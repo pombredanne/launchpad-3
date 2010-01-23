@@ -793,6 +793,8 @@ class IBugTaskSearchBase(Interface):
     subscriber = Choice(
         title=_('Bug subscriber'), vocabulary='ValidPersonOrTeam',
         required=False)
+    affects_me = Bool(
+        title=_('Show only bugs affecting me'), required=False)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -971,8 +973,8 @@ class BugTaskSearchParams:
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None, omit_targeted=False,
-                 date_closed=None, affected_user=None, hardware_bus=None,
+                 bug_commenter=None, omit_targeted=False, date_closed=None,
+                 affected_user=None, affects_me=False, hardware_bus=None,
                  hardware_vendor_id=None, hardware_product_id=None,
                  hardware_driver_name=None, hardware_driver_package_name=None,
                  hardware_owner_is_bug_reporter=None,
@@ -1010,6 +1012,7 @@ class BugTaskSearchParams:
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
         self.affected_user = affected_user
+        self.affects_me = affects_me
         self.hardware_bus = hardware_bus
         self.hardware_vendor_id = hardware_vendor_id
         self.hardware_product_id = hardware_product_id
@@ -1079,7 +1082,8 @@ class BugTaskSearchParams:
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
-                       affected_user=None, has_patch=None, has_cve=None,
+                       affected_user=None, affects_me=False,
+                       has_patch=None, has_cve=None,
                        distribution=None, tags=None,
                        tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,

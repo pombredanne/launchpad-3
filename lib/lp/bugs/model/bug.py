@@ -31,7 +31,8 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
-from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
+from storm.expr import (
+    And, Count, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -266,7 +267,46 @@ class Bug(SQLBase):
         """See `IBug`."""
         return Store.of(self).find(
             Person, BugAffectsPerson.person == Person.id,
+            BugAffectsPerson.affected,
             BugAffectsPerson.bug == self)
+
+    @property
+    def users_unaffected(self):
+        """See `IBug`."""
+        return Store.of(self).find(
+            Person, BugAffectsPerson.person == Person.id,
+            Not(BugAffectsPerson.affected),
+            BugAffectsPerson.bug == self)
+
+    @property
+    def user_ids_affected_with_dupes(self):
+        """Return all IDs of Persons affected by this bug and its dupes.
+        The return value is a Storm expression.  Running a query with
+        this expression returns a result that may contain the same ID
+        multiple times, for example if that person is affected via
+        more than one duplicate."""
+        return Union(
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.affected,
+                       BugAffectsPerson.bug == self)),
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.bug == Bug.id,
+                       BugAffectsPerson.affected,
+                       Bug.duplicateof == self.id)))
+
+    @property
+    def users_affected_with_dupes(self):
+        """See `IBug`."""
+        return Store.of(self).find(
+            Person,
+            In(Person.id, self.user_ids_affected_with_dupes))
+
+    @property
+    def users_affected_count_with_dupes(self):
+        """See `IBug`."""
+        return self.users_affected_with_dupes.count()
 
     @property
     def indexed_messages(self):
@@ -402,6 +442,14 @@ class Bug(SQLBase):
     def followup_subject(self):
         """See `IBug`."""
         return 'Re: '+ self.title
+
+    @property
+    def has_patches(self):
+        """See `IBug`."""
+        for attachment in self.attachments:
+            if attachment.is_patch:
+                return True
+        return False
 
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
@@ -1341,6 +1389,10 @@ class Bug(SQLBase):
             if bap.affected != affected:
                 bap.affected = affected
                 self._flushAndInvalidate()
+        # Loop over dupes.
+        for dupe in self.duplicates:
+            if dupe._getAffectedUser(user) is not None:
+                dupe.markUserAffected(user, affected)
 
     @property
     def readonly_duplicateof(self):

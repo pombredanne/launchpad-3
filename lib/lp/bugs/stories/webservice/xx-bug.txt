@@ -45,6 +45,9 @@ At the top level we provide a collection of bugs.
   title: u'Make Jokosher use autoaudiosink'
   users_affected_collection_link: u'http://.../bugs/11/users_affected'
   users_affected_count: 0
+  users_affected_count_with_dupes: 0
+  users_affected_with_dupes_collection_link: u'http://.../bugs/11/users_affected_with_dupes'
+  users_unaffected_collection_link: u'http://.../bugs/11/users_unaffected'
   users_unaffected_count: 0
   who_made_private_link: None
 
