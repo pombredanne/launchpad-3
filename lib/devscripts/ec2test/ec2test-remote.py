@@ -26,8 +26,6 @@ import bzrlib.errors
 import bzrlib.smtp_connection
 import bzrlib.workingtree
 
-import subunit
-
 
 class SummaryResult(unittest.TestResult):
     """Test result object used to generate the summary."""
@@ -187,6 +185,7 @@ class BaseTestRunner:
 
     def _gather_test_output(self, input_stream, summary_file, out_file):
         """Write the testrunner output to the logs."""
+        import subunit
         # Only write to stdout if we are running as the foreground process.
         echo_to_stdout = not self.daemonized
         result = SummaryResult(summary_file)
