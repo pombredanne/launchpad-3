@@ -286,13 +286,33 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         title=_('The number of comments on this bug'),
         required=True, readonly=True)
     users_affected_count = exported(
-        Int(title=_('The number of users affected by this bug'),
+        Int(title=_('The number of users affected by this bug '
+                    '(not including duplicates)'),
             required=True, readonly=True))
     users_unaffected_count = exported(
+        # We don't say "(not including duplicates)" here because
+        # affected and unaffected are asymmetrical that way.  If a dup
+        # affects you, then the master bug affects you; but if a dup
+        # *doesn't* affect you, the master bug may or may not affect
+        # you, since a dup is often a specific symptom of a more
+        # general master bug.
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
     users_affected = exported(CollectionField(
-            title=_('Users affected'),
+            title=_('Users affected (not including duplicates)'),
+            value_type=Reference(schema=IPerson),
+            readonly=True))
+    users_unaffected = exported(CollectionField(
+            title=_('Users explicitly marked as unaffected '
+                    '(not including duplicates)'),
+            value_type=Reference(schema=IPerson),
+            readonly=True))
+    users_affected_count_with_dupes = exported(
+      Int(title=_('The number of users affected by this bug '
+                  '(including duplicates)'),
+          required=True, readonly=True))
+    users_affected_with_dupes = exported(CollectionField(
+            title=_('Users affected (including duplicates)'),
             value_type=Reference(schema=IPerson),
             readonly=True))
 
