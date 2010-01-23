@@ -89,6 +89,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import (
@@ -341,6 +342,7 @@ class BaseLayer:
         # Fail tests with memory leaks now rather than when Launchpad crashes
         # due to a leak because someone ignored the warnings.
         if gc.garbage:
+            del gc.garbage[:]
             gc.collect() # Expensive, so only do if there might be garbage.
             if gc.garbage:
                 BaseLayer.flagTestIsolationFailure(
@@ -1832,6 +1834,20 @@ class BaseWindmillLayer(AppServerLayer):
         os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
         cls.shell_objects = start_windmill()
 
+        # Patch the config to provide the port number and not use https.
+        sites = (
+            ('vhost.mainsite', 'rooturl: http://launchpad.dev:8085/'),
+            ('vhost.answers', 'rooturl: http://answers.launchpad.dev:8085/'),
+            ('vhost.blueprints',
+                'rooturl: http://blueprints.launchpad.dev:8085/'),
+            ('vhost.bugs', 'rooturl: http://bugs.launchpad.dev:8085/'),
+            ('vhost.code', 'rooturl: http://code.launchpad.dev:8085/'),
+            ('vhost.translations',
+                'rooturl: http://translations.launchpad.dev:8085/'))
+        for site in sites:
+            config.push('windmillsettings', "\n[%s]\n%s\n" % site)
+        allvhosts.reload()
+
     @classmethod
     @profiled
     def tearDown(cls):
@@ -1840,6 +1856,7 @@ class BaseWindmillLayer(AppServerLayer):
         if cls.config_file is not None:
             # Close the file so that it gets deleted.
             cls.config_file.close()
+        config.reloadConfig()
 
     @classmethod
     @profiled

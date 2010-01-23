@@ -84,8 +84,8 @@ from lp.registry.interfaces.distribution import (
     IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, MirrorContent, MirrorStatus)
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, NoSuchDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -394,8 +394,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def newMirror(self, owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,
-                  ftp_base_url=None, rsync_base_url=None, official_candidate=False,
-                  enabled=False, whiteboard=None):
+                  ftp_base_url=None, rsync_base_url=None,
+                  official_candidate=False, enabled=False,
+                  whiteboard=None):
         """See `IDistribution`."""
         # NB this functionality is only available to distributions that have
         # the full functionality of Launchpad enabled. This is Ubuntu and
@@ -450,15 +451,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # If we have a frozen one, return that.
         for series in self.series:
-            if series.status == DistroSeriesStatus.FROZEN:
+            if series.status == SeriesStatus.FROZEN:
                 return series
         # If we have one in development, return that.
         for series in self.series:
-            if series.status == DistroSeriesStatus.DEVELOPMENT:
+            if series.status == SeriesStatus.DEVELOPMENT:
                 return series
         # If we have a stable one, return that.
         for series in self.series:
-            if series.status == DistroSeriesStatus.CURRENT:
+            if series.status == SeriesStatus.CURRENT:
                 return series
         # If we have ANY, return the first one.
         if len(self.series) > 0:
@@ -509,7 +510,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return DistroSeries.selectBy(
             distribution=self,
-            status=DistroSeriesStatus.DEVELOPMENT)
+            status=SeriesStatus.DEVELOPMENT)
 
     def getMilestone(self, name):
         """See `IDistribution`."""
@@ -1002,7 +1003,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # we're searching for.
         return (
             DistroSeries.distribution == self,
-            DistroSeries.status != DistroSeriesStatus.OBSOLETE,
+            DistroSeries.status != SeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             Build.distroarchseries == DistroArchSeries.id,
@@ -1482,7 +1483,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             summary=summary,
             description=description,
             version=version,
-            status=DistroSeriesStatus.EXPERIMENTAL,
+            status=SeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
             owner=owner)
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):

@@ -20,8 +20,15 @@
 
     <div metal:fill-slot="main">
       <p id="description">
-        These translation related entries are imported, blocked, deleted or
-        waiting to be imported in Launchpad.
+        These are translation files that have been imported, blocked, deleted or
+        are waiting to be imported in Launchpad.
+      </p>
+      <p>
+        If your import is taking longer than you'd expect, <a href="
+        https://answers.edge.launchpad.net/rosetta/+addquestion"
+        >contact us</a>.
+        (<a href="/+help/successful-imports.html" target="help">Learn
+        more about getting a successful import</a>)
         <tal:login condition="not:request/lp:person">
           <a href="+login">Log in</a> to change items in this list.
         </tal:login>
