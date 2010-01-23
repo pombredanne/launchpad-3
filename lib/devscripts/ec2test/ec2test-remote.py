@@ -174,8 +174,7 @@ class BaseTestRunner:
                         config, self.email[0], self.email,
                         subject, summary_file.read(),
                         attachment=out_file.read(),
-                        attachment_filename='%s.log' % (
-                            self.public_branch.nick,),
+                        attachment_filename='%s.log' % self.get_nick(),
                         attachment_mime_subtype='subunit')
                     summary_file.close()
             finally:
@@ -184,6 +183,10 @@ class BaseTestRunner:
                 # and take control itself, if it wants to.
                 out_file.close()
                 self.logger.close_logs()
+
+    def get_nick(self):
+        """Return the nick name of the branch that we are testing."""
+        return self.public_branch.strip('/').split('/')[-1]
 
     def _gather_test_output(self, input_stream, summary_file, out_file):
         """Write the testrunner output to the logs."""
