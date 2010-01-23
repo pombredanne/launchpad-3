@@ -10,12 +10,12 @@ import datetime
 import optparse
 import os
 import pickle
-import re
 import subprocess
 import sys
 import textwrap
 import time
 import traceback
+import unittest
 
 from xml.sax.saxutils import escape
 
@@ -25,6 +25,35 @@ import bzrlib.email_message
 import bzrlib.errors
 import bzrlib.smtp_connection
 import bzrlib.workingtree
+
+import subunit
+
+
+class SummaryResult(unittest.TestResult):
+    """Test result object used to generate the summary."""
+
+    double_line = '=' * 70 + '\n'
+    single_line = '-' * 70 + '\n'
+
+    def __init__(self, output_stream):
+        super(SummaryResult, self).__init__()
+        self.stream = output_stream
+
+    def printError(self, flavor, test, error):
+        """Print an error to the output stream."""
+        self.stream.write(self.double_line)
+        self.stream.write('%s: %s\n' % (flavor, test))
+        self.stream.write(self.single_line)
+        self.stream.write('%s\n' % (error,))
+
+    def addError(self, test, error):
+        super(SummaryResult, self).addError(test, error)
+        self.printError('ERROR', test, self._exc_info_to_string(error, test))
+
+    def addFailure(self, test, error):
+        super(SummaryResult, self).addFailure(test, error)
+        self.printError(
+            'FAILURE', test, self._exc_info_to_string(error, test))
 
 
 class BaseTestRunner:
@@ -160,18 +189,15 @@ class BaseTestRunner:
         """Write the testrunner output to the logs."""
         # Only write to stdout if we are running as the foreground process.
         echo_to_stdout = not self.daemonized
-        while 1:
-            line = input_stream.readline()
-            if not line:
-                break
+        result = SummaryResult(summary_file)
+        subunit_server = subunit.TestProtocolServer(result, summary_file)
+        for line in input_stream:
+            subunit_server.lineReceived(line)
             out_file.write(line)
             out_file.flush()
             if echo_to_stdout:
                 sys.stdout.write(line)
                 sys.stdout.flush()
-            if not self.ignore_line(line):
-                summary_file.write(line)
-                summary_file.flush()
 
 
 class TestOnMergeRunner(BaseTestRunner):
@@ -181,16 +207,6 @@ class TestOnMergeRunner(BaseTestRunner):
         """See BaseTestRunner.build_test_command()."""
         command = ['make', 'check', 'VERBOSITY=' + self.test_options]
         return command
-
-    # Used to filter lines in the summary log. See
-    # `BaseTestRunner.ignore_line()`.
-    ignore_line = re.compile(
-        r'( [\w\.\/\-]+( ?\([\w\.\/\-]+\))?|'
-        r'\s*Running.*|'
-        r'\d{4}\-\d{2}\-\d{2} \d{2}\:\d{2}\:\d{2} INFO.+|'
-        r'\s*Set up .+|'
-        r'\s*Tear down .*|'
-        r'  Ran \d+ tests with .+)$').match
 
 
 class WebTestLogger:
