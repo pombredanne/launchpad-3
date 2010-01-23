@@ -203,6 +203,7 @@ class BaseTestRunner:
             if echo_to_stdout:
                 sys.stdout.write(line)
                 sys.stdout.flush()
+            summary_file.flush()
 
 
 class TestOnMergeRunner(BaseTestRunner):
