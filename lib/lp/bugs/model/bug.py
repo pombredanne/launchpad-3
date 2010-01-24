@@ -32,7 +32,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Eq, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
