@@ -10,20 +10,27 @@ import pytz
 
 from storm.locals import Int, Reference, Storm
 
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import SourcePackageUrgency
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from canonical.database.sqlbase import sqlvalues
+
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJobDispatchEstimation)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 
 
-class BuildPackageJob(Storm):
+class BuildPackageJob(Storm, BuildFarmJob):
     """See `IBuildPackageJob`."""
-    implements(IBuildFarmJob, IBuildPackageJob)
+    implements(IBuildPackageJob)
+    classProvides(IBuildFarmJobDispatchEstimation)
+
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)
 
@@ -48,7 +55,7 @@ class BuildPackageJob(Storm):
             'universe': 250,
             'restricted': 750,
             'main': 1000,
-            'partner' : 1250,
+            'partner': 1250,
             }
 
         score_urgency = {
@@ -140,12 +147,16 @@ class BuildPackageJob(Storm):
         # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
         # it fix request from bug # 30617
         return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
-            distroname, distroseriesname, archname, sourcename, version, state
-            ))
+            distroname, distroseriesname, archname, sourcename, version,
+            state))
 
     def getName(self):
         """See `IBuildPackageJob`."""
         return self.build.sourcepackagerelease.name
+
+    def getTitle(self):
+        """See `IBuildPackageJob`."""
+        return self.build.title
 
     def jobStarted(self):
         """See `IBuildPackageJob`."""
@@ -166,3 +177,40 @@ class BuildPackageJob(Storm):
         # fix it.
         self.build.buildstate = BuildStatus.BUILDING
 
+    @staticmethod
+    def composePendingJobsQuery(min_score, processor, virtualized):
+        """See `IBuildFarmJob`."""
+        return """
+            SELECT
+                BuildQueue.job,
+                BuildQueue.lastscore,
+                BuildQueue.estimated_duration,
+                Build.processor AS processor,
+                Archive.require_virtualized AS virtualized
+            FROM
+                BuildQueue, Build, BuildPackageJob, Archive, Job
+            WHERE
+                BuildQueue.job_type = %s
+                AND BuildPackageJob.job = BuildQueue.job
+                AND BuildPackageJob.job = Job.id
+                AND Job.status = %s
+                AND BuildPackageJob.build = Build.id
+                AND Build.buildstate = %s
+                AND Build.archive = Archive.id
+                AND Archive.enabled = TRUE
+                AND BuildQueue.lastscore >= %s
+                AND Build.processor = %s
+                AND Archive.require_virtualized = %s
+        """ % sqlvalues(
+            BuildFarmJobType.PACKAGEBUILD, JobStatus.WAITING,
+            BuildStatus.NEEDSBUILD, min_score, processor, virtualized)
+
+    @property
+    def processor(self):
+        """See `IBuildFarmJob`."""
+        return self.build.processor
+
+    @property
+    def virtualized(self):
+        """See `IBuildFarmJob`."""
+        return self.build.is_virtualized

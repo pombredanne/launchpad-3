@@ -15,9 +15,18 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="language_stats view/productserieslanguages"
-             tal:attributes="class
-                 string:stats language-${language_stats/language/code}">
+          <tal:loop tal:repeat="language_stats view/productserieslanguages">
+            <tal:preferred
+                condition="python: view.isPreferredLanguage(language_stats.language)">
+                <tal:set-class
+                    define="global series_language_class string:stats language-${language_stats/language/code} preferred-language" />
+            </tal:preferred>
+            <tal:not-preferred
+                condition="not:python: view.isPreferredLanguage(language_stats.language)">
+                <tal:set-class
+                    define="global series_language_class string:stats language-${language_stats/language/code} not-preferred-language" />
+            </tal:not-preferred>
+          <tr tal:attributes="class series_language_class">
             <td>
               <tal:multiple_pofile condition="not:view/single_potemplate">
               <a tal:attributes="href language_stats/fmt:url"
@@ -68,6 +77,9 @@
               </tal:block>
             </td>
           </tr>
+          </tal:loop>
         </tbody>
       </table>
+      <metal:languages-table-actions
+        use-macro="context/@@+translations-macros/languages-table-actions" />
 </tal:root>

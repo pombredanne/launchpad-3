@@ -4,7 +4,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'DtdFile',
     'MozillaXpiImporter',
+    'MozillaZipImportParser',
     ]
 
 from cStringIO import StringIO

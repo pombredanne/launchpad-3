@@ -42,9 +42,9 @@ put the person we will merge into some of those.
     >>> ubuntu_team.teamowner = marilize
 
     >>> ubuntu_translators = personset.getByName('ubuntu-translators')
-    >>> ubuntu_translators.addMember(marilize, marilize)
+    >>> ignored = ubuntu_translators.addMember(marilize, marilize)
     >>> rosetta_admins = personset.getByName('rosetta-admins')
-    >>> rosetta_admins.addMember(marilize, marilize)
+    >>> ignored = rosetta_admins.addMember(marilize, marilize)
 
 Karma gets reassigned to the person we merge into. Let's assign karma to
 Marilize and save it for later comparison.
@@ -348,7 +348,7 @@ are carried over just like when merging people.
     >>> from canonical.launchpad.interfaces import IPollSubset, PollSecrecy
     >>> test_team = personset.newTeam(sample, 'test-team', 'Test team')
     >>> launchpad_devs = personset.getByName('launchpad')
-    >>> launchpad_devs.addMember(
+    >>> ignored = launchpad_devs.addMember(
     ...     test_team, reviewer=launchpad_devs.teamowner, force_team_add=True)
     >>> today = datetime.now(pytz.timezone('UTC'))
     >>> tomorrow = today + timedelta(days=1)

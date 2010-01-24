@@ -108,7 +108,7 @@ class IBranchTarget(IPrimaryContext):
 
     collection = Attribute("An IBranchCollection for this target.")
 
-    def assignKarma(person, action_name):
+    def assignKarma(person, action_name, date_created=None):
         """Assign karma to the person on the appropriate target."""
 
     def getBugTask(bug):

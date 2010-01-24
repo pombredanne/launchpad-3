@@ -17,6 +17,16 @@
         rel="meta" type="application/rdf+xml"
         title="FOAF" href="+rdf"
         />
+  <script type="text/javascript"
+          tal:content="string:
+    YUI().use('registry.team', function(Y) {
+        Y.on('load',
+             function(e) {
+                 Y.registry.team.setup_add_member_handler();
+             },
+             window);
+    });
+  "/>
   </tal:block>
 </head>
 
@@ -76,7 +86,7 @@
     <div class="first yui-u">
       <metal:details use-macro="context/@@+person-macros/team-details" />
     </div>
-    <div class="first yui-u">
+    <div class="yui-u">
       <div tal:content="structure context/@@+portlet-membership" />
     </div>
   </div>

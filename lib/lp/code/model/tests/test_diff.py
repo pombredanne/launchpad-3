@@ -8,9 +8,11 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 from difflib import unified_diff
+import logging
 from unittest import TestLoader
 
 from bzrlib.branch import Branch
+from bzrlib import trace
 import transaction
 
 from canonical.launchpad.webapp import canonical_url, errorlog
@@ -21,6 +23,16 @@ from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
+
+
+class RecordLister(logging.Handler):
+
+    def __init__(self):
+        logging.Handler.__init__(self)
+        self.records = []
+
+    def emit(self, record):
+        self.records.append(record)
 
 
 class DiffTestCase(TestCaseWithFactory):
@@ -143,7 +155,7 @@ class TestDiffInScripts(DiffTestCase):
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
         source_branch = Branch.open(bmp.source_branch.warehouse_url)
         target_branch = Branch.open(bmp.target_branch.warehouse_url)
-        diff = Diff.mergePreviewFromBranches(
+        diff, conflicts = Diff.mergePreviewFromBranches(
             source_branch, source_rev_id, target_branch)
         transaction.commit()
         self.checkExampleMerge(diff.text)
@@ -195,7 +207,7 @@ class TestDiffInScripts(DiffTestCase):
         # Changes introduced in the prerequisite branch are ignored.
         (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
          prerequisite) = self.preparePrerequisiteMerge()
-        diff = Diff.mergePreviewFromBranches(
+        diff, conflicts = Diff.mergePreviewFromBranches(
             source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
         transaction.commit()
         self.assertIn('+source text\n', diff.text)
@@ -208,7 +220,7 @@ class TestDiffInScripts(DiffTestCase):
          prerequisite) = self.preparePrerequisiteMerge()
         self.commitFile(
             prerequisite, 'file', 'prerequisite text2\n')
-        diff = Diff.mergePreviewFromBranches(
+        diff, conflicts = Diff.mergePreviewFromBranches(
             source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
         transaction.commit()
         self.assertNotIn('-prerequisite text2\n', diff.text)
@@ -427,6 +439,28 @@ class TestPreviewDiff(DiffTestCase):
         transaction.commit()
         self.assertIn('+source text\n', preview.text)
         self.assertNotIn('+prerequisite text\n', preview.text)
+
+    def test_fromBranchMergeProposal_sets_conflicts(self):
+        """Conflicts are set on the PreviewDiff."""
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        preview = PreviewDiff.fromBranchMergeProposal(bmp)
+        self.assertEqual('Text conflict in foo\n', preview.conflicts)
+
+    def test_fromBranchMergeProposal_does_not_warn_on_conflicts(self):
+        """PreviewDiff generation emits no conflict warnings."""
+        reload(trace)
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        handler = RecordLister()
+        logger = logging.getLogger('bzr')
+        logger.addHandler(handler)
+        try:
+            preview = PreviewDiff.fromBranchMergeProposal(bmp)
+            self.assertEqual(handler.records, [])
+            # check that our handler would normally intercept warnings.
+            trace.warning('foo!')
+            self.assertNotEqual(handler.records, [])
+        finally:
+            logger.removeHandler(handler)
 
 
 def test_suite():

@@ -11,12 +11,11 @@ __all__ = [
 
 from zope.component import adapter, getUtility
 
-from lp.codehosting.scanner import events
 from canonical.config import config
+from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchjob import (
     IRevisionsAddedJobSource, IRevisionMailJobSource)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel)
+from lp.codehosting.scanner import events
 
 
 def subscribers_want_notification(db_branch):

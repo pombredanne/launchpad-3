@@ -1,3 +1,22 @@
+launchpad-buildd (54) hardy-cat; urgency=low
+
+  [ William Grant ]
+  * debian.py: Tell sbuild to build debug symbols if the
+    build_debug_symbols argument is True.
+  * sbuild: Set "Build-Debug-Symbols: yes" in CurrentlyBuilding if
+    we have been told to build debug symbols.
+
+  [ LaMont Jones ]
+  * do not ignore SIGHUP in builds - it breaks test suites. LP#453460
+  * create filecache-default/ccache directories in init.d as well as postinst
+  * sbuild: run dpkg-source inside the chroot.  LP#476036
+  * sbuild: change the regexp for dpkg-source extraction to handle both karmic and pre-karmic dpkg.  LP#476036
+  * use --print-architecture instead of --print-installation-architecture
+  * mount-chroot: copy hosts et al into chroot. LP#447919
+  * provide and call check-implicit-function-pointers.
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 14 Dec 2009 12:00:10 -0700
+
 launchpad-buildd (52) dapper-cat; urgency=low
 
   * Depends: apt-transport-https

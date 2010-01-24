@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'BranchNamespaceSet',
-    'get_namespace',
     'PackageNamespace',
     'PersonalNamespace',
     'ProductNamespace',
@@ -47,9 +46,9 @@ from lp.registry.interfaces.product import (
     IProduct, IProductSet, NoSuchProduct)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet, NoSuchSourcePackageName)
+from lp.services.utils import iter_split
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from lp.code.xmlrpc.codehosting import iter_split
 
 
 class _BaseNamespace:

@@ -38,7 +38,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
@@ -107,7 +107,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestUploadProcessorBase, self).setUp()
 
         self.queue_folder = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
@@ -134,6 +134,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
     def tearDown(self):
         shutil.rmtree(self.queue_folder)
+        super(TestUploadProcessorBase, self).tearDown()
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
@@ -493,7 +494,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
-        self.breezy.status = DistroSeriesStatus.FROZEN
+        self.breezy.status = SeriesStatus.FROZEN
         self.layer.txn.commit()
 
         # Upload a newer version of bar.
@@ -576,7 +577,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         See bug 369512.
         """
         self._checkCopyArchiveUploadToDistro(
-            PackagePublishingPocket.RELEASE, DistroSeriesStatus.CURRENT)
+            PackagePublishingPocket.RELEASE, SeriesStatus.CURRENT)
 
     def testCopyArchiveUploadToSupportedDistro(self):
         """Check binary copy archive uploads to RELEASE pockets.
@@ -588,7 +589,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         See bug 369512.
         """
         self._checkCopyArchiveUploadToDistro(
-            PackagePublishingPocket.RELEASE, DistroSeriesStatus.SUPPORTED)
+            PackagePublishingPocket.RELEASE, SeriesStatus.SUPPORTED)
 
     def testDuplicatedBinaryUploadGetsRejected(self):
         """The upload processor rejects duplicated binary uploads.
@@ -964,7 +965,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
     def testPartnerUploadToProposedPocket(self):
         """Upload a partner package to the proposed pocket."""
         self.setupBreezy()
-        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self.options.context = 'insecure'
         uploadprocessor = UploadProcessor(
@@ -983,7 +984,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         distroseries is allowed.
         """
         self.setupBreezy()
-        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self.options.context = 'insecure'
         uploadprocessor = UploadProcessor(
@@ -1029,21 +1030,21 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check unstable states:
 
-        self.breezy.status = DistroSeriesStatus.DEVELOPMENT
+        self.breezy.status = SeriesStatus.DEVELOPMENT
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
-        self.breezy.status = DistroSeriesStatus.EXPERIMENTAL
+        self.breezy.status = SeriesStatus.EXPERIMENTAL
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
         # Check stable states:
 
-        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
-        self.breezy.status = DistroSeriesStatus.SUPPORTED
+        self.breezy.status = SeriesStatus.SUPPORTED
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 

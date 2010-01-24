@@ -12,13 +12,13 @@ import time
 import urllib2
 import xmlrpclib
 
+from Cookie import SimpleCookie
 from cookielib import CookieJar
 from datetime import datetime
 from email.Utils import parseaddr
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.externalbugtracker.base import (
     BugNotFound, BugTrackerAuthenticationError, ExternalBugTracker,
@@ -48,6 +48,7 @@ LP_PLUGIN_FULL = 3
 # Fault code constants for the LP Plugin
 FAULT_TICKET_NOT_FOUND = 1001
 
+
 class Trac(ExternalBugTracker):
     """An ExternalBugTracker instance for handling Trac bugtrackers."""
 
@@ -61,11 +62,26 @@ class Trac(ExternalBugTracker):
         # Any token will do.
         auth_url = urlappend(base_auth_url, 'check')
         try:
-            self.urlopen(auth_url)
+            response = self.urlopen(auth_url)
         except urllib2.HTTPError, error:
-            if error.code != 401:
+            # If the error is HTTP 401 Unauthorized then we're
+            # probably talking to the LP plugin.
+            if error.code == 401:
+                return TracLPPlugin(self.baseurl)
+            else:
                 return self
-        return TracLPPlugin(self.baseurl)
+        else:
+            # If the response contains a trac_auth cookie then we're
+            # talking to the LP plugin. However, it's unlikely that
+            # the remote system will authorize the bogus auth token we
+            # sent, so this check is really intended to detect broken
+            # Trac instances that return HTTP 200 for a missing page.
+            for set_cookie in response.headers.getheaders('Set-Cookie'):
+                cookie = SimpleCookie(set_cookie)
+                if 'trac_auth' in cookie:
+                    return TracLPPlugin(self.baseurl)
+            else:
+                return self
 
     def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
@@ -83,11 +99,11 @@ class Trac(ExternalBugTracker):
                 # We try to retrive the ticket in HTML form, since that will
                 # tell us whether or not it is actually a valid ticket
                 ticket_id = int(bug_ids.pop())
-                html_data = self.urlopen(html_ticket_url % ticket_id)
+                self.urlopen(html_ticket_url % ticket_id)
             except (ValueError, urllib2.HTTPError):
                 # If we get an HTTP error we can consider the ticket to be
                 # invalid. If we get a ValueError then the ticket_id couldn't
-                # be intified and it's of no use to us anyway.
+                # be identified and it's of no use to us anyway.
                 pass
             else:
                 # If we didn't get an error we can try to get the ticket in
@@ -345,7 +361,7 @@ class TracLPPlugin(Trac):
         auth_url = urlappend(base_auth_url, token_text)
 
         try:
-            response = self.urlopen(auth_url)
+            self.urlopen(auth_url)
         except urllib2.HTTPError, error:
             raise BugTrackerAuthenticationError(
                 self.baseurl, '%s "%s"' % (error.code, error.msg))
@@ -378,17 +394,17 @@ class TracLPPlugin(Trac):
 
         return [bug['id'] for bug in modified_bugs]
 
-    def getCommentIds(self, bug_watch):
+    def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
         try:
-            bug = self.bugs[int(bug_watch.remotebug)]
+            bug = self.bugs[int(remote_bug_id)]
         except KeyError:
-            raise BugNotFound(bug_watch.remotebug)
+            raise BugNotFound(remote_bug_id)
         else:
             return [comment_id for comment_id in bug['comments']]
 
     @needs_authentication
-    def fetchComments(self, bug_watch, comment_ids):
+    def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
         bug_comments = {}
 
@@ -402,11 +418,11 @@ class TracLPPlugin(Trac):
         # Finally, we overwrite the bug's comments field with the
         # bug_comments dict. The nice upshot of this is that we can
         # still loop over the dict and get IDs back.
-        self.bugs[int(bug_watch.remotebug)]['comments'] = bug_comments
+        self.bugs[int(remote_bug_id)]['comments'] = bug_comments
 
-    def getPosterForComment(self, bug_watch, comment_id):
+    def getPosterForComment(self, remote_bug_id, comment_id):
         """See `ISupportsCommentImport`."""
-        bug = self.bugs[int(bug_watch.remotebug)]
+        bug = self.bugs[int(remote_bug_id)]
         comment = bug['comments'][comment_id]
 
         display_name, email = parseaddr(comment['user'])
@@ -424,9 +440,9 @@ class TracLPPlugin(Trac):
         else:
             return display_name, email
 
-    def getMessageForComment(self, bug_watch, comment_id, poster):
+    def getMessageForComment(self, remote_bug_id, comment_id, poster):
         """See `ISupportsCommentImport`."""
-        bug = self.bugs[int(bug_watch.remotebug)]
+        bug = self.bugs[int(remote_bug_id)]
         comment = bug['comments'][comment_id]
 
         comment_datecreated = datetime.fromtimestamp(
@@ -481,7 +497,7 @@ class TracLPPlugin(Trac):
             launchpad_bug_id = 0
 
         try:
-            timestamp = self._server.launchpad.set_launchpad_bug(
+            self._server.launchpad.set_launchpad_bug(
                 remote_bug, launchpad_bug_id)
         except xmlrpclib.Fault, fault:
             # Deal with "Ticket does not exist" faults. We re-raise
@@ -490,4 +506,3 @@ class TracLPPlugin(Trac):
                 raise BugNotFound(remote_bug)
             else:
                 raise
-

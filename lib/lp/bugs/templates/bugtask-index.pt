@@ -53,6 +53,7 @@
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
         .bug-branch-summary dd { font-size: 85% }
+        a#privacy-link:link:hover, a#privacy-link:visited:hover {text-decoration:none;}
       </style>
     </metal:block>
 
@@ -266,7 +267,10 @@
                   tal:condition="context/bug/duplicateof"
                   class="warning message"
                   id="warning-comment-on-duplicate">
-                  Remember, this bug report is a duplicate.
+                  Remember, this bug report is a duplicate of
+                    <a href="#" tal:attributes="href
+                      context/bug/duplicateof/fmt:url">bug #<span
+                      tal:replace="context/bug/duplicateof/id">42</span></a>.
                   Comment here only if you think the duplicate status is wrong.
               </div>
               <h2>Add comment</h2>

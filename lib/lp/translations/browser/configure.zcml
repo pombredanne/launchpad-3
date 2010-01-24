@@ -391,9 +391,9 @@
             <browser:page
                 name="+chart"
                 template="../templates/potemplate-chart.pt"/>
-            
+
             <!-- Potemplate Portlets -->
-            
+
             <browser:page
                 name="+portlet-details"
                 template="../templates/potemplate-portlet-details.pt"/>
