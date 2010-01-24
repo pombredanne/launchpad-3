@@ -574,7 +574,7 @@
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
-                    heat"
+                    heat
                     has_patches"/>
             <require
                 permission="launchpad.View"
