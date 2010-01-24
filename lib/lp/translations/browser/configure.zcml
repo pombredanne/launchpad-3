@@ -799,9 +799,9 @@
         template="../templates/hastranslationimports-index.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
-        name="+settings"
+        name="+translation-policy"
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.translations.browser.product.ProductChangeSettingsView"
+        class="lp.translations.browser.product.ProductSetTranslationPolicyView"
         permission="launchpad.TranslationsAdmin"
         template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
@@ -852,9 +852,9 @@
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
-        name="+settings"
+        name="+translation-policy"
         for="lp.registry.interfaces.project.IProject"
-        class="lp.translations.browser.project.ProjectChangeSettingsView"
+        class="lp.translations.browser.project.ProjectSetTranslationPolicyView"
         permission="launchpad.TranslationsAdmin"
         template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
@@ -887,9 +887,9 @@
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
-        name="+settings"
+        name="+translation-policy"
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.translations.browser.distribution.DistributionSettingsView"
+        class="lp.translations.browser.distribution.DistributionSetTranslationPolicyView"
         permission="launchpad.TranslationsAdmin"
         template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>

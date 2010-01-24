@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProjectChangeTranslatorsView',
+    'ProjectSetTranslationPolicyView',
     'ProjectTranslationsMenu',
     'ProjectView',
     ]
@@ -23,12 +23,12 @@ class ProjectTranslationsMenu(NavigationMenu):
 
     usedfor = IProject
     facet = 'translations'
-    links = ['products', 'settings', 'overview']
+    links = ['products', 'translation_policy', 'overview']
 
     @enabled_with_permission('launchpad.Edit')
-    def settings(self):
+    def translation_policy(self):
         text = 'Settings'
-        return Link('+settings', text, icon='edit')
+        return Link('+translation-policy', text, icon='edit')
 
     def products(self):
         text = 'Products'
@@ -52,7 +52,7 @@ class ProjectView(LaunchpadView):
         return list(all_products - translatables)
 
 
-class ProjectChangeSettingsView(TranslationsMixin, ProjectEditView):
+class ProjectSetTranslationPolicyView(TranslationsMixin, ProjectEditView):
     label = "Set permissions and policies"
     page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]

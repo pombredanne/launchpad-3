@@ -14,7 +14,7 @@
   </p>
   <div tal:condition="context/required:launchpad.TranslationsAdmin">
     <a class="edit sprite"
-       tal:define="link context/menu:navigation/settings"
+       tal:define="link context/menu:navigation/translation_policy"
        tal:attributes="href link/url"
        >Change permissions</a>
   </div>
