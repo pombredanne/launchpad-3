@@ -506,6 +506,8 @@ property returning True.
     ...     description="A patch attachment",
     ...     comment="a string comment",
     ...     is_patch=True)
+    >>> transaction.commit()
+
     >>> bug_two.attachments.count()
     2
     >>> bug_two.has_patches
