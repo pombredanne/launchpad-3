@@ -1,0 +1,157 @@
+= Cookie Client ID Manager =
+
+We use a custom ICookieClientIdManager which instead of a 'namespace'
+attribute provides a getNamespace(request) method. That's because we sometimes
+need to change the namespace depending on the request's layer (e.g. when the
+request is on the TestOpenID layer we want a separate cookie from the
+Launchpad one).
+
+Thanks to this requirement, our custom class has to re-implement a couple
+methods from CookieClientIdManager that expect the 'namespace' attribute to
+be provided.
+
+    >>> from canonical.launchpad.webapp.session import (
+    ...   LaunchpadCookieClientIdManager)
+    >>> bim = LaunchpadCookieClientIdManager()
+    >>> bim.namespace
+    Traceback (most recent call last):
+    ...
+    AttributeError: This class doesn't provide a namespace attribute...
+
+    >>> from StringIO import StringIO
+    >>> from zope.publisher.http import HTTPRequest
+    >>> request = HTTPRequest(StringIO(''), {}, None)
+    >>> bim.getNamespace(request)
+    'launchpad_tests'
+
+When the request is in the TestOpenIDLayer, a separate cookie is used.
+
+    >>> from canonical.launchpad.layers import setFirstLayer, TestOpenIDLayer
+    >>> testopenid_request = HTTPRequest(StringIO(''), {}, None)
+    >>> setFirstLayer(testopenid_request, TestOpenIDLayer)
+    >>> bim.getNamespace(testopenid_request)
+    'testopenid'
+
+
+== getRequestId(request) ==
+
+Because no cookie has been set, we get no id:
+
+    >>> bim.getRequestId(request) is None
+    True
+
+We can set an id:
+
+    >>> id1 = bim.generateUniqueId()
+    >>> bim.setRequestId(request, id1)
+
+And get it back:
+
+    >>> bim.getRequestId(request) == id1
+    True
+
+When we set the request id, we also set a response cookie.  We
+can simulate getting this cookie back in a subsequent request:
+
+    >>> request2 = HTTPRequest(StringIO(''), {}, None)
+    >>> request2._cookies = dict(
+    ...   [(name, cookie['value'])
+    ...    for (name, cookie) in request.response._cookies.items()
+    ...   ])
+
+And we get the same id back from the new request:
+
+    >>> bim.getRequestId(request) == bim.getRequestId(request2)
+    True
+
+Test a corner case where Python 2.6 hmac module does not allow
+unicode as input:
+
+    >>> id_uni = unicode(bim.generateUniqueId())
+    >>> bim.setRequestId(request, id_uni)
+    >>> bim.getRequestId(request) == id_uni
+    True
+
+If another server is managing the ClientId cookies (Apache, Nginx)
+we're returning their value without checking:
+
+    >>> bim.thirdparty = True
+    >>> request3 = HTTPRequest(StringIO(''), {}, None)
+    >>> request3._cookies = {
+    ...     bim.getNamespace(request3): 'AQAAf0Y4gjgAAAQ3AwMEAg=='}
+    >>> bim.getRequestId(request3)
+    'AQAAf0Y4gjgAAAQ3AwMEAg=='
+
+
+== setRequestId(request, id) ==
+
+Note that the id is checked for validity. Setting an
+invalid value is silently ignored:
+
+    >>> request = HTTPRequest(StringIO(''), {}, None)
+    >>> bim = LaunchpadCookieClientIdManager()
+    >>> bim.getRequestId(request)
+    >>> bim.setRequestId(request, 'invalid id')
+    >>> bim.getRequestId(request)
+
+For now, the cookie path is the application URL:
+
+    >>> cookie = request.response.getCookie(bim.getNamespace(request))
+    >>> cookie['path'] == request.getApplicationURL(path_only=True)
+    True
+
+By default, session cookies have a lifetime of 1 year:
+
+    >>> bim.cookieLifetime # 1 year in seconds.
+    31536000
+    >>> cookie.has_key('expires')
+    True
+
+Expiry time of 0 means never (well - close enough)
+
+    >>> bim.cookieLifetime = 0
+    >>> request = HTTPRequest(StringIO(''), {}, None)
+    >>> sid = bim.getRequestId(request)
+    >>> bim.setRequestId(request, sid)
+    >>> cookie = request.response.getCookie(bim.getNamespace(request))
+    >>> cookie['expires']
+    'Tue, 19 Jan 2038 00:00:00 GMT'
+
+If another server in front of Zope (Apache, Nginx) is managing the
+cookies we won't set any ClientId cookies:
+
+    >>> request = HTTPRequest(StringIO(''), {}, None)
+    >>> bim.thirdparty = True
+    >>> bim.setRequestId(request, '1234')
+    WARNING:root:ClientIdManager is using thirdparty cookies...
+    >>> cookie = request.response.getCookie(bim.getNamespace(request))
+    >>> print cookie
+    None
+
+For https requests, the secure cookie option is included.
+
+    >>> bim.thirdparty = False
+    >>> bim.cookieLifetime = None
+    >>> request = HTTPRequest(
+    ...     StringIO(''), {'SERVER_URL': 'https://example.com'}, None)
+    >>> bim.setRequestId(request, '1234')
+    >>> print request.response.getCookie(bim.getNamespace(request))
+    {'path': '/', 'secure': True, 'value': '1234'}
+
+But for http requests, it is not.
+
+    >>> request = HTTPRequest(
+    ...     StringIO(''), {'SERVER_URL': 'http://example.com'}, None)
+    >>> bim.setRequestId(request, '1234')
+    >>> print request.response.getCookie(bim.getNamespace(request))
+    {'path': '/', 'secure': False, 'value': '1234'}
+
+When the cookie is set, cache headers are added to the
+response to try to prevent the cookie header from being cached:
+
+    >>> request.response.getHeader('Cache-Control')
+    'no-cache="Set-Cookie,Set-Cookie2"'
+    >>> request.response.getHeader('Pragma')
+    'no-cache'
+    >>> request.response.getHeader('Expires')
+    'Mon, 26 Jul 1997 05:00:00 GMT'
