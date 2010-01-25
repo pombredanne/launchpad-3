@@ -78,6 +78,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
@@ -446,10 +447,13 @@ class Bug(SQLBase):
     @property
     def has_patches(self):
         """See `IBug`."""
-        for attachment in self.attachments:
-            if attachment.is_patch:
-                return True
-        return False
+        store = IStore(BugAttachment)
+        results = store.find(
+            BugAttachment,
+            BugAttachment.bug == self,
+            BugAttachment.type == BugAttachmentType.PATCH)
+
+        return not results.is_empty()
 
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
