@@ -857,7 +857,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonEmailAddressLinkChecker,
         BugNotificationPruner,
         BranchJobPruner,
-        BugHeatUpdater,
         ]
     experimental_tunable_loops = [
         PersonPruner,
