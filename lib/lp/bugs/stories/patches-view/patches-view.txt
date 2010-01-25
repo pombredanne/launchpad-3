@@ -52,6 +52,7 @@ After we add a non-patch attachment to that bug, the patches view
 still shows no patches.
 
     >>> make_thing(factory.makeBugAttachment, bug=bug_a, is_patch=False)
+    <BugAttachment at...
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug Importance Status Patch Age
@@ -66,7 +67,7 @@ in the patches view.
     ...     factory.makeBugAttachment, comment="comment about patch a",
     ...     filename="patch_a.diff", owner=patch_submitter,
     ...     description="description of patch a", bug=bug_a, is_patch=True)
-    >>> 
+    <BugAttachment at...
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug                                 Importance   Status    Patch Age
@@ -79,7 +80,7 @@ attachments...
 
     >>> bug_b = make_thing(
     ...     make_bug, title="bug_b title", product=product1,
-    ...     importance=BugTaskImportance.CRITICAL,      
+    ...     importance=BugTaskImportance.CRITICAL,
     ...     status=BugTaskStatus.CONFIRMED)
     >>> bug_c = make_thing(
     ...     make_bug, title="bug_c title", product=product1,
@@ -89,23 +90,30 @@ attachments...
     ...     factory.makeBugAttachment, comment="comment about patch b",
     ...     filename="patch_b.diff", owner=patch_submitter,
     ...     description="description of patch b", bug=bug_b, is_patch=True)
+    <BugAttachment at...
     >>> make_thing(
     ...     factory.makeBugAttachment, comment="comment about patch c",
     ...     filename="patch_c.diff", owner=patch_submitter,
     ...     description="description of patch c", bug=bug_b, is_patch=True)
+    <BugAttachment at...
     >>> make_thing(factory.makeBugAttachment, bug=bug_c, is_patch=False)
+    <BugAttachment at...
     >>> make_thing(
     ...     factory.makeBugAttachment, comment="comment about patch d",
     ...     filename="patch_d.diff", owner=patch_submitter,
     ...     description="description of patch d", bug=bug_c, is_patch=True)
+    <BugAttachment at...
     >>> make_thing(
     ...     factory.makeBugAttachment, comment="comment about patch e",
     ...     filename="patch_e.diff", owner=patch_submitter,
     ...     description="description of patch e", bug=bug_c, is_patch=True)
+    <BugAttachment at...
     >>> make_thing(
     ...     factory.makeBugAttachment, comment="comment about patch f",
     ...     filename="patch_f.diff", owner=patch_submitter,
     ...     description="description of patch f", bug=bug_c, is_patch=True)
+    <BugAttachment at...
+
 
 ...the youngest patch on each bug is visible is the patch report.
 
