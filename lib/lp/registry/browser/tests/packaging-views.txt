@@ -389,7 +389,7 @@ are linked to upstream projects.
     Mapping series packages to upstream project series
 
     >>> print view.page_title
-    Upstream packaging links
+    All upstream links
 
 The view provides a property to get the source packages that have
 translations, but are not linked to an upstream project. The view filters

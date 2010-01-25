@@ -5,9 +5,9 @@ The distro series packaging page is accssible to any user from the distro
 series +index page.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary')
-    >>> anon_browser.getLink('Upstream links').click()
+    >>> anon_browser.getLink('All upstream links').click()
     >>> print anon_browser.title
-    Upstream packaging links : ...
+    All upstream links : ...
 
 The page lists the the source packages that have translations, but are
 not linked to an upstream project to sync them to.
@@ -94,10 +94,10 @@ Any use can see that this page is related to the packaging report. It is
 linked, but the link to this page is not enabled.
 
     >>> print extract_text(find_tag_by_id(content, 'related-pages'))
-    Needs upstream links     Upstream links
+    Needs upstream links     All upstream links
 
-    >>> anon_browser.getLink('Upstream links')
-    <Link text='Upstream links'
+    >>> anon_browser.getLink('All upstream links')
+    <Link text='All upstream links'
       url='http://launchpad.dev/ubuntu/hoary/+packaging'>
 
     >>> anon_browser.getLink('Needs upstream links')

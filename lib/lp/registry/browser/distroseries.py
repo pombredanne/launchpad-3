@@ -177,7 +177,7 @@ class DistroSeriesOverviewMenu(
         return Link('+addmilestone', text, summary, icon='add')
 
     def packaging(self):
-        text = 'Upstream links'
+        text = 'All upstream links'
         summary = 'A listing of source pakages and their upstream projects'
         return Link('+packaging', text, summary=summary, icon='info')
 
@@ -469,7 +469,7 @@ class DistroSeriesPackagesView(DistroSeriesView):
     """A View to show series package to upstream package relationships."""
 
     label = 'Mapping series packages to upstream project series'
-    page_title = 'Upstream packaging links'
+    page_title = 'All upstream links'
 
     @cachedproperty
     def unlinked_translatables(self):
