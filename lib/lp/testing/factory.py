@@ -1109,7 +1109,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         other_params = {}
         if is_patch is not None:
             other_params['is_patch'] = is_patch
-        attachment = bug.addAttachment(
+        return bug.addAttachment(
             owner, data, comment, filename, content_type=content_type,
             description=description, **other_params)
 
