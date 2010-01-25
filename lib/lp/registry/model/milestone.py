@@ -16,12 +16,16 @@ __all__ = [
 import datetime
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, providedBy
 
 from sqlobject import (
     AND, BoolCol, DateCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
 from storm.locals import And, Store
+
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.sorting import expand_numbers
@@ -185,7 +189,13 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             milestone=self)
         for bugtask in self.open_bugtasks:
             if bugtask.status == BugTaskStatus.FIXCOMMITTED:
+                original_bugtask = Snapshot(
+                    bugtask, providing=providedBy(bugtask))
                 bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED, owner)
+                notify(ObjectModifiedEvent(
+                    object=bugtask,
+                    object_before_modification=original_bugtask,
+                    edited_fields=['status']))
         return release
 
     def destroySelf(self):
