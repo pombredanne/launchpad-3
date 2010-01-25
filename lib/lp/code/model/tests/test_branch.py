@@ -65,6 +65,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
     run_with_login, TestCase, TestCaseWithFactory, time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
@@ -442,6 +443,21 @@ class TestBranchUpgrade(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
 
         self.assertFalse(branch.upgrade_pending)
+
+    def test_upgradePending_old_job_exists(self):
+        # If the branch had an upgrade pending, but then the job was completed,
+        # then upgrade_pending should return False.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch_job = removeSecurityProxy(branch.requestUpgrade())
+        branch_job.job.start()
+        branch_job.job.complete()
+
+        self.assertFalse(branch.upgrade_pending)
+
 
 
 class TestBzrIdentity(TestCaseWithFactory):
