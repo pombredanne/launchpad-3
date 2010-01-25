@@ -185,7 +185,8 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             milestone=self)
         for bugtask in self.open_bugtasks:
             if bugtask.status == BugTaskStatus.FIXCOMMITTED:
-                bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED, owner)
+                bugtask.bug.setStatus(
+                    bugtask.target, BugTaskStatus.FIXRELEASED, owner)
         return release
 
     def destroySelf(self):
