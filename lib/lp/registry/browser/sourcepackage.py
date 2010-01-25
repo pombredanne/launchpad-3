@@ -20,8 +20,10 @@ from apt_pkg import ParseSrcDepends
 from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
 from zope.formlib.form import Fields, FormFields
+from zope.interface import Interface
 from zope.schema import Choice
-from zope.schema.vocabulary import getVocabularyRegistry, SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 
 from lazr.restful.interface import copy_field
 
@@ -41,8 +43,7 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, custom_widget, GetitemNavigation,
-    LaunchpadEditFormView, LaunchpadFormView, Link, redirection,
-    StandardLaunchpadFacets, stepto)
+    LaunchpadEditFormView, Link, redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -302,10 +303,9 @@ class SourcePackageHelpView:
     page_title = 'Help and support options'
 
 
-class SourcePackageAssociationPortletView(LaunchpadFormView):
+class SourcePackageAssociationPortletView(LaunchpadEditFormView):
     """A view for linking to an upstream package."""
 
-    from zope.interface import Interface
     schema = Interface
     custom_widget(
         'upstream', LaunchpadRadioWidget, orientation='vertical')
@@ -318,14 +318,16 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         # package.
         product_vocab = getVocabularyRegistry().get(None, 'Product')
         matches = product_vocab.searchForTerms(self.context.name)
+        # Based upon the matching products, create a new vocabulary with
+        # term descriptions that include a link to the product.
         self.product_suggestions = []
         vocab_terms = []
         for item in matches:
             product = item.value
             self.product_suggestions.append(product)
             item_url = canonical_url(product)
-            description = """%s <a href="%s">(view project)</a>""" % (
-                item.title, item_url)
+            description = """<a href="%s">%s</a>""" % (
+                item_url, product.displayname)
             vocab_terms.append(SimpleTerm(product, product.name, description))
         upstream_vocabulary = SimpleVocabulary(vocab_terms)
 
@@ -339,6 +341,9 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
 
     @action('Link to Upstream Project', name='link')
     def link(self, action, data):
+        upstream = data.get('upstream')
+        self.context.setPackaging(upstream.development_focus, self.user)
         self.request.response.addInfoNotification(
-            'The project was linked.')
-        self.next_url = canonical_url(self.context)
+            'The project %s was linked to this source package.' %
+            upstream.displayname)
+        self.next_url = self.request.getURL()

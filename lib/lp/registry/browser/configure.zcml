@@ -1944,6 +1944,13 @@
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
+        name="+portlet-associations"
+        facet="overview"
+        class="lp.registry.browser.sourcepackage.SourcePackageAssociationPortletView"
+        template="../templates/sourcepackage-portlet-associations.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="zope.Public"
         class="lp.registry.browser.sourcepackage.SourcePackageHelpView"
         name="+gethelp"
         facet="answers"
