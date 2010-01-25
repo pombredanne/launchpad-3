@@ -3,6 +3,9 @@
 
 import unittest
 
+from canonical.testing import DatabaseFunctionalLayer
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.webapp.session import get_cookie_domain
 
 
@@ -44,4 +47,9 @@ class GetCookieDomainTestCase(unittest.TestCase):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    suite = unittest.TestSuite()
+    suite.addTest(LayeredDocFileSuite(
+        'test_cookie_client_id_manager.txt',
+        layer=DatabaseFunctionalLayer, setUp=setUp, tearDown=tearDown))
+    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
+    return suite
