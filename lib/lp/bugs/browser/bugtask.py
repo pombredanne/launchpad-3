@@ -1935,12 +1935,13 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
-                 has_specification, request=None):
+                 has_specification, has_patch, request=None):
         self.bugtask = bugtask
         self.review_action_widget = None
         self.has_mentoring_offer = has_mentoring_offer
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
+        self.has_patch = has_patch
         self.request = request
 
     @property
@@ -1982,6 +1983,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
             badge_property['has_specification'],
+            badge_property['has_patch'],
             request=self.request)
 
     def getBugListingItems(self):
