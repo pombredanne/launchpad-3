@@ -177,6 +177,9 @@ class BuildQueue(SQLBase):
             # The job of interest (JOI) is processor independent.
             builders_for_job = builders_in_total
 
+        # All builders can take on platform-independent jobs.
+        builder_stats[(None,None)] = builders_in_total
+
         return (builders_in_total, builders_for_job, builder_stats)
 
     def _freeBuildersCount(self, processor, virtualized):
@@ -278,6 +281,123 @@ class BuildQueue(SQLBase):
             return None
         else:
             return int(head_job_delay)
+
+    def _estimateJobDelay(self, builders_in_total, builder_stats):
+        """Sum of estimated durations for *pending* jobs ahead in queue.
+        
+        For the purpose of estimating the dispatch time of the job of
+        interest (JOI) we need to know the delay caused by all the pending
+        jobs that are ahead of the JOI in the queue and that compete with it
+        for builders.
+
+        :param builders_in_total: How many active builders are available
+            altogether?
+        :param builder_stats: A dictionary with builder counts where the
+            key is a (processor, virtualized) combination (aka "platform") and
+            the value is the number of builders that can take on jobs
+            requiring that combination.
+        :return: A (sum_of_delays, head_job_platform) tuple where
+            * 'sum_of_delays' is the estimated delay in seconds and
+            * 'head_job_platform' is the platform ((processor, virtualized)
+              combination) required by the job at the head of the queue.
+        """
+        # Please note: this method will send only one request to the database.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        my_processor = self.specific_job.processor
+        my_virtualized = self.specific_job.virtualized
+        my_platform = (my_processor, my_virtualized)
+
+        # Ask all build farm job type classes for a plain SQL SELECT query
+        # that will yield the pending jobs whose score is equal or better
+        # than the score of the job of interest (JOI).
+        # Chain these queries in "SELECT .. UNION SELECT .." fashion and
+        # use them to obtain the jobs that compete with the JOI for builders.
+        queries = []
+        for job_class in self.specific_job_classes.values():
+            queries.append(
+                job_class.composePendingJobsQuery(
+                    self.lastscore, my_processor, my_virtualized))
+        query = '%s ORDER BY lastscore DESC, job' % ' UNION '.join(queries)
+        job_queue = store.execute(query).get_all()
+
+        sum_of_delays = 0
+
+        # This will be used to capture per-platform delay totals.
+        delays = dict()
+        # This will be used to capture per-platform job counts.
+        job_counts = dict()
+
+        # Which platform is the job at the head of the queue requiring?
+        head_job_platform = None
+
+        # Apply weights to the estimated duration of the jobs as follows:
+        #   - if a job is tied to a processor TP then divide the estimated
+        #     duration of that job by the number of builders that target TP
+        #     since only these can build the job.
+        #   - if the job is processor-independent then divide its estimated
+        #     duration by the total number of builders because any one of
+        #     them may run it.
+        for job, score, duration, processor, virtualized in job_queue:
+            if job == self.job.id:
+                # We have seen all jobs that are ahead of us in the queue
+                # and can stop now.
+                # This is guaranteed by the "ORDER BY lastscore DESC.."
+                # clause above.
+                break
+
+            # For the purpose of estimating the delay for dispatching the job
+            # at the head of the queue to a builder we need to capture the
+            # platform it targets.
+            if head_job_platform is None:
+                platform = (processor, virtualized)
+                if my_processor is None:
+                    # The JOI is platform-independent i.e. the highest scored
+                    # job will be the head job.
+                    head_job_platform = platform
+                else:
+                    # The JOI targets a specific platform. The head job is
+                    # thus the highest scored job that either targets the
+                    # same platform or is platform-independent.
+                    if (my_platform == platform or processor is None):
+                        head_job_platform = platform
+
+            if processor is None:
+                # Processor independent job, can be run on any builder.
+                builder_count = builders_in_total
+            else:
+                # Tied to a particular processor, see how many builders
+                # can run it.
+                builder_count = builder_stats.get((processor, virtualized), 0)
+
+            if builder_count == 0:
+                # There is no builder that can run this job, ignore it
+                # for the purpose of dispatch time estimation.
+                continue
+
+            # Accumulate the delays, and count the number of jobs causing them
+            # on a (processor, virtualized) basis.
+            duration = duration.seconds
+            delays[(processor, virtualized)] = (
+                delays.setdefault((processor, virtualized), 0) + duration)
+            job_counts[(processor, virtualized)] = (
+                job_counts.setdefault((processor, virtualized), 0) + 1)
+
+        # Now weight/average the delays based on a jobs/builders comparison.
+        for platform, duration in delays.iteritems():
+            jobs = job_counts[platform]
+            builders = builder_stats[platform]
+            if jobs < builders:
+                # There are less jobs than builders that can take them on,
+                # the delays should be averaged/divided by the number of jobs.
+                denominator = jobs
+            else:
+                denominator = builders
+            if denominator > 1:
+                duration = int(duration/float(denominator))
+
+            sum_of_delays += duration
+                
+        return (sum_of_delays, head_job_platform)
 
 
 class BuildQueueSet(object):

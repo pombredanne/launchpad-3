@@ -104,6 +104,16 @@ def set_remaining_time_for_running_job(bq, remainder):
         datetime.utcnow().replace(tzinfo=utc) - timedelta(seconds=offset))
 
 
+def check_delay_for_job(the_job, delay, head_job_platform):
+    # Obtain the builder statistics pertaining to this job.
+    builder_data = the_job._getBuilderData()
+    builders_in_total, builders_for_job, builder_stats = builder_data
+    delay = the_job._estimateJobDelay(builders_in_total, builder_stats)
+    self.assertEqual(
+        delay,
+        (delay, head_job_platform))
+
+
 class TestBuildQueueSet(TestCaseWithFactory):
     """Test for `BuildQueueSet`."""
 
@@ -580,7 +590,7 @@ class MultiArchBuildsBase(TestBuildQueueBase):
         score = 1000
         duration = 0
         for build in self.builds:
-            score += 1
+            score += getattr(self, 'score_increment', 1)
             duration += 60
             bq = build.buildqueue_record
             bq.lastscore = score
@@ -815,3 +825,101 @@ class TestPlatformData(TestCaseWithFactory):
             bq.virtualized, build.is_virtualized,
             "The 'virtualized' property deviates.")
 
+
+class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
+    """Test estimated job delays with various processors."""
+    score_increment = 2
+    def setUp(self):
+        """Set up a fake 'BRANCHBUILD' build farm job class.
+
+        The two platform-independent jobs will have a score of 1017 and 1033
+        respectively.
+
+               gedit, p: hppa, v:False e:0:01:00 *** s: 1002
+               gedit, p:  386, v:False e:0:02:00 *** s: 1004
+             firefox, p: hppa, v:False e:0:03:00 *** s: 1006
+             firefox, p:  386, v:False e:0:04:00 *** s: 1008
+                 apg, p: hppa, v:False e:0:05:00 *** s: 1010
+                 apg, p:  386, v:False e:0:06:00 *** s: 1012
+                 vim, p: hppa, v:False e:0:07:00 *** s: 1014
+                 vim, p:  386, v:False e:0:08:00 *** s: 1016
+        -->    fake1,    none     none   0:00:22        1017
+                 gcc, p: hppa, v:False e:0:09:00 *** s: 1018
+                 gcc, p:  386, v:False e:0:10:00 *** s: 1020
+               bison, p: hppa, v:False e:0:11:00 *** s: 1022
+               bison, p:  386, v:False e:0:12:00 *** s: 1024
+                flex, p: hppa, v:False e:0:13:00 *** s: 1026
+                flex, p:  386, v:False e:0:14:00 *** s: 1028
+            postgres, p: hppa, v:False e:0:15:00 *** s: 1030
+            postgres, p:  386, v:False e:0:16:00 *** s: 1032
+        -->    fake2,    none     none   0:03:42        1033
+
+         p=processor, v=virtualized, e=estimated_duration, s=score
+        """
+        super(TestMultiArchJobDelayEstimation, self).setUp()
+
+        from zope import component
+        from zope.interface import implements
+        from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+
+        class FakeBranchBuild:
+            implements(IBuildFarmJob)
+            def score(self):
+                return -9999
+            def getLogFileName(self):
+                return 'buildlog_fake-branch-build.txt'
+            def getName(self):
+                return 'fake-branch-build'
+            @staticmethod
+            def composePendingJobsQuery(min_score, processor, virtualized):
+                return """
+                   (SELECT 
+                        1000001::integer AS job,
+                        1017::integer AS lastscore,
+                        '22 seconds'::interval AS estimated_duration,
+                        NULL::integer AS processor,
+                        NULL::boolean AS virtualized
+                    UNION
+                    SELECT 
+                        1000002::integer AS job,
+                        1033::integer AS lastscore,
+                        '222 seconds'::interval AS estimated_duration,
+                        NULL::integer AS processor,
+                        NULL::boolean AS virtualized)
+                """
+
+        # Pretend that our `FakeBranchBuild` class implements the
+        # `IBuildFarmJob` interface.
+        component.provideUtility(
+            FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
+
+    def test_job_delay(self):
+        processor_fam = ProcessorFamilySet().getByName('hppa')
+        hppa_proc = processor_fam.processors[0]
+
+        # One of four builders for the 'flex' build is immediately available.
+        flex_build, flex_job = find_job(self, 'flex', 'hppa')
+        check_mintime_to_builder(self, flex_job, hppa_proc, False, 0)
+
+        # Obtain the builder statistics pertaining to this job.
+        builder_data = flex_job._getBuilderData()
+        builders_in_total, builders_for_job, builder_stats = builder_data
+
+        # The delay will be 900 (= 15*60) + 222 seconds, the head job is
+        # platform-independent.
+        check_delay_for_job(flex_job, 1122, (None, None))
+
+        # Assign the postgres job to a builder.
+        assign_to_builder(self, 'postgres', 1, 'hppa')
+        # The 'postgres' job is not pending any more.  Now only the 222
+        # seconds (the estimated duration of the platform-independent job)
+        # should be returned.
+        check_delay_for_job(flex_job, 222, (None, None))
+
+        # How about some estimates for x86 builds?
+        processor_fam = ProcessorFamilySet().getByName('x86')
+        x86_proc = processor_fam.processors[0]
+
+        _bison_build, bison_job = find_job(self, 'bison', '386')
+        check_mintime_to_builder(self, bison_job, x86_proc, False, 0)
+        check_delay_for_job(bison_job, 1122, (None, None))
