@@ -453,7 +453,7 @@ class Bug(SQLBase):
             BugAttachment.bug == self,
             BugAttachment.type == BugAttachmentType.PATCH)
 
-        return results.any() is not None
+        return not results.is_empty()
 
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
