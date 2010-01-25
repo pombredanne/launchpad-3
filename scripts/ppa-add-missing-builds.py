@@ -124,3 +124,4 @@ if __name__ == "__main__":
         txn.commit()
     except Exception, err:
         log.error(err)
+        txn.abort()
