@@ -1096,17 +1096,7 @@ class Archive(SQLBase):
                     to_series=None, include_binaries=False):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
-        sources = []
-        for name in source_names:
-            # Check to see if the source package exists, and raise a useful
-            # error if it doesn't.
-            getUtility(ISourcePackageNameSet)[name]
-            # Grabbing the item at index 0 ensures it's the most recent
-            # publication.
-            sources.append(
-                from_archive.getPublishedSources(
-                    name=name, exact_match=True)[0])
-
+        sources = self._collectLatestPublishedSources(from_archive, source_names)
         self._copySources(sources, to_pocket, to_series, include_binaries)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
@@ -1120,6 +1110,22 @@ class Archive(SQLBase):
             name=source_name, version=version, exact_match=True)[0]
 
         self._copySources([source], to_pocket, to_series, include_binaries)
+
+    def _collectLatestPublishedSources(self, from_archive, source_names):
+        """Private helper to collect the latest published sources for an 
+        archive.
+        """
+        sources = []
+        for name in source_names:
+            # Check to see if the source package exists, and raise a useful
+            # error if it doesn't.
+            getUtility(ISourcePackageNameSet)[name]
+            # Grabbing the item at index 0 ensures it's the most recent
+            # publication.
+            sources.append(
+                from_archive.getPublishedSources(
+                    name=name, exact_match=True)[0])
+        return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False):
