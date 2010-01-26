@@ -310,15 +310,7 @@ class BuildQueue(SQLBase):
         """
         # Please note: this method will send only one request to the database.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        my_processor = self.specific_job.processor
-        my_virtualized = self.specific_job.virtualized
-        my_platform = (my_processor, my_virtualized)
-
-        # Ask all build farm job type classes for a plain SQL SELECT query
-        # that will yield the pending jobs whose score is equal or better
-        # than the score of the job of interest (JOI).
-        # Chain these queries in "SELECT .. UNION SELECT .." fashion and
-        # use them to obtain the jobs that compete with the JOI for builders.
+        my_platform = (self.processor, self.virtualized)
         query = """
             SELECT
                 BuildQueue.job,
@@ -381,7 +373,7 @@ class BuildQueue(SQLBase):
             # platform it targets.
             if head_job_platform is None:
                 platform = (processor, virtualized)
-                if my_processor is None:
+                if self.processor is None:
                     # The JOI is platform-independent i.e. the highest scored
                     # job will be the head job.
                     head_job_platform = platform
