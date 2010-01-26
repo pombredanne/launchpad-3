@@ -282,8 +282,8 @@ It can't be both.
 
     >>> admin_browser.getControl(name='field.distroseries').value = [
     ...     'ubuntu/hoary']
-    >>> print admin_browser.getControl(name='field.productseries').value
-    aproduct/trunk
+    >>> admin_browser.getControl(name='field.productseries').value = (
+    ...     'aproduct/trunk')
     >>> admin_browser.getControl('Change').click()
     >>> print_errors(admin_browser.contents)
     There is 1 error.
