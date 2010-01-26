@@ -459,7 +459,6 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.assertFalse(branch.upgrade_pending)
 
 
-
 class TestBzrIdentity(TestCaseWithFactory):
     """Test IBranch.bzr_identity."""
 
