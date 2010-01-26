@@ -10,10 +10,9 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.scripts.ppa_add_missing_biulds import PPAMissingBuilds
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.scripts.ppa_add_missing_builds import PPAMissingBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -43,9 +42,14 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
         # Create an arch-any and an arch-all source in a PPA.
         self.ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.all = self.stp.getPubSource(
-            sourcename="all", architecturehintlist="all", archive=self.ppa)
+            sourcename="all", architecturehintlist="all", archive=self.ppa,
+            status=PackagePublishingStatus.PUBLISHED)
         self.any = self.stp.getPubSource(
-            sourcename="any", architecturehintlist="any", archive=self.ppa)
+            sourcename="any", architecturehintlist="any", archive=self.ppa,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.required_arches = [
+            self.stp.breezy_autotest_hppa,
+            self.stp.breezy_autotest_i386]
 
     def runScript(self, test_args=None):
         """Run the script itself, returning the result and output.
@@ -66,9 +70,42 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
 
     def getScript(self):
         """Return an instance of the script object."""
-        script = PPAMissingBuilds("test")
+        script = PPAMissingBuilds("test", test_args=[])
         script.logger = QuietFakeLogger()
         return script
+
+    def getBuilds(self):
+        """Helper to return build records."""
+        any_build_i386 = self.any.sourcepackagerelease.getBuildByArch(
+            self.stp.breezy_autotest_i386, self.ppa)
+        any_build_hppa = self.any.sourcepackagerelease.getBuildByArch(
+            self.stp.breezy_autotest_hppa, self.ppa)
+        all_build_i386 = self.all.sourcepackagerelease.getBuildByArch(
+            self.stp.breezy_autotest_i386, self.ppa)
+        all_build_hppa = self.all.sourcepackagerelease.getBuildByArch(
+            self.stp.breezy_autotest_hppa, self.ppa)
+        return (
+            any_build_i386, any_build_hppa, all_build_i386, all_build_hppa)
+
+    def assertBuildsForAny(self):
+        """Helper to assert that builds were created for the 'Any' package."""
+        (
+            any_build_i386, any_build_hppa, all_build_i386,
+            all_build_hppa
+            ) = self.getBuilds()
+        self.assertIsNot(any_build_i386, None)
+        self.assertIsNot(any_build_hppa, None)
+
+    def assertNoBuilds(self):
+        """Helper to assert that no builds were created."""
+        (
+            any_build_i386, any_build_hppa, all_build_i386,
+            all_build_hppa
+            ) = self.getBuilds()
+        self.assertIs(any_build_i386, None)
+        self.assertIs(any_build_hppa, None)
+        self.assertIs(all_build_i386, None)
+        self.assertIs(all_build_hppa, None)
 
     def testSimpleRun(self):
         """Try a simple script run.
@@ -92,18 +129,29 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
             "The script returned with a non zero exit code: %s\n%s\n%s"  % (
                 code, stdout, stderr))
 
-        # Sync database changes made.
+        # Sync database changes made in the external process.
         flush_database_updates()
         clear_current_connection_cache()
 
-        any_build_i386 = self.any.sourcepackagerelease.getBuildByArch(
+        # The arch-any package will get builds for all architectures.
+        self.assertBuildsForAny()
+
+        # The arch-all package is architecture-independent, so it will
+        # only get a build for i386 which is the nominated architecture-
+        # independent build arch.
+        all_build_i386 = self.all.sourcepackagerelease.getBuildByArch(
             self.stp.breezy_autotest_i386, self.ppa)
-        any_build_hppa = self.any.sourcepackagerelease.getBuildByArch(
+        all_build_hppa = self.all.sourcepackagerelease.getBuildByArch(
             self.stp.breezy_autotest_hppa, self.ppa)
-        self.assertIsNot(any_build_i386, None)
-        self.assertIsNot(any_build_hppa, None)
+        self.assertIsNot(all_build_i386, None)
+        self.assertIs(all_build_hppa, None)
 
     def testNoActionForNoSources(self):
         """Test that if nothing is published, no builds are created."""
-        self.all.requestDeletion()
-        self.any.requestDeletion()
+        self.all.requestDeletion(self.ppa.owner)
+        self.any.requestDeletion(self.ppa.owner)
+
+        script = self.getScript()
+        script.add_missing_ppa_builds(
+            self.ppa, self.required_arches, self.stp.breezy_autotest)
+        self.assertNoBuilds()

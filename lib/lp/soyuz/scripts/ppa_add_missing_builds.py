@@ -8,6 +8,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.services.scripts.base import LaunchpadScript
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 class PPAMissingBuilds(LaunchpadScript):
@@ -49,7 +50,9 @@ class PPAMissingBuilds(LaunchpadScript):
             self.logger.error("Requested architectures not available")
             return
 
-        sources = ppa.getPublishedSources(distroseries=distroseries)
+        sources = ppa.getPublishedSources(
+            distroseries=distroseries,
+            status=PackagePublishingStatus.PUBLISHED)
         if not sources.count():
             self.logger.info("No sources published, nothing to do.")
             return
