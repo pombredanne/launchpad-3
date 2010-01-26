@@ -29,10 +29,28 @@ stuff to the new system, so we'll drop it.
 
 * Some tests use anon_browser.open() on protected pages so that they get
 reidrected to +login and can show how the protected page works when the user
-is not logged in, including the preserved query string. If we want to keep
-doing that in these tests, we'll need an OpenID provider accessible to the
-test suite. One option would be to include a crippled version of the one in
-c-i-p in our tree, to be used only in tests.
+is not logged in, including the preserved query string. I thought we'd be able
+to keep these tests unchanged by using setDefaultFetcher(PublisherFetcher())
+but even after that I still get the following error in the response on
+openid/yadis/discover.py(72)discover():
+
+    <HTTPResponse status 500 for http://testopenid.launchpad.dev/>
+    ...
+    <li>  Module zope.publisher.publish, line 128, in publish<br />
+        publication.beforeTraversal(request)</li>
+    <li>  Module canonical.launchpad.webapp.publication, line 166, in beforeTraversal<br />
+        da.set_request_started()</li>
+    <li>  Module canonical.launchpad.webapp.adapter, line 105, in set_request_started<br />
+        'finished', stacklevel=1)</li>
+    <li>  Module warnings, line 62, in warn<br />
+        globals)</li>
+    <li>  Module warnings, line 102, in warn_explicit<br />
+        raise message</li>
+    </ul>UserWarning: set_request_started() called before previous request finished&lt;br /&gt;
+
+Maybe that's the reason why we need make_identifier_select_endpoint() and
+beginWithoutDiscovery() in lp/testopenid/stories/logging-in.txt
+
 (lib/canonical/launchpad/pagetests/oauth/authorize-token.txt is one of the
 tests that rely on +login)
 
