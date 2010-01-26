@@ -337,11 +337,18 @@ class BuildQueue(SQLBase):
                     -- job is processor-independent.
                     buildqueue.processor = %s OR 
                     buildqueue.processor IS NULL)
-                AND buildqueue.virtualized = %s
+                AND (
+                    -- The virtualized values either match or the job
+                    -- does not care about virtualization and the job
+                    -- of interest (JOI) is to be run on a virtual builder
+                    -- (we want to prevent the execution of untrusted code
+                    -- on native builders).
+                    buildqueue.virtualized = %s OR
+                    (buildqueue.virtualized IS NULL AND %s = TRUE))
                 ORDER BY lastscore DESC, job
         """ % sqlvalues(
             JobStatus.WAITING, self.lastscore, self.processor,
-            self.virtualized)
+            self.virtualized, self.virtualized)
         job_queue = store.execute(query).get_all()
 
         sum_of_delays = 0
