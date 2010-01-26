@@ -1627,7 +1627,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             requester=requester)
 
-    def makeSourcePackageRecipeBuildJob(self, score=9876):
+    def makeSourcePackageRecipeBuildJob(
+        self, score=9876, virtualized=True, estimated_duration=64):
         """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
         testing."""
         recipe_build = self.makeSourcePackageRecipeBuild()
@@ -1636,7 +1637,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         bq = BuildQueue(
             job=recipe_build_job.job, lastscore=score,
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD)
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
+            estimated_duration = timedelta(seconds=estimated_duration),
+            virtualized=virtualized)
         store.add(bq)
         return bq
 

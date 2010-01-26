@@ -161,34 +161,6 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
         """See `IBuildPackageJob`."""
         return self.build.title
 
-    @staticmethod
-    def composePendingJobsQuery(min_score, processor, virtualized):
-        """See `IBuildFarmJob`."""
-        return """
-            SELECT
-                BuildQueue.job,
-                BuildQueue.lastscore,
-                BuildQueue.estimated_duration,
-                Build.processor AS processor,
-                Archive.require_virtualized AS virtualized
-            FROM
-                BuildQueue, Build, BuildPackageJob, Archive, Job
-            WHERE
-                BuildQueue.job_type = %s
-                AND BuildPackageJob.job = BuildQueue.job
-                AND BuildPackageJob.job = Job.id
-                AND Job.status = %s
-                AND BuildPackageJob.build = Build.id
-                AND Build.buildstate = %s
-                AND Build.archive = Archive.id
-                AND Archive.enabled = TRUE
-                AND BuildQueue.lastscore >= %s
-                AND Build.processor = %s
-                AND Archive.require_virtualized = %s
-        """ % sqlvalues(
-            BuildFarmJobType.PACKAGEBUILD, JobStatus.WAITING,
-            BuildStatus.NEEDSBUILD, min_score, processor, virtualized)
-
     @property
     def processor(self):
         """See `IBuildFarmJob`."""

@@ -160,10 +160,17 @@ class BuildQueue(SQLBase):
             GROUP BY processor, virtualized;
         """
         results = store.execute(builder_data).get_all()
+        builders_in_total = builders_for_job = 0
+        virtualized_total = 0
+        native_total = 0
 
         builder_stats = dict()
-        builders_in_total = builders_for_job = 0
         for processor, virtualized, count in results:
+            builders_in_total += count
+            if virtualized:
+                virtualized_total += count
+            else:
+                native_total += count
             if my_processor is not None:
                 if (my_processor.id == processor and
                     my_virtualized == virtualized):
@@ -171,14 +178,14 @@ class BuildQueue(SQLBase):
                     # particular processor/virtualization combination and
                     # this is how many of these we have.
                     builders_for_job = count
-            builders_in_total += count
             builder_stats[(processor, virtualized)] = count
         if my_processor is None:
             # The job of interest (JOI) is processor independent.
             builders_for_job = builders_in_total
 
-        # All builders can take on platform-independent jobs.
         builder_stats[(None,None)] = builders_in_total
+        builder_stats[(None,True)] = virtualized_total
+        builder_stats[(None,False)] = native_total
 
         return (builders_in_total, builders_for_job, builder_stats)
 
@@ -312,12 +319,29 @@ class BuildQueue(SQLBase):
         # than the score of the job of interest (JOI).
         # Chain these queries in "SELECT .. UNION SELECT .." fashion and
         # use them to obtain the jobs that compete with the JOI for builders.
-        queries = []
-        for job_class in specific_job_classes().values():
-            queries.append(
-                job_class.composePendingJobsQuery(
-                    self.lastscore, my_processor, my_virtualized))
-        query = '%s ORDER BY lastscore DESC, job' % ' UNION '.join(queries)
+        query = """
+            SELECT
+                BuildQueue.job,
+                BuildQueue.lastscore,
+                BuildQueue.estimated_duration,
+                BuildQueue.processor,
+                BuildQueue.virtualized
+            FROM
+                BuildQueue, Job
+            WHERE
+                BuildQueue.job = Job.id
+                AND Job.status = %s
+                AND BuildQueue.lastscore >= %s
+                AND (
+                    -- The processor values either match or the candidate
+                    -- job is processor-independent.
+                    buildqueue.processor = %s OR 
+                    buildqueue.processor IS NULL)
+                AND buildqueue.virtualized = %s
+                ORDER BY lastscore DESC, job
+        """ % sqlvalues(
+            JobStatus.WAITING, self.lastscore, self.processor,
+            self.virtualized)
         job_queue = store.execute(query).get_all()
 
         sum_of_delays = 0

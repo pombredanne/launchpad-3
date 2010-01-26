@@ -84,23 +84,4 @@ class BuildFarmJob:
     @staticmethod
     def composePendingJobsQuery(min_score, processor, virtualized):
         """See `IBuildFarmJobDispatchEstimation`."""
-        return """
-            SELECT
-                BuildQueue.job,
-                BuildQueue.lastscore,
-                BuildQueue.estimated_duration,
-                BuildQueue.processor,
-                BuildQueue.virtualized
-            FROM
-                BuildQueue, Job
-            WHERE
-                BuildQueue.job = Job.id
-                AND Job.status = %s
-                AND BuildQueue.lastscore >= %s
-                AND (
-                    -- The processor values either match or the candidate
-                    -- job is processor-independent.
-                    buildqueue.processor = %s OR 
-                    buildqueue.processor IS NULL)
-                AND buildqueue.virtualized = %s
-        """ % sqlvalues(JobStatus.WAITING, min_score, processor, virtualized)
+        return ''
