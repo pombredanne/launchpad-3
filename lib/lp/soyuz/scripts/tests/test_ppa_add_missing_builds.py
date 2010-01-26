@@ -6,9 +6,6 @@
 import os
 import subprocess
 import sys
-import unittest
-
-from zope.component import getUtility
 
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus

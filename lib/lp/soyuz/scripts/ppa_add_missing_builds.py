@@ -80,6 +80,7 @@ class PPAMissingBuilds(LaunchpadScript):
             "--ppa", action="store", dest='ppa_name', default="ppa")
 
     def main(self):
+        """Entry point for `LaunchpadScript`s."""
         if not self.options.arch_tags:
             self.parser.error("Specify at least one architecture.")
 
@@ -90,7 +91,8 @@ class PPAMissingBuilds(LaunchpadScript):
             self.parser.error("Specify a PPA owner name.")
 
         from lp.registry.interfaces.distribution import IDistributionSet
-        distro = getUtility(IDistributionSet).getByName(self.options.distribution_name)
+        distro = getUtility(IDistributionSet).getByName(
+            self.options.distribution_name)
         if distro is None:
             self.parser.error("%s not found" % self.options.distribution_name)
 
@@ -121,7 +123,7 @@ class PPAMissingBuilds(LaunchpadScript):
 
         # I'm tired of parsing options.  Let's do it.
         try:
-            self.add_missing_ppa_builds(ppa, arches, distroseries);
+            self.add_missing_ppa_builds(ppa, arches, distroseries)
             self.txn.commit()
             self.logger.info("Finished adding builds.")
         except Exception, err:
