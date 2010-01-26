@@ -2,6 +2,10 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import sys
+
+from zope.component import getUtility
+
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.services.scripts.base import LaunchpadScript
 
@@ -9,7 +13,7 @@ from lp.services.scripts.base import LaunchpadScript
 class PPAMissingBuilds(LaunchpadScript):
     """Helper class to create builds in PPAs for requested architectures."""
 
-    def add_missing_ppa_builds(ppa, required_arches, distroseries):
+    def add_missing_ppa_builds(self, ppa, required_arches, distroseries):
         """For a PPA, create builds as necessary.
 
         :param ppa: The PPA
@@ -21,18 +25,18 @@ class PPAMissingBuilds(LaunchpadScript):
         # multiple times.
         distroseries_architectures = list(distroseries.architectures)
         if not distroseries_architectures:
-            log.error(
+            self.logger.error(
                 "No architectures defined for %s, skipping"
                 % distroseries.name)
             return
 
         architectures_available = list(distroseries.enabled_architectures)
         if not architectures_available:
-            log.error(
+            self.logger.error(
                 "Chroots missing for %s" % distroseries.name)
             return
 
-        log.info(
+        self.logger.info(
             "Supported architectures in %s: %s" % (
                 distroseries.name,
                 " ".join(arch_series.architecturetag
@@ -42,23 +46,23 @@ class PPAMissingBuilds(LaunchpadScript):
         required_arch_set = set(required_arches)
         doable_arch_set = available_arch_set.intersection(required_arch_set)
         if len(doable_arch_set) == 0:
-            log.error("Requested architectures not available")
+            self.logger.error("Requested architectures not available")
             return
 
         sources = ppa.getPublishedSources(distroseries=distroseries)
         if not sources.count():
-            log.info("No sources published, nothing to do.")
+            self.logger.info("No sources published, nothing to do.")
             return
 
-        log.info("Creating builds in %s" %
+        self.logger.info("Creating builds in %s" %
                  " ".join(arch_series.architecturetag
                           for arch_series in doable_arch_set))
         for pubrec in sources:
-            log.info("Considering %s" % pubrec.displayname)
+            self.logger.info("Considering %s" % pubrec.displayname)
             builds = pubrec.createMissingBuilds(
-                architectures_available=doable_arch_set, logger=log)
+                architectures_available=doable_arch_set, logger=self.logger)
             if len(builds) > 0:
-                log.info("Created %s builds" % len(builds))
+                self.logger.info("Created %s builds" % len(builds))
 
     def add_my_options(self):
         """Command line options for this script."""
@@ -81,11 +85,6 @@ class PPAMissingBuilds(LaunchpadScript):
 
         if not self.options.ppa_owner_name:
             parser.error("Specify a PPA owner name.")
-
-        log = logger(self.options, "ppa-add-missing-builds")
-        log.debug("Initialising zopeless.")
-        execute_zcml_for_scripts()
-        txn = initZopeless(dbuser=config.builddmaster.dbuser)
 
         from lp.registry.interfaces.distribution import IDistributionSet
         distro = getUtility(IDistributionSet).getByName(self.options.distribution_name)
@@ -119,9 +118,13 @@ class PPAMissingBuilds(LaunchpadScript):
 
         # I'm tired of parsing options.  Let's do it.
         try:
-            add_missing_ppa_builds(ppa, arches, distroseries);
-            txn.commit()
+            self.add_missing_ppa_builds(ppa, arches, distroseries);
+            self.txn.commit()
+            self.logger.info("Finished adding builds.")
         except Exception, err:
-            log.error(err)
-            txn.abort()
+            self.logger.error(err)
+            self.txn.abort()
+            self.logger.info("Errors, aborted transaction.")
+            sys.exit(1)
+
 
