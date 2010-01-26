@@ -754,9 +754,8 @@ class TestCleanup(TestCaseWithFactory):
         entry.syncUpdate()
 
     def test_cleanUpObsoleteEntries_unaffected_statuses(self):
-        # _cleanUpObsoleteEntries leaves entries in non-terminal states
-        # (Needs Review, Approved, Blocked) alone no matter how old they
-        # are.
+        # _cleanUpObsoleteEntries leaves entries in some states (i.e.
+        # Approved and Blocked) alone no matter how old they are.
         one_year_ago = datetime.now(UTC) - timedelta(days=366)
         entry = self._makeProductEntry()
         entry.potemplate = (
@@ -768,11 +767,6 @@ class TestCleanup(TestCaseWithFactory):
         self.assertTrue(self._exists(entry_id))
 
         self._setStatus(entry, RosettaImportStatus.BLOCKED, one_year_ago)
-        self.queue._cleanUpObsoleteEntries(self.store)
-        self.assertTrue(self._exists(entry_id))
-
-        self._setStatus(entry, RosettaImportStatus.NEEDS_REVIEW, one_year_ago)
-        become_the_gardener(self.layer)
         self.queue._cleanUpObsoleteEntries(self.store)
         self.assertTrue(self._exists(entry_id))
 
@@ -794,6 +788,25 @@ class TestCleanup(TestCaseWithFactory):
         become_the_gardener(self.layer)
         self.queue._cleanUpObsoleteEntries(self.store)
         self.assertFalse(self._exists(entry_id))
+
+    def test_cleanUpObsoleteEntries_needs_review(self):
+        # _cleanUpObsoleteEntries cleans up entries in Needs Review
+        # state after a very long wait.
+        entry = self._makeProductEntry()
+        entry.potemplate = self.factory.makePOTemplate()
+        self._setStatus(entry, RosettaImportStatus.NEEDS_REVIEW, None)
+        entry_id = entry.id
+
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        entry.date_status_changed -= timedelta(days=365)
+        entry.syncUpdate()
+
+        become_the_gardener(self.layer)
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
+
 
     def test_cleanUpInactiveProductEntries(self):
         # After a product is deactivated, _cleanUpInactiveProductEntries
