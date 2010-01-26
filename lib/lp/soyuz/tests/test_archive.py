@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
@@ -543,7 +543,8 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
 
     def test_collectLatestPublishedSources_returns_latest(self):
-        pubs = self.naked_archive._collectLatestPublishedSources(self.archive, ["foo"])
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('0.5.11~ppa2', pubs[0].source_package_version)
 
@@ -552,7 +553,8 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
         # is not returned.
         self.pub_2.secure_record.status = PackagePublishingStatus.DELETED
 
-        pubs = self.naked_archive._collectLatestPublishedSources(self.archive, ["foo"])
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
 
