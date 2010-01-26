@@ -8,6 +8,7 @@ __metaclass__ = type
 import datetime
 import os
 import shutil
+from storm.locals import Store
 import tempfile
 from unittest import TestLoader
 
@@ -262,6 +263,30 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         self.assertEqual(
             new_branch.repository._format.get_format_string(),
             'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+
+    def test_creates_scan_job(self):
+        # After a branch upgrade job runs, it should have created a
+        # BranchScanJob.
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree(
+            hosted=True, format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Bazaar-NG Knit Repository Format 1')
+
+        job = BranchUpgradeJob.create(db_branch)
+        job.run()
+
+        store = Store.of(db_branch)
+        jobs = store.find(
+            BranchJob,
+            BranchJob.branch == db_branch,
+            Job.id == BranchJob.jobID,
+            Job._status == JobStatus.WAITING,
+            BranchJob.job_type == BranchJobType.SCAN_BRANCH)
+        self.assertEqual(jobs.count(), 1)
 
     def test_needs_no_upgrading(self):
         # Branch upgrade job creation should raise an AssertionError if the
