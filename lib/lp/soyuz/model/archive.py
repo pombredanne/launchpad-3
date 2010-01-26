@@ -1124,7 +1124,8 @@ class Archive(SQLBase):
             # publication.
             sources.append(
                 from_archive.getPublishedSources(
-                    name=name, exact_match=True)[0])
+                    name=name, exact_match=True, 
+                    status=PackagePublishingStatus.PUBLISHED)[0])
         return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
