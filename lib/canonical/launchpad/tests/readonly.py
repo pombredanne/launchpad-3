@@ -13,7 +13,7 @@ __all__ = [
 import os
 
 from canonical.launchpad.readonly import (
-    read_only_file_exists, read_only_file_path)
+    is_read_only, read_only_file_exists, read_only_file_path)
 
 
 def touch_read_only_file():
@@ -26,9 +26,14 @@ def touch_read_only_file():
         "already exists.")
     f = open(read_only_file_path, 'w')
     f.close()
+    # Assert that the switch succeeded and make sure the mode change is
+    # logged.
+    assert is_read_only(), "Switching to read-only failed."
 
 
 def remove_read_only_file():
     """Remove the file named read-only.txt from the root of the tree."""
     os.remove(read_only_file_path)
-
+    # Assert that the switch succeeded and make sure the mode change is
+    # logged.
+    assert not is_read_only(), "Switching to read-write failed."
