@@ -833,7 +833,10 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
     def _messages_html_id(self):
         order = []
         message = self.translationmessage_view
-        if (message.form_is_writeable):
+        # If we don't know about plural forms, or there are some other
+        # reason that prevent translations, translationmessage_view is
+        # not created
+        if ((message is not None) and (message.form_is_writeable)):
             for dictionary in message.translation_dictionaries:
                 order.append(
                     dictionary['html_id_translation'] + '_new')
