@@ -343,8 +343,7 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch_transport.rename('.bzr', 'backup.bzr')
             upgrade_transport.copy_tree_to_transport(source_branch_transport)
 
-            # Create a branch scan job now to update the format.
-            BranchScanJob.create(self.branch)
+            self.branch.requestMirror()
         finally:
             shutil.rmtree(upgrade_branch_path)
 
