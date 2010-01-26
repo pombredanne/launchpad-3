@@ -1401,6 +1401,7 @@ class BugsPatchesView(LaunchpadView):
     def shouldShowTargetName(self):
         """Return True if current context can have different bugtargets."""
         return (IDistribution.providedBy(self.context)
+                or IDistroSeries.providedBy(self.context)
                 or IProject.providedBy(self.context))
 
     def youngest_patch(self, bug):

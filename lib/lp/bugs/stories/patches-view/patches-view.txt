@@ -163,6 +163,22 @@ We can sort patches by importance and status.
     From: Patchy Person
     Link: patch_f.diff description of patch f
 
+If a bug is nominated for a product series, it shows up in the patches
+view for that series.
+
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/patchy-product-1/+bug/18/+nominate")
+    >>> user_browser.getControl("Trunk").selected = True
+    >>> user_browser.getControl("Submit").click()
+    >>> for tag in find_tags_by_class(
+    ...     user_browser.contents, 'informational message'):
+    ...     print tag
+    <div class="informational message">Added nominations for: Patchy-product-1 trunk</div>
+    >>> user_browser.open('https://launchpad.dev/patchy-product-1/trunk/+patches')
+    >>> show_patches_view(user_browser.contents)
+    Bug                       Importance   Status   Patch Age
+    Okay, why isn't this showing the bug we just targeted to this series?
+
 Patches View by Distro
 ----------------------
 
@@ -198,6 +214,18 @@ package when viewed via a distribution.
     Bug #16: bug_a title       Medium   Fix Released   evolution  ...second...
     From: Patchy Person
     Link: patch_a.diff description of patch a
+
+Patches View by Distro Series
+-----------------------------
+
+The patches view works for distro series.
+
+    >>> user_browser.open('https://launchpad.dev/ubuntu/hoary/+patches')
+    >>> show_patches_view(user_browser.contents)
+    Bug                       Importance   Status   Package    Patch Age
+    >>> user_browser.open('https://launchpad.dev/ubuntu/warty/+patches')
+    >>> show_patches_view(user_browser.contents)
+    Bug                       Importance   Status   Package    Patch Age
 
 Patches View by Source Package
 ------------------------------
