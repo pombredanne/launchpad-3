@@ -217,4 +217,4 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
 
     def verifySlaveBuildID(self, slave_build_id):
         """See `IBuildFarmJobBehavior`."""
-        raise AssertionError('Should not be called for an idle builder.')
+        raise CorruptBuildID('No job assigned to builder')

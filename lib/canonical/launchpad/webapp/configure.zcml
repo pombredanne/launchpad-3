@@ -815,7 +815,6 @@
 
     <class class="canonical.launchpad.webapp.vocabulary.CountableIterator">
       <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
-      <allow attributes="__getslice__"/>
     </class>
 
     <class class="canonical.launchpad.webapp.vocabulary.BatchedCountableIterator">

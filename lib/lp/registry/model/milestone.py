@@ -31,7 +31,7 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+    BugTaskSearchParams, BugTaskStatus, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
@@ -177,12 +177,17 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         if self.product_release is not None:
             raise AssertionError(
                 'A milestone can only have one ProductRelease.')
-        return ProductRelease(
+        release = ProductRelease(
             owner=owner,
             changelog=changelog,
             release_notes=release_notes,
             datereleased=datereleased,
             milestone=self)
+        for bugtask in self.open_bugtasks:
+            if bugtask.status == BugTaskStatus.FIXCOMMITTED:
+                bugtask.bug.setStatus(
+                    bugtask.target, BugTaskStatus.FIXRELEASED, owner)
+        return release
 
     def destroySelf(self):
         """See `IMilestone`."""
