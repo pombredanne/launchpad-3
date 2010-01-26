@@ -1096,7 +1096,8 @@ class Archive(SQLBase):
                     to_series=None, include_binaries=False):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
-        sources = self._collectLatestPublishedSources(from_archive, source_names)
+        sources = self._collectLatestPublishedSources(
+            from_archive, source_names)
         self._copySources(sources, to_pocket, to_series, include_binaries)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
