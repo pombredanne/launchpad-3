@@ -64,8 +64,8 @@ def print_build_setup(builds):
     for build in builds:
         bq = build.buildqueue_record
         spr = build.sourcepackagerelease
-        print "%12s, p:%5s, v:%5s e:%s *** s:%5s" % (
-            spr.name, build.processor.name, build.is_virtualized,
+        print "%5s, %12s, p:%5s, v:%5s e:%s *** s:%5s" % (
+            bq.id, spr.name, build.processor.name, build.is_virtualized,
             bq.estimated_duration, bq.lastscore)
 
 
@@ -106,13 +106,14 @@ def set_remaining_time_for_running_job(bq, remainder):
         datetime.utcnow().replace(tzinfo=utc) - timedelta(seconds=offset))
 
 
-def check_delay_for_job(the_job, delay, head_job_platform):
+def check_delay_for_job(test, the_job, delay, head_job_platform):
     # Obtain the builder statistics pertaining to this job.
     builder_data = the_job._getBuilderData()
     builders_in_total, builders_for_job, builder_stats = builder_data
-    delay = the_job._estimateJobDelay(builders_in_total, builder_stats)
-    self.assertEqual(
-        delay,
+    estimated_delay = the_job._estimateJobDelay(
+        builders_in_total, builder_stats)
+    test.assertEqual(
+        estimated_delay,
         (delay, head_job_platform))
 
 
@@ -838,24 +839,24 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         The two platform-independent jobs will have a score of 1017 and 1033
         respectively.
 
-               gedit, p: hppa, v:False e:0:01:00 *** s: 1002
-               gedit, p:  386, v:False e:0:02:00 *** s: 1004
-             firefox, p: hppa, v:False e:0:03:00 *** s: 1006
-             firefox, p:  386, v:False e:0:04:00 *** s: 1008
-                 apg, p: hppa, v:False e:0:05:00 *** s: 1010
-                 apg, p:  386, v:False e:0:06:00 *** s: 1012
-                 vim, p: hppa, v:False e:0:07:00 *** s: 1014
-                 vim, p:  386, v:False e:0:08:00 *** s: 1016
-        -->    fake1,    none     none   0:00:22        1017
-                 gcc, p: hppa, v:False e:0:09:00 *** s: 1018
-                 gcc, p:  386, v:False e:0:10:00 *** s: 1020
-               bison, p: hppa, v:False e:0:11:00 *** s: 1022
-               bison, p:  386, v:False e:0:12:00 *** s: 1024
-                flex, p: hppa, v:False e:0:13:00 *** s: 1026
-                flex, p:  386, v:False e:0:14:00 *** s: 1028
-            postgres, p: hppa, v:False e:0:15:00 *** s: 1030
-            postgres, p:  386, v:False e:0:16:00 *** s: 1032
-        -->    fake2,    none     none   0:03:42        1033
+            3,        gedit, p: hppa, v:False e:0:01:00 *** s: 1003
+            4,        gedit, p:  386, v:False e:0:02:00 *** s: 1006
+            5,      firefox, p: hppa, v:False e:0:03:00 *** s: 1009
+            6,      firefox, p:  386, v:False e:0:04:00 *** s: 1012
+            7,          apg, p: hppa, v:False e:0:05:00 *** s: 1015
+            8,          apg, p:  386, v:False e:0:06:00 *** s: 1018
+            9,          vim, p: hppa, v:False e:0:07:00 *** s: 1021
+           10,          vim, p:  386, v:False e:0:08:00 *** s: 1024
+           -->        fake1,    none     none   0:00:22        1025
+           11,          gcc, p: hppa, v:False e:0:09:00 *** s: 1027
+           12,          gcc, p:  386, v:False e:0:10:00 *** s: 1030
+           13,        bison, p: hppa, v:False e:0:11:00 *** s: 1033
+           14,        bison, p:  386, v:False e:0:12:00 *** s: 1036
+           15,         flex, p: hppa, v:False e:0:13:00 *** s: 1039
+           16,         flex, p:  386, v:False e:0:14:00 *** s: 1042
+           17,     postgres, p: hppa, v:False e:0:15:00 *** s: 1045
+           18,     postgres, p:  386, v:False e:0:16:00 *** s: 1048
+           -->        fake2,    none     none   0:03:42        1053
 
          p=processor, v=virtualized, e=estimated_duration, s=score
         """
@@ -878,14 +879,14 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
                 return """
                    (SELECT 
                         1000001::integer AS job,
-                        1017::integer AS lastscore,
+                        1025::integer AS lastscore,
                         '22 seconds'::interval AS estimated_duration,
                         NULL::integer AS processor,
                         NULL::boolean AS virtualized
                     UNION
                     SELECT 
                         1000002::integer AS job,
-                        1033::integer AS lastscore,
+                        1053::integer AS lastscore,
                         '222 seconds'::interval AS estimated_duration,
                         NULL::integer AS processor,
                         NULL::boolean AS virtualized)
@@ -895,6 +896,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # `IBuildFarmJob` interface.
         component.provideUtility(
             FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
+        print_build_setup(self.builds)
 
     def test_job_delay(self):
         processor_fam = ProcessorFamilySet().getByName('hppa')
@@ -910,21 +912,19 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         # The delay will be 900 (= 15*60) + 222 seconds, the head job is
         # platform-independent.
-        check_delay_for_job(flex_job, 1122, (None, None))
+        check_delay_for_job(self, flex_job, 1122, (None, None))
 
         # Assign the postgres job to a builder.
         assign_to_builder(self, 'postgres', 1, 'hppa')
         # The 'postgres' job is not pending any more.  Now only the 222
         # seconds (the estimated duration of the platform-independent job)
         # should be returned.
-        check_delay_for_job(flex_job, 222, (None, None))
+        check_delay_for_job(self, flex_job, 222, (None, None))
 
         # How about some estimates for x86 builds?
         processor_fam = ProcessorFamilySet().getByName('x86')
         x86_proc = processor_fam.processors[0]
 
         _bison_build, bison_job = find_job(self, 'bison', '386')
-        import pdb
-        pdb.set_trace()
         check_mintime_to_builder(self, bison_job, x86_proc, False, 0)
-        check_delay_for_job(bison_job, 1122, (None, None))
+        check_delay_for_job(self, bison_job, 1122, (None, None))
