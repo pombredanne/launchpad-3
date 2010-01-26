@@ -591,6 +591,7 @@ class MultiArchBuildsBase(TestBuildQueueBase):
         duration = 0
         for build in self.builds:
             score += getattr(self, 'score_increment', 1)
+            score += 1
             duration += 60
             bq = build.buildqueue_record
             bq.lastscore = score
