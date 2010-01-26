@@ -190,10 +190,10 @@
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       class="canonical.launchpad.webapp.login.OpenIDLogin"
       permission="zope.Public"
-      name="+login-openid"
+      name="+login"
       />
   <browser:page
-      for="*"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       class="canonical.launchpad.webapp.login.OpenIDCallbackView"
       permission="zope.Public"
       name="+openid-callback"
@@ -204,7 +204,7 @@
       template="../templates/launchpad-login.pt"
       class="canonical.launchpad.webapp.login.LoginOrRegister"
       permission="zope.Public"
-      name="+login"
+      name="+login-old"
       />
 
   <browser:page

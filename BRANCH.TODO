@@ -6,11 +6,7 @@
 * Do we want to change c-i-p to use a separate cookie so that logging into
 login.lp.net doesn't cause you to end up logged into lp.net or should we just
 wait for ISD to roll a rebranded version of login.u.c on login.lp.net, which
-will probably use separate cookies.
- - Apart from not being trivial to change the cookie name for a given vhost
-   we also need to worry about making sure the new cookie (which is supposed
-   to be valid only for login.lp.net) is not valid for all other vhosts, which
-   would normally happen thanks to LaunchpadCookieClientIdManager.
+will probably use separate cookies?
 
 * We still rely heavily on the Account table and expect all users to have an
 Account. We need to fix that if we're going to copy the Account table into the
@@ -40,18 +36,3 @@ c-i-p in our tree, to be used only in tests.
 (lib/canonical/launchpad/pagetests/oauth/authorize-token.txt is one of the
 tests that rely on +login)
 
-* Does not work for /people/+me, because when the OpenID provider sends the
-user back to /people/+me/+openid-callback, there's a redirect to
-/~person/+openid-callback, which causes the openid dance to fail: *
-<openid.consumer.consumer.FailureResponse id=None message="return_to does not
-match return URL. Expected 'https://launchpad.dev/%7Ename16/+openid-callback',
-got
-u'https://launchpad.dev/people/+me/+openid-callback?janrain_nonce=2009-12-23T14%3A47%3A47ZsgdbOJ'">
-  I think this is a general problem with OpenID and login.lp.net because when
-you log into login.lp.net and is sent to the callback page (in lp.net), that
-page will see you as logged in, regardless of the openid response, because the
-cookie is shared, and that causes /people/+me/+openid-callback to redirect to
-/~name16/+openid-callback, which causes the error above.
-  One way around this is to always use /+openid-callback as the return_to URL,
-and include a lp_redirect_to URL in the query string, where LP will send the
-user to, once the openid dance is completed.

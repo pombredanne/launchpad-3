@@ -43,7 +43,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class UnauthorizedView(SystemErrorView):
@@ -198,6 +197,7 @@ class CaptchaMixin:
 
 
 class OpenIDLogin(LaunchpadView):
+    """A view which initiates the OpenID handshake with our provider."""
     _openid_session_ns = 'OPENID'
 
     def _getConsumer(self):
@@ -211,12 +211,21 @@ class OpenIDLogin(LaunchpadView):
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
         self.openid_request = consumer.begin(
-            allvhosts.configs['testopenid'].rooturl)
+            config.launchpad.openid_provider_url)
 
-        return_to = self.return_to_url
         trust_root = self.request.getApplicationURL()
         assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")
+        # Once the user authenticates with the OpenID provider they will be
+        # sent to the /+openid-callback page, where we log them in, but
+        # once that's done they must be sent back to the URL they where when
+        # they started the login process (i.e. the current URL without the
+        # '+login' bit). To do that we encode that URL as a query arg in the
+        # return_to URL passed to the OpenID Provider
+        starting_url = urllib.urlencode([('starting_url', self.starting_url)])
+        return_to = urlappend(
+            self.request.getApplicationURL(), '+openid-callback')
+        return_to = "%s?%s" % (return_to, starting_url)
         form_html = self.openid_request.htmlMarkup(trust_root, return_to)
 
         # Need to commit here because the consumer.begin() call above will
@@ -227,9 +236,32 @@ class OpenIDLogin(LaunchpadView):
         return form_html
 
     @property
-    def return_to_url(self):
-        url = self.request.getURL(1)
-        return urlappend(url, '+openid-callback')
+    def starting_url(self):
+        starting_url = self.request.getURL(1)
+        query_string = "&".join([arg for arg in self.form_args])
+        if query_string:
+            starting_url += "?%s" % query_string
+        return starting_url
+
+    @property
+    def form_args(self):
+        """Iterate over form args, yielding 'key=value' strings for them.
+
+        Exclude things such as 'loggingout' and starting with 'openid.', which
+        we don't want.
+        """
+        for name, value in self.request.form.items():
+            if name == 'loggingout' or name.startswith('openid.'):
+                continue
+            if isinstance(value, list):
+                value_list = value
+            else:
+                value_list = [value]
+            for value_list_item in value_list:
+                # Thanks to apport (https://launchpad.net/bugs/61171), we need
+                # to do this here.
+                value_list_item = UnicodeDammit(value_list_item).markup
+                yield "%s=%s" % (name, value_list_item)
 
 
 class OpenIDCallbackView(OpenIDLogin):
@@ -258,9 +290,10 @@ class OpenIDCallbackView(OpenIDLogin):
             account = getUtility(IAccountSet).getByOpenIDIdentifier(
                 self.openid_response.identity_url.split('/')[-1])
             self.login(account)
-            # TODO: Preserve the query string for everything other than openid
-            # stuff.
-            self.request.response.redirect(self.request.getURL(1))
+            target = self.request.form.get('starting_url')
+            if target is None:
+                target = self.getApplicationURL()
+            self.request.response.redirect(target, temporary_if_possible=True)
         else:
             return OpenIDLoginErrorView(
                 self.context, self.request, self.openid_response)()
@@ -529,6 +562,7 @@ class LoginOrRegister(CaptchaMixin):
             value = UnicodeDammit(value).markup
             L.append(html % (name, cgi.escape(value, quote=True)))
         return '\n'.join(L)
+
 
 def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
