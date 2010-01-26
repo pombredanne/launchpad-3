@@ -18,7 +18,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJobDispatchEstimation)
+    BuildFarmJobType)
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -32,7 +32,6 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 class BuildPackageJob(PackageBuildFarmJob, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
-    classProvides(IBuildFarmJobDispatchEstimation)
 
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)

@@ -17,7 +17,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJobDispatchEstimation)
+    BuildFarmJobType)
 from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.services.job.model.job import Job
@@ -885,7 +885,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         job.lastscore = 1053
         self.builds.append(job.specific_job.build)
 
-        print_build_setup(self.builds)
+        # print_build_setup(self.builds)
 
     def test_job_delay(self):
         processor_fam = ProcessorFamilySet().getByName('hppa')

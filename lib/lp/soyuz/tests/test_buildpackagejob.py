@@ -13,8 +13,6 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJobDispatchEstimation)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -381,9 +379,6 @@ class TestBuildPackageJob(TestBuildJobBase):
         build, bq = find_job(self, 'flex', 'hppa')
         bpj = bq.specific_job
         self.assertEqual(bpj.virtualized, False)
-
-    def test_provides_dispatch_estimation_interface(self):
-        verifyObject(IBuildFarmJobDispatchEstimation, BuildPackageJob)
 
     def test_getTitle(self):
         # Test that BuildPackageJob returns the title of the build.

@@ -13,7 +13,7 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, IBuildFarmCandidateJobSelection,
-    IBuildFarmJobDispatchEstimation, ISpecificBuildFarmJobClass)
+    ISpecificBuildFarmJobClass)
 from lp.services.job.interfaces.job import JobStatus
 
 
@@ -21,8 +21,7 @@ class BuildFarmJob:
     """Mix-in class for `IBuildFarmJob` implementations."""
     implements(IBuildFarmJob)
     classProvides(
-        IBuildFarmCandidateJobSelection, IBuildFarmJobDispatchEstimation,
-        ISpecificBuildFarmJobClass)
+        IBuildFarmCandidateJobSelection, ISpecificBuildFarmJobClass)
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -81,7 +80,3 @@ class BuildFarmJob:
         """See `IBuildFarmCandidateJobSelection`."""
         return True
 
-    @staticmethod
-    def composePendingJobsQuery(min_score, processor, virtualized):
-        """See `IBuildFarmJobDispatchEstimation`."""
-        return ''
