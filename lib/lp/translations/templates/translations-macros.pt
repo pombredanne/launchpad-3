@@ -131,11 +131,16 @@
 
 <metal:pofile-js-footer define-macro="pofile-js-footer">
     <script type="text/javascript"
+        tal:define="
+            plural_forms context/plural_forms | string:'1';
+            autofocus_html_id view/autofocus_html_id | string:;
+            translations_order view/translations_order | string:;
+            "
         tal:content="
         structure string:<!-- 
-        var autofocus_field = '${view/autofocus_html_id}';
-        var translations_order = '${view/translations_order}';
-        var plural_forms = ${context/plural_forms};
+        var autofocus_field = '${autofocus_html_id}';
+        var translations_order = '${translations_order}';
+        var plural_forms = ${plural_forms};
         // -->" />
 </metal:pofile-js-footer>
 
