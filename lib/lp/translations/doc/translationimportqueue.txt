@@ -1515,8 +1515,8 @@ Such requests are deleted after a few days.
 
 === Deactivated Products ===
 
-Another reason is that they belong to products that have been
-deactivated.
+Another reason for deleting entries is that they belong to products that
+have been deactivated.
 
 A user sets up Jokosher for translation, and uploads a template.
 

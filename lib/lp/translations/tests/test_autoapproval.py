@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for translation import queue auto-approval.
@@ -800,7 +800,7 @@ class TestCleanup(TestCaseWithFactory):
         self.queue._cleanUpObsoleteEntries(self.store)
         self.assertTrue(self._exists(entry_id))
 
-        entry.date_status_changed -= timedelta(days=365)
+        entry.date_status_changed -= timedelta(days=200)
         entry.syncUpdate()
 
         become_the_gardener(self.layer)
