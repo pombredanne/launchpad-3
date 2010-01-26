@@ -1471,8 +1471,8 @@ You can also select by status.
 
 == cleanUpQueue ==
 
-The queue is cleaned up regularly.  This removes entries that are either
-DELETED or IMPORTED and get too old.
+The queue is cleaned up regularly.  This removes entries that have been
+sitting in various statuses for too long.
 
 Here we start out with an empty queue.
 
@@ -1531,6 +1531,39 @@ This request, too, is deleted when left in this state for longer than a
 few days.
 
     >>> entry.date_status_changed = stale
+    >>> flush_database_updates()
+    >>> translationimportqueue.cleanUpQueue()
+    1
+
+    >>> print_queue_entries(translationimportqueue)
+
+
+=== Needs-Review ===
+
+Another entry stays in needs-review forever.
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/gl.po', 'nunca', True, rosetta_experts,
+    ...     productseries=evolution_productseries)
+    >>> print entry.status.name
+    NEEDS_REVIEW
+    >>> print_queue_entries(translationimportqueue)
+    evolution   | None        | po/gl.po
+
+A needs-review entry won't be cleaned up as quickly as ones in some of
+the other states.
+
+    >>> entry.date_status_changed = stale
+    >>> flush_database_updates()
+    >>> translationimportqueue.cleanUpQueue()
+    0
+
+However, at some point the queue assumes that the entry is never going
+to be approved.  Or if it is, whatever is in the file will be obsolete
+by then.  This happens particularly with old Ubuntu releases that are
+still on security maintenance.
+
+    >>> entry.date_status_changed = stale - datetime.timedelta(days=7 * 30)
     >>> flush_database_updates()
     >>> translationimportqueue.cleanUpQueue()
     1

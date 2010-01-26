@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -66,12 +66,16 @@ from lp.translations.utilities.gettext_po_importer import (
 from canonical.librarian.interfaces import ILibrarianClient
 
 
-# Period to wait before entries with terminal statuses are removed from
-# the queue.
+# Approximate number of days in a 6-month period.
+half_year = 6 * 30 + 4
+
+# Period after which entries with certain statuses are culled from the
+# queue.
 entry_gc_age = {
     RosettaImportStatus.DELETED: datetime.timedelta(days=3),
     RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
     RosettaImportStatus.FAILED: datetime.timedelta(days=30),
+    RosettaImportStatus.NEEDS_REVIEW: datetime.timedelta(days=half_year),
 }
 
 
