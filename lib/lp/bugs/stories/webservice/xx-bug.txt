@@ -348,6 +348,7 @@ The collection of bug tasks is not exposed as a resource:
 It's possible to change the task's assignee.
 
   >>> patch = {u'assignee_link': webservice.getAbsoluteUrl('/~cprov')}
+  >>> bugtask_path = bug_one_bugtasks[0]['self_link']
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
   HTTP/1.1 209 Content Returned...
 
