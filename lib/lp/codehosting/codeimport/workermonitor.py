@@ -243,19 +243,15 @@ class CodeImportWorkerMonitor:
     def finishJob(self, status):
         """Call the finishJob method for the job we are working on.
 
-        This method uploads the log file to the librarian first.  If this
-        fails, we still try to call finishJob, but return the librarian's
-        failure if finishJob succeeded (if finishJob fails, that exception
-        'wins').
+        This method uploads the log file to the librarian first.
         """
         job = self.getJob()
         log_file_size = self._log_file.tell()
-        librarian_failure = None
         if log_file_size > 0:
             self._log_file.seek(0)
             branch = job.code_import.branch
-            log_file_name = '%s-%s-log.txt' % (
-                branch.product.name, branch.name)
+            log_file_name = '%s-%s-%s-log.txt' % (
+                branch.owner.name, branch.product.name, branch.name)
             try:
                 log_file_alias = self._createLibrarianFileAlias(
                     log_file_name, log_file_size, self._log_file,
