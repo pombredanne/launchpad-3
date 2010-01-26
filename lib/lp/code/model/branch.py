@@ -74,6 +74,8 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
@@ -1012,6 +1014,9 @@ class Branch(SQLBase):
         jobs = store.find(
             BranchJob,
             BranchJob.branch == self,
+            Job.id == BranchJob.jobID,
+            Job._status != JobStatus.COMPLETED,
+            Job._status != JobStatus.FAILED,
             BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
         return jobs.count() > 0
 
