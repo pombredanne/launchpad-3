@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from pytz import utc
 
 from zope.component import getUtility
+from zope.interface import classProvides, implements
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.webapp.interfaces import (
@@ -15,7 +16,8 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJobDispatchEstimation)
 from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.services.job.model.job import Job
@@ -860,11 +862,11 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         super(TestMultiArchJobDelayEstimation, self).setUp()
 
         from zope import component
-        from zope.interface import implements
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 
-        class FakeBranchBuild:
+        class FakeBranchBuild(BuildFarmJob):
             implements(IBuildFarmJob)
+            classProvides(IBuildFarmJobDispatchEstimation)
             def score(self):
                 return -9999
             def getLogFileName(self):
@@ -922,5 +924,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         x86_proc = processor_fam.processors[0]
 
         _bison_build, bison_job = find_job(self, 'bison', '386')
+        import pdb
+        pdb.set_trace()
         check_mintime_to_builder(self, bison_job, x86_proc, False, 0)
         check_delay_for_job(bison_job, 1122, (None, None))

@@ -313,7 +313,7 @@ class BuildQueue(SQLBase):
         # Chain these queries in "SELECT .. UNION SELECT .." fashion and
         # use them to obtain the jobs that compete with the JOI for builders.
         queries = []
-        for job_class in self.specific_job_classes.values():
+        for job_class in specific_job_classes().values():
             queries.append(
                 job_class.composePendingJobsQuery(
                     self.lastscore, my_processor, my_virtualized))
