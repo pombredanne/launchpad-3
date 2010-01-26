@@ -340,11 +340,6 @@ we will just verify that an integer is returned.
   >>> print type(bug_one_bugtasks[0]['task_age'])
   <type 'int'>
 
-  >>> bugtask_path = bug_one_bugtasks[0]['self_link']
-  >>> bugtask = webservice.get(bugtask_path).jsonBody()
-  >>> bugtask == bug_one_bugtasks[0]
-  True
-
 The collection of bug tasks is not exposed as a resource:
 
   >>> webservice.get("/bug_tasks").status
