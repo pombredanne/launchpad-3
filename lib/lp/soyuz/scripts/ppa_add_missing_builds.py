@@ -81,23 +81,23 @@ class PPAMissingBuilds(LaunchpadScript):
 
     def main(self):
         if not self.options.arch_tags:
-            parser.error("Specify at least one architecture.")
+            self.parser.error("Specify at least one architecture.")
 
         if not self.options.distroseries_name:
-            parser.error("Specifiy a distroseries.")
+            self.parser.error("Specifiy a distroseries.")
 
         if not self.options.ppa_owner_name:
-            parser.error("Specify a PPA owner name.")
+            self.parser.error("Specify a PPA owner name.")
 
         from lp.registry.interfaces.distribution import IDistributionSet
         distro = getUtility(IDistributionSet).getByName(self.options.distribution_name)
         if distro is None:
-            parser.error("%s not found" % self.options.distribution_name)
+            self.parser.error("%s not found" % self.options.distribution_name)
 
         try:
             distroseries = distro.getSeries(self.options.distroseries_name)
         except NotFoundError:
-            parser.error("%s not found" % self.options.distroseries_name)
+            self.parser.error("%s not found" % self.options.distroseries_name)
 
         arches = []
         for arch_tag in self.options.arch_tags:
@@ -105,19 +105,19 @@ class PPAMissingBuilds(LaunchpadScript):
                 das = distroseries.getDistroArchSeries(arch_tag)
                 arches.append(das)
             except NotFoundError:
-                parser.error(
+                self.parser.error(
                     "%s not a valid architecture for %s" % (
                         arch_tag, self.options.distroseries_name))
 
         from lp.registry.interfaces.person import IPersonSet
         owner = getUtility(IPersonSet).getByName(self.options.ppa_owner_name)
         if owner is None:
-            parser.error("%s not found" % self.options.ppa_owner_name)
+            self.parser.error("%s not found" % self.options.ppa_owner_name)
 
         try:
             ppa = owner.getPPAByName(self.options.ppa_name)
         except NotFoundError:
-            parser.error("%s not found" % self.options.ppa_name)
+            self.parser.error("%s not found" % self.options.ppa_name)
 
         # I'm tired of parsing options.  Let's do it.
         try:
