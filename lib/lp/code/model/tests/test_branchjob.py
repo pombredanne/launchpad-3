@@ -8,6 +8,7 @@ __metaclass__ = type
 import datetime
 import os
 import shutil
+from storm.locals import Store
 import tempfile
 from unittest import TestLoader
 
@@ -262,6 +263,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         self.assertEqual(
             new_branch.repository._format.get_format_string(),
             'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+
+        self.assertTrue(db_branch.pending_writes)
 
     def test_needs_no_upgrading(self):
         # Branch upgrade job creation should raise an AssertionError if the
