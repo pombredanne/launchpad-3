@@ -13,13 +13,13 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.scripts.expire_ppa_binaries import PPABinaryExpirer
+from lp.soyuz.scripts.ppa_add_missing_biulds import PPAMissingBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    flush_database_updates, clear_current_connection_cache, cursor)
+    flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -64,6 +64,12 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
+    def getScript(self):
+        """Return an instance of the script object."""
+        script = PPAMissingBuilds("test")
+        script.logger = QuietFakeLogger()
+        return script
+
     def testSimpleRun(self):
         """Try a simple script run.
 
@@ -96,3 +102,8 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
             self.stp.breezy_autotest_hppa, self.ppa)
         self.assertIsNot(any_build_i386, None)
         self.assertIsNot(any_build_hppa, None)
+
+    def testNoActionForNoSources(self):
+        """Test that if nothing is published, no builds are created."""
+        self.all.requestDeletion()
+        self.any.requestDeletion()
