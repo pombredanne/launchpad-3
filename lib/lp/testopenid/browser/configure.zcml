@@ -16,7 +16,7 @@
     <adapter
         provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
         for="..interfaces.server.ITestOpenIDApplication"
-        factory="lp.testopenid.browser.server.TestOpenIDRootUrlData"
+        factory=".server.TestOpenIDRootUrlData"
         />
 
     <browser:defaultView
@@ -26,7 +26,7 @@
 
     <browser:page
         for="..interfaces.server.ITestOpenIDApplication"
-        class="lp.testopenid.browser.server.TestOpenIDView"
+        class=".server.TestOpenIDView"
         permission="zope.Public"
         name="+openid"
         />
@@ -37,8 +37,8 @@
         name="+index"
         />
     <browser:page
-        for="lp.testopenid.interfaces.server.ITestOpenIDApplication"
-        class="lp.testopenid.browser.server.TestOpenIDLoginView"
+        for="..interfaces.server.ITestOpenIDApplication"
+        class=".server.TestOpenIDLoginView"
         permission="zope.Public"
         name="+auth"
         />
