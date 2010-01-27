@@ -147,9 +147,8 @@ for us to test for the first instances of each here. This is an instance of Bug
 
 === Person bugs menu ===
 
-The person bugs page can be accessed without being in the bugs site, so 
-make sure the person bugs menu is linking to the bugs site correctly
-(https://launchpad.net/bugs/118609).
+The person bugs page can be accessed without being in the bugs
+site, yet all the menu links point to the bugs site.
 
     >>> anon_browser.open('http://launchpad.dev/~name12/+assignedbugs')
     >>> print anon_browser.getLink('List commented bugs').url
