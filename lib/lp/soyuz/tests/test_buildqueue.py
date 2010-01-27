@@ -57,10 +57,14 @@ def find_job(test, name, processor='386'):
     return (None, None)
 
 
-def nth_builder(test, build, n):
+def nth_builder(test, bq, n):
     """Find nth builder that can execute the given build."""
+    def builder_key(job):
+        """Access key for builders capable of running the given job."""
+        return (getattr(job.processor, 'id', None), job.virtualized)
+
     builder = None
-    builders = test.builders.get(builder_key(build), [])
+    builders = test.builders.get(builder_key(bq), [])
     try:
         builder = builders[n-1]
     except IndexError:
@@ -71,7 +75,7 @@ def nth_builder(test, build, n):
 def assign_to_builder(test, job_name, builder_number, processor='386'):
     """Simulate assigning a build to a builder."""
     build, bq = find_job(test, job_name, processor)
-    builder = nth_builder(test, build, builder_number)
+    builder = nth_builder(test, bq, builder_number)
     bq.markAsBuilding(builder)
 
 
@@ -95,11 +99,6 @@ def print_build_setup(builds):
         print "%5s, %18s, p:%5s, v:%5s e:%s *** s:%5s" % (
             bq.id, source.name, processor_name(bq),
             bq.virtualized, bq.estimated_duration, bq.lastscore)
-
-
-def builder_key(job):
-    """Access key for builders capable of running the given job."""
-    return (job.processor.id, job.is_virtualized)
 
 
 def check_mintime_to_builder(
@@ -246,6 +245,20 @@ class TestBuildQueueBase(TestCaseWithFactory):
             for builder in builders:
                 builder.builderok = True
                 builder.manual = False
+
+        # Native builders irrespective of processor.
+        self.builders[(None, False)] = self.builders[(x86_proc.id, False)]
+        self.builders[(None, False)].extend(
+            self.builders[(amd_proc.id, False)])
+        self.builders[(None, False)].extend(
+            self.builders[(hppa_proc.id, False)])
+
+        # Virtual builders irrespective of processor.
+        self.builders[(None, True)] = self.builders[(x86_proc.id, True)]
+        self.builders[(None, True)].extend(
+            self.builders[(amd_proc.id, True)])
+        self.builders[(None, True)].extend(
+            self.builders[(hppa_proc.id, True)])
 
         # Disable the sample data builders.
         getUtility(IBuilderSet)['bob'].builderok = False
@@ -870,7 +883,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
     def setUp(self):
         """Set up a fake 'BRANCHBUILD' build farm job class.
 
-        The two platform-independent jobs will have a score of 1017 and 1033
+        The two platform-independent jobs will have a score of 1025 and 1053
         respectively.
 
             3,              gedit, p: hppa, v:False e:0:01:00 *** s: 1003
@@ -881,7 +894,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
             8,                apg, p:  386, v:False e:0:06:00 *** s: 1018
             9,                vim, p: hppa, v:False e:0:07:00 *** s: 1021
            10,                vim, p:  386, v:False e:0:08:00 *** s: 1024
-           19,     xx-recipe-bash, p: None, v:False e:0:00:22 *** s: 1025
+      -->  19,     xx-recipe-bash, p: None, v:False e:0:00:22 *** s: 1025
            11,                gcc, p: hppa, v:False e:0:09:00 *** s: 1027
            12,                gcc, p:  386, v:False e:0:10:00 *** s: 1030
            13,              bison, p: hppa, v:False e:0:11:00 *** s: 1033
@@ -890,7 +903,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
            16,               flex, p:  386, v:False e:0:14:00 *** s: 1042
            17,           postgres, p: hppa, v:False e:0:15:00 *** s: 1045
            18,           postgres, p:  386, v:False e:0:16:00 *** s: 1048
-           20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
+      -->  20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
 
          p=processor, v=virtualized, e=estimated_duration, s=score
         """
@@ -972,3 +985,34 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         #   hppa job delays: 960 = (9+11+13+15)*60/3
         #    386 job delays: 780 = (10+12+14+16)*60/4
         check_delay_for_job(self, bash_job, 1962, (None, False))
+
+        # One of the 9 builders for the 'zsh' build is immediately available.
+        zsh_build, zsh_job = find_job(self, 'xx-recipe-zsh', None)
+        check_mintime_to_builder(self, zsh_job, None, False, 0)
+
+        # Obtain the builder statistics pertaining to this job.
+        builder_data = zsh_job._getBuilderData()
+        builders_in_total, builders_for_job, builder_stats = builder_data
+
+        # The delay will be 0 since this is the head job.
+        check_delay_for_job(self, zsh_job, 0, (None, False))
+
+        # Assign the zsh job to a builder.
+        assign_to_builder(self, 'xx-recipe-zsh', 1, None)
+
+        # Now that the highest-scored job is out of the way, the estimation
+        # for the 'bash' recipe build is 222 seconds shorter and the new head
+        # job platform is (1, False) (due to the fact that the native '386'
+        # postgres job (with id 18) is the new head job).
+
+        # The delay will be 960 + 780 = 1740, where
+        #   hppa job delays: 960 = (9+11+13+15)*60/3
+        #    386 job delays: 780 = (10+12+14+16)*60/4
+        check_delay_for_job(self, bash_job, 1740, (1, False))
+
+        processor_fam = ProcessorFamilySet().getByName('x86')
+        x86_proc = processor_fam.processors[0]
+
+        _postgres_build, postgres_job = find_job(self, 'postgres', '386')
+        # The delay will be 0 since this is the head job now.
+        check_delay_for_job(self, postgres_job, 0, (1, False))

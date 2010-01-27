@@ -394,16 +394,8 @@ class BuildQueue(SQLBase):
         #     duration by the total number of builders because any one of
         #     them may run it.
         for job, score, duration, processor, virtualized in job_queue:
-            if job == self.job.id:
-                # We have seen all jobs that are ahead of us in the queue
-                # and can stop now.
-                # This is guaranteed by the "ORDER BY lastscore DESC.."
-                # clause above.
-                break
-
             virtualized = normalize_virtualization(virtualized)
             platform = (processor, virtualized)
-
             # For the purpose of estimating the delay for dispatching the job
             # at the head of the queue to a builder we need to capture the
             # platform it targets.
@@ -418,6 +410,13 @@ class BuildQueue(SQLBase):
                     # same platform or is platform-independent.
                     if (my_platform == platform or processor is None):
                         head_job_platform = platform
+
+            if job == self.job.id:
+                # We have seen all jobs that are ahead of us in the queue
+                # and can stop now.
+                # This is guaranteed by the "ORDER BY lastscore DESC.."
+                # clause above.
+                break
 
             builder_count = builder_stats.get((processor, virtualized), 0)
             if builder_count == 0:
