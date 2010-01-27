@@ -1242,8 +1242,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         passed in, but defaults to a Subversion import from an arbitrary
         unique URL.
         """
-        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is hg_repo_url
-            is None):
+        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
+            hg_repo_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if product is None:

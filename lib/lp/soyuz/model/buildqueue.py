@@ -183,9 +183,9 @@ class BuildQueue(SQLBase):
             # The job of interest (JOI) is processor independent.
             builders_for_job = builders_in_total
 
-        builder_stats[(None,None)] = builders_in_total
-        builder_stats[(None,True)] = virtualized_total
-        builder_stats[(None,False)] = native_total
+        builder_stats[(None, None)] = builders_in_total
+        builder_stats[(None, True)] = virtualized_total
+        builder_stats[(None, False)] = native_total
 
         return (builders_in_total, builders_for_job, builder_stats)
 
