@@ -748,36 +748,36 @@ class PersonBugsMenu(NavigationMenu):
         text = 'List all related bugs'
         summary = ('Lists all bug reports which %s reported, is assigned to, '
                    'or is subscribed to.' % self.context.displayname)
-        return Link('', text, summary=summary)
+        return Link('', text, site='bugs', summary=summary)
 
     def assignedbugs(self):
         text = 'List assigned bugs'
         summary = 'Lists bugs assigned to %s.' % self.context.displayname
-        return Link('+assignedbugs', text, summary=summary)
+        return Link('+assignedbugs', text, site='bugs', summary=summary)
 
     def softwarebugs(self):
         text = 'Show package report'
         summary = (
             'A summary report for packages where %s is a bug supervisor.'
             % self.context.displayname)
-        return Link('+packagebugs', text, summary=summary)
+        return Link('+packagebugs', text, site='bugs', summary=summary)
 
     def reportedbugs(self):
         text = 'List reported bugs'
         summary = 'Lists bugs reported by %s.' % self.context.displayname
-        return Link('+reportedbugs', text, summary=summary)
+        return Link('+reportedbugs', text, site='bugs', summary=summary)
 
     def subscribedbugs(self):
         text = 'List subscribed bugs'
         summary = ('Lists bug reports %s is subscribed to.'
                    % self.context.displayname)
-        return Link('+subscribedbugs', text, summary=summary)
+        return Link('+subscribedbugs', text, site='bugs', summary=summary)
 
     def commentedbugs(self):
         text = 'List commented bugs'
         summary = ('Lists bug reports on which %s has commented.'
                    % self.context.displayname)
-        return Link('+commentedbugs', text, summary=summary)
+        return Link('+commentedbugs', text, site='bugs', summary=summary)
 
 
 class PersonSpecsMenu(NavigationMenu):
