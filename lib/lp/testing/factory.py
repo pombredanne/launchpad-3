@@ -1633,7 +1633,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         sourcename=None):
         """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
         testing."""
-        recipe_build = self.makeSourcePackageRecipeBuild(sourcename=sourcename)
+        recipe_build = self.makeSourcePackageRecipeBuild(
+            sourcename=sourcename)
         recipe_build_job = recipe_build.makeJob()
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
