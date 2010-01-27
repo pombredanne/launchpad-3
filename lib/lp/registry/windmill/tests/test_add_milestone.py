@@ -61,6 +61,8 @@ def test_inline_add_milestone(client, url, name=None, suite='milestone',
     client.waits.forElement(id=u'field.name', timeout=u'8000')
     client.type(id='field.name', text=milestone_name)
     client.click(id=u'formoverlay-add-milestone')
+    client.waits.forElement(
+        xpath="//div[contains(@class, 'yui-lazr-formoverlay-errors')]/ul/li")
     client.asserts.assertTextIn(
         classname='yui-lazr-formoverlay-errors',
         validator='The name %s is already used' % milestone_name.lower())
@@ -87,6 +89,7 @@ class TestAddMilestone(TestCaseWithFactory):
     layer = RegistryWindmillLayer
 
     def setUp(self):
+        super(TestAddMilestone, self).setUp()
         self.client = WindmillTestClient('AddMilestone')
 
     def test_adding_milestone_on_addrelease_page(self):

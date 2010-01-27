@@ -865,24 +865,20 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return [
             ProxiedLibraryFileAlias(file, parent).http_url for file in files]
 
-    @property
-    def source_file_urls(self):
+    def sourceFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
         source_urls = self._proxied_urls(
             [file.libraryfile for file in self.sourcepackagerelease.files],
              self.archive)
-
         return source_urls
 
-    @property
-    def binary_file_urls(self):
+    def binaryFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
         binaries = publishing_set.getBinaryFilesForSources(
             self).config(distinct=True)
         binary_urls = self._proxied_urls(
             [binary for _source, binary, _content in binaries], self.archive)
-
         return binary_urls
 
 

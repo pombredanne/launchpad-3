@@ -640,12 +640,12 @@ Nominating a bug for an obsolete distroseries raises a
 NominationSeriesObsoleteError. Let's make a new obsolete distroseries
 to demonstrate.
 
-    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+    >>> from canonical.launchpad.interfaces import SeriesStatus
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu_edgy = factory.makeDistroRelease(
     ...     distribution=ubuntu, version='6.10',
-    ...     status=DistroSeriesStatus.OBSOLETE)
+    ...     status=SeriesStatus.OBSOLETE)
     >>> login("no-priv@canonical.com")
 
     >>> bug_one.addNomination(target=ubuntu_edgy, owner=no_privs)

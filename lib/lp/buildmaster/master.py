@@ -282,13 +282,8 @@ class BuilddMaster:
 
         build_set = getUtility(IBuildSet)
         for job in queueItems:
-            build = build_set.getByQueueEntry(job)
-            proc = build.distroarchseries.processorfamily
-            try:
-                builders = notes[proc]["builders"]
-            except KeyError:
-                continue
-            builders.updateBuild(job)
+            job.builder.updateBuild(job)
+            self.commit()
 
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""

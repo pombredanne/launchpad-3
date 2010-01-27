@@ -87,7 +87,7 @@ summary.  She can also add a longer description.
     >>> user_browser.getControl('Title').value = 'Aardvark Central Command'
     >>> user_browser.getControl('Summary').value = (
     ...     'Control pesky aardvarkian fnords')
-    ... user_browser.getControl('Description').value = (
+    >>> user_browser.getControl('Description').value = (
     ...     'The desktop aardvark is an ornery thing.')
 
 Before a project can be created though, a license for it must be selected.
@@ -105,6 +105,17 @@ This time, Sample Person remembers to select a license.
     >>> user_browser.getControl('Complete Registration').click()
     >>> print user_browser.title
     Aardvark Central Command in Launchpad
+
+Let's ensure the summary and description are presented.
+
+    >>> summary = find_tags_by_class(user_browser.contents,
+    ...                              'summary', only_first=True)
+    >>> print extract_text(summary)
+    Control pesky aardvarkian fnords
+    >>> desc = find_tags_by_class(user_browser.contents,
+    ...                           'description', only_first=True)
+    >>> print extract_text(desc)
+    The desktop aardvark is an ornery thing.
 
 
 Search results
