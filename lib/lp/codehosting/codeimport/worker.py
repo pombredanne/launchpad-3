@@ -28,13 +28,13 @@ from bzrlib.urlutils import join as urljoin
 from bzrlib.upgrade import upgrade
 
 from canonical.cachedproperty import cachedproperty
+from lp.code.enums import CodeImportWorkerExitCode, RevisionControlSystems
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
 from lp.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
 from canonical.config import config
-from lp.code.enums import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs
@@ -85,7 +85,11 @@ class BazaarBranchStore:
         except NotBranchError:
             branch_to = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
-        branch_to.pull(branch_from, overwrite=True)
+        pull_result = branch_to.pull(branch_from, overwrite=True)
+        if pull_result.old_revid != pull_result.new_revid:
+            return CodeImportWorkerExitCode.SUCCESS
+        else:
+            return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
 
 
 def get_default_bazaar_branch_store():
@@ -372,7 +376,7 @@ class ImportWorker:
 
     def pushBazaarWorkingTree(self, bazaar_tree):
         """Push the updated Bazaar working tree to the server."""
-        self.bazaar_branch_store.push(
+        return self.bazaar_branch_store.push(
             self.source_details.branch_id, bazaar_tree, self.required_format)
 
     def getWorkingDirectory(self):
@@ -405,7 +409,7 @@ class ImportWorker:
         saved_pwd = os.getcwd()
         os.chdir(working_directory)
         try:
-            self._doImport()
+            return self._doImport()
         finally:
             shutil.rmtree(working_directory)
             os.chdir(saved_pwd)
@@ -485,8 +489,9 @@ class CSCVSImportWorker(ImportWorker):
         foreign_tree = self.getForeignTree()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
-        self.pushBazaarWorkingTree(bazaar_tree)
+        retcode = self.pushBazaarWorkingTree(bazaar_tree)
         self.foreign_tree_store.archive(foreign_tree)
+        return retcode
 
 
 class PullingImportWorker(ImportWorker):
@@ -525,7 +530,7 @@ class PullingImportWorker(ImportWorker):
             bazaar_tree.branch.pull(foreign_branch, overwrite=True)
         finally:
             bzrlib.ui.ui_factory = saved_factory
-        self.pushBazaarWorkingTree(bazaar_tree)
+        return self.pushBazaarWorkingTree(bazaar_tree)
 
 
 class GitImportWorker(PullingImportWorker):
@@ -566,9 +571,10 @@ class GitImportWorker(PullingImportWorker):
         that bzr-git will have created at .bzr/repository/bzr.git into the
         import data store.
         """
-        PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
+        retcode = PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
         self.import_data_store.put(
             'git.db', bazaar_tree.branch.repository._transport)
+        return retcode
 
 
 class BzrSvnImportWorker(PullingImportWorker):

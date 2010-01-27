@@ -28,6 +28,7 @@ from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import BaseLayer
 
+from lp.code.enums import CodeImportWorkerExitCode
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore, BzrSvnImportWorker, CSCVSImportWorker,
@@ -709,6 +710,25 @@ class TestActualImportMixin:
 
         self.assertEqual(
             self.foreign_commit_count, len(branch.revision_history()))
+
+    def test_script_exit_codes(self):
+        # XXX
+        source_details = self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')])
+
+        clean_up_default_stores_for_import(source_details)
+
+        script_path = os.path.join(
+            config.root, 'scripts', 'code-import-worker.py')
+        output = tempfile.TemporaryFile()
+        retcode = subprocess.call(
+            [script_path] + source_details.asArguments(),
+            stderr=output, stdout=output)
+        self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS)
+        retcode = subprocess.call(
+            [script_path] + source_details.asArguments(),
+            stderr=output, stdout=output)
+        self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS_NOCHANGE)
 
 
 class CSCVSActualImportMixin(TestActualImportMixin):
