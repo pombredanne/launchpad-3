@@ -14,7 +14,7 @@ product.  At first, the product is new and has no bugs.
     ...    logout()
     ...    return result
 
-    >>> product1 = make_thing(factory.makeProduct, name='patchy-product-1')
+    >>> patchy_product = make_thing(factory.makeProduct, name='patchy-product-1')
 
 We don't see any patches when we open the patches view.
 
@@ -43,7 +43,7 @@ view, because that bug has no patch attachments.
     ...     return bug
 
     >>> bug_a = make_thing(
-    ...     make_bug, title="bug_a title", product=product1)
+    ...     make_bug, title="bug_a title", product=patchy_product)
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug Importance Status Patch Age
@@ -79,11 +79,11 @@ After creating some more bugs, with some non-patch and some patch
 attachments...
 
     >>> bug_b = make_thing(
-    ...     make_bug, title="bug_b title", product=product1,
+    ...     make_bug, title="bug_b title", product=patchy_product,
     ...     importance=BugTaskImportance.CRITICAL,
     ...     status=BugTaskStatus.CONFIRMED)
     >>> bug_c = make_thing(
-    ...     make_bug, title="bug_c title", product=product1,
+    ...     make_bug, title="bug_c title", product=patchy_product,
     ...     importance=BugTaskImportance.WISHLIST,
     ...     status=BugTaskStatus.FIXCOMMITTED)
     >>> make_thing(
@@ -163,21 +163,44 @@ We can sort patches by importance and status.
     From: Patchy Person
     Link: patch_f.diff description of patch f
 
-If a bug is nominated for a product series, it shows up in the patches
-view for that series.
+To nominate a bug for a series, we need to be able to make bugtasks.
+It helps to have a meta-factory for this.  The meta-factory defaults
+to the 'ubuntu' distro, for all instances where a distro is needed.
 
-    >>> user_browser.open(
-    ...     "http://launchpad.dev/patchy-product-1/+bug/18/+nominate")
-    >>> user_browser.getControl("Trunk").selected = True
-    >>> user_browser.getControl("Submit").click()
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'informational message'):
-    ...     print tag
-    <div class="informational message">Added nominations for: Patchy-product-1 trunk</div>
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> def make_bugtask(
+    ...     bug, target, target_is_spkg_name=False,
+    ...     importance=None, status=None):
+    ...     ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     if target_is_spkg_name:
+    ...         target = ubuntu_distro.getSourcePackage(target)
+    ...     bugtask = factory.makeBugTask(bug=bug, target=target)
+    ...     if importance is not None:
+    ...         bugtask.transitionToImportance(importance, ubuntu_distro.owner)
+    ...     if status is not None:
+    ...         bugtask.transitionToStatus(status, ubuntu_distro.owner)
+
+Bugs in a product series show up in the patches view for that series.
+
+    >>> patchy_product_series = patchy_product.getSeries('trunk')
+    >>> make_thing(
+    ...     make_bugtask, bug=bug_a,
+    ...     target=patchy_product_series)
+    >>> make_thing(
+    ...     make_bugtask, bug=bug_c,
+    ...     target=patchy_product_series)
     >>> user_browser.open('https://launchpad.dev/patchy-product-1/trunk/+patches')
     >>> show_patches_view(user_browser.contents)
-    Bug                       Importance   Status   Patch Age
-    Okay, why isn't this showing the bug we just targeted to this series?
+    Bug                       Importance     Status      Patch Age
+    Bug #18: bug_c title       Wishlist  Fix Committed   ... seconds
+    From: Patchy Person
+    Link: patch_f.diff
+    description of patch f
+    Bug #16: bug_a title       Undecided      New        ... seconds
+    From: Patchy Person
+    Link: patch_a.diff
+    description of patch a
 
 Patches View by Distro
 ----------------------
@@ -185,23 +208,14 @@ Patches View by Distro
 The patches view also works for distributions, and it shows the target
 package when viewed via a distribution.
 
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> def make_bugtask(
-    ...     bug, source_package_name,
-    ...     importance=BugTaskImportance.UNDECIDED,
-    ...     status=BugTaskStatus.NEW):
-    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    ...     spkg = ubuntu.getSourcePackage(source_package_name)
-    ...     bugtask = factory.makeBugTask(bug=bug, target=spkg)
-    ...     bugtask.transitionToImportance(importance, ubuntu.owner)
-    ...     bugtask.transitionToStatus(status, ubuntu.owner)
     >>> make_thing(
-    ...     make_bugtask, bug=bug_a, source_package_name='evolution',
+    ...     make_bugtask, bug=bug_a,
+    ...     target='evolution', target_is_spkg_name=True,
     ...     importance=BugTaskImportance.MEDIUM,
     ...     status=BugTaskStatus.FIXRELEASED)
     >>> make_thing(
-    ...     make_bugtask, bug=bug_c, source_package_name='a52dec',
+    ...     make_bugtask, bug=bug_c,
+    ...     target='a52dec', target_is_spkg_name=True,
     ...     importance=BugTaskImportance.HIGH,
     ...     status=BugTaskStatus.TRIAGED)
 
