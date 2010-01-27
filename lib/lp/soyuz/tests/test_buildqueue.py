@@ -863,6 +863,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
             8,                apg, p:  386, v:False e:0:06:00 *** s: 1018
             9,                vim, p: hppa, v:False e:0:07:00 *** s: 1021
            10,                vim, p:  386, v:False e:0:08:00 *** s: 1024
+           19,  generic-string140, p: None, v:False e:0:00:22 *** s: 1025
            11,                gcc, p: hppa, v:False e:0:09:00 *** s: 1027
            12,                gcc, p:  386, v:False e:0:10:00 *** s: 1030
            13,              bison, p: hppa, v:False e:0:11:00 *** s: 1033
@@ -871,7 +872,6 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
            16,               flex, p:  386, v:False e:0:14:00 *** s: 1042
            17,           postgres, p: hppa, v:False e:0:15:00 *** s: 1045
            18,           postgres, p:  386, v:False e:0:16:00 *** s: 1048
-           19,  generic-string140, p: None, v:False e:0:00:22 *** s: 1025
            20,  generic-string206, p: None, v:False e:0:03:42 *** s: 1053
 
          p=processor, v=virtualized, e=estimated_duration, s=score
@@ -886,10 +886,9 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
             virtualized=False, estimated_duration=222)
         job.lastscore = 1053
         self.builds.append(job.specific_job.build)
-
         # print_build_setup(self.builds)
 
-    def test_job_delay(self):
+    def test_job_delay_for_binary_builds(self):
         processor_fam = ProcessorFamilySet().getByName('hppa')
         hppa_proc = processor_fam.processors[0]
 
@@ -918,6 +917,25 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         _bison_build, bison_job = find_job(self, 'bison', '386')
         check_mintime_to_builder(self, bison_job, x86_proc, False, 0)
+        # The delay will be 900 (= (14+16)*60/2) + 222 seconds, the head job
+        # is platform-independent.
         check_delay_for_job(self, bison_job, 1122, (None, False))
 
+        # The 2 tests that follow exercise the estimation in conjunction with
+        # longer pending job queues. Please note that the sum of estimates for
+        # the '386' jobs is divided by 4 which is the number of native '386'
+        # builders.
+
+        _apg_build, apg_job = find_job(self, 'apg', '386')
+        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
+        # The delay will be 900 (= (8+10+12+14+16)*60/4) + 122 (= (222+22)/2)
+        # seconds, the head job is platform-independent.
+        check_delay_for_job(self, apg_job, 1022, (None, False))
+
+        _gedit_build, gedit_job = find_job(self, 'gedit', '386')
+        check_mintime_to_builder(self, gedit_job, x86_proc, False, 0)
+        # The delay will be
+        #   1080 (= (4+6+8+10+12+14+16)*60/4) + 122 (= (222+22)/2)
+        # seconds, the head job is platform-independent.
+        check_delay_for_job(self, gedit_job, 1172, (None, False))
 
