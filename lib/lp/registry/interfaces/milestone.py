@@ -163,8 +163,6 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget):
         :returns: `IProductRelease` object.
         """
 
-    @call_with(user=REQUEST_USER)
-    @export_write_operation()
     def closeBugsAndBlueprints(user):
         """Close completed bugs and blueprints.
 
