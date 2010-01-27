@@ -30,7 +30,8 @@ from canonical.testing.layers import (
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
 from lp.code.enums import (
-    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
+    CodeImportResultStatus, CodeImportReviewStatus, CodeImportWorkerExitCode,
+    RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -292,7 +293,39 @@ class TestWorkerMonitorUnit(TrialTestCase):
 
     def test_callFinishJobCallsFinishJobFailure(self):
         # callFinishJob calls finishJob with CodeImportResultStatus.FAILURE
-        # and swallows the failure if its argument is a Failure.
+        # and swallows the failure if its argument indicates that the
+        # subprocess exited with an exit code of
+        # CodeImportWorkerExitCode.FAILURE.
+        calls = self.patchOutFinishJob()
+        ret = self.worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.FAILURE))
+        self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
+        self.assertOopsesLogged([error.ProcessTerminated])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobSuccessNoChange(self):
+        # If the argument to callFinishJob indicates that the subprocess
+        # exited with a code of CodeImportWorkerExitCode.SUCCESS_NOCHANGE, it
+        # calls finishJob with a status of SUCCESS_NOCHANGE.
+        calls = self.patchOutFinishJob()
+        ret = self.worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.SUCCESS_NOCHANGE))
+        self.assertEqual(calls, [CodeImportResultStatus.SUCCESS_NOCHANGE])
+        self.assertOopsesLogged([])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobArbitraryFailure(self):
+        # If the argument to callFinishJob indicates that there was some other
+        # failure that had nothing to do with the subprocess, it records
+        # failure.
         calls = self.patchOutFinishJob()
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
