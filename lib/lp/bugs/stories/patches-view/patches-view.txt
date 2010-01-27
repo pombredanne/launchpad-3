@@ -174,11 +174,15 @@ to the 'ubuntu' distro, for all instances where a distro is needed.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> def make_bugtask(
-    ...     bug, target, target_is_spkg_name=False,
+    ...     bug, target,
+    ...     target_is_spkg_name=False,
+    ...     target_is_distroseries_name=False,
     ...     importance=None, status=None):
     ...     ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
     ...     if target_is_spkg_name:
     ...         target = ubuntu_distro.getSourcePackage(target)
+    ...     if target_is_distroseries_name:
+    ...         target = ubuntu_distro.getSeries(target)
     ...     bugtask = factory.makeBugTask(bug=bug, target=target)
     ...     if importance is not None:
     ...         bugtask.transitionToImportance(importance, ubuntu_distro.owner)
@@ -239,12 +243,39 @@ Patches View by Distro Series
 
 The patches view works for distro series.
 
+    >>> make_thing(
+    ...     make_bugtask, bug=bug_a, target='hoary',
+    ...     target_is_distroseries_name=True)
+    >>> make_thing(
+    ...     make_bugtask, bug=bug_a, target='warty',
+    ...     target_is_distroseries_name=True)
+    >>> make_thing(
+    ...     make_bugtask, bug=bug_b, target='warty',
+    ...     target_is_distroseries_name=True)
+    >>> make_thing(
+    ...     make_bugtask, bug=bug_c, target='warty',
+    ...     target_is_distroseries_name=True)
     >>> user_browser.open('https://launchpad.dev/ubuntu/hoary/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug                       Importance   Status   Package    Patch Age
+    Bug #16: bug_a title     Undecided       New    hoary     ...second...
+    From: Patchy Person
+    Link: patch_a.diff
+    description of patch a
     >>> user_browser.open('https://launchpad.dev/ubuntu/warty/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug                       Importance   Status   Package    Patch Age
+    Bug #16: bug_a title      Undecided      New     warty    ...second...
+    From: Patchy Person
+    Link: patch_a.diff
+    description of patch a
+    Bug #17: bug_b title      Undecided      New     warty    ...second...
+    From: Patchy Person
+    Link: patch_c.diff
+    description of patch c
+    Bug #18: bug_c title      Undecided      New     warty    ...second...
+    From: Patchy Person
+    Link: patch_f.diff description of patch f
 
 Patches View by Source Package
 ------------------------------
