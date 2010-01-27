@@ -391,17 +391,19 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
         return job
 
+
     def failImport(self, code_import):
         """Create if necessary a job for `code_import` and have it fail."""
         running_job = self.makeRunningJob(code_import)
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.FAILURE, None)
 
-    def succeedImport(self, code_import):
+    def succeedImport(self, code_import,
+                      status=CodeImportResultStatus.SUCCESS):
         """Create if necessary a job for `code_import` and have it succeed."""
         running_job = self.makeRunningJob(code_import)
         getUtility(ICodeImportJobWorkflow).finishJob(
-            running_job, CodeImportResultStatus.SUCCESS, None)
+            running_job, status, None)
 
     def test_consecutive_failure_count_zero_initially(self):
         # A new code import has a consecutive_failure_count of 0.
@@ -410,7 +412,7 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
 
     def test_consecutive_failure_count_succeed(self):
         # A code import that has succeeded once has a
-        # consecutive_failure_count of 1.
+        # consecutive_failure_count of 0.
         code_import = self.factory.makeCodeImport()
         self.succeedImport(code_import)
         self.assertEqual(0, code_import.consecutive_failure_count)
@@ -421,6 +423,15 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         code_import = self.factory.makeCodeImport()
         self.failImport(code_import)
         self.assertEqual(1, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_succeed_succeed_no_changes(self):
+        # A code import that has succeeded then succeeded with no changes has
+        # a consecutive_failure_count of 0.
+        code_import = self.factory.makeCodeImport()
+        self.succeedImport(code_import)
+        self.succeedImport(
+            code_import, CodeImportResultStatus.SUCCESS_NOCHANGE)
+        self.assertEqual(0, code_import.consecutive_failure_count)
 
     def test_consecutive_failure_count_fail_fail(self):
         # A code import that has failed twice has a consecutive_failure_count

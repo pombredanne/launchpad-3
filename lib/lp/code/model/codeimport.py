@@ -160,7 +160,8 @@ class CodeImport(SQLBase):
             "coalesce",
             Select(
                 CodeImportResult.id,
-                And(CodeImportResult.status == CodeImportResultStatus.SUCCESS,
+                And(CodeImportResult.status.is_in(
+                        CodeImportResultStatus.successes),
                     CodeImportResult.code_import == self),
                 order_by=Desc(CodeImportResult.id),
                 limit=1),

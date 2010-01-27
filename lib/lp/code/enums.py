@@ -782,7 +782,7 @@ class CodeImportResultStatus(DBEnumeratedType):
         """)
 
     SUCCESS_NOCHANGE = DBItem(110, """
-        Success with no changes.
+        Success with no changes
 
         Import job completed successfully, but there were no new revisions to
         import.
@@ -845,6 +845,8 @@ class CodeImportResultStatus(DBEnumeratedType):
         completed. It could have been an explicit request to kill the
         job, or the deletion of a CodeImport which had a running job.
         """)
+
+    successes = [SUCCESS, SUCCESS_NOCHANGE]
 
 class CodeImportWorkerExitCode:
     """XXX"""
