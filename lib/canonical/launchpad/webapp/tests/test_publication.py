@@ -82,7 +82,9 @@ class TestReadOnlyModeSwitches(TestCase):
         self.publication.endRequest(self.request, None)
         # Force pending mode switches to actually happen and get logged so
         # that we don't interfere with other tests.
-        assert not is_read_only()
+        assert not is_read_only(), (
+            "A test failed to clean things up properly, leaving the app "
+            "in read-only mode.")
 
     def setUp(self):
         TestCase.setUp(self)
