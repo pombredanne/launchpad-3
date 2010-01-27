@@ -429,8 +429,8 @@ class BuildQueue(SQLBase):
                 # Accumulate the delays, and count the number of jobs causing
                 # them on a (processor, virtualized) basis.
                 duration = duration.seconds
-                delays[platform] = (delays.setdefault(platform, 0) + duration)
-                job_counts[platform] = (job_counts.setdefault(platform, 0) + 1)
+                delays[platform] = delays.setdefault(platform, 0) + duration
+                job_counts[platform] = job_counts.setdefault(platform, 0) + 1
 
         # Now weight/average the delays based on a jobs/builders comparison.
         for platform, duration in delays.iteritems():
