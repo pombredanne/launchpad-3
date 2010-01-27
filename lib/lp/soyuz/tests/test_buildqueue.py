@@ -137,8 +137,7 @@ def check_delay_for_job(test, the_job, delay, head_job_platform):
     # Obtain the builder statistics pertaining to this job.
     builder_data = the_job._getBuilderData()
     builders_in_total, builders_for_job, builder_stats = builder_data
-    estimated_delay = the_job._estimateJobDelay(
-        builders_in_total, builder_stats)
+    estimated_delay = the_job._estimateJobDelay(builder_stats)
     test.assertEqual(
         estimated_delay,
         (delay, head_job_platform))

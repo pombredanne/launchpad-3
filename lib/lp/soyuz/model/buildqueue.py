@@ -289,7 +289,7 @@ class BuildQueue(SQLBase):
         else:
             return int(head_job_delay)
 
-    def _estimateJobDelay(self, builders_in_total, builder_stats):
+    def _estimateJobDelay(self, builder_stats):
         """Sum of estimated durations for *pending* jobs ahead in queue.
         
         For the purpose of estimating the dispatch time of the job of
@@ -297,8 +297,6 @@ class BuildQueue(SQLBase):
         jobs that are ahead of the JOI in the queue and that compete with it
         for builders.
 
-        :param builders_in_total: How many active builders are available
-            altogether?
         :param builder_stats: A dictionary with builder counts where the
             key is a (processor, virtualized) combination (aka "platform") and
             the value is the number of builders that can take on jobs
