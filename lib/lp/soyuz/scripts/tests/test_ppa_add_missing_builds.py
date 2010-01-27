@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the ppa-add-missing-builds.py script. """
@@ -15,7 +15,7 @@ from lp.testing import TestCaseWithFactory
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    flush_database_updates, clear_current_connection_cache)
+    clear_current_connection_cache, flush_database_updates)
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 

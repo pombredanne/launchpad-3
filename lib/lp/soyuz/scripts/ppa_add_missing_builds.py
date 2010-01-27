@@ -91,6 +91,8 @@ class PPAMissingBuilds(LaunchpadScript):
         if not self.options.ppa_owner_name:
             self.parser.error("Specify a PPA owner name.")
 
+        # Avoid circular imports by importing here.
+        from lp.registry.interfaces.distribution import IDistributionSet
         distro = getUtility(IDistributionSet).getByName(
             self.options.distribution_name)
         if distro is None:
