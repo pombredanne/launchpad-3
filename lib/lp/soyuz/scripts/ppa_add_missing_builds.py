@@ -7,6 +7,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
@@ -40,7 +41,7 @@ class PPAMissingBuilds(LaunchpadScript):
         self.logger.info(
             "Supported architectures in %s: %s" % (
                 distroseries.name,
-                " ".join(arch_series.architecturetag
+                ", ".join(arch_series.architecturetag
                          for arch_series in architectures_available)))
 
         required_arch_set = set(required_arches)
@@ -65,7 +66,7 @@ class PPAMissingBuilds(LaunchpadScript):
             builds = pubrec.createMissingBuilds(
                 architectures_available=doable_arch_set, logger=self.logger)
             if len(builds) > 0:
-                self.logger.info("Created %s builds" % len(builds))
+                self.logger.info("Created %s build(s)" % len(builds))
 
     def add_my_options(self):
         """Command line options for this script."""
@@ -85,12 +86,11 @@ class PPAMissingBuilds(LaunchpadScript):
             self.parser.error("Specify at least one architecture.")
 
         if not self.options.distroseries_name:
-            self.parser.error("Specifiy a distroseries.")
+            self.parser.error("Specify a distroseries.")
 
         if not self.options.ppa_owner_name:
             self.parser.error("Specify a PPA owner name.")
 
-        from lp.registry.interfaces.distribution import IDistributionSet
         distro = getUtility(IDistributionSet).getByName(
             self.options.distribution_name)
         if distro is None:
