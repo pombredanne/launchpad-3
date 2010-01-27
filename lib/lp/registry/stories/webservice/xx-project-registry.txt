@@ -891,6 +891,44 @@ Invalid data will return a Bad Request error.
     ...
     date_targeted: Value doesn't look like a date.
 
+The milestone closeBugsAndBlueprints() method is called by sending
+"ws.op=closeBugsAndBlueprints"; the user is taken from the request.
+
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+
+    >>> login('test@canonical.com')
+    >>> rose_owner = factory.makePerson(name='rose-owner')
+    >>> rose_project = factory.makeProduct(name='rose', owner=rose_owner)
+    >>> rose_series = factory.makeProductSeries(
+    ...     product=rose_project, name='master', owner=rose_owner)
+    >>> rose_milestone = factory.makeMilestone(
+    ...     productseries=rose_series, name='bud')
+    >>> fixed_bugtask = factory.makeBugTask(target=rose_project)
+    >>> fixed_bugtask.transitionToMilestone(rose_milestone, rose_owner)
+    >>> fixed_bugtask.transitionToStatus(
+    ...     BugTaskStatus.FIXCOMMITTED, rose_owner)
+    >>> logout()
+
+    >>> api_milestone = webservice.get('/rose/+milestone/bud').jsonBody()
+    >>> response = webservice.named_post(
+    ...     api_milestone['self_link'], 'closeBugsAndBlueprints', {})
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> login('test@canonical.com')
+    >>> print fixed_bugtask.status.title
+    Fix Released
+
+    >>> latest_activity = fixed_bugtask.bug.activity[-1]
+    >>> print latest_activity.person.name
+    salgado
+
+    >>> print latest_activity.whatchanged
+    rose: status
+
+    >>> logout()
+
 
 Project release
 ===============
