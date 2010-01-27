@@ -31,7 +31,7 @@ class PPAMissingBuilds(LaunchpadScript):
                 % distroseries.name)
             return
 
-        architectures_available = list(distroseries.enabled_architectures)
+        architectures_available = set(distroseries.enabled_architectures)
         if not architectures_available:
             self.logger.error(
                 "Chroots missing for %s" % distroseries.name)
@@ -43,9 +43,9 @@ class PPAMissingBuilds(LaunchpadScript):
                 " ".join(arch_series.architecturetag
                          for arch_series in architectures_available)))
 
-        available_arch_set = set(architectures_available)
         required_arch_set = set(required_arches)
-        doable_arch_set = available_arch_set.intersection(required_arch_set)
+        doable_arch_set = architectures_available.intersection(
+            required_arch_set)
         if len(doable_arch_set) == 0:
             self.logger.error("Requested architectures not available")
             return
