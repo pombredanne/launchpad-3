@@ -910,13 +910,11 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=22,
-            sourcename='xx-recipe-bash')
-        job.lastscore = 1025
+            sourcename='xx-recipe-bash', score=1025)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=222,
-            sourcename='xx-recipe-zsh')
-        job.lastscore = 1053
+            sourcename='xx-recipe-zsh', score=1053)
         self.builds.append(job.specific_job.build)
         # print_build_setup(self.builds)
 
