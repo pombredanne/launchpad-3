@@ -971,6 +971,4 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # The delay will be 960 + 780 + 222 = 1962, where
         #   hppa job delays: 960 = (9+11+13+15)*60/3
         #    386 job delays: 780 = (10+12+14+16)*60/4
-        #import pdb
-        #pdb.set_trace()
         check_delay_for_job(self, bash_job, 1962, (None, False))
