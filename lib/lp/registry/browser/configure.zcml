@@ -1594,13 +1594,6 @@
             template="../templates/productseries-table-releases.pt"/>
     </browser:pages>
     <browser:page
-        name="+addpackage"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.registry.browser.packaging.PackagingAddView"
-        facet="overview"
-        permission="launchpad.View"
-        template="../templates/productseries-packaging.pt"/>
-    <browser:page
         name="+ubuntupkg"
         facet="overview"
         template="../templates/productseries-ubuntupkg.pt"
