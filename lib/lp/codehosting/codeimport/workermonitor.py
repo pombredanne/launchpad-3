@@ -10,10 +10,9 @@ __all__ = []
 
 
 import os
-import sys
 import tempfile
 
-from twisted.internet import defer, reactor, task
+from twisted.internet import defer, error, reactor, task
 from twisted.python import failure
 from twisted.python.util import mergeFunctionMetadata
 
@@ -29,7 +28,7 @@ from canonical.twistedsupport.loggingsupport import (
     log_oops_from_failure)
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
-from lp.code.enums import CodeImportResultStatus
+from lp.code.enums import CodeImportResultStatus, CodeImportWorkerExitCode
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
@@ -296,16 +295,25 @@ class CodeImportWorkerMonitor:
         failure.trap(ExitQuietly)
         return None
 
+    def _reasonToStatus(self, reason):
+        if isinstance(reason, failure.Failure):
+            if reason.check(error.ProcessTerminated):
+                if reason.value.exitCode == \
+                       CodeImportWorkerExitCode.SUCCESS_NOCHANGE:
+                    return CodeImportResultStatus.SUCCESS_NOCHANGE
+            return CodeImportResultStatus.FAILURE
+        else:
+            return CodeImportResultStatus.SUCCESS
+
     def callFinishJob(self, reason):
         """Call finishJob() with the appropriate status."""
         if not self._call_finish_job:
             return reason
-        if isinstance(reason, failure.Failure):
+        status = self._reasonToStatus(reason)
+        if status == CodeImportResultStatus.FAILURE:
             self._log_file.write("Import failed:\n")
             reason.printTraceback(self._log_file)
             self._logOopsFromFailure(reason)
-            status = CodeImportResultStatus.FAILURE
         else:
             self._logger.info('Import succeeded.')
-            status = CodeImportResultStatus.SUCCESS
         return self.finishJob(status)
