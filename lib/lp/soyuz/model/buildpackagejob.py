@@ -12,17 +12,14 @@ import pytz
 
 from storm.locals import Int, Reference, Storm
 
-from zope.interface import classProvides, implements
+from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
 
-from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType)
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob

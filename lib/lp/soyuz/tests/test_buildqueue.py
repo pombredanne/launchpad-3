@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from pytz import utc
 
 from zope.component import getUtility
-from zope.interface import classProvides, implements
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.webapp.interfaces import (
@@ -871,9 +870,6 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
          p=processor, v=virtualized, e=estimated_duration, s=score
         """
-        from lp.soyuz.interfaces.sourcepackagerecipebuild import (
-            ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
-            ISourcePackageRecipeBuildSource)
         super(TestMultiArchJobDelayEstimation, self).setUp()
 
         job = self.factory.makeSourcePackageRecipeBuildJob(

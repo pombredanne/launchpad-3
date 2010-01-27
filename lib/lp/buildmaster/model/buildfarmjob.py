@@ -8,13 +8,11 @@ __all__ = ['BuildFarmJob']
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, IBuildFarmCandidateJobSelection,
     ISpecificBuildFarmJobClass)
-from lp.services.job.interfaces.job import JobStatus
 
 
 class BuildFarmJob:
