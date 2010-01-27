@@ -352,6 +352,12 @@ class TestBuilderData(SingleArchBuildsBase):
         self.assertEqual(
             builder_stats[(hppa_proc.id, True)], 4,
             "The number of virtual hppa builders is wrong")
+        self.assertEqual(
+            builder_stats[(None, False)], 9,
+            "The number of *virtual* builders across all processors is wrong")
+        self.assertEqual(
+            builder_stats[(None, True)], 12,
+            "The number of *native* builders across all processors is wrong")
         # Disable the native x86 builders.
         for builder in self.builders[(x86_proc.id, False)]:
             builder.builderok = False
@@ -913,3 +919,5 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         _bison_build, bison_job = find_job(self, 'bison', '386')
         check_mintime_to_builder(self, bison_job, x86_proc, False, 0)
         check_delay_for_job(self, bison_job, 1122, (None, False))
+
+
