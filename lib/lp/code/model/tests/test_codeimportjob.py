@@ -32,8 +32,7 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
-from lp.code.interfaces.codeimportresult import (
-    ICodeImportResult, ICodeImportResultSet)
+from lp.code.interfaces.codeimportresult import ICodeImportResult
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import ANONYMOUS, login, logout, TestCaseWithFactory
 from canonical.launchpad.testing.codeimporthelpers import (
@@ -274,7 +273,7 @@ class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTests):
         self.assertReclaimableJobs([stale_job])
         machine = self.factory.makeCodeImportMachine(set_online=True)
         login(ANONYMOUS)
-        job = getUtility(ICodeImportJobSet).getJobForMachine(
+        getUtility(ICodeImportJobSet).getJobForMachine(
             machine.hostname)
         login_for_code_imports()
         # Now there are no reclaimable jobs.
@@ -456,7 +455,7 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # of the job that was deleted when the CodeImport review status
         # changed from REVIEWED. That is the date_job_started of the most
         # recent CodeImportResult plus the effective update interval.
-        job = getUtility(ICodeImportJobWorkflow).newJob(code_import)
+        getUtility(ICodeImportJobWorkflow).newJob(code_import)
         self.assertSqlAttributeEqualsDate(
             code_import.import_job, 'date_due',
             recent_result.date_job_started + interval)
@@ -690,7 +689,6 @@ class TestCodeImportJobWorkflowUpdateHeartbeat(TestCaseWithFactory,
     def test_wrongJobState(self):
         # Calling updateHeartbeat with a job whose state is not RUNNING is an
         # error.
-        machine = self.factory.makeCodeImportMachine()
         code_import = self.factory.makeCodeImport()
         job = self.factory.makeCodeImportJob(code_import)
         self.assertFailure(
@@ -740,7 +738,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
 
     def test_wrongJobState(self):
         # Calling finishJob with a job whose state is not RUNNING is an error.
-        machine = self.factory.makeCodeImportMachine()
         code_import = self.factory.makeCodeImport()
         job = self.factory.makeCodeImportJob(code_import)
         self.switchDbUser()
@@ -767,7 +764,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # finishJob() creates a new CodeImportJob for the given CodeImport,
         # scheduled appropriately far in the future.
         running_job = self.makeRunningJob()
-        running_job_date_due = running_job.date_due
         code_import = running_job.code_import
         self.switchDbUser()
         getUtility(ICodeImportJobWorkflow).finishJob(
@@ -784,7 +780,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # finishJob() creates a new CodeImportJob for the given CodeImport,
         # unless the CodeImport has been suspended or marked invalid.
         running_job = self.makeRunningJob()
-        running_job_date_due = running_job.date_due
         code_import = running_job.code_import
         ddaa = getUtility(IPersonSet).getByEmail(
             'david.allouche@canonical.com')
@@ -798,9 +793,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
     def test_createsResultObject(self):
         # finishJob() creates a CodeImportResult object for the given import.
         running_job = self.makeRunningJob()
-        running_job_date_due = running_job.date_due
         code_import = running_job.code_import
-        result_set = getUtility(ICodeImportResultSet)
         # Before calling finishJob() there are no CodeImportResults for the
         # given import...
         self.assertEqual(len(list(code_import.results)), 0)
@@ -903,7 +896,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
 
         self.switchDbUser()
         log_data = 'several\nlines\nof\nlog data'
-        log_excerpt = log_data.splitlines()[-1]
         log_alias_id = getUtility(ILibrarianClient).addFile(
            'import_log.txt', len(log_data),
            StringIO.StringIO(log_data), 'text/plain')
