@@ -308,9 +308,39 @@ class BuildQueue(SQLBase):
             * 'head_job_platform' is the platform ((processor, virtualized)
               combination) required by the job at the head of the queue.
         """
-        # Please note: this method will send only one request to the database.
+        def normalize_virtualization(virtualized):
+            """Jobs with NULL virtualization settings should be treated the
+               same way as virtualized jobs."""
+            if virtualized is None or virtualized == True:
+                return True
+            else:
+                return False
+        def jobs_compete_for_builders(a, b):
+            """True if the two jobs compete for builders."""
+            a_processor, a_virtualized = a
+            b_processor, b_virtualized = b
+            if a_processor is None or b_processor is None:
+                # If either of the jobs is platform-independent then the two
+                # jobs compete for the same builders if the virtualization
+                # settings match.
+                if a_virtualized == b_virtualized:
+                    return True
+            else:
+                # Neither job is platform-independent, match processor and
+                # virtualization settings.
+                return a == b
+
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        my_platform = (self.processor, self.virtualized)
+        my_platform = (
+            getattr(self.processor, 'id', None),
+            normalize_virtualization(self.virtualized))
+        processor_clause = """
+                AND (
+                    -- The processor values either match or the candidate
+                    -- job is processor-independent.
+                    buildqueue.processor = %s OR 
+                    buildqueue.processor IS NULL)
+        """ % sqlvalues(self.processor)
         query = """
             SELECT
                 BuildQueue.job,
@@ -325,11 +355,6 @@ class BuildQueue(SQLBase):
                 AND Job.status = %s
                 AND BuildQueue.lastscore >= %s
                 AND (
-                    -- The processor values either match or the candidate
-                    -- job is processor-independent.
-                    buildqueue.processor = %s OR 
-                    buildqueue.processor IS NULL)
-                AND (
                     -- The virtualized values either match or the job
                     -- does not care about virtualization and the job
                     -- of interest (JOI) is to be run on a virtual builder
@@ -337,10 +362,18 @@ class BuildQueue(SQLBase):
                     -- on native builders).
                     buildqueue.virtualized = %s OR
                     (buildqueue.virtualized IS NULL AND %s = TRUE))
-                ORDER BY lastscore DESC, job
         """ % sqlvalues(
-            JobStatus.WAITING, self.lastscore, self.processor,
-            self.virtualized, self.virtualized)
+            JobStatus.WAITING, self.lastscore, self.virtualized,
+            self.virtualized)
+
+        # We don't care about processors if the estimation is for a
+        # processor-independent job.
+        if self.processor is not None:
+            query += processor_clause
+
+        query += """
+                ORDER BY lastscore DESC, job
+            """
         job_queue = store.execute(query).get_all()
 
         sum_of_delays = 0
@@ -368,11 +401,13 @@ class BuildQueue(SQLBase):
                 # clause above.
                 break
 
+            virtualized = normalize_virtualization(virtualized)
+            platform = (processor, virtualized)
+
             # For the purpose of estimating the delay for dispatching the job
             # at the head of the queue to a builder we need to capture the
             # platform it targets.
             if head_job_platform is None:
-                platform = (processor, virtualized)
                 if self.processor is None:
                     # The JOI is platform-independent i.e. the highest scored
                     # job will be the head job.
@@ -384,26 +419,18 @@ class BuildQueue(SQLBase):
                     if (my_platform == platform or processor is None):
                         head_job_platform = platform
 
-            if processor is None:
-                # Processor independent job, can be run on any builder.
-                builder_count = builders_in_total
-            else:
-                # Tied to a particular processor, see how many builders
-                # can run it.
-                builder_count = builder_stats.get((processor, virtualized), 0)
-
+            builder_count = builder_stats.get((processor, virtualized), 0)
             if builder_count == 0:
                 # There is no builder that can run this job, ignore it
                 # for the purpose of dispatch time estimation.
                 continue
 
-            # Accumulate the delays, and count the number of jobs causing them
-            # on a (processor, virtualized) basis.
-            duration = duration.seconds
-            delays[(processor, virtualized)] = (
-                delays.setdefault((processor, virtualized), 0) + duration)
-            job_counts[(processor, virtualized)] = (
-                job_counts.setdefault((processor, virtualized), 0) + 1)
+            if jobs_compete_for_builders(my_platform, platform):
+                # Accumulate the delays, and count the number of jobs causing
+                # them on a (processor, virtualized) basis.
+                duration = duration.seconds
+                delays[platform] = (delays.setdefault(platform, 0) + duration)
+                job_counts[platform] = (job_counts.setdefault(platform, 0) + 1)
 
         # Now weight/average the delays based on a jobs/builders comparison.
         for platform, duration in delays.iteritems():

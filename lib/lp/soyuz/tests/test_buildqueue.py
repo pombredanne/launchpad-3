@@ -33,10 +33,27 @@ from lp.testing import TestCaseWithFactory
 
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
+    def processor_matches(bq):
+        if processor is None:
+            if bq.processor is None:
+                return True
+            else:
+                return False
+        else:
+            if processor == bq.processor.name:
+                return True
+            else:
+                return False
+
     for build in test.builds:
-        if (build.sourcepackagerelease.name == name
-            and build.processor.name == processor):
-            return (build, build.buildqueue_record)
+        bq = build.buildqueue_record
+        source = None
+        for attr in ('sourcepackagerelease', 'sourcepackagename'):
+            source = getattr(build, attr, None)
+            if source is not None:
+                break
+        if (source.name == name and processor_matches(bq)):
+            return (build, bq)
     return (None, None)
 
 
@@ -67,6 +84,7 @@ def print_build_setup(builds):
         else:
             return proc.name
 
+    print ""
     for build in builds:
         bq = build.buildqueue_record
         source = None
@@ -863,7 +881,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
             8,                apg, p:  386, v:False e:0:06:00 *** s: 1018
             9,                vim, p: hppa, v:False e:0:07:00 *** s: 1021
            10,                vim, p:  386, v:False e:0:08:00 *** s: 1024
-           19,  generic-string140, p: None, v:False e:0:00:22 *** s: 1025
+           19,     xx-recipe-bash, p: None, v:False e:0:00:22 *** s: 1025
            11,                gcc, p: hppa, v:False e:0:09:00 *** s: 1027
            12,                gcc, p:  386, v:False e:0:10:00 *** s: 1030
            13,              bison, p: hppa, v:False e:0:11:00 *** s: 1033
@@ -872,18 +890,20 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
            16,               flex, p:  386, v:False e:0:14:00 *** s: 1042
            17,           postgres, p: hppa, v:False e:0:15:00 *** s: 1045
            18,           postgres, p:  386, v:False e:0:16:00 *** s: 1048
-           20,  generic-string206, p: None, v:False e:0:03:42 *** s: 1053
+           20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
 
          p=processor, v=virtualized, e=estimated_duration, s=score
         """
         super(TestMultiArchJobDelayEstimation, self).setUp()
 
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            virtualized=False, estimated_duration=22)
+            virtualized=False, estimated_duration=22,
+            sourcename='xx-recipe-bash')
         job.lastscore = 1025
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            virtualized=False, estimated_duration=222)
+            virtualized=False, estimated_duration=222,
+            sourcename='xx-recipe-zsh')
         job.lastscore = 1053
         self.builds.append(job.specific_job.build)
         # print_build_setup(self.builds)
@@ -939,3 +959,18 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # seconds, the head job is platform-independent.
         check_delay_for_job(self, gedit_job, 1172, (None, False))
 
+    def test_job_delay_for_recipe_builds(self):
+        # One of the 9 builders for the 'bash' build is immediately available.
+        bash_build, bash_job = find_job(self, 'xx-recipe-bash', None)
+        check_mintime_to_builder(self, bash_job, None, False, 0)
+
+        # Obtain the builder statistics pertaining to this job.
+        builder_data = bash_job._getBuilderData()
+        builders_in_total, builders_for_job, builder_stats = builder_data
+
+        # The delay will be 960 + 780 + 222 = 1962, where
+        #   hppa job delays: 960 = (9+11+13+15)*60/3
+        #    386 job delays: 780 = (10+12+14+16)*60/4
+        #import pdb
+        #pdb.set_trace()
+        check_delay_for_job(self, bash_job, 1962, (None, False))

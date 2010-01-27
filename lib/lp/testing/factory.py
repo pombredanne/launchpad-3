@@ -1611,10 +1611,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant, owner, distroseries, sourcepackagename, name, recipe)
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
-                                     requester=None, archive=None):
+                                     requester=None, archive=None,
+                                     sourcename=None):
         """Make a new SourcePackageRecipeBuild."""
         if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage()
+            sourcepackage = self.makeSourcePackage(sourcename=sourcename)
         if recipe is None:
             recipe = self.makeSourcePackageRecipe()
         if requester is None:
@@ -1628,10 +1629,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             requester=requester)
 
     def makeSourcePackageRecipeBuildJob(
-        self, score=9876, virtualized=True, estimated_duration=64):
+        self, score=9876, virtualized=True, estimated_duration=64,
+        sourcename=None):
         """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
         testing."""
-        recipe_build = self.makeSourcePackageRecipeBuild()
+        recipe_build = self.makeSourcePackageRecipeBuild(sourcename=sourcename)
         recipe_build_job = recipe_build.makeJob()
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -1853,10 +1855,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             return self.makeSourcePackageName()
         return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
 
-    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
+    def makeSourcePackage(
+        self, sourcepackagename=None, distroseries=None, sourcename=None):
         """Make an `ISourcePackage`."""
         if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+            sourcepackagename = self.makeSourcePackageName(sourcename)
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
