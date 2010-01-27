@@ -931,7 +931,8 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             code_import = job.code_import
             self.assertTrue(code_import.date_last_successful is None)
             getUtility(ICodeImportJobWorkflow).finishJob(job, status, None)
-            if status == CodeImportResultStatus.SUCCESS:
+            if status in [CodeImportResultStatus.SUCCESS,
+                          CodeImportResultStatus.SUCCESS_NOCHANGE]:
                 self.assertTrue(code_import.date_last_successful is not None)
             else:
                 self.assertTrue(code_import.date_last_successful is None)
