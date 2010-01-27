@@ -389,8 +389,8 @@ class BuildQueue(SQLBase):
         #     duration of that job by the number of builders that target TP
         #     since only these can build the job.
         #   - if the job is processor-independent then divide its estimated
-        #     duration by the total number of builders because any one of
-        #     them may run it.
+        #     duration by the total number of builders with the same
+        #     virtualization setting because any one of them may run it.
         for job, score, duration, processor, virtualized in job_queue:
             virtualized = normalize_virtualization(virtualized)
             platform = (processor, virtualized)
