@@ -110,7 +110,7 @@
             template="../templates/official-bug-target-manage-tags.pt"/>
         <browser:page
             name="+patches"
-            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
             class="lp.bugs.browser.bugtarget.BugsPatchesView"
             facet="bugs"
             permission="zope.Public"
