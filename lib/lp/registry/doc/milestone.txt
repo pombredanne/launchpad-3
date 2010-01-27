@@ -506,3 +506,41 @@ If a milestone has a structural subscription, it cannot be deleted.
     ...
     AssertionError: You cannot delete a milestone which has structural
                     subscriptions.
+
+
+Creating a release from a milestone with targeted bugs
+------------------------------------------------------
+
+When a milestone with bug tasks creates a release, those bug tasks in fix
+committed status are updated to fix released. An ObjectModifiedEvent
+event is signaled for each changed bug task.
+
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTask
+
+    >>> def print_event(object, event):
+    ...     print "Received %s on %s" % (
+    ...         event.__class__.__name__.split('.')[-1],
+    ...         object.__class__.__name__.split('.')[-1])
+
+    >>> milestone = ff_onedotzero.newMilestone('kia')
+    >>> fixed_bugtask = factory.makeBugTask(target=upstream_firefox)
+    >>> fixed_bugtask.transitionToMilestone(milestone, owner)
+    >>> fixed_bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED, owner)
+    >>> triaged_bugtask = factory.makeBugTask(target=upstream_firefox)
+    >>> triaged_bugtask.transitionToMilestone(milestone, owner)
+    >>> triaged_bugtask.transitionToStatus(BugTaskStatus.TRIAGED, owner)
+    >>> bugtask_event_listener = TestEventListener(
+    ...     IBugTask, IObjectModifiedEvent, print_event)
+
+    >>> release = milestone.createProductRelease(owner, datetime.now(UTC))
+    Received ObjectModifiedEvent on BugTask
+
+    >>> fixed_bugtask.status
+    <DBItem BugTaskStatus.FIXRELEASED, (30) Fix Released>
+
+    >>> triaged_bugtask.status
+    <DBItem BugTaskStatus.TRIAGED, (21) Triaged>
+
+    >>> bugtask_event_listener.unregister()
