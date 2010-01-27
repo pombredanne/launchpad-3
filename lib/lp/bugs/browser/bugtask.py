@@ -1935,12 +1935,13 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
-                 has_specification, request=None):
+                 has_specification, has_patch, request=None):
         self.bugtask = bugtask
         self.review_action_widget = None
         self.has_mentoring_offer = has_mentoring_offer
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
+        self.has_patch = has_patch
         self.request = request
 
     @property
@@ -1982,6 +1983,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
             badge_property['has_specification'],
+            badge_property['has_patch'],
             request=self.request)
 
     def getBugListingItems(self):
@@ -2735,6 +2737,15 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         Return the IDistributionSourcePackage if yes, otherwise return None.
         """
         return IDistributionSourcePackage(self.context, None)
+
+    @property
+    def hot_bugtasks(self):
+        """Return the 10 most recently updated bugtasks for this target."""
+        params = BugTaskSearchParams(
+            orderby="-date_last_updated", omit_dupes=True, user=self.user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        search = self.context.searchTasks(params)
+        return list(search[:10])
 
     @property
     def addquestion_url(self):
