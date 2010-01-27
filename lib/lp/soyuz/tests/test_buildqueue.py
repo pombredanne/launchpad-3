@@ -880,7 +880,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
     """Test estimated job delays with various processors."""
     score_increment = 2
     def setUp(self):
-        """Set up a fake 'BRANCHBUILD' build farm job class.
+        """Add 2 'build source package from recipe' builds to the mix.
 
         The two platform-independent jobs will have a score of 1025 and 1053
         respectively.
