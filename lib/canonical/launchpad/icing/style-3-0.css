@@ -860,15 +860,12 @@ body.tab-bugs #portlet-subscribers .sprite {
 .yes {background:url(icon-sprites) 0 -256px no-repeat;}
 .crowd {background:url(icon-sprites) 0 -288px no-repeat;}
 .person {background:url(icon-sprites) 0 -320px no-repeat;}
-.person-tabs {background:url(icon-sprites) 5px -314px no-repeat;}
 .person-badge {background:url(icon-sprites) 0 -352px no-repeat;}
 .team {background:url(icon-sprites) 0 -384px no-repeat;}
 .team-badge {background:url(icon-sprites) 0 -416px no-repeat;}
 .arrowRight {background:url(icon-sprites) 0 -448px no-repeat;}
 .treeCollapsed {background:url(icon-sprites) 0 -480px no-repeat;}
 .treeExpanded {background:url(icon-sprites) 0 -512px no-repeat;}
-.branch, .bzr-favicon {background:url(icon-sprites) 0 -544px no-repeat;}
-.bzr-favicon {background:url(icon-sprites) 5px -538px no-repeat;}
 .distribution {background:url(icon-sprites) 0 -576px no-repeat;}
 .package-source {background:url(icon-sprites) 0 -608px no-repeat;}
 .milestone {background:url(icon-sprites) 0 -640px no-repeat;}
