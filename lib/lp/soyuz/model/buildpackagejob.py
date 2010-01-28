@@ -181,8 +181,8 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
         sub_query = """
             SELECT TRUE FROM Archive, Build, BuildPackageJob, DistroArchSeries
             WHERE
-            BuildPackageJob.job = Job.id AND 
-            BuildPackageJob.build = Build.id AND 
+            BuildPackageJob.job = Job.id AND
+            BuildPackageJob.build = Build.id AND
             Build.distroarchseries = DistroArchSeries.id AND
             Build.archive = Archive.id AND
             ((Archive.private IS TRUE AND

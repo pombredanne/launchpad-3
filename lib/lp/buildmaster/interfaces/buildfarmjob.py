@@ -109,7 +109,7 @@ class ISpecificBuildFarmJobClass(Interface):
 
 class IBuildFarmCandidateJobSelection(Interface):
     """Operations for refining candidate job selection (optional).
-    
+
     Job type classes that do *not* need to refine candidate job selection may
     be derived from `BuildFarmJob` which provides a base implementation of
     this interface.
@@ -129,7 +129,7 @@ class IBuildFarmCandidateJobSelection(Interface):
             SELECT TRUE
             FROM Archive, Build, BuildPackageJob, DistroArchSeries
             WHERE
-            BuildPackageJob.job = Job.id AND 
+            BuildPackageJob.job = Job.id AND
             ..
 
         :param processor: the type of processor that the candidate jobs are
@@ -143,7 +143,7 @@ class IBuildFarmCandidateJobSelection(Interface):
     def postprocessCandidate(job, logger):
         """True if the candidate job is fine and should be dispatched
         to a builder, False otherwise.
-        
+
         :param job: The `BuildQueue` instance to be scrutinized.
         :param logger: The logger to use.
 
