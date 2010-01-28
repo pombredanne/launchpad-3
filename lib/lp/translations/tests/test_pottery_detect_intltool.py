@@ -30,6 +30,7 @@ class TestDetectIntltool(TestCase):
         # Remove temporary directory.
         os.chdir(self.curdir)
         shutil.rmtree(self.workdir)
+        super(TestDetectIntltool, self).tearDown()
 
     def _prepare_package(self, packagename):
         # Unpack the specified pacakge to run the test against it.
@@ -181,6 +182,7 @@ class TestDetectIntltool(TestCase):
 class TestConfigFile(TestCase):
 
     def setUp(self):
+        super(TestConfigFile, self).setUp()
         self.configfile = ConfigFile(StringIO(dedent("""\
             # Demo config file
             CCC
