@@ -60,7 +60,7 @@ Get editmoin.py from launchpadlib's "contrib/" directory:
 # counted as a Canonical contributor, sometimes Canonical people
 # submit from personal addresses, so we still need a list.
 #
-# XXX: Karl Fogel 2009-09-10: Really, this ought to use launchpadlib
+# XXX: Karl Fogel 2009-09-10 bug=513608: We should use launchpadlib
 # to consult Launchpad itself to find out who's a Canonical developer.
 known_canonical_devs = (
     u'Aaron Bentley',
@@ -93,6 +93,7 @@ known_canonical_devs = (
     u'Henning Eggers',
     u'Herb McNew',
     u'James Henstridge',
+    u'Jelmer Vernooij',
     u'Jeroen Vermeulen',
     u'Jonathan Knowles',
     u'Jonathan Lange',
@@ -101,10 +102,12 @@ known_canonical_devs = (
     u'Kees Cook',
     u'Launch Pad',
     u'Launchpad Developers',
+    u'LaMont Jones',
     u'Leonard Richardson',
     u'Malcolm Cleaton',
     u'Maris Fogels',
     u'Martin Albisetti',
+    u'Martin Pool',
     u'Matt Zimmerman',
     u'Matthew Revell',
     u'Michael Hudson',
@@ -115,6 +118,7 @@ known_canonical_devs = (
     u'Robert Collins',
     u'Sidnei',
     u'Sidnei da Silva',
+    u'Steve Kowalik',
     u'Steve McInerney',
     u'Stuart Bishop',
     u'Tom Berger',
