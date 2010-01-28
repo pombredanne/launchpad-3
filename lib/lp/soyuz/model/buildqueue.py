@@ -332,13 +332,6 @@ class BuildQueue(SQLBase):
         my_platform = (
             getattr(self.processor, 'id', None),
             normalize_virtualization(self.virtualized))
-        processor_clause = """
-                AND (
-                    -- The processor values either match or the candidate
-                    -- job is processor-independent.
-                    buildqueue.processor = %s OR 
-                    buildqueue.processor IS NULL)
-        """ % sqlvalues(self.processor)
         query = """
             SELECT
                 BuildQueue.job,
@@ -351,7 +344,12 @@ class BuildQueue(SQLBase):
             WHERE
                 BuildQueue.job = Job.id
                 AND Job.status = %s
-                AND BuildQueue.lastscore >= %s
+                AND (
+                    -- The score must be either above my score or the
+                    -- job must be older than me in cases where the
+                    -- score is equal.
+                    BuildQueue.lastscore > %s OR
+                    (BuildQueue.lastscore = %s AND Job.id < %s))
                 AND (
                     -- The virtualized values either match or the job
                     -- does not care about virtualization and the job
@@ -361,17 +359,21 @@ class BuildQueue(SQLBase):
                     buildqueue.virtualized = %s OR
                     (buildqueue.virtualized IS NULL AND %s = TRUE))
         """ % sqlvalues(
-            JobStatus.WAITING, self.lastscore, self.virtualized,
-            self.virtualized)
+            JobStatus.WAITING, self.lastscore, self.lastscore, self.job,
+            self.virtualized, self.virtualized)
+        processor_clause = """
+                AND (
+                    -- The processor values either match or the candidate
+                    -- job is processor-independent.
+                    buildqueue.processor = %s OR 
+                    buildqueue.processor IS NULL)
+        """ % sqlvalues(self.processor)
 
         # We don't care about processors if the estimation is for a
         # processor-independent job.
         if self.processor is not None:
             query += processor_clause
 
-        query += """
-                ORDER BY lastscore DESC, job
-            """
         job_queue = store.execute(query).get_all()
 
         sum_of_delays = 0
@@ -383,6 +385,7 @@ class BuildQueue(SQLBase):
 
         # Which platform is the job at the head of the queue requiring?
         head_job_platform = None
+        head_job_score = 0
 
         # Apply weights to the estimated duration of the jobs as follows:
         #   - if a job is tied to a processor TP then divide the estimated
@@ -397,7 +400,7 @@ class BuildQueue(SQLBase):
             # For the purpose of estimating the delay for dispatching the job
             # at the head of the queue to a builder we need to capture the
             # platform it targets.
-            if head_job_platform is None:
+            if head_job_platform is None or score > head_job_score:
                 if self.processor is None:
                     # The JOI is platform-independent i.e. the highest scored
                     # job will be the head job.
@@ -408,13 +411,6 @@ class BuildQueue(SQLBase):
                     # same platform or is platform-independent.
                     if (my_platform == platform or processor is None):
                         head_job_platform = platform
-
-            if job == self.job.id:
-                # We have seen all jobs that are ahead of us in the queue
-                # and can stop now.
-                # This is guaranteed by the "ORDER BY lastscore DESC.."
-                # clause above.
-                break
 
             builder_count = builder_stats.get((processor, virtualized), 0)
             if builder_count == 0:
@@ -444,6 +440,10 @@ class BuildQueue(SQLBase):
 
             sum_of_delays += duration
                 
+        # No jobs ahead of me. I am the head job.
+        if head_job_platform is None:
+            head_job_platform = my_platform
+
         return (sum_of_delays, head_job_platform)
 
 
