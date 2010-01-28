@@ -336,7 +336,9 @@ class BuildQueue(SQLBase):
             SELECT
                 BuildQueue.job,
                 BuildQueue.lastscore,
-                BuildQueue.estimated_duration,
+                CAST (
+                    EXTRACT(
+                        EPOCH FROM BuildQueue.estimated_duration) AS INTEGER),
                 BuildQueue.processor,
                 BuildQueue.virtualized
             FROM
@@ -421,7 +423,6 @@ class BuildQueue(SQLBase):
             if jobs_compete_for_builders(my_platform, platform):
                 # Accumulate the delays, and count the number of jobs causing
                 # them on a (processor, virtualized) basis.
-                duration = duration.seconds
                 delays[platform] = delays.setdefault(platform, 0) + duration
                 job_counts[platform] = job_counts.setdefault(platform, 0) + 1
 
