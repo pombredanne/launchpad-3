@@ -55,7 +55,8 @@ class Times:
         histogram = numpy.histogram(
             array, normed=True,
             range=(0, self.timeout), bins=self.timeout)
-        return mean, median, standard_deviation, histogram[0]
+        histogram = zip(histogram[1], histogram[0])
+        return mean, median, standard_deviation, histogram
 
     def __str__(self):
         results = self.stats()
@@ -224,6 +225,10 @@ def print_html_report(categories):
                     bars: {show: true}
                     },
                 xaxis: {
+                    tickDecimals: 0,
+                    tickFormatter: function (val, axis) {
+                        return val.toFixed(axis.tickDecimals) + "s";
+                        }
                     },
                 yaxis: {
                     min: 0,
@@ -244,14 +249,13 @@ def print_html_report(categories):
         histogram = histograms[i]
         if histogram is None:
             continue
-        data = zip(range(0, len(histogram)), list(histogram))
         print dedent("""\
             var d = %s;
 
             $.plot(
                 $("#histogram%d"),
                 [{data: d}], options);
-            """ % (json.dumps(data), i))
+            """ % (json.dumps(histogram), i))
 
     print dedent("""\
             });
