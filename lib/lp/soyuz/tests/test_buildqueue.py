@@ -35,9 +35,9 @@ def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
     def processor_matches(bq):
         if processor is None:
-            return (True if bq.processor is None else False)
+            return (bq.processor is None)
         else:
-            return (True if processor == bq.processor.name else False)
+            return (processor == bq.processor.name)
 
     for build in test.builds:
         bq = build.buildqueue_record
@@ -77,25 +77,22 @@ def print_build_setup(builds):
     """Show the build set-up for a particular test."""
     def processor_name(bq):
         return ('None' if bq.processor is None else bq.processor.name)
-    def higher_scored_or_older(a,b):
-        a_queue_entry = a.buildqueue_record
-        b_queue_entry = b.buildqueue_record
-        if a_queue_entry.lastscore != b_queue_entry.lastscore:
-            return cmp(a_queue_entry.lastscore, b_queue_entry.lastscore)
-        else:
-            return cmp(a_queue_entry.job, b_queue_entry.job)
 
     print ""
-    for build in sorted(builds, higher_scored_or_older):
-        bq = build.buildqueue_record
+    queue_entries = [build.buildqueue_record for build in builds]
+    queue_entries = sorted(
+        queue_entries, key=lambda qe: qe.job.id, reverse=True)
+    queue_entries = sorted(queue_entries, key=lambda qe: qe.lastscore)
+    for queue_entry in queue_entries:
         source = None
         for attr in ('sourcepackagerelease', 'sourcepackagename'):
-            source = getattr(build, attr, None)
+            source = getattr(queue_entry.specific_job.build, attr, None)
             if source is not None:
                 break
         print "%5s, %18s, p:%5s, v:%5s e:%s *** s:%5s" % (
-            bq.id, source.name, processor_name(bq),
-            bq.virtualized, bq.estimated_duration, bq.lastscore)
+            queue_entry.id, source.name, processor_name(queue_entry),
+            queue_entry.virtualized, queue_entry.estimated_duration,
+            queue_entry.lastscore)
 
 
 def check_mintime_to_builder(
@@ -117,7 +114,7 @@ def almost_equal(a, b, deviation=1):
 
     This used to  spurious failures in time based tests.
     """
-    return (True if abs(a - b) <= deviation else False)
+    return (abs(a - b) <= deviation)
 
 
 def set_remaining_time_for_running_job(bq, remainder):

@@ -301,8 +301,8 @@ class BuildQueue(SQLBase):
             key is a (processor, virtualized) combination (aka "platform") and
             the value is the number of builders that can take on jobs
             requiring that combination.
-        :return: The sum of delays caused by the jobs that are ahead of and
-            competing with the JOI.
+        :return: An integer value holding the sum of delays (in seconds)
+            caused by the jobs that are ahead of and competing with the JOI.
         """
         def normalize_virtualization(virtualized):
             """Jobs with NULL virtualization settings should be treated the
