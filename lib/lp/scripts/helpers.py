@@ -19,9 +19,9 @@ def _check_datetime(option, opt, value):
     formats = [
         '%Y-%m-%dT%H:%M:%S',
         '%Y-%m-%dT%H:%M',
-        '%Y-%m-%d',
         '%Y-%m-%d %H:%M:%S',
-        '%Y-%m-%d %H:%M'
+        '%Y-%m-%d %H:%M',
+        '%Y-%m-%d',
         ]
     for format in formats:
         try:
