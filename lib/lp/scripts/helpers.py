@@ -46,6 +46,9 @@ class LPOptionParser(OptionParser):
     """Extended optparse OptionParser.
 
     Adds a 'datetime' option type.
+
+    Automatically adds our standard --verbose, --quiet options that
+    tie into our logging system.
     """
     def __init__(self, *args, **kw):
         kw.setdefault('option_class', LPOption)
