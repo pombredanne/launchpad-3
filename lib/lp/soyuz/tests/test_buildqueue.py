@@ -35,15 +35,9 @@ def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
     def processor_matches(bq):
         if processor is None:
-            if bq.processor is None:
-                return True
-            else:
-                return False
+            return (True if bq.processor is None else False)
         else:
-            if processor == bq.processor.name:
-                return True
-            else:
-                return False
+            return (True if processor == bq.processor.name else False)
 
     for build in test.builds:
         bq = build.buildqueue_record
@@ -82,11 +76,7 @@ def assign_to_builder(test, job_name, builder_number, processor='386'):
 def print_build_setup(builds):
     """Show the build set-up for a particular test."""
     def processor_name(bq):
-        proc = getattr(bq, 'processor', None)
-        if proc is None:
-            return 'None'
-        else:
-            return proc.name
+        return ('None' if bq.processor is None else bq.processor.name)
 
     print ""
     for build in builds:
@@ -120,10 +110,7 @@ def almost_equal(a, b, deviation=1):
 
     This used to  spurious failures in time based tests.
     """
-    if abs(a - b) <= deviation:
-        return True
-    else:
-        return False
+    return (True if abs(a - b) <= deviation else False)
 
 
 def set_remaining_time_for_running_job(bq, remainder):
@@ -246,14 +233,18 @@ class TestBuildQueueBase(TestCaseWithFactory):
                 builder.manual = False
 
         # Native builders irrespective of processor.
-        self.builders[(None, False)] = self.builders[(x86_proc.id, False)]
+        self.builders[(None, False)] = []
+        self.builders[(None, False)].extend(
+            self.builders[(x86_proc.id, False)])
         self.builders[(None, False)].extend(
             self.builders[(amd_proc.id, False)])
         self.builders[(None, False)].extend(
             self.builders[(hppa_proc.id, False)])
 
         # Virtual builders irrespective of processor.
-        self.builders[(None, True)] = self.builders[(x86_proc.id, True)]
+        self.builders[(None, True)] = []
+        self.builders[(None, True)].extend(
+            self.builders[(x86_proc.id, True)])
         self.builders[(None, True)].extend(
             self.builders[(amd_proc.id, True)])
         self.builders[(None, True)].extend(
