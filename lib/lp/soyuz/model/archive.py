@@ -1115,11 +1115,15 @@ class Archive(SQLBase):
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an 
         archive.
+
+        :raises NoSuchSourcePackageName: If any of the source_names do not
+            exist.
         """
         sources = []
         for name in source_names:
-            # Check to see if the source package exists, and raise a useful
-            # error if it doesn't.
+            # Check to see if the source package exists. This will raise
+            # a NoSuchSourcePackageName exception if the source package
+            # doesn't exist.
             getUtility(ISourcePackageNameSet)[name]
             # Grabbing the item at index 0 ensures it's the most recent
             # publication.
