@@ -52,6 +52,7 @@ from canonical.database.enumcol import EnumCol
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
@@ -1322,6 +1323,13 @@ class BugTaskSet:
                       FROM BugBranch, BugTask
                       WHERE BugBranch.bug = BugTask.bug
                         AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        bugs_with_patches = list(Bug.select(
+            """id IN (SELECT BugAttachment.bug
+                      FROM BugAttachment, BugTask
+                      WHERE BugAttachment.bug = BugTask.bug
+                      AND BugAttachment.type = %s
+                        AND BugTask.id IN %s)""" % sqlvalues(
+            BugAttachmentType.PATCH, bugtask_ids)))
         badge_properties = {}
         for bugtask in bugtasks:
             badge_properties[bugtask] = {
@@ -1329,6 +1337,7 @@ class BugTaskSet:
                     bugtask.bug in bugs_with_mentoring_offers,
                 'has_specification': bugtask.bug in bugs_with_specifications,
                 'has_branch': bugtask.bug in bugs_with_branches,
+                'has_patch': bugtask.bug in bugs_with_patches,
                 }
         return badge_properties
 
@@ -1617,6 +1626,8 @@ class BugTaskSet:
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
 
+        if params.affects_me:
+            params.affected_user = params.user
         if params.affected_user:
             affected_user_clause = """
             BugTask.id IN (

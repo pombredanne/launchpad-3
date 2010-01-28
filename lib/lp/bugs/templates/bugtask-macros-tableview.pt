@@ -547,6 +547,16 @@
                   </label>
               </td>
             </tr>
+            <tr>
+	      <td>
+	      </td>
+          <td style="white-space: nowrap">
+            <input tal:replace="structure view/widgets/affects_me" />
+            <label tal:attributes="for view/widgets/affects_me/name">
+                Show only bugs affecting me
+            </label>
+          </td>
+        </tr>
 	    <tr>
               <tal:XXX condition="nothing">
                 # XXX: Bjorn Tillenius 2006-10-02:
