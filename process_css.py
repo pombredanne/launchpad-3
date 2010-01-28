@@ -33,19 +33,21 @@ def main():
                 '/** sprite-ref: %(sprite_group)s */'
                 % dict(image=image_name, sprite_group=sprite_group))
     print
-    for args in image_file_util.not_found:
-        image_file = image_file_util.get(*args)
-        if image_file is None:
-            print "Still not found:", args
-        else:
-            print "***Found later:", args, image_file
+    image_file_util.reprocess_missing()
 
 
 class ImageFileUtil:
     def __init__(self):
         self.cache = {}
-        self.not_found = set()
+        self.missing = set()
         self.found = []
+
+    def reprocess_missing(self):
+        for args in self.missing:
+            image_file = self.add(*args)
+            if image_file is None:
+                raise AssertionError(
+                    "File for css class still not found:", args)
 
     def add(self, image_name, sprite_group, offset):
         image_file = os.path.join(image_dir, image_name + '.png')
@@ -55,14 +57,8 @@ class ImageFileUtil:
             image_file = os.path.join(
                 image_dir, swapped_image_name + '.png')
             if not os.path.isfile(image_file):
-                if key in self.cache:
-                    print (
-                        "Cached file found for css class:", image_name,
-                        self.cache[key])
-                    image_file = self.cache[key]
-                else:
-                    print "Image not found for css class:", image_name
-                    self.not_found.add((image_name, sprite_group, offset))
+                if key not in self.cache:
+                    self.missing.add((image_name, sprite_group, offset))
                     return
         if key not in self.cache:
             self.cache[key] = image_file
@@ -70,6 +66,7 @@ class ImageFileUtil:
             dict(sprite_group=sprite_group,
                  image_file=image_file,
                  css_class=image_name))
+        return image_file
 
 
 if __name__ == '__main__':
