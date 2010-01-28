@@ -85,7 +85,7 @@ class ProductView(LaunchpadView):
     @cachedproperty
     def uses_translations(self):
         """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and 
+        return (self.context.official_rosetta and
                 self.primary_translatable is not None)
 
     @cachedproperty
@@ -114,13 +114,15 @@ class ProductView(LaunchpadView):
     @cachedproperty
     def untranslatable_series(self):
         """Return series which are not yet set up for translations.
-        
-        Obsolete series will be excluded from this list.
+
+        The list is sorted in alphabetically order and obsolete series
+        will be excluded.
         """
 
         all_active_series = set(
             [serie for serie in self.context.series if (
                 serie.status != SeriesStatus.OBSOLETE)])
         translatable = set(self.context.translatable_series)
-        return all_active_series - translatable
-
+        return sorted(
+            all_active_series - translatable,
+            key=lambda series: series.name)
