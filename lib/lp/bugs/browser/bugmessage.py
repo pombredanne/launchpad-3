@@ -104,15 +104,16 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
                 file_description = filename
 
             # Process the attachment.
-            # If the patch flag indicates a confict with the content,
-            # override the flag and redirect the user to the bug
-            # attachment edit page, where he can confirm his setting,
-            # if he really wants to set the to the desired value.
+            # If the patch flag is not consistent with the result of
+            # the guess made in attachmentTypeConsistentWithContentType(),
+            # we use the guessed type and lead the user to a page
+            # where he can override the flag value, if Luanchpad's
+            # guess is wrong.
             patch_flag_consistent = (
-                self.attachment_type_consistent_with_content_type(
+                self.attachmentTypeConsistentWithContentType(
                     data['patch'], filename, data['filecontent']))
             if not patch_flag_consistent:
-                guessed_type = self.guess_content_type(
+                guessed_type = self.guessContentType(
                     filename, data['filecontent'])
                 is_patch = guessed_type == 'text/x-diff'
             else:
@@ -123,7 +124,7 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
                 comment=message, is_patch=is_patch)
 
             if not patch_flag_consistent:
-                self.next_url = self.next_url_for_inconsistent_patch_flags(
+                self.next_url = self.nextUrlForInconsistentPatchFlags(
                     attachment)
 
             self.request.response.addNotification(

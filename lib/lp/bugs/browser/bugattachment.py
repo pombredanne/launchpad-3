@@ -1,3 +1,4 @@
+
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -17,11 +18,13 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
-from canonical.launchpad.webapp import canonical_url, GetitemNavigation
+from canonical.launchpad.webapp import (
+    canonical_url, custom_widget, GetitemNavigation)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachmentEditForm, IBugAttachmentSet)
+    BugAttachmentType, IBugAttachmentEditForm,
+    IBugAttachmentIsPatchConfirmationForm, IBugAttachmentSet)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
@@ -29,30 +32,32 @@ from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr.utils import smartquote
 
+from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
+
 
 class BugAttachmentContentCheck:
     """A mixin class that checks the consistency of patch flag and file type.
     """
 
-    def guess_content_type(self, filename, file_content):
+    def guessContentType(self, filename, file_content):
         """Guess the content type a file with the given anme and content."""
         guessed_type, encoding = guess_content_type(
             name=filename, body=file_content)
         return guessed_type
 
-    def attachment_type_consistent_with_content_type(
+    def attachmentTypeConsistentWithContentType(
         self, patch_flag_set, filename, file_content):
         """Return True iff patch_flag is consistent with filename and content.
         """
-        guessed_type = self.guess_content_type(filename, file_content)
+        guessed_type = self.guessContentType(filename, file_content)
         # An XOR of "is the patch flag selected?" with "is the
         # guessed type not a diff?" tells us if the type selected
-        # b y the user matches the guessed type.
+        # by the user matches the guessed type.
         return (patch_flag_set ^ (guessed_type != 'text/x-diff'))
 
-    def next_url_for_inconsistent_patch_flags(self, attachment):
+    def nextUrlForInconsistentPatchFlags(self, attachment):
         """The next_url value used for an inconistent patch flag."""
-        return canonical_url(attachment) + '?need_confirm=1'
+        return canonical_url(attachment) + '/+confirm-is-patch'
 
 
 class BugAttachmentSetNavigation(GetitemNavigation):
@@ -82,6 +87,7 @@ class BugAttachmentURL:
     def path(self):
         """Return the path component of the URL."""
         return u"+attachment/%d" % self.context.id
+
 
 class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
     """Edit a bug attachment."""
@@ -114,28 +120,22 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
             # We expect that users set data['patch'] to True only for
             # real patch data, indicated by guessed_content_type ==
             # 'text/x-diff'. If there are inconsistencies, we don't
-            # set the value automatically, but show the user this form
-            # again with an explanation of when the flag data['patch']
-            # should be used.
+            # set the value automatically. Instead, we lead the user to
+            # another form where we ask him if he is sure about his
+            # choice of the patch flag.
             new_type_consistent_with_guessed_type = (
-                self.attachment_type_consistent_with_content_type(
+                self.attachmentTypeConsistentWithContentType(
                     new_type == BugAttachmentType.PATCH, filename,
                     file_content))
-            is_confirmation_step = self.request.form_ng.getOne(
-                'confirmation_step') is not None
-            if new_type_consistent_with_guessed_type or is_confirmation_step:
+            if new_type_consistent_with_guessed_type:
                 self.context.type = new_type
             else:
-                self.next_url = self.next_url_for_inconsistent_patch_flags(
+                self.next_url = self.nextUrlForInconsistentPatchFlags(
                     self.context)
 
         if data['title'] != self.context.title:
             self.context.title = data['title']
 
-        # If it's a patch, 'text/plain' is always used.
-        if (self.context.type == BugAttachmentType.PATCH
-            and data['contenttype'] != 'text/plain'):
-            data['contenttype'] = 'text/plain'
         if self.context.libraryfile.mimetype != data['contenttype']:
             self.updateContentType(data['contenttype'])
 
@@ -165,24 +165,50 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
         return smartquote('Bug #%d - Edit attachment "%s"') % (
             self.context.bug.id, self.context.title)
 
-    @property
-    def rendering_confirmation_step(self):
-        """Is the page is displayed to confirm an unexpected "patch" value?"""
-        return self.request.get('need_confirm') is not None
+    page_title = label
+
+
+class BugAttachmentPatchConfirmationView(LaunchpadFormView):
+    """Confirmation of the "patch" flag setting.
+
+    If the user sets the "patch" flag to a value that is inconsistent
+    with the result of a call of guess_content_type() for this
+    attachment, we show this view to ask the user if he is sure
+    about his selection.
+    """
+
+    schema = IBugAttachmentIsPatchConfirmationForm
+
+    custom_widget('patch', LaunchpadBooleanRadioWidget)
+
+    def __init__(self, context, request):
+        LaunchpadFormView.__init__(self, context, request)
+        self.next_url = self.cancel_url = (
+            canonical_url(ICanonicalUrlData(context).inside))
+
+    def initialize(self):
+        super(BugAttachmentPatchConfirmationView, self).initialize()
+        self.widgets['patch'].setRenderedValue(self.is_patch)
 
     @property
-    def confirmation_element(self):
-        """An extra hidden input field for the patch flag confirmation step.
-        """
-        if self.rendering_confirmation_step:
-            return ('<input type="hidden" name="confirmation_step" '
-                    'value="1"/>')
-        else:
-            return ''
+    def label(self):
+        return smartquote('Bug #%d - Confirm attachment type of "%s"') % (
+            self.context.bug.id, self.context.title)
+
+    page_title = label
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        current_patch_setting = self.context.type == BugAttachmentType.PATCH
+        if data['patch'] != current_patch_setting:
+            if data['patch']:
+                self.context.type = BugAttachmentType.PATCH
+                #xxxxxxxxxx adjust content type!
+                # xxx use mixin, together with BugAttachmnetEditView
+            else:
+                self.context.type = BugAttachmentType.UNSPECIFIED
 
     @property
     def is_patch(self):
         """True if this attachment contains a patch, else False."""
         return self.context.type == BugAttachmentType.PATCH
-
-    page_title = label

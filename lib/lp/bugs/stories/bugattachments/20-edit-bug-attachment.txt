@@ -42,31 +42,24 @@ is doesn't, and we get the edit page again, with a message asking us if
 the attachment should indeed be labeled as a patch
 
     >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/1?need_confirm=1'
+    'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/1/+confirm-is-patch'
 
     >>> print extract_text(find_tags_by_class(
     ...     user_browser.contents, 'documentDescription')[0])
-    An attachment can provide valuable information about the bug. It
-    can also provide a direct solution to a bug - for example a patch
-    that fixes the bug.
-    This file does not look like a patch, but you selected the checkbox
-    "This attachment contains a solution (patch) for this bug". Please
-    select it again and click on "change", if you are sure that this
-    file does indeed contain a patch.
-    Please leave the field unchecked, if the attachment contains
-    data that describes a bug, for example a screenshot or test
-    data to reproduce a bug.
-    Patches normally describe changes to the source code which fix
-    a bug. See also Launchpad help on Bug Attachments.
+    This file does not look like a patch.
+    What is a patch?
 
 We are sure that this file is indeed a patch, so let's activate the
-currenty inactive "patch" checkbox again and submit the form.
+currenty inactive "yes" radion button of the question "Is this a patch?"
+again and submit the form.
 
-    >>> patch_control = user_browser.getControl(
-    ...     'This attachment contains a solution (patch) for this bug')
-    >>> patch_control.selected
+    >>> patch_control_yes = user_browser.getControl('yes')
+    >>> patch_control_yes.selected
     False
-    >>> patch_control.selected = True
+    >>> patch_control_no = user_browser.getControl('no')
+    >>> patch_control_no.selected
+    True
+    >>> patch_control_yes.selected = True
     >>> user_browser.getControl('Change').click()
 
 Now we are redirected to the main bug page...
@@ -91,12 +84,6 @@ Now we are redirected to the main bug page...
     ...   print li_tag.a.renderContents()
     bar.txt
     More data
-
-The content type of a patch is automatically changed to text/plain.
-
-    >>> user_browser.getLink(url='+attachment/1').click()
-    >>> user_browser.getControl('Content Type').value
-    'text/plain'
 
 Clicking the link "Add patch" in the patches portlet opens the form
 to add bug comments with the checkbox "This attachment is a patch"

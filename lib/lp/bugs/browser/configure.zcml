@@ -718,6 +718,13 @@
         name="+edit"
         permission="launchpad.AnyPerson"
         template="../templates/bug-attachment-edit.pt"/>
+    <browser:page
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment"
+        class="lp.bugs.browser.bugattachment.BugAttachmentPatchConfirmationView"
+        facet="bugs"
+        name="+confirm-is-patch"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-attachment-confirm-is-patch.pt"/>
     <browser:navigation
         module="lp.bugs.browser.bugattachment"
         classes="

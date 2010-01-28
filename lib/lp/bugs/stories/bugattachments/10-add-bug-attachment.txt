@@ -108,37 +108,33 @@ the flag "this attachment is a patch"...
   ...     name="field.comment").value = 'Added even more information'
   >>> user_browser.getControl('Post Comment').click()
 
-...we are redirected to the "edit attachment" page...
+...we are redirected to a page...
 
   >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/4?need_confirm=1'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/4/+confirm-is-patch'
 
 ...where we see a message that we should double-check if this file
 is indeed not a patch.
 
   >>> print extract_text(find_tags_by_class(
   ...     user_browser.contents, 'documentDescription')[0])
-  An attachment can provide valuable information about the bug. It
-  can also provide a direct solution to a bug - for example a patch
-  that fixes the bug.
-  This file looks like a patch, but you unselected the
-  checkbox "This attachment contains a solution (patch) for this
-  bug". Please unselect it again and click on "change",
-  if you are sure that this file does not contain a patch.
-  Patches normally describe changes to the source code which fix
-  a bug. See also Launchpad help on Bug Attachments.
+  This file looks like a patch.
+  What is a patch?
 
-Also, the flag "patch" is currently set.
+Also, we have "yes"/"no" radio buttons to answer the question "Is this a
+patch?". The currently selected radio button is "yes".
 
-  >>> patch_control = user_browser.getControl(
-  ...     'This attachment contains a solution (patch) for this bug')
-  >>> patch_control.selected
+  >>> patch_control_yes = user_browser.getControl('yes')
+  >>> patch_control_yes.selected
   True
+  >>> patch_control_no = user_browser.getControl('no')
+  >>> patch_control_no.selected
+  False
 
 We want indeed to declare the file as not being a patch, so we unselect
 the "patch" checkbox again and submit the form.
 
-  >>> patch_control.selected = False
+  >>> patch_control_no.selected = True
   >>> user_browser.getControl('Change').click()
 
 Now we are redirected to the main bug page, and the new file is
@@ -153,7 +149,7 @@ listed as an ordinary attachment.
   bar.txt
   More data
 
-Similary, if we add an attachment that does not look like a patch ans
+Similary, if we add an attachment that does not look like a patch and
 if we set the "patch" flag for this attachment...
 
   >>> user_browser.open(
@@ -167,40 +163,33 @@ if we set the "patch" flag for this attachment...
   >>> patch_control.selected = True
   >>> user_browser.getControl('Post Comment').click()
 
-...we are redirected to the bug attachment edit page...
+...we are redirected to the page where we must confirm that this attachment
+is indeed a patch.
 
   >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/5?need_confirm=1'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/5/+confirm-is-patch'
 
 ...where we see a message asking us if we really ant to declare this file
 as a patch.
 
   >>> print extract_text(find_tags_by_class(
   ...     user_browser.contents, 'documentDescription')[0])
-  An attachment can provide valuable information about the bug. It
-  can also provide a direct solution to a bug - for example a patch
-  that fixes the bug.
-  This file does not look like a patch, but you selected the checkbox
-  "This attachment contains a solution (patch) for this bug". Please
-  select it again and click on "change", if you are sure that this
-  file does indeed contain a patch.
-  Please leave the field unchecked, if the attachment contains
-  data that describes a bug, for example a screenshot or test
-  data to reproduce a bug.
-  Patches normally describe changes to the source code which fix
-  a bug. See also Launchpad help on Bug Attachments.
+  This file does not look like a patch.
+  What is a patch?
 
 Also, the "patch" flag is not yet set.
 
-  >>> patch_control = user_browser.getControl(
-  ...     'This attachment contains a solution (patch) for this bug')
-  >>> patch_control.selected
+  >>> patch_control_yes = user_browser.getControl('yes')
+  >>> patch_control_yes.selected
   False
+  >>> patch_control_no = user_browser.getControl('no')
+  >>> patch_control_no.selected
+  True
 
 Let's pretend that the file contains an improved icon, so we set
 the "patch" flag again and save the changes.
 
-  >>> patch_control.selected = True
+  >>> patch_control_yes.selected = True
   >>> user_browser.getControl('Change').click()
 
 Now we are redirected to the main bug page...

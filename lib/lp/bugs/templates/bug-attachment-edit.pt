@@ -12,39 +12,14 @@
     <div metal:use-macro="context/@@launchpad_form/form">
 
       <div metal:fill-slot="extra_info" class="documentDescription">
-        <p>An attachment can provide valuable information about the bug. It
-          can also provide a direct solution to a bug - for example a patch
-          that fixes the bug.
-        </p>
-        <tal:is-confirmation condition="view/rendering_confirmation_step">
-          <tal:is_patch condition="view/is_patch">
-            <p><strong>This file looks like a patch, but you unchecked the
-              checkbox "This attachment contains a solution (patch) for this
-              bug". Please uncheck it again and click on "change",
-              if you are sure that this file does not contain a patch.
-            </strong></p>
-          </tal:is_patch>
-          <tal:is_not_patch condition="not: view/is_patch">
-            <p><strong>This file does not look like a patch, but you
-              checked the checkbox "This attachment contains a solution
-              (patch) for this bug". Please check it again and
-                click on "change", if you are sure that this file does
-                indeed contain a patch.
-            </strong></p>
-            <p>Please leave the field unchecked, if the attachment contains
-              data that describes a bug, for example a screenshot or test
-              data to reproduce a bug.
-            </p>
-          </tal:is_not_patch>
-          <p>Patches normally describe changes to the source code which fix
-            a bug. See also
-            <a href="https://help.launchpad.net/Bugs/BugAttchements">Launchpad
-              help on Bug Attachments</a>.
-          </p>
-        </tal:is-confirmation>
-      </div>
-      <div metal:fill-slot="extra_bottom">
-        <tal:hidden replace="structure view/confirmation_element" />
+        An attachment can provide valuable information about the bug. It
+        can also provide a direct solution to a bug - for example a patch
+        that fixes the bug.
+        <small>
+          <a href="https://help.launchpad.net/Bugs/BugAttchements">
+            What is a patch?
+          </a>
+        </small>
       </div>
     </div>
   </div>

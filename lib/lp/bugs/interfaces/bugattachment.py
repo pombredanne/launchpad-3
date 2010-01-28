@@ -12,6 +12,7 @@ __all__ = [
     'IBugAttachment',
     'IBugAttachmentSet',
     'IBugAttachmentEditForm',
+    'IBugAttachmentIsPatchConfirmationForm',
     ]
 
 from zope.interface import Interface
@@ -135,3 +136,9 @@ class IBugAttachmentEditForm(Interface):
     patch = Bool(
         title=u"This attachment contains a solution (patch) for this bug",
         required=True, default=False)
+
+
+class IBugAttachmentIsPatchConfirmationForm(Interface):
+    """Schema used to confirm the setting of the "patch" flag."""
+
+    patch = Bool(title=u"Is this file a patch", required=True, default=False)
