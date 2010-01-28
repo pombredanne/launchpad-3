@@ -15,7 +15,7 @@ import time
 
 import numpy
 import simplejson as json
-from zc.zservertracelog.tracereport import Request, Times, parsedt
+from zc.zservertracelog.tracereport import Request, parsedt
 
 from canonical.config import config
 from lp.scripts.helpers import LPOptionParser
@@ -61,7 +61,7 @@ class Times:
     def __str__(self):
         results = self.stats()
         mean, median, standard_deviation, histogram = results
-        hstr=" ".join("%2d" % v for v in histogram)
+        hstr = " ".join("%2d" % v for v in histogram)
         return "%2.2f %2.2f %2.2f %s" % (
             mean, median, standard_deviation, hstr)
 
@@ -127,12 +127,12 @@ def parse(tracefiles, categories, options):
     for tracefile in tracefiles:
         for line in open(tracefile):
             record = line.split()
-            record_type, request_id, date, time = record[:4]
+            record_type, request_id, date, time_ = record[:4]
 
             if record_type == 'S':
                 continue # Short circuit - we don't care about these entries.
 
-            dt = parsedt('%s %s' % (date, time))
+            dt = parsedt('%s %s' % (date, time_))
             if options.from_ts is not None and dt < options.from_ts:
                 continue # Skip to next line.
             if options.until_ts is not None and dt > options.until_ts:
