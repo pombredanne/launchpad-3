@@ -127,14 +127,12 @@ def set_remaining_time_for_running_job(bq, remainder):
         datetime.utcnow().replace(tzinfo=utc) - timedelta(seconds=offset))
 
 
-def check_delay_for_job(test, the_job, delay, head_job_platform):
+def check_delay_for_job(test, the_job, delay):
     # Obtain the builder statistics pertaining to this job.
     builder_data = the_job._getBuilderData()
     builders_in_total, builders_for_job, builder_stats = builder_data
     estimated_delay = the_job._estimateJobDelay(builder_stats)
-    test.assertEqual(
-        estimated_delay,
-        (delay, head_job_platform))
+    test.assertEqual(estimated_delay, delay)
 
 
 class TestBuildQueueSet(TestCaseWithFactory):
@@ -518,7 +516,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         assign_to_builder(self, 'gcc', 4)
         # Now that no builder is immediately available, the shortest
         # remaing build time (based on the estimated duration) is returned:
-        #   300 seconds 
+        #   300 seconds
         # This is equivalent to the 'gcc' job's estimated duration.
         check_mintime_to_builder(self, apg_job, x86_proc, False, 300)
 
@@ -670,7 +668,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         assign_to_builder(self, 'bison', 3, 'hppa')
         # Now that no builder is immediately available, the shortest
         # remaing build time (based on the estimated duration) is returned:
-        #   660 seconds 
+        #   660 seconds
         # This is equivalent to the 'bison' job's estimated duration.
         check_mintime_to_builder(self, apg_job, hppa_proc, False, 660)
 
@@ -936,16 +934,15 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         builder_data = flex_job._getBuilderData()
         builders_in_total, builders_for_job, builder_stats = builder_data
 
-        # The delay will be 900 (= 15*60) + 222 seconds, the head job is
-        # platform-independent.
-        check_delay_for_job(self, flex_job, 1122, (None, False))
+        # The delay will be 900 (= 15*60) + 222 seconds
+        check_delay_for_job(self, flex_job, 1122)
 
         # Assign the postgres job to a builder.
         assign_to_builder(self, 'postgres', 1, 'hppa')
         # The 'postgres' job is not pending any more.  Now only the 222
         # seconds (the estimated duration of the platform-independent job)
         # should be returned.
-        check_delay_for_job(self, flex_job, 222, (None, False))
+        check_delay_for_job(self, flex_job, 222)
 
         # How about some estimates for x86 builds?
         processor_fam = ProcessorFamilySet().getByName('x86')
@@ -953,9 +950,8 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         _bison_build, bison_job = find_job(self, 'bison', '386')
         check_mintime_to_builder(self, bison_job, x86_proc, False, 0)
-        # The delay will be 900 (= (14+16)*60/2) + 222 seconds, the head job
-        # is platform-independent.
-        check_delay_for_job(self, bison_job, 1122, (None, False))
+        # The delay will be 900 (= (14+16)*60/2) + 222 seconds.
+        check_delay_for_job(self, bison_job, 1122)
 
         # The 2 tests that follow exercise the estimation in conjunction with
         # longer pending job queues. Please note that the sum of estimates for
@@ -967,15 +963,15 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         _vim_build, vim_job = find_job(self, 'vim', '386')
         check_mintime_to_builder(self, vim_job, x86_proc, False, 0)
         # The delay will be 870 (= (6+10+12+14+16)*60/4) + 122 (= (222+22)/2)
-        # seconds, the head job is platform-independent.
-        check_delay_for_job(self, vim_job, 992, (None, False))
+        # seconds.
+        check_delay_for_job(self, vim_job, 992)
 
         _gedit_build, gedit_job = find_job(self, 'gedit', '386')
         check_mintime_to_builder(self, gedit_job, x86_proc, False, 0)
         # The delay will be
         #   1080 (= (4+6+8+10+12+14+16)*60/4) + 122 (= (222+22)/2)
-        # seconds, the head job is platform-independent.
-        check_delay_for_job(self, gedit_job, 1172, (None, False))
+        # seconds.
+        check_delay_for_job(self, gedit_job, 1172)
 
     def test_job_delay_for_recipe_builds(self):
         # One of the 9 builders for the 'bash' build is immediately available.
@@ -989,7 +985,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # The delay will be 960 + 780 + 222 = 1962, where
         #   hppa job delays: 960 = (9+11+13+15)*60/3
         #    386 job delays: 780 = (10+12+14+16)*60/4
-        check_delay_for_job(self, bash_job, 1962, (None, False))
+        check_delay_for_job(self, bash_job, 1962)
 
         # One of the 9 builders for the 'zsh' build is immediately available.
         zsh_build, zsh_job = find_job(self, 'xx-recipe-zsh', None)
@@ -1000,24 +996,22 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         builders_in_total, builders_for_job, builder_stats = builder_data
 
         # The delay will be 0 since this is the head job.
-        check_delay_for_job(self, zsh_job, 0, (None, False))
+        check_delay_for_job(self, zsh_job, 0)
 
         # Assign the zsh job to a builder.
         assign_to_builder(self, 'xx-recipe-zsh', 1, None)
 
         # Now that the highest-scored job is out of the way, the estimation
-        # for the 'bash' recipe build is 222 seconds shorter and the new head
-        # job platform is (1, False) (due to the fact that the native '386'
-        # postgres job (with id 18) is the new head job).
+        # for the 'bash' recipe build is 222 seconds shorter.
 
         # The delay will be 960 + 780 = 1740, where
         #   hppa job delays: 960 = (9+11+13+15)*60/3
         #    386 job delays: 780 = (10+12+14+16)*60/4
-        check_delay_for_job(self, bash_job, 1740, (1, False))
+        check_delay_for_job(self, bash_job, 1740)
 
         processor_fam = ProcessorFamilySet().getByName('x86')
         x86_proc = processor_fam.processors[0]
 
         _postgres_build, postgres_job = find_job(self, 'postgres', '386')
         # The delay will be 0 since this is the head job now.
-        check_delay_for_job(self, postgres_job, 0, (1, False))
+        check_delay_for_job(self, postgres_job, 0)

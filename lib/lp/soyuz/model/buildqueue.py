@@ -211,7 +211,7 @@ class BuildQueue(SQLBase):
     def _estimateTimeToNextBuilder(
         self, head_job_processor, head_job_virtualized):
         """Estimate time until next builder becomes available.
-        
+
         For the purpose of estimating the dispatch time of the job of interest
         (JOI) we need to know how long it will take until the job at the head
         of JOI's queue is dispatched.
@@ -253,7 +253,7 @@ class BuildQueue(SQLBase):
 
         delay_query = """
             SELECT MIN(
-              CASE WHEN 
+              CASE WHEN
                 EXTRACT(EPOCH FROM
                   (BuildQueue.estimated_duration -
                    (((now() AT TIME ZONE 'UTC') - Job.date_started))))  >= 0
@@ -291,7 +291,7 @@ class BuildQueue(SQLBase):
 
     def _estimateJobDelay(self, builder_stats):
         """Sum of estimated durations for *pending* jobs ahead in queue.
-        
+
         For the purpose of estimating the dispatch time of the job of
         interest (JOI) we need to know the delay caused by all the pending
         jobs that are ahead of the JOI in the queue and that compete with it
@@ -301,18 +301,12 @@ class BuildQueue(SQLBase):
             key is a (processor, virtualized) combination (aka "platform") and
             the value is the number of builders that can take on jobs
             requiring that combination.
-        :return: A (sum_of_delays, head_job_platform) tuple where
-            * 'sum_of_delays' is the estimated delay in seconds and
-            * 'head_job_platform' is the platform ((processor, virtualized)
-              combination) required by the job at the head of the queue.
+        :return: A sum_of_delays value
         """
         def normalize_virtualization(virtualized):
             """Jobs with NULL virtualization settings should be treated the
                same way as virtualized jobs."""
-            if virtualized is None or virtualized == True:
-                return True
-            else:
-                return False
+            return virtualized is None or virtualized
         def jobs_compete_for_builders(a, b):
             """True if the two jobs compete for builders."""
             a_processor, a_virtualized = a
@@ -334,13 +328,12 @@ class BuildQueue(SQLBase):
             normalize_virtualization(self.virtualized))
         query = """
             SELECT
-                BuildQueue.job,
-                BuildQueue.lastscore,
-                CAST (
-                    EXTRACT(
-                        EPOCH FROM BuildQueue.estimated_duration) AS INTEGER),
                 BuildQueue.processor,
-                BuildQueue.virtualized
+                BuildQueue.virtualized,
+                COUNT(BuildQueue.job),
+                CAST(EXTRACT(
+                    EPOCH FROM
+                        SUM(BuildQueue.estimated_duration)) AS INTEGER)
             FROM
                 BuildQueue, Job
             WHERE
@@ -367,27 +360,24 @@ class BuildQueue(SQLBase):
                 AND (
                     -- The processor values either match or the candidate
                     -- job is processor-independent.
-                    buildqueue.processor = %s OR 
+                    buildqueue.processor = %s OR
                     buildqueue.processor IS NULL)
         """ % sqlvalues(self.processor)
-
         # We don't care about processors if the estimation is for a
         # processor-independent job.
         if self.processor is not None:
             query += processor_clause
 
-        job_queue = store.execute(query).get_all()
+        query += """
+            GROUP BY BuildQueue.processor, BuildQueue.virtualized
+            """
 
-        sum_of_delays = 0
+        delays_by_platform = store.execute(query).get_all()
 
         # This will be used to capture per-platform delay totals.
         delays = dict()
         # This will be used to capture per-platform job counts.
         job_counts = dict()
-
-        # Which platform is the job at the head of the queue requiring?
-        head_job_platform = None
-        head_job_score = 0
 
         # Apply weights to the estimated duration of the jobs as follows:
         #   - if a job is tied to a processor TP then divide the estimated
@@ -396,24 +386,9 @@ class BuildQueue(SQLBase):
         #   - if the job is processor-independent then divide its estimated
         #     duration by the total number of builders with the same
         #     virtualization setting because any one of them may run it.
-        for job, score, duration, processor, virtualized in job_queue:
+        for processor, virtualized, job_count, delay in delays_by_platform:
             virtualized = normalize_virtualization(virtualized)
             platform = (processor, virtualized)
-            # For the purpose of estimating the delay for dispatching the job
-            # at the head of the queue to a builder we need to capture the
-            # platform it targets.
-            if head_job_platform is None or score > head_job_score:
-                if self.processor is None:
-                    # The JOI is platform-independent i.e. the highest scored
-                    # job will be the head job.
-                    head_job_platform = platform
-                else:
-                    # The JOI targets a specific platform. The head job is
-                    # thus the highest scored job that either targets the
-                    # same platform or is platform-independent.
-                    if (my_platform == platform or processor is None):
-                        head_job_platform = platform
-
             builder_count = builder_stats.get((processor, virtualized), 0)
             if builder_count == 0:
                 # There is no builder that can run this job, ignore it
@@ -421,31 +396,25 @@ class BuildQueue(SQLBase):
                 continue
 
             if jobs_compete_for_builders(my_platform, platform):
-                # Accumulate the delays, and count the number of jobs causing
-                # them on a (processor, virtualized) basis.
-                delays[platform] = delays.setdefault(platform, 0) + duration
-                job_counts[platform] = job_counts.setdefault(platform, 0) + 1
+                # The jobs that target the platform at hand compete with
+                # the JOI for builders, add their delays.
+                delays[platform] = delay
+                job_counts[platform] = job_count
 
+        sum_of_delays = 0
         # Now weight/average the delays based on a jobs/builders comparison.
         for platform, duration in delays.iteritems():
             jobs = job_counts[platform]
             builders = builder_stats[platform]
-            if jobs < builders:
-                # There are less jobs than builders that can take them on,
-                # the delays should be averaged/divided by the number of jobs.
-                denominator = jobs
-            else:
-                denominator = builders
+            # If there are less jobs than builders that can take them on,
+            # the delays should be averaged/divided by the number of jobs.
+            denominator = (jobs if jobs < builders else builders)
             if denominator > 1:
                 duration = int(duration/float(denominator))
 
             sum_of_delays += duration
-                
-        # No jobs ahead of me. I am the head job.
-        if head_job_platform is None:
-            head_job_platform = my_platform
 
-        return (sum_of_delays, head_job_platform)
+        return sum_of_delays
 
 
 class BuildQueueSet(object):
