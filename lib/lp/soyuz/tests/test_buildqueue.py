@@ -77,9 +77,16 @@ def print_build_setup(builds):
     """Show the build set-up for a particular test."""
     def processor_name(bq):
         return ('None' if bq.processor is None else bq.processor.name)
+    def higher_scored_or_older(a,b):
+        a_queue_entry = a.buildqueue_record
+        b_queue_entry = b.buildqueue_record
+        if a_queue_entry.lastscore != b_queue_entry.lastscore:
+            return cmp(a_queue_entry.lastscore, b_queue_entry.lastscore)
+        else:
+            return cmp(a_queue_entry.job, b_queue_entry.job)
 
     print ""
-    for build in builds:
+    for build in sorted(builds, higher_scored_or_older):
         bq = build.buildqueue_record
         source = None
         for attr in ('sourcepackagerelease', 'sourcepackagename'):
@@ -875,15 +882,17 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         The two platform-independent jobs will have a score of 1025 and 1053
         respectively.
+        In case of jobs with equal scores the one with the lesser 'job' value
+        (i.e. the older one wins).
 
             3,              gedit, p: hppa, v:False e:0:01:00 *** s: 1003
             4,              gedit, p:  386, v:False e:0:02:00 *** s: 1006
             5,            firefox, p: hppa, v:False e:0:03:00 *** s: 1009
             6,            firefox, p:  386, v:False e:0:04:00 *** s: 1012
             7,                apg, p: hppa, v:False e:0:05:00 *** s: 1015
-            8,                apg, p:  386, v:False e:0:06:00 *** s: 1018
             9,                vim, p: hppa, v:False e:0:07:00 *** s: 1021
            10,                vim, p:  386, v:False e:0:08:00 *** s: 1024
+            8,                apg, p:  386, v:False e:0:06:00 *** s: 1024
       -->  19,     xx-recipe-bash, p: None, v:False e:0:00:22 *** s: 1025
            11,                gcc, p: hppa, v:False e:0:09:00 *** s: 1027
            12,                gcc, p:  386, v:False e:0:10:00 *** s: 1030
@@ -907,6 +916,12 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
             virtualized=False, estimated_duration=222,
             sourcename='xx-recipe-zsh', score=1053)
         self.builds.append(job.specific_job.build)
+
+        # Assign the same score to the '386' vim and apg build jobs.
+        processor_fam = ProcessorFamilySet().getByName('x86')
+        x86_proc = processor_fam.processors[0]
+        _apg_build, apg_job = find_job(self, 'apg', '386')
+        apg_job.lastscore = 1024
         # print_build_setup(self.builds)
 
     def test_job_delay_for_binary_builds(self):
@@ -947,11 +962,13 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # the '386' jobs is divided by 4 which is the number of native '386'
         # builders.
 
-        _apg_build, apg_job = find_job(self, 'apg', '386')
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
-        # The delay will be 900 (= (8+10+12+14+16)*60/4) + 122 (= (222+22)/2)
+        # Also, this tests that jobs with equal score but a lower 'job' value
+        # (i.e. older jobs) are queued ahead of the job of interest (JOI).
+        _vim_build, vim_job = find_job(self, 'vim', '386')
+        check_mintime_to_builder(self, vim_job, x86_proc, False, 0)
+        # The delay will be 870 (= (6+10+12+14+16)*60/4) + 122 (= (222+22)/2)
         # seconds, the head job is platform-independent.
-        check_delay_for_job(self, apg_job, 1022, (None, False))
+        check_delay_for_job(self, vim_job, 992, (None, False))
 
         _gedit_build, gedit_job = find_job(self, 'gedit', '386')
         check_mintime_to_builder(self, gedit_job, x86_proc, False, 0)
