@@ -339,7 +339,7 @@ series, excepting the one with status 'Obsolete'.
     True
     >>> u'evo-frozen series \u2014\nmanual or\nautomatic' in untranslatable_text
     True
-    >>> u'evo-obsolete series \u2014\nmanual or\nautomatic' in untranslatable_text
+    >>> u'evo-obsolete' in untranslatable_text
     False
  
 For each series there is a link for accesing the series translations
