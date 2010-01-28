@@ -9,7 +9,6 @@ __all__ = []
 from cgi import escape as html_quote
 from ConfigParser import RawConfigParser
 import re
-from optparse import OptionParser
 import os.path
 from textwrap import dedent
 import time
@@ -19,6 +18,7 @@ import simplejson as json
 from zc.zservertracelog.tracereport import Request, Times, parsedt
 
 from canonical.config import config
+from lp.scripts.helpers import LPOptionParser
 
 
 class Category:
@@ -67,7 +67,7 @@ class Times:
 
 
 def main():
-    parser = OptionParser("%prog [args] tracelog [...]")
+    parser = LPOptionParser("%prog [args] tracelog [...]")
     parser.add_option(
         "-c", "--config", dest="config",
         default=os.path.join(
@@ -77,9 +77,23 @@ def main():
         "--timeout", dest="timeout", type="int",
         default=20, metavar="SECS",
         help="Requests taking more than SECS seconds are timeouts")
+    parser.add_option(
+        "--from", dest="from_ts", type="datetime",
+        default=None, metavar="TIMESTAMP",
+        help="Ignore log entries before TIMESTAMP")
+    parser.add_option(
+        "--until", dest="until_ts", type="datetime",
+        default=None, metavar="TIMESTAMP",
+        help="Ignore log entries after TIMESTAMP")
     options, args = parser.parse_args()
     if len(args) == 0:
         parser.error("At least one zserver tracelog file must be provided")
+
+    if options.from_ts is not None and options.until_ts is not None:
+        if options.from_ts > options.until_ts:
+            parser.error(
+                "--from timestamp %s is before --until timestamp %s"
+                % (options.from_ts, options.until_ts))
 
     for filename in args:
         if not os.path.exists(filename):
@@ -101,22 +115,29 @@ def main():
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
 
-    parse(args, categories)
+    parse(args, categories, options)
 
     print_html_report(categories)
 
     return 0
 
 
-def parse(tracefiles, categories):
+def parse(tracefiles, categories, options):
     requests = {}
     for tracefile in tracefiles:
         for line in open(tracefile):
             record = line.split()
             record_type, request_id, date, time = record[:4]
+
             if record_type == 'S':
-                continue
+                continue # Short circuit - we don't care about these entries.
+
             dt = parsedt('%s %s' % (date, time))
+            if options.from_ts is not None and dt < options.from_ts:
+                continue # Skip to next line.
+            if options.until_ts is not None and dt > options.until_ts:
+                break # Skip to next log file.
+
             args = record[4:]
 
             if record_type == 'B': # Request begins.
@@ -150,6 +171,7 @@ def parse(tracefiles, categories):
 
             else:
                 pass # Ignore malformed records.
+
 
 def print_html_report(categories):
 
