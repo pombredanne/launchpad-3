@@ -1,7 +1,8 @@
 = Builder View Classes and Pages =
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import IBuildSet, IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> from lp.soyuz.interfaces.build import IBuildSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
