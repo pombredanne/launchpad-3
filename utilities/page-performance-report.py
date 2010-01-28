@@ -11,7 +11,7 @@ import _pythonpath
 
 import sys
 
-from lp.scripts.pageperformancereport import main
+from lp.scripts.utilities.pageperformancereport import main
 
 
 if __name__ == '__main__':

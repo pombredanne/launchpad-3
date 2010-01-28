@@ -18,6 +18,8 @@ import numpy
 import simplejson as json
 from zc.zservertracelog.tracereport import Request, Times, parsedt
 
+from canonical.config import config
+
 
 class Category:
     def __init__(self, title, regexp, timeout):
@@ -67,7 +69,8 @@ def main():
     parser = OptionParser("%prog [args] tracelog [...]")
     parser.add_option(
         "-c", "--config", dest="config",
-        default="page-performance-report.ini",
+        default=os.path.join(
+            config.root, "utilities", "page-performance-report.ini"),
         metavar="FILE", help="Load configuration from FILE")
     parser.add_option(
         "--timeout", dest="timeout", type="int",
