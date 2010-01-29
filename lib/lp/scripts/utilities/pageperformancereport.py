@@ -154,7 +154,9 @@ def parse_timestamp(ts_string):
 
 def parse(tracefiles, categories, options):
     requests = {}
+    total_requests = 0
     for tracefile in tracefiles:
+        log.info('Processing %s', tracefile)
         for line in smart_open(tracefile):
             line = line.rstrip()
             try:
@@ -218,6 +220,9 @@ def parse(tracefiles, categories, options):
                 elif record_type == 'E': # Request done.
                     del requests[request_id]
                     request.E(dt)
+                    total_requests += 1
+                    if total_requests % 10000 == 0:
+                        log.debug("Parsed %d requests", total_requests)
                     for category in categories:
                         category.add(request)
 
