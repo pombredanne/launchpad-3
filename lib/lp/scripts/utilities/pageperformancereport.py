@@ -39,20 +39,16 @@ class Category:
 
 class Times:
     def __init__(self, timeout):
-        self.requests = []
+        self.request_times = []
         self.timeout = timeout
 
     def add(self, request):
-        self.requests.append(request)
+        self.request_times.append(min(request.app_seconds, self.timeout))
 
     def stats(self):
-        num_requests = len(self.requests)
-        if num_requests == 0:
+        if not self.request_times:
             return 0, 0, 0, None
-        array = numpy.fromiter(
-            (min(request.app_seconds, self.timeout)
-                for request in self.requests),
-            numpy.float32, num_requests)
+        array = numpy.asarray(self.request_times, numpy.float32)
         mean = numpy.mean(array)
         median = numpy.median(array)
         standard_deviation = numpy.std(array)
