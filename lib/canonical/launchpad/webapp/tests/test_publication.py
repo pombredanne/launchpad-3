@@ -10,6 +10,7 @@ import unittest
 
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 
+from storm.database import STATE_DISCONNECTED, STATE_RECONNECT
 from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
 
@@ -18,19 +19,22 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.publisher.interfaces import Retry
 
 from canonical.config import dbconfig
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.tests.readonly import (
     remove_read_only_file, touch_read_only_file)
-from lp.testing import TestCase, TestCaseWithFactory
-import canonical.launchpad.webapp.adapter as da
+import canonical.launchpad.webapp.adapter as dbadapter
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, OAuthPermission, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.publication import (
     is_browser, LaunchpadBrowserPublication)
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest, WebServicePublication)
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import TestCase, TestCaseWithFactory
 
 
 class TestLaunchpadBrowserPublication(TestCase):
@@ -76,6 +80,11 @@ class TestReadOnlyModeSwitches(TestCase):
         # Cleanup needed so that further tests can start processing other
         # requests (e.g. calling beforeTraversal).
         self.publication.endRequest(self.request, None)
+        # Force pending mode switches to actually happen and get logged so
+        # that we don't interfere with other tests.
+        assert not is_read_only(), (
+            "A test failed to clean things up properly, leaving the app "
+            "in read-only mode.")
 
     def setUp(self):
         TestCase.setUp(self)
@@ -124,7 +133,10 @@ class TestReadOnlyModeSwitches(TestCase):
             touch_read_only_file()
             self.publication.beforeTraversal(self.request)
         finally:
-            remove_read_only_file()
+            # Tell remove_read_only_file() to not assert that the mode switch
+            # actually happened, as we know it won't happen until this request
+            # is finished.
+            remove_read_only_file(assert_mode_switch=False)
 
         # Here the mode has changed to read-only, so the stores were removed
         # from zstorm.
@@ -190,7 +202,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         # disconnections, as per Bug #373837.
         request = LaunchpadTestRequest()
         publication = WebServicePublication(None)
-        da.set_request_started()
+        dbadapter.set_request_started()
         try:
             raise DisconnectionError('Fake')
         except DisconnectionError:
@@ -198,17 +210,51 @@ class TestWebServicePublication(TestCaseWithFactory):
                 Retry,
                 publication.handleException,
                 None, request, sys.exc_info(), True)
-        da.clear_request_started()
+        dbadapter.clear_request_started()
         next_oops = error_reporting_utility.getLastOopsReport()
 
         # Ensure the OOPS mentions the correct exception
-        self.assertNotEqual(repr(next_oops).find("DisconnectionError"), -1)
+        self.assertTrue(repr(next_oops).find("DisconnectionError") != -1)
 
         # Ensure the OOPS is correctly marked as informational only.
         self.assertEqual(next_oops.informational, 'True')
 
         # Ensure that it is different to the last logged OOPS.
         self.assertNotEqual(repr(last_oops), repr(next_oops))
+
+    def test_store_disconnected_after_request_handled_logs_oops(self):
+        # Bug #504291 was that a Store was being left in a disconnected
+        # state after a request, causing subsequent requests handled by that
+        # thread to fail. We detect this state in endRequest and log an
+        # OOPS to help track down the trigger.
+        error_reporting_utility = getUtility(IErrorReportingUtility)
+        last_oops = error_reporting_utility.getLastOopsReport()
+
+        request = LaunchpadTestRequest()
+        publication = WebServicePublication(None)
+        dbadapter.set_request_started()
+
+        # Disconnect a store
+        store = IMasterStore(EmailAddress)
+        store._connection._state = STATE_DISCONNECTED
+
+        # Invoke the endRequest hook.
+        publication.endRequest(request, None)
+
+        next_oops = error_reporting_utility.getLastOopsReport()
+
+        # Ensure that it is different to the last logged OOPS.
+        self.assertNotEqual(repr(last_oops), repr(next_oops))
+
+        # Ensure the OOPS mentions the correct exception
+        self.assertNotEqual(repr(next_oops).find("Bug #504291"), -1)
+
+        # Ensure the OOPS is correctly marked as informational only.
+        self.assertEqual(next_oops.informational, 'True')
+
+        # Ensure the store has been rolled back and in a usable state.
+        self.assertEqual(store._connection._state, STATE_RECONNECT)
+        store.find(EmailAddress).first() # Confirms Store is working.
 
     def test_is_browser(self):
         # No User-Agent: header.

@@ -427,6 +427,17 @@ Let's make our attachment a patch and search again:
     >>> bugs[0].id
     1
 
+An easy way to determine whether an attachment is a patch is to read its
+`is_patch` attribute.
+
+    >>> attachment.type = BugAttachmentType.PATCH
+    >>> attachment.is_patch
+    True
+
+    >>> attachment.type = BugAttachmentType.UNSPECIFIED
+    >>> attachment.is_patch
+    False
+
 
 == Deleting attachments ==
 
@@ -468,3 +479,35 @@ noting that the notification still includes the URL to the attachment.
     >>> print latest_notification.message.text_contents
     ** Attachment removed: "Attachment to be deleted"
        http://.../foo.baz
+
+
+== Bugs with patches ==
+
+A bug that has patch attachments associated with it has its `has_patches`
+property returning True.
+
+    >>> bug_two.attachments.count()
+    0
+    >>> attachment = bug_two.addAttachment(
+    ...     owner=foobar,
+    ...     data=StringIO(filecontent),
+    ...     filename="foo.baz",
+    ...     description="A non-patch attachment",
+    ...     comment="a string comment",
+    ...     is_patch=False)
+    >>> bug_two.attachments.count()
+    1
+    >>> bug_two.has_patches
+    False
+    >>> attachment = bug_two.addAttachment(
+    ...     owner=foobar,
+    ...     data=StringIO(filecontent),
+    ...     filename="foo.baz",
+    ...     description="A patch attachment",
+    ...     comment="a string comment",
+    ...     is_patch=True)
+    >>> bug_two.attachments.count()
+    2
+    >>> bug_two.has_patches
+    True
+

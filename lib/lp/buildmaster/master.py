@@ -267,7 +267,7 @@ class BuilddMaster:
                 self._logger.debug(
                     "Creating buildqueue record for %s (%s) on %s"
                     % (name, version, tag))
-                build.createBuildQueueEntry()
+                build.queueBuild()
 
         self.commit()
 
