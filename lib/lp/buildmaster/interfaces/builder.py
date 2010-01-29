@@ -9,7 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
-    'BuildJobMismatch',
+    'CorruptBuildID',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
@@ -46,7 +46,7 @@ class ProtocolVersionMismatch(BuildDaemonError):
     """The build slave had a protocol version. This is a serious error."""
 
 
-class BuildJobMismatch(BuildDaemonError):
+class CorruptBuildID(BuildDaemonError):
     """The build slave is working with mismatched information.
 
     It needs to be rescued.
@@ -214,6 +214,12 @@ class IBuilder(IHasOwner):
         :return: A tuple with the first element containing the slave status,
             build_id-queue-id and then optionally more elements depending on
             the status.
+        """
+
+    def verifySlaveBuildID(slave_build_id):
+        """Verify that a slave's build ID is consistent.
+
+        This should delegate to the current `IBuildFarmJobBehavior`.
         """
 
     def updateBuild(queueItem):

@@ -87,9 +87,7 @@ class CodeImport(SQLBase):
 
     cvs_module = StringCol(default=None)
 
-    svn_branch_url = StringCol(default=None)
-
-    git_repo_url = StringCol(default=None)
+    url = StringCol(default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
@@ -108,6 +106,8 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
+            RevisionControlSystems.HG:
+                config.codeimport.default_interval_hg,
             }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
@@ -121,12 +121,12 @@ class CodeImport(SQLBase):
             "Only makes sense for series with import details set.")
         if self.rcs_type == RevisionControlSystems.CVS:
             return '%s %s' % (self.cvs_root, self.cvs_module)
-        elif self.rcs_type == RevisionControlSystems.SVN:
-            return self.svn_branch_url
-        elif self.rcs_type == RevisionControlSystems.GIT:
-            return self.git_repo_url
-        elif self.rcs_type == RevisionControlSystems.BZR_SVN:
-            return self.svn_branch_url
+        elif self.rcs_type in (
+            RevisionControlSystems.SVN,
+            RevisionControlSystems.GIT,
+            RevisionControlSystems.BZR_SVN,
+            RevisionControlSystems.HG):
+            return self.url
         else:
             raise AssertionError(
                 'Unknown rcs type: %s'% self.rcs_type.title)
@@ -214,29 +214,25 @@ class CodeImportSet:
     implements(ICodeImportSet)
 
     def new(self, registrant, product, branch_name, rcs_type,
-            svn_branch_url=None, cvs_root=None, cvs_module=None,
-            review_status=None, git_repo_url=None):
+            url=None, cvs_root=None, cvs_module=None, review_status=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
-            assert svn_branch_url is None
-            assert git_repo_url is None
+            assert url is None
         elif rcs_type in (RevisionControlSystems.SVN,
-                          RevisionControlSystems.BZR_SVN):
+                          RevisionControlSystems.BZR_SVN,
+                          RevisionControlSystems.GIT,
+                          RevisionControlSystems.HG):
             assert cvs_root is None and cvs_module is None
-            assert svn_branch_url is not None
-            assert git_repo_url is None
-        elif rcs_type == RevisionControlSystems.GIT:
-            assert cvs_root is None and cvs_module is None
-            assert svn_branch_url is None
-            assert git_repo_url is not None
+            assert url is not None
         else:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
         if review_status is None:
-            # Auto approve git imports.
-            if rcs_type == RevisionControlSystems.GIT:
+            # Auto approve git and hg imports.
+            if rcs_type in (
+                RevisionControlSystems.GIT, RevisionControlSystems.HG):
                 review_status = CodeImportReviewStatus.REVIEWED
             else:
                 review_status = CodeImportReviewStatus.NEW
@@ -248,9 +244,9 @@ class CodeImportSet:
 
         code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=import_branch,
-            rcs_type=rcs_type, svn_branch_url=svn_branch_url,
+            rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
-            review_status=review_status, git_repo_url=git_repo_url)
+            review_status=review_status)
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(ObjectCreatedEvent(code_import))
@@ -329,13 +325,9 @@ class CodeImportSet:
         return CodeImport.selectOneBy(
             cvs_root=cvs_root, cvs_module=cvs_module)
 
-    def getByGitDetails(self, git_repo_url):
+    def getByURL(self, url):
         """See `ICodeImportSet`."""
-        return CodeImport.selectOneBy(git_repo_url=git_repo_url)
-
-    def getBySVNDetails(self, svn_branch_url):
-        """See `ICodeImportSet`."""
-        return CodeImport.selectOneBy(svn_branch_url=svn_branch_url)
+        return CodeImport.selectOneBy(url=url)
 
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""
