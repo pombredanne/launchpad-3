@@ -125,7 +125,7 @@ Link 1. Open bugs (2)
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print extract_text(table)
-    Summary             Importance  Status
+    Summary             Importance  Status      Heat
     10 another test bug Medium      Triaged
     16 take one         Undecided   Triaged
 
@@ -136,7 +136,7 @@ Link 2. Triaged bugs (2)
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print extract_text(table)
-    Summary             Importance  Status
+    Summary             Importance  Status      Heat
     10 another test bug Medium      Triaged
     16 take one         Undecided   Triaged
 
@@ -156,7 +156,7 @@ Link 4: Triaged bugs that are upstream issues (2)
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print extract_text(table)
-    Summary             Importance  Status
+    Summary             Importance  Status      Heat
     10 another test bug Medium      Triaged
     16 take one         Undecided   Triaged
 
@@ -176,7 +176,7 @@ Link 6: Triaged bugs marked upstream lacking a watch (1)
     'Bugs : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
     >>> table = find_tag_by_id(browser.contents, 'buglisting')
     >>> print extract_text(table)
-    Summary             Importance  Status
+    Summary             Importance  Status     Heat
     10 another test bug Medium      Triaged
 
 
