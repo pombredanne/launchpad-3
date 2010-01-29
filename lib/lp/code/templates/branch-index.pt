@@ -114,7 +114,7 @@
     </div>
   </div>
 
-  <div class="yui-g">
+  <div class="yui-g" tal:condition="view/show_merge_links">
 
     <div class="portlet" id="branch-merges">
       <h2>Branch merges</h2>

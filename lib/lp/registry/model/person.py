@@ -1682,6 +1682,7 @@ class Person(
         for coc in self.signedcocs:
             coc.active = False
         for email in self.validatedemails:
+            email = IMasterObject(email)
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
@@ -2838,6 +2839,8 @@ class PersonSet:
             (decorator_table.lower(), person_pointer_column.lower()))
 
     def _mergeBranches(self, cur, from_id, to_id):
+        # XXX MichaelHudson 2010-01-13 bug=506630: This code does not account
+        # for package branches.
         cur.execute('''
             SELECT product, name FROM Branch WHERE owner = %(to_id)d
             ''' % vars())
@@ -3347,6 +3350,10 @@ class PersonSet:
         # ones that *do* conflict.
         self._mergeBranches(cur, from_id, to_id)
         skip.append(('branch','owner'))
+
+        # XXX MichaelHudson 2010-01-13: Write _mergeSourcePackageRecipes!
+        #self._mergeSourcePackageRecipes(cur, from_id, to_id))
+        skip.append(('sourcepackagerecipe','owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)
         skip.append(('mailinglistsubscription', 'person'))

@@ -7,7 +7,6 @@ import warnings
 from datetime import datetime
 import re
 from textwrap import dedent
-
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
@@ -29,7 +28,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.interfaces import ISQLBase
 
 
@@ -268,8 +267,11 @@ class ZopelessTransactionManager(object):
     @classmethod
     def _get_zopeless_connection_config(self, dbname, dbhost):
         # This method exists for testability.
-        main_connection_string = config.database.main_master
-        auth_connection_string = config.database.auth_master
+
+        # This is only used by scripts, so we must connect to the read-write
+        # DB here -- that's why we use rw_main_master directly.
+        main_connection_string = dbconfig.rw_main_master
+        auth_connection_string = dbconfig.auth_master
 
         # Override dbname and dbhost in the connection string if they
         # have been passed in.
@@ -312,7 +314,7 @@ class ZopelessTransactionManager(object):
         # Construct a config fragment:
         overlay = dedent("""\
             [database]
-            main_master: %(main_connection_string)s
+            rw_main_master: %(main_connection_string)s
             auth_master: %(auth_connection_string)s
             isolation_level: %(isolation_level)s
             """ % vars())
@@ -755,20 +757,25 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 
     Default database name is the one specified in the main configuration file.
     """
-    con_str = connect_string(user, dbname)
-    con = psycopg2.connect(con_str)
+    con = psycopg2.connect(connect_string(user, dbname))
     con.set_isolation_level(isolation)
     return con
 
 
 def connect_string(user, dbname=None):
-    """Return a PostgreSQL connection string."""
+    """Return a PostgreSQL connection string.
+
+    Allows you to pass the generated connection details to external
+    programs like pg_dump or embed in slonik scripts.
+    """
     from canonical import lp
     # We start with the config string from the config file, and overwrite
     # with the passed in dbname or modifications made by db_options()
     # command line arguments. This will do until db_options gets an overhaul.
-    con_str = config.database.main_master
     con_str_overrides = []
+    # We must connect to the read-write DB here, so we use rw_main_master
+    # directly.
+    con_str = dbconfig.rw_main_master
     assert 'user=' not in con_str, (
             'Connection string already contains username')
     if user is not None:
@@ -782,7 +789,8 @@ def connect_string(user, dbname=None):
         con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
         con_str_overrides.append('dbname=%s' % dbname)
 
-    return ' '.join([con_str] + con_str_overrides)
+    con_str = ' '.join([con_str] + con_str_overrides)
+    return con_str
 
 
 class cursor:

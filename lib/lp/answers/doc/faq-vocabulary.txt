@@ -73,9 +73,10 @@ Trying to retrieve an invalid or non-existent token raises LookupError:
 The searchForTerms() method returns a CountableIterator of terms that
 are similar to the query:
 
+    >>> from zope.security import proxy
     >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
     >>> terms = vocabulary.searchForTerms('Problem showing SVG')
-    >>> isinstance(terms, CountableIterator)
+    >>> proxy.isinstance(terms, CountableIterator)
     True
     >>> terms.count()
     2

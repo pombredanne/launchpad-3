@@ -21,6 +21,7 @@ At the top level we provide a collection of bugs.
   attachments_collection_link: u'http://.../bugs/11/attachments'
   bug_tasks_collection_link: u'http://.../bugs/11/bug_tasks'
   bug_watches_collection_link: u'http://.../bugs/11/bug_watches'
+  can_expire: False
   cves_collection_link: u'http://.../bugs/11/cves'
   date_created: u'2007-03-15T20:33:56.678930+00:00'
   date_last_message: None
@@ -29,9 +30,11 @@ At the top level we provide a collection of bugs.
   description: u"I've had problems when switching..."
   duplicate_of_link: None
   duplicates_collection_link: u'http://.../bugs/11/duplicates'
+  heat: 0
   id: 11
   messages_collection_link: u'http://.../bugs/11/messages'
   name: None
+  number_of_duplicates: 0
   owner_link: u'http://.../~name16'
   private: False
   resource_type_link: u'http://.../#bug'
@@ -42,6 +45,9 @@ At the top level we provide a collection of bugs.
   title: u'Make Jokosher use autoaudiosink'
   users_affected_collection_link: u'http://.../bugs/11/users_affected'
   users_affected_count: 0
+  users_affected_count_with_dupes: 0
+  users_affected_with_dupes_collection_link: u'http://.../bugs/11/users_affected_with_dupes'
+  users_unaffected_collection_link: u'http://.../bugs/11/users_unaffected'
   users_unaffected_count: 0
   who_made_private_link: None
 
@@ -325,12 +331,14 @@ data in a bug task is derived from the bug.
   self_link: u'http://api.../debian/+source/mozilla-firefox/+bug/1'
   status: u'Confirmed'
   target_link: u'http://api.../debian/+source/mozilla-firefox'
+  task_age: ...
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
 
-  >>> bugtask_path = bug_one_bugtasks[0]['self_link']
-  >>> bugtask = webservice.get(bugtask_path).jsonBody()
-  >>> bugtask == bug_one_bugtasks[0]
-  True
+Because task age is a dynamic calculation between now and the date_created
+we will just verify that an integer is returned.
+
+  >>> print type(bug_one_bugtasks[0]['task_age'])
+  <type 'int'>
 
 The collection of bug tasks is not exposed as a resource:
 
@@ -340,6 +348,7 @@ The collection of bug tasks is not exposed as a resource:
 It's possible to change the task's assignee.
 
   >>> patch = {u'assignee_link': webservice.getAbsoluteUrl('/~cprov')}
+  >>> bugtask_path = bug_one_bugtasks[0]['self_link']
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
   HTTP/1.1 209 Content Returned...
 

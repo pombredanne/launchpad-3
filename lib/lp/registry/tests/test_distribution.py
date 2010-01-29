@@ -13,7 +13,7 @@ from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases)
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 
 
 class TestDistributionCurrentSourceReleases(
@@ -36,7 +36,7 @@ class TestDistributionCurrentSourceReleases(
         # version numbers. We don't care whether the version is
         # published in a earlier or later series.
         self.current_series = self.factory.makeDistroRelease(
-            self.distribution, '1.0', status=DistroSeriesStatus.CURRENT)
+            self.distribution, '1.0', status=SeriesStatus.CURRENT)
         self.publisher.getPubSource(
             version='0.9', distroseries=self.current_series)
         self.publisher.getPubSource(
