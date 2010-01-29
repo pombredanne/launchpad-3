@@ -241,9 +241,11 @@ margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
-table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
+table.form, table.extra-options {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
 table.form th {font-weight: normal;}
-table.form th, table.form td {padding-bottom: 1em;}
+table.form th, table.form td,
+table.form table.extra-options td,
+table.form table.extra-options th {padding-bottom: 1em;}
 table.form td td {padding-bottom: 0;}
 
 /* === Tables === */
@@ -1230,6 +1232,11 @@ div#sub-unsub-spinner {
   font-size: 120%;
 }
 
+div.watermark-apps-portlet span img {
+    float: none;
+    margin: 0;
+}
+
 /* --- Blueprints --- */
 
 body.tab-specifications #actions, body.tab-specifications .results {
@@ -1492,19 +1499,18 @@ div.popupTitle {
   max-width: 55em;
 }
 
-#search-results div.upper-batch-nav {
+#search-results .upper-batch-nav, .freeform-batch .upper-batch-nav {
   border-top: 1px solid #d2d2d2;
   margin-top: 2.5em;
-  margin-bottom: 0.5em;
-}
-#search-results .search-batch {
-  background: #e7effc;
   margin-bottom: 10px;
+  background: #e7effc;
 }
 
-#search-results div.lower-batch-nav {
+#search-results .lower-batch-nav, .freeform-batch .lower-batch-nav  {
   margin-top: 1.5em;
   border-top: 1px solid #d2d2d2;
+  margin-bottom: 10px;
+  background: #e7effc;
 }
 
 #search-results .search-result-link {

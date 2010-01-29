@@ -17,31 +17,14 @@
           translations from Ubuntu to the
           <span tal:replace="context/product/displayname">Firefox</span> team.
         </p>
-
         <p>
-          Use
-          <a tal:replace="structure context/menu:overview/add_package/fmt:link" />
-           to link this series to packages in other distribution series.
+          Verify that the version packaged in the Ubuntu series is based on
+          the <tal:series replace="context/title" />. Don&rsquo;t link "HEAD",
+          "MAIN", "MASTER", or "TRUNK" to an Ubuntu package unless you are
+          certain that the package is based on the trunk of development.
         </p>
-      </div>
 
-      <div class="portlet">
-        <div metal:use-macro="context/@@launchpad_form/form">
-          <div metal:fill-slot="extra_info">
-            <h2>
-              Package in
-              <span tal:replace="view/default_distroseries/title" />
-            </h2>
-
-            <p>
-              Ensure both the <tal:series replace="context/title" /> and the
-              Ubuntu package are exactly correct. Don&rsquo;t link "HEAD",
-              "MAIN", or "TRUNK" to an Ubuntu package unless you are
-              absolutely certain that the package is really based on the
-              trunk of development.
-            </p>
-          </div>
-        </div>
+        <div metal:use-macro="context/@@launchpad_form/form" />
       </div>
 
       <div class="portlet"

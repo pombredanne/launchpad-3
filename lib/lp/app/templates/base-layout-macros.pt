@@ -52,6 +52,16 @@
     do any initialization.
   </tal:comment>
 
+  <tal:comment replace="nothing">
+    XXX mars 2010-01-21
+    We have to load MochiKit outside of the main javascript rollup so that the
+    rollup's size does not exceed 512Kb.  That magic number triggers a bug
+    somewhere in the automated test system that will prevent Windmill from
+    executing.
+  </tal:comment>
+  <script type="text/javascript"
+          tal:attributes="src string:${icingroot}/MochiKit.js"></script>
+
   <tal:devmode condition="devmode">
 
     <tal:comment replace="nothing">
@@ -80,7 +90,7 @@
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event/event.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${yui}/event/event-key.js"></script>            
+            tal:attributes="src string:${yui}/event/event-key.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event-custom/event-custom.js"></script>
     <script type="text/javascript"
@@ -133,8 +143,6 @@
             tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
 
     <script type="text/javascript"
-            tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-    <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/lazr/lazr.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
@@ -157,6 +165,8 @@
 
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/lp.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/lp/lp-mochi.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/dragscroll.js"></script>
     <script type="text/javascript"
@@ -319,7 +329,7 @@
 
 <metal:footer define-macro="footer">
   <div id="footer" class="footer">
-    <div class="lp-arcana">
+    <div class="lp-arcana" tal:condition="not:view/is_root_page|nothing">
         <div class="lp-branding">
           <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
           &nbsp;&bull;&nbsp;
@@ -339,7 +349,7 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2009
+      &copy; 2004-2010
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a href="/legal">Terms of use</a>

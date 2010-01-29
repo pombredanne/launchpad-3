@@ -24,6 +24,7 @@ class TestTeamIndex(TestCaseWithFactory):
     layer = RegistryWindmillLayer
 
     def setUp(self):
+        super(TestTeamIndex, self).setUp()
         self.client = WindmillTestClient(__name__)
 
     def test_addmember(self):
