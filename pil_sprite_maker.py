@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python2.5
 
 # This work is licensed under the Creative Commons Attribution 3.0 United
 # States License. To view a copy of this license, visit
@@ -7,7 +7,11 @@
 # Derived from make_master.py by Oran Looney.
 # http://oranlooney.com/make-css-sprites-python-image-library/
 
+from __future__ import with_statement
 import os
+import sys
+import re
+import cssutils
 import Image
 
 MARGIN = 18
@@ -16,57 +20,59 @@ TEMPLATE_CSS_FILE = 'lib/canonical/launchpad/icing/sprite-template.css'
 
 def get_sprites():
     smartsprites_exp = re.compile(
-        r'.*/\*+([^*]*sprite-ref: icon-sprites;[^*]*)\*.*')
+        r'/\*+([^*]*sprite-ref: icon-sprites;[^*]*)\*')
     template_css = cssutils.parseFile(TEMPLATE_CSS_FILE)
     sprites = []
     for rule in template_css:
-        match = smartsprites_exp.match(rule.cssText)
+        match = smartsprites_exp.search(rule.cssText)
         if match is not None:
             smartsprites_info = match.group(1)
             for parameter in smartsprites_info.split(';'):
-                name, value = parameter.split(':')
-                name = name.strip()
-                value = value.strip()
-                if name == 'icon-sprites':
-                    sprites.append(dict(
-                        filename=filename,
-                        rule=rule))
-
-
+                if parameter.strip() != '':
+                    name, value = parameter.split(':')
+                    name = name.strip()
+                    value = value.strip()
+                    if value == 'icon-sprites':
+                        # Remove url() from string.
+                        filename = rule.style.backgroundImage[4:-1]
+                        sprites.append(dict(filename=filename, rule=rule))
     return sprites
 
 sprites = get_sprites()
 
 for sprite in sprites:
-    sprite['image'] = Image.open(sprite['filename'])
+    css_dir, _css_file = os.path.split(TEMPLATE_CSS_FILE)
+    filename = os.path.join(css_dir, sprite['filename'])
+    sprite['image'] = Image.open(filename)
 
+if len(sprites) == 0:
+    print >> sys.stderr, "No images found."
+    sys.exit(1)
 print "%d images will be combined." % len(sprites)
 
 max_width = 0
 total_height = 0
 for sprite in sprites:
-    max_width = max(sprite['image'].width, max_width)
-    total_height += sprite['image'].height
+    width, height = sprite['image'].size
+    max_width = max(width, max_width)
+    total_height += height
 
 master_width = max_width
 # Separate each image with lots of whitespace.
-master_height = total_height + (MARGIN * len(images))
-print "the master image will by %d by %d" % (master_width, master_height)
-print "creating image...",
+master_height = total_height + (MARGIN * len(sprites))
+print "the master image will be %d by %d" % (master_width, master_height)
 transparent = (0,0,0,0)
 master = Image.new(
     mode='RGBA',
     size=(master_width, master_height),
     color=transparent)
 
-print "created."
-
-sprites = []
 y = 0
 for index, sprite in enumerate(sprites):
-    print "adding %s at %d" % (sprite['filename'], sprite['y_position'])
-    master.paste(sprite['image'], (0, sprite['y_position']))
-    y += sprite['image'].height + MARGIN
+    print "adding %s at %d" % (sprite['filename'], y)
+    master.paste(sprite['image'], (0, y))
+    sprite['y_position'] = y
+    y += sprite['image'].size[1] + MARGIN
 print "done adding icons."
 
 print "saving master.gif...",
@@ -78,15 +84,9 @@ master.save(os.path.join(OUTPUT_DIR, 'master.png'))
 print "saved!"
 
 
-css_template = '''.%s {
-    background-image:url(/static/icons/master.%s);
-    background-position: 6px %dpx;
-}
-'''
-
 for format in ['png','gif']:
-    print 'saving icons_%s.css...' % format,
     css_filename = os.path.join(OUTPUT_DIR, 'icons_%s.css' % format)
+    print 'saving', css_filename
     with open(css_filename,'w') as sprite_css_file:
         for sprite in sprites:
             rule = sprite['rule']
@@ -94,6 +94,3 @@ for format in ['png','gif']:
             rule.style.backgroundPosition = '0px %dpx' % sprite['y_position']
             sprite_css_file.write(sprite['rule'].cssText)
             sprite_css_file.write('\n')
-                css_template
-                % (sprite['rule'], format, sprite['y_position']))
-    print 'created', css_filename
