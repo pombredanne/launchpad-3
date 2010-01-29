@@ -5,7 +5,7 @@ import os
 import re
 
 style_exp = re.compile(
-    r'\.([a-zA-Z-]*) .*url\(([^)]*-sprites[^)]*)\) '
+    r'\.([a-zA-Z ,.-]*) {.*url\(([^)]*-sprites[^)]*)\) '
     r'([0-9px-]+ [0-9px-]+) (.*);}')
 
 directive_template = (
@@ -22,8 +22,6 @@ def main():
         if match is not None:
             css_class, sprite_group, offset, repeat = match.groups()
             image_file_util.add(css_class, sprite_group, offset, repeat)
-        elif '-sprites' in line:
-            print 'NOT quite matching:', line
     print
     image_file_util.reprocessMissing()
     print_css(image_file_util)
@@ -97,12 +95,13 @@ class ImageFileUtil:
             # try adding some extensions.
             without_hyphen = css_class.replace('-', '')
             possible_names.append(without_hyphen)
-            if '-large' in sprite_group:
-                possible_names.append(without_hyphen + '-large')
-            elif '-logo' in sprite_group:
-                possible_names.append(without_hyphen + '-logo')
-            else:
-                possible_names.append(without_hyphen + '-icon')
+            for name in (css_class, without_hyphen):
+                if '-large' in sprite_group:
+                    possible_names.append(name + '-large')
+                elif '-logo' in sprite_group:
+                    possible_names.append(name + '-logo')
+                else:
+                    possible_names.append(name + '-icon')
 
             # Special cases.
             if css_class == 'favorite-yes':
