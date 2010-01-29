@@ -78,6 +78,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
@@ -255,6 +256,7 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
+    heat = IntCol(notNull=True, default=0)
 
     @property
     def comment_count(self):
@@ -445,10 +447,13 @@ class Bug(SQLBase):
     @property
     def has_patches(self):
         """See `IBug`."""
-        for attachment in self.attachments:
-            if attachment.is_patch:
-                return True
-        return False
+        store = IStore(BugAttachment)
+        results = store.find(
+            BugAttachment,
+            BugAttachment.bug == self,
+            BugAttachment.type == BugAttachmentType.PATCH)
+
+        return not results.is_empty()
 
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
@@ -1477,6 +1482,10 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
+    def setHeat(self, heat):
+        """See `IBug`."""
+        self.heat = heat
+
 
 class BugSet:
     """See BugSet."""
@@ -1717,11 +1726,17 @@ class BugSet:
         return bugs
 
     def getByNumbers(self, bug_numbers):
-        """see `IBugSet`."""
+        """See `IBugSet`."""
         if bug_numbers is None or len(bug_numbers) < 1:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set.order_by('id')
+
+    def dangerousGetAllBugs(self):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        result_set = store.find(Bug)
         return result_set.order_by('id')
 
 

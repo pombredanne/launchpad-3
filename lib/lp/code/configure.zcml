@@ -487,7 +487,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
-                    requestUpgrade
+                    upgrade_pending
                     getUpgradeFormat
                     isBranchMergeable
                     visibleByUser
@@ -495,7 +495,7 @@
     <require
         permission="launchpad.Edit"
         attributes="destroySelf destroySelfBreakReferences setPrivate 
-		            setOwner setTarget"
+		            setOwner setTarget requestUpgrade"
         set_attributes="name url mirror_status_message
                         description lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
@@ -750,8 +750,7 @@
                        rcs_type
                        cvs_root
                        cvs_module
-                       svn_branch_url
-                       git_repo_url
+                       url
                        date_last_successful
                        source_product_series
                        update_interval
@@ -900,6 +899,15 @@
     <allow interface="lp.code.interfaces.branchjob.IBranchUpgradeJobSource"/>
   </securedutility>
   <class class="lp.code.model.branchjob.BranchUpgradeJob">
+    <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+  </class>
+
+  <securedutility
+      component="lp.code.model.branchjob.BranchScanJob"
+      provides="lp.code.interfaces.branchjob.IBranchScanJobSource">
+    <allow interface="lp.code.interfaces.branchjob.IBranchScanJobSource"/>
+  </securedutility>
+  <class class="lp.code.model.branchjob.BranchScanJob">
     <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
   </class>
 

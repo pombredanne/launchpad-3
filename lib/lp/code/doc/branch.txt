@@ -601,6 +601,8 @@ The current references to the branch table are shown here.
     productseries.branch
     productseries.translations_branch
     seriessourcepackagebranch.branch
+    sourcepackagerecipedata.base_branch
+    sourcepackagerecipedatainstruction.branch
     specificationbranch.branch
 
 (Unfortunately, references can form a cycle-- note that codereviewcomments
