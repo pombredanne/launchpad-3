@@ -902,7 +902,10 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
         This enables better validation error handling,
         since the form is always used inline on the +filebug page.
         """
-        return "%s/+filebug" % canonical_url(self.context)
+        url = '%s/+filebug' % canonical_url(self.context)
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
 
     @property
     def search_context(self):
