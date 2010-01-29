@@ -9,17 +9,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJobDispatchEstimation)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -381,9 +377,6 @@ class TestBuildPackageJob(TestBuildJobBase):
         build, bq = find_job(self, 'flex', 'hppa')
         bpj = bq.specific_job
         self.assertEqual(bpj.virtualized, False)
-
-    def test_provides_dispatch_estimation_interface(self):
-        verifyObject(IBuildFarmJobDispatchEstimation, BuildPackageJob)
 
     def test_getTitle(self):
         # Test that BuildPackageJob returns the title of the build.
