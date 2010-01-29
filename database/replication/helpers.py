@@ -71,7 +71,26 @@ IGNORED_TABLES = set([
     'public.lp_person',
     'public.lp_personlocation',
     'public.lp_teamparticipation',
+    # Ubuntu SSO database. These tables where created manually by ISD
+    # and the Launchpad scripts should not mess with them. Eventually
+    # these tables will be in a totally separate database.
+    'public.auth_permission',
+    'public.auth_group',
+    'public.auth_user',
+    'public.auth_message',
+    'public.django_content_type',
+    'public.auth_permission',
+    'public.django_session',
+    'public.django_site',
+    'public.django_admin_log',
+    'public.ssoopenidrpconfig',
+    'public.auth_group_permissions',
+    'public.auth_user_groups',
+    'public.auth_user_user_permissions',
     ])
+
+# Calculate IGNORED_SEQUENCES
+IGNORED_SEQUENCES = set('%s_id_seq' % table for table in IGNORED_TABLES)
 
 
 def slony_installed(con):
@@ -268,7 +287,7 @@ def get_all_cluster_nodes(con):
         assert len(node_ids) == 1, "Multiple nodes but no paths."
         master_node_id = node_ids[0]
         master_connection_string = ConnectionString(
-            config.database.main_master)
+            config.database.rw_main_master)
         master_connection_string.user = 'slony'
         return [Node(
             master_node_id, 'node%d_node' % master_node_id,
@@ -447,7 +466,7 @@ def discover_unreplicated(cur):
 
     return (
         all_tables - replicated_tables - IGNORED_TABLES,
-        all_sequences - replicated_sequences)
+        all_sequences - replicated_sequences - IGNORED_SEQUENCES)
 
 
 class ReplicationConfigError(Exception):
