@@ -6,13 +6,17 @@ __metaclass__ = type
 
 from copy import copy
 from datetime import datetime, timedelta
-import Queue as queue
 import socket
 import sys
 import threading
 import time
 
 import pytz
+
+from twisted.internet import reactor
+from twisted.internet.defer import DeferredList
+from twisted.internet.threads import deferToThreadPool
+from twisted.python.threadpool import ThreadPool
 
 from zope.component import getUtility
 from zope.event import notify
@@ -283,32 +287,19 @@ class BugWatchUpdater(object):
         """
         self.log.debug("Using a global batch size of %s" % batch_size)
 
-        # Put all the work on the queue. This is simpler than drip-feeding the
-        # queue, and avoids a situation where a worker thread exits because
-        # there's no work left and the feeding thread hasn't been scheduled to
-        # add work to the queue.
-        work = queue.Queue()
-        for updater in self._bugTrackerUpdaters(bug_tracker_names):
-            work.put(updater)
+        # Defer all the update jobs to a thread pool.
+        thread_pool = ThreadPool(0, num_threads)
+        update_jobs = [
+            deferToThreadPool(reactor, thread_pool, updater, batch_size)
+            for updater in self._bugTrackerUpdaters(bug_tracker_names)
+            ]
 
-        # This will be run once in each worker thread.
-        def do_work():
-            while True:
-                try:
-                    job = work.get(block=False)
-                except queue.Empty:
-                    break
-                else:
-                    job(batch_size)
+        update_jobs_done = DeferredList(update_jobs)
+        update_jobs_done.addBoth(lambda ignore: thread_pool.stop())
+        update_jobs_done.addBoth(lambda ignore: reactor.stop())
 
-        # Start and join the worker threads.
-        threads = []
-        for run in xrange(num_threads):
-            thread = threading.Thread(target=do_work)
-            thread.start()
-            threads.append(thread)
-        for thread in threads:
-            thread.join()
+        reactor.callWhenRunning(thread_pool.start)
+        reactor.run()
 
     def updateBugTracker(self, bug_tracker, batch_size):
         """Updates the given bug trackers's bug watches.
