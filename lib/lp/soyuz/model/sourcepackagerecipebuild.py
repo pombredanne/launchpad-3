@@ -39,6 +39,8 @@ from lp.soyuz.model.buildqueue import BuildQueue
 class SourcePackageRecipeBuild(BuildBase, Storm):
     __storm_table__ = 'SourcePackageRecipeBuild'
 
+    policy_name = 'recipe'
+
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
 
@@ -87,9 +89,9 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     @property
     def pocket(self):
-        # JRV 2010-01-15: The database table really should have a pocket 
-        # column, although this is not a big problem at the moment 
-        # as recipe builds only happen for PPA's (so far). (bug 507307)
+        # XXX: JRV 2010-01-15 bug=507307: The database table really should
+        # have a pocket column, although this is not a big problem at the
+        # moment as recipe builds only happen for PPA's (so far).
         return PackagePublishingPocket.RELEASE
 
     recipe_id = Int(name='recipe', allow_none=False)
@@ -129,8 +131,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(
-        cls, sourcepackage, recipe, requester, archive, date_created=None):
+    def new(cls, sourcepackage, recipe, requester, archive,
+            date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         if date_created is None:

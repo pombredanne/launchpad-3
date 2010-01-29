@@ -16,8 +16,8 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.manager import RecordingSlave
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
-from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
 from lp.soyuz.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuild)
 from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
@@ -48,21 +48,20 @@ class TestRecipeBuilder(TestCaseWithFactory):
         """Create a sample `ISourcePackageRecipeBuildJob`."""
         spn = self.factory.makeSourcePackageName("apackage")
         distro = self.factory.makeDistribution(name="distro")
-        distroseries = self.factory.makeDistroSeries(name="mydistro", 
+        distroseries = self.factory.makeDistroSeries(name="mydistro",
             distribution=distro)
-        processorfamily = ProcessorFamilySet().getByName('x86')
-        distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, architecturetag='i386',
-            processorfamily=processorfamily)
+        processorfamily = ProcessorFamilySet().getByProcessorName('386')
+        distroseries.newArch(
+            'i386', processorfamily, True, self.factory.makePerson())
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
         requester = self.factory.makePerson(email="requester@ubuntu.com",
             name="joe", displayname="Joe User")
-        somebranch = self.factory.makeBranch(owner=requester, name="pkg", 
+        somebranch = self.factory.makeBranch(owner=requester, name="pkg",
             product=self.factory.makeProduct("someapp"))
-        recipe = self.factory.makeSourcePackageRecipe(requester, requester, 
+        recipe = self.factory.makeSourcePackageRecipe(requester, requester,
              distroseries, spn, u"recept", somebranch)
-        spb = self.factory.makeSourcePackageRecipeBuild(sourcepackage=sourcepackage,
-            recipe=recipe, requester=requester)
+        spb = self.factory.makeSourcePackageRecipeBuild(
+            sourcepackage=sourcepackage, recipe=recipe, requester=requester)
         job = spb.makeJob()
         job = IBuildFarmJobBehavior(job)
         return job
@@ -95,8 +94,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # _extraBuildArgs will return a sane set of additional arguments
         job = self.makeJob()
         distroarchseries = job.build.distroseries.architectures[0]
-        distroname = job.build.archive.distribution.name
-        self.assertEquals({
+        self.assertEqual({
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
            'author_name': u'Joe User',
@@ -105,7 +103,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'ogrecomponent': 'universe',
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
                           'lp://dev/~joe/someapp/pkg\n',
-           'archives': get_sources_list_for_building(job.build, 
+           'archives': get_sources_list_for_building(job.build,
                 distroarchseries, job.build.sourcepackagename.name)
             }, job._extraBuildArgs(distroarchseries))
 
@@ -132,10 +130,10 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEquals(build_args[1], "sourcepackagerecipe")
         self.assertEquals(build_args[3], {})
         distroarchseries = job.build.distroseries.architectures[0]
-        self.assertEquals(build_args[4], job._extraBuildArgs(distroarchseries))
+        self.assertEqual(build_args[4], job._extraBuildArgs(distroarchseries))
 
     def test_dispatchBuildToSlave_nochroot(self):
-        # dispatchBuildToSlave will fail when there is not chroot tarball 
+        # dispatchBuildToSlave will fail when there is not chroot tarball
         # available for the distroseries to build for.
         job = self.makeJob()
         builder = MockBuilder("bob-de-bouwer", SaneBuildingSlave())
@@ -143,7 +141,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         builder.processor = processorfamily.processors[0]
         job.setBuilder(builder)
         logger = BufferLogger()
-        self.assertRaises(CannotBuild, job.dispatchBuildToSlave, 
+        self.assertRaises(CannotBuild, job.dispatchBuildToSlave,
             "someid", logger)
 
     def test_getById(self):

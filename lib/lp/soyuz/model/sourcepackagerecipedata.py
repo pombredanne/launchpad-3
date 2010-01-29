@@ -127,8 +127,8 @@ class _SourcePackageRecipeData(Storm):
 
     sourcepackage_recipe_build_id = Int(
         name='sourcepackage_recipe_build', allow_none=True)
-    #sourcepackage_recipe_build = Reference(
-    #    sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
+    sourcepackage_recipe_build = Reference(
+        sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
 
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
