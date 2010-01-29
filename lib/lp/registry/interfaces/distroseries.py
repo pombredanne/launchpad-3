@@ -386,6 +386,14 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         given architecturetag.
         """
 
+    def getDistroArchSeriesByProcessor(processor):
+        """Return the distroarchseries for this distroseries with the
+        given architecturetag from a `IProcessor`.
+        
+        :param processor: An `IProcessor`
+        :return: An `IDistroArchSeries` or None when none was found.
+        """
+
     @operation_parameters(
         archtag=TextLine(
             title=_("The architecture tag"), required=True))
@@ -420,6 +428,16 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return a list of Source packages in this distribution series
         that can be translated.
         """
+
+    def getPriorizedUnlinkedSourcePackages():
+        """Return a list of package summaries that need packaging links.
+
+        A summary is a dict of package (`ISourcePackage`), total_bugs,
+        and total_messages (translatable messages).
+        """
+
+    def getPriorizedlPackagings():
+        """Return a list of packagings that need more upstream information."""
 
     @operation_parameters(
         created_since_date=Datetime(

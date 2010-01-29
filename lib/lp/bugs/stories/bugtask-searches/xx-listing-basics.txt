@@ -223,6 +223,7 @@ relevant listings:
     <a href="http://launchpad.dev/debian/+milestone/3.1" alt="milestone 3.1"
     title="Linked to milestone 3.1" class="sprite milestone"></a>
 
+
 Patches also appear as badges in bug listings.
 
     >>> from canonical.launchpad.ftests import login, logout
@@ -258,4 +259,15 @@ Patches also appear as badges in bug listings.
     /firefox/+bug/1
       Badge: blueprint
       Badge: haspatch
+
+
+== Bug heat in listings ==
+
+Bug listings display the bug heat in the last column. Heat is displayed as four flame
+images, marked here as '-'.
+
+    >>> user_browser.open("http://launchpad.dev/firefox/+bugs?field.searchtext=install&search=Search&advanced=&milestone=1&status=10&status=20&assignee=all")
+    >>> print_bugtasks(user_browser.contents, show_heat=True)
+    5 Firefox install instructions should be complete Critical New ----
+    1 Firefox does not support SVG Low New ----
 

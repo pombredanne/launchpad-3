@@ -9,7 +9,7 @@ __all__ = [
     'MockBuilder',
     'SaneBuildingSlave',
     'SaneWaitingSlave',
-    'InsaneWatingSlave',
+    'InsaneWaitingSlave',
     'LostBuildingSlave',
     'LostWaitingSlave',
     'LostBuildingBrokenSlave',
@@ -27,10 +27,14 @@ import xmlrpclib
 
 from canonical.config import config
 from lp.buildmaster.interfaces.builder import CannotFetchFile
+from lp.soyuz.model.binarypackagebuildbehavior import (
+    BinaryPackageBuildBehavior)
 
 
 class MockBuilder:
     """Emulates a IBuilder class."""
+
+    current_build_behavior = BinaryPackageBuildBehavior(None)
 
     def __init__(self, name, slave):
         self.slave = slave
@@ -47,6 +51,9 @@ class MockBuilder:
 
     def slaveStatusSentence(self):
         return self.slave.status()
+
+    def verifySlaveBuildID(self, slave_build_id):
+        return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
 
     def cleanSlave(self):
         return self.slave.clean()
@@ -78,6 +85,10 @@ class SaneBuildingSlave:
 
     def info(self):
         return ['1.0', 'i386', ['debian']]
+
+    def build(self, buildid, builder_type, chroot_sha1, filemap, args):
+        return ('BuildStatus.Building', buildid)
+
 
 class SaneWaitingSlave:
     """A mock slave that is currently waiting.

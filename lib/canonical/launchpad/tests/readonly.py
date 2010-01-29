@@ -13,7 +13,7 @@ __all__ = [
 import os
 
 from canonical.launchpad.readonly import (
-    read_only_file_exists, read_only_file_path)
+    is_read_only, read_only_file_exists, read_only_file_path)
 
 
 def touch_read_only_file():
@@ -26,9 +26,22 @@ def touch_read_only_file():
         "already exists.")
     f = open(read_only_file_path, 'w')
     f.close()
+    # Assert that the switch succeeded and make sure the mode change is
+    # logged.
+    assert is_read_only(), "Switching to read-only failed."
 
 
-def remove_read_only_file():
-    """Remove the file named read-only.txt from the root of the tree."""
+def remove_read_only_file(assert_mode_switch=True):
+    """Remove the file named read-only.txt from the root of the tree.
+
+    May also assert that the mode switch actually happened (i.e. not 
+    is_read_only()). This assertion has to be conditional because some tests
+    will use this during the processing of a request, when a mode change can't
+    happen (i.e. is_read_only() will still return True during that request's
+    processing, even though the read-only.txt file has been removed).
+    """
     os.remove(read_only_file_path)
-
+    if assert_mode_switch:
+        # Assert that the switch succeeded and make sure the mode change is
+        # logged.
+        assert not is_read_only(), "Switching to read-write failed."
