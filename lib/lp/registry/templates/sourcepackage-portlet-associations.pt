@@ -4,7 +4,7 @@
    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
    omit-tag="">
 
-  <div class="portlet" id="portlet-associations">
+  <div id="portlet-associations">
     <h2>Upstream associations</h2>
 
     <div class="portletBody portletContent"
@@ -56,6 +56,17 @@
             maintainers share bugs, patches, and translations
             efficiently.
           </p>
+
+          <tal:message
+             define="count python:len(view.product_suggestions);
+                     singular string:Is the following project the upstream for this source package?;
+                     plural string:Is one of these projects the upstream for this source package?"
+             >
+            <b>
+            <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+            </b>
+          </tal:message>
+
           <div tal:condition="python: len(view.product_suggestions) > 1">
             <b>Is one of these projects the upstream for this source
             package?</b>

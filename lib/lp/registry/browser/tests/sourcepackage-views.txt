@@ -2,7 +2,7 @@ SourcePackage views
 ===================
 
 Edit packaging view
------------------------
+-------------------
 
     >>> product = factory.makeProduct(name='bonkers', displayname='Bonkers')
     >>> productseries = factory.makeProductSeries(
@@ -140,7 +140,7 @@ the portlet showing the suggested project.
     Launchpad doesn&#8217;t know which project and series this
     package belongs to. ...
     Is the following project the upstream for this source package?
-    Upstream project:
+    Registered upstream project:
     Lernid...
 
 If there are multiple potential matches they are all shown.
@@ -157,6 +157,6 @@ If there are multiple potential matches they are all shown.
     Launchpad doesn&#8217;t know which project and series this
     package belongs to. ...
     Is one of these projects the upstream for this source package?
-    Upstream project:
+    Registered upstream project:
     Lernid...
     Lernid Dev...

@@ -17,6 +17,7 @@ __all__ = [
     ]
 
 from apt_pkg import ParseSrcDepends
+from cgi import escape
 from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
 from zope.formlib.form import Fields, FormFields
@@ -27,6 +28,7 @@ from zope.schema.vocabulary import (
 
 from lazr.restful.interface import copy_field
 
+from canonical.cachedproperty import cachedproperty
 from canonical.widgets import LaunchpadRadioWidget
 
 from canonical.launchpad import helpers
@@ -43,7 +45,8 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, custom_widget, GetitemNavigation,
-    LaunchpadEditFormView, Link, redirection, StandardLaunchpadFacets, stepto)
+    LaunchpadEditFormView, LaunchpadFormView, Link, redirection,
+    StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -303,7 +306,7 @@ class SourcePackageHelpView:
     page_title = 'Help and support options'
 
 
-class SourcePackageAssociationPortletView(LaunchpadEditFormView):
+class SourcePackageAssociationPortletView(LaunchpadFormView):
     """A view for linking to an upstream package."""
 
     schema = Interface
@@ -327,16 +330,15 @@ class SourcePackageAssociationPortletView(LaunchpadEditFormView):
             self.product_suggestions.append(product)
             item_url = canonical_url(product)
             description = """<a href="%s">%s</a>""" % (
-                item_url, product.displayname)
+                item_url, escape(product.displayname))
             vocab_terms.append(SimpleTerm(product, product.name, description))
         upstream_vocabulary = SimpleVocabulary(vocab_terms)
 
         self.form_fields = Fields(
             Choice(__name__='upstream',
-                   title=_('Upstream project'),
+                   title=_('Registered upstream project'),
                    default=None,
                    vocabulary=upstream_vocabulary,
-                   #description=_("Select the upstream project"),
                    required=True))
 
     @action('Link to Upstream Project', name='link')
