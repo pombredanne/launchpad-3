@@ -271,7 +271,7 @@ If focus is set, nice explanatory text is displayed.
 
 
 Setting up translations for series
-------------------------------------
+----------------------------------
 
 When visiting product translations main page, project developers sees
 status for current series configured for translations.

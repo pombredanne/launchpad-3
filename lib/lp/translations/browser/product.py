@@ -116,13 +116,10 @@ class ProductView(LaunchpadView):
         """Return series which are not yet set up for translations.
 
         The list is sorted in alphabetically order and obsolete series
-        will be excluded.
+        are excluded.
         """
 
-        all_active_series = set(
-            [serie for serie in self.context.series if (
-                serie.status != SeriesStatus.OBSOLETE)])
-        translatable = set(self.context.translatable_series)
-        return sorted(
-            all_active_series - translatable,
-            key=lambda series: series.name)
+        translatable = self.context.translatable_series
+        return [series for series in self.context.series if (
+            series.status != SeriesStatus.OBSOLETE and
+            series not in translatable)]

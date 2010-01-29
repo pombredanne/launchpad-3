@@ -7,18 +7,15 @@ import unittest
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.interfaces.series import SeriesStatus
 from lp.translations.browser.product import ProductView
 from lp.testing import TestCaseWithFactory
-from lp.registry.interfaces.series import SeriesStatus
 
 
 class TestProduct(TestCaseWithFactory):
     """Test Product view in translations facet."""
 
     layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
 
     def test_primary_translatable_with_package_link(self):
         # Create a product that uses translations.
@@ -75,24 +72,17 @@ class TestProduct(TestCaseWithFactory):
             product=product, name='evo-future')
         series_future.status = SeriesStatus.FUTURE
 
-        # 'untranslatable_series' is a cached property, this is why we
-        # check it after adding all series.
-        self.assertTrue(series_experimental in view.untranslatable_series)
-        self.assertTrue(series_development in view.untranslatable_series)
-        self.assertTrue(series_frozen in view.untranslatable_series)
-        self.assertTrue(series_current in view.untranslatable_series)
-        self.assertTrue(series_supported in view.untranslatable_series)
-        self.assertTrue(series_future in view.untranslatable_series)
-
-        # Obsolete series are not included
-        self.assertFalse(series_obsolete in view.untranslatable_series)
-
-        # Series are listed in alphabetical order, 'evo-current'
-        # is firsts, while 'trunk' is last.
-        self.assertTrue(
-            series_current == view.untranslatable_series[0])
-        self.assertTrue(
-            series_trunk == view.untranslatable_series[-1])
+        # The series are returned in alphabetical order and do not
+        # include obsolete series.
+        series_names = [series.name for series in view.untranslatable_series]
+        self.assertEqual([
+            u'evo-current',
+            u'evo-development',
+            u'evo-experimental',
+            u'evo-frozen',
+            u'evo-future',
+            u'evo-supported',
+            u'trunk'], series_names)
 
 
 def test_suite():
