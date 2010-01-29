@@ -888,6 +888,10 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
         """See `BugTaskImageDisplayAPI`"""
         return self._context.has_specification
 
+    def _hasPatch(self):
+        """See `BugTaskImageDisplayAPI`"""
+        return self._context.has_patch
+
 
 class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IQuestion to a formatted string. Used for image:icon."""
