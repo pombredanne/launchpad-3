@@ -50,7 +50,7 @@ class TestBranchRewriter(TestCaseWithFactory):
             rewriter.rewriteLine("/%s/.bzr/README" % branch.unique_name)
             for branch in branches]
         expected = [
-            'file:///var/tmp/bzrsync/%s/.bzr/README'
+            'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
             % branch_id_to_path(branch.id)
             for branch in branches]
         self.assertEqual(expected, output)
@@ -179,7 +179,7 @@ class TestBranchRewriterScript(TestCaseWithFactory):
             "/%s/.bzr/README" % branch.unique_name for branch in branches] + [
             "/%s/changes" % branch.unique_name for branch in branches]
         expected_lines = [
-            'file:///var/tmp/bzrsync/%s/.bzr/README'
+            'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
             % branch_id_to_path(branch.id)
             for branch in branches] + [
             'http://localhost:8080/%s/changes' % branch.unique_name
@@ -206,14 +206,14 @@ class TestBranchRewriterScript(TestCaseWithFactory):
 
         new_branch_input = '/%s/.bzr/README' % new_branch.unique_name
         expected_lines.append(
-            'file:///var/tmp/bzrsync/%s/.bzr/README'
+            'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
             % branch_id_to_path(new_branch.id))
         proc.stdin.write(new_branch_input + '\n')
         output_lines.append(proc.stdout.readline().rstrip('\n'))
 
         edited_branch_input = '/%s/.bzr/README' % edited_branch.unique_name
         expected_lines.append(
-            'file:///var/tmp/bzrsync/%s/.bzr/README'
+            'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
             % branch_id_to_path(edited_branch.id))
         proc.stdin.write(edited_branch_input + '\n')
         output_lines.append(proc.stdout.readline().rstrip('\n'))

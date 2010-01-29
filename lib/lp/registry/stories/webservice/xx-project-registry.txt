@@ -167,6 +167,7 @@ Projects are available at their canonical URL on the API virtual host.
     sourceforge_project: None
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
+    translation_focus_link: None
     wiki_url: None
 
 In Launchpad project names may not have uppercase letters in their
@@ -225,6 +226,7 @@ several that are not available to non-privileged users marked as
     sourceforge_project: None
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
+    translation_focus_link: None
     wiki_url: None
 
 The milestones can be accessed through the
