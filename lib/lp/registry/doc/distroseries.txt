@@ -500,7 +500,37 @@ From the results above you can notice that neither mozilla-firefox nor
 netapplet are translatable in Hoary.
 
 
-== DistroSeries can build meta objects for packages ==
+Packages that need linking and packagings that need upstream information
+-----------------------------------------------------------------------
+
+The distroseries getPriorizedUnlinkedSourcePackages() method that returns
+a prioritized list of `ISourcePackage` objects that need a packaging link to
+an `IProductSeries` to provide the the upstream information to share bugs,
+translations, and code. Each item in the list is a dict with the 'package',
+total_bugs, and total_messages (translatable messages).
+
+    >>> for summary in hoary.getPriorizedUnlinkedSourcePackages():
+    ...     print  summary['package'].name
+    ...     print '%(total_bugs)s %(total_messages)s' % summary
+    pmount  0  64
+    alsa-utils  0  0
+    cnews  0  0
+    libstdc++  0  0
+    linux-source-2.6.15  1  0
+
+
+The distroseries getPriorizedlPackagings() method that returns a prioritized
+list of `IPackaging` that need more information about the upstream project to
+share bugs, translations, and code.
+
+    >>> for packaging in hoary.getPriorizedlPackagings():
+    ...     print packaging.sourcepackagename.name
+    netapplet
+    evolution
+
+
+DistroSeries can build meta objects for packages
+------------------------------------------------
 
    >>> from canonical.launchpad.interfaces import (
    ...     ISourcePackage,
