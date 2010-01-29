@@ -931,7 +931,7 @@ body.tab-bugs #portlet-subscribers .sprite {
   background:url(icon-sprites-3) 0 -46px no-repeat;
   padding-left: 22px}
 .build-superseded {background:url(icon-sprites-3) 0 -80px no-repeat;}
-.build-sucess {background:url(icon-sprites-3) 0 -112px no-repeat;}
+.build-success {background:url(icon-sprites-3) 0 -112px no-repeat;}
 .build-needed {background:url(icon-sprites-3) 0 -144px no-repeat;}
 .build-failure {background:url(icon-sprites-3) 0 -176px no-repeat;}
 .build-depwait {background:url(icon-sprites-3) 0 -208px no-repeat;}

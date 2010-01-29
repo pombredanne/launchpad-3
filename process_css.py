@@ -5,7 +5,8 @@ import os
 import re
 
 style_exp = re.compile(
-    r'\.([a-zA-Z-]*) .*url\(([^)]*-sprites[^)]*)\) ([0-9px-]*).*')
+    r'\.([a-zA-Z-]*) .*url\(([^)]*-sprites[^)]*)\) '
+    r'([0-9px-]+ [0-9px-]+) (.*);}')
 
 directive_template = (
     "/** sprite: %(sprite_group)s; "
@@ -19,7 +20,7 @@ def main():
     for line in open('lib/canonical/launchpad/icing/style-3-0.css'):
         match = style_exp.match(line)
         if match is not None:
-            css_class, sprite_group, offset = match.groups()
+            css_class, sprite_group, offset, repeat = match.groups()
             image_file_util.add(css_class, sprite_group, offset)
     print
     image_file_util.reprocessMissing()
@@ -42,8 +43,8 @@ def print_css(image_file_util):
         css['image_file'] = image_file
         print (
             '.%(css_class)s '
-            '{background-image: url(../images/%(image_file)s);} '
-            '/** sprite-ref: %(sprite_group)s */'
+            '{\n    background-image: url(../images/%(image_file)s); '
+            '/** sprite-ref: %(sprite_group)s */\n}'
             % css)
 
 
@@ -55,6 +56,7 @@ class ImageFileUtil:
 
     def reprocessMissing(self):
         for args in self.missing:
+            print "Reprocessing:", args
             image_path = self.add(*args)
             if image_path is None:
                 raise AssertionError(
@@ -64,13 +66,52 @@ class ImageFileUtil:
         image_path = os.path.join(image_dir, css_class + '.png')
         key = (sprite_group, offset)
         if not os.path.isfile(image_path):
-            swapped_image_name = '-'.join(reversed(css_class.split('-')))
-            image_path = os.path.join(
-                image_dir, swapped_image_name + '.png')
+            possible_names = []
+            if css_class == 'favorite-yes':
+                possible_names.append('news')
+            elif css_class == 'external-link':
+                possible_names.append('link')
+            elif css_class == 'translate-icon':
+                possible_names.append('translation')
+            elif css_class == 'undecided':
+                possible_names.append('maybe')
+            elif '-' in css_class:
+                # Remove last section.
+                truncated_name = css_class.rsplit('-', 1)[0]
+                possible_names.append(truncated_name)
+                possible_names.append(truncated_name + '-icon')
+
+                # If the css class looks like "foo-bar", try finding
+                # a file named "bar-foo.png".
+                reversed_name = '-'.join(reversed(css_class.split('-')))
+                possible_names.append(reversed_name)
+                possible_names.append('person-' + reversed_name)
+                possible_names.append('merge-' + reversed_name)
+
+            else:
+                # If the css class looks like "foobar", try finding a
+                # file named "f-oobar", "fo-obar", "foo-bar", etc.
+                for i in range(1, len(css_class)):
+                    image_file = css_class[:i] + '-' + css_class[i:]
+                    possible_names.append(image_file)
+
+            # Remove the hyphen.
+            without_hyphen = css_class.replace('-', '')
+            possible_names.append(without_hyphen)
+            if '-large' in sprite_group:
+                possible_names.append(without_hyphen + '-large')
+            elif '-logo' in sprite_group:
+                possible_names.append(without_hyphen + '-logo')
+            else:
+                possible_names.append(without_hyphen + '-icon')
+
+            for image_file in possible_names:
+                image_path = os.path.join(image_dir, image_file + '.png')
+                if os.path.isfile(image_path):
+                    break
             if not os.path.isfile(image_path):
-                if key not in self.cache:
-                    self.missing.add((css_class, sprite_group, offset))
-                    return
+                self.missing.add((css_class, sprite_group, offset))
+                return
         if key not in self.cache:
             self.cache[key] = image_path
         self.found.append(
