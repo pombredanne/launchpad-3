@@ -4,10 +4,13 @@
 """Page performance report generated from zserver trace logs."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['main']
 
+import bz2
 from cgi import escape as html_quote
 from ConfigParser import RawConfigParser
+from datetime import datetime
+import gzip
 import re
 import os.path
 from textwrap import dedent
@@ -18,6 +21,7 @@ import simplejson as json
 from zc.zservertracelog.tracereport import Request, parsedt
 
 from canonical.config import config
+from canonical.launchpad.scripts.logger import log
 from lp.scripts.helpers import LPOptionParser
 
 
@@ -48,7 +52,7 @@ class Times:
         array = numpy.fromiter(
             (min(request.app_seconds, self.timeout)
                 for request in self.requests),
-            numpy.float, num_requests)
+            numpy.float32, num_requests)
         mean = numpy.mean(array)
         median = numpy.median(array)
         standard_deviation = numpy.std(array)
@@ -122,55 +126,110 @@ def main():
     return 0
 
 
+def smart_open(filename, mode='r'):
+    """Open a file, transparently handling compressed files.
+
+    Compressed files are detected by file extension.
+    """
+    ext = os.path.splitext(filename)[1]
+    if ext == '.bz2':
+        return bz2.BZ2File(filename, mode)
+    elif ext == '.gz':
+        return gzip.open(filename, mode)
+    else:
+        return open(filename, mode)
+
+
+class MalformedLine(Exception):
+    """A malformed line was found in the trace log."""
+
+
+_ts_re = re.compile(
+    '^(\d{4})-(\d\d)-(\d\d)\s(\d\d):(\d\d):(\d\d)(?:.(\d{6}))?$')
+
+
+def parse_timestamp(ts_string):
+    match = _ts_re.search(ts_string)
+    if match is None:
+        raise ValueError("Invalid timestamp")
+    return datetime(
+        *(int(elem) for elem in match.groups() if elem is not None))
+
+
 def parse(tracefiles, categories, options):
     requests = {}
     for tracefile in tracefiles:
-        for line in open(tracefile):
-            record = line.split()
-            record_type, request_id, date, time_ = record[:4]
+        for line in smart_open(tracefile):
+            line = line.rstrip()
+            try:
+                record = line.split(' ',7)
+                try:
+                    record_type, request_id, date, time_ = record[:4]
+                except ValueError:
+                    raise MalformedLine()
 
-            if record_type == 'S':
-                continue # Short circuit - we don't care about these entries.
+                if record_type == 'S':
+                    # Short circuit - we don't care about these entries.
+                    continue
 
-            dt = parsedt('%s %s' % (date, time_))
-            if options.from_ts is not None and dt < options.from_ts:
-                continue # Skip to next line.
-            if options.until_ts is not None and dt > options.until_ts:
-                break # Skip to next log file.
+                # Parse the timestamp.
+                ts_string = '%s %s' % (date, time_)
+                try:
+                    dt = parse_timestamp(ts_string)
+                except ValueError:
+                    raise MalformedLine(
+                        'Invalid timestamp %s' % repr(ts_string))
 
-            args = record[4:]
+                # Filter entries by command line date range.
+                if options.from_ts is not None and dt < options.from_ts:
+                    continue # Skip to next line.
+                if options.until_ts is not None and dt > options.until_ts:
+                    break # Skip to next log file.
 
-            if record_type == 'B': # Request begins.
-                requests[request_id] = Request(dt, args[0], args[1])
-                continue
+                args = record[4:]
 
-            request = requests.get(request_id, None)
-            if request is None: # Just ignore partial records.
-                continue
+                def require_args(count):
+                    if len(args) < count:
+                        raise MalformedLine()
 
-            if record_type == '-': # Extension record from Launchpad.
-                # Launchpad outputs the full URL to the tracelog,
-                # including protocol & hostname. Use this in favor of
-                # the ZServer logged path.
-                request.url = args[0]
+                if record_type == 'B': # Request begins.
+                    require_args(2)
+                    requests[request_id] = Request(dt, args[0], args[1])
+                    continue
 
-            elif record_type == 'I': # Got request input.
-                request.I(dt, args[0])
+                request = requests.get(request_id, None)
+                if request is None: # Just ignore partial records.
+                    continue
 
-            elif record_type == 'C': # Entered application thread.
-                request.C(dt)
+                if record_type == '-': # Extension record from Launchpad.
+                    # Launchpad outputs the full URL to the tracelog,
+                    # including protocol & hostname. Use this in favor of
+                    # the ZServer logged path.
+                    require_args(1)
+                    request.url = args[0]
 
-            elif record_type == 'A': # Application done.
-                request.A(dt, *args)
+                elif record_type == 'I': # Got request input.
+                    require_args(1)
+                    request.I(dt, args[0])
 
-            elif record_type == 'E': # Request done.
-                del requests[request_id]
-                request.E(dt)
-                for category in categories:
-                    category.add(request)
+                elif record_type == 'C': # Entered application thread.
+                    request.C(dt)
 
-            else:
-                pass # Ignore malformed records.
+                elif record_type == 'A': # Application done.
+                    require_args(2)
+                    request.A(dt, args[0], args[1])
+
+                elif record_type == 'E': # Request done.
+                    del requests[request_id]
+                    request.E(dt)
+                    for category in categories:
+                        category.add(request)
+
+                else:
+                    raise MalformedLine('Unknown record type %s', record_type)
+            except MalformedLine, x:
+                log.error(
+                    "Malformed line %s %s (%s)" % (repr(line), repr(args), x))
 
 
 def print_html_report(categories):
@@ -219,8 +278,7 @@ def print_html_report(categories):
         ''' % {'date': time.ctime()})
 
     histograms = []
-    for i in range(0, len(categories)):
-        category = categories[i]
+    for i, category in enumerate(categories):
         row_class = "even-row" if i % 2 else "odd-row"
         mean, median, standard_deviation, histogram = category.times.stats()
         histograms.append(histogram)
@@ -267,8 +325,7 @@ def print_html_report(categories):
                 };
         """)
 
-    for i in range(0, len(histograms)):
-        histogram = histograms[i]
+    for i, histogram in enumerate(histograms):
         if histogram is None:
             continue
         print dedent("""\
