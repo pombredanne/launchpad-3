@@ -1,0 +1,29 @@
+
+    # XXX: For this test to pass we need to make the testopenid vhost
+    # available in the subprocess started by the AppServerLayer.  It currently
+    # isn't because the config used by that layer sets devmode to False.
+
+    # Set handleErrors to True so that the Unauthorized exception is handled
+    # by the publisher and we get redirected to the +login page.
+    >>> browser = Browser()
+    >>> browser.handleErrors = True
+    >>> browser.open(
+    ...     'http://launchpad.dev:8085/people/?name=foo&searchfor=all')
+    >>> browser.getLink('Log in / Register').click()
+
+    # Show that the <body> tag has an onload attribute which calls
+    # form.submit();
+    >>> # TODO
+
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.title
+    Login
+    >>> browser.getControl(name='field.email').value = 'test@canonical.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+    # This might fail because the query args might be in a different order, so
+    # need to find a more robust way to test it.
+    >>> print browser.url
+    http://launchpad.dev:8085/people/?name=foo&searchfor=all

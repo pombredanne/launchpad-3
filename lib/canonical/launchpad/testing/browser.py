@@ -56,7 +56,7 @@ _live_browser_set = set()
 
 
 class Browser(_Browser):
-    """A browser subsclass that knows about basic auth."""
+    """A browser subclass that knows about basic auth."""
 
     def __init__(self, auth=None):
         super(Browser, self).__init__()

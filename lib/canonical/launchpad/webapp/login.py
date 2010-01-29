@@ -43,6 +43,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class UnauthorizedView(SystemErrorView):
@@ -210,8 +211,9 @@ class OpenIDLogin(LaunchpadView):
         # handshake to work.
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
+        openid_vhost = config.launchpad.openid_provider_vhost
         self.openid_request = consumer.begin(
-            config.launchpad.openid_provider_url)
+            allvhosts.configs[openid_vhost].rooturl)
 
         trust_root = self.request.getApplicationURL()
         assert not self.openid_request.shouldSendRedirect(), (
