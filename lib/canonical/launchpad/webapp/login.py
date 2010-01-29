@@ -14,6 +14,7 @@ import random
 from BeautifulSoup import UnicodeDammit
 
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
 
 from zope.component import getUtility
 from zope.session.interfaces import ISession, IClientIdManager
@@ -196,6 +197,9 @@ class CaptchaMixin:
         op2 = self.captcha_answer - op1
         return '%d + %d =' % (op1, op2)
 
+
+# XXX: Hack to make it never use the Curl fetcher.
+setDefaultFetcher(Urllib2Fetcher())
 
 class OpenIDLogin(LaunchpadView):
     """A view which initiates the OpenID handshake with our provider."""
