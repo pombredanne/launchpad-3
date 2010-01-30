@@ -53,26 +53,30 @@
                   tal:attributes="href summary/package/fmt:url"
                   tal:content="summary/package/name">evolution</a>
               </td>
-              <td tal:define="count summary/total_bugs">
+              <td tal:define="count summary/total_bugs;
+                              singular string:bug;
+                              plural string:bugs;">
                 <tal:no-bugs condition="not: count">
                   No bugs
                 </tal:no-bugs>
                 <tal:has-bugs condition="count">
                   <a tal:attributes="href summary/package/distribution_sourcepackage/fmt:url:bugs"
                     ><tal:total-bugs replace="count" />
-                    bug<tal:plural
-                      metal:use-macro="context/@@+base-layout-macros/plural"/></a>
+                    <tal:plural
+                      metal:use-macro="context/@@+base-layout-macros/plural-message"/></a>
                 </tal:has-bugs>
               </td>
-              <td tal:define="count summary/total_messages;">
+              <td tal:define="count summary/total_messages;
+                              singular string:string;
+                              plural string:strings;">
                 <tal:no-translations condition="not:count">
                   No strings
                 </tal:no-translations>
                 <tal:has-translations condition="count">
                   <a tal:attributes="href summary/package/fmt:url:translations"
                     ><tal:total-messages replace="count" />
-                    string<tal:plural
-                      metal:use-macro="context/@@+base-layout-macros/plural"/></a>
+                    <tal:plural
+                      metal:use-macro="context/@@+base-layout-macros/plural-message"/></a>
                 </tal:has-translations>
               </td>
             </tr>

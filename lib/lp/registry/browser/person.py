@@ -2556,9 +2556,14 @@ class PersonLanguagesView(LaunchpadFormView):
 class PersonKarmaView(LaunchpadView):
     """A view class used for ~person/+karma."""
 
+    page_title = 'Karma'
+
     @property
     def label(self):
-        return 'Launchpad Karma for ' + cgi.escape(self.context.displayname)
+        if self.user == self.context:
+            return 'Your Launchpad Karma'
+        else:
+            return 'Launchpad Karma for %s' %  self.context.displayname
 
     @cachedproperty
     def has_karma(self):

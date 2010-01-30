@@ -391,15 +391,21 @@
   </div>
 </metal:site-message>
 
-<metal:plural define-macro="plural"><tal:comment condition="nothing">
-  This macro requires the call site to define `count` in a containing
-  tag or as a global. The plural `suffix` can also be defined by the
-  containing tag or as a global, the default is 's'.
-  </tal:comment><tal:if
-    define="
-      l_default string:s;
-      l_suffix suffix | l_default;"
+<metal:plural-msg define-macro="plural-message">
+  <tal:comment condition="nothing">
+    Expected variables to be defined in a containing tag or global:
+    count - value to check to determine plural form
+    singluar - string to use when count == 1
+    plural - string to use when count > 1.  If no plural is given it defaults
+    to the singular value + 's'.
+  </tal:comment>
+  <tal:singular
+    condition="python: count == 1"
+    replace="singular" />
+  <tal:plural
+     define="l_default string:s;
+             l_plural plural | string:$singular$l_default;"
     condition="python: count != 1"
-    replace="l_suffix" />
-</metal:plural>
+    replace="l_plural" />
+</metal:plural-msg>
 </macros>

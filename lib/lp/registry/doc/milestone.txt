@@ -508,8 +508,8 @@ If a milestone has a structural subscription, it cannot be deleted.
                     subscriptions.
 
 
-Creating a release from a milestone with targeted bugs
-------------------------------------------------------
+Closing milestone targeted bugs
+-------------------------------
 
 When a milestone with bug tasks creates a release, those bug tasks in fix
 committed status are updated to fix released. An ObjectModifiedEvent
@@ -531,10 +531,11 @@ event is signaled for each changed bug task.
     >>> triaged_bugtask = factory.makeBugTask(target=upstream_firefox)
     >>> triaged_bugtask.transitionToMilestone(milestone, owner)
     >>> triaged_bugtask.transitionToStatus(BugTaskStatus.TRIAGED, owner)
+    >>> release = milestone.createProductRelease(owner, datetime.now(UTC))
     >>> bugtask_event_listener = TestEventListener(
     ...     IBugTask, IObjectModifiedEvent, print_event)
 
-    >>> release = milestone.createProductRelease(owner, datetime.now(UTC))
+    >>> milestone.closeBugsAndBlueprints(owner)
     Received ObjectModifiedEvent on BugTask
 
     >>> fixed_bugtask.status
