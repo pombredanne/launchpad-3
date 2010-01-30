@@ -11,6 +11,7 @@ __all__ = [
     'specific_job_classes',
     ]
 
+from collections import defaultdict
 import logging
 
 from zope.component import getSiteManager, getUtility
@@ -36,6 +37,12 @@ from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
+
+def normalize_virtualization(virtualized):
+    """Jobs with NULL virtualization settings should be treated the
+       same way as virtualized jobs."""
+    return virtualized is None or virtualized
 
 
 def specific_job_classes():
@@ -208,8 +215,7 @@ class BuildQueue(SQLBase):
         free_builders = result_set.get_one()[0]
         return free_builders
 
-    def _estimateTimeToNextBuilder(
-        self, head_job_processor, head_job_virtualized):
+    def _estimateTimeToNextBuilder(self):
         """Estimate time until next builder becomes available.
 
         For the purpose of estimating the dispatch time of the job of interest
@@ -220,17 +226,19 @@ class BuildQueue(SQLBase):
 
             - processor dependent: only builders with the matching
               processor/virtualization combination should be considered.
-            - *not* processor dependent: all builders should be considered.
+            - *not* processor dependent: all builders with the matching
+              virtualization setting should be considered.
 
-        :param head_job_processor: The processor required by the job at the
-            head of the queue.
-        :param head_job_virtualized: The virtualization setting required by
-            the job at the head of the queue.
         :return: The estimated number of seconds untils a builder capable of
             running the head job becomes available or None if no such builder
             exists.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        head_job_platform = self._getHeadJobPlatform()
+        if head_job_platform is None:
+            # The job of interest (JOI) is the head job.
+            return 0
+
+        head_job_processor, head_job_virtualized = head_job_platform
 
         # First check whether we have free builders.
         free_builders = self._freeBuildersCount(
@@ -282,12 +290,83 @@ class BuildQueue(SQLBase):
                 %s
             """ % params
 
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.execute(delay_query)
         head_job_delay = result_set.get_one()[0]
         if head_job_delay is None:
             return None
         else:
             return int(head_job_delay)
+
+    def _getPendingJobsClauses(self):
+        """WHERE clauses for pending job queries, used for dipatch time
+        estimation."""
+        virtualized = normalize_virtualization(self.virtualized)
+        clauses = """
+                BuildQueue.job = Job.id
+                AND Job.status = %s
+                AND (
+                    -- The score must be either above my score or the
+                    -- job must be older than me in cases where the
+                    -- score is equal.
+                    BuildQueue.lastscore > %s OR
+                    (BuildQueue.lastscore = %s AND Job.id < %s))
+                AND (
+                    -- The virtualized values either match or the job
+                    -- does not care about virtualization and the job
+                    -- of interest (JOI) is to be run on a virtual builder
+                    -- (we want to prevent the execution of untrusted code
+                    -- on native builders).
+                    buildqueue.virtualized = %s OR
+                    (buildqueue.virtualized IS NULL AND %s = TRUE))
+        """ % sqlvalues(
+            JobStatus.WAITING, self.lastscore, self.lastscore, self.job,
+            virtualized, virtualized)
+        processor_clause = """
+                AND (
+                    -- The processor values either match or the candidate
+                    -- job is processor-independent.
+                    buildqueue.processor = %s OR
+                    buildqueue.processor IS NULL)
+        """ % sqlvalues(self.processor)
+        # We don't care about processors if the estimation is for a
+        # processor-independent job.
+        if self.processor is not None:
+            clauses += processor_clause
+        return clauses
+
+    def _getHeadJobPlatform(self):
+        """Find the processor and virtualization setting for the head job.
+
+        Among the jobs that compete with the job of interest (JOI) for
+        builders and are queued ahead of it the head job is the one in pole
+        position i.e. the one to be dispatched to a builder next.
+
+        :return: A (processor, virtualized) tuple which is the head job's
+        platform or None if the JOI is the head job.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        my_platform = (
+            getattr(self.processor, 'id', None),
+            normalize_virtualization(self.virtualized))
+        query = """
+            SELECT
+                processor,
+                virtualized
+            FROM
+                BuildQueue, Job
+            WHERE
+            """
+        query += self._getPendingJobsClauses()
+        query += """
+            ORDER BY lastscore DESC, job LIMIT 1
+            """
+        head_job_platform = store.execute(query).get_all()
+        if len(head_job_platform) == 1:
+            head_job_platform = head_job_platform.pop()
+        else:
+            head_job_platform = None
+        return head_job_platform
 
     def _estimateJobDelay(self, builder_stats):
         """Sum of estimated durations for *pending* jobs ahead in queue.
@@ -304,10 +383,6 @@ class BuildQueue(SQLBase):
         :return: An integer value holding the sum of delays (in seconds)
             caused by the jobs that are ahead of and competing with the JOI.
         """
-        def normalize_virtualization(virtualized):
-            """Jobs with NULL virtualization settings should be treated the
-               same way as virtualized jobs."""
-            return virtualized is None or virtualized
         def jobs_compete_for_builders(a, b):
             """True if the two jobs compete for builders."""
             a_processor, a_virtualized = a
@@ -338,37 +413,8 @@ class BuildQueue(SQLBase):
             FROM
                 BuildQueue, Job
             WHERE
-                BuildQueue.job = Job.id
-                AND Job.status = %s
-                AND (
-                    -- The score must be either above my score or the
-                    -- job must be older than me in cases where the
-                    -- score is equal.
-                    BuildQueue.lastscore > %s OR
-                    (BuildQueue.lastscore = %s AND Job.id < %s))
-                AND (
-                    -- The virtualized values either match or the job
-                    -- does not care about virtualization and the job
-                    -- of interest (JOI) is to be run on a virtual builder
-                    -- (we want to prevent the execution of untrusted code
-                    -- on native builders).
-                    buildqueue.virtualized = %s OR
-                    (buildqueue.virtualized IS NULL AND %s = TRUE))
-        """ % sqlvalues(
-            JobStatus.WAITING, self.lastscore, self.lastscore, self.job,
-            self.virtualized, self.virtualized)
-        processor_clause = """
-                AND (
-                    -- The processor values either match or the candidate
-                    -- job is processor-independent.
-                    buildqueue.processor = %s OR
-                    buildqueue.processor IS NULL)
-        """ % sqlvalues(self.processor)
-        # We don't care about processors if the estimation is for a
-        # processor-independent job.
-        if self.processor is not None:
-            query += processor_clause
-
+            """
+        query += self._getPendingJobsClauses()
         query += """
             GROUP BY BuildQueue.processor, BuildQueue.virtualized
             """
@@ -376,9 +422,9 @@ class BuildQueue(SQLBase):
         delays_by_platform = store.execute(query).get_all()
 
         # This will be used to capture per-platform delay totals.
-        delays = dict()
+        delays = defaultdict(int)
         # This will be used to capture per-platform job counts.
-        job_counts = dict()
+        job_counts = defaultdict(int)
 
         # Apply weights to the estimated duration of the jobs as follows:
         #   - if a job is tied to a processor TP then divide the estimated
@@ -390,7 +436,7 @@ class BuildQueue(SQLBase):
         for processor, virtualized, job_count, delay in delays_by_platform:
             virtualized = normalize_virtualization(virtualized)
             platform = (processor, virtualized)
-            builder_count = builder_stats.get((processor, virtualized), 0)
+            builder_count = builder_stats.get(platform, 0)
             if builder_count == 0:
                 # There is no builder that can run this job, ignore it
                 # for the purpose of dispatch time estimation.
@@ -399,8 +445,8 @@ class BuildQueue(SQLBase):
             if jobs_compete_for_builders(my_platform, platform):
                 # The jobs that target the platform at hand compete with
                 # the JOI for builders, add their delays.
-                delays[platform] = delay
-                job_counts[platform] = job_count
+                delays[platform] += delay
+                job_counts[platform] += job_count
 
         sum_of_delays = 0
         # Now weight/average the delays based on a jobs/builders comparison.
@@ -416,6 +462,50 @@ class BuildQueue(SQLBase):
             sum_of_delays += duration
 
         return sum_of_delays
+
+    def getEstimatedJobStartTime(self):
+        """See `IBuildQueue`.
+
+        The estimated dispatch time for the build farm job at hand is
+        calculated from the following ingredients:
+            * the start time for the head job (job at the
+              head of the respective build queue)
+            * the estimated build durations of all jobs that
+              precede the job of interest (JOI) in the build queue
+              (weighted by the number of machines in the respective
+              build pool)
+        """
+        # This method may only be invoked for pending jobs.
+        if self.job.status != JobStatus.WAITING:
+            raise AssertionError(
+                "The start time is only estimated for pending jobs.")
+
+        # A None value indicates that the estimated dispatch time is not
+        # available.
+        result = None
+
+        (builders_in_total, builders_for_job,
+         builder_stats) = self._getBuilderData()
+        if builders_for_job == 0:
+            # No builders that can run the job at hand
+            #   -> no dispatch time estimation available.
+            return result
+
+        # Get the sum of the estimated run times for *pending* jobs that are
+        # ahead of us in the queue.
+        sum_of_delays = self._estimateJobDelay(builder_stats)
+
+        # Get the minimum time duration until the next builder becomes
+        # available.
+        min_wait_time = self._estimateTimeToNextBuilder()
+
+        start_time = min_wait_time + sum_of_delays
+
+        result = (
+            datetime.datetime.utcnow() +
+            datetime.timedelta(seconds=start_time))
+
+        return result
 
 
 class BuildQueueSet(object):

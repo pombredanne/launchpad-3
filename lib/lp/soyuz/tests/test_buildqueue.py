@@ -95,11 +95,9 @@ def print_build_setup(builds):
             queue_entry.lastscore)
 
 
-def check_mintime_to_builder(
-    test, bq, head_job_processor, head_job_virtualized, min_time):
+def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
-    delay = bq._estimateTimeToNextBuilder(
-        head_job_processor, head_job_virtualized)
+    delay = bq._estimateTimeToNextBuilder()
     if min_time is not None:
         test.assertTrue(
             almost_equal(delay, min_time),
@@ -496,33 +494,33 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         # This will be the job of interest.
         apg_build, apg_job = find_job(self, 'apg')
         # One of four builders for the 'apg' build is immediately available.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         # Assign the postgres job to a builder.
         assign_to_builder(self, 'postgres', 1)
         # Now one builder is gone. But there should still be a builder
         # immediately available.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'flex', 2)
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'bison', 3)
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'gcc', 4)
         # Now that no builder is immediately available, the shortest
         # remaing build time (based on the estimated duration) is returned:
         #   300 seconds
         # This is equivalent to the 'gcc' job's estimated duration.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 300)
+        check_mintime_to_builder(self, apg_job, 300)
 
         # Now we pretend that the 'postgres' started 6 minutes ago. Its
         # remaining execution time should be 2 minutes = 120 seconds and
         # it now becomes the job whose builder becomes available next.
         build, bq = find_job(self, 'postgres')
         set_remaining_time_for_running_job(bq, 120)
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 120)
+        check_mintime_to_builder(self, apg_job, 120)
 
         # What happens when jobs overdraw the estimated duration? Let's
         # pretend the 'flex' job started 8 minutes ago.
@@ -530,13 +528,13 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         set_remaining_time_for_running_job(bq, -60)
         # In such a case we assume that the job will complete within 2
         # minutes, this is a guess that has worked well so far.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 120)
+        check_mintime_to_builder(self, apg_job, 120)
 
         # If there's a job that will complete within a shorter time then
         # we expect to be given that time frame.
         build, bq = find_job(self, 'postgres')
         set_remaining_time_for_running_job(bq, 30)
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 30)
+        check_mintime_to_builder(self, apg_job, 30)
 
         # Disable the native x86 builders.
         for builder in self.builders[(x86_proc.id, False)]:
@@ -544,7 +542,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
 
         # No builders capable of running the job at hand are available now,
         # this is indicated by a None value.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, None)
+        check_mintime_to_builder(self, apg_job, None)
 
 
 class MultiArchBuildsBase(TestBuildQueueBase):
@@ -651,30 +649,30 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
 
         # One of four builders for the 'apg' build is immediately available.
         apg_build, apg_job = find_job(self, 'apg', 'hppa')
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         # Assign the postgres job to a builder.
         assign_to_builder(self, 'postgres', 1, 'hppa')
         # Now one builder is gone. But there should still be a builder
         # immediately available.
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'flex', 2, 'hppa')
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'bison', 3, 'hppa')
         # Now that no builder is immediately available, the shortest
         # remaing build time (based on the estimated duration) is returned:
         #   660 seconds
         # This is equivalent to the 'bison' job's estimated duration.
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 660)
+        check_mintime_to_builder(self, apg_job, 660)
 
         # Now we pretend that the 'postgres' started 13 minutes ago. Its
         # remaining execution time should be 2 minutes = 120 seconds and
         # it now becomes the job whose builder becomes available next.
         build, bq = find_job(self, 'postgres', 'hppa')
         set_remaining_time_for_running_job(bq, 120)
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 120)
+        check_mintime_to_builder(self, apg_job, 120)
 
         # What happens when jobs overdraw the estimated duration? Let's
         # pretend the 'flex' job started 14 minutes ago.
@@ -682,13 +680,13 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         set_remaining_time_for_running_job(bq, -60)
         # In such a case we assume that the job will complete within 2
         # minutes, this is a guess that has worked well so far.
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 120)
+        check_mintime_to_builder(self, apg_job, 120)
 
         # If there's a job that will complete within a shorter time then
         # we expect to be given that time frame.
         build, bq = find_job(self, 'postgres', 'hppa')
         set_remaining_time_for_running_job(bq, 30)
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 30)
+        check_mintime_to_builder(self, apg_job, 30)
 
         # Disable the native hppa builders.
         for builder in self.builders[(hppa_proc.id, False)]:
@@ -696,16 +694,19 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
 
         # No builders capable of running the job at hand are available now,
         # this is indicated by a None value.
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, None)
+        check_mintime_to_builder(self, apg_job, None)
 
         # Let's assume for the moment that the job at the head of the 'apg'
         # build queue is processor independent. In that case we'd ask for
         # *any* next available builder.
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            virtualized=False, estimated_duration=22,
+            sourcename='my-recipe-digikam', score=9999)
         self.assertTrue(
             bq._freeBuildersCount(None, None) > 0,
             "Builders are immediately available for jobs that don't care "
             "about processor architectures or virtualization")
-        check_mintime_to_builder(self, apg_job, None, None, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         # Let's disable all builders.
         for builders in self.builders.itervalues():
@@ -714,7 +715,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
 
         # There are no builders capable of running even the processor
         # independent jobs now and that this is indicated by a None value.
-        check_mintime_to_builder(self, apg_job, None, None, None)
+        check_mintime_to_builder(self, apg_job, None)
 
         # Re-enable the native hppa builders.
         for builder in self.builders[(hppa_proc.id, False)]:
@@ -722,7 +723,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
 
         # The builder that's becoming available next is the one that's
         # running the 'postgres' build.
-        check_mintime_to_builder(self, apg_job, None, None, 30)
+        check_mintime_to_builder(self, apg_job, 30)
 
         # Make sure we'll find an x86 builder as well.
         processor_fam = ProcessorFamilySet().getByName('x86')
@@ -736,14 +737,14 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         build, bq = find_job(self, 'gcc', '386')
         set_remaining_time_for_running_job(bq, 29)
 
-        check_mintime_to_builder(self, apg_job, None, None, 29)
+        check_mintime_to_builder(self, apg_job, 29)
 
         # Make a second, idle x86 builder available.
         builder = self.builders[(x86_proc.id, False)][1]
         builder.builderok = True
 
         # That builder should be available immediately since it's idle.
-        check_mintime_to_builder(self, apg_job, None, None, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
 
 class TestJobClasses(TestCaseWithFactory):
@@ -925,7 +926,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         # One of four builders for the 'flex' build is immediately available.
         flex_build, flex_job = find_job(self, 'flex', 'hppa')
-        check_mintime_to_builder(self, flex_job, hppa_proc, False, 0)
+        check_mintime_to_builder(self, flex_job, 0)
 
         # Obtain the builder statistics pertaining to this job.
         builder_data = flex_job._getBuilderData()
@@ -946,7 +947,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         x86_proc = processor_fam.processors[0]
 
         _bison_build, bison_job = find_job(self, 'bison', '386')
-        check_mintime_to_builder(self, bison_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, bison_job, 0)
         # The delay will be 900 (= (14+16)*60/2) + 222 seconds.
         check_delay_for_job(self, bison_job, 1122)
 
@@ -958,13 +959,13 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # Also, this tests that jobs with equal score but a lower 'job' value
         # (i.e. older jobs) are queued ahead of the job of interest (JOI).
         _vim_build, vim_job = find_job(self, 'vim', '386')
-        check_mintime_to_builder(self, vim_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, vim_job, 0)
         # The delay will be 870 (= (6+10+12+14+16)*60/4) + 122 (= (222+22)/2)
         # seconds.
         check_delay_for_job(self, vim_job, 992)
 
         _gedit_build, gedit_job = find_job(self, 'gedit', '386')
-        check_mintime_to_builder(self, gedit_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, gedit_job, 0)
         # The delay will be
         #   1080 (= (4+6+8+10+12+14+16)*60/4) + 122 (= (222+22)/2)
         # seconds.
@@ -973,7 +974,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
     def test_job_delay_for_recipe_builds(self):
         # One of the 9 builders for the 'bash' build is immediately available.
         bash_build, bash_job = find_job(self, 'xx-recipe-bash', None)
-        check_mintime_to_builder(self, bash_job, None, False, 0)
+        check_mintime_to_builder(self, bash_job, 0)
 
         # Obtain the builder statistics pertaining to this job.
         builder_data = bash_job._getBuilderData()
@@ -986,7 +987,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         # One of the 9 builders for the 'zsh' build is immediately available.
         zsh_build, zsh_job = find_job(self, 'xx-recipe-zsh', None)
-        check_mintime_to_builder(self, zsh_job, None, False, 0)
+        check_mintime_to_builder(self, zsh_job, 0)
 
         # Obtain the builder statistics pertaining to this job.
         builder_data = zsh_job._getBuilderData()
@@ -996,7 +997,9 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         check_delay_for_job(self, zsh_job, 0)
 
         # Assign the zsh job to a builder.
+        self.assertEquals(bash_job._getHeadJobPlatform(), (None, False))
         assign_to_builder(self, 'xx-recipe-zsh', 1, None)
+        self.assertEquals(bash_job._getHeadJobPlatform(), (1, False))
 
         # Now that the highest-scored job is out of the way, the estimation
         # for the 'bash' recipe build is 222 seconds shorter.
@@ -1012,3 +1015,65 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         _postgres_build, postgres_job = find_job(self, 'postgres', '386')
         # The delay will be 0 since this is the head job now.
         check_delay_for_job(self, postgres_job, 0)
+        self.assertEquals(postgres_job._getHeadJobPlatform(), None)
+
+    def test_job_delay_for_unspecified_virtualization(self):
+        # Make sure that jobs with a NULL 'virtualized' flag get the same
+        # treatment as the ones with virtualized=TRUE.
+        processor_fam = ProcessorFamilySet().getByName('hppa')
+        hppa_proc = processor_fam.processors[0]
+
+        # First toggle the 'virtualized' flag for all hppa jobs.
+        for build in self.builds:
+            bq = build.buildqueue_record
+            if bq.processor == hppa_proc:
+                bq.virtualized = True
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            virtualized=True, estimated_duration=332,
+            sourcename='xxr-openssh-client', score=1050)
+        self.builds.append(job.specific_job.build)
+        # print_build_setup(self.builds)
+        #   ...
+        #   15,               flex, p: hppa, v: True e:0:13:00 *** s: 1039
+        #   16,               flex, p:  386, v:False e:0:14:00 *** s: 1042
+        #   17,           postgres, p: hppa, v: True e:0:15:00 *** s: 1045
+        #   18,           postgres, p:  386, v:False e:0:16:00 *** s: 1048
+        #   21, xxr-openssh-client, p: None, v: True e:0:05:32 *** s: 1050
+        #   20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
+
+        flex_build, flex_job = find_job(self, 'flex', 'hppa')
+        # The head job platform is the one of job #21 (xxr-openssh-client).
+        self.assertEquals(flex_job._getHeadJobPlatform(), (None, True))
+        # The delay will be 900 (= 15*60) + 332 seconds
+        check_delay_for_job(self, flex_job, 1232)
+
+        # Now add a job with a NULL 'virtualized' flag. It should be treated
+        # like jobs with virtualized=TRUE.
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=111, sourcename='xxr-gwibber', score=1051,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+        # print_build_setup(self.builds)
+        self.assertEqual(job.virtualized, None)
+        #   ...
+        #   15,               flex, p: hppa, v: True e:0:13:00 *** s: 1039
+        #   16,               flex, p:  386, v:False e:0:14:00 *** s: 1042
+        #   17,           postgres, p: hppa, v: True e:0:15:00 *** s: 1045
+        #   18,           postgres, p:  386, v:False e:0:16:00 *** s: 1048
+        #   21, xxr-openssh-client, p: None, v: True e:0:05:32 *** s: 1050
+        #   22,        xxr-gwibber, p: None, v: None e:0:01:51 *** s: 1051
+        #   20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
+
+        # The newly added 'xxr-gwibber' job is the new head job now.
+        self.assertEquals(flex_job._getHeadJobPlatform(), (None, None))
+        # The newly added 'xxr-gwibber' job now weighs in as well and the
+        # delay is 900 (= 15*60) + (332+111)/2 seconds
+        check_delay_for_job(self, flex_job, 1121)
+
+        # The '386' flex job does not care about the 'xxr-gwibber' and
+        # 'xxr-openssh-client' jobs since the 'virtualized' values do not
+        # match.
+        flex_build, flex_job = find_job(self, 'flex', '386')
+        self.assertEquals(flex_job._getHeadJobPlatform(), (None, False))
+        # delay is 960 (= 16*60) + 222 seconds
+        check_delay_for_job(self, flex_job, 1182)
