@@ -457,7 +457,7 @@ class Builder(SQLBase):
                 AND (
                     -- The processor values either match or the candidate
                     -- job is processor-independent.
-                    buildqueue.processor = %s OR 
+                    buildqueue.processor = %s OR
                     buildqueue.processor IS NULL)
                 AND (
                     -- The virtualized values either match or the candidate
@@ -473,7 +473,6 @@ class Builder(SQLBase):
             self.virtualized)
         order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
 
-        extra_tables = set()
         extra_queries = []
         job_classes = specific_job_classes()
         for job_type, job_class in job_classes.iteritems():
