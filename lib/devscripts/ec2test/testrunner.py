@@ -109,7 +109,7 @@ class EC2TestRunner:
     message = image = None
     _running = False
 
-    def __init__(self, branch, email=False, file=None, test_options='-vv',
+    def __init__(self, branch, email=False, file=None, test_options=None,
                  headless=False, branches=(),
                  pqm_message=None, pqm_public_location=None,
                  pqm_submit_location=None,

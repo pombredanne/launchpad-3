@@ -62,10 +62,6 @@ class BaseTestRunner:
         self.pqm_message = pqm_message
         self.public_branch = public_branch
         self.public_branch_revno = public_branch_revno
-
-        # Set up the testrunner options.
-        if test_options is None:
-            test_options = '-vv'
         self.test_options = test_options
 
         # Configure paths.
