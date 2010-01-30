@@ -68,7 +68,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.distroseries,
             self.build.sourcepackagename.name)
-        args['archives'] = get_sources_list_for_building(self.build, 
+        args['archives'] = get_sources_list_for_building(self.build,
             distroarchseries, self.build.sourcepackagename.name)
         return args
 
@@ -87,7 +87,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
         chroot = distroarchseries.getChroot()
         if chroot is None:
-            raise CannotBuild("Unable to find a chroot for %s" % 
+            raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
         self._builder.slave.cacheFile(logger, chroot)
 
@@ -131,10 +131,11 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
         # This should already have been checked earlier, but just check again
         # here in case of programmer errors.
-        reason = check_upload_to_pocket(build.archive, build.distroseries, build.pocket)
+        reason = check_upload_to_pocket(
+            build.archive, build.distroseries, build.pocket)
         assert reason is None, (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
-                "to the series status of %s." % 
+                "to the series status of %s." %
                     (build.title, build.id, build.pocket.name,
                      build.distroseries.name))
 

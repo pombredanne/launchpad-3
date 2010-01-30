@@ -466,7 +466,9 @@ class LaunchpadBrowserPublication(
         _maybePlacefullyAuthenticate.
         """
         # Log the URL including vhost information to the ZServer tracelog.
-        ITraceLog(request).log(request.getURL())
+        tracelog = ITraceLog(request, None)
+        if tracelog is not None:
+            tracelog.log(request.getURL())
 
         assert hasattr(request, '_traversalticks_start'), (
             'request._traversalticks_start, which should have been set by '
