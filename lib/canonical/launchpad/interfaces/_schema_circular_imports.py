@@ -61,8 +61,7 @@ from lp.soyuz.interfaces.archivedependency import (
     IArchiveDependency)
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, IBinaryPackagePublishingHistoryPublic,
-    ISecureBinaryPackagePublishingHistory,
+    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
     ISourcePackagePublishingHistoryPublic, PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
@@ -177,9 +176,10 @@ IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 # publishing.py
 ISourcePackagePublishingHistoryPublic['getBuilds'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
-ISourcePackagePublishingHistoryPublic['getPublishedBinaries'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)[
-    'return_type'].value_type.schema = IBinaryPackagePublishingHistory
+ISourcePackagePublishingHistoryPublic[
+    'getPublishedBinaries'].queryTaggedValue(
+        LAZR_WEBSERVICE_EXPORTED)[
+            'return_type'].value_type.schema = IBinaryPackagePublishingHistory
 patch_reference_property(
     ISecureBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)
