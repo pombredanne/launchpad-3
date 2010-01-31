@@ -117,44 +117,30 @@
               <h2>Recent Launchpad blog posts</h2>
               <ul>
                 <li class="news">
-                  <a href="http://blog.launchpad.net/?p=1218">
-                  This is a patch</a><span class="registered"> &ndash; 16 Dec 2009</span><br />
-                  Patches are now listed separately from other attachments on bug pages.
+                  <a href="http://blog.launchpad.net/?p=1316">
+                  Measuring bug heat</a><span class="registered"> &ndash; 27 Jan 2010</span><br />
+                  Launchpad shows a new calculated measure of a bug's importance to help make triage easier.
                 </li>
                 <li class="news">
-                  <a href="http://blog.launchpad.net/?p=1222">
-                  Hot or not?</a><span class="registered"> &ndash; 16 Dec 2009</span><br />
-                  Bug reports now show how many people have clicked "This bug affects me".
+                  <a href="http://blog.launchpad.net/?p=1311">
+                  Improved bug patch notifications</a><span class="registered"> &ndash; 27 Jan 2010</span><br />
+                  Bug listings now highlight bugs that have patches. Launchpad also emails you when a new patch is
+                  added to bugs you care about.
                 </li>
                 <li class="news">
-                  <a href="http://blog.launchpad.net/cool-new-stuff/inline-dupe-finding">
-                  Streamlined duplicate bug finding</a><span class="registered"> &ndash; 10 Dec 2009</span><br />
-                  New in-line duplicate finder makes project bug reporting smoother.
+                  <a href="http://blog.launchpad.net/general/anonymous-access-to-the-launchpad-web-service-api">
+                  Anonymous API access</a><span class="registered"> &ndash; 19 Jan 2010</span><br />
+                  Your launchpadlib scripts can now get read-only access to the Launchpad API without needing authentication.
                 </li>
                 <li class="news">
-                  <a href="http://blog.launchpad.net/?p=1178">
-                  Working with bug mail</a><span class="registered"> &ndash; 02 Dec 2009</span><br />
-                  Get the most from Launchpad's bug notifications.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net/api/new-lpx-project-group-for-launchpad-extensions">
-                  lpx project group for Launchpad extensions</a><span class="registered"> &ndash; 16 Oct 2009</span><br />
-                  If you've used the Launchpad API to create a script that interacts with or extends Launchpad, add it to our new lpx project group.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net/notifications/launchpads-status-page">
-                  New Launchpad status page</a><span class="registered"> &ndash; 13 Oct 2009</span><br />
-                  Our new identi.ca-hosted status page is the canonical source of service information about Launchpad.
+                  <a href="http://blog.launchpad.net/coming-features/the-road-ahead">
+                  The road ahead for Launchpad</a><span class="registered"> &ndash; 08 Jan 2010</span><br />
+                  Take a look at where Launchpad is going, and where you can get involved, by reading our 2010 roadmap.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
                     Launchpad now open source</a><span class="registered"> &ndash; 21 Jul 2009</span><br />
-                  Get the code to Launchpad and join our development community.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net/general/new-privacy-features-for-commercial-subscribers">
-                    Launchpad for commercial projects</a><span class="registered"> &ndash; 25 Feb 2009</span><br />
-                  Find out more about Launchpad's privacy features for your commercial projects.
+                    Get the code to Launchpad and join our development community.
                 </li>
               </ul>
               <ul class="horizontal">

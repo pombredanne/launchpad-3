@@ -550,16 +550,19 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
-        db_branch = self.factory.makeAnyBranch()
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        db_branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
 
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
         job_id = branch_job.job.id
 
-        branch_job_newer = BranchUpgradeJob.create(db_branch)
-        job_id_newer = branch_job_newer.job.id
+        db_branch2 = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
+        branch_job2 = BranchUpgradeJob.create(db_branch2)
+        job_id_newer = branch_job2.job.id
         transaction.commit()
 
         collector = self.runDaily()

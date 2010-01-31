@@ -20,6 +20,7 @@ __all__ = [
     'BranchEditMenu',
     'BranchInProductView',
     'BranchSparkView',
+    'BranchUpgradeView',
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
@@ -224,7 +225,7 @@ class BranchContextMenu(ContextMenu):
     links = [
         'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import']
+        'edit_status', 'edit_import', 'upgrade_branch']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -299,6 +300,14 @@ class BranchContextMenu(ContextMenu):
             check_permission('launchpad.Edit', self.context.code_import))
         return Link(
             '+edit-import', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def upgrade_branch(self):
+        enabled = False
+        if self.context.needs_upgrading:
+            enabled = True
+        return Link(
+            '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
 
 class DecoratedBug:
@@ -520,8 +529,8 @@ class BranchView(LaunchpadView, FeedsMixin):
         """True if an imported branch's SVN URL is HTTP or HTTPS."""
         # You should only be calling this if it's an SVN code import
         assert self.context.code_import
-        assert self.context.code_import.svn_branch_url
-        url = self.context.code_import.svn_branch_url
+        url = self.context.code_import.url
+        assert url
         # https starts with http too!
         return url.startswith("http")
 
@@ -883,6 +892,27 @@ class BranchDeletionView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class BranchUpgradeView(LaunchpadFormView):
+    """Used to upgrade a branch."""
+
+    schema = IBranch
+    field_names = []
+
+    @property
+    def page_title(self):
+        return smartquote('Upgrade branch "%s"' % self.context.displayname)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    @action('Upgrade', name='upgrade_branch')
+    def upgrade_branch_action(self, action, data):
+        self.context.requestUpgrade()
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
