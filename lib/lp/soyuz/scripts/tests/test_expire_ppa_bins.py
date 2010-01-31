@@ -143,7 +143,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             dateremoved=self.over_threshold_date)
         other_source = pkg4.copyTo(
             pkg4.distroseries, pkg4.pocket, self.ppa2)
-        other_source.secure_record.dateremoved = None
+        other_source.dateremoved = None
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg4, dateremoved=self.over_threshold_date,
             archive=self.ppa)
@@ -166,7 +166,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             dateremoved=self.over_threshold_date)
         other_source = pkg5.copyTo(
             pkg5.distroseries, pkg5.pocket, self.ppa2)
-        other_source.secure_record.dateremoved = self.under_threshold_date
+        other_source.dateremoved = self.under_threshold_date
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg5, dateremoved=self.over_threshold_date,
             archive=self.ppa)
@@ -187,7 +187,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             dateremoved=self.over_threshold_date)
         other_source = pkg5.copyTo(
             pkg5.distroseries, pkg5.pocket, self.ppa2)
-        other_source.secure_record.dateremoved = self.over_threshold_date
+        other_source.dateremoved = self.over_threshold_date
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg5, dateremoved=self.over_threshold_date,
             archive=archive)
