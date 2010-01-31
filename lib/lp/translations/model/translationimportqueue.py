@@ -37,8 +37,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries, DistroSeriesStatus)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPerson, validate_person_not_private_membership)
 from lp.registry.interfaces.product import IProduct
@@ -268,10 +268,10 @@ class TranslationImportQueueEntry(SQLBase):
         We get it based on the path it's stored or None.
         """
         pofile_set = getUtility(IPOFileSet)
-        return pofile_set.getPOFileByPathAndOrigin(
+        return pofile_set.getPOFilesByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename)
+            sourcepackagename=self.sourcepackagename).one()
 
     def isUbuntuAndIsUserTranslationGroupOwner(self, user):
         """See `ITranslationImportQueueEntry`."""
@@ -1286,7 +1286,7 @@ class TranslationImportQueue:
                     Distribution.id = DistroSeries.distribution
                 WHERE DistroSeries.releasestatus = %s
                 LIMIT 100)
-            """ % quote(DistroSeriesStatus.OBSOLETE))
+            """ % quote(SeriesStatus.OBSOLETE))
         return cur.rowcount
 
     def cleanUpQueue(self):

@@ -81,14 +81,14 @@ Obsolete series are less interesting that other series. The ProductSeriesView
 has an is_obsolete property that templates can check when choosing the content
 to display.
 
-    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> print series.status
     Active Development
     >>> view.is_obsolete
     False
 
-    >>> series.status = DistroSeriesStatus.OBSOLETE
+    >>> series.status = SeriesStatus.OBSOLETE
     >>> view = create_view(series, '+index')
     >>> view.is_obsolete
     True

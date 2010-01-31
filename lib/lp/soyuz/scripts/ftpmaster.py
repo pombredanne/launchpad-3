@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
@@ -1064,7 +1064,7 @@ class LpQueryDistro(LaunchpadScript):
         """
         self.checkNoSuiteDefined()
         try:
-            series = self.getSeriesByStatus(DistroSeriesStatus.CURRENT)
+            series = self.getSeriesByStatus(SeriesStatus.CURRENT)
         except NotFoundError, err:
             raise LaunchpadScriptFailure(err)
 
@@ -1087,8 +1087,8 @@ class LpQueryDistro(LaunchpadScript):
         """
         self.checkNoSuiteDefined()
         series = None
-        wanted_status = (DistroSeriesStatus.DEVELOPMENT,
-                         DistroSeriesStatus.FROZEN)
+        wanted_status = (SeriesStatus.DEVELOPMENT,
+                         SeriesStatus.FROZEN)
         for status in wanted_status:
             try:
                 series = self.getSeriesByStatus(status)
@@ -1118,8 +1118,8 @@ class LpQueryDistro(LaunchpadScript):
         """
         self.checkNoSuiteDefined()
         supported_series = []
-        unsupported_status = (DistroSeriesStatus.EXPERIMENTAL,
-                              DistroSeriesStatus.OBSOLETE)
+        unsupported_status = (SeriesStatus.EXPERIMENTAL,
+                              SeriesStatus.OBSOLETE)
         for distroseries in self.location.distribution:
             if distroseries.status not in unsupported_status:
                 supported_series.append(distroseries.name)
@@ -1361,7 +1361,7 @@ class ObsoleteDistroseries(SoyuzScript):
                 "and which is not the most recent distroseries.")
 
         # Is the distroseries in an obsolete state?  Bail out now if not.
-        if distroseries.status != DistroSeriesStatus.OBSOLETE:
+        if distroseries.status != SeriesStatus.OBSOLETE:
             raise SoyuzScriptError(
                 "%s is not at status OBSOLETE." % distroseries.name)
 

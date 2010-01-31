@@ -35,8 +35,8 @@ from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.browser.queue import QueueItemsView
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -150,9 +150,9 @@ class DistroSeriesOverviewMenu(
 
     usedfor = IDistroSeries
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'create_milestone', 'admin', 'builds', 'queue',
-             'subscribe']
+    links = ['edit', 'reassign', 'driver', 'answers',
+             'packaging', 'needs_packaging', 'builds', 'queue',
+             'add_port', 'create_milestone', 'subscribe', 'admin']
 
     @enabled_with_permission('launchpad.Admin')
     def edit(self):
@@ -177,8 +177,14 @@ class DistroSeriesOverviewMenu(
         return Link('+addmilestone', text, summary, icon='add')
 
     def packaging(self):
-        text = 'Upstream links'
-        return Link('+packaging', text, icon='info')
+        text = 'All upstream links'
+        summary = 'A listing of source pakages and their upstream projects'
+        return Link('+packaging', text, summary=summary, icon='info')
+
+    def needs_packaging(self):
+        text = 'Needs upstream links'
+        summary = 'A listing of source pakages without upstream projects'
+        return Link('+needs-packaging', text, summary=summary, icon='info')
 
     # A search link isn't needed because the distro series overview
     # has a search form.
@@ -244,7 +250,7 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
     label = 'Search packages'
 
 
-class DistroSeriesStatusMixin:
+class SeriesStatusMixin:
     """A mixin that provides status field support."""
 
     def createStatusField(self):
@@ -256,15 +262,15 @@ class DistroSeriesStatusMixin:
          * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
         """
         stable_status = (
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED,
-            DistroSeriesStatus.OBSOLETE,
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED,
+            SeriesStatus.OBSOLETE,
             )
 
         if self.context.status not in stable_status:
-            terms = [status for status in DistroSeriesStatus.items
+            terms = [status for status in SeriesStatus.items
                      if status not in stable_status]
-            terms.append(DistroSeriesStatus.CURRENT)
+            terms.append(SeriesStatus.CURRENT)
         else:
             terms = stable_status
 
@@ -282,7 +288,7 @@ class DistroSeriesStatusMixin:
     def updateDateReleased(self, status):
         """Update the datereleased field if the status is set to CURRENT."""
         if (self.context.datereleased is None and
-            status == DistroSeriesStatus.CURRENT):
+            status == SeriesStatus.CURRENT):
             self.context.datereleased = UTC_NOW
 
 
@@ -328,7 +334,7 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
     milestone_can_release = False
 
 
-class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
+class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
@@ -375,7 +381,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
         self.next_url = canonical_url(self.context)
 
 
-class DistroSeriesAdminView(LaunchpadEditFormView, DistroSeriesStatusMixin):
+class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class for administering a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
@@ -463,7 +469,7 @@ class DistroSeriesPackagesView(DistroSeriesView):
     """A View to show series package to upstream package relationships."""
 
     label = 'Mapping series packages to upstream project series'
-    page_title = 'Upstream packaging links'
+    page_title = 'All upstream links'
 
     @cachedproperty
     def unlinked_translatables(self):
@@ -486,4 +492,21 @@ class DistroSeriesPackagesView(DistroSeriesView):
     def cached_packagings(self):
         """The batched upstream packaging links."""
         packagings = self.context.packagings
-        return BatchNavigator(packagings, self.request, size=200)
+        navigator = BatchNavigator(packagings, self.request, size=200)
+        navigator.setHeadings('packaging', 'packagings')
+        return navigator
+
+
+class DistroSeriesNeedsPackagesView(DistroSeriesView):
+    """A View to show series package to upstream package relationships."""
+
+    label = 'Packages that need upstream packaging links'
+    page_title = 'Needs upstream links'
+
+    @cachedproperty
+    def cached_unlinked_packages(self):
+        """The batched `ISourcePackage`s that needs packaging links."""
+        packages = self.context.getPriorizedUnlinkedSourcePackages()
+        navigator = BatchNavigator(packages, self.request, size=100)
+        navigator.setHeadings('package', 'packages')
+        return navigator

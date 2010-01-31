@@ -3,9 +3,12 @@
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
-  <utility
+  <securedutility
     name="TimezoneName"
     component="lp.services.worlddata.vocabularies.TimezoneNameVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
-    />
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
 </configure>

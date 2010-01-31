@@ -6,12 +6,14 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-
 import apt_pkg
 from cStringIO import StringIO
 import datetime
 import logging
 import operator
+import os
+import subprocess
+import time
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -28,7 +30,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote_like, SQLBase, sqlvalues)
+    clear_current_connection_cache, flush_database_updates, cursor,
+    quote_like, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.librarian import (
@@ -44,18 +47,21 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from canonical.librarian.utils import copy_and_close
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.buildmaster.model.buildbase import BuildBase
+from lp.registry.interfaces.pocket import (PackagePublishingPocket,
+    pocketsuffix)
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.builder import Builder
+from lp.buildmaster.model.builder import Builder
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.files import BinaryPackageFile
@@ -64,10 +70,12 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
 
 
-class Build(SQLBase):
+class Build(BuildBase, SQLBase):
     implements(IBuild)
     _table = 'Build'
     _defaultOrder = 'id'
+
+    build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
 
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
@@ -94,15 +102,6 @@ class Build(SQLBase):
     upload_log = ForeignKey(
         dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
-    def _getProxiedFileURL(self, library_file):
-        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
-        # Avoiding circular imports.
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
-
-        proxied_file = ProxiedLibraryFileAlias(library_file, self)
-        return proxied_file.http_url
-
     @property
     def buildqueue_record(self):
         """See `IBuild`."""
@@ -119,13 +118,6 @@ class Build(SQLBase):
         if self.upload_log is None:
             return None
         return self._getProxiedFileURL(self.upload_log)
-
-    @property
-    def build_log_url(self):
-        """See `IBuild`."""
-        if self.buildlog is None:
-            return None
-        return self._getProxiedFileURL(self.buildlog)
 
     def _getLatestPublication(self):
         store = Store.of(self)
@@ -217,6 +209,11 @@ class Build(SQLBase):
     def is_virtualized(self):
         """See `IBuild`"""
         return self.archive.require_virtualized
+
+    @property
+    def is_private(self):
+        """See `IBuildBase`"""
+        return self.archive.private
 
     @property
     def title(self):
@@ -316,7 +313,7 @@ class Build(SQLBase):
         self.buildlog = None
         self.upload_log = None
         self.dependencies = None
-        self.createBuildQueueEntry()
+        self.queueBuild()
 
     def rescore(self, score):
         """See `IBuild`."""
@@ -324,6 +321,17 @@ class Build(SQLBase):
             raise CannotBeRescored("Build cannot be rescored.")
 
         self.buildqueue_record.manualScore(score)
+
+    def makeJob(self):
+        """See `IBuildBase`."""
+        store = Store.of(self)
+        job = Job()
+        store.add(job)
+        specific_job = BuildPackageJob()
+        specific_job.build = self.id
+        specific_job.job = job.id
+        store.add(specific_job)
+        return specific_job
 
     def getEstimatedBuildStartTime(self):
         """See `IBuild`.
@@ -618,8 +626,8 @@ class Build(SQLBase):
             breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific)
 
-    def _estimateDuration(self):
-        """Estimate the build duration."""
+    def estimateDuration(self):
+        """See `IBuildBase`."""
         # Always include the primary archive when looking for
         # past build times (just in case that none can be found
         # in a PPA or copy archive).
@@ -669,26 +677,24 @@ class Build(SQLBase):
 
         return estimated_duration
 
-    def createBuildQueueEntry(self):
-        """See `IBuild`"""
-        store = Store.of(self)
-        job = Job()
-        store.add(job)
-        specific_job = BuildPackageJob()
-        specific_job.build = self.id
-        specific_job.job = job.id
-        store.add(specific_job)
-        duration_estimate = self._estimateDuration()
-        queue_entry = BuildQueue(
-            estimated_duration=duration_estimate,
-            job_type=BuildFarmJobType.PACKAGEBUILD,
-            job=job.id, processor=self.processor,
-            virtualized=self.is_virtualized)
-        store.add(queue_entry)
-        return queue_entry
-
     def notify(self, extra_info=None):
-        """See `IBuild`"""
+        """See `IBuildBase`.
+
+        If config.buildmaster.build_notification is disable, simply
+        return.
+
+        If config.builddmaster.notify_owner is enabled and SPR.creator
+        has preferredemail it will send an email to the creator, Bcc:
+        to the config.builddmaster.default_recipient. If one of the
+        conditions was not satisfied, no preferredemail found (autosync
+        or untouched packages from debian) or config options disabled,
+        it will only send email to the specified default recipient.
+
+        This notification will contain useful information about
+        the record in question (all states are supported), see
+        doc/build-notification.txt for further information.
+        """
+
         if not config.builddmaster.send_build_notification:
             return
 
@@ -823,7 +829,12 @@ class Build(SQLBase):
                 headers=extra_headers)
 
     def storeUploadLog(self, content):
-        """See `IBuild`."""
+        """See `IBuildBase`."""
+        # The given content is stored in the librarian, restricted as
+        # necessary according to the targeted archive's privacy.  The content
+        # object's 'upload_log' attribute will point to the
+        # `LibrarianFileAlias`.
+
         assert self.upload_log is None, (
             "Upload log information already exist and cannot be overridden.")
 

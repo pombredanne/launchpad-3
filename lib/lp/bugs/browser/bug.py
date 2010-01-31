@@ -10,6 +10,7 @@ __all__ = [
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
+    'BugHeatView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
@@ -22,11 +23,13 @@ __all__ = [
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
     'MaloneView',
+    'MAX_HEAT',
     ]
 
 from datetime import datetime, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
+from math import floor
 import re
 
 import pytz
@@ -74,6 +77,10 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 
+# Constant for the maximum bug heat we'll use for converting
+# IBug.heat to ratio. In the future this should come from the DB.
+# The value must be a float 
+MAX_HEAT = 5000.0
 
 class BugNavigation(Navigation):
     """Navigation for the `IBug`."""
@@ -621,8 +628,7 @@ class BugEditView(BugEditViewBase):
                 confirm_action.label, confirm_action.__name__))
         for new_tag in newly_defined_tags:
             self.notifications.append(
-                'The tag "%s" hasn\'t yet been used by %s before.'
-                ' Is this a new tag? %s' % (
+                'The tag "%s" hasn\'t been used by %s before. %s' % (
                     new_tag, bugtarget.bugtargetdisplayname, confirm_button))
             self._confirm_new_tags = True
 
@@ -633,7 +639,7 @@ class BugEditView(BugEditViewBase):
             self.updateBugFromData(data)
             self.next_url = canonical_url(self.context)
 
-    @action('Yes, define new tag', name='confirm_tag')
+    @action('Create the new tag', name='confirm_tag')
     def confirm_tag_action(self, action, data):
         """Define a new tag."""
         self.actions['field.actions.change'].success(data)
@@ -958,3 +964,20 @@ def bug_description_xhtml_representation(context, field, request):
         html    = formatter(nomail).text_to_html()
         return html.encode('utf-8')
     return renderer
+
+
+class BugHeatView(LaunchpadView):
+    """View for rendering the graphical (HTML) representation of bug heat."""
+
+    def __call__(self):
+        """Render the bug heat representation."""
+        heat_ratio = floor((self.context.heat / MAX_HEAT) * 4)
+        html = '<span>'
+        for flame in range(1, 5):
+            if flame <= heat_ratio:
+                html += '<img src="/@@/flame-icon" />'
+            else:
+                html += '<img src="/@@/flame-bw-icon" />'
+        html += '</span>'
+        return html
+
