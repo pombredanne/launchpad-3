@@ -323,7 +323,6 @@ class IPublishingView(Interface):
 
 class IPublishingEdit(Interface):
     """Base interface for writeable Publishing classes."""
-    export_as_webservice_entry()
 
     @call_with(removed_by=REQUEST_USER)
     @operation_parameters(
@@ -506,9 +505,9 @@ class ISecureSourcePackagePublishingHistory(IPublishingView):
         ))
 
 
-class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
-    """A source package publishing history record."""
-    export_as_webservice_entry()
+class ISourcePackagePublishingHistoryPublic(
+    ISecureSourcePackagePublishingHistory):
+    """A source package publishing history record with public attributes."""
 
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
@@ -691,6 +690,12 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         """
 
 
+class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
+                                      IPublishingEdit):
+    """A source package publishing history record."""
+    export_as_webservice_entry()
+
+
 #
 # Binary package publishing
 #
@@ -839,9 +844,9 @@ class ISecureBinaryPackagePublishingHistory(IPublishingView):
             required=False, readonly=False))
 
 
-class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
-    """A binary package publishing record."""
-    export_as_webservice_entry()
+class IBinaryPackagePublishingHistoryPublic(
+    ISecureBinaryPackagePublishingHistory):
+    """A binary package publishing record with public attributes."""
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
         "represents this binarypackagerelease in this distroarchseries.")
@@ -878,6 +883,12 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
         :return: a list of `IBinaryPackagePublishingHistory` records
             representing the binaries copied to the destination location.
         """
+
+
+class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
+                                      IPublishingEdit):
+    """A binary package publishing record."""
+    export_as_webservice_entry()
 
 
 class IPublishingSet(Interface):
