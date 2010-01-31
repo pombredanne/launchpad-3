@@ -41,6 +41,11 @@ class BugAttachment(SQLBase):
     message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
 
+    @property
+    def is_patch(self):
+        """See IBugAttachment."""
+        return self.type == BugAttachmentType.PATCH
+
     def removeFromBug(self, user):
         """See IBugAttachment."""
         notify(ObjectDeletedEvent(self, user))
