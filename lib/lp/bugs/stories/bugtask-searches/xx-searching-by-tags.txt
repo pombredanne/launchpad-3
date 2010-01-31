@@ -42,7 +42,7 @@ Both bugs are returned.
     >>> anon_browser.getControl('Search', index=1).click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'buglisting'))
-    Summary        Importance  Status
+    Summary        Importance  Status   Heat
     16 test bug a  Undecided   New
     17 test bug b  Undecided   New
 
@@ -56,5 +56,5 @@ returned, since it's the only bug with both tags.
     >>> anon_browser.getControl('Search', index=1).click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'buglisting'))
-    Summary        Importance  Status
+    Summary        Importance  Status   Heat
     16 test bug a  Undecided   New

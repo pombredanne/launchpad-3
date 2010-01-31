@@ -23,6 +23,7 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.tests.readonly import (
     remove_read_only_file, touch_read_only_file)
 import canonical.launchpad.webapp.adapter as dbadapter
@@ -79,6 +80,11 @@ class TestReadOnlyModeSwitches(TestCase):
         # Cleanup needed so that further tests can start processing other
         # requests (e.g. calling beforeTraversal).
         self.publication.endRequest(self.request, None)
+        # Force pending mode switches to actually happen and get logged so
+        # that we don't interfere with other tests.
+        assert not is_read_only(), (
+            "A test failed to clean things up properly, leaving the app "
+            "in read-only mode.")
 
     def setUp(self):
         TestCase.setUp(self)
@@ -127,7 +133,10 @@ class TestReadOnlyModeSwitches(TestCase):
             touch_read_only_file()
             self.publication.beforeTraversal(self.request)
         finally:
-            remove_read_only_file()
+            # Tell remove_read_only_file() to not assert that the mode switch
+            # actually happened, as we know it won't happen until this request
+            # is finished.
+            remove_read_only_file(assert_mode_switch=False)
 
         # Here the mode has changed to read-only, so the stores were removed
         # from zstorm.
