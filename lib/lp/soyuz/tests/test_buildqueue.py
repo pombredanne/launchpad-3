@@ -104,7 +104,10 @@ def check_mintime_to_builder(test, bq, min_time):
             "Wrong min time to next available builder (%s != %s)"
             % (delay, min_time))
     else:
-        test.assertTrue(delay is None, "No delay to next builder available")
+        test.assertEquals(
+            delay, None,
+            "A builder was found although none is available (returned "
+            "delay: %s)" % delay)
 
 
 def almost_equal(a, b, deviation=1):
@@ -544,6 +547,28 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         # this is indicated by a None value.
         check_mintime_to_builder(self, apg_job, None)
 
+        # The following job can only run on a native builder.
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=111, sourcename='xxr-gftp', score=1055,
+            virtualized=False)
+        self.builds.append(job.specific_job.build)
+
+        # Disable the native amd builders.
+        processor_fam = ProcessorFamilySet().getByName('amd64')
+        amd_proc = processor_fam.processors[0]
+        for builder in self.builders[(amd_proc.id, False)]:
+            builder.builderok = False
+
+        # Disable the native hppa builders.
+        processor_fam = ProcessorFamilySet().getByName('hppa')
+        hppa_proc = processor_fam.processors[0]
+        for builder in self.builders[(hppa_proc.id, False)]:
+            builder.builderok = False
+
+        # All native builders are disabled now.  No builders capable of
+        # running the job at hand are available and this is indicated by a
+        # None value.
+        check_mintime_to_builder(self, job, None)
 
 class MultiArchBuildsBase(TestBuildQueueBase):
     """Set up a test environment with builds and multiple processors."""
