@@ -48,6 +48,7 @@ from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, DistroArchSeriesSet, PocketChroot)
@@ -240,6 +241,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 archtag, self.distribution.name, self.name))
         return item
 
+    def getDistroArchSeriesByProcessor(self, processor):
+        """See `IDistroSeries`."""
+        # XXX: JRV 2010-01-14: This should ideally use storm to find the
+        # distroarchseries rather than iterating over all of them, but
+        # I couldn't figure out how to do that - and a trivial for loop
+        # isn't expensive given there's generally less than a dozen
+        # architectures.
+        for architecture in self.architectures:
+            if architecture.processorfamily == processor.family:
+                return architecture
+        return None
+
     @property
     def enabled_architectures(self):
         store = Store.of(self)
@@ -305,10 +318,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def packagings(self):
         """See `IDistroSeries`."""
-        # Avoid circular import failures.
         # We join to SourcePackageName, ProductSeries, and Product to cache
-        # the objects that are implcitly needed to work with a
+        # the objects that are implicitly needed to work with a
         # Packaging object.
+        # Avoid circular import failures.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
         find_spec = (Packaging, SourcePackageName, ProductSeries, Product)
@@ -329,6 +342,130 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [
             packaging
             for (packaging, spn, product_series, product) in results]
+
+    def getPriorizedUnlinkedSourcePackages(self):
+        """See `IDistroSeries`.
+
+        The prioritization is a heuristic rule using bug heat,
+        translatable messages, and the source package release's component.
+        """
+        find_spec = (
+            SourcePackageName,
+            SQL("""
+                coalesce(total_heat, 0) + coalesce(po_messages, 0) +
+                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""),
+            SQL("coalesce(total_bugs, 0) AS total_bugs"),
+            SQL("coalesce(total_messages, 0) AS total_messages"))
+        joins, conditions = self._current_sourcepackage_joins_and_conditions
+        origin = SQL(joins)
+        condition = SQL(conditions + "AND packaging.id IS NULL")
+        results = IStore(self).using(origin).find(find_spec, condition)
+        results = results.order_by('score DESC')
+        return [{
+                 'package': SourcePackage(
+                    sourcepackagename=spn, distroseries=self),
+                 'total_bugs': total_bugs,
+                 'total_messages': total_messages}
+                for (spn, score, total_bugs, total_messages) in results]
+
+    def getPriorizedlPackagings(self):
+        """See `IDistroSeries`.
+
+        The prioritization is a heuristic rule using the branch, bug heat,
+        translatable messages, and the source package release's component.
+        """
+        # We join to SourcePackageName, ProductSeries, and Product to cache
+        # the objects that are implcitly needed to work with a
+        # Packaging object.
+        # Avoid circular import failures.
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        find_spec = (
+            Packaging, SourcePackageName, ProductSeries, Product,
+            SQL("""
+                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END +
+                    CASE WHEN Product.bugtracker IS NULL
+                        THEN coalesce(total_heat, 10) ELSE 0 END +
+                    CASE WHEN ProductSeries.translations_autoimport_mode = 1
+                        THEN coalesce(po_messages, 10) ELSE 0 END +
+                    CASE WHEN ProductSeries.branch IS NULL THEN 500
+                        ELSE 0 END AS score"""))
+        joins, conditions = self._current_sourcepackage_joins_and_conditions
+        origin = SQL(joins + """
+            JOIN ProductSeries
+                ON Packaging.productseries = ProductSeries.id
+            JOIN Product
+                ON ProductSeries.product = Product.id
+            """)
+        condition = SQL(conditions + "AND packaging.id IS NOT NULL")
+        results = IStore(self).using(origin).find(find_spec, condition)
+        results = results.order_by('score DESC')
+        return [packaging
+                for (packaging, spn, series, product, score) in results]
+
+    @property
+    def _current_sourcepackage_joins_and_conditions(self):
+        """The SQL joins and conditions to prioritise source packages."""
+        heat_score = ("""
+            LEFT JOIN (
+                SELECT
+                    BugTask.sourcepackagename,
+                    sum(Bug.heat) AS total_heat,
+                    count(Bug.id) AS total_bugs
+                FROM BugTask
+                    JOIN Bug
+                        ON bugtask.bug = Bug.id
+                WHERE
+                    BugTask.sourcepackagename is not NULL
+                    AND BugTask.distribution = %(distribution)s
+                    AND BugTask.status in %(statuses)s
+                GROUP BY BugTask.sourcepackagename
+                ) bugs
+                ON SourcePackageName.id = bugs.sourcepackagename
+            """ % sqlvalues(
+                distribution=self.distribution,
+                statuses=UNRESOLVED_BUGTASK_STATUSES))
+        message_score = ("""
+            LEFT JOIN (
+                SELECT
+                    POTemplate.sourcepackagename,
+                    POTemplate.distroseries,
+                    SUM(POTemplate.messagecount) / 2 AS po_messages,
+                    SUM(POTemplate.messagecount) AS total_messages
+                FROM POTemplate
+                WHERE
+                    POTemplate.sourcepackagename is not NULL
+                    AND POTemplate.distroseries = %(distroseries)s
+                GROUP BY
+                    POTemplate.sourcepackagename,
+                    POTemplate.distroseries
+                ) messages
+                ON SourcePackageName.id = messages.sourcepackagename
+                AND DistroSeries.id = messages.distroseries
+            """ % sqlvalues(distroseries=self))
+        joins = ("""
+            SourcePackageName
+            JOIN SourcePackageRelease spr
+                ON SourcePackageName.id = spr.sourcepackagename
+            JOIN SourcePackagePublishingHistory spph
+                ON spr.id = spph.sourcepackagerelease
+            JOIN archive
+                ON spph.archive = Archive.id
+            JOIN DistroSeries
+                ON spph.distroseries = DistroSeries.id
+            LEFT JOIN Packaging
+                ON SourcePackageName.id = Packaging.sourcepackagename
+                AND Packaging.distroseries = DistroSeries.id
+            """ + heat_score + message_score)
+        conditions = ("""
+            DistroSeries.id = %(distroseries)s
+            AND spph.status IN %(active_status)s
+            AND archive.purpose = %(primary)s
+            """ % sqlvalues(
+                distroseries=self,
+                active_status=active_publishing_status,
+                primary=ArchivePurpose.PRIMARY))
+        return (joins, conditions)
 
     @property
     def supported(self):
