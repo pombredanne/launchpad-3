@@ -23,9 +23,8 @@ from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
 
 from ampoule import child, pool, main
-from twisted.internet import defer, error, reactor, stdio
+from twisted.internet import defer, reactor
 from twisted.protocols import amp
-from twisted.python import log, reflect
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
