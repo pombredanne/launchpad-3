@@ -9,12 +9,14 @@ from bzrlib.transport import get_transport
 
 
 def get_staging_revision():
+    """Get the revision of db-stable deployed on staging."""
     t = get_transport('https://staging.launchpad.net/')
     last_line = t.get_bytes('successful-updates.txt').splitlines()[-1]
     return int(last_line.split()[-1])
 
 
 def get_edge_revision():
+    """Get the revision of stable deployed on edge."""
     t = get_transport('https://edge.launchpad.net/')
     html = t.get_bytes('index.html')
     revision_re = re.compile(r'\(r(\d+)\)')
