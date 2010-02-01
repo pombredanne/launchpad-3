@@ -2,8 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
- - Add a ParseFileBugDataJob class to the model somewhere. This should:
-   - Use the FileBugDataParser() class (it's in the browser code; we
-     need to move it) to parse the temp file and store the parsed data
-     in the BugJob.json_data field.
