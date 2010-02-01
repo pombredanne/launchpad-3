@@ -28,8 +28,8 @@ from storm.database import STATE_DISCONNECTED
 from storm.exceptions import DisconnectionError, IntegrityError
 from storm.zope.interfaces import IZStorm
 
+from zc.zservertracelog.interfaces import ITraceLog
 import zope.app.publication.browser
-
 from zope.app import zapi  # used to get at the adapters service
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
@@ -459,8 +459,17 @@ class LaunchpadBrowserPublication(
         notify(BeforeTraverseEvent(ob, request))
 
     def afterTraversal(self, request, ob):
-        """ We don't want to call _maybePlacefullyAuthenticate as does
-        zopepublication."""
+        """See zope.publisher.interfaces.IPublication.
+
+        This hook does not invoke our parent's afterTraversal hook
+        in zopepublication.py because we don't want to call
+        _maybePlacefullyAuthenticate.
+        """
+        # Log the URL including vhost information to the ZServer tracelog.
+        tracelog = ITraceLog(request, None)
+        if tracelog is not None:
+            tracelog.log(request.getURL())
+
         assert hasattr(request, '_traversalticks_start'), (
             'request._traversalticks_start, which should have been set by '
             'beforeTraversal(), was not found.')

@@ -183,11 +183,14 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             release_notes=release_notes,
             datereleased=datereleased,
             milestone=self)
+        return release
+
+    def closeBugsAndBlueprints(self, user):
+        """See `IMilestone`."""
         for bugtask in self.open_bugtasks:
             if bugtask.status == BugTaskStatus.FIXCOMMITTED:
                 bugtask.bug.setStatus(
-                    bugtask.target, BugTaskStatus.FIXRELEASED, owner)
-        return release
+                    bugtask.target, BugTaskStatus.FIXRELEASED, user)
 
     def destroySelf(self):
         """See `IMilestone`."""
