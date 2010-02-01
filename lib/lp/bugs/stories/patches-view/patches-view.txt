@@ -17,11 +17,14 @@ We don't see any patches when we open the patches view.
     ...     for tag in find_tags_by_class(
     ...         expected_contents, 'listing'):
     ...         print extract_text(tag)
+    ...     messages = find_tags_by_class(expected_contents, 'informational')
+    ...     if len(messages) > 0:
+    ...         print extract_text(messages[0])
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
-    Bug Importance Status Patch Age
+    There are no patches associated with Patchy-product-1 at this time.
 
 After the product has a bug, it still doesn't show up in the patches
 view, because that bug has no patch attachments.
@@ -44,7 +47,8 @@ view, because that bug has no patch attachments.
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
-    Bug Importance Status Patch Age
+    There are no patches associated with Patchy-product-1 at this time.
+
 
 After we add a non-patch attachment to that bug, the patches view
 still shows no patches.
@@ -54,7 +58,7 @@ still shows no patches.
     <BugAttachment at...
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
-    Bug Importance Status Patch Age
+    There are no patches associated with Patchy-product-1 at this time.
 
 After we add a patch attachment that's one day old, we see it in the
 patches view.
@@ -319,12 +323,3 @@ target package column in that case, because the package is implied.
     From: Patchy Person
     Link: patch_a.diff description of patch a
 
-
-Display when no patches are available
--------------------------------------
-
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/tomcat/+patches')
-    >>> print extract_text(
-    ...     find_tags_by_class(anon_browser.contents, 'informational')[0])
-    There are no patches associated with Tomcat at this time.
