@@ -1,6 +1,8 @@
 SourcePackage views
 ===================
 
+Edit packaging view
+-------------------
 
     >>> product = factory.makeProduct(name='bonkers', displayname='Bonkers')
     >>> productseries = factory.makeProductSeries(
@@ -96,3 +98,65 @@ but there is no notification message that the upstream link was updated.
 
     >>> print view.request.response.notifications
     []
+
+Upstream associations portlet
+-----------------------------
+
+The upstreams associations portlet either displays the upstream
+information if it is already set or gives the user the opportunity to
+suggest the association.  The suggestion is based on a
+ProductVocabulary query using the source package name.
+
+Since the bonkers source project was associated previously with the
+bonkers project, the portlet will display that information.
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> for product in view.product_suggestions:
+    ...     print product.name
+    bonkers
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     extract_text, find_tag_by_id)
+    >>> content = extract_text(find_tag_by_id(view.render(), 'upstreams'))
+    >>> print content
+    Project:...Bonkers...
+    Series:...crazy...
+
+A new source project that is not linked to an upstream will result in
+the portlet showing the suggested project.
+
+    >>> product = factory.makeProduct(name='lernid', displayname='Lernid')
+    >>> sourcepackagename = factory.makeSourcePackageName(name='lernid')
+    >>> package = factory.makeSourcePackage(
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> for product in view.product_suggestions:
+    ...     print product.name
+    lernid
+
+    >>> content = extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
+    >>> print content
+    Launchpad doesn&#8217;t know which project and series this
+    package belongs to. ...
+    Is the following project the upstream for this source package?
+    Registered upstream project:
+    Lernid...
+
+If there are multiple potential matches they are all shown.
+
+    >>> product = factory.makeProduct(name='lernid-dev', displayname='Lernid Dev')
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> for product in view.product_suggestions:
+    ...     print product.name
+    lernid
+    lernid-dev
+
+    >>> content = extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
+    >>> print content
+    Launchpad doesn&#8217;t know which project and series this
+    package belongs to. ...
+    Is one of these projects the upstream for this source package?
+    Registered upstream project:
+    Lernid...
+    Lernid Dev...
