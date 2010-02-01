@@ -14,16 +14,16 @@ mirrors:
     content: u'Archive'
     description: None
     displayname: None
-    distribution_link: u'http://api.launchpad.dev/beta/ubuntu'
+    distribution_link: u'http://.../ubuntu'
     enabled: True
     ftp_base_url: None
     http_base_url: u'http://archive.ubuntu.com/ubuntu/'
     name: u'canonical-archive'
     official_candidate: True
-    owner_link: u'http://api.launchpad.dev/beta/~mark'
-    resource_type_link: u'http://api.launchpad.dev/beta/#distribution_mirror'
+    owner_link: u'http://.../~mark'
+    resource_type_link: u'http://.../#distribution_mirror'
     rsync_base_url: None
-    self_link: u'http://api.launchpad.dev/beta/ubuntu/+mirror/canonical-archive'
+    self_link: u'http://.../ubuntu/+mirror/canonical-archive'
     speed: u'100 Mbps'
     status: u'Official'
 
@@ -36,15 +36,27 @@ And CD image mirrors:
     content: u'CD Image'
     description: None
     displayname: None
-    distribution_link: u'http://api.launchpad.dev/beta/ubuntu'
+    distribution_link: u'http://.../ubuntu'
     enabled: True
     ftp_base_url: None
     http_base_url: u'http://releases.ubuntu.com/'
     name: u'canonical-releases'
     official_candidate: True
-    owner_link: u'http://api.launchpad.dev/beta/~mark'
-    resource_type_link: u'http://api.launchpad.dev/beta/#distribution_mirror'
+    owner_link: u'http://.../~mark'
+    resource_type_link: u'http://.../#distribution_mirror'
     rsync_base_url: None
-    self_link: u'http://api.launchpad.dev/beta/ubuntu/+mirror/canonical-releases'
+    self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
     status: u'Official'
+
+= Distribution Mirror Custom Operations =
+
+DistributionMirror has some custom operations.
+
+"isOfficial" returns a boolean result on whether a mirror is an official mirror
+or not.
+
+    >>> is_official_mirror = webservice.named_get(canonical_releases['self_link'],
+    ...     'isOfficial').jsonBody()
+    >>> print is_official_mirror
+    True
