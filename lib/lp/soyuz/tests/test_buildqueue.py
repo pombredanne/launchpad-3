@@ -140,11 +140,18 @@ def builders_for_job(job):
 
 def check_estimate(test, job, delay_in_seconds):
     """Does the dispatch time estimate match the expectation?"""
-    estimate = job.getEstimatedJobStartTime() - datetime.utcnow()
-    test.assertTrue(
-        almost_equal(estimate.seconds, delay_in_seconds),
-        "The estimated delay (%s) deviates from the expected one (%s)" %
-        (estimate.seconds, delay_in_seconds))
+    estimate = job.getEstimatedJobStartTime()
+    if delay_in_seconds is None:
+        test.assertEquals(
+            delay_in_seconds, estimate,
+            "An estimate should not be possible at present but one was "
+            "returned (%s) nevertheless." % estimate)
+    else:
+        estimate -= datetime.utcnow()
+        test.assertTrue(
+            almost_equal(estimate.seconds, delay_in_seconds),
+            "The estimated delay (%s) deviates from the expected one (%s)" %
+            (estimate.seconds, delay_in_seconds))
 
 
 class TestBuildQueueSet(TestCaseWithFactory):
@@ -1177,11 +1184,9 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         apg_job.lastscore = 1024
 
         # Also, toggle the 'virtualized' flag for all '386' jobs.
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        proc_386 = processor_fam.processors[0]
         for build in self.builds:
             bq = build.buildqueue_record
-            if bq.processor == proc_386:
+            if bq.processor == x86_proc:
                 bq.virtualized = True
 
     def test_estimation(self):
@@ -1238,3 +1243,10 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         #   processor-independent jobs:
         #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
         check_estimate(self, vim_job, 1527)
+
+        processor_fam = ProcessorFamilySet().getByName('x86')
+        x86_proc = processor_fam.processors[0]
+        # Disable the virtual x86 builders.
+        for builder in self.builders[(x86_proc.id, True)]:
+            builder.builderok = False
+        check_estimate(self, vim_job, None)
