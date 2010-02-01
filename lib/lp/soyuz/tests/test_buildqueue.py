@@ -23,7 +23,7 @@ from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.buildqueue import (BuildQueue, get_builder_data)
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
@@ -127,10 +127,21 @@ def set_remaining_time_for_running_job(bq, remainder):
 
 def check_delay_for_job(test, the_job, delay):
     # Obtain the builder statistics pertaining to this job.
-    builder_data = the_job._getBuilderData()
-    builders_in_total, builders_for_job, builder_stats = builder_data
-    estimated_delay = the_job._estimateJobDelay(builder_stats)
+    builder_data = get_builder_data()
+    estimated_delay = the_job._estimateJobDelay(builder_data)
     test.assertEqual(estimated_delay, delay)
+
+
+def total_builders():
+    """How many available builders do we have in total?"""
+    builder_data = get_builder_data()
+    return builder_data[(None, False)] + builder_data[(None, True)]
+
+
+def builders_for_job(job):
+    """How many available builders can run the given job?"""
+    builder_data = get_builder_data()
+    return builder_data[(getattr(job.processor, 'id', None), job.virtualized)]
 
 
 class TestBuildQueueSet(TestCaseWithFactory):
@@ -344,16 +355,16 @@ class TestBuilderData(SingleArchBuildsBase):
         # Make sure the builder numbers are correct. The builder data will
         # be the same for all of our builds.
         bq = self.builds[0].buildqueue_record
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
         self.assertEqual(
-            builders_in_total, 21, "The total number of builders is wrong.")
+            total_builders(), 21,
+            "The total number of builders is wrong.")
         self.assertEqual(
-            builders_for_job, 4,
+            builders_for_job(bq), 4,
             "[1] The total number of builders that can build the job in "
             "question is wrong.")
         processor_fam = ProcessorFamilySet().getByName('x86')
         x86_proc = processor_fam.processors[0]
+        builder_stats = get_builder_data()
         self.assertEqual(
             builder_stats[(x86_proc.id, False)], 4,
             "The number of native x86 builders is wrong")
@@ -385,37 +396,28 @@ class TestBuilderData(SingleArchBuildsBase):
         # Disable the native x86 builders.
         for builder in self.builders[(x86_proc.id, False)]:
             builder.builderok = False
-        # Get the builder statistics again.
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
         # Since all native x86 builders were disabled there are none left
         # to build the job.
         self.assertEqual(
-            builders_for_job, 0,
+            builders_for_job(bq), 0,
             "[2] The total number of builders that can build the job in "
             "question is wrong.")
         # Re-enable one of them.
         for builder in self.builders[(x86_proc.id, False)]:
             builder.builderok = True
             break
-        # Get the builder statistics again.
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
         # Now there should be one builder available to build the job.
         self.assertEqual(
-            builders_for_job, 1,
+            builders_for_job(bq), 1,
             "[3] The total number of builders that can build the job in "
             "question is wrong.")
         # Disable the *virtual* x86 builders -- should not make any
         # difference.
         for builder in self.builders[(x86_proc.id, True)]:
             builder.builderok = False
-        # Get the builder statistics again.
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
         # There should still be one builder available to build the job.
         self.assertEqual(
-            builders_for_job, 1,
+            builders_for_job(bq), 1,
             "[4] The total number of builders that can build the job in "
             "question is wrong.")
 
@@ -429,8 +431,7 @@ class TestBuilderData(SingleArchBuildsBase):
         self.assertEqual(build.processor.id, proc_386.id)
         self.assertEqual(build.is_virtualized, False)
         bq = build.buildqueue_record
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
+        builder_stats = get_builder_data()
         # We have 4 x86 native builders.
         self.assertEqual(
             builder_stats[(proc_386.id, False)], 4,
@@ -543,9 +544,11 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         for builder in self.builders[(x86_proc.id, False)]:
             builder.builderok = False
 
-        # No builders capable of running the job at hand are available now,
-        # this is indicated by a None value.
-        check_mintime_to_builder(self, apg_job, None)
+        # No builders capable of running the job at hand are available now.
+        self.assertEquals(builders_for_job(apg_job), 0)
+        # The "minimum time to builder" estimation logic is not aware of this
+        # though.
+        check_mintime_to_builder(self, apg_job, 0)
 
         # The following job can only run on a native builder.
         job = self.factory.makeSourcePackageRecipeBuildJob(
@@ -566,9 +569,11 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
             builder.builderok = False
 
         # All native builders are disabled now.  No builders capable of
-        # running the job at hand are available and this is indicated by a
-        # None value.
-        check_mintime_to_builder(self, job, None)
+        # running the job at hand are available.
+        self.assertEquals(builders_for_job(job), 0)
+        # The "minimum time to builder" estimation logic is not aware of the
+        # fact that no builders capable of running the job are available.
+        check_mintime_to_builder(self, job, 0)
 
 class MultiArchBuildsBase(TestBuildQueueBase):
     """Set up a test environment with builds and multiple processors."""
@@ -717,21 +722,23 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         for builder in self.builders[(hppa_proc.id, False)]:
             builder.builderok = False
 
-        # No builders capable of running the job at hand are available now,
-        # this is indicated by a None value.
-        check_mintime_to_builder(self, apg_job, None)
+        # No builders capable of running the job at hand are available now.
+        self.assertEquals(builders_for_job(apg_job), 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
-        # Let's assume for the moment that the job at the head of the 'apg'
-        # build queue is processor independent. In that case we'd ask for
-        # *any* next available builder.
+        # Let's add a processor-independent job to the mix.
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=22,
             sourcename='my-recipe-digikam', score=9999)
+        # There are still builders available for the processor-independent
+        # job.
+        self.assertEquals(builders_for_job(job), 6)
+        # Even free ones.
         self.assertTrue(
-            bq._freeBuildersCount(None, None) > 0,
-            "Builders are immediately available for jobs that don't care "
-            "about processor architectures or virtualization")
-        check_mintime_to_builder(self, apg_job, 0)
+            bq._freeBuildersCount(job.processor, job.virtualized) > 0,
+            "Builders are immediately available for processor-independent "
+            "jobs.")
+        check_mintime_to_builder(self, job, 0)
 
         # Let's disable all builders.
         for builders in self.builders.itervalues():
@@ -739,8 +746,9 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
                 builder.builderok = False
 
         # There are no builders capable of running even the processor
-        # independent jobs now and that this is indicated by a None value.
-        check_mintime_to_builder(self, apg_job, None)
+        # independent jobs now.
+        self.assertEquals(builders_for_job(job), 0)
+        check_mintime_to_builder(self, job, 0)
 
         # Re-enable the native hppa builders.
         for builder in self.builders[(hppa_proc.id, False)]:
@@ -953,10 +961,6 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         flex_build, flex_job = find_job(self, 'flex', 'hppa')
         check_mintime_to_builder(self, flex_job, 0)
 
-        # Obtain the builder statistics pertaining to this job.
-        builder_data = flex_job._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
-
         # The delay will be 900 (= 15*60) + 222 seconds
         check_delay_for_job(self, flex_job, 1122)
 
@@ -1001,10 +1005,6 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         bash_build, bash_job = find_job(self, 'xx-recipe-bash', None)
         check_mintime_to_builder(self, bash_job, 0)
 
-        # Obtain the builder statistics pertaining to this job.
-        builder_data = bash_job._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
-
         # The delay will be 960 + 780 + 222 = 1962, where
         #   hppa job delays: 960 = (9+11+13+15)*60/3
         #    386 job delays: 780 = (10+12+14+16)*60/4
@@ -1013,10 +1013,6 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # One of the 9 builders for the 'zsh' build is immediately available.
         zsh_build, zsh_job = find_job(self, 'xx-recipe-zsh', None)
         check_mintime_to_builder(self, zsh_job, 0)
-
-        # Obtain the builder statistics pertaining to this job.
-        builder_data = zsh_job._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
 
         # The delay will be 0 since this is the head job.
         check_delay_for_job(self, zsh_job, 0)

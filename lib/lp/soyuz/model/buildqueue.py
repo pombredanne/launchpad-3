@@ -61,6 +61,32 @@ def specific_job_classes():
     return job_classes
 
 
+def get_builder_data():
+    """How many working builders are there, how are they configured?"""
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    builder_data = """
+        SELECT processor, virtualized, COUNT(id) FROM builder
+        WHERE builderok = TRUE AND manual = FALSE
+        GROUP BY processor, virtualized;
+    """
+    results = store.execute(builder_data).get_all()
+    builders_in_total = builders_for_job = virtualized_total = 0
+
+    builder_stats = defaultdict(int)
+    for processor, virtualized, count in results:
+        builders_in_total += count
+        if virtualized:
+            virtualized_total += count
+        builder_stats[(processor, virtualized)] = count
+
+    builder_stats[(None, True)] = virtualized_total
+    # Jobs with a NULL virtualized flag should be treated the same as
+    # jobs where virtualized=TRUE.
+    builder_stats[(None, None)] = virtualized_total
+    builder_stats[(None, False)] = builders_in_total - virtualized_total
+
+    return builder_stats
+
 class BuildQueue(SQLBase):
     implements(IBuildQueue)
     _table = "BuildQueue"
@@ -149,53 +175,6 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.job.date_started = timestamp
 
-    def _getBuilderData(self):
-        """How many working builders are there, how are they configured?"""
-        # Please note: this method will send only one request to the database.
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        my_processor = self.specific_job.processor
-        my_virtualized = self.specific_job.virtualized
-
-        # We need to know the total number of builders as well as the
-        # number of builders that can run the job of interest (JOI).
-        # If the JOI is processor independent these builder counts will
-        # have the same value.
-        builder_data = """
-            SELECT processor, virtualized, COUNT(id) FROM builder
-            WHERE builderok = TRUE AND manual = FALSE
-            GROUP BY processor, virtualized;
-        """
-        results = store.execute(builder_data).get_all()
-        builders_in_total = builders_for_job = 0
-        virtualized_total = 0
-        native_total = 0
-
-        builder_stats = dict()
-        for processor, virtualized, count in results:
-            builders_in_total += count
-            if virtualized:
-                virtualized_total += count
-            else:
-                native_total += count
-            if my_processor is not None:
-                if (my_processor.id == processor and
-                    my_virtualized == virtualized):
-                    # The job on hand can only run on builders with a
-                    # particular processor/virtualization combination and
-                    # this is how many of these we have.
-                    builders_for_job = count
-            builder_stats[(processor, virtualized)] = count
-        if my_processor is None:
-            # The job of interest (JOI) is processor independent.
-            builders_for_job = builders_in_total
-
-        builder_stats[(None, None)] = builders_in_total
-        builder_stats[(None, True)] = virtualized_total
-        builder_stats[(None, False)] = native_total
-
-        return (builders_in_total, builders_for_job, builder_stats)
-
     def _freeBuildersCount(self, processor, virtualized):
         """How many builders capable of running jobs for the given processor
         and virtualization combination are idle/free at present?"""
@@ -205,11 +184,12 @@ class BuildQueue(SQLBase):
                 builderok = TRUE AND manual = FALSE
                 AND id NOT IN (
                     SELECT builder FROM BuildQueue WHERE builder IS NOT NULL)
-            """
+                AND virtualized = %s
+            """ % sqlvalues(normalize_virtualization(virtualized))
         if processor is not None:
             query += """
-                AND processor = %s AND virtualized = %s
-            """ % sqlvalues(processor, virtualized)
+                AND processor = %s
+            """ % sqlvalues(processor)
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.execute(query)
         free_builders = result_set.get_one()[0]
@@ -230,34 +210,20 @@ class BuildQueue(SQLBase):
               virtualization setting should be considered.
 
         :return: The estimated number of seconds untils a builder capable of
-            running the head job becomes available or None if no such builder
-            exists.
+            running the head job becomes available.
         """
         head_job_platform = self._getHeadJobPlatform()
         if head_job_platform is None:
             # The job of interest (JOI) is the head job.
             return 0
 
-        head_job_processor, head_job_virtualized = head_job_platform
-
-        # First check whether we have free builders.
-        free_builders = self._freeBuildersCount(
-            head_job_processor, head_job_virtualized)
-
+        # Return a zero delay if we still have free builders available for the
+        # given platform/virtualization combination.
+        free_builders = self._freeBuildersCount(*head_job_platform)
         if free_builders > 0:
-            # We have free builders for the given processor/virtualization
-            # combination -> zero delay
             return 0
 
-        extra_clauses = ''
-        if head_job_processor is not None:
-            # Only look at builders with specific processor types.
-            extra_clauses += """
-                AND Builder.processor = %s
-                AND Builder.virtualized = %s
-                """ % sqlvalues(head_job_processor, head_job_virtualized)
-
-        params = sqlvalues(JobStatus.RUNNING) + (extra_clauses,)
+        head_job_processor, head_job_virtualized = head_job_platform
 
         delay_query = """
             SELECT MIN(
@@ -287,16 +253,21 @@ class BuildQueue(SQLBase):
                 AND Builder.manual = False
                 AND Builder.builderok = True
                 AND Job.status = %s
-                %s
-            """ % params
+                AND Builder.virtualized = %s
+            """ % sqlvalues(
+                JobStatus.RUNNING,
+                normalize_virtualization(head_job_virtualized))
+
+        if head_job_processor is not None:
+            # Only look at builders with specific processor types.
+            delay_query += """
+                AND Builder.processor = %s
+                """ % sqlvalues(head_job_processor)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.execute(delay_query)
         head_job_delay = result_set.get_one()[0]
-        if head_job_delay is None:
-            return None
-        else:
-            return int(head_job_delay)
+        return (0 if head_job_delay is None else int(head_job_delay))
 
     def _getPendingJobsClauses(self):
         """WHERE clauses for pending job queries, used for dipatch time
@@ -362,11 +333,7 @@ class BuildQueue(SQLBase):
             ORDER BY lastscore DESC, job LIMIT 1
             """
         head_job_platform = store.execute(query).get_all()
-        if len(head_job_platform) == 1:
-            head_job_platform = head_job_platform.pop()
-        else:
-            head_job_platform = None
-        return head_job_platform
+        return (head_job_platform[0] if len(head_job_platform) == 1 else None)
 
     def _estimateJobDelay(self, builder_stats):
         """Sum of estimated durations for *pending* jobs ahead in queue.
@@ -484,9 +451,8 @@ class BuildQueue(SQLBase):
         # available.
         result = None
 
-        (builders_in_total, builders_for_job,
-         builder_stats) = self._getBuilderData()
-        if builders_for_job == 0:
+        builder_stats = self._getBuilderData()
+        if builder_stats[(self.processor, self.virtualized)] == 0:
             # No builders that can run the job at hand
             #   -> no dispatch time estimation available.
             return result
