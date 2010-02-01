@@ -9,7 +9,8 @@ __all__ = ['ExportTranslationsToBranch']
 
 import os.path
 from datetime import datetime, timedelta
-from pytz import UTC
+
+import pytz
 
 from zope.component import getUtility
 
@@ -66,7 +67,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         branch = source.translations_branch
         jobsource = getUtility(IRosettaUploadJobSource)
         unfinished_jobs = jobsource.findUnfinishedJobs(
-            branch, since=datetime.now(UTC) - timedelta(days=1))
+            branch, since=datetime.now(pytz.UTC) - timedelta(days=1))
 
         if unfinished_jobs.any():
             raise ConcurrentUpdateError(
@@ -130,11 +131,11 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # The bzr timestamp is a float representing UTC-based seconds
         # since the epoch.  It stores the timezone as well, but we can
         # ignore it here.
-        return datetime.fromtimestamp(revision.timestamp, UTC)
+        return datetime.fromtimestamp(revision.timestamp, pytz.UTC)
 
     def _getLatestTranslationsCommit(self, branch):
         """Get date of last translations commit to `branch`, if any."""
-        cutoff_date = datetime.now(UTC) - self.previous_commit_cutoff_age
+        cutoff_date = datetime.now(pytz.UTC) - self.previous_commit_cutoff_age
 
         revno, current_rev = branch.last_revision_info()
         repository = branch.repository

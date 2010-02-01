@@ -25,24 +25,8 @@ been accepted as targeting a specific series of a distribution:
   >>> print anon_browser.getLink("hoary").url
   http://bugs.launchpad.dev/ubuntu/hoary/+bugs
 
-The same portlet is available on the bugs homepage for the distro:
-
-  >>> anon_browser.open("http://bugs.launchpad.dev/debian/+bugs-index")
-  >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
-  >>> print extract_text(portlet)
-  Series-targeted bugs
-  sarge 1
-  woody 2
-
-  >>> anon_browser.open("http://bugs.launchpad.dev/debian/sarge/+bugs-index")
-  >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
-  >>> print extract_text(portlet)
-  Series-targeted bugs
-  sarge 1
-  woody 2
-
-It's also available for project and project series listings and
-homepages:
+The same portlet is also available for project and project series
+listings and homepages:
 
   >>> anon_browser.open("http://bugs.launchpad.dev/firefox/+bugs")
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")

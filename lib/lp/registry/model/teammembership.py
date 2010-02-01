@@ -277,7 +277,7 @@ class TeamMembership(SQLBase):
     def setStatus(self, status, user, comment=None, silent=False):
         """See `ITeamMembership`."""
         if status == self.status:
-            return
+            return False
 
         if silent and not self.canChangeStatusSilently(user):
             raise UserCannotChangeMembershipSilently(
@@ -317,7 +317,6 @@ class TeamMembership(SQLBase):
                 "Cannot make %(person)s a member of %(team)s because "
                 "%(team)s is a member of %(person)s."
                 % dict(person=self.person.name, team=self.team.name))
-
 
         old_status = self.status
         self.status = status
@@ -367,11 +366,10 @@ class TeamMembership(SQLBase):
         # When a member proposes himself, a more detailed notification is
         # sent to the team admins by a subscriber of JoinTeamEvent; that's
         # why we don't send anything here.
-        if self.person == self.last_changed_by and self.status == proposed:
-            return
-
-        if not silent:
+        if ((self.person != self.last_changed_by or self.status != proposed)
+            and not silent):
             self._sendStatusChangeNotification(old_status)
+        return True
 
     def _sendStatusChangeNotification(self, old_status):
         """Send a status change notification to all team admins and the

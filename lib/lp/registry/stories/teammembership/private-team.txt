@@ -17,7 +17,7 @@ admins and members of that team can see the team.
     >>> person_set = getUtility(IPersonSet)
     >>> cprov = person_set.getByName('cprov')
     >>> login_person(owner)
-    >>> priv_team.addMember(cprov, reviewer=owner)
+    >>> ignored = priv_team.addMember(cprov, reviewer=owner)
     >>> logout()
 
     >>> admin_browser.open('http://launchpad.dev/~private-team')

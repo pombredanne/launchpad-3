@@ -273,7 +273,7 @@ a user Mark who is a member of the Launchpad team,
     >>> login('foo.bar@canonical.com')
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> launchpad.addMember(mark, foobar)
+    >>> ignored = launchpad.addMember(mark, foobar)
     >>> import transaction
     >>> transaction.commit()
     >>> logout()

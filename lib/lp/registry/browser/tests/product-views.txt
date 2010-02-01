@@ -142,7 +142,7 @@ Adding the Commercial Admin to the registry experts team will allow him access.
     >>> commercial_member = getUtility(IPersonSet).getByEmail(
     ...     'commercial-member@canonical.com')
     >>> registry_experts = getUtility(IPersonSet).getByName('registry')
-    >>> registry_experts.addMember(commercial_member, reviewer=mark)
+    >>> ignored = registry_experts.addMember(commercial_member, reviewer=mark)
     >>> login('commercial-member@canonical.com')
     >>> view = create_initialized_view(firefox, name='+review-license')
     >>> print view.label

@@ -6,22 +6,19 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
-
 from windmill.authoring import WindmillTestClient
-from zope.component import getUtility
 
 from canonical.launchpad.windmill.testing.constants import (
-    FOR_ELEMENT, PAGE_LOAD, SLEEP)
+    PAGE_LOAD, SLEEP)
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
-INPUT_FIELD=(u"//div[contains(@class,'searchform')]"+
+INPUT_FIELD = (u"//div[contains(@class,'searchform')]"+
              u"//input[@id='field.search_lang']")
-FILTER_BUTTON=(u"//div[contains(@class,'searchform')]"+
+FILTER_BUTTON = (u"//div[contains(@class,'searchform')]"+
                u"//input[@value='Filter languages']")
-LANGUAGE=u"//a[contains(@class, 'language') and text()='%s']/parent::li"
-UNSEEN_VALIDATOR='className|unseen'
+LANGUAGE = u"//a[contains(@class, 'language') and text()='%s']/parent::li"
+UNSEEN_VALIDATOR = 'className|unseen'
 
 
 class LanguagesFilterTest(TestCaseWithFactory):
@@ -104,4 +101,3 @@ class LanguagesFilterTest(TestCaseWithFactory):
             u'Mende': True,
             u'French': True,
             })
-

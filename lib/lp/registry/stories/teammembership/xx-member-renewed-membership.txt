@@ -141,7 +141,7 @@ team's renewal policy is ONDEMAND.
     >>> login('mark@example.com')
     >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
     >>> landscape_devs = personset.getByName('landscape-developers')
-    >>> mirror_admins.addMember(
+    >>> ignored = mirror_admins.addMember(
     ...     landscape_devs, mirror_admins.teamowner, force_team_add=True)
     >>> membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
     ...     landscape_devs, mirror_admins)

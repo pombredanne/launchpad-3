@@ -50,7 +50,7 @@ from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_collection_of,
+    export_destructor_operation, exported, operation_parameters,
     operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
@@ -681,10 +681,19 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             required=True,
             readonly=False))
 
+    @export_destructor_operation()
+    def destroySelfBreakReferences():
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted as 
+        well as any items with mandatory references.
+        """
+
     def destroySelf(break_references=False):
         """Delete the specified branch.
 
         BranchRevisions associated with this branch will also be deleted.
+
         :param break_references: If supplied, break any references to this
             branch by deleting items with mandatory references and
             NULLing other references.
@@ -865,6 +874,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         :param launchbag: `ILaunchBag`.
         """
 
+    @export_read_operation()
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 
@@ -1058,6 +1068,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         """
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
+    upgrade_pending = Attribute(
+        "Whether a branch has had an upgrade requested.")
 
     def requestUpgrade():
         """Create an IBranchUpgradeJob to upgrade this branch."""
