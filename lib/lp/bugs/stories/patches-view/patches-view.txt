@@ -18,9 +18,9 @@ We don't see any patches when we open the patches view.
     ...         expected_contents, 'listing'):
     ...         print extract_text(tag)
 
-    >>> user_browser.open(
+    >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> show_patches_view(anon_browser.contents)
     Bug Importance Status Patch Age
 
 After the product has a bug, it still doesn't show up in the patches
@@ -41,9 +41,9 @@ view, because that bug has no patch attachments.
     >>> bug_a = factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bug,
     ...     title="bug_a title", product=patchy_product)
-    >>> user_browser.open(
+    >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> show_patches_view(anon_browser.contents)
     Bug Importance Status Patch Age
 
 After we add a non-patch attachment to that bug, the patches view
@@ -52,8 +52,8 @@ still shows no patches.
     >>> factory.doAsUser('foo.bar@canonical.com', factory.makeBugAttachment,
     ...            bug=bug_a, is_patch=False)
     <BugAttachment at...
-    >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> anon_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
+    >>> show_patches_view(anon_browser.contents)
     Bug Importance Status Patch Age
 
 After we add a patch attachment that's one day old, we see it in the
@@ -68,9 +68,9 @@ patches view.
     ...     filename="patch_a.diff", owner=patch_submitter,
     ...     description="description of patch a", bug=bug_a, is_patch=True)
     <BugAttachment at...
-    >>> user_browser.open(
+    >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> show_patches_view(anon_browser.contents)
     Bug                                 Importance   Status    Patch Age
     Bug #16: bug_a title                  Undecided     New     ...second...
     From: Patchy Person
@@ -126,8 +126,8 @@ attachments...
 
 ...the youngest patch on each bug is visible is the patch report.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> anon_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
+    >>> show_patches_view(anon_browser.contents)
     Bug                                 Importance   Status    Patch Age
     Bug #17: bug_b title                  Critical    Confirmed ...second...
     From: Patchy Person
@@ -141,11 +141,11 @@ attachments...
 
 We can sort patches by importance and status.
 
-    >>> user_browser.getControl(name="orderby").value = ['-importance']
-    >>> user_browser.getControl("sort").click()
-    >>> user_browser.url
+    >>> anon_browser.getControl(name="orderby").value = ['-importance']
+    >>> anon_browser.getControl("sort").click()
+    >>> anon_browser.url
     'http://bugs.launchpad.dev/patchy-product-1/+patches?orderby=-importance'
-    >>> show_patches_view(user_browser.contents)
+    >>> show_patches_view(anon_browser.contents)
     Bug                                 Importance   Status    Patch Age
     Bug #17: bug_b title                  Critical    Confirmed ...second...
     From: Patchy Person
@@ -157,11 +157,11 @@ We can sort patches by importance and status.
     From: Patchy Person
     Link: patch_a.diff description of patch a
 
-    >>> user_browser.getControl(name="orderby").value = ['status']
-    >>> user_browser.getControl("sort").click()
-    >>> user_browser.url
+    >>> anon_browser.getControl(name="orderby").value = ['status']
+    >>> anon_browser.getControl("sort").click()
+    >>> anon_browser.url
     'http://bugs.launchpad.dev/patchy-product-1/+patches?orderby=status'
-    >>> show_patches_view(user_browser.contents)
+    >>> show_patches_view(anon_browser.contents)
     Bug                                 Importance   Status    Patch Age
     Bug #16: bug_a title                  Undecided     New     ...second...
     From: Patchy Person
@@ -217,9 +217,9 @@ Bugs in a product series show up in the patches view for that series.
     >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask,
     ...     bug=bug_c, target=patchy_product_series)
-    >>> user_browser.open(
+    >>> anon_browser.open(
     ...     'https://launchpad.dev/patchy-product-1/trunk/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> show_patches_view(anon_browser.contents)
     Bug                       Importance     Status      Patch Age
     Bug #18: bug_c title       Wishlist  Fix Committed   ...second...
     From: Patchy Person
@@ -247,8 +247,8 @@ package when viewed via a distribution.
     ...     importance=BugTaskImportance.HIGH,
     ...     status=BugTaskStatus.TRIAGED)
 
-    >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+patches')
+    >>> show_patches_view(anon_browser.contents)
     Bug                       Importance   Status    Package    Patch Age
     Bug #18: bug_c title       High       Triaged    a52dec  ...second...
     From: Patchy Person
@@ -276,15 +276,15 @@ The patches view works for distro series.
     ...     target='warty', target_is_distroseries_name=True,
     ...     importance=BugTaskImportance.HIGH,
     ...     status=BugTaskStatus.TRIAGED)
-    >>> user_browser.open('https://launchpad.dev/ubuntu/hoary/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> anon_browser.open('https://launchpad.dev/ubuntu/hoary/+patches')
+    >>> show_patches_view(anon_browser.contents)
     Bug                       Importance   Status   Package    Patch Age
     Bug #16: bug_a title     Undecided       New    hoary     ...second...
     From: Patchy Person
     Link: patch_a.diff
     description of patch a
-    >>> user_browser.open('https://launchpad.dev/ubuntu/warty/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> anon_browser.open('https://launchpad.dev/ubuntu/warty/+patches')
+    >>> show_patches_view(anon_browser.contents)
     Bug                       Importance   Status   Package    Patch Age
     Bug #18: bug_c title        High       Triaged   warty    ...second...
     From: Patchy Person
@@ -304,16 +304,16 @@ Patches View by Source Package
 The patches view works for source packages too.  The view doesn't show
 target package column in that case, because the package is implied.
 
-    >>> user_browser.open(
+    >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/a52dec/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> show_patches_view(anon_browser.contents)
     Bug                       Importance   Status     Patch Age
     Bug #18: bug_c title       High       Triaged     ...second...
     From: Patchy Person
     Link: patch_f.diff description of patch f
-    >>> user_browser.open(
+    >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/evolution/+patches')
-    >>> show_patches_view(user_browser.contents)
+    >>> show_patches_view(anon_browser.contents)
     Bug                       Importance   Status     Patch Age
     Bug #16: bug_a title       Medium   Fix Released  ...second...
     From: Patchy Person
