@@ -235,6 +235,17 @@ class JobRunnerProcess(child.AMPChild):
         child.AMPChild.__init__(self)
         self.context_manager = self.job_class.contextManager()
 
+    @staticmethod
+    def __enter__():
+        def handler(signum, frame):
+            raise TimeoutError
+        scripts.execute_zcml_for_scripts(use_web_security=False)
+        signal(SIGHUP, handler)
+
+    @staticmethod
+    def __exit__(exc_type, exc_val, exc_tb):
+        pass
+
     def makeConnection(self, transport):
         """The Job context is entered on connect."""
         child.AMPChild.makeConnection(self, transport)
@@ -273,7 +284,7 @@ class TwistedJobRunner(BaseJobRunner):
 
     def __init__(self, job_source, job_amp, logger=None, error_utility=None):
         starter = main.ProcessStarter(
-            bootstrap=BOOTSTRAP, packages=('twisted', 'ampoule'),
+            packages=('twisted', 'ampoule'),
             env={'PYTHONPATH': os.environ['PYTHONPATH'],
             'PATH': os.environ['PATH'],
             'LPCONFIG': os.environ['LPCONFIG']})
@@ -385,22 +396,3 @@ class TimeoutError(Exception):
 
     def __init__(self):
         Exception.__init__(self, "Job ran too long.")
-
-
-BOOTSTRAP = """\
-import sys
-from twisted.application import reactors
-reactors.installReactor(sys.argv[-2])
-from lp.services.job.runner import bootstrap
-bootstrap(sys.argv[-1])
-"""
-
-def bootstrap(ampChildPath):
-    def handler(signum, frame):
-        raise TimeoutError
-    signal(SIGHUP, handler)
-    log.startLogging(sys.stderr)
-    ampChild = reflect.namedAny(ampChildPath)
-    stdio.StandardIO(ampChild(), 3, 4)
-    scripts.execute_zcml_for_scripts(use_web_security=False)
-    reactor.run()
