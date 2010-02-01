@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'PersistentIdentityView',
     'TestOpenIDApplicationNavigation',
     'TestOpenIDIndexView'
     'TestOpenIDLoginView',
@@ -94,6 +95,7 @@ class TestOpenIDIndexView(
 
 
 class OpenIDMixin:
+    """A mixin with OpenID helper methods."""
 
     openid_request = None
 
@@ -118,10 +120,12 @@ class OpenIDMixin:
         query = {}
         for key, value in self.request.form.items():
             if key.startswith('openid.'):
+                # All OpenID query args are supposed to be ASCII.
                 query[key.encode('US-ASCII')] = value.encode('US-ASCII')
         return query
 
     def getSession(self):
+        """Get the session data container that stores the OpenID request."""
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             # A dance to assert that we want to break the rules about no
             # unauthenticated sessions. Only after this next line is it
@@ -158,6 +162,7 @@ class OpenIDMixin:
         session[OPENID_REQUEST_SESSION_KEY] = query
 
     def renderOpenIDResponse(self, openid_response):
+        """Return a web-suitable response constructed from openid_response."""
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
         response.setStatus(webresponse.code)
@@ -242,6 +247,7 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
 
 
 class TestOpenIDLoginView(OpenIDMixin, LaunchpadFormView):
+    """A view for users to log into the OpenID provider."""
 
     page_title = "Login"
     schema = ITestOpenIDLoginForm

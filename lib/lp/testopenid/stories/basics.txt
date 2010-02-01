@@ -1,10 +1,14 @@
-= Test OpenID provider =
+====================
+Test OpenID provider
+====================
 
-== Introduction ==
+Introduction
+============
 
 Launchpad provides an OpenID provider (under the testopenid.launchpad.dev
 vhost) for testing purposes and for developers to be able to log into their
-development instances.
+development instances.  This provider is only available for development and
+testing.
 
 We are going to fake a consumer for these examples. In order to ensure
 that the consumer is being fed the correct replies, we use a view that
@@ -16,7 +20,8 @@ renders the parameters in the response in an easily testable format.
     foo:bar
 
 
-== associate Mode ==
+associate Mode
+==============
 
 Establish a shared secret between Consumer and Identity Provider.
 
@@ -47,7 +52,8 @@ Get the association handle, which we will need for later tests.
     >>> [assoc_handle] = re.findall('assoc_handle:(.*)', anon_browser.contents)
 
 
-== checkid_setup Mode ==
+checkid_setup Mode
+==================
 
 When we go to the OpenID setup URL, we are presented with a login
 form.  By entering an email address and password, we are directed back
@@ -87,7 +93,8 @@ We will record the signature from this response to use in the next test:
     >>> [sig] = re.findall('sig:(.*)', user_browser.contents)
 
 
-== check_authentication Mode ==
+check_authentication Mode
+=========================
 
 Ask an Identity Provider if a message is valid. For dumb, stateless
 Consumers or when verifying an invalidate_handle response.
