@@ -290,7 +290,8 @@ class TwistedJobRunner(BaseJobRunner):
             'LPCONFIG': os.environ['LPCONFIG']})
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        self.pool = HUPProcessPool(job_amp, starter=starter, min=0)
+        self.pool = pool.ProcessPool(
+            job_amp, starter=starter, min=0, timeout_signal=SIGHUP)
 
     def runJobInSubprocess(self, job):
         """Run the job_class with the specified id in the process pool.
