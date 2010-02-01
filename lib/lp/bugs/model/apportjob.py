@@ -29,7 +29,8 @@ from canonical.launchpad.webapp.interfaces import (
 from lazr.delegates import delegates
 
 from lp.bugs.interfaces.apportjob import (
-    ApportJobType, IApportJob, IApportJobSource)
+    ApportJobType, IApportJob, IApportJobSource, IProcessApportBlobJob,
+    IProcessApportBlobJobSource)
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
@@ -138,3 +139,33 @@ class ApportJobDerived(BaseRunnableJob):
             ('apport_job_type', self.context.job_type.title),
             ])
         return vars
+
+
+class ProcessApportBlobJob(ApportJobDerived):
+    """A Job to process an Apport BLOB."""
+    implements(IProcessApportBlobJob)
+
+    class_job_type = ApportJobType.PROCESS_BLOB
+    classProvides(IProcessApportBlobJobSource)
+
+    @classmethod
+    def create(cls, blob):
+        """See `IProcessApportBlobJobSource`."""
+        # If there's already a job for the bug, don't create a new one.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        job_for_blob = store.find(
+            ApportJob,
+            ApportJob.blob == blob,
+            ApportJob.job_type == cls.class_job_type,
+            ApportJob.job == Job.id,
+            Job.id.is_in(Job.ready_jobs)
+            ).any()
+
+        if job_for_blob is not None:
+            return cls(job_for_blob)
+        else:
+            return super(ProcessApportBlobJob, cls).create(blob)
+
+    def run(self):
+        """See `IRunnableJob`."""
+

@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryBlobStorage)
 
 from lazr.enum import DBEnumeratedType, DBItem
-from lp.services.job.interfaces.job import IJob, IJobSource
+from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
 
 
 class ApportJobType(DBEnumeratedType):
@@ -56,3 +56,11 @@ class IApportJobSource(IJobSource):
 
     def create(bug):
         """Create a new IApportJob for a bug."""
+
+
+class IProcessApportBlobJob(IRunnableJob):
+    """A Job to process an Apport BLOB."""
+
+
+class IProcessApportBlobJobSource(IApportJobSource):
+    """Interface for acquiring ProcessApportBlobJobs."""

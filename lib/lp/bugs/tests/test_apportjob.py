@@ -5,12 +5,15 @@
 
 __metaclass__ = type
 
+import os
 import unittest
 
+from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.interfaces.apportjob import ApportJobType
-from lp.bugs.model.apportjob import ApportJob, ApportJobDerived
+from lp.bugs.model.apportjob import (
+    ApportJob, ApportJobDerived, ProcessApportBlobJob)
 from lp.testing import TestCaseWithFactory
 
 
@@ -49,6 +52,27 @@ class ApportJobDerivedTestCase(TestCaseWithFactory):
         blob = self.factory.makeBlob()
         self.assertRaises(
             AttributeError, ApportJobDerived.create, blob)
+
+
+class ProcessApportBlobJobTestCase(TestCaseWithFactory):
+    """Test case for the ProcessApportBlobJob class."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(ProcessApportBlobJobTestCase, self).setUp()
+
+        # Create a BLOB using existing testing data.
+        testfiles = os.path.join(config.root, 'lib/lp/bugs/tests/testfiles')
+        blob_data = open(
+            os.path.join(testfiles, 'extra_filebug_data.msg')).read()
+        self.blob = self.factory.makeBlob(blob_data)
+
+    def test_run(self):
+        # ProcessApportBlobJob.run() extracts salient data from an
+        # Apport BLOB and stores it in the job's metadata attribute.
+        job = ProcessApportBlobJob.create(self.blob)
+        job.run()
 
 
 def test_suite():
