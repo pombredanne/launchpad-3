@@ -1,0 +1,30 @@
+#!/usr/bin/python2.5
+#
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+import re
+
+from bzrlib.transport import get_transport
+
+
+def get_staging_revision():
+    t = get_transport('https://staging.launchpad.net/')
+    last_line = t.get_bytes('successful-updates.txt').splitlines()[-1]
+    return int(last_line.split()[-1])
+
+
+def get_edge_revision():
+    t = get_transport('https://edge.launchpad.net/')
+    html = t.get_bytes('index.html')
+    revision_re = re.compile(r'\(r(\d+)\)')
+    for line in html.splitlines():
+        matches = revision_re.search(line)
+        if matches:
+            return int(matches.group(1))
+    raise ValueError("Could not find revision number on edge home page")
+
+
+if __name__ == '__main__':
+    print 'staging is running db-stable', repr(get_staging_revision())
+    print 'edge is running stable', repr(get_edge_revision())
