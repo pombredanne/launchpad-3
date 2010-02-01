@@ -22,6 +22,7 @@ from lp.soyuz.interfaces.build import IBuild
 
 class IBuildPackageJob(IBuildFarmJob):
     """A read-only interface for build package jobs."""
+
     id = Int(title=_('ID'), required=True, readonly=True)
 
     job = Reference(
@@ -30,5 +31,5 @@ class IBuildPackageJob(IBuildFarmJob):
 
     build = Reference(
         IBuild, title=_("Build"),
-        required=True,readonly=True,
+        required=True, readonly=True,
         description=_("Build record associated with this job."))

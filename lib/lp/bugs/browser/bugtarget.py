@@ -901,6 +901,18 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
     show_summary_in_results = False
 
     @property
+    def action_url(self):
+        """Return the +filebug page as the action URL.
+
+        This enables better validation error handling,
+        since the form is always used inline on the +filebug page.
+        """
+        url = '%s/+filebug' % canonical_url(self.context)
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
+    @property
     def search_context(self):
         """Return the context used to search for similar bugs."""
         return self.context

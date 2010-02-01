@@ -77,7 +77,8 @@ class CVEReportView(LaunchpadView):
                 bugtask,
                 has_mentoring_offer=badges['has_mentoring_offer'],
                 has_bug_branch=badges['has_branch'],
-                has_specification=badges['has_specification'])
+                has_specification=badges['has_specification'],
+                has_patch=badges['has_patch'])
             if not bugtaskcves.has_key(bugtask.bug.id):
                 bugtaskcves[bugtask.bug.id] = BugTaskCve()
             bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)
