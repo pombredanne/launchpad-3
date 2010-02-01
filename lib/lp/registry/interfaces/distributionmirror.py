@@ -28,7 +28,7 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_read_operation, exported)
 from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
