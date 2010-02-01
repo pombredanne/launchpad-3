@@ -161,7 +161,7 @@ p {
     width: auto;
     margin-bottom: 0.8em;
     }
-p, li, dt, dd, blockquote {
+p, li, dt, dd, blockquote, .narrow {
     max-width: 45em; /* Wrap the text before the eye gets lost. */
     }
 pre, code, samp, tt, .console {

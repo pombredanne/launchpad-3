@@ -49,6 +49,7 @@ class ISourcePackageRecipeBuild(IBuildBase):
         schema=ISourcePackageRecipe, required=True,
         title=_("The recipe being built."))
 
+
 class ISourcePackageRecipeBuildSource(Interface):
     """A utility of this interface be used to create source package builds."""
 
