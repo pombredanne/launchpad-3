@@ -10,10 +10,10 @@
   i18n:domain="malone"
 >
 
-  <body>
+  <body tal:define="batchnav view/batchedPatchTasks;
+                    batch batchnav/currentBatch">
     <div metal:fill-slot="main" class="tab-bugs"
-         tal:define="batchnav view/batchedPatchTasks;
-                     batch batchnav/currentBatch">
+         condition="batch/count">
 
   <form class="lesser" id="sort" method="get"
         tal:attributes="action string:${context/fmt:url}/+patches">
@@ -123,6 +123,10 @@
              </td>
              </tr></table>
     <div tal:replace="structure batchnav/@@+navigation-links-lower" />
-    </div><!-- main -->
+    </div><!-- main (with some patches available) -->
+    <div metal:fill-slot="main" class="tab-bugs"
+         condition="not batch/count">
+         NO PATCH FOR YOU!
+    </div><!-- main (with no patches available) -->
   </body>
 </html>
