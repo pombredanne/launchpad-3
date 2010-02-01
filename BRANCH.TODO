@@ -3,8 +3,6 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
- - Add an IParseFileBugDataJob marker interface to interfaces/bugjob.py
- - Ditto for IParseFileBugDataJobSource.
  - Add a ParseFileBugDataJob class to the model somewhere. This should:
    - Use the FileBugDataParser() class (it's in the browser code; we
      need to move it) to parse the temp file and store the parsed data
