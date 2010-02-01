@@ -12,6 +12,7 @@ from ConfigParser import RawConfigParser
 from datetime import datetime
 import gzip
 import re
+import sre_constants
 import os.path
 from textwrap import dedent
 import time
@@ -110,7 +111,11 @@ def main():
     categories = [] # A list of Category, in report order.
     for option in script_config.options('categories'):
         regexp = script_config.get('categories', option)
-        categories.append(Category(option, regexp, options.timeout))
+        try:
+            categories.append(Category(option, regexp, options.timeout))
+        except sre_constants.error, x:
+            log.fatal("Unable to compile regexp %r (%s)" % (regexp, x))
+            return 1
 
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
