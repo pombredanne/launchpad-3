@@ -31,21 +31,22 @@
       // -->
     </script>
 
-    <select name="orderby" id="orderby" size="1"
-            tal:define="orderby request/orderby|string:-importance">
+    Order&nbsp;by:&nbsp;<select
+                    name="orderby" id="orderby" size="1"
+                    tal:define="orderby request/orderby|string:-importance">
       <option
         value="-importance"
         tal:attributes="selected python:orderby == '-importance'"
-      >by importance</option>
+      >importance</option>
       <option
         value="status"
         tal:attributes="selected python:orderby == 'status'"
-      >by status</option>
+      >status</option>
       <option
         tal:condition="view/shouldShowTargetName"
         tal:attributes="selected python:orderby == 'targetname'"
         value="targetname"
-      >by package</option>
+      >package</option>
       <option
         value="datecreated"
         tal:attributes="selected python:orderby == 'datecreated'"

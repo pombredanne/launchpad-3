@@ -1356,6 +1356,17 @@ INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, 
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (13, '2007-07-27 20:00:58.299796', NULL, 'Launchpad CSS and JS is not testible', 'The messages placed on this bug are for eyeball viewing of JS and CSS behaviour.', 12, NULL, NULL, false, false, '2007-07-27 20:29:46.336737', NULL, NULL, NULL, 0, 2, 0, 0, 0, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (14, '2007-08-09 11:39:16.836856', NULL, 'jokosher exposes personal details in its actions portlet', 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', 63, NULL, NULL, true, true, '2007-08-09 11:39:16.836856', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (15, '2007-12-18 16:30:19.103679', NULL, 'Nonsensical bugs are useless', 'Like this one, natch.', 16, NULL, NULL, false, false, '2007-12-18 16:31:34.972893', NULL, NULL, '2007-12-18 16:31:34.790641', 0, 7, 0, 0, 0, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (16, '2010-01-12 20:45:21.127561', NULL, 'Bug A: No attachments at all.', 'Enough said.', 12, NULL, NULL, false, false, '2010-01-13 17:22:11.58624', NULL, NULL, '2010-01-12 20:45:21.127561', 0, 1, 1, 0, 0, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (17, '2010-01-12 22:22:46.153194', NULL, 'Bug B: one non-patch attachment.', 'This is the second bug.', 12, NULL, NULL, false, false, '2010-01-13 17:22:45.081926', NULL, NULL, '2010-01-12 22:28:27.800017', 0, 2, 1, 0, 0, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (18, '2010-01-13 14:16:19.911349', NULL, 'Bug C: one patch attachment.', 'This is the third bug in the project, and it has the first attachment that is a patch.', 12, NULL, NULL, false, false, '2010-01-27 22:30:14.500892', NULL, NULL, '2010-01-13 14:16:19.911349', 0, 2, 1, 0, 0, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (19, '2010-01-13 14:18:01.028701', NULL, 'Bug D: one patch attachment (really an image file).', 'Bug number four, with patch attachment.
+
+', 12, NULL, NULL, false, false, '2010-01-13 17:27:10.529755', NULL, NULL, '2010-01-13 14:18:01.028701', 0, 2, 1, 0, 0, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (20, '2010-01-13 14:19:01.243841', NULL, 'Bug E: no attachments.', 'Bug five has no attachment.', 12, NULL, NULL, false, false, '2010-01-13 17:23:49.957979', NULL, NULL, '2010-01-13 14:19:01.243841', 0, 1, 1, 0, 0, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (21, '2010-01-13 14:20:12.307283', NULL, 'Bug F: one non-patch attachment (same image that Bug D calls a patch).', 'Bug six has a non-patch attachment (but it''s the same as an earlier bug called a patch attachment).', 12, NULL, NULL, false, false, '2010-01-13 17:27:33.740526', NULL, NULL, '2010-01-13 14:20:12.307283', 0, 2, 1, 0, 0, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (22, '2010-01-13 14:22:45.617948', NULL, 'Bug G: one patch attachment.', 'Bug seven has a patch attachment.', 12, NULL, NULL, false, false, '2010-01-13 17:27:52.792443', NULL, NULL, '2010-01-13 14:22:45.617948', 0, 2, 1, 0, 0, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (23, '2010-01-13 18:23:45.763802', NULL, 'Bug H: two attachments, one patch, one not.', 'This is Bug H.  It has two attachments.  One is a patch, the other is not.', 12, NULL, NULL, false, false, '2010-01-13 18:27:05.39843', NULL, NULL, '2010-01-13 18:27:05.201874', 0, 3, 1, 0, 0, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated) VALUES (24, '2010-01-13 18:29:46.39858', NULL, 'Bug I: six attachments (three patches, three non-patches).', 'This is Bug I.  It has six attachments, of which three are patches.', 12, NULL, NULL, false, false, '2010-01-22 16:28:30.566586', NULL, NULL, '2010-01-13 18:34:21.130592', 0, 7, 1, 0, 0, NULL);
 
 
 ALTER TABLE bug ENABLE TRIGGER ALL;
@@ -1399,6 +1410,68 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (34, 15, '2007-12-18 16:30:19.103679', 16, 'bug', NULL, NULL, 'added bug');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (35, 15, '2007-12-18 16:30:47.889614', 16, 'bug', NULL, NULL, 'assigned to thunderbird');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (36, 15, '2007-12-18 16:31:34.790641', 62, 'thunderbird: status', 'Unknown', 'New', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (37, 16, '2010-01-12 20:45:21.127561', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (38, 17, '2010-01-12 22:22:46.153194', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (39, 17, '2010-01-12 22:28:27.800017', 12, 'attachment added', NULL, 'bigjools.png http://launchpad.dev:58080/93/bigjools.png', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (40, 18, '2010-01-13 14:16:19.911349', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (41, 18, '2010-01-13 14:16:19.911349', 12, 'attachment added', NULL, 'test patch http://launchpad.dev:58080/94/test-patch.txt', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (42, 19, '2010-01-13 14:18:01.028701', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (43, 19, '2010-01-13 14:18:01.028701', 12, 'attachment added', NULL, 'An image file.  Let''s see what mime type it gets. http://launchpad.dev:58080/95/nobody.png', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (44, 19, '2010-01-13 14:18:27.630313', 12, 'summary', 'The fourth bug has a non-patch attachment.', 'The fourth bug has a attachment.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (45, 19, '2010-01-13 14:18:34.066926', 12, 'description', 'Bug number four, with a non-patch attachment.', 'Bug number four, with patch attachment.
+
+', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (46, 20, '2010-01-13 14:19:01.243841', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (47, 21, '2010-01-13 14:20:12.307283', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (48, 21, '2010-01-13 14:20:12.307283', 12, 'attachment added', NULL, 'An image, this time not as a patch. http://launchpad.dev:58080/96/nobody.png', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (49, 22, '2010-01-13 14:22:45.617948', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (50, 22, '2010-01-13 14:22:45.617948', 12, 'attachment added', NULL, 'Some patch. http://launchpad.dev:58080/97/ignore-this.patch', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (51, 19, '2010-01-13 14:26:47.46993', 12, 'summary', 'The fourth bug has a attachment.', 'The fourth bug has a patch attachment.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (52, 16, '2010-01-13 17:21:46.537052', 12, 'summary', 'The first bug has no patch attachment.', 'No attachments at all.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (53, 16, '2010-01-13 17:22:11.382144', 12, 'summary', 'No attachments at all.', 'Bug A: No attachments at all.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (54, 17, '2010-01-13 17:22:24.925081', 12, 'summary', 'The second bug has the first attachment, but it''s not a patch.', 'Bug B: non-patch attachment.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (55, 18, '2010-01-13 17:22:37.743448', 12, 'summary', 'The third bug has the first patch attachment.', 'Bug C: one patch attachment.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (56, 17, '2010-01-13 17:22:44.88561', 12, 'summary', 'Bug B: non-patch attachment.', 'Bug B: one non-patch attachment.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (57, 20, '2010-01-13 17:23:32.153195', 12, 'summary', 'Bug number five has no attachment.', 'Bug D: no attachments.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (58, 20, '2010-01-13 17:23:49.760696', 12, 'summary', 'Bug D: no attachments.', 'Bug E: no attachments.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (59, 19, '2010-01-13 17:27:10.325536', 12, 'summary', 'The fourth bug has a patch attachment.', 'Bug D: one patch attachment (really an image file).', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (60, 21, '2010-01-13 17:27:28.108308', 12, 'summary', 'Bug six has a non-patch attachment (but same as earlier was called a patch).', 'Bug F: one non-patch attachment (same image thaht Bug D calls a patch).', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (61, 21, '2010-01-13 17:27:33.53256', 12, 'summary', 'Bug F: one non-patch attachment (same image thaht Bug D calls a patch).', 'Bug F: one non-patch attachment (same image that Bug D calls a patch).', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (62, 22, '2010-01-13 17:27:52.536624', 12, 'summary', 'Bug seven has a patch attachment.', 'Bug G: one patch attachment.', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (63, 23, '2010-01-13 18:23:45.763802', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (64, 23, '2010-01-13 18:26:37.318632', 12, 'attachment added', NULL, 'Patch attachment to Bug H. http://launchpad.dev:58080/98/another-diff.txt', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (65, 23, '2010-01-13 18:27:05.201874', 12, 'attachment added', NULL, 'Non-patch attachment to Bug H (same as patch attachment, btw). http://launchpad.dev:58080/99/another-diff.txt', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (66, 24, '2010-01-13 18:29:46.39858', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (67, 24, '2010-01-13 18:29:46.39858', 12, 'attachment added', NULL, 'first patch attachment to Bug I http://launchpad.dev:58080/100/another-diff.txt', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (68, 24, '2010-01-13 18:30:30.467005', 12, 'attachment added', NULL, 'second patch attachment to bug I http://launchpad.dev:58080/101/test-patch.txt', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (69, 24, '2010-01-13 18:31:54.707866', 12, 'attachment added', NULL, 'first non-patch attachment to Bug I http://launchpad.dev:58080/102/barcelona-laundry.jpg', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (70, 24, '2010-01-13 18:32:47.18092', 12, 'attachment added', NULL, 'second non-patch attachment to Bug I http://launchpad.dev:58080/103/esther-helen-exley.jpg', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (71, 24, '2010-01-13 18:33:38.232304', 12, 'attachment added', NULL, 'third patch attachment to Bug I http://launchpad.dev:58080/104/rf-setup-patch.txt', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (72, 24, '2010-01-13 18:34:21.130592', 12, 'attachment added', NULL, 'third non-patch attachment to Bug I http://launchpad.dev:58080/105/vonage-cancellation.pdf', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (73, 18, '2010-01-20 21:17:00.883889', 12, 'bug task added', NULL, 'firefox', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (74, 18, '2010-01-20 21:18:49.833838', 12, 'bug task added', NULL, 'cdrkit (Ubuntu)', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (75, 24, '2010-01-20 21:20:10.669476', 12, 'bug task added', NULL, 'gentoo', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (76, 24, '2010-01-20 21:20:35.930261', 12, 'bug task added', NULL, 'libstdc++ (Ubuntu)', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (77, 24, '2010-01-20 21:21:09.866741', 12, 'bug task added', NULL, 'firefox', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (78, 24, '2010-01-20 21:21:33.597745', 12, 'bug task added', NULL, 'evolution', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (79, 18, '2010-01-20 21:22:54.717976', 12, 'firefox: importance', 'Undecided', 'Wishlist', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (80, 24, '2010-01-20 21:23:26.85161', 12, 'evolution: importance', 'Undecided', 'Low', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (81, 24, '2010-01-20 21:23:29.895717', 12, 'firefox: importance', 'Undecided', 'Wishlist', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (82, 24, '2010-01-20 21:23:39.33682', 12, 'patches-view-test: importance', 'Undecided', 'High', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (83, 24, '2010-01-20 21:23:52.874688', 12, 'patches-view-test: status', 'New', 'Incomplete', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (84, 24, '2010-01-20 21:23:57.506344', 12, 'evolution: status', 'New', 'Confirmed', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (85, 18, '2010-01-20 21:41:58.449444', 12, 'cdrkit (Ubuntu): status', 'New', 'Confirmed', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (86, 18, '2010-01-21 15:38:51.601715', 12, 'bug task added', NULL, 'alsa-utils (Ubuntu)', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (87, 18, '2010-01-21 15:40:28.504905', 12, 'bug task added', NULL, 'at (Ubuntu)', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (88, 24, '2010-01-22 16:28:29.7187', 16, 'libstdc++ (Ubuntu): importance', 'Undecided', 'Critical', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (89, 24, '2010-01-22 17:23:55.406526', 16, 'nominated for series', NULL, 'patches-view-test/trunk', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (90, 24, '2010-01-22 17:23:55.406526', 16, 'bug task added', NULL, 'patches-view-test/trunk', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (91, 18, '2010-01-26 20:13:16.909946', 16, 'nominated for series', NULL, 'Ubuntu Hoary', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (92, 18, '2010-01-26 20:13:16.909946', 16, 'bug task added', NULL, 'alsa-utils (Ubuntu Hoary)', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (93, 18, '2010-01-26 20:13:16.909946', 16, 'bug task added', NULL, 'at (Ubuntu Hoary)', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (94, 18, '2010-01-26 20:13:16.909946', 16, 'bug task added', NULL, 'cdrkit (Ubuntu Hoary)', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (95, 18, '2010-01-27 22:19:05.667291', 16, 'patches-view-test: assignee', NULL, 'Foo Bar (name16)', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (96, 18, '2010-01-27 22:30:14.068436', 16, 'at (Ubuntu Hoary): assignee', NULL, 'Foo Bar (name16)', NULL);
 
 
 ALTER TABLE bugactivity ENABLE TRIGGER ALL;
@@ -1406,6 +1479,15 @@ ALTER TABLE bugactivity ENABLE TRIGGER ALL;
 
 ALTER TABLE bugaffectsperson DISABLE TRIGGER ALL;
 
+INSERT INTO bugaffectsperson (id, bug, person, affected) VALUES (1, 16, 12, true);
+INSERT INTO bugaffectsperson (id, bug, person, affected) VALUES (2, 17, 12, true);
+INSERT INTO bugaffectsperson (id, bug, person, affected) VALUES (3, 18, 12, true);
+INSERT INTO bugaffectsperson (id, bug, person, affected) VALUES (4, 19, 12, true);
+INSERT INTO bugaffectsperson (id, bug, person, affected) VALUES (5, 20, 12, true);
+INSERT INTO bugaffectsperson (id, bug, person, affected) VALUES (6, 21, 12, true);
+INSERT INTO bugaffectsperson (id, bug, person, affected) VALUES (7, 22, 12, true);
+INSERT INTO bugaffectsperson (id, bug, person, affected) VALUES (8, 23, 12, true);
+INSERT INTO bugaffectsperson (id, bug, person, affected) VALUES (9, 24, 12, true);
 
 
 ALTER TABLE bugaffectsperson ENABLE TRIGGER ALL;
@@ -1413,6 +1495,19 @@ ALTER TABLE bugaffectsperson ENABLE TRIGGER ALL;
 
 ALTER TABLE bugattachment DISABLE TRIGGER ALL;
 
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (1, 52, NULL, 'bigjools.png', 93, 17, 2);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (2, 55, NULL, 'test patch', 94, 18, 1);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (3, 58, NULL, 'An image file.  Let''s see what mime type it gets.', 95, 19, 1);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (4, 64, NULL, 'An image, this time not as a patch.', 96, 21, 2);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (5, 67, NULL, 'Some patch.', 97, 22, 1);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (6, 82, NULL, 'Patch attachment to Bug H.', 98, 23, 1);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (7, 84, NULL, 'Non-patch attachment to Bug H (same as patch attachment, btw).', 99, 23, 2);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (8, 87, NULL, 'first patch attachment to Bug I', 100, 24, 1);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (9, 89, NULL, 'second patch attachment to bug I', 101, 24, 1);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (10, 91, NULL, 'first non-patch attachment to Bug I', 102, 24, 2);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (11, 93, NULL, 'second non-patch attachment to Bug I', 103, 24, 2);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (12, 95, NULL, 'third patch attachment to Bug I', 104, 24, 1);
+INSERT INTO bugattachment (id, message, name, title, libraryfile, bug, type) VALUES (13, 97, NULL, 'third non-patch attachment to Bug I', 105, 24, 2);
 
 
 ALTER TABLE bugattachment ENABLE TRIGGER ALL;
@@ -1475,6 +1570,28 @@ INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) 
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true);
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true);
 INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (37, 16, 50, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (38, 17, 51, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (39, 17, 52, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (40, 18, 54, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (41, 18, 55, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (42, 19, 57, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (43, 19, 58, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (44, 20, 62, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (45, 21, 63, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (46, 21, 64, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (47, 22, 66, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (48, 22, 67, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (49, 23, 81, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (50, 23, 82, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (51, 23, 84, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (52, 24, 86, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (53, 24, 87, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (54, 24, 89, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (55, 24, 91, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (56, 24, 93, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (57, 24, 95, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (58, 24, 97, NULL, NULL, true);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -1486,6 +1603,8 @@ INSERT INTO bugnomination (id, bug, distroseries, productseries, status, date_cr
 INSERT INTO bugnomination (id, bug, distroseries, productseries, status, date_created, date_decided, owner, decider) VALUES (2, 1, 3, NULL, 10, '2006-08-21 22:21:14.60328', NULL, 52, NULL);
 INSERT INTO bugnomination (id, bug, distroseries, productseries, status, date_created, date_decided, owner, decider) VALUES (3, 2, 3, NULL, 20, '2006-08-21 22:23:08.163936', '2006-08-21 22:23:08.332055', 1, 1);
 INSERT INTO bugnomination (id, bug, distroseries, productseries, status, date_created, date_decided, owner, decider) VALUES (4, 5, NULL, 2, 20, '2007-01-04 15:00:50.431687', '2007-01-04 15:00:50.552021', 16, 16);
+INSERT INTO bugnomination (id, bug, distroseries, productseries, status, date_created, date_decided, owner, decider) VALUES (5, 24, NULL, 32, 20, '2010-01-22 17:23:55.406526', '2010-01-22 17:23:55.588315', 16, 16);
+INSERT INTO bugnomination (id, bug, distroseries, productseries, status, date_created, date_decided, owner, decider) VALUES (6, 18, 3, NULL, 20, '2010-01-26 20:13:16.909946', '2010-01-26 20:13:17.17565', 16, 16);
 
 
 ALTER TABLE bugnomination ENABLE TRIGGER ALL;
@@ -1493,6 +1612,77 @@ ALTER TABLE bugnomination ENABLE TRIGGER ALL;
 
 ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (1, 16, 50, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (2, 17, 51, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (3, 17, 52, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (4, 17, 53, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (5, 18, 54, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (6, 18, 55, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (7, 18, 56, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (8, 19, 57, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (9, 19, 58, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (10, 19, 59, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (11, 19, 60, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (12, 19, 61, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (13, 20, 62, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (14, 21, 63, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (15, 21, 64, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (16, 21, 65, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (17, 22, 66, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (18, 22, 67, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (19, 22, 68, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (20, 19, 69, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (21, 16, 70, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (22, 16, 71, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (23, 17, 72, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (24, 18, 73, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (25, 17, 74, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (26, 20, 75, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (27, 20, 76, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (28, 19, 77, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (29, 21, 78, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (30, 21, 79, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (31, 22, 80, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (32, 23, 81, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (33, 23, 82, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (34, 23, 83, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (35, 23, 84, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (36, 23, 85, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (37, 24, 86, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (38, 24, 87, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (39, 24, 88, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (40, 24, 89, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (41, 24, 90, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (42, 24, 91, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (43, 24, 92, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (44, 24, 93, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (45, 24, 94, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (46, 24, 95, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (47, 24, 96, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (48, 24, 97, true, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (49, 24, 98, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (50, 18, 99, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (51, 18, 100, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (52, 24, 101, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (53, 24, 102, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (54, 24, 103, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (55, 24, 104, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (56, 18, 105, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (57, 24, 106, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (58, 24, 107, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (59, 24, 108, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (60, 24, 109, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (61, 24, 110, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (62, 18, 111, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (63, 18, 112, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (64, 18, 113, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (65, 24, 114, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (66, 24, 115, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (67, 18, 116, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (68, 18, 117, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (69, 18, 118, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (70, 18, 119, false, NULL);
+INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (71, 18, 120, false, NULL);
 
 
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
@@ -1514,6 +1704,110 @@ ALTER TABLE bugnotificationattachment ENABLE TRIGGER ALL;
 
 ALTER TABLE bugnotificationrecipient DISABLE TRIGGER ALL;
 
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (1, 1, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (2, 2, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (3, 3, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (4, 4, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (5, 5, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (6, 6, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (7, 7, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (8, 8, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (9, 9, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (10, 10, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (11, 11, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (12, 12, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (13, 13, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (14, 14, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (15, 15, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (16, 16, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (17, 17, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (18, 18, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (19, 19, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (20, 20, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (21, 21, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (22, 22, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (23, 23, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (24, 24, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (25, 25, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (26, 26, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (27, 27, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (28, 28, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (29, 29, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (30, 30, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (31, 31, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (32, 32, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (33, 33, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (34, 34, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (35, 35, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (36, 36, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (37, 37, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (38, 38, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (39, 39, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (40, 40, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (41, 41, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (42, 42, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (43, 43, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (44, 44, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (45, 45, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (46, 46, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (47, 47, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (48, 48, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (49, 49, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (50, 50, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (51, 51, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (52, 51, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (53, 52, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (54, 52, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (55, 53, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (56, 53, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (57, 53, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (58, 54, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (59, 54, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (60, 54, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (61, 55, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (62, 55, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (63, 55, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (64, 56, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (65, 56, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (66, 57, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (67, 57, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (68, 57, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (69, 58, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (70, 58, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (71, 58, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (72, 59, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (73, 59, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (74, 59, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (75, 60, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (76, 60, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (77, 60, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (78, 61, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (79, 61, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (80, 61, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (81, 62, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (82, 62, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (83, 63, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (84, 63, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (85, 64, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (86, 64, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (87, 65, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (88, 65, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (89, 65, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (90, 66, 1, 'Registrant (Gentoo)', 'You received this bug notification because you are the registrant for Gentoo.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (91, 66, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (92, 66, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (93, 67, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (94, 67, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (95, 68, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (96, 68, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (97, 69, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (98, 69, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (99, 70, 16, 'Assignee', 'You received this bug notification because you are a bug assignee.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (100, 70, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (101, 70, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (102, 71, 16, 'Assignee', 'You received this bug notification because you are a bug assignee.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (103, 71, 12, 'Subscriber', 'You received this bug notification because you are a direct subscriber of the bug.');
+INSERT INTO bugnotificationrecipient (id, bug_notification, person, reason_header, reason_body) VALUES (104, 71, 17, 'Registrant (Ubuntu) @ubuntu-team', 'You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.');
 
 
 ALTER TABLE bugnotificationrecipient ENABLE TRIGGER ALL;
@@ -1557,6 +1851,15 @@ INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUE
 INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (15, 63, 14, '2007-08-09 11:39:16.836856', 65);
 INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (16, 14, 14, '2007-08-09 11:39:16.836856', 65);
 INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (17, 16, 15, '2007-12-18 16:30:19.103679', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (18, 12, 16, '2010-01-12 20:45:21.127561', 12);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (19, 12, 17, '2010-01-12 22:22:46.153194', 12);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (20, 12, 18, '2010-01-13 14:16:19.911349', 12);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (21, 12, 19, '2010-01-13 14:18:01.028701', 12);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (22, 12, 20, '2010-01-13 14:19:01.243841', 12);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (23, 12, 21, '2010-01-13 14:20:12.307283', 12);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (24, 12, 22, '2010-01-13 14:22:45.617948', 12);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (25, 12, 23, '2010-01-13 18:23:45.763802', 12);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (26, 12, 24, '2010-01-13 18:29:46.39858', 12);
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
@@ -1607,6 +1910,27 @@ INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackage
 INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (33, 14, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-08-09 11:39:16.836856', 63, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (34, 15, 22, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-12-18 16:30:19.103679', 16, NULL, NULL, NULL, NULL, 'Redfish', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (35, 15, 8, NULL, NULL, NULL, NULL, 10, NULL, 999, NULL, NULL, '2007-12-18 16:30:47.889614', 16, NULL, 11, NULL, NULL, 'Mozilla Thunderbird', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (36, 16, 30, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2010-01-12 20:45:21.127561', 12, NULL, NULL, NULL, NULL, 'Patches View Test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (37, 17, 30, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2010-01-12 22:22:46.153194', 12, NULL, NULL, NULL, NULL, 'Patches View Test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (38, 18, 30, NULL, NULL, NULL, NULL, 10, NULL, 5, 16, '2010-01-27 22:19:06.095198', '2010-01-13 14:16:19.911349', 12, NULL, NULL, NULL, NULL, 'Patches View Test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (39, 19, 30, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2010-01-13 14:18:01.028701', 12, NULL, NULL, NULL, NULL, 'Patches View Test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (40, 20, 30, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2010-01-13 14:19:01.243841', 12, NULL, NULL, NULL, NULL, 'Patches View Test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (41, 21, 30, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2010-01-13 14:20:12.307283', 12, NULL, NULL, NULL, NULL, 'Patches View Test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (42, 22, 30, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2010-01-13 14:22:45.617948', 12, NULL, NULL, NULL, NULL, 'Patches View Test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (43, 23, 30, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2010-01-13 18:23:45.763802', 12, NULL, NULL, NULL, NULL, 'Patches View Test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (44, 24, 30, NULL, NULL, NULL, NULL, 15, NULL, 40, NULL, NULL, '2010-01-13 18:29:46.39858', 12, NULL, NULL, NULL, NULL, 'Patches View Test', NULL, NULL, NULL, NULL, '2010-01-20 21:23:53.052331', '2010-01-20 21:23:53.052331', NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (45, 18, 4, NULL, NULL, NULL, NULL, 10, NULL, 10, NULL, NULL, '2010-01-20 21:17:00.883889', 12, NULL, NULL, NULL, NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (46, 18, NULL, 1, NULL, 24, NULL, 20, NULL, 5, NULL, NULL, '2010-01-20 21:18:49.833838', 12, NULL, NULL, NULL, NULL, 'cdrkit (Ubuntu)', '2010-01-20 21:41:58.645349', NULL, NULL, NULL, NULL, '2010-01-20 21:41:58.645349', NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (47, 24, NULL, 4, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2010-01-20 21:20:10.669476', 12, NULL, NULL, NULL, NULL, 'Gentoo', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (48, 24, NULL, 1, NULL, 21, NULL, 10, NULL, 50, NULL, NULL, '2010-01-20 21:20:35.930261', 12, NULL, NULL, NULL, NULL, 'libstdc++ (Ubuntu)', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (49, 24, 4, NULL, NULL, NULL, NULL, 10, NULL, 10, NULL, NULL, '2010-01-20 21:21:09.866741', 12, NULL, NULL, NULL, NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (50, 24, 5, NULL, NULL, NULL, NULL, 20, NULL, 20, NULL, NULL, '2010-01-20 21:21:33.597745', 12, NULL, NULL, NULL, NULL, 'Evolution', '2010-01-20 21:23:57.702694', NULL, NULL, NULL, NULL, '2010-01-20 21:23:57.702694', NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (51, 18, NULL, 1, NULL, 19, NULL, 10, NULL, 5, NULL, NULL, '2010-01-21 15:38:51.601715', 12, NULL, NULL, NULL, NULL, 'alsa-utils (Ubuntu)', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (52, 18, NULL, 1, NULL, 17, NULL, 10, NULL, 5, 16, '2010-01-27 22:30:14.233883', '2010-01-21 15:40:28.504905', 12, NULL, NULL, NULL, NULL, 'at (Ubuntu)', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (53, 24, NULL, NULL, NULL, NULL, NULL, 15, NULL, 40, NULL, NULL, '2010-01-22 17:23:55.406526', 16, NULL, NULL, NULL, NULL, 'Patches View Test trunk', NULL, NULL, NULL, 32, '2010-01-20 21:23:53.052331', '2010-01-20 21:23:53.052331', NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (54, 18, NULL, NULL, 3, 19, NULL, 10, NULL, 5, NULL, NULL, '2010-01-26 20:13:16.909946', 16, NULL, NULL, NULL, NULL, 'alsa-utils (Ubuntu Hoary)', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (55, 18, NULL, NULL, 3, 17, NULL, 10, NULL, 5, 16, '2010-01-27 22:30:14.233883', '2010-01-26 20:13:16.909946', 16, NULL, NULL, NULL, NULL, 'at (Ubuntu Hoary)', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, owner, milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete, date_left_new, date_triaged, date_fix_committed, date_fix_released, date_left_closed, heat_rank, date_milestone_set) VALUES (56, 18, NULL, NULL, 3, 24, NULL, 20, NULL, 5, NULL, NULL, '2010-01-26 20:13:16.909946', 16, NULL, NULL, NULL, NULL, 'cdrkit (Ubuntu Hoary)', '2010-01-20 21:41:58.645349', NULL, NULL, NULL, NULL, '2010-01-20 21:41:58.645349', NULL, NULL, NULL, NULL, 0, NULL);
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -1715,8 +2039,8 @@ ALTER TABLE buildpackagejob ENABLE TRIGGER ALL;
 
 ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
-INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, 1, 1, '00:00:00', 1, FALSE);
-INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized) VALUES (2, NULL, NULL, 10, false, 2, 1, '00:01:00', 1, FALSE);
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, 1, 1, '00:00:00');
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration) VALUES (2, NULL, NULL, 10, false, 2, 1, '00:01:00');
 
 
 ALTER TABLE buildqueue ENABLE TRIGGER ALL;
@@ -2870,6 +3194,57 @@ INSERT INTO karma (id, datecreated, person, action, product, distribution, sourc
 INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (62, '2001-07-03 21:30:51.583356', 12, 47, NULL, 1, NULL);
 INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (63, '2001-08-09 11:39:16.836856', 63, 1, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (64, '2010-01-12 20:45:21.127561', 12, 1, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (65, '2010-01-12 22:22:46.153194', 12, 1, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (66, '2010-01-12 22:28:27.800017', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (67, '2010-01-13 14:16:19.911349', 12, 1, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (68, '2010-01-13 14:16:19.911349', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (69, '2010-01-13 14:18:01.028701', 12, 1, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (70, '2010-01-13 14:18:01.028701', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (71, '2010-01-13 14:18:27.630313', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (72, '2010-01-13 14:18:34.066926', 12, 5, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (73, '2010-01-13 14:19:01.243841', 12, 1, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (74, '2010-01-13 14:20:12.307283', 12, 1, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (75, '2010-01-13 14:20:12.307283', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (76, '2010-01-13 14:22:45.617948', 12, 1, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (77, '2010-01-13 14:22:45.617948', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (78, '2010-01-13 14:26:47.46993', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (79, '2010-01-13 17:21:46.537052', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (80, '2010-01-13 17:22:11.382144', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (81, '2010-01-13 17:22:24.925081', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (82, '2010-01-13 17:22:37.743448', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (83, '2010-01-13 17:22:44.88561', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (84, '2010-01-13 17:23:32.153195', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (85, '2010-01-13 17:23:49.760696', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (86, '2010-01-13 17:27:10.325536', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (87, '2010-01-13 17:27:28.108308', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (88, '2010-01-13 17:27:33.53256', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (89, '2010-01-13 17:27:52.536624', 12, 3, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (90, '2010-01-13 18:23:45.763802', 12, 1, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (91, '2010-01-13 18:26:37.318632', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (92, '2010-01-13 18:27:05.201874', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (93, '2010-01-13 18:29:46.39858', 12, 1, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (94, '2010-01-13 18:29:46.39858', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (95, '2010-01-13 18:30:30.467005', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (96, '2010-01-13 18:31:54.707866', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (97, '2010-01-13 18:32:47.18092', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (98, '2010-01-13 18:33:38.232304', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (99, '2010-01-13 18:34:21.130592', 12, 2, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (100, '2010-01-20 21:17:00.883889', 12, 9, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (101, '2010-01-20 21:18:49.833838', 12, 9, NULL, 1, 24);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (102, '2010-01-20 21:20:10.669476', 12, 9, NULL, 4, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (103, '2010-01-20 21:20:35.930261', 12, 9, NULL, 1, 21);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (104, '2010-01-20 21:21:09.866741', 12, 9, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (105, '2010-01-20 21:21:33.597745', 12, 9, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (106, '2010-01-20 21:22:54.717976', 12, 18, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (107, '2010-01-20 21:23:26.85161', 12, 18, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (108, '2010-01-20 21:23:29.895717', 12, 18, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (109, '2010-01-20 21:23:39.33682', 12, 18, 30, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (110, '2010-01-20 21:23:57.506344', 12, 17, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (111, '2010-01-20 21:41:58.449444', 12, 17, NULL, 1, 24);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (112, '2010-01-21 15:38:51.601715', 12, 9, NULL, 1, 19);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (113, '2010-01-21 15:40:28.504905', 12, 9, NULL, 1, 17);
+INSERT INTO karma (id, datecreated, person, action, product, distribution, sourcepackagename) VALUES (114, '2010-01-22 16:28:29.7187', 16, 18, NULL, 1, 21);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -3740,6 +4115,19 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (90, 90, 'pmount_1.0-1_all.deb', 'application/x-debian-package', NULL, '2008-05-08 10:15:32.440132', '2008-05-08 10:10:27.899028', false, 0);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (91, 91, 'upload_22_log.txt', 'application/text', NULL, '2008-07-07 22:30:01.123456', '2008-07-07 22:30:01.123456', false, 0);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (92, 92, 'sample-submission-2.xml', 'application/x-bzip2', NULL, '2008-09-30 08:19:00.222131', '2008-09-30 08:19:00.222131', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (93, 93, 'bigjools.png', 'image/png', NULL, '2010-01-12 22:28:27.800017', '2010-01-12 22:28:27.800017', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (94, 94, 'test-patch.txt', 'text/plain', NULL, '2010-01-13 14:16:19.911349', '2010-01-13 14:16:19.911349', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (95, 95, 'nobody.png', 'text/plain', NULL, '2010-01-13 14:18:01.028701', '2010-01-13 14:18:01.028701', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (96, 96, 'nobody.png', 'image/png', NULL, '2010-01-13 14:20:12.307283', '2010-01-13 14:20:12.307283', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (97, 97, 'ignore-this.patch', 'text/plain', NULL, '2010-01-13 14:22:45.617948', '2010-01-13 14:22:45.617948', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (98, 98, 'another-diff.txt', 'text/plain', NULL, '2010-01-13 18:26:37.318632', '2010-01-13 18:26:37.318632', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (99, 99, 'another-diff.txt', 'text/plain', NULL, '2010-01-13 18:27:05.201874', '2010-01-13 18:27:05.201874', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (100, 100, 'another-diff.txt', 'text/plain', NULL, '2010-01-13 18:29:46.39858', '2010-01-13 18:29:46.39858', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (101, 101, 'test-patch.txt', 'text/plain', NULL, '2010-01-13 18:30:30.467005', '2010-01-13 18:30:30.467005', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (102, 102, 'barcelona-laundry.jpg', 'image/jpeg', NULL, '2010-01-13 18:31:54.707866', '2010-01-13 18:31:54.707866', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (103, 103, 'esther-helen-exley.jpg', 'image/jpeg', NULL, '2010-01-13 18:32:47.18092', '2010-01-13 18:32:47.18092', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (104, 104, 'rf-setup-patch.txt', 'text/plain', NULL, '2010-01-13 18:33:38.232304', '2010-01-13 18:33:38.232304', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (105, 105, 'vonage-cancellation.pdf', 'application/pdf', NULL, '2010-01-13 18:34:21.130592', '2010-01-13 18:34:21.130592', false, 0);
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3834,6 +4222,19 @@ INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VA
 INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (90, '2008-05-08 10:10:16.866444', 18, '0c805a60b31058a1018680f99447033dcb9d4caa', '8a8a67b8dbc5f203ae8712092c68c7aa', NULL);
 INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (91, '2008-07-07 22:30:01.123456', 10, '0c805a60b31058a1018680f99447033dcb9d4c01', '8a8a67b8dbc5f203ae8712092c68c701', NULL);
 INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (92, '2008-09-30 08:19:00.222131', 10, 'f10e2821bbbea527ea02200352313bc059445190', '7815696ecbf1c96e6894b779456d330e', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (93, '2010-01-12 22:28:27.800017', 6302, '7592bc722c8954347c11a8f95a54460fe7c92c4a', '19eaeb35afa81e6a537ab083c54df4db', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (94, '2010-01-13 14:16:19.911349', 1391, 'b0f2a8f2dd78f25d852f4398592011d2f102ccf8', '02de56a37dd2678ef3afc14819f07c9f', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (95, '2010-01-13 14:18:01.028701', 2280, '2a100b56cdbb251c95db843ad5142a01a40d9be5', '3da18ccb0800458bbbd7f186e88c436b', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (96, '2010-01-13 14:20:12.307283', 2280, '2a100b56cdbb251c95db843ad5142a01a40d9be5', '3da18ccb0800458bbbd7f186e88c436b', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (97, '2010-01-13 14:22:45.617948', 1391, 'b0f2a8f2dd78f25d852f4398592011d2f102ccf8', '02de56a37dd2678ef3afc14819f07c9f', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (98, '2010-01-13 18:26:37.318632', 540, '7afc411f4a356cf36db1bdbefc3097751bf15e29', 'a28f11e3141320afe818a304968de315', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (99, '2010-01-13 18:27:05.201874', 540, '7afc411f4a356cf36db1bdbefc3097751bf15e29', 'a28f11e3141320afe818a304968de315', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (100, '2010-01-13 18:29:46.39858', 540, '7afc411f4a356cf36db1bdbefc3097751bf15e29', 'a28f11e3141320afe818a304968de315', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (101, '2010-01-13 18:30:30.467005', 1391, 'b0f2a8f2dd78f25d852f4398592011d2f102ccf8', '02de56a37dd2678ef3afc14819f07c9f', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (102, '2010-01-13 18:31:54.707866', 127994, '32d7d60180115aeeb2ffb09f88bc9b281b65a7e4', '9e5c76cd3a2e30992207d0086547360e', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (103, '2010-01-13 18:32:47.18092', 105515, '2c3ba9c20b9ba3a116385664bacb42c71ac812ee', 'e3a26b8983484e4bceda32e0dd324d85', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (104, '2010-01-13 18:33:38.232304', 4324, 'd3a6cc586cf31427cb6bdec493c27f2cf245de58', 'dc8d96c1ecae8d71099981c14e14edb8', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (105, '2010-01-13 18:34:21.130592', 55594, 'cb69cb3e91a19c0ee831b571ff0e121ba57c35db', 'a031e115a3cfecd18fee97c1c42af7a0', NULL);
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -4321,6 +4722,77 @@ INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc8
 INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (47, '2005-05-17 20:20:44', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 46, NULL, '<20050517202044.GA23231@spring.luon.net>', NULL, 78);
 INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (48, '2005-06-17 14:00:11', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243616, 46, NULL, '<20050617140011.GA15638@piware.de>', NULL, 79);
 INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (49, '2005-06-25 10:13:10', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<42BD2E36.9090809@gmx.de>', NULL, 81);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (50, '2010-01-12 20:45:21.127561', 'The first bug has no patch attachment.', 12, NULL, NULL, '<20100112204521.3617.46129.malonedeb@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (51, '2010-01-12 22:22:46.153194', 'The second bug has the first attachment, but it''s not a patch.', 12, NULL, NULL, '<20100112222246.19348.2002.malonedeb@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (52, '2010-01-12 22:28:27.800017', 'Re: The second bug has the first attachment, but it''s not a patch.', 12, NULL, NULL, '<20100112222827.19348.56893.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (53, '2010-01-12 22:28:27.800017', 'Re: The second bug has the first attachment, but it''s not a patch.', 12, NULL, NULL, '<20100112222828.19348.64771.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (54, '2010-01-13 14:16:19.911349', 'The third bug has the first patch attachment.', 12, NULL, NULL, '<20100113141619.5358.90135.malonedeb@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (55, '2010-01-13 14:16:19.911349', 'Re: The third bug has the first patch attachment.', 12, NULL, NULL, '<20100113141620.5358.60178.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (56, '2010-01-13 14:16:19.911349', 'Re: The third bug has the first patch attachment.', 12, NULL, NULL, '<20100113141620.5358.25424.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (57, '2010-01-13 14:18:01.028701', 'The fourth bug has a non-patch attachment.', 12, NULL, NULL, '<20100113141801.5358.87208.malonedeb@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (58, '2010-01-13 14:18:01.028701', 'Re: The fourth bug has a non-patch attachment.', 12, NULL, NULL, '<20100113141801.5358.39419.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (59, '2010-01-13 14:18:01.028701', 'Re: The fourth bug has a non-patch attachment.', 12, NULL, NULL, '<20100113141801.5358.92085.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (60, '2010-01-13 14:18:27.630313', 'Re: The fourth bug has a attachment.', 12, NULL, NULL, '<20100113141827.5358.73694.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (61, '2010-01-13 14:18:34.066926', 'Re: The fourth bug has a attachment.', 12, NULL, NULL, '<20100113141834.5358.46673.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (62, '2010-01-13 14:19:01.243841', 'Bug number five has no attachment.', 12, NULL, NULL, '<20100113141901.5358.60302.malonedeb@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (63, '2010-01-13 14:20:12.307283', 'Bug six has a non-patch attachment (but same as earlier was called a patch).', 12, NULL, NULL, '<20100113142012.5358.56004.malonedeb@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (64, '2010-01-13 14:20:12.307283', 'Re: Bug six has a non-patch attachment (but same as earlier was called a patch).', 12, NULL, NULL, '<20100113142012.5358.61043.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (65, '2010-01-13 14:20:12.307283', 'Re: Bug six has a non-patch attachment (but same as earlier was called a patch).', 12, NULL, NULL, '<20100113142012.5358.83534.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (66, '2010-01-13 14:22:45.617948', 'Bug seven has a patch attachment.', 12, NULL, NULL, '<20100113142245.5358.72439.malonedeb@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (67, '2010-01-13 14:22:45.617948', 'Re: Bug seven has a patch attachment.', 12, NULL, NULL, '<20100113142245.5358.51636.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (68, '2010-01-13 14:22:45.617948', 'Re: Bug seven has a patch attachment.', 12, NULL, NULL, '<20100113142245.5358.4495.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (69, '2010-01-13 14:26:47.46993', 'Re: The fourth bug has a patch attachment.', 12, NULL, NULL, '<20100113142647.5358.43442.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (70, '2010-01-13 17:21:46.537052', 'Re: No attachments at all.', 12, NULL, NULL, '<20100113172146.5358.79987.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (71, '2010-01-13 17:22:11.382144', 'Re: Bug A: No attachments at all.', 12, NULL, NULL, '<20100113172211.5358.62209.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (72, '2010-01-13 17:22:24.925081', 'Re: Bug B: non-patch attachment.', 12, NULL, NULL, '<20100113172225.5358.57044.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (73, '2010-01-13 17:22:37.743448', 'Re: Bug C: one patch attachment.', 12, NULL, NULL, '<20100113172237.5358.37093.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (74, '2010-01-13 17:22:44.88561', 'Re: Bug B: one non-patch attachment.', 12, NULL, NULL, '<20100113172245.5358.16852.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (75, '2010-01-13 17:23:32.153195', 'Re: Bug D: no attachments.', 12, NULL, NULL, '<20100113172332.5358.90533.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (76, '2010-01-13 17:23:49.760696', 'Re: Bug E: no attachments.', 12, NULL, NULL, '<20100113172349.5358.24365.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (77, '2010-01-13 17:27:10.325536', 'Re: Bug D: one patch attachment (really an image file).', 12, NULL, NULL, '<20100113172710.5358.34990.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (78, '2010-01-13 17:27:28.108308', 'Re: Bug F: one non-patch attachment (same image thaht Bug D calls a patch).', 12, NULL, NULL, '<20100113172728.5358.33754.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (79, '2010-01-13 17:27:33.53256', 'Re: Bug F: one non-patch attachment (same image that Bug D calls a patch).', 12, NULL, NULL, '<20100113172733.5358.6028.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (80, '2010-01-13 17:27:52.536624', 'Re: Bug G: one patch attachment.', 12, NULL, NULL, '<20100113172752.5358.82801.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (81, '2010-01-13 18:23:45.763802', 'Bug H: two attachments, one patch, one not.', 12, NULL, NULL, '<20100113182345.5358.35767.malonedeb@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (82, '2010-01-13 18:26:37.318632', 'Re: Bug H: two attachments, one patch, one not.', 12, NULL, NULL, '<20100113182637.5358.46835.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (83, '2010-01-13 18:26:37.318632', 'Re: Bug H: two attachments, one patch, one not.', 12, NULL, NULL, '<20100113182637.5358.41333.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (84, '2010-01-13 18:27:05.201874', 'Re: Bug H: two attachments, one patch, one not.', 12, NULL, NULL, '<20100113182705.5358.62395.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (85, '2010-01-13 18:27:05.201874', 'Re: Bug H: two attachments, one patch, one not.', 12, NULL, NULL, '<20100113182705.5358.76691.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (86, '2010-01-13 18:29:46.39858', 'Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113182946.5358.76263.malonedeb@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (87, '2010-01-13 18:29:46.39858', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113182946.5358.5131.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (88, '2010-01-13 18:29:46.39858', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113182946.5358.14868.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (89, '2010-01-13 18:30:30.467005', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183030.5358.85602.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (90, '2010-01-13 18:30:30.467005', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183030.5358.69918.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (91, '2010-01-13 18:31:54.707866', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183154.5358.10140.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (92, '2010-01-13 18:31:54.707866', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183154.5358.18175.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (93, '2010-01-13 18:32:47.18092', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183247.5358.10006.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (94, '2010-01-13 18:32:47.18092', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183247.5358.29330.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (95, '2010-01-13 18:33:38.232304', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183338.5358.26039.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (96, '2010-01-13 18:33:38.232304', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183338.5358.41992.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (97, '2010-01-13 18:34:21.130592', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183421.5358.32215.malone@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (98, '2010-01-13 18:34:21.130592', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100113183421.5358.648.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (99, '2010-01-20 21:17:00.883889', 'Re: Bug C: one patch attachment.', 12, NULL, NULL, '<20100120211701.17445.29712.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (100, '2010-01-20 21:18:49.833838', 'Re: Bug C: one patch attachment.', 12, NULL, NULL, '<20100120211850.17445.84724.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (101, '2010-01-20 21:20:10.669476', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100120212010.17445.30818.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (102, '2010-01-20 21:20:35.930261', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100120212036.17445.94048.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (103, '2010-01-20 21:21:09.866741', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100120212110.17445.54332.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (104, '2010-01-20 21:21:33.597745', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100120212133.17445.35200.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (105, '2010-01-20 21:22:54.717976', 'Re: Bug C: one patch attachment.', 12, NULL, NULL, '<20100120212254.17445.14068.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (106, '2010-01-20 21:23:26.85161', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100120212327.17445.79653.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (107, '2010-01-20 21:23:29.895717', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100120212330.17445.31898.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (108, '2010-01-20 21:23:39.33682', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100120212339.17445.27845.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (109, '2010-01-20 21:23:52.874688', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100120212353.17445.58578.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (110, '2010-01-20 21:23:57.506344', 'Re: Bug I: six attachments (three patches, three non-patches).', 12, NULL, NULL, '<20100120212357.17445.63504.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (111, '2010-01-20 21:41:58.449444', 'Re: Bug C: one patch attachment.', 12, NULL, NULL, '<20100120214158.18968.79883.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (112, '2010-01-21 15:38:51.601715', 'Re: Bug C: one patch attachment.', 12, NULL, NULL, '<20100121153852.4166.85021.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (113, '2010-01-21 15:40:28.504905', 'Re: Bug C: one patch attachment.', 12, NULL, NULL, '<20100121154028.4166.46784.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (114, '2010-01-22 16:28:29.7187', 'Re: Bug I: six attachments (three patches, three non-patches).', 16, NULL, NULL, '<20100122162830.5301.16916.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (115, '2010-01-22 17:23:55.406526', 'Re: Bug I: six attachments (three patches, three non-patches).', 16, NULL, NULL, '<20100122172355.5301.60732.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (116, '2010-01-26 20:13:16.909946', 'Re: Bug C: one patch attachment.', 16, NULL, NULL, '<20100126201317.10252.35278.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (117, '2010-01-26 20:13:16.909946', 'Re: Bug C: one patch attachment.', 16, NULL, NULL, '<20100126201317.10252.72527.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (118, '2010-01-26 20:13:16.909946', 'Re: Bug C: one patch attachment.', 16, NULL, NULL, '<20100126201317.10252.57614.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (119, '2010-01-27 22:19:05.667291', 'Re: Bug C: one patch attachment.', 16, NULL, NULL, '<20100127221906.10252.53976.launchpad@kfogel-work>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (120, '2010-01-27 22:30:14.068436', 'Re: Bug C: one patch attachment.', 16, NULL, NULL, '<20100127223014.10252.23666.launchpad@kfogel-work>', NULL, NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -4781,6 +5253,166 @@ Martin Pitt wrote:
 
 
 ', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (51, 50, 1, 'Enough said.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (52, 51, 1, 'This is the second bug.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (53, 52, 1, 'Attach a non-patch.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (54, 53, 1, '** Attachment added: "bigjools.png"
+   http://launchpad.dev:58080/93/bigjools.png', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (55, 54, 1, 'This is the third bug in the project, and it has the first attachment that is a patch.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (56, 55, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (57, 56, 1, '** Attachment added: "test patch"
+   http://launchpad.dev:58080/94/test-patch.txt', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (58, 57, 1, 'Bug number four, with a non-patch attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (59, 58, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (60, 59, 1, '** Attachment added: "An image file.  Let''s see what mime type it gets."
+   http://launchpad.dev:58080/95/nobody.png', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (61, 60, 1, '** Summary changed:
+
+- The fourth bug has a non-patch attachment.
++ The fourth bug has a attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (62, 61, 1, '** Description changed:
+
+- Bug number four, with a non-patch attachment.
++ Bug number four, with patch attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (63, 62, 1, 'Bug five has no attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (64, 63, 1, 'Bug six has a non-patch attachment (but it''s the same as an earlier bug called a patch attachment).', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (65, 64, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (66, 65, 1, '** Attachment added: "An image, this time not as a patch."
+   http://launchpad.dev:58080/96/nobody.png', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (67, 66, 1, 'Bug seven has a patch attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (68, 67, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (69, 68, 1, '** Attachment added: "Some patch."
+   http://launchpad.dev:58080/97/ignore-this.patch', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (70, 69, 1, '** Summary changed:
+
+- The fourth bug has a attachment.
++ The fourth bug has a patch attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (71, 70, 1, '** Summary changed:
+
+- The first bug has no patch attachment.
++ No attachments at all.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (72, 71, 1, '** Summary changed:
+
+- No attachments at all.
++ Bug A: No attachments at all.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (73, 72, 1, '** Summary changed:
+
+- The second bug has the first attachment, but it''s not a patch.
++ Bug B: non-patch attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (74, 73, 1, '** Summary changed:
+
+- The third bug has the first patch attachment.
++ Bug C: one patch attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (75, 74, 1, '** Summary changed:
+
+- Bug B: non-patch attachment.
++ Bug B: one non-patch attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (76, 75, 1, '** Summary changed:
+
+- Bug number five has no attachment.
++ Bug D: no attachments.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (77, 76, 1, '** Summary changed:
+
+- Bug D: no attachments.
++ Bug E: no attachments.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (78, 77, 1, '** Summary changed:
+
+- The fourth bug has a patch attachment.
++ Bug D: one patch attachment (really an image file).', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (79, 78, 1, '** Summary changed:
+
+- Bug six has a non-patch attachment (but same as earlier was called a patch).
++ Bug F: one non-patch attachment (same image thaht Bug D calls a patch).', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (80, 79, 1, '** Summary changed:
+
+- Bug F: one non-patch attachment (same image thaht Bug D calls a patch).
++ Bug F: one non-patch attachment (same image that Bug D calls a patch).', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (81, 80, 1, '** Summary changed:
+
+- Bug seven has a patch attachment.
++ Bug G: one patch attachment.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (82, 81, 1, 'This is Bug H.  It has two attachments.  One is a patch, the other is not.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (83, 82, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (84, 83, 1, '** Attachment added: "Patch attachment to Bug H."
+   http://launchpad.dev:58080/98/another-diff.txt', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (85, 84, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (86, 85, 1, '** Attachment added: "Non-patch attachment to Bug H (same as patch attachment, btw)."
+   http://launchpad.dev:58080/99/another-diff.txt', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (87, 86, 1, 'This is Bug I.  It has six attachments, of which three are patches.', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (88, 87, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (89, 88, 1, '** Attachment added: "first patch attachment to Bug I"
+   http://launchpad.dev:58080/100/another-diff.txt', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (90, 89, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (91, 90, 1, '** Attachment added: "second patch attachment to bug I"
+   http://launchpad.dev:58080/101/test-patch.txt', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (92, 91, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (93, 92, 1, '** Attachment added: "first non-patch attachment to Bug I"
+   http://launchpad.dev:58080/102/barcelona-laundry.jpg', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (94, 93, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (95, 94, 1, '** Attachment added: "second non-patch attachment to Bug I"
+   http://launchpad.dev:58080/103/esther-helen-exley.jpg', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (96, 95, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (97, 96, 1, '** Attachment added: "third patch attachment to Bug I"
+   http://launchpad.dev:58080/104/rf-setup-patch.txt', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (98, 97, 1, NULL, NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (99, 98, 1, '** Attachment added: "third non-patch attachment to Bug I"
+   http://launchpad.dev:58080/105/vonage-cancellation.pdf', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (100, 99, 1, '** Also affects: firefox
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (101, 100, 1, '** Also affects: cdrkit (Ubuntu)
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (102, 101, 1, '** Also affects: gentoo
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (103, 102, 1, '** Also affects: libstdc++ (Ubuntu)
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (104, 103, 1, '** Also affects: firefox
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (105, 104, 1, '** Also affects: evolution
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (106, 105, 1, '** Changed in: firefox
+   Importance: Undecided => Wishlist', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (107, 106, 1, '** Changed in: evolution
+   Importance: Undecided => Low', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (108, 107, 1, '** Changed in: firefox
+   Importance: Undecided => Wishlist', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (109, 108, 1, '** Changed in: patches-view-test
+   Importance: Undecided => High', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (110, 109, 1, '** Changed in: patches-view-test
+       Status: New => Incomplete', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (111, 110, 1, '** Changed in: evolution
+       Status: New => Confirmed', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (112, 111, 1, '** Changed in: cdrkit (Ubuntu)
+       Status: New => Confirmed', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (113, 112, 1, '** Also affects: alsa-utils (Ubuntu)
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (114, 113, 1, '** Also affects: at (Ubuntu)
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (115, 114, 1, '** Changed in: libstdc++ (Ubuntu)
+   Importance: Undecided => Critical', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (116, 115, 1, '** Also affects: patches-view-test/trunk
+   Importance: High
+       Status: Incomplete', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (117, 116, 1, '** Also affects: alsa-utils (Ubuntu Hoary)
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (118, 117, 1, '** Also affects: at (Ubuntu Hoary)
+   Importance: Undecided
+       Status: New', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (119, 118, 1, '** Also affects: cdrkit (Ubuntu Hoary)
+   Importance: Undecided
+       Status: Confirmed', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (120, 119, 1, '** Changed in: patches-view-test
+     Assignee: (unassigned) => Foo Bar (name16)', NULL, NULL);
+INSERT INTO messagechunk (id, message, sequence, content, blob, fti) VALUES (121, 120, 1, '** Changed in: at (Ubuntu Hoary)
+     Assignee: (unassigned) => Foo Bar (name16)', NULL, NULL);
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
@@ -5318,6 +5950,8 @@ INSERT INTO pillarname (id, name, product, project, distribution, active, alias_
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (45, 'epiphany', 27, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (46, 'intltool', 28, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (47, 'lies', 29, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (48, 'patches-view-test', 30, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (49, 'patches-view-group', NULL, 9, NULL, true, NULL);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -8132,6 +8766,7 @@ INSERT INTO product (id, project, owner, name, displayname, title, summary, desc
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (27, NULL, 243648, 'epiphany', 'Epiphany', 'Epiphany Web Browser', 'A default GNOME web browser.', 'description1', '2009-08-24 14:36:04.699204', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 3, 20, true, false, NULL, NULL, NULL, NULL, 29, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 243648, NULL, NULL);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (28, NULL, 243649, 'intltool', 'intltool', 'Internationalization build tools', 'Tools to extract translatable messages from different file formats and to merge them back in.', 'description2', '2009-08-24 14:39:04.708167', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 2, 1, true, false, NULL, NULL, NULL, NULL, 30, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 243649, NULL, NULL);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (29, NULL, 243650, 'lies', 'Lies', 'Quick production of lies', 'Software to easily and quickly manufacture as many lies as possible. It takes truth as the input', 'description3', '2009-08-24 14:41:04.427117', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 2, 100, true, false, NULL, NULL, NULL, NULL, 31, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 243650, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (30, 9, 12, 'patches-view-test', 'Patches View Test', 'Test project for +patches view.', 'Summary of Patches View Test.', 'Description of Patches View Test.', '2010-01-12 20:23:51.720963', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, NULL, NULL, NULL, NULL, 32, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, true, false, 12, NULL, NULL);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -8164,6 +8799,7 @@ INSERT INTO productlicense (id, product, license) VALUES (6, 27, 130);
 INSERT INTO productlicense (id, product, license) VALUES (7, 28, 130);
 INSERT INTO productlicense (id, product, license) VALUES (8, 29, 130);
 INSERT INTO productlicense (id, product, license) VALUES (9, 15, 150);
+INSERT INTO productlicense (id, product, license) VALUES (10, 30, 220);
 
 
 ALTER TABLE productlicense ENABLE TRIGGER ALL;
@@ -8401,6 +9037,7 @@ INSERT INTO productseries (id, product, name, summary, releasefileglob, releasev
 INSERT INTO productseries (id, product, name, summary, releasefileglob, releaseverstyle, datecreated, driver, owner, status, translations_autoimport_mode, branch, translations_branch) VALUES (29, 27, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, '2009-08-24 14:36:04.699204', NULL, 243648, 2, 1, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, releasefileglob, releaseverstyle, datecreated, driver, owner, status, translations_autoimport_mode, branch, translations_branch) VALUES (30, 28, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, '2009-08-24 14:39:04.708167', NULL, 243649, 2, 1, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, releasefileglob, releaseverstyle, datecreated, driver, owner, status, translations_autoimport_mode, branch, translations_branch) VALUES (31, 29, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, '2009-08-24 14:41:04.427117', NULL, 243650, 2, 1, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, releasefileglob, releaseverstyle, datecreated, driver, owner, status, translations_autoimport_mode, branch, translations_branch) VALUES (32, 30, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, '2010-01-12 20:23:51.720963', NULL, 12, 2, 1, NULL, NULL);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -8440,6 +9077,7 @@ It would be very interesting to know whether this second paragraph of text about
 INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (8, 16, 'gimp', 'the GiMP Project', 'The GIMP Project', 'The GIMP Project works in the field of image manipulation and reproduction. The Project is responsible for several pieces of software, such as The GiMP and GiMP-Print.', 'Founded by Spencer Kimball in 1996 with the simple aim of producing a "paint" program, the GIMP project has become one of the defining projects of the open source world. The GIMP itself is an image manipulation program that is beginning to rival even Adobe Photoshop in features and functionality.
 
 The project is loosely organised, with about 15 people making regular contributions. There is no fixed release schedule other than "when it is done".', '2004-10-03 22:27:45.283741', 'http://www.gimp.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16);
+INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (9, 16, 'patches-view-group', 'Patches View Project Group', 'FULL NAME OF PATCHES VIEW PROJECT GROUP', 'summary', 'description', '2010-01-22 17:18:55.961276', NULL, NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16);
 
 
 ALTER TABLE project ENABLE TRIGGER ALL;
