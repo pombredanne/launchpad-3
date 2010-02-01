@@ -65,7 +65,7 @@ class ApportJob(Storm):
         :param metadata: The type-specific variables, as a JSON-compatible
             dict.
         """
-        Storm.__init__(self)
+        super(ApportJob, self).__init__()
         json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.blob = blob
@@ -92,17 +92,6 @@ class ApportJobDerived(BaseRunnableJob):
 
     def __init__(self, job):
         self.context = job
-
-    # We need to define __eq__ and __ne__ here to prevent the security
-    # proxy from mucking up our comparisons in tests and elsewhere.
-
-    def __eq__(self, job):
-        return (
-            self.__class__ is removeSecurityProxy(job.__class__)
-            and self.job == job.job)
-
-    def __ne__(self, job):
-        return not (self == job)
 
     @classmethod
     def create(cls, blob):
@@ -135,8 +124,7 @@ class ApportJobDerived(BaseRunnableJob):
             ApportJob,
             And(ApportJob.job_type == cls.class_job_type,
                 ApportJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs),
-                ApportJob.blob == TemporaryBlobStorage.id))
+                Job.id.is_in(Job.ready_jobs))
         return (cls(job) for job in jobs)
 
     def getOopsVars(self):
@@ -144,6 +132,8 @@ class ApportJobDerived(BaseRunnableJob):
         vars =  BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('apport_blob_uuid', self.context.blob.uuid),
+            ('apport_blob_librarian_url',
+                self.context.blob.file_alias.getURL()),
             ('apport_job_id', self.context.id),
             ('apport_job_type', self.context.job_type.title),
             ])
