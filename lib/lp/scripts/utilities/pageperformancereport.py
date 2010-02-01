@@ -261,7 +261,7 @@ def print_html_report(categories):
             .mean { text-align: right; padding-right: 1em; }
             .median { text-align: right; padding-right: 1em; }
             .standard-deviation { text-align: right; padding-right: 1em; }
-            .histogram { padding: 0.5em 1em; width:400px; height:200px; }
+            .histogram { padding: 0.5em 1em; width:400px; height:250px; }
             .odd-row { background-color: #eeeeff; }
             .even-row { background-color: #ffffee; }
         </style>
@@ -320,10 +320,10 @@ def print_html_report(categories):
                     min: 0,
                     max: 1,
                     transform: function (v) {
-                        return Math.log(v*100+1);
+                        return Math.pow(Math.log(v*100+1)/Math.LN2, 0.5);
                         },
                     inverseTransform: function (v) {
-                        return Math.exp(v*100+1);
+                        return Math.pow(Math.exp(v*100+1)/Math.LN2, 2);
                         },
                     tickDecimals: 1,
                     tickFormatter: function (val, axis) {
