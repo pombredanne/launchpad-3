@@ -216,6 +216,7 @@ class MixinBaseLaunchpadServerTests:
 class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
                           BzrTestCase):
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
     def setUp(self):
@@ -344,6 +345,7 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
                                   LaunchpadInternalServerTests):
     """Tests for `LaunchpadInternalServer`, used by the puller and scanner."""
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
     def setUp(self):
@@ -362,6 +364,7 @@ class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
 
     layer = ZopelessDatabaseLayer
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
     def setUp(self):
@@ -377,6 +380,7 @@ class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
 
     layer = TwistedLayer
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
     class VirtualServer(Server):
@@ -778,6 +782,7 @@ class LaunchpadTransportTests:
 
 class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
     def _ensureDeferred(self, function, *args, **kwargs):
@@ -803,6 +808,7 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 
 class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
     def _ensureDeferred(self, function, *args, **kwargs):
@@ -873,7 +879,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     # See comment on TestLaunchpadServer.
     layer = TwistedLayer
 
-    # XXX: argh.
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
     def setUp(self):

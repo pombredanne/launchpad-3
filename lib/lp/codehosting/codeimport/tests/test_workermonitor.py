@@ -325,6 +325,7 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
     """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
     """
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
     class WorkerMonitor(CodeImportWorkerMonitor):
@@ -441,6 +442,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
     def setUp(self):
