@@ -335,8 +335,8 @@ class BuildQueue(SQLBase):
         query += """
             ORDER BY lastscore DESC, job LIMIT 1
             """
-        head_job_platform = store.execute(query).get_all()
-        return (head_job_platform[0] if len(head_job_platform) == 1 else None)
+        head_job_platform = store.execute(query).get_one()
+        return head_job_platform
 
     def _estimateJobDelay(self, builder_stats):
         """Sum of estimated durations for *pending* jobs ahead in queue.
