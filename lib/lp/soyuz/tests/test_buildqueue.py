@@ -1192,9 +1192,6 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         gedit_build, gedit_job = find_job(self, 'gedit', 'hppa')
         self.assertRaises(AssertionError, gedit_job.getEstimatedJobStartTime)
 
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
-
         gcc_build, gcc_job = find_job(self, 'gcc', '386')
         # The delay of 1671 seconds is calculated as follows:
         #                     386 jobs: (12+14+16)*60/3           = 840
@@ -1218,12 +1215,18 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
         check_estimate(self, gedit_job, 1671)
 
+        xxr_build, xxr_job = find_job(self, 'xxr-daptup', None)
+        # This job is at the head of the queue for virtualized builders and
+        # will get dispatched next.
+        check_estimate(self, xxr_job, 5)
+
         xxr_build, xxr_job = find_job(self, 'xxr-aptitude', None)
         # The delay of 1403 seconds is calculated as follows:
         #                    hppa jobs: (9+11+13+15)*60/3        = 960
         #   processor-independent jobs: 7:23                     = 443
         check_estimate(self, xxr_job, 1403)
 
-        # Disable the native x86 builders.
-        for builder in self.builders[(x86_proc.id, False)]:
-            builder.builderok = False
+        xxr_build, xxr_job = find_job(self, 'xxr-auto-apt', None)
+        # This job is at the head of the queue for native builders and
+        # will get dispatched next.
+        check_estimate(self, xxr_job, 5)

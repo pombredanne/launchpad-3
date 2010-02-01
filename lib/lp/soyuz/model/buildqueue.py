@@ -463,7 +463,8 @@ class BuildQueue(SQLBase):
         # available.
         min_wait_time = self._estimateTimeToNextBuilder()
 
-        start_time = min_wait_time + sum_of_delays
+        # A job will not get dispatched in less than 5 seconds no matter what.
+        start_time = max(5, min_wait_time + sum_of_delays)
         result = datetime.utcnow() + timedelta(seconds=start_time)
 
         return result
