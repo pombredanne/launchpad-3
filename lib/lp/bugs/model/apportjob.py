@@ -124,7 +124,7 @@ class ApportJobDerived(BaseRunnableJob):
             ApportJob,
             And(ApportJob.job_type == cls.class_job_type,
                 ApportJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs))
+                Job.id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
     def getOopsVars(self):
