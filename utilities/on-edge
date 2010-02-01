@@ -3,9 +3,15 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import optparse
 import re
+import sys
 
 from bzrlib.transport import get_transport
+
+
+class UsageError(Exception):
+    """Raised when the user makes a dumb error."""
 
 
 def get_staging_revision():
@@ -27,6 +33,42 @@ def get_edge_revision():
     raise ValueError("Could not find revision number on edge home page")
 
 
+def get_opt_parse():
+    parser = optparse.OptionParser(
+        description="Show local revisions that aren't on beta servers.")
+    parser.add_option(
+        '-v', '--verbose', action='store_true', help="Show revision log")
+    parser.add_option(
+        '--edge-only', action='store_true',
+        help="Only show revisions not on edge. Do not consult staging.")
+    parser.add_option(
+        '--staging-only', action='store_true',
+        help="Only show revisions not on staging. Do not consult edge.")
+    return parser
+
+
+def run(verbose, edge_only, staging_only):
+    if edge_only and staging_only:
+        raise UsageError("Cannot show only edge and only staging.")
+    if not staging_only:
+        edge_revision = get_edge_revision()
+        print 'edge is running stable r%s' % edge_revision
+    if not edge_only:
+        staging_revision = get_staging_revision()
+        print 'staging is running db-stable r%s' % staging_revision
+
+
+def main(argv):
+    parser = get_opt_parse()
+    options, args = parser.parse_args(argv)
+    if args:
+        raise UsageError("Don't know what to do with arguments: %s" % args)
+    run(options.verbose, options.edge_only, options.staging_only)
+
+
 if __name__ == '__main__':
-    print 'staging is running db-stable', repr(get_staging_revision())
-    print 'edge is running stable', repr(get_edge_revision())
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except UsageError, e:
+        print 'ERROR: %s' % e
+        sys.exit(1)
