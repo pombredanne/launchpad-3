@@ -15,6 +15,7 @@ __all__ = [
     ]
 
 
+from calendar import timegm
 import contextlib
 import logging
 import os
@@ -305,12 +306,9 @@ class TwistedJobRunner(BaseJobRunner):
             self.incomplete_jobs.append(job)
             return
         job_id = job.id
-        timeout = job.getTimeout()
-        # work around ampoule bug
-        if timeout == 0:
-            timeout = 0.0000000000001
+        deadline = timegm(job.lease_expires.timetuple())
         deferred = self.pool.doWork(
-            RunJobCommand, job_id = job_id, _timeout=timeout)
+            RunJobCommand, job_id = job_id, _deadline=deadline)
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)
