@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryBlobStorage)
 
 from lazr.enum import DBEnumeratedType, DBItem
-from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
+from lp.services.job.interfaces.job import IJob, IJobSource
 
 
 class ApportJobType(DBEnumeratedType):
