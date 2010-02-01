@@ -270,16 +270,6 @@ class JobRunnerProcess(child.AMPChild):
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
-class HUPProcessPool(pool.ProcessPool):
-    """A ProcessPool that kills with HUP."""
-
-    def _handleTimeout(self, child):
-        try:
-            child.transport.signalProcess(SIGHUP)
-        except error.ProcessExitedAlready:
-            pass
-
-
 class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
 
