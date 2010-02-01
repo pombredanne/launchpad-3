@@ -1269,15 +1269,14 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         check_mintime_to_builder(self, vim_job, 120)
 
         xxr_build, xxr_job = find_job(self, 'xxr-apt', None)
-        # The delay of 2627 seconds is calculated as follows:
-        #                     386 jobs: (6+10+12+14+16)*60/2      = 1740
-        #   processor-independent jobs:
+        # The delay of 2627+120 seconds is calculated as follows:
+        #                     386 jobs : (6+10+12+14+16)*60/2     = 1740
+        #   processor-independent jobs :
         #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47)/5         =  887
-        # There is also a waiting time of 120 seconds until the next builder
-        # becomes available.
+        # waiting time for next builder:                          =  120
         self.assertEquals(2, builders_for_job(vim_job))
         self.assertEquals(9, builders_for_job(xxr_job))
-        check_estimate(self, vim_job, 2627+120)
+        check_estimate(self, vim_job, 2747)
 
         # The head job only waits for the next builder to become available.
         postgres_build, postgres_job = find_job(self, 'postgres', '386')
