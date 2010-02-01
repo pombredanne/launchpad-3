@@ -98,16 +98,10 @@ def print_build_setup(builds):
 def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
     delay = bq._estimateTimeToNextBuilder()
-    if min_time is not None:
-        test.assertTrue(
-            almost_equal(delay, min_time),
-            "Wrong min time to next available builder (%s != %s)"
-            % (delay, min_time))
-    else:
-        test.assertEquals(
-            delay, None,
-            "A builder was found although none is available (returned "
-            "delay: %s)" % delay)
+    test.assertTrue(
+        almost_equal(delay, min_time),
+        "Wrong min time to next available builder (%s != %s)"
+        % (delay, min_time))
 
 
 def almost_equal(a, b, deviation=1):
