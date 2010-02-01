@@ -216,7 +216,9 @@ class BuildQueue(SQLBase):
         head_job_platform = self._getHeadJobPlatform()
         if head_job_platform is None:
             # The job of interest (JOI) is the head job.
-            return 0
+            head_job_platform = (
+                getattr(self.processor, 'id', None),
+                normalize_virtualization(self.virtualized))
 
         # Return a zero delay if we still have free builders available for the
         # given platform/virtualization combination.

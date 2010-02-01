@@ -60,7 +60,9 @@ def nth_builder(test, bq, n):
     builder = None
     builders = test.builders.get(builder_key(bq), [])
     try:
-        builder = builders[n-1]
+        for builder in builders[n-1:]:
+            if builder.builderok:
+                break
     except IndexError:
         pass
     return builder
@@ -1250,3 +1252,33 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         for builder in self.builders[(x86_proc.id, True)]:
             builder.builderok = False
         check_estimate(self, vim_job, None)
+
+        # Re-enable one builder.
+        builder = self.builders[(x86_proc.id, True)][0]
+        builder.builderok = True
+        # Dispatch the firefox job to it.
+        assign_to_builder(self, 'firefox', 1, '386')
+        # Dispatch also the head job, making postgres/386 the new head job.
+        assign_to_builder(self, 'xxr-daptup', 1, None)
+        check_mintime_to_builder(self, vim_job, 240)
+        # Re-enable another builder.
+        builder = self.builders[(x86_proc.id, True)][1]
+        builder.builderok = True
+        # Assign a job to it.
+        assign_to_builder(self, 'gedit', 2, '386')
+        check_mintime_to_builder(self, vim_job, 120)
+
+        xxr_build, xxr_job = find_job(self, 'xxr-apt', None)
+        # The delay of 2627 seconds is calculated as follows:
+        #                     386 jobs: (6+10+12+14+16)*60/2      = 1740
+        #   processor-independent jobs:
+        #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47)/5         =  887
+        # There is also a waiting time of 120 seconds until the next builder
+        # becomes available.
+        self.assertEquals(2, builders_for_job(vim_job))
+        self.assertEquals(9, builders_for_job(xxr_job))
+        check_estimate(self, vim_job, 2627+120)
+
+        # The head job only waits for the next builder to become available.
+        postgres_build, postgres_job = find_job(self, 'postgres', '386')
+        check_estimate(self, postgres_job, 120)
