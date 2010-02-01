@@ -6,7 +6,7 @@ as a member of launchpad-buildd-admin:
 
     >>> from canonical.launchpad.ftests import login
     >>> login('celso.providelo@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> builder_set = getUtility(IBuilderSet)
 
 Do we have two builders?
@@ -48,7 +48,7 @@ the pending job.
     >>> alsa_build = alsa_spr.createBuild(
     ...     hoary['i386'], PackagePublishingPocket.RELEASE,
     ...     hoary.main_archive)
-    >>> alsa_bqueue = alsa_build.createBuildQueueEntry()
+    >>> alsa_bqueue = alsa_build.queueBuild()
     >>> alsa_bqueue.lastscore = 500
     >>> alsa_build.buildstate = BuildStatus.NEEDSBUILD
 
@@ -119,7 +119,7 @@ We first add a build for the 'pmount' source package to cprov's PPA.
 
     >>> pmount_build = pmount_spr.createBuild(
     ...     hoary['i386'], PackagePublishingPocket.RELEASE, cprov.archive)
-    >>> pmount_bqueue = pmount_build.createBuildQueueEntry()
+    >>> pmount_bqueue = pmount_build.queueBuild()
     >>> pmount_bqueue.lastscore = 66
     >>> removeSecurityProxy(pmount_bqueue).estimated_duration = (
     ...     timedelta(minutes=12))
@@ -137,7 +137,7 @@ to mark's PPA.
 
     >>> iceweasel_build = iceweasel_spr.createBuild(
     ...     hoary['i386'], PackagePublishingPocket.RELEASE, mark.archive)
-    >>> iceweasel_bqueue = iceweasel_build.createBuildQueueEntry()
+    >>> iceweasel_bqueue = iceweasel_build.queueBuild()
     >>> removeSecurityProxy(iceweasel_bqueue).estimated_duration = (
     ...     timedelta(minutes=48))
     >>> iceweasel_bqueue.lastscore = 666
@@ -168,7 +168,7 @@ associated with it (i.e. the 'iceweasel' build) are ignored while
 calculating the estimated dispatch time and the latter becomes effectively
 "now" for the 'pmount' build.
 
-    >>> mark.archive.enabled = False
+    >>> mark.archive.disable()
     >>> syncUpdate(mark.archive)
     >>> estimate = pmount_build.getEstimatedBuildStartTime()
     >>> estimate > now

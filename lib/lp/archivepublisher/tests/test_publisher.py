@@ -30,7 +30,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -137,7 +137,7 @@ class TestPublisher(TestPublisherBase):
         distroseries is always allowed, so check for that here.
         """
         archive = self.ubuntutest.getArchiveByComponent('partner')
-        self.ubuntutest['breezy-autotest'].status = DistroSeriesStatus.CURRENT
+        self.ubuntutest['breezy-autotest'].status = SeriesStatus.CURRENT
         pub_config = getPubConfig(archive)
         pub_config.setupArchiveDirs()
         disk_pool = DiskPool(
@@ -201,7 +201,7 @@ class TestPublisher(TestPublisherBase):
                              PackagePublishingPocket.UPDATES)])
 
         self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
         pub_source = self.getPubSource(
             filecontent='foo',
@@ -645,7 +645,7 @@ class TestPublisher(TestPublisherBase):
         # If the distroseries is CURRENT, then the release pocket is not
         # marked as dirty.
         self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
         publisher.dirty_pockets = set()
         publisher.A2_markPocketsWithDeletionsDirty()
