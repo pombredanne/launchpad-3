@@ -86,7 +86,11 @@ class BazaarBranchStore:
         return BzrDir.open(target_path).open_workingtree()
 
     def push(self, db_branch_id, bzr_tree, required_format):
-        """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
+        """Push up `bzr_tree` as the Bazaar branch for `code_import`.
+
+        :return: A boolean that is true if the push was non-trivial
+            (i.e. actually transferred revisions).
+        """
         self.transport.create_prefix()
         branch_from = bzr_tree.branch
         target_url = self._getMirrorURL(db_branch_id)
@@ -96,10 +100,7 @@ class BazaarBranchStore:
             branch_to = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
         pull_result = branch_to.pull(branch_from, overwrite=True)
-        if pull_result.old_revid != pull_result.new_revid:
-            return CodeImportWorkerExitCode.SUCCESS
-        else:
-            return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
+        return pull_result.old_revid != pull_result.new_revid
 
 
 def get_default_bazaar_branch_store():
@@ -369,7 +370,10 @@ class ImportWorker:
             self.required_format)
 
     def pushBazaarWorkingTree(self, bazaar_tree):
-        """Push the updated Bazaar working tree to the server."""
+        """Push the updated Bazaar working tree to the server.
+
+        :return: True if revisions were transferred.
+        """
         return self.bazaar_branch_store.push(
             self.source_details.branch_id, bazaar_tree, self.required_format)
 
@@ -403,12 +407,20 @@ class ImportWorker:
         saved_pwd = os.getcwd()
         os.chdir(working_directory)
         try:
-            return self._doImport()
+            non_trivial = self._doImport()
+            if non_trivial:
+                return CodeImportWorkerExitCode.SUCCESS
+            else:
+                return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
         finally:
             shutil.rmtree(working_directory)
             os.chdir(saved_pwd)
 
     def _doImport(self):
+        """Perform the import.
+
+        :return: True if the import actually imported some new revisions.
+        """
         raise NotImplementedError()
 
 
@@ -483,9 +495,9 @@ class CSCVSImportWorker(ImportWorker):
         foreign_tree = self.getForeignTree()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
-        retcode = self.pushBazaarWorkingTree(bazaar_tree)
+        non_trivial = self.pushBazaarWorkingTree(bazaar_tree)
         self.foreign_tree_store.archive(foreign_tree)
-        return retcode
+        return non_trivial
 
 
 class PullingImportWorker(ImportWorker):
