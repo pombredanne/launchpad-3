@@ -355,8 +355,8 @@ class IDistributionMirror(Interface):
     last_probe_record = Attribute(
         'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
-    has_ftp_or_rsync_base_url = Bool(
-        title=_('Does this mirror have a ftp or rsync base URL?'))
+    has_ftp_or_rsync_base_url = exported(Bool(
+        title=_('Does this mirror have a ftp or rsync base URL?')))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = exported(Datetime(
         title=_('Date Created'), required=True, readonly=True))
