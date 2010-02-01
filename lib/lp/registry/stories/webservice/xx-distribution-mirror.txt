@@ -12,6 +12,7 @@ mirrors:
     >>> canonical_archive_json = webservice.get(canonical_archive['self_link']).jsonBody()
     >>> pprint_entry(canonical_archive_json)
     content: u'Archive'
+    date_created: u'2006-10-16T18:31:43.434567+00:00'
     description: None
     displayname: None
     distribution_link: u'http://.../ubuntu'
@@ -34,6 +35,7 @@ And CD image mirrors:
     >>> canonical_releases_json = webservice.get(canonical_releases['self_link']).jsonBody()
     >>> pprint_entry(canonical_releases_json)
     content: u'CD Image'
+    date_created: u'2006-10-16T18:31:43.434567+00:00'
     description: None
     displayname: None
     distribution_link: u'http://.../ubuntu'

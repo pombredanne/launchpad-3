@@ -358,8 +358,8 @@ class IDistributionMirror(Interface):
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a ftp or rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
+    date_created = exported(Datetime(
+        title=_('Date Created'), required=True, readonly=True))
     date_reviewed = Datetime(
         title=_('Date reviewed'), required=False, readonly=False)
     whiteboard = Whiteboard(
