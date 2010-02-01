@@ -319,10 +319,17 @@ def print_html_report(categories):
                 yaxis: {
                     min: 0,
                     max: 1,
-                    tickDecimals: 0,
+                    transform: function (v) {
+                        return Math.log(v*100+1);
+                        },
+                    inverseTransform: function (v) {
+                        return Math.exp(v*100+1);
+                        },
+                    tickDecimals: 1,
                     tickFormatter: function (val, axis) {
                         return (val * 100).toFixed(axis.tickDecimals) + "%";
-                        }
+                        },
+                    ticks: [0.001,0.01,0.10,0.50,1.0]
                     },
                 grid: {
                     aboveData: true,
