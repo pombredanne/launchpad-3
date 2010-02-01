@@ -19,6 +19,8 @@ import os
 import re
 import sys
 
+from bzrlib.branch import Branch
+from bzrlib import errors
 from bzrlib.transport import get_transport
 
 
@@ -27,14 +29,22 @@ class UsageError(Exception):
 
 
 def get_staging_revision():
-    """Get the revision of db-stable deployed on staging."""
+    """Get the revision of db-stable deployed on staging.
+
+    :return: The staging revno as an int. Corresponds to a revision of
+        lp:launchpad/db-stable.
+    """
     t = get_transport('https://staging.launchpad.net/')
     last_line = t.get_bytes('successful-updates.txt').splitlines()[-1]
     return int(last_line.split()[-1])
 
 
 def get_edge_revision():
-    """Get the revision of stable deployed on edge."""
+    """Get the revision of stable deployed on edge.
+
+    :return: The edge revno as an int. Corresponds to a revision of
+        lp:launchpad/stable.
+    """
     t = get_transport('https://edge.launchpad.net/')
     html = t.get_bytes('index.html')
     revision_re = re.compile(r'\(r(\d+)\)')
@@ -45,11 +55,24 @@ def get_edge_revision():
     raise ValueError("Could not find revision number on edge home page")
 
 
-def bzr_log_to_tip(branch_path, revno):
-    command = 'bzr log -r%s.. %s' % (revno + 1, branch_path)
-    print
-    os.system(command)
-    print
+def get_parent_directory():
+    """Return the parent directory of the current branch."""
+    this_file = os.path.abspath(__file__)
+    return os.path.dirname(os.path.dirname(os.path.dirname(this_file)))
+
+
+def report_difference_to_server(server, branch_path, revno, verbose):
+    branch = Branch.open(branch_path)
+    print '%s is running %s r%s' % (server, branch.nick, revno)
+    try:
+        branch.dotted_revno_to_revision_id(str(revno + 1))
+    except errors.NoSuchRevision:
+        print '%s is up-to-date' % (server,)
+    else:
+        if verbose:
+            command = 'bzr log -r%s.. %s' % (revno, branch_path)
+            os.system(command)
+            print
 
 
 def get_opt_parse():
@@ -69,16 +92,17 @@ def get_opt_parse():
 def run(verbose, edge_only, staging_only):
     if edge_only and staging_only:
         raise UsageError("Cannot show only edge and only staging.")
+    parent_dir = get_parent_directory()
     if not staging_only:
         edge_revision = get_edge_revision()
-        if verbose:
-            bzr_log_to_tip('../stable', edge_revision)
-        print 'edge is running stable r%s' % edge_revision
+        stable_branch = os.path.join(parent_dir, 'stable')
+        report_difference_to_server(
+            'edge', stable_branch, edge_revision, verbose)
     if not edge_only:
         staging_revision = get_staging_revision()
-        if verbose:
-            bzr_log_to_tip('../db-stable', staging_revision)
-        print 'staging is running db-stable r%s' % staging_revision
+        db_stable_branch = os.path.join(parent_dir, 'db-stable')
+        report_difference_to_server(
+            'staging', db_stable_branch, staging_revision, verbose)
 
 
 def main(argv):
