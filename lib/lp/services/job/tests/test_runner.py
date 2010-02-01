@@ -283,14 +283,6 @@ class StuckJob(BaseRunnableJob):
             sleep(30)
 
 
-class StuckJobProcess(JobRunnerProcess):
-
-    job_class = StuckJob
-
-
-StuckJob.amp = StuckJobProcess
-
-
 class ListLogger:
 
     def __init__(self):
