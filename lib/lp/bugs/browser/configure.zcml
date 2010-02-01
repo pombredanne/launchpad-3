@@ -115,6 +115,13 @@
             facet="bugs"
             permission="zope.Public"
             template="../templates/bugtarget-patches.pt"/>
+        <browser:page
+            name="+patches"
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.bugs.browser.bugtarget.BugsPatchesView"
+            facet="bugs"
+            permission="zope.Public"
+            template="../templates/bugtarget-patches.pt"/>
     </facet>
     <browser:page
         name="+bugtarget-macros-search"
