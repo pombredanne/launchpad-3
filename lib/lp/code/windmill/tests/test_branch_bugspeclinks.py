@@ -9,17 +9,17 @@ __all__ = []
 import unittest
 
 import windmill
-from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestBranchBugLinks(TestCaseWithFactory):
+class TestBranchBugLinks(WindmillTestCase):
     """Test the links between branches and bugs."""
 
     layer = CodeWindmillLayer
+    suite_name = "Branch bug links"
 
     def link_bug_and_assert_success(self, client, bug):
         """Link a bug to the branch currently viewed by the client."""
@@ -38,7 +38,7 @@ class TestBranchBugLinks(TestCaseWithFactory):
 
     def test_inline_branch_bug_link_unlink(self):
         """Link a bug from the branch page."""
-        client = WindmillTestClient("Branch bug links")
+        client = self.client
 
         lpuser.FOO_BAR.ensure_login(client)
 

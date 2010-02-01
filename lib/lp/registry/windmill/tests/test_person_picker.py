@@ -8,21 +8,16 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import constants, lpuser
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TesPersonPickerWidget(TestCaseWithFactory):
+class TesPersonPickerWidget(WindmillTestCase):
 
     layer = RegistryWindmillLayer
-
-    def setUp(self):
-        super(TesPersonPickerWidget, self).setUp()
-        self.client = WindmillTestClient('PersonPickerWidget')
+    suite_name = 'PersonPickerWidget'
 
     def test_person_picker_widget(self):
         client = self.client

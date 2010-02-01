@@ -27,6 +27,7 @@ __all__ = [
     # it from Zope.
     'verifyObject',
     'validate_mock_class',
+    'WindmillTestCase',
     'with_anonymous_login',
     ]
 
@@ -53,6 +54,8 @@ import testtools
 import transaction
 
 from twisted.python.util import mergeFunctionMetadata
+
+from windmill.authoring import WindmillTestClient
 
 from zope.component import getUtility
 import zope.event
@@ -533,6 +536,21 @@ class TestCaseWithFactory(TestCase):
                 get_transport('lp-hosted'), url_prefix='lp-hosted:///')
             hosted_server.setUp()
             self.addCleanup(hosted_server.tearDown)
+
+
+class WindmillTestCase(TestCaseWithFactory):
+    """A TestCase class for Windmill tests.
+
+    It provides a WindmillTestClient (self.client) with Launchpad's front
+    page loaded.
+    """
+
+    suite_name = ''
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.client = WindmillTestClient(self.suite_name)
+        self.client.open('http://launchpad.dev:8085')
 
 
 def capture_events(callable_obj, *args, **kwargs):
