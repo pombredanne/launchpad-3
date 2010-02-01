@@ -568,10 +568,11 @@ class GitImportWorker(PullingImportWorker):
         that bzr-git will have created at .bzr/repository/bzr.git into the
         import data store.
         """
-        retcode = PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
+        non_trivial = PullingImportWorker.pushBazaarWorkingTree(
+            self, bazaar_tree)
         self.import_data_store.put(
             'git.db', bazaar_tree.branch.repository._transport)
-        return retcode
+        return non_trivial
 
 
 class HgImportWorker(PullingImportWorker):
@@ -608,9 +609,11 @@ class HgImportWorker(PullingImportWorker):
         that bzr-hg will have created at .bzr/repository/hg-v2.db into the
         import data store.
         """
-        PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
+        non_trivial = PullingImportWorker.pushBazaarWorkingTree(
+            self, bazaar_tree)
         self.import_data_store.put(
             self.db_file, bazaar_tree.branch.repository._transport)
+        return non_trivial
 
 
 class BzrSvnImportWorker(PullingImportWorker):
