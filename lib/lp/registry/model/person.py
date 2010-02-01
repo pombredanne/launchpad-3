@@ -2348,11 +2348,6 @@ class Person(
     def official_bug_tags(self):
         """ a person does not have any official bug tags """
         return set()
-        
-    @property
-    def bug_reporting_guidelines(self):
-        """ there are no bug reporting guidelines for persons """
-        return ""
 
 
 class PersonSet:
