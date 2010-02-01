@@ -11,6 +11,7 @@ import unittest
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.bugs.browser.bugtarget import FileBugDataParser
 from lp.bugs.interfaces.apportjob import ApportJobType
 from lp.bugs.model.apportjob import (
     ApportJob, ApportJobDerived, ProcessApportBlobJob)
@@ -64,9 +65,11 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
 
         # Create a BLOB using existing testing data.
         testfiles = os.path.join(config.root, 'lib/lp/bugs/tests/testfiles')
-        blob_data = open(
-            os.path.join(testfiles, 'extra_filebug_data.msg')).read()
+        blob_file = open(
+            os.path.join(testfiles, 'extra_filebug_data.msg'))
+        blob_data = blob_file.read()
         self.blob = self.factory.makeBlob(blob_data)
+        self.data_parser = FileBugDataParser(blob_file)
 
     def test_run(self):
         # ProcessApportBlobJob.run() extracts salient data from an
