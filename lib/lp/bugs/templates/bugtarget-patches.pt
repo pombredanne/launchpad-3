@@ -76,7 +76,7 @@
            </thead>
            <tr tal:repeat="patch_task batch">
              <td style="padding-right: 1em;"
-              ><a tal:replace="structure patch_task/bug/fmt:link" /></td>
+              ><a tal:replace="structure patch_task/fmt:link" /></td>
              <td style="padding-right: 1em;"
                  tal:content="patch_task/importance/title"
                  tal:attributes="class string:importance${patch_task/importance/name}"></td>
