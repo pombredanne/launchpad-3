@@ -282,9 +282,9 @@ class BranchScanJob(BranchJobDerived):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
         server = get_scanner_server()
-        server.setUp()
+        server.start_server()
         yield
-        server.tearDown()
+        server.stop_server()
 
 
 class BranchUpgradeJob(BranchJobDerived):
