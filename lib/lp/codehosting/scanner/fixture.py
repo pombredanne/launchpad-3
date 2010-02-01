@@ -125,7 +125,7 @@ def make_zope_event_fixture(*handlers):
 
 
 class ServerFixture:
-    """XXX."""
+    """Adapt a bzrlib `Server` into an `IFixture`."""
 
     implements(IFixture)
 
