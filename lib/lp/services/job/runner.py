@@ -286,7 +286,8 @@ class TwistedJobRunner(BaseJobRunner):
             'LPCONFIG': os.environ['LPCONFIG']})
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        import_name = '%s.%s' % (job_source.__module__, job_source.__name__)
+        import_name = '%s.%s' % (
+            removeSecurityProxy(job_source).__module__, job_source.__name__)
         self.pool = pool.ProcessPool(
             JobRunnerProcess, ampChildArgs=[import_name], starter=starter,
             min=0, timeout_signal=SIGHUP)

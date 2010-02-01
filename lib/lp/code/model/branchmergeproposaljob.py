@@ -283,14 +283,6 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         self.branch_merge_proposal.preview_diff = preview
 
 
-class UpdatePreviewDiffProcess(JobRunnerProcess):
-    """A process that runs UpdatePreviewDiffJobs"""
-    job_class = UpdatePreviewDiffJob
-
-
-UpdatePreviewDiffJob.amp = UpdatePreviewDiffProcess
-
-
 class CreateMergeProposalJob(BaseRunnableJob):
     """See `ICreateMergeProposalJob` and `ICreateMergeProposalJobSource`."""
 
