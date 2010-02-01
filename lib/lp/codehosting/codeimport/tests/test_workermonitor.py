@@ -511,8 +511,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         """Make a `CodeImport` that points to a real Mercurial repository."""
         load_optional_plugin('hg')
         self.hg_server = MercurialServer(self.repo_path)
-        self.hg_server.setUp()
-        self.addCleanup(self.hg_server.tearDown)
+        self.hg_server.start_server()
+        self.addCleanup(self.hg_server.stop_server)
 
         self.hg_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1

@@ -926,8 +926,8 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         """
         repository_path = self.makeTemporaryDirectory()
         hg_server = MercurialServer(repository_path)
-        hg_server.setUp()
-        self.addCleanup(hg_server.tearDown)
+        hg_server.start_server()
+        self.addCleanup(hg_server.stop_server)
 
         hg_server.makeRepo(files)
         self.foreign_commit_count = 1
