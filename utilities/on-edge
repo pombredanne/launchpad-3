@@ -3,7 +3,19 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Usage: on-edge [-v] [--edge-only] [--staging-only]
+
+This script consults the edge and staging servers to determine which revisions
+they are running. Once it knows that, it prints a log of all the revisions of
+stable and db-stable respectively that cannot be found on edge or staging.
+
+Note that the stable branch is assumed to be in a directory called 'stable', a
+sibling to the current branch directory. Likewise, db-stable is assumed to be
+in '../db-stable', relative to this branch.
+"""
+
 import optparse
+import os
 import re
 import sys
 
@@ -33,6 +45,13 @@ def get_edge_revision():
     raise ValueError("Could not find revision number on edge home page")
 
 
+def bzr_log_to_tip(branch_path, revno):
+    command = 'bzr log -r%s.. %s' % (revno + 1, branch_path)
+    print
+    os.system(command)
+    print
+
+
 def get_opt_parse():
     parser = optparse.OptionParser(
         description="Show local revisions that aren't on beta servers.")
@@ -52,9 +71,13 @@ def run(verbose, edge_only, staging_only):
         raise UsageError("Cannot show only edge and only staging.")
     if not staging_only:
         edge_revision = get_edge_revision()
+        if verbose:
+            bzr_log_to_tip('../stable', edge_revision)
         print 'edge is running stable r%s' % edge_revision
     if not edge_only:
         staging_revision = get_staging_revision()
+        if verbose:
+            bzr_log_to_tip('../db-stable', staging_revision)
         print 'staging is running db-stable r%s' % staging_revision
 
 
