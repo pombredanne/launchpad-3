@@ -167,13 +167,29 @@ We can sort patches by importance and status.
     From: Patchy Person
     Link: patch_f.diff description of patch f
 
-To nominate a bug for a series, we need to be able to make bugtasks.
-It helps to have a meta-factory for this.  The meta-factory defaults
-to the 'ubuntu' distro, for all instances where a distro is needed.
+Bugs in a product series show up in the patches view for that series.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> def make_bugtask(
+    ...     # Meta-factory for making bugtasks.
+    ...     # 
+    ...     # In all instances where a distro is needed, defaults to
+    ...     # 'ubuntu' distro.
+    ...     # 
+    ...     # :param bug: The bug with which the task is associated.
+    ...     # :param target: The target to which to attach this bug.
+    ...     #     If the target is a string, then it names the target
+    ...     #     object, and exactly one of following two boolean
+    ...     #     parameters must be set to indicate the object type.
+    ...     # :param target_is_spkg_name: If true, target is a string
+    ...     #     indicating the name of the source package for the task.
+    ...     # :param target_is_distroseries_name: If true, target is a string
+    ...     #     indicating the name of the distroseries for the task.
+    ...     # :param importance: The initial importance of the bugtask;
+    ...     #     if None, just use the default importance.
+    ...     # :param status: The initial status of the bugtask;
+    ...     #     if None, just use the default status.
     ...     bug, target,
     ...     target_is_spkg_name=False,
     ...     target_is_distroseries_name=False,
@@ -188,9 +204,6 @@ to the 'ubuntu' distro, for all instances where a distro is needed.
     ...         bugtask.transitionToImportance(importance, ubuntu_distro.owner)
     ...     if status is not None:
     ...         bugtask.transitionToStatus(status, ubuntu_distro.owner)
-
-Bugs in a product series show up in the patches view for that series.
-
     >>> patchy_product_series = patchy_product.getSeries('trunk')
     >>> make_thing(
     ...     make_bugtask, bug=bug_a,
