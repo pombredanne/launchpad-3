@@ -408,5 +408,4 @@
     condition="python: count != 1"
     replace="l_plural" />
 </metal:plural-msg>
-
 </macros>
