@@ -14,7 +14,7 @@
       </tal:language_name>:
     </p>
     <ul>
-      <li tal:repeat="contributor view/getTopContributors">
+      <li tal:repeat="contributor view/top_contributors">
         <a tal:replace="structure contributor/fmt:link">Guilherme Salgado</a>
       </li>
     </ul>

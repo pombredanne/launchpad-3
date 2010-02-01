@@ -214,8 +214,31 @@ class LanguageView(TranslationsMixin, LaunchpadView):
                 })
         return translation_teams
 
-    def getTopContributors(self):
-        return self.context.translators[:20]
+    @property
+    def top_contributors(self):
+        """
+        Get top 20 contributors for a language.
+
+        Instead of merged account, show the merged target account.
+        """
+        translators = []
+        for translator in reversed(list(self.context.translators)):
+            # Get only the top 20 contributors
+            if (len(translators) >= 20):
+                break
+
+            # For merged account add the target account
+            if translator_iter.merged != None:
+                translator_target = translator.merged
+            else:
+                translator_target = translator
+
+            # Add translator only if it was not previouly added as a
+            # merged account
+            if translator_target not in translators:
+                translators.append(translator_target)
+
+        return translators
 
     @property
     def friendly_plural_forms(self):
