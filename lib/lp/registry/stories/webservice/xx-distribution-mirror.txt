@@ -62,3 +62,12 @@ or not.
     ...     'isOfficial').jsonBody()
     >>> print is_official_mirror
     True
+
+"getOverallFreshness" returns the freshness of the mirror determined by the
+mirror prober from the mirror's last probe.
+
+    >>> releases_mirror2 = ubuntu_cd_mirrors['entries'][2]
+    >>> freshness = webservice.named_get(releases_mirror2['self_link'],
+    ...     'getOverallFreshness').jsonBody()
+    >>> print freshness
+    Up to date

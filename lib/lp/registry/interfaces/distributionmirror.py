@@ -390,6 +390,7 @@ class IDistributionMirror(Interface):
         each distro_arch_series of this distribution mirror.
         """
 
+    @export_read_operation()
     def getOverallFreshness():
         """Return this mirror's overall freshness.
 
