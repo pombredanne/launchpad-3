@@ -30,8 +30,7 @@ from canonical.testing.layers import (
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
 from lp.code.enums import (
-    CodeImportResultStatus, CodeImportReviewStatus, CodeImportWorkerExitCode,
-    RevisionControlSystems)
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -39,7 +38,8 @@ from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    CodeImportSourceDetails, get_default_bazaar_branch_store)
+    CodeImportSourceDetails, CodeImportWorkerExitCode,
+    get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)

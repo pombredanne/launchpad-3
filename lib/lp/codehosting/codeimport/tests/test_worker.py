@@ -28,12 +28,11 @@ from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import BaseLayer
 
-from lp.code.enums import CodeImportWorkerExitCode
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    BazaarBranchStore, BzrSvnImportWorker, CSCVSImportWorker,
+    BazaarBranchStore, BzrSvnImportWorker, CodeImportWorkerExitCode,
     ForeignTreeStore, GitImportWorker, HgImportWorker, ImportDataStore,
-    ImportWorker, get_default_bazaar_branch_store)
+    ImportWorker, CSCVSImportWorker, get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.tests.helpers import (

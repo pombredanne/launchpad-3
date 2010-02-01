@@ -9,6 +9,7 @@ __all__ = [
     'BzrSvnImportWorker',
     'CSCVSImportWorker',
     'CodeImportSourceDetails',
+    'CodeImportWorkerExitCode',
     'ForeignTreeStore',
     'GitImportWorker',
     'HgImportWorker',
@@ -29,7 +30,7 @@ from bzrlib.urlutils import join as urljoin
 from bzrlib.upgrade import upgrade
 
 from canonical.cachedproperty import cachedproperty
-from lp.code.enums import CodeImportWorkerExitCode, RevisionControlSystems
+from lp.code.enums import RevisionControlSystems
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
 from lp.codehosting.codeimport.tarball import (
@@ -41,6 +42,14 @@ from cscvs.cmds import totla
 import cscvs
 import CVS
 import SCM
+
+
+class CodeImportWorkerExitCode:
+    """Exit codes used by the code import worker script."""
+
+    SUCCESS = 0
+    FAILURE = 1
+    SUCCESS_NOCHANGE = 2
 
 
 class BazaarBranchStore:

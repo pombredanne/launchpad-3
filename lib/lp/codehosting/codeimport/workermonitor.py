@@ -28,10 +28,11 @@ from canonical.twistedsupport.loggingsupport import (
     log_oops_from_failure)
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
-from lp.code.enums import CodeImportResultStatus, CodeImportWorkerExitCode
+from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
-from lp.codehosting.codeimport.worker import CodeImportSourceDetails
+from lp.codehosting.codeimport.worker import (
+    CodeImportSourceDetails, CodeImportWorkerExitCode)
 from lp.testing import login, logout, ANONYMOUS
 
 

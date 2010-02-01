@@ -8,7 +8,7 @@
     Expects a parameter called 'result'.
   </tal:comment>
 
-  <img tal:attributes="src python:view.icon_for_code_import_result_status(result.status);
+  <img tal:attributes="src python:view.iconForCodeImportResultStatus(result.status);
                        title result/status/title"/>
   Import started
   <tal:when replace="result/date_job_started/fmt:displaydate">

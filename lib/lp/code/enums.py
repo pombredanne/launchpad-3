@@ -20,7 +20,6 @@ __all__ = [
     'CodeImportMachineState',
     'CodeImportResultStatus',
     'CodeImportReviewStatus',
-    'CodeImportWorkerExitCode',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
     'RevisionControlSystems',
@@ -866,13 +865,6 @@ class CodeImportResultStatus(DBEnumeratedType):
         """)
 
     successes = [SUCCESS, SUCCESS_NOCHANGE]
-
-class CodeImportWorkerExitCode:
-    """XXX"""
-
-    SUCCESS = 0
-    FAILURE = 1
-    SUCCESS_NOCHANGE = 2
 
 
 class CodeReviewVote(DBEnumeratedType):

@@ -510,7 +510,8 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
 
-    def icon_for_code_import_result_status(self, status):
+    def iconForCodeImportResultStatus(self, status):
+        """The icon to represent the `CodeImportResultStatus` `status`."""
         if status in CodeImportResultStatus.successes:
             return "/@@/yes"
         else:
