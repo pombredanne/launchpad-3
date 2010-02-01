@@ -1203,6 +1203,13 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         check_estimate(self, gcc_job, 1671)
         self.assertEquals(5, builders_for_job(gcc_job))
 
+        xxr_build, xxr_job = find_job(self, 'xxr-apt-build', None)
+        # The delay of 1671 seconds is calculated as follows:
+        #                     386 jobs: 16*60                    = 960
+        #   processor-independent jobs:
+        #       (11:05 + 18:30 + 16:38 + 14:47 + 9:14)/5         = 842
+        check_estimate(self, xxr_job, 1802)
+
         xxr_build, xxr_job = find_job(self, 'xxr-aptitude', None)
         # The delay of 1403 seconds is calculated as follows:
         #                    hppa jobs: (9+11+13+15)*60/3        = 960
