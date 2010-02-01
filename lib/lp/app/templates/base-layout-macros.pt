@@ -52,6 +52,16 @@
     do any initialization.
   </tal:comment>
 
+  <tal:comment replace="nothing">
+    XXX mars 2010-01-21
+    We have to load MochiKit outside of the main javascript rollup so that the
+    rollup's size does not exceed 512Kb.  That magic number triggers a bug
+    somewhere in the automated test system that will prevent Windmill from
+    executing.
+  </tal:comment>
+  <script type="text/javascript"
+          tal:attributes="src string:${icingroot}/MochiKit.js"></script>
+
   <tal:devmode condition="devmode">
 
     <tal:comment replace="nothing">
@@ -80,7 +90,7 @@
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event/event.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${yui}/event/event-key.js"></script>            
+            tal:attributes="src string:${yui}/event/event-key.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event-custom/event-custom.js"></script>
     <script type="text/javascript"
@@ -133,8 +143,6 @@
             tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
 
     <script type="text/javascript"
-            tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-    <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/lazr/lazr.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
@@ -157,6 +165,8 @@
 
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/lp.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/lp/lp-mochi.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/dragscroll.js"></script>
     <script type="text/javascript"
@@ -381,4 +391,21 @@
   </div>
 </metal:site-message>
 
+<metal:plural-msg define-macro="plural-message">
+  <tal:comment condition="nothing">
+    Expected variables to be defined in a containing tag or global:
+    count - value to check to determine plural form
+    singluar - string to use when count == 1
+    plural - string to use when count > 1.  If no plural is given it defaults
+    to the singular value + 's'.
+  </tal:comment>
+  <tal:singular
+    condition="python: count == 1"
+    replace="singular" />
+  <tal:plural
+     define="l_default string:s;
+             l_plural plural | string:$singular$l_default;"
+    condition="python: count != 1"
+    replace="l_plural" />
+</metal:plural-msg>
 </macros>

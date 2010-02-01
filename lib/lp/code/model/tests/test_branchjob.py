@@ -8,13 +8,13 @@ __metaclass__ = type
 import datetime
 import os
 import shutil
+from storm.locals import Store
+import tempfile
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
-from bzrlib.branch import (Branch, BzrBranchFormat5, BzrBranchFormat7,
-    BzrBranchFormat8)
+from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirMetaFormat1
-from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
@@ -38,18 +38,17 @@ from canonical.launchpad.testing.librarianhelpers import (
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
-    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
+    IBranchDiffJob, IBranchJob, IBranchScanJob, IBranchUpgradeJob,
+    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionMailJob,
+    IRosettaUploadJob)
 from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobDerived, BranchJobType,
-    BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
+    BranchScanJob, BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
     RevisionsAddedJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
@@ -111,11 +110,17 @@ class TestBranchDiffJob(TestCaseWithFactory):
     def test_run_diff_content(self):
         """Ensure that run generates expected diff."""
         self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
-        open('file', 'wb').write('foo\n')
+
+        tree_location = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tree_location)) 
+
+        branch, tree = self.create_branch_and_tree(
+            tree_location=tree_location)
+        tree_file = os.path.join(tree_location, 'file')
+        open(tree_file, 'wb').write('foo\n')
         tree.add('file')
         tree.commit('First commit')
-        open('file', 'wb').write('bar\n')
+        open(tree_file, 'wb').write('bar\n')
         tree.commit('Next commit')
         job = BranchDiffJob.create(branch, '1', '2')
         static_diff = job.run()
@@ -178,6 +183,44 @@ class TestBranchDiffJob(TestCaseWithFactory):
         self.assertIsInstance(diff.diff.text, str)
 
 
+class TestBranchScanJob(TestCaseWithFactory):
+    """Tests for `BranchScanJob`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchScanJob implements IBranchScanJob."""
+        branch = self.factory.makeAnyBranch()
+        job = BranchScanJob.create(branch)
+        verifyObject(IBranchScanJob, job)
+
+    def test_run(self):
+        """Ensure the job scans the branch."""
+        self.useBzrBranches()
+
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        bzr_tree.commit('First commit', rev_id='rev1')
+        bzr_tree.commit('Second commit', rev_id='rev2')
+        bzr_tree.commit('Third commit', rev_id='rev3')
+        LaunchpadZopelessLayer.commit()
+
+        job = BranchScanJob.create(db_branch)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        job.run()
+        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+
+        self.assertEqual(db_branch.revision_count, 3)
+
+        bzr_tree.commit('Fourth commit', rev_id='rev4')
+        bzr_tree.commit('Fifth commit', rev_id='rev5')
+
+        job = BranchScanJob.create(db_branch)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        job.run()
+
+        self.assertEqual(db_branch.revision_count, 5)
+
+
 class TestBranchUpgradeJob(TestCaseWithFactory):
     """Tests for `BranchUpgradeJob`."""
 
@@ -219,71 +262,17 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         new_branch = Branch.open(tree.branch.base)
         self.assertEqual(
             new_branch.repository._format.get_format_string(),
-            'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+
+        self.assertTrue(db_branch.pending_writes)
 
     def test_needs_no_upgrading(self):
         # Branch upgrade job creation should raise an AssertionError if the
         # branch does not need to be upgraded.
-        branch = self.factory.makeAnyBranch()
-        self.assertRaises(AssertionError, BranchUpgradeJob.create, branch)
-
-    def test_upgrade_format_all_formats(self):
-        # getUpgradeFormat should return a BzrDirMetaFormat1 object with the
-        # most up to date branch and repository formats.
-        self.useBzrBranches()
-        branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_5,
-            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
-        job = BranchUpgradeJob.create(branch)
-
-        format = job.upgrade_format
-        self.assertIs(
-            type(format.get_branch_format()),
-            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5))
-        self.assertIs(
-            type(format._repository_format),
-            REPOSITORY_FORMAT_UPGRADE_PATH.get(
-                RepositoryFormat.BZR_REPOSITORY_4))
-
-    def test_upgrade_format_no_branch_upgrade_needed(self):
-        # getUpgradeFormat should not downgrade the branch format when it is
-        # more up to date than the default formats provided.
-        self.useBzrBranches()
-        branch = self.factory.makePersonalBranch(
+        branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_7,
-            repository_format=RepositoryFormat.BZR_KNIT_1)
-        _format = self.make_format(repo_format=RepositoryFormatKnit1)
-        branch, _unused = self.create_branch_and_tree(db_branch=branch,
-            format=_format)
-        job = BranchUpgradeJob.create(branch)
-
-        format = job.upgrade_format
-        self.assertIs(
-            type(format.get_branch_format()),
-            BzrBranchFormat8)
-        self.assertIs(
-            type(format._repository_format),
-            REPOSITORY_FORMAT_UPGRADE_PATH.get(RepositoryFormat.BZR_KNIT_1))
-
-    def test_upgrade_format_no_repository_upgrade_needed(self):
-        # getUpgradeFormat should not downgrade the branch format when it is
-        # more up to date than the default formats provided.
-        self.useBzrBranches()
-        branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_4,
-            repository_format=RepositoryFormat.BZR_KNITPACK_6)
-        _format = self.make_format(branch_format=BzrBranchFormat5)
-        branch, _unused = self.create_branch_and_tree(
-            db_branch=branch, format=_format, hosted=True)
-        job = BranchUpgradeJob.create(branch)
-
-        format = job.upgrade_format
-        self.assertIs(
-            type(format.get_branch_format()),
-            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_4))
-        self.assertIs(
-            type(format._repository_format),
-            RepositoryFormatKnitPack6)
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        self.assertRaises(AssertionError, BranchUpgradeJob.create, branch)
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
