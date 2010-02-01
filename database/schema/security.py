@@ -28,6 +28,9 @@ import replication.helpers
 # sensitive information that interactive sessions don't need.
 SECURE_TABLES = [
     'public.accountpassword',
+    'public.oauthnonce',
+    'public.openidnonce',
+    'public.openidconsumernonce',
     ]
 
 

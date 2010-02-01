@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IJob',
+    'IJobSource',
     'IRunnableJob',
     'JobStatus',
     'LeaseHeld',
@@ -144,3 +145,13 @@ class IRunnableJob(IJob):
 
     def run():
         """Run this job."""
+
+
+class IJobSource(Interface):
+    """Interface for creating and getting jobs."""
+
+    def iterReady():
+        """Iterate through all jobs."""
+
+    def contextManager():
+        """Get a context for running this kind of job in."""
