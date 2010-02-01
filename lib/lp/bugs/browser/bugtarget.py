@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     "BugsVHostBreadcrumb",
+    "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
     "BugTargetBugsView",
@@ -15,7 +16,6 @@ __all__ = [
     "FileBugViewBase",
     "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
-    "BugsPatchesView",
     ]
 
 import cgi
@@ -52,7 +52,8 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
@@ -1401,39 +1402,47 @@ class BugsPatchesView(LaunchpadView):
 
     def batchedPatchTasks(self):
         """Return a BatchNavigator for bug tasks with patch attachments."""
-        any_unresolved_plus_fixreleased = \
-            UNRESOLVED_BUGTASK_STATUSES + (BugTaskStatus.FIXRELEASED,)
+        # XXX: Karl Fogel 2010-02-01 bug=515584: we should be using a
+        # Zope form instead of validating the values by hand in the
+        # code.  Doing it the Zope form way would specify rendering
+        # and validation from the same enum, and thus observe DRY.
+        orderby = self.request.get("orderby")
+        if (orderby is not None and
+            orderby not in ["-importance", "status", "targetname",
+                            "datecreated", "-datecreated"]):
+            raise AssertionError("patch task batch navigator ordered by "
+                                 "invalid value '%s'" % orderby)
         return BatchNavigator(
-            self.context.searchTasks(None, user=self.user,
-                                     order_by=self.request.get("orderby"),
-                                     status=any_unresolved_plus_fixreleased,
-                                     omit_duplicates=True, has_patch=True),
+            self.context.searchTasks(
+                None, user=self.user, order_by=orderby,
+                status=UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES,
+                omit_duplicates=True, has_patch=True),
             self.request)
         
     def shouldShowTargetName(self):
         """Return True if current context can have different bugtargets."""
-        return (IDistribution.providedBy(self.context)
-                or IDistroSeries.providedBy(self.context)
-                or IProject.providedBy(self.context))
+        return (IDistribution.providedBy(self.context) or
+                IDistroSeries.providedBy(self.context) or
+                IProject.providedBy(self.context))
 
-    def youngest_patch(self, bug):
+    def youngestPatch(self, bug):
         """Return the youngest patch attached to a bug, else error."""
         youngest = None
         # Loop over bugtasks, gathering youngest patch for each's bug.
-        for a in bug.attachments:
-            if a.type == BugAttachmentType.PATCH:
+        for attachment in bug.attachments:
+            if attachment.is_patch:
                 if youngest is None:
-                    youngest = a
-                else:
-                    if (a.message.datecreated > youngest.message.datecreated):
-                        youngest = a
+                    youngest = attachment
+                elif (attachment.message.datecreated >
+                      youngest.message.datecreated):
+                    youngest = attachment
         if youngest is None:
             # This is the patches view, so every bug under
             # consideration should have at least one patch attachment.
             raise AssertionError("bug %i has no patch attachments" % bug.id)
         return youngest
 
-    def patch_age(self, patch):
+    def patchAge(self, patch):
         """Return a timedelta object for the age of a patch attachment."""
         now = datetime.now(timezone('UTC'))
         return now - patch.message.datecreated

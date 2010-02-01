@@ -89,8 +89,8 @@
                      tal:content="patch_task/target/name"
                   ></a></td>
              <td style="padding-right: 1em;"
-                 tal:define="p python:view.youngest_patch(patch_task.bug);
-                             age python:view.patch_age(p)"
+                 tal:define="p python:view.youngestPatch(patch_task.bug);
+                             age python:view.patchAge(p)"
                  tal:attributes="id string:patch-cell-${repeat/patch_task/index}"
                   ><a tal:attributes="href p/libraryfile/http_url"
                       tal:content="age/fmt:approximateduration/use-digits"
