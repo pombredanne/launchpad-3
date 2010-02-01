@@ -318,3 +318,13 @@ target package column in that case, because the package is implied.
     Bug #16: bug_a title       Medium   Fix Released  ...second...
     From: Patchy Person
     Link: patch_a.diff description of patch a
+
+
+Display when no patches are available
+-------------------------------------
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/tomcat/+patches')
+    >>> print extract_text(
+    ...     find_tags_by_class(anon_browser.contents, 'informational')[0])
+    There are no patches associated with Tomcat at this time.
