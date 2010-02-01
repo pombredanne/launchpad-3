@@ -130,7 +130,7 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.buildqueue import BuildQueue
-from lp.testing import run_with_login, time_counter
+from lp.testing import run_with_login, time_counter, login, logout
 
 SPACE = ' '
 
@@ -238,6 +238,19 @@ class LaunchpadObjectFactory(ObjectFactory):
         # bzr-builder format 0.2 deb-version 1.0
         %s
         ''')
+
+    def doAsUser(self, user, factory_method, **factory_args):
+        """Perform a factory method while temporarily logged in as a user.
+        :param user: The user to log in as, and then to log out from.
+        :param factory_method: The factory method to invoke while logged in.
+        :param factory_args: Keyword arguments to pass to factory_method."""
+        login(user)
+        try:
+            result = factory_method(**factory_args)
+            transaction.commit()
+        finally:
+            logout()
+        return result
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):

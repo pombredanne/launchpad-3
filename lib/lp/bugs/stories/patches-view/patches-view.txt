@@ -7,14 +7,7 @@ Patches View by Product
 We have a view listing patches attached to bugs that target a given
 product.  At first, the product is new and has no bugs.
 
-    >>> def do_as_user(user, factory_method, **thing_args):
-    ...     login(user)
-    ...     result = factory_method(**thing_args)
-    ...     transaction.commit()
-    ...     logout()
-    ...     return result
-
-    >>> patchy_product = do_as_user(
+    >>> patchy_product = factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeProduct,
     ...     name='patchy-product-1')
 
@@ -45,7 +38,7 @@ view, because that bug has no patch attachments.
     ...         status, product.owner)
     ...     return bug
 
-    >>> bug_a = do_as_user(
+    >>> bug_a = factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bug,
     ...     title="bug_a title", product=patchy_product)
     >>> user_browser.open(
@@ -56,7 +49,7 @@ view, because that bug has no patch attachments.
 After we add a non-patch attachment to that bug, the patches view
 still shows no patches.
 
-    >>> do_as_user('foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> factory.doAsUser('foo.bar@canonical.com', factory.makeBugAttachment,
     ...            bug=bug_a, is_patch=False)
     <BugAttachment at...
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
@@ -66,10 +59,10 @@ still shows no patches.
 After we add a patch attachment that's one day old, we see it in the
 patches view.
 
-    >>> patch_submitter = do_as_user(
+    >>> patch_submitter = factory.doAsUser(
     ...    'foo.bar@canonical.com', factory.makePerson,
     ...    name="patchy-person", displayname="Patchy Person")
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch a",
     ...     filename="patch_a.diff", owner=patch_submitter,
@@ -86,45 +79,45 @@ patches view.
 After creating some more bugs, with some non-patch and some patch
 attachments...
 
-    >>> bug_b = do_as_user(
+    >>> bug_b = factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bug,
     ...     title="bug_b title", product=patchy_product,
     ...     importance=BugTaskImportance.CRITICAL,
     ...     status=BugTaskStatus.CONFIRMED)
-    >>> bug_c = do_as_user(
+    >>> bug_c = factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bug,
     ...     title="bug_c title", product=patchy_product,
     ...     importance=BugTaskImportance.WISHLIST,
     ...     status=BugTaskStatus.FIXCOMMITTED)
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch b",
     ...     filename="patch_b.diff", owner=patch_submitter,
     ...     description="description of patch b", bug=bug_b, is_patch=True)
     <BugAttachment at...
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch c",
     ...     filename="patch_c.diff", owner=patch_submitter,
     ...     description="description of patch c", bug=bug_b, is_patch=True)
     <BugAttachment at...
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...    'foo.bar@canonical.com', factory.makeBugAttachment,
     ...    bug=bug_c, is_patch=False)
     <BugAttachment at...
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch d",
     ...     filename="patch_d.diff", owner=patch_submitter,
     ...     description="description of patch d", bug=bug_c, is_patch=True)
     <BugAttachment at...
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch e",
     ...     filename="patch_e.diff", owner=patch_submitter,
     ...     description="description of patch e", bug=bug_c, is_patch=True)
     <BugAttachment at...
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch f",
     ...     filename="patch_f.diff", owner=patch_submitter,
@@ -218,10 +211,10 @@ Bugs in a product series show up in the patches view for that series.
     ...     if status is not None:
     ...         bugtask.transitionToStatus(status, ubuntu_distro.owner)
     >>> patchy_product_series = patchy_product.getSeries('trunk')
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask,
     ...     bug=bug_a, target=patchy_product_series)
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask,
     ...     bug=bug_c, target=patchy_product_series)
     >>> user_browser.open(
@@ -243,12 +236,12 @@ Patches View by Distro
 The patches view also works for distributions, and it shows the target
 package when viewed via a distribution.
 
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
     ...     target='evolution', target_is_spkg_name=True,
     ...     importance=BugTaskImportance.MEDIUM,
     ...     status=BugTaskStatus.FIXRELEASED)
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask, bug=bug_c,
     ...     target='a52dec', target_is_spkg_name=True,
     ...     importance=BugTaskImportance.HIGH,
@@ -269,16 +262,16 @@ Patches View by Distro Series
 
 The patches view works for distro series.
 
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
     ...     target='hoary', target_is_distroseries_name=True)
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
     ...     target='warty', target_is_distroseries_name=True)
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask, bug=bug_b,
     ...     target='warty', target_is_distroseries_name=True)
-    >>> do_as_user(
+    >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask, bug=bug_c,
     ...     target='warty', target_is_distroseries_name=True,
     ...     importance=BugTaskImportance.HIGH,
