@@ -711,7 +711,10 @@ class TestActualImportMixin:
             self.foreign_commit_count, len(branch.revision_history()))
 
     def test_script_exit_codes(self):
-        # XXX
+        # After a successful import that imports revisions, the worker exits
+        # with a code of CodeImportWorkerExitCode.SUCCESS.  After a successful
+        # import that does not import revisions, the worker exits with a code
+        # of CodeImportWorkerExitCode.SUCCESS_NOCHANGE.
         source_details = self.makeSourceDetails(
             'trunk', [('README', 'Original contents')])
 

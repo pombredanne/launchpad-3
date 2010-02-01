@@ -388,7 +388,6 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
         return job
 
-
     def failImport(self, code_import):
         """Create if necessary a job for `code_import` and have it fail."""
         running_job = self.makeRunningJob(code_import)
@@ -398,6 +397,9 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
     def succeedImport(self, code_import,
                       status=CodeImportResultStatus.SUCCESS):
         """Create if necessary a job for `code_import` and have it succeed."""
+        if status not in CodeImportResultStatus.successes:
+            raise AssertionError(
+                "succeedImport() should be called with a successful status!")
         running_job = self.makeRunningJob(code_import)
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, status, None)
