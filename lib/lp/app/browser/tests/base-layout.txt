@@ -94,7 +94,7 @@ Watermark and breadcrumbs.
               <div class="yui-b" dir="ltr">
                 <div>
                   <h2>Heading</h2>
-                  <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
+                  <ol class="breadcrumbs">
     ...
 
 Top portlet.
@@ -190,7 +190,7 @@ Main content.
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
-                  <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
+                  <ol class="breadcrumbs">
     <BLANKLINE>
     </ol>
     <BLANKLINE>
@@ -310,7 +310,7 @@ Main content.
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
-                  <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
+                  <ol class="breadcrumbs">
     <BLANKLINE>
     </ol>
     ...

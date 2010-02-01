@@ -233,8 +233,22 @@ location bar.
     ...                 for step in hierarchy]
     ...     print 'Location:', ' > '.join(segments)
 
-    >>> print_hierarchy(hierarchy.render())
+    >>> markup = hierarchy.render()
+    >>> print_hierarchy(markup)
     Location: Joy of cooking > Spam
+
+The items in the breadcrumbs are linked, except for the last one which
+represents the current location.
+
+    >>> print markup
+    <ol class="breadcrumbs">
+      <li>
+        <a href="http://launchpad.dev/joy-of-cooking">Joy of cooking</a>
+      </li>
+      <li>
+          Spam
+      </li>
+    </ol>
 
 The Launchpad Homepage displays no items in its location bar.  We are
 considered to be on the home page if there are no breadcrumbs.
