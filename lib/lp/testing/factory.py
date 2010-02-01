@@ -1242,8 +1242,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         passed in, but defaults to a Subversion import from an arbitrary
         unique URL.
         """
-        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is hg_repo_url
-            is None):
+        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
+            hg_repo_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if product is None:
@@ -1611,10 +1611,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant, owner, distroseries, sourcepackagename, name, recipe)
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
-                                     requester=None, archive=None):
+                                     requester=None, archive=None,
+                                     sourcename=None):
         """Make a new SourcePackageRecipeBuild."""
         if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage()
+            sourcepackage = self.makeSourcePackage(sourcename=sourcename)
         if recipe is None:
             recipe = self.makeSourcePackageRecipe()
         if requester is None:
@@ -1627,16 +1628,21 @@ class LaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             requester=requester)
 
-    def makeSourcePackageRecipeBuildJob(self, score=9876):
+    def makeSourcePackageRecipeBuildJob(
+        self, score=9876, virtualized=True, estimated_duration=64,
+        sourcename=None):
         """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
         testing."""
-        recipe_build = self.makeSourcePackageRecipeBuild()
+        recipe_build = self.makeSourcePackageRecipeBuild(
+            sourcename=sourcename)
         recipe_build_job = recipe_build.makeJob()
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         bq = BuildQueue(
             job=recipe_build_job.job, lastscore=score,
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD)
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
+            estimated_duration = timedelta(seconds=estimated_duration),
+            virtualized=virtualized)
         store.add(bq)
         return bq
 
@@ -1850,10 +1856,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             return self.makeSourcePackageName()
         return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
 
-    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
+    def makeSourcePackage(
+        self, sourcepackagename=None, distroseries=None, sourcename=None):
         """Make an `ISourcePackage`."""
         if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+            sourcepackagename = self.makeSourcePackageName(sourcename)
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)

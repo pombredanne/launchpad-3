@@ -191,7 +191,7 @@ pushed to the bottom of the list.
     >>> contents = find_main_content(user_browser.contents)
     >>> buglisting = contents.find('table', id='buglisting')
     >>> print extract_text(buglisting.thead)
-    Summary  Date last updated
+    Summary  Date last updated  Heat
 
     >>> for tr in buglisting.tbody.findAll('tr'):
     ...     print extract_text(tr)

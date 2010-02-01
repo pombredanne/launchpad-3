@@ -42,8 +42,8 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+    BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
+    CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
     BranchMergeProposalStatus, BranchType)
@@ -74,6 +74,8 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
@@ -998,10 +1000,25 @@ class Branch(SQLBase):
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None)
-            or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
-            return True
-        return False
+        if self.upgrade_pending:
+            return False
+        return not (
+            self.branch_format in CURRENT_BRANCH_FORMATS and
+            self.repository_format in CURRENT_REPOSITORY_FORMATS)
+
+    @property
+    def upgrade_pending(self):
+        """See `IBranch`."""
+        from lp.code.model.branchjob import BranchJob, BranchJobType
+        store = Store.of(self)
+        jobs = store.find(
+            BranchJob,
+            BranchJob.branch == self,
+            Job.id == BranchJob.jobID,
+            Job._status != JobStatus.COMPLETED,
+            Job._status != JobStatus.FAILED,
+            BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
+        return jobs.count() > 0
 
     def requestUpgrade(self):
         """See `IBranch`."""
