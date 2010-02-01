@@ -374,19 +374,19 @@
 }
 .bluebar {
   background-image: url(../images/blue-bar.png); /** sprite-ref: icon-sprites-3; sprite-margin-bottom: 18; sprite-alignment: repeat; */
-  background-repeat: no-repeat;
+  background-repeat: repeat-x;
 }
 .greenbar {
   background-image: url(../images/green-bar.png); /** sprite-ref: icon-sprites-3; sprite-margin-bottom: 18; sprite-alignment: repeat; */
-  background-repeat: no-repeat;
+  background-repeat: repeat-x;
 }
 .purplebar {
   background-image: url(../images/purple-bar.png); /** sprite-ref: icon-sprites-3; sprite-margin-bottom: 18; sprite-alignment: repeat; */
-  background-repeat: no-repeat;
+  background-repeat: repeat-x;
 }
 .redbar {
   background-image: url(../images/red-bar.png); /** sprite-ref: icon-sprites-3; sprite-margin-bottom: 18; sprite-alignment: repeat; */
-  background-repeat: no-repeat;
+  background-repeat: repeat-x;
 }
 .favorite-yes {
   background-image: url(../images/news.png); /** sprite-ref: icon-sprites-3; sprite-margin-bottom: 18; */
