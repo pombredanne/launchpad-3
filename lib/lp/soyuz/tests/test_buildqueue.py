@@ -1092,3 +1092,95 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         self.assertEquals(flex_job._getHeadJobPlatform(), (None, False))
         # delay is 960 (= 16*60) + 222 seconds
         check_delay_for_job(self, flex_job, 1182)
+
+
+class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
+    """Test estimated job delays with various processors."""
+    score_increment = 2
+    def setUp(self):
+        """Add more processor-independent jobs to the mix, make the '386' jobs
+        virtual.
+
+            3,              gedit, p: hppa, v:False e:0:01:00 *** s: 1003
+            4,              gedit, p:  386, v: True e:0:02:00 *** s: 1006
+            5,            firefox, p: hppa, v:False e:0:03:00 *** s: 1009
+            6,            firefox, p:  386, v: True e:0:04:00 *** s: 1012
+            7,                apg, p: hppa, v:False e:0:05:00 *** s: 1015
+            9,                vim, p: hppa, v:False e:0:07:00 *** s: 1021
+           10,                vim, p:  386, v: True e:0:08:00 *** s: 1024
+            8,                apg, p:  386, v: True e:0:06:00 *** s: 1024
+           19,       xxr-aptitude, p: None, v:False e:0:05:32 *** s: 1025
+           11,                gcc, p: hppa, v:False e:0:09:00 *** s: 1027
+           12,                gcc, p:  386, v: True e:0:10:00 *** s: 1030
+           13,              bison, p: hppa, v:False e:0:11:00 *** s: 1033
+           14,              bison, p:  386, v: True e:0:12:00 *** s: 1036
+           15,               flex, p: hppa, v:False e:0:13:00 *** s: 1039
+           16,               flex, p:  386, v: True e:0:14:00 *** s: 1042
+           23,      xxr-apt-build, p: None, v: True e:0:12:56 *** s: 1043
+           22,       xxr-cron-apt, p: None, v: True e:0:11:05 *** s: 1043
+           26,           xxr-cupt, p: None, v: None e:0:18:30 *** s: 1044
+           25,            xxr-apt, p: None, v: None e:0:16:38 *** s: 1044
+           24,       xxr-debdelta, p: None, v: None e:0:14:47 *** s: 1044
+           17,           postgres, p: hppa, v:False e:0:15:00 *** s: 1045
+           18,           postgres, p:  386, v: True e:0:16:00 *** s: 1048
+           21,         xxr-daptup, p: None, v: None e:0:09:14 *** s: 1051
+           20,       xxr-auto-apt, p: None, v:False e:0:07:23 *** s: 1053
+
+         p=processor, v=virtualized, e=estimated_duration, s=score
+        """
+        super(TestJobDispatchTimeEstimation, self).setUp()
+
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            virtualized=False, estimated_duration=332,
+            sourcename='xxr-aptitude', score=1025)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            virtualized=False, estimated_duration=443,
+            sourcename='xxr-auto-apt', score=1053)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=554, sourcename='xxr-daptup', score=1051,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=665, sourcename='xxr-cron-apt', score=1043)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=776, sourcename='xxr-apt-build', score=1043)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=887, sourcename='xxr-debdelta', score=1044,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=998, sourcename='xxr-apt', score=1044,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=1110, sourcename='xxr-cupt', score=1044,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+
+        # Assign the same score to the '386' vim and apg build jobs.
+        processor_fam = ProcessorFamilySet().getByName('x86')
+        x86_proc = processor_fam.processors[0]
+        _apg_build, apg_job = find_job(self, 'apg', '386')
+        apg_job.lastscore = 1024
+
+        # Also, toggle the 'virtualized' flag for all '386' jobs.
+        processor_fam = ProcessorFamilySet().getByName('x86')
+        proc_386 = processor_fam.processors[0]
+        for build in self.builds:
+            bq = build.buildqueue_record
+            if bq.processor == proc_386:
+                bq.virtualized = True
+        print_build_setup(self.builds)
+
+    def test_estimation(self):
+        # Let's see the assertion fail for a job that's not pending any more.
+        assign_to_builder(self, 'gedit', 1, 'hppa')
+        processor_fam = ProcessorFamilySet().getByName('hppa')
+        hppa_proc = processor_fam.processors[0]
+        gedit_build, gedit_job = find_job(self, 'gedit', 'hppa')
+        self.assertRaises(AssertionError, gedit_job.getEstimatedJobStartTime)
+
