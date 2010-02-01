@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 from collections import defaultdict
+from datetime import datetime, timedelta
 import logging
 
 from zope.component import getSiteManager, getUtility
@@ -462,10 +463,7 @@ class BuildQueue(SQLBase):
         min_wait_time = self._estimateTimeToNextBuilder()
 
         start_time = min_wait_time + sum_of_delays
-
-        result = (
-            datetime.datetime.utcnow() +
-            datetime.timedelta(seconds=start_time))
+        result = datetime.utcnow() + timedelta(seconds=start_time)
 
         return result
 
