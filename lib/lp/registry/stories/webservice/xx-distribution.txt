@@ -115,3 +115,25 @@ packages matching (substring) the given text.
     http://.../ubuntu/+source/alsa-utils
     http://.../ubuntu/+source/foobar
     http://.../ubuntu/+source/commercialpackage
+
+"getMirrorByName" returns a mirror by its unique name.
+
+    >>> canonical_releases = webservice.named_get(
+    ...     ubuntu['self_link'], 'getMirrorByName',
+    ...     name='canonical-releases').jsonBody()
+    >>> pprint_entry(canonical_releases)
+    content: u'CD Image'
+    description: None
+    displayname: None
+    distribution_link: u'http://.../ubuntu'
+    enabled: True
+    ftp_base_url: None
+    http_base_url: u'http://releases.ubuntu.com/'
+    name: u'canonical-releases'
+    official_candidate: True
+    owner_link: u'http://.../~mark'
+    resource_type_link: u'http://.../#distribution_mirror'
+    rsync_base_url: None
+    self_link: u'http://.../ubuntu/+mirror/canonical-releases'
+    speed: u'100 Mbps'
+    status: u'Official'
