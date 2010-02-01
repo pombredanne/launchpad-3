@@ -52,6 +52,8 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryStorageManager)
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
@@ -2181,3 +2183,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             person=person, keytype=keytype, keytext=self.getUniqueString(),
             comment=self.getUniqueString())
 
+    def makeBlob(self, blob=None, expires=None):
+        """Create a new TemporaryFileStorage BLOB."""
+        if blob is None:
+            blob = self.getUniqueString()
+        new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
+
+        return getUtility(ITemporaryStorageManager).fetch(new_uuid)
