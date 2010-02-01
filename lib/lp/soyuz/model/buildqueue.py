@@ -84,8 +84,8 @@ def get_builder_data():
     # jobs where virtualized=TRUE.
     builder_stats[(None, None)] = virtualized_total
     builder_stats[(None, False)] = builders_in_total - virtualized_total
-
     return builder_stats
+
 
 class BuildQueue(SQLBase):
     implements(IBuildQueue)
@@ -447,15 +447,11 @@ class BuildQueue(SQLBase):
             raise AssertionError(
                 "The start time is only estimated for pending jobs.")
 
-        # A None value indicates that the estimated dispatch time is not
-        # available.
-        result = None
-
-        builder_stats = self._getBuilderData()
+        builder_stats = get_builder_data()
         if builder_stats[(self.processor, self.virtualized)] == 0:
             # No builders that can run the job at hand
             #   -> no dispatch time estimation available.
-            return result
+            return None
 
         # Get the sum of the estimated run times for *pending* jobs that are
         # ahead of us in the queue.
