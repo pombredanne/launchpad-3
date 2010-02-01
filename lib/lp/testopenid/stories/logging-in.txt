@@ -1,4 +1,6 @@
-= Logging in using the TestOpenID provider =
+========================================
+Logging in using the TestOpenID provider
+========================================
 
 A user with an existing account may log into Launchpad using the OpenID
 provider available on testopenid.launchpad.dev.
@@ -58,7 +60,5 @@ the relying party, with the user's identity URL:
     >>> print info.endpoint.claimed_id
     http://testopenid.launchpad.dev/+id/mark_oid
 
-
-== Cleanup ==
-
+    # Clean up the changes we did to the openid module.
     >>> setDefaultFetcher(None)
