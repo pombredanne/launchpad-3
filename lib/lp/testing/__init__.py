@@ -550,7 +550,13 @@ class WindmillTestCase(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.client = WindmillTestClient(self.suite_name)
-        self.client.open('http://launchpad.dev:8085')
+        # Load the front page to make sure we don't get fooled by stale pages
+        # left by the previous test. (For some reason, when you create a new
+        # WindmillTestClient you get a new session and everything, but if you
+        # do anything before you open() something you'd be operating on the
+        # page that was last accessed by the previous test, which is the cause
+        # of things like https://launchpad.net/bugs/515494)
+        self.client.open(url=u'http://launchpad.dev:8085')
 
 
 def capture_events(callable_obj, *args, **kwargs):
