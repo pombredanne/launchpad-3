@@ -1201,7 +1201,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         self.assertEquals(5, builders_for_job(gcc_job))
 
         xxr_build, xxr_job = find_job(self, 'xxr-apt-build', None)
-        # The delay of 1671 seconds is calculated as follows:
+        # The delay of 1802 seconds is calculated as follows:
         #                     386 jobs: 16*60                    = 960
         #   processor-independent jobs:
         #       (11:05 + 18:30 + 16:38 + 14:47 + 9:14)/5         = 842
@@ -1217,7 +1217,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
 
         xxr_build, xxr_job = find_job(self, 'xxr-daptup', None)
         # This job is at the head of the queue for virtualized builders and
-        # will get dispatched next.
+        # will get dispatched within the next 5 seconds.
         check_estimate(self, xxr_job, 5)
 
         xxr_build, xxr_job = find_job(self, 'xxr-aptitude', None)
@@ -1228,5 +1228,13 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
 
         xxr_build, xxr_job = find_job(self, 'xxr-auto-apt', None)
         # This job is at the head of the queue for native builders and
-        # will get dispatched next.
+        # will get dispatched within the next 5 seconds.
         check_estimate(self, xxr_job, 5)
+
+        vim_build, vim_job = find_job(self, 'vim', '386')
+        # The apg job is ahead of the vim job.
+        # The delay of 1527 seconds is calculated as follows:
+        #                     386 jobs: (6+10+12+14+16)*60/5      = 696
+        #   processor-independent jobs:
+        #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
+        check_estimate(self, vim_job, 1527)
