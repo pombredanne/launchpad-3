@@ -36,6 +36,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
