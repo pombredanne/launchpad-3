@@ -11,7 +11,7 @@ The ~person/+karma page is controlled by the PersonKarmaView.
 The view's label shows the person who's karma we're looking at...
 
     >>> print view.label
-    Launchpad Karma for Geddy Lee
+    Your Launchpad Karma
 
 ...even when the logged in user is looking at someone else's karma.
 
