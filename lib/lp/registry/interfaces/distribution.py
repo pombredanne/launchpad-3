@@ -309,6 +309,10 @@ class IDistributionPublic(
             `IDistroSeries.version`.
         """
 
+    @operation_parameters(
+        name=TextLine(title=_("Name"), required=True))
+    @operation_returns_entry(IDistributionMirror)
+    @export_read_operation()
     def getMirrorByName(name):
         """Return the mirror with the given name for this distribution or None
         if it's not found.
