@@ -138,6 +138,15 @@ def builders_for_job(job):
     return builder_data[(getattr(job.processor, 'id', None), job.virtualized)]
 
 
+def check_estimate(test, job, delay_in_seconds):
+    """Does the dispatch time estimate match the expectation?"""
+    estimate = job.getEstimatedJobStartTime() - datetime.utcnow()
+    test.assertTrue(
+        almost_equal(estimate.seconds, delay_in_seconds),
+        "The estimated delay (%s) deviates from the expected one (%s)" %
+        (estimate.seconds, delay_in_seconds))
+
+
 class TestBuildQueueSet(TestCaseWithFactory):
     """Test for `BuildQueueSet`."""
 
@@ -1174,7 +1183,6 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
             bq = build.buildqueue_record
             if bq.processor == proc_386:
                 bq.virtualized = True
-        print_build_setup(self.builds)
 
     def test_estimation(self):
         # Let's see the assertion fail for a job that's not pending any more.
@@ -1183,4 +1191,14 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         hppa_proc = processor_fam.processors[0]
         gedit_build, gedit_job = find_job(self, 'gedit', 'hppa')
         self.assertRaises(AssertionError, gedit_job.getEstimatedJobStartTime)
+
+        processor_fam = ProcessorFamilySet().getByName('x86')
+        x86_proc = processor_fam.processors[0]
+
+        gcc_build, gcc_job = find_job(self, 'gcc', '386')
+        check_estimate(self, gcc_job, 1671)
+
+        # Disable the native x86 builders.
+        for builder in self.builders[(x86_proc.id, False)]:
+            builder.builderok = False
 

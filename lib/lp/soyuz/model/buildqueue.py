@@ -449,7 +449,7 @@ class BuildQueue(SQLBase):
                 "The start time is only estimated for pending jobs.")
 
         builder_stats = get_builder_data()
-        if builder_stats[(self.processor, self.virtualized)] == 0:
+        if builder_stats[(self.processor.id, self.virtualized)] == 0:
             # No builders that can run the job at hand
             #   -> no dispatch time estimation available.
             return None
