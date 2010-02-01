@@ -1199,7 +1199,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         # The delay of 1671 seconds is calculated as follows:
         #                     386 jobs: (12+14+16)*60/3           = 840
         #   processor-independent jobs:
-        #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6 = 831
+        #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
         check_estimate(self, gcc_job, 1671)
         self.assertEquals(5, builders_for_job(gcc_job))
 
@@ -1210,6 +1210,14 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         #       (11:05 + 18:30 + 16:38 + 14:47 + 9:14)/5         = 842
         check_estimate(self, xxr_job, 1802)
 
+        gedit_build, gedit_job = find_job(self, 'gedit', '386')
+        # The delay of 1671 seconds is calculated as follows:
+        #                     386 jobs:
+        #       (4+6+8+10+12+14+16)*60/5                          = 840
+        #   processor-independent jobs:
+        #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
+        check_estimate(self, gedit_job, 1671)
+
         xxr_build, xxr_job = find_job(self, 'xxr-aptitude', None)
         # The delay of 1403 seconds is calculated as follows:
         #                    hppa jobs: (9+11+13+15)*60/3        = 960
@@ -1219,4 +1227,3 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         # Disable the native x86 builders.
         for builder in self.builders[(x86_proc.id, False)]:
             builder.builderok = False
-
