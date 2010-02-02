@@ -25,7 +25,6 @@ import re
 import shutil
 import stat
 import string
-import sys
 import tempfile
 import time
 import urllib
@@ -44,6 +43,7 @@ from canonical.launchpad.scripts import (
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.scripts.ftpmaster import SyncSource, SyncSourceError
 
 
 reject_message = ""
@@ -565,72 +565,14 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     if not Sources.has_key(pkg):
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
 
-    have_orig_tar_gz = False
-
-    # Fetch the source
-    files = Sources[pkg]["files"]
-    for filename in files:
-        # First see if we can find the source in the librarian
-        archive_ids = [a.id for a in Options.todistro.all_distro_archives]
-        query = """
-        SELECT DISTINCT ON (LibraryFileContent.sha1, LibraryFileContent.filesize)
-            LibraryFileAlias.id
-        FROM SourcePackageFilePublishing, LibraryFileAlias, LibraryFileContent
-        WHERE
-          LibraryFileAlias.id = SourcePackageFilePublishing.libraryfilealias AND
-          LibraryFileContent.id = LibraryFileAlias.content AND
-          SourcePackageFilePublishing.libraryfilealiasfilename = %s AND
-          SourcePackageFilePublishing.archive IN %s
-        """ % sqlvalues(filename, archive_ids)
-        cur = cursor()
-        cur.execute(query)
-        results = cur.fetchall()
-        if results:
-            if not filename.endswith("orig.tar.gz"):
-                dak_utils.fubar(
-                    "%s (from %s) is in the DB but isn't an orig.tar.gz.  "
-                    "(Probably published in an older release)"
-                    % (filename, pkg))
-            if len(results) > 1:
-                dak_utils.fubar(
-                    "%s (from %s) returns multiple IDs (%s) for "
-                    "orig.tar.gz.  Help?" % (filename, pkg, results))
-            have_orig_tar_gz = filename
-            print ("  - <%s: already in distro - downloading from librarian>"
-                   % (filename))
-            output_file = open(filename, 'w')
-            librarian_input = Library.getFileByAlias(results[0][0])
-            output_file.write(librarian_input.read())
-            output_file.close()
-            continue
-
-        # Download the file
-        download_f = (
-            "%s%s" % (origin["url"], files[filename]["remote filename"]))
-        if not os.path.exists(filename):
-            print "  - <%s: downloading from %s>" % (filename, origin["url"])
-            sys.stdout.flush()
-            urllib.urlretrieve(download_f, filename)
-        else:
-            print "  - <%s: cached>" % (filename)
-
-        # Check md5sum and size match Source
-        actual_md5sum = md5sum_file(filename)
-        expected_md5sum = files[filename]["md5sum"]
-        if actual_md5sum != expected_md5sum:
-            dak_utils.fubar(
-                "%s: md5sum check failed (%s [actual] vs. %s [expected])."
-                % (filename, actual_md5sum, expected_md5sum))
-        actual_size = os.stat(filename)[stat.ST_SIZE]
-        expected_size = int(files[filename]["size"])
-        if actual_size != expected_size:
-            dak_utils.fubar(
-                "%s: size mismatch (%s [actual] vs. %s [expected])."
-                % (filename, actual_size, expected_size))
-
-        # Remember the name of the .dsc file
-        if filename.endswith(".dsc"):
-            dsc_filename = os.path.abspath(filename)
+    syncsource = SyncSource(Sources[pkg]["files"], origin, Log.debug,
+        urllib.urlretrieve, Options.todistro)
+    try:
+        syncsource.fetchLibrarianFiles()
+        dsc_filename = syncsource.fetchSyncFiles()
+        syncsource.checkDownloadFiles()
+    except SyncSourceError, e:
+        dak_utils.fubar(str(e))
 
     if origin["dsc"] == "must be signed and valid":
         signing_rules = 1
@@ -639,12 +581,19 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     else:
         signing_rules = -1
 
+    have_orig_tarball = None
+    for filename in Sources[pkg]["files"]:
+        if filename.endswith(".orig.tar.gz"):
+            have_orig_tarball = filename
+
     import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               have_orig_tar_gz, requested_by, origin, current_sources,
+               have_orig_tarball, requested_by, origin, current_sources,
                current_binaries)
 
-    if have_orig_tar_gz:
-        os.unlink(have_orig_tar_gz)
+    # XXX JRV 20100202 - Why is just the orig tarball removed, not 
+    # all the files that were fetched?
+    if have_orig_tarball:
+        os.unlink(have_orig_tarball)
 
 
 def do_diff(Sources, Suite, origin, arguments, current_binaries):
