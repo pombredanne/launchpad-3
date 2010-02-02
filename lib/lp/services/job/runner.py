@@ -16,6 +16,7 @@ __all__ = [
 
 
 import contextlib
+import logging
 import os
 from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
@@ -123,6 +124,8 @@ class BaseJobRunner(object):
     def __init__(self, logger=None, error_utility=None):
         self.completed_jobs = []
         self.incomplete_jobs = []
+        if logger is None:
+            logger = logging.getLogger()
         self.logger = logger
         self.error_utility = error_utility
         if self.error_utility is None:
