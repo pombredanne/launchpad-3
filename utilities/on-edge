@@ -70,8 +70,8 @@ def print_revisions(branch, end_id):
         if depth > 0:
             continue
         rev = branch.repository.get_revision(rev_id)
-        revno = ".".join(map(str, branch.revision_id_to_dotted_revno(rev_id)))
-        print "r%s:\n%s" % (revno, rev.message)
+        revno_str = ".".join(map(str, revno))
+        print "r%s:\n%s" % (revno_str, rev.message)
 
 
 def report_difference_to_server(server, branch_path, revno, verbose):
