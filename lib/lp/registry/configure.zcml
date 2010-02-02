@@ -824,6 +824,9 @@
                 set_schema="lp.registry.interfaces.person.IPersonPublic                                                                         lp.registry.interfaces.person.ITeamPublic"
                 set_attributes="name displayname"/>
             <require
+                permission="launchpad.Moderate"
+                interface="lp.registry.interfaces.person.IPersonModerate" />
+            <require
                 permission="launchpad.Commercial"
                 set_schema="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
@@ -897,6 +900,7 @@
             permission="launchpad.Edit"
             attributes="
                 createProductRelease
+                closeBugsAndBlueprints
                 destroySelf"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
@@ -1078,7 +1082,8 @@
                             remote_product screenshotsurl
                             security_contact sourceforgeproject
                             summary title translationgroup
-                            translationpermission wikiurl"/>
+                            translationpermission translation_focus
+                            wikiurl"/>
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal

@@ -10,9 +10,10 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
-    'HostedBranchRestrictedOnOwnerVocabulary',
     'BranchRestrictedOnProductVocabulary',
     'BranchVocabulary',
+    'BugNominatableDistroSeriesVocabulary',
+    'BugNominatableProductSeriesVocabulary',
     'BugNominatableSeriesVocabulary',
     'BugTrackerVocabulary',
     'BugVocabulary',
@@ -25,11 +26,13 @@ __all__ = [
     'FilteredFullLanguagePackVocabulary',
     'FilteredLanguagePackVocabulary',
     'FutureSprintVocabulary',
+    'HostedBranchRestrictedOnOwnerVocabulary',
     'LanguageVocabulary',
-    'PPAVocabulary',
     'PackageReleaseVocabulary',
+    'PPAVocabulary',
     'ProcessorFamilyVocabulary',
     'ProcessorVocabulary',
+    'project_products_using_malone_vocabulary_factory',
     'SpecificationDepCandidatesVocabulary',
     'SpecificationDependenciesVocabulary',
     'SpecificationVocabulary',
@@ -39,7 +42,6 @@ __all__ = [
     'TranslationMessageVocabulary',
     'TranslationTemplateVocabulary',
     'WebBugTrackerVocabulary',
-    'project_products_using_malone_vocabulary_factory',
     ]
 
 import cgi
@@ -90,8 +92,8 @@ from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries    
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -780,7 +782,7 @@ class BugNominatableDistroSeriesVocabulary(
         """Return all non-obsolete distribution series"""
         return [
             series for series in shortlist(self.distribution.series)
-            if series.status != DistroSeriesStatus.OBSOLETE]
+            if series.status != SeriesStatus.OBSOLETE]
 
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""

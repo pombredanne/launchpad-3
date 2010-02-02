@@ -19,11 +19,11 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces._schema_circular_imports import IDistribution
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import (
+    IDistribution, IDistributionSet)
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.project import IProjectSet
 from canonical.launchpad.testing.systemdocs import (

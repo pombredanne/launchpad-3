@@ -153,7 +153,7 @@ retry it.
     ...     "launchpad-buildd-admins")
     >>> nopriv = getUtility(IPersonSet).getByName("no-priv")
     >>> login("foo.bar@canonical.com")
-    >>> buildd_admins.addMember(nopriv, nopriv)
+    >>> ignored = buildd_admins.addMember(nopriv, nopriv)
 
     >>> login("no-priv@canonical.com")
     >>> failed_build_view = getMultiAdapter(

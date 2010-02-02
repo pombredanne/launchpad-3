@@ -261,12 +261,12 @@ retried.
 We will reactivate ubuntu/warty allowing the pmount build to be
 retried.
 
-    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+    >>> from canonical.launchpad.interfaces import SeriesStatus
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu.getSeries('warty')
-    >>> warty.status = DistroSeriesStatus.DEVELOPMENT
+    >>> warty.status = SeriesStatus.DEVELOPMENT
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 
@@ -333,7 +333,7 @@ We will restore ubuntu/warty previously changes status, SUPPORTED, so
 it won't interfere in the next tests.
 
     >>> login('foo.bar@canonical.com')
-    >>> warty.status = DistroSeriesStatus.SUPPORTED
+    >>> warty.status = SeriesStatus.SUPPORTED
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 
@@ -837,7 +837,7 @@ be filtered from the list returned:
     >>> buildd_admin = factory.makePerson()
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName('launchpad-buildd-admins')
-    >>> buildd_admins.addMember(buildd_admin, buildd_admin)
+    >>> ignored = buildd_admins.addMember(buildd_admin, buildd_admin)
     >>> bob_builds = bob.getBuildRecords(user=buildd_admin)
     >>> print_build_details(bob_builds)
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
@@ -845,9 +845,9 @@ be filtered from the list returned:
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
     RELEASE
-    
+
     >>> bob_builds.count()
     13
 
@@ -1304,7 +1304,7 @@ is initialized based on its package size. Since the latter is very
 small (less than a KB) the 'estimated_duration' will be a
 minute.
 
-    >>> bq = oldest_build.createBuildQueueEntry()
+    >>> bq = oldest_build.queueBuild()
     >>> bq.estimated_duration
     datetime.timedelta(0, 60)
 
@@ -1328,7 +1328,7 @@ Check whether the intermediate build instance's 'estimated_duration'
 value equals the oldest instance's 'buildduration' (72 minutes equals 4320
 seconds).
 
-    >>> bq = medium_build.createBuildQueueEntry()
+    >>> bq = medium_build.queueBuild()
     >>> bq.estimated_duration
     datetime.timedelta(0, 4320)
 
@@ -1350,7 +1350,7 @@ NEEDSBUILD.
 Check whether the most recent build instance's 'estimated_duration'
 value equals the intermediate instance's 'buildduration'.
 
-    >>> bq = recent_build.createBuildQueueEntry()
+    >>> bq = recent_build.queueBuild()
     >>> bq.estimated_duration
     datetime.timedelta(0, 3600)
 
@@ -1372,7 +1372,7 @@ Check whether the PPA build instance's 'estimated_duration'
 value was set from the intermediate instance's 'buildduration' in
 the main archive.
 
-    >>> bq = ppa_build.createBuildQueueEntry()
+    >>> bq = ppa_build.queueBuild()
     >>> bq.estimated_duration
     datetime.timedelta(0, 3600)
 

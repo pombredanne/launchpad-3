@@ -510,13 +510,15 @@ use Cwd;
 
 # avoid intermixing of stdout and stderr
 $| = 1;
+
+# We should not ignore HUP for our children - it breaks test suites.
 # in case the terminal disappears, the build should continue
-$SIG{'HUP'} = 'IGNORE';
+#$SIG{'HUP'} = 'IGNORE';
 
 $main::distribution = "";
 $main::distribution = $conf::default_distribution if $conf::default_distribution;
 
-chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
+chomp( $main::arch = `$conf::dpkg --print-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::debug = 0;
 $main::verbose = 0;
@@ -570,6 +572,9 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	}
         elsif (/^--purpose=(.)/) {
                 $main::purpose=$1.$';
+	}
+	elsif (/^--build-debug-symbols$/) {
+		$main::build_debug_symbols = 1;
 	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
@@ -967,13 +972,34 @@ sub build {
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 				exit 1;
 			}
-			exec "$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1";
+
+			my @files;
+			push( @files, $dsc );
+			if (!open( F, "<$main::cwd/$dsc" )) {
+				print PLOG "Can't open $main::cwd/$dsc: $!\n";
+				return 0;
+			}
+			my $dsctext;
+			{ local($/); $dsctext = <F>; }
+			close( F );
+			my $files;
+			$dsctext =~ /^Files:\s*\n((\s+.*\s*\n)+)/mi and $files = $1;
+			push(@files, map { (split( /\s+/, $_ ))[3] } split( "\n", $files ));
+
+			my $file;
+			foreach $file (@files) {
+				system ("cp", "$main::cwd/$file", "$file");
+			}
+			exec "$conf::sudo", "/usr/sbin/chroot", "$main::cwd/$main::chroot_dir",
+				"$conf::su", $main::username, "-s", "/bin/sh", "-c",
+				"cd /build/$main::username && $conf::dpkg_source -sn -x $dsc 2>&1";
+			unlink @files;
 		}
 		$main::sub_task = "dpkg-source";
 		
 		while( <PIPE> ) {
 			print PLOG $_;
-			$dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
+			$dir = $1 if /^dpkg-source: (?:info: )?extracting \S+ in (\S+)/;
 			$main::pkg_fail_stage = "unpack-check"
 				if /^dpkg-source: error: file.*instead of expected/;
 		}
@@ -1146,6 +1172,7 @@ EOF
 	print CURRENT "Package: $pkg\nComponent: $main::component\n";
 	print CURRENT "Suite: $main::distribution\n" if $main::distribution;
 	print CURRENT "Purpose: $main::purpose\n" if $main::purpose;
+	print CURRENT "Build-Debug-Symbols: yes\n" if $main::build_debug_symbols;
 	close CURRENT;
 
 	$main::build_start_time = time;
@@ -1233,6 +1260,13 @@ EOF
 	chdir( $main::cwd );
 
 	my @space_files = ("$dir");
+	if (!$main::nolog and defined $conf::exit_hook and open TMP, '-|', "$conf::exit_hook <$main::pkg_logfile") {
+		local $/ = undef;
+		my $log = <TMP>;
+		close TMP;
+		$rv |= $?;
+		print PLOG $log;
+	}
 	if ($rv) {
 		print PLOG "FAILED [dpkg-buildpackage died]\n";
 	}
@@ -1688,7 +1722,7 @@ sub unpack_special_source {
 		my $dir;
 		while( <PIPE> ) {
 			print PLOG $_;
-			$dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
+			$dir = $1 if /^dpkg-source: (?:info: )?extracting \S+ in (\S+)/;
 		}
 		close( PIPE );
 		if ($?) {

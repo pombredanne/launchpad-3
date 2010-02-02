@@ -6,8 +6,9 @@ subscription policy) their teams as members of another team.
 This is done from the +add-my-teams page, which is linked from a team's
 home page.
 
-    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
-    >>> browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> browser = setupBrowser(
+    ...     auth='Basic colin.watson@ubuntulinux.com:test')
+    >>> browser.open('http://launchpad.dev/~name21')
     >>> browser.getLink('Add one of my teams').click()
     >>> browser.title
     'Propose/add one of your teams to another one...
@@ -18,47 +19,48 @@ The proposal will have to be reviewed by a team administrator.
     >>> print extract_text(find_tag_by_id(browser.contents, 'candidates'))
     This is a moderated team, so one of its administrators will have
     to review any memberships you propose.
-    Launchpad Administrators
-    Mailing List Experts
-    Rosetta Administrators
+    GuadaMen
+    Ubuntu Security Team
+    Ubuntu Team
     or Cancel
 
-We'll now propose Launchpad Administrators as a member of Ubuntu Team.
+We'll now propose Ubuntu Team as a member of the Hoary Gnome Team (name21).
 
-    >>> browser.getControl(name='field.teams').value = ['admins']
+    >>> browser.open('http://launchpad.dev/~name21')
+    >>> link = browser.getLink('Add one of my teams')
+    >>> link.click()
+    >>> browser.getControl(name='field.teams').value = ['ubuntu-team']
     >>> browser.getControl('Continue').click()
     >>> browser.title
-    'Ubuntu Team in Launchpad'
+    'Hoary Gnome Team in Launchpad'
     >>> print get_feedback_messages(browser.contents)
-    [u'Launchpad Administrators has been proposed to this team.']
+    [u'Ubuntu Team has been proposed to this team.']
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'recently-applied'))
+    ...     find_tag_by_id(browser.contents, 'recently-proposed'))
     Pending approval
-    Launchpad Administrators
-    ...
+    Ubuntu Team...
 
 If it were an OPEN team, we'd be able to directly add any of our teams as
 members.
 
-    >>> admin_browser.open('http://launchpad.dev/~ubuntu-team/+edit')
+    >>> admin_browser.open('http://launchpad.dev/~name21/+edit')
     >>> admin_browser.getControl(
     ...     name='field.subscriptionpolicy').displayValue = ['Open Team']
     >>> admin_browser.getControl('Save').click()
     >>> admin_browser.title
-    'Ubuntu Team in Launchpad'
+    'Hoary Gnome Team in Launchpad'
 
-    >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
-    >>> browser.getControl(name='field.teams').value = ['rosetta-admins']
+    >>> browser.open('http://launchpad.dev/~name21/+add-my-teams')
+    >>> browser.getControl(name='field.teams').value = ['ubuntu-team']
     >>> browser.getControl('Continue').click()
     >>> browser.title
-    'Ubuntu Team in Launchpad'
+    'Hoary Gnome Team in Launchpad'
     >>> print get_feedback_messages(browser.contents)
-    [u'Rosetta Administrators has been added to this team.']
+    [u'Ubuntu Team has been added to this team.']
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
-    Recently approved
-    Rosetta Administrators
-    ...
+    Latest members
+    Ubuntu Team...
 
 In the case of restricted teams, though, there is no way to propose any of
 your teams as members.
@@ -88,38 +90,38 @@ The page is restricted to logged in users.
     Traceback (most recent call last):
     Unauthorized:...
 
-You also can't propose a team to itself. Here although Salgado is usually
-allowed to propose Launchpad Administrators in other team, it doesn't
-appear in the list when proposing a team for the Launchpad
-Administrators team. Likewise Mailing List Experts isn't shown because
-the Launchpad Administrators are a member of Mailing List Experts.
-Adding Mailing List Experts would create a cycle.
+You also can't propose a team to itself. Here although Colin Watson is
+usually allowed to propose Guadamen in other team, it doesn't appear in
+the list when proposing a team for the Guadamen team. Likewise Mailing
+List Experts isn't shown because the Launchpad Administrators are a
+member of Mailing List Experts.  Adding Mailing List Experts would
+create a cycle.
 
-    >>> browser.open('http://launchpad.dev/~admins/+add-my-teams')
+    >>> browser.open('http://launchpad.dev/~guadamen/+add-my-teams')
     >>> browser.getControl(name='field.teams').options
-    ['rosetta-admins']
+    ['ubuntu-security']
 
 Teams that are already member of the team can't be proposed or added.
-For example, Rosetta Administrators is not in the list of choices
-anymore of the Ubuntu Team:
+For example, Ubuntu Team is not in the list of choices
+anymore of the Hoary Gnome Team:
 
-    >>> admin_browser.open('http://launchpad.dev/~ubuntu-team/+edit')
+    >>> admin_browser.open('http://launchpad.dev/~name21/+edit')
     >>> admin_browser.getControl(
     ...     name='field.subscriptionpolicy').displayValue = ['Open']
     >>> admin_browser.getControl('Save').click()
 
-    >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
+    >>> browser.open('http://launchpad.dev/~name21/+members')
+    >>> browser.open('http://launchpad.dev/~name21/+add-my-teams')
     >>> browser.getControl(name='field.teams').options
-    ['admins', 'mailing-list-experts']
+    ['guadamen', 'ubuntu-security']
     >>> browser.getControl(name='field.teams').value = [
-    ...     'admins', 'mailing-list-experts']
+    ...     'guadamen', 'ubuntu-security']
     >>> browser.getControl('Continue').click()
     >>> print "\n".join(get_feedback_messages(browser.contents))
-    Launchpad Administrators, Mailing List Experts have been added to this
-    team.
+    GuadaMen, Ubuntu Security Team have been added to this team.
 
 And when no teams can be added, a message is displayed:
 
-    >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
+    >>> browser.open('http://launchpad.dev/~name21/+add-my-teams')
     >>> print extract_text(find_tag_by_id(browser.contents, 'no-candidates'))
     None of the teams you administer can be added to this team.

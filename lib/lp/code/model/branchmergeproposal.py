@@ -38,7 +38,6 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
     CodeReviewVoteReference)
 from lp.code.model.diff import PreviewDiff
-from lp.registry.model.person import Person
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -48,11 +47,14 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalGetter)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.mail.branch import RecipientReason
+from lp.registry.model.person import Person
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
-from lp.code.mail.branch import RecipientReason
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.mail.sendmail import validate_message
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
@@ -132,6 +134,28 @@ class BranchMergeProposal(SQLBase):
 
     review_diff = ForeignKey(
         foreignKey='StaticDiff', notNull=False, default=None)
+
+    @property
+    def next_preview_diff_job(self):
+        # circular dependencies
+        from lp.code.model.branchmergeproposaljob import (
+            BranchMergeProposalJob, MergeProposalCreatedJob,
+            UpdatePreviewDiffJob)
+        job_classes = [MergeProposalCreatedJob, UpdatePreviewDiffJob]
+        type_classes = dict(
+            (job_class.class_job_type, job_class)
+            for job_class in job_classes)
+        job = Store.of(self).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == self,
+            BranchMergeProposalJob.job_type.is_in(type_classes.keys()),
+            BranchMergeProposalJob.job == Job.id,
+            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING])
+            ).order_by(Job.scheduled_start, Job.date_created).first()
+        if job is not None:
+            return type_classes[job.job_type](job)
+        else:
+            return None
 
     preview_diff_id = Int(name='merge_diff')
     preview_diff = Reference(preview_diff_id, 'PreviewDiff.id')

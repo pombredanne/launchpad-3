@@ -101,6 +101,13 @@
         template="../templates/distroseries-packaging.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesNeedsPackagesView"
+        permission="zope.Public"
+        name="+needs-packaging"
+        facet="overview"
+        template="../templates/distroseries-needs-packaging.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Admin"
         facet="overview"
         class="canonical.launchpad.browser.ObjectReassignmentView"
@@ -751,6 +758,9 @@
             for="lp.registry.interfaces.person.IPerson"
             layer="canonical.launchpad.layers.BugsLayer"
             name="+bugs"/>
+        <adapter
+          factory="lp.registry.browser.person.PersonXHTMLRepresentation"
+          name="lazr.restful.EntryResource" />
         <browser:page
             name="+review"
             for="lp.registry.interfaces.person.IPerson"
@@ -1170,6 +1180,12 @@
             permission="launchpad.Edit"
             class="lp.registry.browser.team.ProposedTeamMembersEditView"
             template="../templates/team-editproposed.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            permission="launchpad.Moderate"
+            class="lp.registry.browser.peoplemerge.DeleteTeamView"
+            name="+delete"
+            template="../templates/team-delete.pt"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPersonSet"
             name="+index"/>
@@ -1211,7 +1227,7 @@
             template="../templates/people-adminrequestmerge.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPersonSet"
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             class="lp.registry.browser.peoplemerge.AdminTeamMergeView"
             name="+adminteammerge"
             template="../templates/people-adminrequestmerge.pt"/>
@@ -1585,13 +1601,6 @@
             template="../templates/productseries-table-releases.pt"/>
     </browser:pages>
     <browser:page
-        name="+addpackage"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.registry.browser.packaging.PackagingAddView"
-        facet="overview"
-        permission="launchpad.View"
-        template="../templates/productseries-packaging.pt"/>
-    <browser:page
         name="+ubuntupkg"
         facet="overview"
         template="../templates/productseries-ubuntupkg.pt"
@@ -1932,6 +1941,13 @@
             facet="overview"
             template="../templates/sourcepackage-portlet-details.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="zope.Public"
+        name="+portlet-associations"
+        facet="overview"
+        class="lp.registry.browser.sourcepackage.SourcePackageAssociationPortletView"
+        template="../templates/sourcepackage-portlet-associations.pt"/>
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
