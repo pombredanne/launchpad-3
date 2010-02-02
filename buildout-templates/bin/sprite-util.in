@@ -1,0 +1,29 @@
+#! /usr/bin/env ${buildout:directory}/bin/py
+
+import os
+import sys
+
+from spriteutils import SpriteUtil
+
+if len(sys.argv) != 2:
+    raise AssertionError(
+        "Expected a single argument. Received %r" % sys.argv[1:])
+else:
+    command = sys.argv[1]
+
+root = '${buildout:directory}'
+icing = os.path.join(root, 'lib/canonical/launchpad/icing')
+combined_image_file = os.path.join(icing, 'icon-sprites')
+positioning_file = os.path.join(icing, 'icon-sprites.positioning')
+css_file = os.path.join(icing, 'style-3-0.css')
+css_template_file = css_file + '.in'
+
+sprite_util = SpriteUtil()
+sprite_util.loadCSSTemplate(css_template_file, 'icon-sprites')
+
+if command == 'create-image':
+    sprite_util.savePNG(combined_image_file)
+    sprite_util.savePositioning(positioning_file)
+elif command == 'create-css':
+    sprite_util.loadPositioning(positioning_file)
+    sprite_util.saveConvertedCSS(css_file)
