@@ -74,4 +74,5 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         else:
             return (
                 '<a href="%(url)s" class="diff-link">'
-                '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s</a>' % args)
+                '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s'
+                '</a>' % args)

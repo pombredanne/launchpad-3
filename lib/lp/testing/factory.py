@@ -945,8 +945,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         diff = self.makeDiff()
         bmp = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
-        preview_diff.branch_merge_proposal=bmp
-        preview_diff.conflicts=conflicts
+        preview_diff.branch_merge_proposal = bmp
+        preview_diff.conflicts = conflicts
         preview_diff.diff = diff
         preview_diff.source_revision_id = self.getUniqueUnicode()
         preview_diff.target_revision_id = self.getUniqueUnicode()
@@ -1277,8 +1277,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         passed in, but defaults to a Subversion import from an arbitrary
         unique URL.
         """
-        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is hg_repo_url
-            is None):
+        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
+            hg_repo_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if product is None:
