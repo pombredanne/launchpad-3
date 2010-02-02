@@ -31,10 +31,12 @@ from canonical.launchpad import scripts
 
 
 def force_bzr_to_use_urllib():
-    # These lines prevent bzr from using pycurl to connect to http: urls.  We
-    # want this because pycurl rejects self signed certificates, which
-    # prevents a significant number of import branchs from updating.  Also see
-    # https://bugs.edge.launchpad.net/bzr/+bug/516222
+    """Rrevent bzr from using pycurl to connect to http: urls.
+
+    We want this because pycurl rejects self signed certificates, which
+    prevents a significant number of import branchs from updating.  Also see
+    https://bugs.edge.launchpad.net/bzr/+bug/516222.
+    """
     from bzrlib.transport import register_lazy_transport
     register_lazy_transport('http://', 'bzrlib.transport.http._urllib',
                             'HttpTransport_urllib')
