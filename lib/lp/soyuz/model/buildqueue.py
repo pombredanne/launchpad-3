@@ -272,32 +272,32 @@ class BuildQueue(SQLBase):
         estimation."""
         virtualized = normalize_virtualization(self.virtualized)
         clauses = """
-                BuildQueue.job = Job.id
-                AND Job.status = %s
-                AND (
-                    -- The score must be either above my score or the
-                    -- job must be older than me in cases where the
-                    -- score is equal.
-                    BuildQueue.lastscore > %s OR
-                    (BuildQueue.lastscore = %s AND Job.id < %s))
-                AND (
-                    -- The virtualized values either match or the job
-                    -- does not care about virtualization and the job
-                    -- of interest (JOI) is to be run on a virtual builder
-                    -- (we want to prevent the execution of untrusted code
-                    -- on native builders).
-                    buildqueue.virtualized = %s OR
-                    (buildqueue.virtualized IS NULL AND %s = TRUE))
-        """ % sqlvalues(
-            JobStatus.WAITING, self.lastscore, self.lastscore, self.job,
-            virtualized, virtualized)
+            BuildQueue.job = Job.id
+            AND Job.status = %s
+            AND (
+                -- The score must be either above my score or the
+                -- job must be older than me in cases where the
+                -- score is equal.
+                BuildQueue.lastscore > %s OR
+                (BuildQueue.lastscore = %s AND Job.id < %s))
+            AND (
+                -- The virtualized values either match or the job
+                -- does not care about virtualization and the job
+                -- of interest (JOI) is to be run on a virtual builder
+                -- (we want to prevent the execution of untrusted code
+                -- on native builders).
+                buildqueue.virtualized = %s OR
+                (buildqueue.virtualized IS NULL AND %s = TRUE))
+            """ % sqlvalues(
+                JobStatus.WAITING, self.lastscore, self.lastscore, self.job,
+                virtualized, virtualized)
         processor_clause = """
-                AND (
-                    -- The processor values either match or the candidate
-                    -- job is processor-independent.
-                    buildqueue.processor = %s OR
-                    buildqueue.processor IS NULL)
-        """ % sqlvalues(self.processor)
+            AND (
+                -- The processor values either match or the candidate
+                -- job is processor-independent.
+                buildqueue.processor = %s OR
+                buildqueue.processor IS NULL)
+            """ % sqlvalues(self.processor)
         # We don't care about processors if the estimation is for a
         # processor-independent job.
         if self.processor is not None:
