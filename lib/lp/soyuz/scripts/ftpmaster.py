@@ -803,11 +803,13 @@ class ChrootManager:
         pocket_chroot.chroot.open()
         copy_and_close(pocket_chroot.chroot, local_file)
 
+
 class SyncSourceError(Exception):
     """Raised when an critical error occurs inside SyncSource.
 
     The entire procedure should be aborted in order to avoid unknown problems.
     """
+
 
 class SyncSource:
     """Sync Source procedure helper class.
