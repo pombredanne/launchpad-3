@@ -3,6 +3,7 @@
 
 __all__ = [
     'BranchJob',
+    'BranchScanJob',
     'BranchJobDerived',
     'BranchJobType',
     'BranchUpgradeJob',
@@ -18,7 +19,6 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
-from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
@@ -44,12 +44,11 @@ from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url, errorlog
-from lp.code.bzr import (
-    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
+from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
@@ -61,10 +60,11 @@ from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
-    IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
-    IReclaimBranchSpaceJobSource, IRevisionsAddedJob, IRevisionMailJob,
-    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
+    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchScanJob,
+    IBranchScanJobSource, IBranchUpgradeJob, IBranchUpgradeJobSource,
+    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionsAddedJob,
+    IRevisionMailJob, IRevisionMailJobSource, IRosettaUploadJob,
+    IRosettaUploadJobSource)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.translations.interfaces.translationimportqueue import (
@@ -127,6 +127,11 @@ class BranchJobType(DBEnumeratedType):
         This job generates translations templates from a source branch.
         """)
 
+    SCAN_BRANCH = DBItem(7, """
+        Scan Branch
+
+        This job scans a branch for new revisions.
+        """)
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -251,6 +256,36 @@ class BranchDiffJob(BranchJobDerived):
         return static_diff
 
 
+class BranchScanJob(BranchJobDerived):
+    """A Job that scans a branch for new revisions."""
+
+    implements(IBranchScanJob)
+
+    classProvides(IBranchScanJobSource)
+    class_job_type = BranchJobType.SCAN_BRANCH
+
+    @classmethod
+    def create(cls, branch):
+        """See `IBranchUpgradeJobSource`."""
+        branch_job = BranchJob(branch, BranchJobType.SCAN_BRANCH, {})
+        return cls(branch_job)
+
+    def run(self):
+        """See `IBranchScanJob`."""
+        bzrsync = BzrSync(self.branch)
+        bzrsync.syncBranchAndClose()
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        """See `IBranchScanJobSource`."""
+        errorlog.globalErrorUtility.configure('branchscanner')
+        server = get_multi_server()
+        server.setUp()
+        yield
+        server.tearDown()
+
+
 class BranchUpgradeJob(BranchJobDerived):
     """A Job that upgrades branches to the current stable format."""
 
@@ -264,6 +299,8 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         if not branch.needs_upgrading:
             raise AssertionError('Branch does not need upgrading.')
+        if branch.upgrade_pending:
+            raise AssertionError('Branch already has upgrade pending.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
@@ -288,7 +325,7 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
             # Perform the upgrade.
-            upgrade(upgrade_branch.base, self.upgrade_format)
+            upgrade(upgrade_branch.base)
 
             # Re-open the branch, since its format has changed.
             upgrade_branch = BzrBranch.open_from_transport(
@@ -307,24 +344,6 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_transport.copy_tree_to_transport(source_branch_transport)
         finally:
             shutil.rmtree(upgrade_branch_path)
-
-    @property
-    def upgrade_format(self):
-        """See `IBranch`."""
-        format = BzrDirMetaFormat1()
-        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
-            self.branch.branch_format)
-        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
-            self.branch.repository_format)
-        if branch_format is None or repository_format is None:
-            branch = BzrBranch.open(self.branch.getPullURL())
-            if branch_format is None:
-                branch_format = type(branch._format)
-            if repository_format is None:
-                repository_format = type(branch.repository._format)
-        format.set_branch_format(branch_format())
-        format._set_repository_format(repository_format())
-        return format
 
 
 class RevisionMailJob(BranchDiffJob):
