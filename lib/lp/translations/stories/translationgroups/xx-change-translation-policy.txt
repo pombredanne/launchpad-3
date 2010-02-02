@@ -1,5 +1,5 @@
-Translation policy settings
-==========================================
+Translations policy settings
+============================
 
 A product owner, Rosetta expert, and Ubuntu translations coordinator
 browser is created.
@@ -14,10 +14,6 @@ browser is created.
     >>> re_browser = setupRosettaExpertBrowser()
     >>> po_browser = setupBrowser("Basic po@ex.com:test")
 
-
-Translations policy for products
---------------------------------
-
 Visiting the main product's translations page, product owners and Rosetta
 administrators sees the "Change permissions" link, leading to the
 translations settings page.
@@ -26,13 +22,13 @@ translations settings page.
     ...     'http://translations.launchpad.dev/chestii')
     >>> re_browser.getLink('Change permissions').click()
     >>> print re_browser.url
-    http://translations.launchpad.dev/chestii/+translation-policy
+    http://translations.launchpad.dev/chestii/+translations-policy
 
     >>> po_browser.open(
     ...     'http://translations.launchpad.dev/chestii')
     >>> po_browser.getLink('Change permissions').click()
     >>> print po_browser.url
-    http://translations.launchpad.dev/chestii/+translation-policy
+    http://translations.launchpad.dev/chestii/+translations-policy
 
 Other persons will not see the link to settigs page.
 
@@ -46,7 +42,7 @@ Other persons will not see the link to settigs page.
 An attempt to access the settins url will not be authorized.
 
     >>> browser.open(
-    ...     'http://translations.launchpad.dev/chestii/+translation-policy')
+    ...     'http://translations.launchpad.dev/chestii/+translations-policy')
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -58,18 +54,14 @@ can be changed.
     >>> print extract_text(hint)
     Select the translation group that will be managing...
 
-    >>> re_browser.getControl('Translation group').value = ['launchpad-translators']
+    >>> re_browser.getControl('Translation group').value = ['testing-translation-team']
     >>> re_browser.getControl('Translation permissions policy').value = ['CLOSED']
     >>> re_browser.getControl('Change').click()
     >>> print re_browser.url
     http://translations.launchpad.dev/chestii
     >>> permissions = find_tag_by_id(re_browser.contents, 'translation-permissions')
     >>> print extract_text(permissions)
-    Evolution (Unspecified) is translated by ... with Closed permissions
-
-
-Translations policy for projects
---------------------------------
+    Chestii is translated by ... with Closed permissions.
 
 
 Translations policy for distributions
@@ -79,7 +71,8 @@ Translations policy for distributions
     ...     'http://translations.launchpad.dev/ubuntu')
     >>> dtc_browser.getLink('Change permissions').click()
     >>> print dtc_browser.url
-    http://translations.launchpad.dev/ubuntu/+translation-policy
+    http://translations.launchpad.dev/ubuntu/+translations-policy
+
     >>> dtc_browser.getControl('Translation group').value = ['ubuntu-translators']
     >>> dtc_browser.getControl('Translation permissions policy').value = ['CLOSED']
     >>> dtc_browser.getControl('Change').click()
@@ -87,4 +80,4 @@ Translations policy for distributions
     http://translations.launchpad.dev/ubuntu
     >>> permissions = find_tag_by_id(dtc_browser.contents, 'translation-permissions')
     >>> print extract_text(permissions)
-    Ubuntu (Unspecified) is translated by ... with Closed permissions
+    Ubuntu is translated by ... with Closed permissions.

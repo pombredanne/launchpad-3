@@ -678,7 +678,10 @@ def setupDTCBrowser():
         # We have already created the translations coordinator
         pass
     else:
-        dtg = LaunchpadObjectFactory().makeTranslationGroup(owner=dtg_member)
+        dtg = LaunchpadObjectFactory().makeTranslationGroup(
+            name="ubuntu-translators",
+            title="Ubuntu Translators",
+            owner=dtg_member)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         ubuntu.translationgroup = dtg
     logout()
