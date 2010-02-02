@@ -18,7 +18,7 @@ icing = os.path.join(root, 'lib/canonical/launchpad/icing')
 combined_image_file = os.path.join(icing, 'icon-sprites')
 positioning_file = os.path.join(icing, 'icon-sprites.positioning')
 css_template_file = os.path.join(icing, 'style-3-0.css.in')
-css_file = '/var/tmp/style-3-0.css'
+css_file = os.path.join(icing, 'build/style-3-0.css')
 
 sprite_util = SpriteUtil()
 sprite_util.loadCSSTemplate(

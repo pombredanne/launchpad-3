@@ -111,8 +111,11 @@ inplace: build
 
 build: $(BZR_VERSION_INFO) compile apidoc jsbuild css_combine
 
-css_combine:
+css_combine: sprite_css
 	${SHHH} bin/combine-css
+
+sprite_css:
+	${SHHH} bin/sprite-util create-css
 
 jsbuild_lazr:
 	# We absolutely do not want to include the lazr.testing module and its
@@ -310,7 +313,6 @@ clean: clean_js
 			  /var/tmp/mailman-xmlrpc.test \
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
-			  /var/tmp/style-3-0.css \
 			  /var/tmp/zeca
 
 realclean: clean
