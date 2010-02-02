@@ -47,7 +47,7 @@ hidden from the UI.
 
 The page also contains a link back to the +review page.
 
-    >>> link = admin_browser.getLink(url='+review', index=1)
+    >>> link = admin_browser.getLink(url='+review')
     >>> print link.text
     edit[IMG] Review the user's Launchpad information
 
