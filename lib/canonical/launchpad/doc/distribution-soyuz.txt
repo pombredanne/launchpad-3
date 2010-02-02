@@ -268,6 +268,26 @@ Including 'inactive' PPAs:
     >>> [archive.owner.name for archive in result]
     [u'mark']
 
+The searchPPAs() method only returns the PPAs of active users.
+
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
+
+    >>> login('admin@canonical.com')
+    >>> account = IMasterObject(no_priv.account)
+    >>> account.status = AccountStatus.SUSPENDED
+    >>> transaction.commit()
+    >>> login(ANONYMOUS)
+
+    >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
+    >>> [archive for archive in result]
+    []
+
+    >>> login('admin@canonical.com')
+    >>> account.status = AccountStatus.ACTIVE
+    >>> transaction.commit()
+    >>> login(ANONYMOUS)
+
 
 Retrieving only pending-acceptance PPAs
 ---------------------------------------
