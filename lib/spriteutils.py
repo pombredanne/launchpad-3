@@ -6,18 +6,20 @@
 
 """Library to create sprites."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 __all__ = [
     'SpriteUtil',
     ]
 
-from __future__ import with_statement
 import os
 import sys
 import re
 import cssutils
 import Image
+import simplejson
 
 MARGIN = 18
 
@@ -28,12 +30,14 @@ class SpriteUtil:
         self.positions = None
         self.css_object = None
 
-    def loadCSSTemplate(css_file, group_name):
+    def loadCSSTemplate(self, css_file, group_name):
         smartsprites_exp = re.compile(
             r'/\*+([^*]*sprite-ref: [^*]*)\*/')
         self.css_object = cssutils.parseFile(css_file)
         sprites = []
         for rule in self.css_object:
+            if rule.cssText is None:
+                continue
             match = smartsprites_exp.search(rule.cssText)
             if match is not None:
                 smartsprites_info = match.group(1)
@@ -48,10 +52,8 @@ class SpriteUtil:
                             sprites.append(dict(filename=filename, rule=rule))
         self.sprites = sprites
 
-    def combineImages(self, css_file):
-        self.loadCSSTemplate(css_file)
+    def combineImages(self, css_dir):
         for sprite in self.sprites:
-            css_dir, _css_file = os.path.split(TEMPLATE_CSS_FILE)
             filename = os.path.join(css_dir, sprite['filename'])
             sprite['image'] = Image.open(filename)
 
@@ -77,7 +79,7 @@ class SpriteUtil:
         y = 0
         positions = {}
         for index, sprite in enumerate(self.sprites):
-            position = (0, y))
+            position = (0, y)
             master.paste(sprite['image'], position)
             positions[sprite['filename']] = position
             y += sprite['image'].size[1] + MARGIN
@@ -89,22 +91,16 @@ class SpriteUtil:
         self.combined_image.save(filename, format='png')
 
     def savePositioning(self, filename):
-        with open(filename, 'w') as fp:
-            for sprite in sprites:
-                rule = sprite['rule']
-                fp.write('%s=%s\n' % (sprite['filename'], sprite['position']))
+        simplejson.dump(self.positions, fp=open(filename, 'w'), indent=4)
 
     def loadPositioning(self, filename):
-        for line in open(filename):
-            filename, position = line.strip().split('=')
-            positions[filename] = position
-        self.locations = locations
+        self.positions = simplejson.load(open(filename))
 
     def saveConvertedCSS(self, filename):
         for sprite in self.sprites:
             rule = sprite['rule']
             rule.style.backgroundImage = 'url(master.%s)' % format
-            position = self.positions[sprite['filename']
+            position = self.positions[sprite['filename']]
             rule.style.backgroundPosition = '0px %dpx' % position
 
         open(filename, 'w').write(self.css_object.cssText)
