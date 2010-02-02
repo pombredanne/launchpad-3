@@ -322,6 +322,10 @@ class TestBranchUpgrade(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_needsUpgrading_empty_formats(self):
+        branch = self.factory.makePersonalBranch()
+        self.assertFalse(branch.needs_upgrading)
+
     def test_needsUpgrading_already_requested(self):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If the format is
