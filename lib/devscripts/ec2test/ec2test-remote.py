@@ -43,6 +43,7 @@ class SummaryResult(unittest.TestResult):
         self.stream.write('%s: %s\n' % (flavor, test))
         self.stream.write(self.single_line)
         self.stream.write('%s\n' % (error,))
+        self.stream.flush()
 
     def addError(self, test, error):
         super(SummaryResult, self).addError(test, error)
@@ -204,7 +205,6 @@ class BaseTestRunner:
             if echo_to_stdout:
                 sys.stdout.write(line)
                 sys.stdout.flush()
-            summary_file.flush()
 
 
 class TestOnMergeRunner(BaseTestRunner):
