@@ -51,6 +51,7 @@ class SpriteUtil:
                             filename = rule.style.backgroundImage[4:-1]
                             sprites.append(dict(filename=filename, rule=rule))
         self.sprites = sprites
+        self.group_name = group_name
 
     def combineImages(self, css_dir):
         for sprite in self.sprites:
@@ -96,11 +97,11 @@ class SpriteUtil:
     def loadPositioning(self, filename):
         self.positions = simplejson.load(open(filename))
 
-    def saveConvertedCSS(self, filename):
+    def saveConvertedCSS(self, css_file, combined_image_file):
         for sprite in self.sprites:
             rule = sprite['rule']
-            rule.style.backgroundImage = 'url(master.%s)' % format
+            rule.style.backgroundImage = 'url(%s)' % combined_image_file
             position = self.positions[sprite['filename']]
-            rule.style.backgroundPosition = '0px %dpx' % position
+            rule.style.backgroundPosition = '%dpx %dpx' % tuple(position)
 
-        open(filename, 'w').write(self.css_object.cssText)
+        open(css_file, 'w').write(self.css_object.cssText)

@@ -310,6 +310,7 @@ clean: clean_js
 			  /var/tmp/mailman-xmlrpc.test \
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
+			  /var/tmp/style-3-0.css \
 			  /var/tmp/zeca
 
 realclean: clean
