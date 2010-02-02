@@ -280,17 +280,15 @@ class BuildQueue(SQLBase):
                 -- score is equal.
                 BuildQueue.lastscore > %s OR
                 (BuildQueue.lastscore = %s AND Job.id < %s))
-            AND (
-                -- The virtualized values either match or the job
-                -- does not care about virtualization and the job
-                -- of interest (JOI) is to be run on a virtual builder
-                -- (we want to prevent the execution of untrusted code
-                -- on native builders).
-                buildqueue.virtualized = %s OR
-                (buildqueue.virtualized IS NULL AND %s = TRUE))
+            -- The virtualized values either match or the job
+            -- does not care about virtualization and the job
+            -- of interest (JOI) is to be run on a virtual builder
+            -- (we want to prevent the execution of untrusted code
+            -- on native builders).
+            AND COALESCE(buildqueue.virtualized, TRUE) = %s
             """ % sqlvalues(
                 JobStatus.WAITING, self.lastscore, self.lastscore, self.job,
-                virtualized, virtualized)
+                virtualized)
         processor_clause = """
             AND (
                 -- The processor values either match or the candidate
