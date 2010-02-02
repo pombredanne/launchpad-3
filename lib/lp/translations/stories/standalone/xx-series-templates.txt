@@ -97,7 +97,6 @@ appropriate page.
 Trying to edit/administer disabled templates brings them to the
 appropriate page.
 
-    >>> utc_browser = setupBrowser(auth='Basic utc-member@example.com:test')
     >>> utc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
     >>> utc_browser.getLink(url='ubuntu/hoary/+source/evolution/+pots/disabled-template/+edit').click()
