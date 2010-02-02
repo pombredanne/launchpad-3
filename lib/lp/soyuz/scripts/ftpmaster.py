@@ -820,7 +820,7 @@ class SyncSource:
     'aptMD5Sum' is provided as a classmethod during the integration time.
     """
 
-    def __init__(self, files, origin, debug, downloader):
+    def __init__(self, files, origin, debug, downloader, todistro):
         """Store local context.
 
         files: a dictionary where the keys are the filename and the
@@ -829,11 +829,13 @@ class SyncSource:
                 contain information for download files to be synchronized
         debug: a debug function, 'debug(message)'
         downloader: a callable that fetchs URLs, 'downloader(url, destination)'
+        todistro: target distribution object
         """
         self.files = files
         self.origin = origin
         self.debug = debug
         self.downloader = downloader
+        self.todistro = todistro
 
     @classmethod
     def generateMD5Sum(self, filename):
@@ -849,13 +851,8 @@ class SyncSource:
         Return the fetched filename if it was present in Librarian or None
         if it wasn't.
         """
-        # XXX cprov 2007-01-10 bug=78683: Looking for files within ubuntu
-        # only. It doesn't affect the usual sync-source procedure. However
-        # it needs to be revisited for derivation, we probably need
-        # to pass the target distribution in order to make proper lookups.
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
-            libraryfilealias = ubuntu.getFileByName(
+            libraryfilealias = self.todistro.getFileByName(
                 filename, source=True, binary=False)
         except NotFoundError:
             return None
@@ -874,8 +871,8 @@ class SyncSource:
 
         It raises SyncSourceError if anything else then an
         'orig.tar.gz' was found in Librarian.
-        Return a boolean indicating whether or not the 'orig.tar.gz' is
-        required in the upload.
+        Return the name of the orig tarball if it was 
+        retrieved from the librarian.
         """
         orig_filename = None
         for filename in self.files.keys():

@@ -12,11 +12,14 @@ import sys
 import tempfile
 from unittest import TestCase, TestLoader
 
-from lp.archiveuploader.tagfiles import parse_tagfile
+from zope.component import getUtility
+
 from canonical.config import config
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.testing import LaunchpadZopelessLayer
+from lp.archiveuploader.tagfiles import parse_tagfile
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.scripts.ftpmaster import (
     SyncSource, SyncSourceError)
 
@@ -73,7 +76,8 @@ class TestSyncSource(TestCase):
         """
         sync_source = SyncSource(
             files=files, origin=origin, debug=self.local_debug,
-            downloader=self.local_downloader)
+            downloader=self.local_downloader,
+            todistro=getUtility(IDistributionSet)['ubuntu'])
         return sync_source
 
     def testInstantiate(self):
