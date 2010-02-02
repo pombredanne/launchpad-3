@@ -15,28 +15,21 @@
           translations efficiently.
         </p>
 
-        <p class="informational message"
-          tal:condition="not: packagings/batch">
-          There are no links between packages in <span
-          tal:replace="context/displayname">Hoary</span> and upstream. By
-          adding information for specific packages, you can help the
-          distribution developers collaborate with upstream.
+        <p>
+          The packages are listed by priority. Packages that greatest need to
+          forward bugs, sync translations, or need the latest development
+          branch are listed first. Can you help provide the missing 
+          information for these registered Launchpad projects?
         </p>
 
-        <tal:unlinked_translatables
-         condition="view/show_unlinked_translatables">
-          <div id="unlinked-translatables">
-            <h2>Unlinked translatable packages</h2>
-
-            <ul class="horizontal">
-              <li tal:repeat="sp view/unlinked_translatables">
-                <a class="sprite package-source"
-                  tal:attributes="href sp/fmt:url"
-                  tal:content="sp/sourcepackagename/name">evolution</a>
-              </li>
-            </ul>
-          </div>
-        </tal:unlinked_translatables>
+        <ul id="related-pages" class="horizontal">
+          <li>
+            <a tal:replace="structure context/menu:overview/needs_packaging/fmt:link" />
+          </li>
+          <li>
+            <a tal:replace="structure context/menu:overview/packaging/fmt:link" />
+          </li>
+        </ul>
       </div>
 
       <tal:known_links condition="packagings/batch">
