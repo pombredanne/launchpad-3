@@ -324,3 +324,34 @@ target package column in that case, because the package is implied.
 # XXX Karl Fogel 2010-02-02 bug=516186: We should also test the
 # patches view on a project group, to make sure the "Package" column
 # becomes "Project" in that context.
+
+Patches View by Person and Team
+-------------------------------
+
+The patches view works for people and teams.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/~%s/+patches' % (
+    ...         patch_submitter.name,))
+    >>> show_patches_view(user_browser.contents)
+    Bug                     Importance  Status         Patch Age
+    Bug #17: bug_b title    Critical    Confirmed      ...second...
+    From: Patchy Person
+    Link: patch_c.diff
+    description of patch c
+    Bug #18: bug_c title    High        Triaged        ...second...
+    From: Patchy Person
+    Link: patch_f.diff
+    description of patch f
+    Bug #18: bug_c title    High        Triaged        ...second...
+    From: Patchy Person
+    Link: patch_f.diff
+    description of patch f
+    Bug #16: bug_a title    Medium      Fix Released   ...second...
+    From: Patchy Person
+    Link: patch_a.diff
+    description of patch a
+    Bug #18: bug_c title    Wishlist    Fix Committed  ...second...
+    From: Patchy Person
+    Link: patch_f.diff
+    description of patch f
