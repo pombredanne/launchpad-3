@@ -842,7 +842,7 @@ class Person(
             # this method is called via webapi directly
             args = list()
             for key in ('assignee', 'bug_subscriber', 'owner', 'bug_commenter'):
-                if kwargs[key] is None:
+                if kwargs.get(key, None) is None:
                     arguments = copy.copy(kwargs)
                     arguments[key] = self
                     if key == 'owner':
