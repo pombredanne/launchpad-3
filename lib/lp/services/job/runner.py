@@ -16,6 +16,7 @@ __all__ = [
 
 
 import contextlib
+import logging
 import os
 from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
@@ -324,7 +325,10 @@ class TwistedJobRunner(BaseJobRunner):
 
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
-        consumer = ParallelLimitedTaskConsumer(1)
+        logger = logging.getLogger('gloop')
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+        logger.setLevel(logging.DEBUG)
+        consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 
     def runAll(self):
