@@ -278,7 +278,7 @@ class SanitizeDb(LaunchpadScript):
 
     def removePrivateHwSubmissions(self):
         """Remove all private hardware submissions."""
-        from canonical.launchpad.database.hwdb import HWSubmission
+        from lp.hardwaredb.model.hwdb import HWSubmission
         count = self.store.find(
             HWSubmission, HWSubmission.private == True).remove()
         self.store.flush()
