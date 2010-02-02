@@ -317,3 +317,7 @@ target package column in that case, because the package is implied.
     Bug #16: bug_a title       Medium   Fix Released  ...second...
     From: Patchy Person
     Link: patch_a.diff description of patch a
+
+# XXX Karl Fogel 2010-02-02 bug=516186: We should also test the
+# patches view on a project group, to make sure the "Package" column
+# becomes "Project" in that context.
