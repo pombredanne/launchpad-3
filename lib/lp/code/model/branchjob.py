@@ -282,6 +282,14 @@ class BranchScanJob(BranchJobDerived):
         """See `IBranchScanJob`."""
         from canonical.launchpad.scripts import log
         bzrsync = BzrSync(self.branch, log)
+        bzrsync.syncBranchAndClose()
+
+    @classmethod
+    @contextlib.contextmanager
+    def contextManager(cls):
+        """See `IBranchScanJobSource`."""
+        errorlog.globalErrorUtility.configure('branchscanner')
+        cls.server = get_scanner_server()
         event_handlers = [
             email.queue_tip_changed_email_jobs,
             buglinks.got_new_revision,
@@ -291,18 +299,10 @@ class BranchScanJob(BranchJobDerived):
             schedule_translation_upload,
             ]
         fixture = Fixtures(
-            [self.server, make_zope_event_fixture(*event_handlers)])
-        run_with_fixture(fixture, bzrsync.syncBranchAndClose)
-
-    @classmethod
-    @contextlib.contextmanager
-    def contextManager(cls):
-        """See `IBranchScanJobSource`."""
-        errorlog.globalErrorUtility.configure('branchscanner')
-        cls.server = get_scanner_server()
-        cls.server.setUp()
+            [cls.server, make_zope_event_fixture(*event_handlers)])
+        fixture.setUp()
         yield
-        cls.server.tearDown()
+        fixture.tearDown()
 
 
 class BranchUpgradeJob(BranchJobDerived):
