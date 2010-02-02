@@ -130,7 +130,7 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.buildqueue import BuildQueue
-from lp.testing import run_with_login, time_counter
+from lp.testing import run_with_login, time_counter, login, logout
 
 SPACE = ' '
 
@@ -238,6 +238,21 @@ class LaunchpadObjectFactory(ObjectFactory):
         # bzr-builder format 0.2 deb-version 1.0
         %s
         ''')
+
+    def doAsUser(self, user, factory_method, **factory_args):
+        """Perform a factory method while temporarily logged in as a user.
+
+        :param user: The user to log in as, and then to log out from.
+        :param factory_method: The factory method to invoke while logged in.
+        :param factory_args: Keyword arguments to pass to factory_method.
+        """
+        login(user)
+        try:
+            result = factory_method(**factory_args)
+            transaction.commit()
+        finally:
+            logout()
+        return result
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
@@ -1084,7 +1099,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,
-                          description=None):
+                          description=None, is_patch=_DEFAULT):
         """Create and return a new bug attachment.
 
         :param bug: An `IBug` or a bug ID or name, or None, in which
@@ -1099,6 +1114,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             string will be used.
         :param content_type: The MIME-type of this file.
         :param description: The description of the attachment.
+        :param is_patch: If true, this attachment is a patch.
         :return: An `IBugAttachment`.
         """
         if bug is None:
@@ -1115,9 +1131,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             comment = self.getUniqueString()
         if filename is None:
             filename = self.getUniqueString()
+        # If the default value of is_patch when creating a new
+        # BugAttachment should ever change, we don't want to interfere
+        # with that.  So, we only override it if our caller explicitly
+        # passed it.
+        other_params = {}
+        if is_patch is not _DEFAULT:
+            other_params['is_patch'] = is_patch
         return bug.addAttachment(
             owner, data, comment, filename, content_type=content_type,
-            description=description)
+            description=description, **other_params)
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     "BugsVHostBreadcrumb",
+    "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
     "BugTargetBugsView",
@@ -19,8 +20,10 @@ __all__ = [
 
 import cgi
 from cStringIO import StringIO
+from datetime import datetime
 from email import message_from_string
 from operator import itemgetter
+from pytz import timezone
 from simplejson import dumps
 import tempfile
 import urllib
@@ -40,6 +43,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
@@ -48,7 +52,8 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
@@ -73,6 +78,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp.menu import structured
@@ -1384,3 +1390,69 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
 class BugsVHostBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
     text = 'Bugs'
+
+
+class BugsPatchesView(LaunchpadView):
+    """View list of patch attachments associated with bugs."""
+
+    @property
+    def label(self):
+        """The display label for the view."""
+        return 'Patch attachments in %s' % self.context.displayname
+
+    def batchedPatchTasks(self):
+        """Return a BatchNavigator for bug tasks with patch attachments."""
+        # XXX: Karl Fogel 2010-02-01 bug=515584: we should be using a
+        # Zope form instead of validating the values by hand in the
+        # code.  Doing it the Zope form way would specify rendering
+        # and validation from the same enum, and thus observe DRY.
+        orderby = self.request.get("orderby")
+        if (orderby is not None and
+            orderby not in ["-importance", "status", "targetname",
+                            "datecreated", "-datecreated"]):
+            raise UnexpectedFormData(
+                "Unexpected value for field 'orderby': '%s'" % orderby)
+        return BatchNavigator(
+            self.context.searchTasks(
+                None, user=self.user, order_by=orderby,
+                status=UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES,
+                omit_duplicates=True, has_patch=True),
+            self.request)
+
+    def targetName(self):
+        """Return the name of the current context's target type, or None.
+
+        The name is something like "Package" or "Project" (meaning
+        Product); it is intended to be appropriate to use as a column
+        name in a web page, for example.  If no target type is
+        appropriate for the current context, then return None.
+        """
+        if (IDistribution.providedBy(self.context) or
+            IDistroSeries.providedBy(self.context)):
+            return "Package"
+        elif IProject.providedBy(self.context):
+            return "Project"  # meaning Product
+        else:
+            return None
+
+    def youngestPatch(self, bug):
+        """Return the youngest patch attached to a bug, else error."""
+        youngest = None
+        # Loop over bugtasks, gathering youngest patch for each's bug.
+        for attachment in bug.attachments:
+            if attachment.is_patch:
+                if youngest is None:
+                    youngest = attachment
+                elif (attachment.message.datecreated >
+                      youngest.message.datecreated):
+                    youngest = attachment
+        if youngest is None:
+            # This is the patches view, so every bug under
+            # consideration should have at least one patch attachment.
+            raise AssertionError("bug %i has no patch attachments" % bug.id)
+        return youngest
+
+    def patchAge(self, patch):
+        """Return a timedelta object for the age of a patch attachment."""
+        now = datetime.now(timezone('UTC'))
+        return now - patch.message.datecreated
