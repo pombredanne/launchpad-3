@@ -763,7 +763,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             id="displayname", title="Edit the displayname")
         return widget
 
-
     @property
     def sources_list_entries(self):
         """Setup and return the source list entries widget."""
@@ -790,16 +789,23 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         return None
 
     @property
+    def is_probationary_ppa(self):
+        """Is this a PPA owned by a probationary user?"""
+        return self.context.is_ppa and self.context.owner.karma == 0
+
+    @property
     def archive_description_html(self):
         """The archive's description as HTML."""
         formatter = FormattersAPI
 
         description = self.context.description
         if description is not None:
-            hide_email = formatter(self.context.description).obfuscate_email()
-            description = formatter(hide_email).text_to_html()
+            description = formatter(description).obfuscate_email()
         else:
             description = ''
+
+        if not self.is_probationary_ppa:
+            description = formatter(description).text_to_html()
 
         return TextAreaEditorWidget(
             self.context,
