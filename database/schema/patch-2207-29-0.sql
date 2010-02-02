@@ -23,4 +23,4 @@ SELECT bug_update_latest_patch_uploaded(bug.id)
         SELECT bugattachment.id FROM bugattachment, bug
             WHERE bugattachment.bug=bug.id AND bugattachment.type=1);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 29, 0);
