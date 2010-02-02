@@ -567,16 +567,8 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
             virtualized=False)
         self.builds.append(job.specific_job.build)
 
-        # Disable the native amd builders.
-        processor_fam = ProcessorFamilySet().getByName('amd64')
-        amd_proc = processor_fam.processors[0]
-        for builder in self.builders[(amd_proc.id, False)]:
-            builder.builderok = False
-
-        # Disable the native hppa builders.
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
-        for builder in self.builders[(hppa_proc.id, False)]:
+        # Disable all native builders.
+        for builder in self.builders[(None, False)]:
             builder.builderok = False
 
         # All native builders are disabled now.  No builders capable of
