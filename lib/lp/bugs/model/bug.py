@@ -258,6 +258,7 @@ class Bug(SQLBase):
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
     heat = IntCol(notNull=True, default=0)
+    latest_patch_uploaded = UtcDateTimeCol(default=None)
 
     @property
     def comment_count(self):
