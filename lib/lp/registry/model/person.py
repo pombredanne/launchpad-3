@@ -31,6 +31,7 @@ import pytz
 import random
 import re
 import weakref
+import copy
 
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
@@ -837,6 +838,24 @@ class Person(
 
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
+        if search_params is None and not args:
+            # this method is called via webapi directly
+            args = list()
+            for key in ('assignee', 'bug_subscriber', 'owner', 'bug_commenter'):
+                if kwargs[key] is None:
+                    arguments = copy.copy(kwargs)
+                    arguments[key] = self
+                    if key == 'owner':
+                        # Specify both owner and bug_reporter to try to prevent the same
+                        # bug (but different tasks) being displayed.
+                        # see `PersonRelatedBugTaskSearchListingView.searchUnbatched`
+                        arguments['bug_reporter'] = self
+                    args.append(BugTaskSearchParams.fromSearchForm(**arguments))
+            if args:
+                search_params = args.pop(0)
+                # all keyword arguments are considered in the
+                # search parameters, use the implementation in BugTaskSet
+                return getUtility(IBugTaskSet).search(search_params, *args)
         if len(kwargs) > 0:
             # if keyword arguments are supplied, use the deault
             # implementation in HasBugsBase.
