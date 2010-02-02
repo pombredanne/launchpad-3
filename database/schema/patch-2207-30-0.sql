@@ -8,4 +8,7 @@ CREATE TABLE ApportJob(
     json_data text
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0)
+ALTER TABLE ApportJob ADD CONSTRAINT apportjob__job__key UNIQUE (job);
+CREATE INDEX apportjob__blob__idx ON ApportJob(blob);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 30, 0)
