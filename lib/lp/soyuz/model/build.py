@@ -58,6 +58,7 @@ from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -71,7 +72,7 @@ from lp.soyuz.model.queue import (
 
 
 class Build(BuildBase, SQLBase):
-    implements(IBuild)
+    implements(IBuildBase, IBuild)
     _table = 'Build'
     _defaultOrder = 'id'
 
