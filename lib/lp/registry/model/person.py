@@ -837,7 +837,7 @@ class Person(
         pass
 
     def searchTasks(self, search_params, *args, **kwargs):
-        """See `IBugTaskSearchable`."""
+        """See `IHasBugs`."""
         if search_params is None and not args:
             # this method is called via webapi directly
             args = list()
@@ -2367,6 +2367,12 @@ class Person(
         """See `IPerson`."""
         from canonical.launchpad.database.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
+        
+    
+    @property
+    def official_bug_tags(self):
+        """ a person does not have any official bug tags """
+        return set()
 
 
 class PersonSet:

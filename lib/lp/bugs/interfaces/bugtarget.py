@@ -16,7 +16,6 @@ __all__ = [
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
     'IOfficialBugTagTargetRestricted',
-    'IBugTaskSearchable',
     ]
 
 from zope.interface import Interface, Attribute
@@ -34,11 +33,34 @@ from lazr.restful.declarations import (
     export_as_webservice_entry, export_read_operation, export_write_operation,
     exported, operation_parameters, operation_returns_collection_of)
 
-class IBugTaskSearchable(Interface):
-    """ a searchable entity which has a collection of bug tasks but no specific target"""
-    
+
+class IHasBugs(Interface):
+    """An entity which has a collection of bug tasks."""
+
     export_as_webservice_entry()
-    
+
+    # XXX Tom Berger 2008-09-26, Bug #274735
+    # The following are attributes, rather than fields, and must remain
+    # so, to make sure that they are not being copied into snapshots.
+    # Eventually, we'd like to remove these attributes from the content
+    # class altogether.
+    open_bugtasks = Attribute("A list of open bugTasks for this target.")
+    closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
+    inprogress_bugtasks = Attribute(
+        "A list of in-progress bugTasks for this target.")
+    critical_bugtasks = Attribute(
+        "A list of critical BugTasks for this target.")
+    new_bugtasks = Attribute("A list of New BugTasks for this target.")
+    unassigned_bugtasks = Attribute(
+        "A list of unassigned BugTasks for this target.")
+    all_bugtasks = Attribute(
+        "A list of all BugTasks ever reported for this target.")
+    official_bug_tags = exported(List(
+        title=_("Official Bug Tags"),
+        description=_("The list of bug tags defined as official."),
+        value_type=Tag(),
+        readonly=True))
+
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(
         order_by=List(
@@ -174,35 +196,6 @@ class IBugTaskSearchable(Interface):
         hardware_owner_is_subscribed_to_bug,
         hardware_is_linked_to_bug to True.
         """
-    
-
-
-class IHasBugs(IBugTaskSearchable):
-    """An entity which has a collection of bug tasks."""
-
-    export_as_webservice_entry()
-
-    # XXX Tom Berger 2008-09-26, Bug #274735
-    # The following are attributes, rather than fields, and must remain
-    # so, to make sure that they are not being copied into snapshots.
-    # Eventually, we'd like to remove these attributes from the content
-    # class altogether.
-    open_bugtasks = Attribute("A list of open bugTasks for this target.")
-    closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
-    inprogress_bugtasks = Attribute(
-        "A list of in-progress bugTasks for this target.")
-    critical_bugtasks = Attribute(
-        "A list of critical BugTasks for this target.")
-    new_bugtasks = Attribute("A list of New BugTasks for this target.")
-    unassigned_bugtasks = Attribute(
-        "A list of unassigned BugTasks for this target.")
-    all_bugtasks = Attribute(
-        "A list of all BugTasks ever reported for this target.")
-    official_bug_tags = exported(List(
-        title=_("Official Bug Tags"),
-        description=_("The list of bug tags defined as official."),
-        value_type=Tag(),
-        readonly=True))
 
     def getUsedBugTags():
         """Return the tags used by the context as a sorted list of strings."""
