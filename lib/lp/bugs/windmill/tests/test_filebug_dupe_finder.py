@@ -104,5 +104,16 @@ class TestDupeFinder(WindmillTestCase):
         client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_NOT_VISIBLE)
 
+        # Validation errors are displayed on the current page.
+        client.click(id="bug-not-already-reported")
+        client.asserts.assertProperty(
+            id="filebug-form-container", validator="style.display|block",
+            timeout=constants.FOR_ELEMENT)
+        client.click(id="field.actions.submit_bug")
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.asserts.assertText(
+            xpath=u'//div[@class="message"]',
+            validator="Required input is missing.")
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
