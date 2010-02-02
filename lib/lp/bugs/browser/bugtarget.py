@@ -1419,11 +1419,21 @@ class BugsPatchesView(LaunchpadView):
                 omit_duplicates=True, has_patch=True),
             self.request)
 
-    def shouldShowTargetName(self):
-        """Return True if current context can have different bugtargets."""
-        return (IDistribution.providedBy(self.context) or
-                IDistroSeries.providedBy(self.context) or
-                IProject.providedBy(self.context))
+    def targetName(self):
+        """Return the name of the current context's target type, or None.
+
+        The name is something like "Package" or "Project" (meaning
+        Product); it is intended to be appropriate to use as a column
+        name in a web page, for example.  If no target type is
+        appropriate for the current context, then return None.
+        """
+        if (IDistribution.providedBy(self.context) or
+            IDistroSeries.providedBy(self.context)):
+            return "Package"
+        elif IProject.providedBy(self.context):
+            return "Project"  # meaning Product
+        else:
+            return None
 
     def youngestPatch(self, bug):
         """Return the youngest patch attached to a bug, else error."""

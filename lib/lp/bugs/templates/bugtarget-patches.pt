@@ -41,10 +41,11 @@
         tal:attributes="selected python:orderby == 'status'"
       >status</option>
       <option
-        tal:condition="view/shouldShowTargetName"
+        tal:condition="view/targetName"
+        tal:content="view/targetName"
         tal:attributes="selected python:orderby == 'targetname'"
         value="targetname"
-      >package</option>
+      ></option>
       <option
         value="datecreated"
         tal:attributes="selected python:orderby == 'datecreated'"
@@ -66,8 +67,9 @@
                <th class="patches-view-cell"
                    >Status</th>
                <th class="patches-view-cell"
-                   tal:condition="view/shouldShowTargetName"
-                   >Package</th>
+                   tal:condition="view/targetName"
+                   tal:content="view/targetName"
+                   ></th>
                <th class="patches-view-cell"
                    >Patch Age</th>
              </tr>
@@ -82,7 +84,7 @@
                  tal:content="patch_task/status/title"
                  tal:attributes="class string:status${patch_task/status/name}"></td>
              <td class="patches-view-cell"
-                 tal:condition="view/shouldShowTargetName">
+                 tal:condition="view/targetName">
                    <a tal:attributes="href patch_task/target/fmt:url"
                       tal:content="patch_task/target/name"></a></td>
              <td class="patches-view-cell"
