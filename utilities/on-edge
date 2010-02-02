@@ -1,0 +1,121 @@
+#!/usr/bin/python2.5
+#
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Usage: on-edge [-v] [--edge-only] [--staging-only]
+
+This script consults the edge and staging servers to determine which revisions
+they are running. Once it knows that, it prints a log of all the revisions of
+stable and db-stable respectively that cannot be found on edge or staging.
+
+Note that the stable branch is assumed to be in a directory called 'stable', a
+sibling to the current branch directory. Likewise, db-stable is assumed to be
+in '../db-stable', relative to this branch.
+"""
+
+import optparse
+import os
+import re
+import sys
+
+from bzrlib.branch import Branch
+from bzrlib import errors
+from bzrlib.transport import get_transport
+
+
+class UsageError(Exception):
+    """Raised when the user makes a dumb error."""
+
+
+def get_staging_revision():
+    """Get the revision of db-stable deployed on staging.
+
+    :return: The staging revno as an int. Corresponds to a revision of
+        lp:launchpad/db-stable.
+    """
+    t = get_transport('https://staging.launchpad.net/')
+    last_line = t.get_bytes('successful-updates.txt').splitlines()[-1]
+    return int(last_line.split()[-1])
+
+
+def get_edge_revision():
+    """Get the revision of stable deployed on edge.
+
+    :return: The edge revno as an int. Corresponds to a revision of
+        lp:launchpad/stable.
+    """
+    t = get_transport('https://edge.launchpad.net/')
+    html = t.get_bytes('index.html')
+    revision_re = re.compile(r'\(r(\d+)\)')
+    for line in html.splitlines():
+        matches = revision_re.search(line)
+        if matches:
+            return int(matches.group(1))
+    raise ValueError("Could not find revision number on edge home page")
+
+
+def get_parent_directory():
+    """Return the parent directory of the current branch."""
+    this_file = os.path.abspath(__file__)
+    return os.path.dirname(os.path.dirname(os.path.dirname(this_file)))
+
+
+def report_difference_to_server(server, branch_path, revno, verbose):
+    branch = Branch.open(branch_path)
+    print '%s is running %s r%s' % (server, branch.nick, revno)
+    try:
+        branch.dotted_revno_to_revision_id(str(revno + 1))
+    except errors.NoSuchRevision:
+        print '%s is up-to-date' % (server,)
+    else:
+        if verbose:
+            command = 'bzr log -r%s.. %s' % (revno, branch_path)
+            os.system(command)
+            print
+
+
+def get_opt_parse():
+    parser = optparse.OptionParser(
+        description="Show local revisions that aren't on beta servers.")
+    parser.add_option(
+        '-v', '--verbose', action='store_true', help="Show revision log")
+    parser.add_option(
+        '--edge-only', action='store_true',
+        help="Only show revisions not on edge. Do not consult staging.")
+    parser.add_option(
+        '--staging-only', action='store_true',
+        help="Only show revisions not on staging. Do not consult edge.")
+    return parser
+
+
+def run(verbose, edge_only, staging_only):
+    if edge_only and staging_only:
+        raise UsageError("Cannot show only edge and only staging.")
+    parent_dir = get_parent_directory()
+    if not staging_only:
+        edge_revision = get_edge_revision()
+        stable_branch = os.path.join(parent_dir, 'stable')
+        report_difference_to_server(
+            'edge', stable_branch, edge_revision, verbose)
+    if not edge_only:
+        staging_revision = get_staging_revision()
+        db_stable_branch = os.path.join(parent_dir, 'db-stable')
+        report_difference_to_server(
+            'staging', db_stable_branch, staging_revision, verbose)
+
+
+def main(argv):
+    parser = get_opt_parse()
+    options, args = parser.parse_args(argv)
+    if args:
+        raise UsageError("Don't know what to do with arguments: %s" % args)
+    run(options.verbose, options.edge_only, options.staging_only)
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except UsageError, e:
+        print 'ERROR: %s' % e
+        sys.exit(1)

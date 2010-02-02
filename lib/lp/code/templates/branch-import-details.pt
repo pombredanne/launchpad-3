@@ -40,10 +40,16 @@
         </div>
 
         <tal:git-import condition="code_import/rcs_type/enumvalue:GIT">
-          <p>This branch is an import of the MASTER branch from the Git repo at
-            <span tal:replace="code_import/git_repo_url" />.
+          <p>This branch is an import of the HEAD branch of the Git repository at
+            <span tal:replace="code_import/url" />.
           </p>
         </tal:git-import>
+
+        <tal:hg-import condition="code_import/rcs_type/enumvalue:HG">
+          <p>This branch is an import of the tip branch of the Mercurial repository at
+            <span tal:replace="code_import/url" />.
+          </p>
+        </tal:hg-import>
 
         <tal:svn-import condition="view/is_svn_import">
           <p id="svn-import-details">
@@ -51,11 +57,11 @@
             <span tal:attributes="title code_import/rcs_type/title">Subversion</span>
             branch from
             <tal:is-web-url condition="view/svn_url_is_web">
-              <a tal:attributes="href code_import/svn_branch_url"
-                 tal:content="code_import/svn_branch_url" />.
+              <a tal:attributes="href code_import/url"
+                 tal:content="code_import/url" />.
             </tal:is-web-url>
             <tal:not-web-url condition="not: view/svn_url_is_web">
-              <span tal:replace="code_import/svn_branch_url" />.
+              <span tal:replace="code_import/url" />.
             </tal:not-web-url>
           </p>
         </tal:svn-import>

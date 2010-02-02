@@ -905,6 +905,7 @@
             permission="launchpad.Edit"
             attributes="
                 createProductRelease
+                closeBugsAndBlueprints
                 destroySelf"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
@@ -1085,7 +1086,7 @@
                             redeemSubscriptionVoucher releaseroot
                             remote_product screenshotsurl
                             security_contact sourceforgeproject
-                            summary title wikiurl"/>
+                            summary title translation_focus wikiurl"/>
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
