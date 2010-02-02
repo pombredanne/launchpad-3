@@ -209,55 +209,55 @@ class TestBuildQueueBase(TestCaseWithFactory):
 
         # Next make seven 'hppa' builders.
         processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
+        self.hppa_proc = processor_fam.processors[0]
         self.h1 = self.factory.makeBuilder(
-            name='hppa-v-1', processor=hppa_proc)
+            name='hppa-v-1', processor=self.hppa_proc)
         self.h2 = self.factory.makeBuilder(
-            name='hppa-v-2', processor=hppa_proc)
+            name='hppa-v-2', processor=self.hppa_proc)
         self.h3 = self.factory.makeBuilder(
-            name='hppa-v-3', processor=hppa_proc)
+            name='hppa-v-3', processor=self.hppa_proc)
         self.h4 = self.factory.makeBuilder(
-            name='hppa-v-4', processor=hppa_proc)
+            name='hppa-v-4', processor=self.hppa_proc)
         self.h5 = self.factory.makeBuilder(
-            name='hppa-n-5', processor=hppa_proc, virtualized=False)
+            name='hppa-n-5', processor=self.hppa_proc, virtualized=False)
         self.h6 = self.factory.makeBuilder(
-            name='hppa-n-6', processor=hppa_proc, virtualized=False)
+            name='hppa-n-6', processor=self.hppa_proc, virtualized=False)
         self.h7 = self.factory.makeBuilder(
-            name='hppa-n-7', processor=hppa_proc, virtualized=False)
+            name='hppa-n-7', processor=self.hppa_proc, virtualized=False)
 
         # Finally make five 'amd64' builders.
         processor_fam = ProcessorFamilySet().getByName('amd64')
-        amd_proc = processor_fam.processors[0]
+        self.amd_proc = processor_fam.processors[0]
         self.a1 = self.factory.makeBuilder(
-            name='amd64-v-1', processor=amd_proc)
+            name='amd64-v-1', processor=self.amd_proc)
         self.a2 = self.factory.makeBuilder(
-            name='amd64-v-2', processor=amd_proc)
+            name='amd64-v-2', processor=self.amd_proc)
         self.a3 = self.factory.makeBuilder(
-            name='amd64-v-3', processor=amd_proc)
+            name='amd64-v-3', processor=self.amd_proc)
         self.a4 = self.factory.makeBuilder(
-            name='amd64-n-4', processor=amd_proc, virtualized=False)
+            name='amd64-n-4', processor=self.amd_proc, virtualized=False)
         self.a5 = self.factory.makeBuilder(
-            name='amd64-n-5', processor=amd_proc, virtualized=False)
+            name='amd64-n-5', processor=self.amd_proc, virtualized=False)
 
         self.builders = dict()
         processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
+        self.x86_proc = processor_fam.processors[0]
         # x86 native
-        self.builders[(x86_proc.id, False)] = [
+        self.builders[(self.x86_proc.id, False)] = [
             self.i6, self.i7, self.i8, self.i9]
         # x86 virtual
-        self.builders[(x86_proc.id, True)] = [
+        self.builders[(self.x86_proc.id, True)] = [
             self.i1, self.i2, self.i3, self.i4, self.i5]
 
         # amd64 native
-        self.builders[(amd_proc.id, False)] = [self.a4, self.a5]
+        self.builders[(self.amd_proc.id, False)] = [self.a4, self.a5]
         # amd64 virtual
-        self.builders[(amd_proc.id, True)] = [self.a1, self.a2, self.a3]
+        self.builders[(self.amd_proc.id, True)] = [self.a1, self.a2, self.a3]
 
         # hppa native
-        self.builders[(hppa_proc.id, False)] = [self.h5, self.h6, self.h7]
+        self.builders[(self.hppa_proc.id, False)] = [self.h5, self.h6, self.h7]
         # hppa virtual
-        self.builders[(hppa_proc.id, True)] = [
+        self.builders[(self.hppa_proc.id, True)] = [
             self.h1, self.h2, self.h3, self.h4]
 
         # Ensure all builders are operational.
@@ -269,20 +269,20 @@ class TestBuildQueueBase(TestCaseWithFactory):
         # Native builders irrespective of processor.
         self.builders[(None, False)] = []
         self.builders[(None, False)].extend(
-            self.builders[(x86_proc.id, False)])
+            self.builders[(self.x86_proc.id, False)])
         self.builders[(None, False)].extend(
-            self.builders[(amd_proc.id, False)])
+            self.builders[(self.amd_proc.id, False)])
         self.builders[(None, False)].extend(
-            self.builders[(hppa_proc.id, False)])
+            self.builders[(self.hppa_proc.id, False)])
 
         # Virtual builders irrespective of processor.
         self.builders[(None, True)] = []
         self.builders[(None, True)].extend(
-            self.builders[(x86_proc.id, True)])
+            self.builders[(self.x86_proc.id, True)])
         self.builders[(None, True)].extend(
-            self.builders[(amd_proc.id, True)])
+            self.builders[(self.amd_proc.id, True)])
         self.builders[(None, True)].extend(
-            self.builders[(hppa_proc.id, True)])
+            self.builders[(self.hppa_proc.id, True)])
 
         # Disable the sample data builders.
         getUtility(IBuilderSet)['bob'].builderok = False
@@ -382,30 +382,24 @@ class TestBuilderData(SingleArchBuildsBase):
             4, builders_for_job(bq),
             "[1] The total number of builders that can build the job in "
             "question is wrong.")
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
         builder_stats = get_builder_data()
         self.assertEqual(
-            4, builder_stats[(x86_proc.id, False)],
+            4, builder_stats[(self.x86_proc.id, False)],
             "The number of native x86 builders is wrong")
         self.assertEqual(
-            5, builder_stats[(x86_proc.id, True)],
+            5, builder_stats[(self.x86_proc.id, True)],
             "The number of virtual x86 builders is wrong")
-        processor_fam = ProcessorFamilySet().getByName('amd64')
-        amd_proc = processor_fam.processors[0]
         self.assertEqual(
-            2, builder_stats[(amd_proc.id, False)],
+            2, builder_stats[(self.amd_proc.id, False)],
             "The number of native amd64 builders is wrong")
         self.assertEqual(
-            3, builder_stats[(amd_proc.id, True)],
+            3, builder_stats[(self.amd_proc.id, True)],
             "The number of virtual amd64 builders is wrong")
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
         self.assertEqual(
-            3, builder_stats[(hppa_proc.id, False)],
+            3, builder_stats[(self.hppa_proc.id, False)],
             "The number of native hppa builders is wrong")
         self.assertEqual(
-            4, builder_stats[(hppa_proc.id, True)],
+            4, builder_stats[(self.hppa_proc.id, True)],
             "The number of virtual hppa builders is wrong")
         self.assertEqual(
             9, builder_stats[(None, False)],
@@ -414,7 +408,7 @@ class TestBuilderData(SingleArchBuildsBase):
             12, builder_stats[(None, True)],
             "The number of *native* builders across all processors is wrong")
         # Disable the native x86 builders.
-        for builder in self.builders[(x86_proc.id, False)]:
+        for builder in self.builders[(self.x86_proc.id, False)]:
             builder.builderok = False
         # Since all native x86 builders were disabled there are none left
         # to build the job.
@@ -423,7 +417,7 @@ class TestBuilderData(SingleArchBuildsBase):
             "[2] The total number of builders that can build the job in "
             "question is wrong.")
         # Re-enable one of them.
-        for builder in self.builders[(x86_proc.id, False)]:
+        for builder in self.builders[(self.x86_proc.id, False)]:
             builder.builderok = True
             break
         # Now there should be one builder available to build the job.
@@ -433,7 +427,7 @@ class TestBuilderData(SingleArchBuildsBase):
             "question is wrong.")
         # Disable the *virtual* x86 builders -- should not make any
         # difference.
-        for builder in self.builders[(x86_proc.id, True)]:
+        for builder in self.builders[(self.x86_proc.id, True)]:
             builder.builderok = False
         # There should still be one builder available to build the job.
         self.assertEqual(
@@ -444,17 +438,15 @@ class TestBuilderData(SingleArchBuildsBase):
     def test_free_builder_counts(self):
         # Make sure the builder numbers are correct. The builder data will
         # be the same for all of our builds.
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        proc_386 = processor_fam.processors[0]
         build = self.builds[0]
         # The build in question is an x86/native one.
-        self.assertEqual(proc_386.id, build.processor.id)
+        self.assertEqual(self.x86_proc.id, build.processor.id)
         self.assertEqual(False, build.is_virtualized)
         bq = build.buildqueue_record
         builder_stats = get_builder_data()
         # We have 4 x86 native builders.
         self.assertEqual(
-            4, builder_stats[(proc_386.id, False)],
+            4, builder_stats[(self.x86_proc.id, False)],
             "The number of native x86 builders is wrong")
         # Initially all 4 builders are free.
         free_count = bq._getFreeBuildersCount(
@@ -513,8 +505,6 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         #
         # p=processor, v=virtualized, e=estimated_duration, s=score
 
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
         # This will be the job of interest.
         apg_build, apg_job = find_job(self, 'apg')
         # One of four builders for the 'apg' build is immediately available.
@@ -561,7 +551,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         check_mintime_to_builder(self, apg_job, 30)
 
         # Disable the native x86 builders.
-        for builder in self.builders[(x86_proc.id, False)]:
+        for builder in self.builders[(self.x86_proc.id, False)]:
             builder.builderok = False
 
         # No builders capable of running the job at hand are available now.
@@ -686,9 +676,6 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     def test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
-
         # One of four builders for the 'apg' build is immediately available.
         apg_build, apg_job = find_job(self, 'apg', 'hppa')
         check_mintime_to_builder(self, apg_job, 0)
@@ -731,7 +718,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         check_mintime_to_builder(self, apg_job, 30)
 
         # Disable the native hppa builders.
-        for builder in self.builders[(hppa_proc.id, False)]:
+        for builder in self.builders[(self.hppa_proc.id, False)]:
             builder.builderok = False
 
         # No builders capable of running the job at hand are available now.
@@ -763,7 +750,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         check_mintime_to_builder(self, job, 0)
 
         # Re-enable the native hppa builders.
-        for builder in self.builders[(hppa_proc.id, False)]:
+        for builder in self.builders[(self.hppa_proc.id, False)]:
             builder.builderok = True
 
         # The builder that's becoming available next is the one that's
@@ -771,9 +758,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         check_mintime_to_builder(self, apg_job, 30)
 
         # Make sure we'll find an x86 builder as well.
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
-        builder = self.builders[(x86_proc.id, False)][0]
+        builder = self.builders[(self.x86_proc.id, False)][0]
         builder.builderok = True
 
         # Now this builder is the one that becomes available next (29 minutes
@@ -785,7 +770,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         check_mintime_to_builder(self, apg_job, 29)
 
         # Make a second, idle x86 builder available.
-        builder = self.builders[(x86_proc.id, False)][1]
+        builder = self.builders[(self.x86_proc.id, False)][1]
         builder.builderok = True
 
         # That builder should be available immediately since it's idle.
@@ -959,16 +944,11 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         self.builds.append(job.specific_job.build)
 
         # Assign the same score to the '386' vim and apg build jobs.
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
         _apg_build, apg_job = find_job(self, 'apg', '386')
         apg_job.lastscore = 1024
         # print_build_setup(self.builds)
 
     def test_job_delay_for_binary_builds(self):
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
-
         # One of four builders for the 'flex' build is immediately available.
         flex_build, flex_job = find_job(self, 'flex', 'hppa')
         check_mintime_to_builder(self, flex_job, 0)
@@ -984,9 +964,6 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         check_delay_for_job(self, flex_job, 222)
 
         # How about some estimates for x86 builds?
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
-
         _bison_build, bison_job = find_job(self, 'bison', '386')
         check_mintime_to_builder(self, bison_job, 0)
         # The delay will be 900 (= (14+16)*60/2) + 222 seconds.
@@ -1042,9 +1019,6 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         #    386 job delays: 780 = (10+12+14+16)*60/4
         check_delay_for_job(self, bash_job, 1740)
 
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
-
         _postgres_build, postgres_job = find_job(self, 'postgres', '386')
         # The delay will be 0 since this is the head job now.
         check_delay_for_job(self, postgres_job, 0)
@@ -1056,13 +1030,10 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
     def test_job_delay_for_unspecified_virtualization(self):
         # Make sure that jobs with a NULL 'virtualized' flag get the same
         # treatment as the ones with virtualized=TRUE.
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
-
         # First toggle the 'virtualized' flag for all hppa jobs.
         for build in self.builds:
             bq = build.buildqueue_record
-            if bq.processor == hppa_proc:
+            if bq.processor == self.hppa_proc:
                 bq.virtualized = True
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=True, estimated_duration=332,
@@ -1183,8 +1154,6 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         self.builds.append(job.specific_job.build)
 
         # Assign the same score to the '386' vim and apg build jobs.
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        self.x86_proc = processor_fam.processors[0]
         _apg_build, apg_job = find_job(self, 'apg', '386')
         apg_job.lastscore = 1024
 
@@ -1197,8 +1166,6 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
     def test_pending_jobs_only(self):
         # Let's see the assertion fail for a job that's not pending any more.
         assign_to_builder(self, 'gedit', 1, 'hppa')
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
         gedit_build, gedit_job = find_job(self, 'gedit', 'hppa')
         self.assertRaises(AssertionError, gedit_job.getEstimatedJobStartTime)
 
