@@ -1099,7 +1099,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,
-                          description=None, is_patch=None):
+                          description=None, is_patch=_DEFAULT):
         """Create and return a new bug attachment.
 
         :param bug: An `IBug` or a bug ID or name, or None, in which
@@ -1114,7 +1114,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             string will be used.
         :param content_type: The MIME-type of this file.
         :param description: The description of the attachment.
-        :param is_patch: Iff true, this attachment is a patch.
+        :param is_patch: If true, this attachment is a patch.
         :return: An `IBugAttachment`.
         """
         if bug is None:
@@ -1136,7 +1136,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         # with that.  So, we only override it if our caller explicitly
         # passed it.
         other_params = {}
-        if is_patch is not None:
+        if is_patch is not _DEFAULT:
             other_params['is_patch'] = is_patch
         return bug.addAttachment(
             owner, data, comment, filename, content_type=content_type,
