@@ -31,7 +31,6 @@ from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):

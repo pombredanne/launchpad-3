@@ -44,7 +44,6 @@ from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.translations.interfaces.translations import (
