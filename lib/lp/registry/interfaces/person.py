@@ -96,7 +96,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.authorization import check_permission
 
-from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtarget import IBugTaskSearchable
 
 PRIVATE_TEAM_PREFIX = 'private-'
 
@@ -477,7 +477,7 @@ class IHasStanding(Interface):
 
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation, IPrivacy, IHasBugs):
+                    IHasLocation, IObjectWithLocation, IPrivacy, IBugTaskSearchable):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
