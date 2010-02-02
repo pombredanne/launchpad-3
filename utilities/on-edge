@@ -69,9 +69,9 @@ def print_revisions(branch, end_id):
         (rev_id, depth, revno, end_of_merge) = rev_info
         if depth > 0:
             continue
-        rev = branch.repository.get_revision(rev_id)
+        revision = branch.repository.get_revision(rev_id)
         revno_str = ".".join(map(str, revno))
-        print "r%s:\n%s" % (revno_str, rev.message)
+        print "r%s:\n%s" % (revno_str, revision.message)
 
 
 def report_difference_to_server(server, branch_path, revno, verbose):
@@ -94,6 +94,7 @@ automatic_merge_regex = re.compile(
     "automatic merge from stable[.] "
     "Revisions:[0-9,\s]*\s+([0-9]+)\s+included")
 
+
 def get_last_automatic_stable_merge_revno(branch_path):
     """Find out which stable revision was last commited to db-stable."""
     branch = Branch.open(branch_path)
@@ -101,10 +102,10 @@ def get_last_automatic_stable_merge_revno(branch_path):
         (rev_id, depth, revno, end_of_merge) = rev_info
         if depth > 0:
             continue
-        rev = branch.repository.get_revision(rev_id)
-        res = automatic_merge_regex.search(rev.message)
-        if res is not None:
-            return res.group(1)
+        revision = branch.repository.get_revision(rev_id)
+        match = automatic_merge_regex.search(revision.message)
+        if match is not None:
+            return match.group(1)
 
 
 def get_opt_parse():
