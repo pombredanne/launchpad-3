@@ -13,9 +13,8 @@ product.  At first, the product is new and has no bugs.
 
 We don't see any patches when we open the patches view.
 
-    >>> def show_patches_view(expected_contents):
-    ...     for tag in find_tags_by_class(
-    ...         expected_contents, 'listing'):
+    >>> def show_patches_view(contents):
+    ...     for tag in find_tags_by_class(contents, 'listing'):
     ...         print extract_text(tag)
 
     >>> anon_browser.open(
@@ -179,10 +178,10 @@ Bugs in a product series show up in the patches view for that series.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> def make_bugtask(
     ...     # Meta-factory for making bugtasks.
-    ...     # 
+    ...     #
     ...     # In all instances where a distro is needed, defaults to
     ...     # 'ubuntu' distro.
-    ...     # 
+    ...     #
     ...     # :param bug: The bug with which the task is associated.
     ...     # :param target: The target to which to attach this bug.
     ...     #     If the target is a string, then it names the target

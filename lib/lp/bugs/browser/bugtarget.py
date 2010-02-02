@@ -1410,15 +1410,15 @@ class BugsPatchesView(LaunchpadView):
         if (orderby is not None and
             orderby not in ["-importance", "status", "targetname",
                             "datecreated", "-datecreated"]):
-            raise AssertionError("patch task batch navigator ordered by "
-                                 "invalid value '%s'" % orderby)
+            raise UnexpectedFormData(
+                "Unexpected value for field 'orderby': '%s'" % orderby)
         return BatchNavigator(
             self.context.searchTasks(
                 None, user=self.user, order_by=orderby,
                 status=UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES,
                 omit_duplicates=True, has_patch=True),
             self.request)
-        
+
     def shouldShowTargetName(self):
         """Return True if current context can have different bugtargets."""
         return (IDistribution.providedBy(self.context) or
