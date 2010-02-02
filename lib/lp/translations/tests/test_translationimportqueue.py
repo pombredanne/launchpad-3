@@ -33,6 +33,8 @@ class TestCanSetStatusBase(TestCaseWithFactory):
         self.rosetta_experts = (
             getUtility(ILaunchpadCelebrities).rosetta_experts)
         self.productseries = self.factory.makeProductSeries()
+        self.productseries.driver = self.factory.makePerson()
+        self.productseries.product.driver = self.factory.makePerson()
         self.uploaderperson = self.factory.makePerson()
 
     def _switch_dbuser(self):
@@ -84,11 +86,26 @@ class TestCanSetStatusBase(TestCaseWithFactory):
         # The uploader can set some statuses.
         self._assertCanSetStatus(self.uploaderperson, self.entry,
             #  A      B     D     F      I     NR
+            [False, False, True, False, False, True])
+
+    def test_canSetStatus_product_owner(self):
+        # The owner (maintainer) of the product gets to set Blocked as well.
+        owner = self.productseries.product.owner
+        self._assertCanSetStatus(self.productseries.product.owner, self.entry,
+            #  A      B     D     F      I     NR
             [False, True, True, False, False, True])
 
-    def test_canSetStatus_owner(self):
-        # The owner gets the same permissions.
-        self._assertCanSetStatus(self.productseries.product.owner, self.entry,
+    def test_canSetStatus_driver(self):
+        # The driver gets the same permissions as the maintainer.
+        driver = self.productseries.driver
+        self._assertCanSetStatus(driver, self.entry,
+            #  A      B     D     F      I     NR
+            [False, True, True, False, False, True])
+
+    def test_canSetStatus_product_driver(self):
+        # The driver of the product, too.
+        driver = self.productseries.product.driver
+        self._assertCanSetStatus(driver, self.entry,
             #  A      B     D     F      I     NR
             [False, True, True, False, False, True])
 
