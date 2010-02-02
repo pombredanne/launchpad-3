@@ -240,7 +240,8 @@ special = {
             ),
     'hwdb-device-tables.txt': LayeredDocFileSuite(
             '../doc/hwdb-device-tables.txt',
-            setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
+            setUp=hwdbDeviceTablesSetup,
+            tearDown=tearDown,
             layer=LaunchpadZopelessLayer,
             ),
     # This test is actually run twice to prove that the AppServerLayer
