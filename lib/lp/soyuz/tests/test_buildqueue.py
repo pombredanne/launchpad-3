@@ -449,36 +449,36 @@ class TestBuilderData(SingleArchBuildsBase):
             builder_stats[(proc_386.id, False)], 4,
             "The number of native x86 builders is wrong")
         # Initially all 4 builders are free.
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 4)
         # Once we assign a build to one of them we should see the free
         # builders count drop by one.
         assign_to_builder(self, 'postgres', 1)
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 3)
         # When we assign another build to one of them we should see the free
         # builders count drop by one again.
         assign_to_builder(self, 'gcc', 2)
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 2)
         # Let's use up another builder.
         assign_to_builder(self, 'apg', 3)
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 1)
         # And now for the last one.
         assign_to_builder(self, 'flex', 4)
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 0)
         # If we reset the 'flex' build the builder that was assigned to it
         # will be free again.
         build, bq = find_job(self, 'flex')
         bq.reset()
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 1)
 
@@ -747,7 +747,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         self.assertEquals(builders_for_job(job), 6)
         # Even free ones.
         self.assertTrue(
-            bq._freeBuildersCount(job.processor, job.virtualized) > 0,
+            bq._getFreeBuildersCount(job.processor, job.virtualized) > 0,
             "Builders are immediately available for processor-independent "
             "jobs.")
         check_mintime_to_builder(self, job, 0)

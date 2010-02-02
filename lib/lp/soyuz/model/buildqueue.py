@@ -176,7 +176,7 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.job.date_started = timestamp
 
-    def _freeBuildersCount(self, processor, virtualized):
+    def _getFreeBuildersCount(self, processor, virtualized):
         """How many builders capable of running jobs for the given processor
         and virtualization combination are idle/free at present?"""
         query = """
@@ -217,7 +217,7 @@ class BuildQueue(SQLBase):
 
         # Return a zero delay if we still have free builders available for the
         # given platform/virtualization combination.
-        free_builders = self._freeBuildersCount(*head_job_platform)
+        free_builders = self._getFreeBuildersCount(*head_job_platform)
         if free_builders > 0:
             return 0
 
