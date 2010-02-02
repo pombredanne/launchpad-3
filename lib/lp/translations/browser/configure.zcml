@@ -75,7 +75,7 @@
         template="../templates/translations-macros.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
-        for="lp.translations.interfaces.translationgroup.IHasTranslationGroup"
+        for="lp.translations.interfaces.translationgroup.ITranslationPolicy"
         facet="translations"
         permission="zope.Public"
         name="+portlet-translation-groups-and-permission"
@@ -799,9 +799,9 @@
         template="../templates/hastranslationimports-index.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
-        name="+translations-policy"
+        name="+translation-policy"
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.translations.browser.product.ProductSetTranslationsPolicyView"
+        class="lp.translations.browser.product.ProductSetTranslationPolicyView"
         permission="launchpad.TranslationsAdmin"
         template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
@@ -852,9 +852,9 @@
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
-        name="+translations-policy"
+        name="+translation-policy"
         for="lp.registry.interfaces.project.IProject"
-        class="lp.translations.browser.project.ProjectSetTranslationsPolicyView"
+        class="lp.translations.browser.project.ProjectSetTranslationPolicyView"
         permission="launchpad.TranslationsAdmin"
         template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
@@ -887,9 +887,9 @@
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
-        name="+translations-policy"
+        name="+translation-policy"
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.translations.browser.distribution.DistributionSetTranslationsPolicyView"
+        class="lp.translations.browser.distribution.DistributionSetTranslationPolicyView"
         permission="launchpad.TranslationsAdmin"
         template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>

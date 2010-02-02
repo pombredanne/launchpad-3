@@ -274,13 +274,13 @@
         <allow
             interface="canonical.launchpad.interfaces.IQuestionCollection"/>
         <allow
-            interface="lp.translations.interfaces.translationgroup.IHasTranslationGroup"/>
+            interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.project.IProjectPublic"/>
         <require
             permission="launchpad.TranslationsAdmin"
-            set_schema="lp.translations.interfaces.translationgroup.IHasTranslationGroup"/>
+            set_schema="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
 
         <!-- IStructuralSubscriptionTarget -->
 

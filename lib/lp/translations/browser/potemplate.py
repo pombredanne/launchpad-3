@@ -257,7 +257,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 
     @property
     def group_parent(self):
-        """Return a parent object implementing `IHasTranslationGroups`."""
+        """Return a parent object implementing `ITranslationPolicy`."""
         if self.context.productseries is not None:
             return self.context.productseries.product
         else:

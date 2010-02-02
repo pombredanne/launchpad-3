@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionLanguagePackAdminView',
-    'DistributionSetTranslationsPolicyView',
+    'DistributionSetTranslationPolicyView',
     'DistributionView',
     ]
 
@@ -28,7 +28,7 @@ class DistributionTranslationsMenu(NavigationMenu):
 
     usedfor = IDistribution
     facet = 'translations'
-    links = ['overview', 'translations_policy', 'language_pack_admin', 'imports']
+    links = ['overview', 'translation_policy', 'language_pack_admin', 'imports']
 
     def overview(self):
         text = 'Overview'
@@ -36,9 +36,9 @@ class DistributionTranslationsMenu(NavigationMenu):
         return Link(link, text)
 
     @enabled_with_permission('launchpad.Edit')
-    def translations_policy(self):
-        text = 'Translations policy'
-        return Link('+translations-policy', text)
+    def translation_policy(self):
+        text = 'Translation policy'
+        return Link('+translation-policy', text)
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def language_pack_admin(self):
@@ -109,7 +109,7 @@ class DistributionView(LaunchpadView):
                       reverse=True)
 
 
-class DistributionSetTranslationsPolicyView(TranslationsMixin, DistributionEditView):
+class DistributionSetTranslationPolicyView(TranslationsMixin, DistributionEditView):
     label = "Set permissions and policies"
     page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]

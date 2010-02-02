@@ -38,7 +38,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.translations.interfaces.translationgroup import (
-    IHasTranslationGroup)
+    ITranslationPolicy)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from canonical.launchpad.validators.name import name_validator
@@ -280,7 +280,7 @@ class IProjectPublic(
 
 
 class IProject(IProjectPublic, IStructuralSubscriptionTarget,
-    IHasTranslationGroup):
+    ITranslationPolicy):
     """A Project."""
 
     export_as_webservice_entry('project_group')

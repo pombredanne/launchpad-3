@@ -22,13 +22,13 @@ translations settings page.
     ...     'http://translations.launchpad.dev/chestii')
     >>> re_browser.getLink('Change permissions').click()
     >>> print re_browser.url
-    http://translations.launchpad.dev/chestii/+translations-policy
+    http://translations.launchpad.dev/chestii/+translation-policy
 
     >>> po_browser.open(
     ...     'http://translations.launchpad.dev/chestii')
     >>> po_browser.getLink('Change permissions').click()
     >>> print po_browser.url
-    http://translations.launchpad.dev/chestii/+translations-policy
+    http://translations.launchpad.dev/chestii/+translation-policy
 
 Other persons will not see the link to settigs page.
 
@@ -42,7 +42,7 @@ Other persons will not see the link to settigs page.
 An attempt to access the settins url will not be authorized.
 
     >>> browser.open(
-    ...     'http://translations.launchpad.dev/chestii/+translations-policy')
+    ...     'http://translations.launchpad.dev/chestii/+translation-policy')
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -71,7 +71,7 @@ Translations policy for distributions
     ...     'http://translations.launchpad.dev/ubuntu')
     >>> dtc_browser.getLink('Change permissions').click()
     >>> print dtc_browser.url
-    http://translations.launchpad.dev/ubuntu/+translations-policy
+    http://translations.launchpad.dev/ubuntu/+translation-policy
 
     >>> dtc_browser.getControl('Translation group').value = ['ubuntu-translators']
     >>> dtc_browser.getControl('Translation permissions policy').value = ['CLOSED']
