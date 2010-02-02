@@ -106,5 +106,5 @@ class SourcePackageRecipe(Storm):
                 self.sourcepackagename)
         build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
                 self, requester, archive)
-        build.createBuildQueueEntry()
+        build.queueBuild()
         return build
