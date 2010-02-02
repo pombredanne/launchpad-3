@@ -178,9 +178,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         ppa = self.factory.makeArchive()
         build = recipe.requestBuild(ppa, ppa.owner,
                 PackagePublishingPocket.RELEASE)
-        # TODO: Fails as SourcePackageRecipeBuild doesn't correctly
-        # implement the interface currently.
-        #self.assertProvides(build, ISourcePackageRecipeBuild)
+        self.assertProvides(build, ISourcePackageRecipeBuild)
         self.assertEqual(build.archive, ppa)
         self.assertEqual(build.distroseries, recipe.distroseries)
         self.assertEqual(build.requester, ppa.owner)
