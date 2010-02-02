@@ -209,6 +209,28 @@ class TestSyncSource(TestCase):
             ['\tnetapplet_1.0.0.orig.tar.gz: already in distro '
              '- downloading from librarian'])
 
+    def testFetchLibrarianFilesBzip2Orig(self):
+        """Probe fetchLibrarianFiles.
+
+        Seek on files published from librarian and download matching filenames.
+        """
+        files = {
+            'netapplet_1.0.0.orig.tar.bz2': {},
+            'netapplet_1.0.1.dsc': {},
+            'netapplet_1.0.1.diff.gz': {},
+            }
+        origin = {}
+        sync_source = self._getSyncSource(files, origin)
+
+        orig_filename = sync_source.fetchLibrarianFiles()
+
+        self.assertEqual(orig_filename, 'netapplet_1.0.0.orig.tar.bz2')
+        self.assertEqual(self._listFiles(), ['netapplet_1.0.0.orig.tar.bz2'])
+        self.assertEqual(
+            self.messages,
+            ['\tnetapplet_1.0.0.orig.tar.bz2: already in distro '
+             '- downloading from librarian'])
+
     def testFetchLibrarianFilesGotDuplicatedDSC(self):
         """fetchLibrarianFiles fails for an already present version.
 
