@@ -75,24 +75,40 @@ def print_revisions(branch, end_id):
 
 def report_difference_to_server(server, branch_path, revno, verbose):
     branch = Branch.open(branch_path)
-    print '%s is running %s r%d' % (server, branch.nick, revno)
+    print '%s is running %s r%d.' % (server, branch.nick, revno)
     try:
         current_id = branch.dotted_revno_to_revision_id((revno,))
     except errors.NoSuchRevision:
-        print '%s has newer revisions than %s' % (server, branch.nick)
+        print '%s has newer revisions than %s.' % (server, branch.nick)
     else:
         if current_id == branch.last_revision():
-            print '%s is up-to-date' % (server,)
+            print '%s is up-to-date.' % (server,)
         else:
             if verbose:
                 print_revisions(branch, current_id)
+
+
+automatic_merge_regex = re.compile(
+    "automatic merge from stable[.] "
+    "Revisions:[0-9,\s]*\s+([0-9]+)\s+included")
+
+def get_last_automatic_stable_merge_revno(branch_path):
+    branch = Branch.open(branch_path)
+    for rev_info in branch.iter_merge_sorted_revisions():
+        (rev_id, depth, revno, end_of_merge) = rev_info
+        if depth > 0:
+            continue
+        rev = branch.repository.get_revision(rev_id)
+        res = automatic_merge_regex.search(rev.message)
+        if res is not None:
+            return res.group(1)
 
 
 def get_opt_parse():
     parser = optparse.OptionParser(
         description="Show local revisions that aren't on beta servers.")
     parser.add_option(
-        '-v', '--verbose', action='store_true', help="Show revision log")
+        '-v', '--verbose', action='store_true', help="Show revision log.")
     parser.add_option(
         '--edge-only', action='store_true',
         help="Only show revisions not on edge. Do not consult staging.")
@@ -116,6 +132,8 @@ def run(verbose, edge_only, staging_only):
         db_stable_branch = os.path.join(parent_dir, 'db-stable')
         report_difference_to_server(
             'staging', db_stable_branch, staging_revision, verbose)
+        print "Last automatic merge on db-stable was stable r%s." % (
+            get_last_automatic_stable_merge_revno(db_stable_branch),)
 
 
 def main(argv):
