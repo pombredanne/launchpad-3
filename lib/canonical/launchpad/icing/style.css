@@ -1237,6 +1237,10 @@ div.watermark-apps-portlet span img {
     margin: 0;
 }
 
+.patches-view-cell {
+  padding-right: 1em;
+}
+
 /* --- Blueprints --- */
 
 body.tab-specifications #actions, body.tab-specifications .results {
