@@ -155,6 +155,15 @@ def check_estimate(test, job, delay_in_seconds):
             (estimate.seconds, delay_in_seconds))
 
 
+def disable_builders(test, processor, virtualized):
+    """Disable bulders with the given processor and virtualization setting."""
+    if processor is not None:
+        processor_fam = ProcessorFamilySet().getByName(processor)
+        processor = processor_fam.processors[0].id
+    for builder in test.builders[(processor, virtualized)]:
+        builder.builderok = False
+
+
 class TestBuildQueueSet(TestCaseWithFactory):
     """Test for `BuildQueueSet`."""
 
@@ -1175,17 +1184,17 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
 
         # Assign the same score to the '386' vim and apg build jobs.
         processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
+        self.x86_proc = processor_fam.processors[0]
         _apg_build, apg_job = find_job(self, 'apg', '386')
         apg_job.lastscore = 1024
 
         # Also, toggle the 'virtualized' flag for all '386' jobs.
         for build in self.builds:
             bq = build.buildqueue_record
-            if bq.processor == x86_proc:
+            if bq.processor == self.x86_proc:
                 bq.virtualized = True
 
-    def test_estimation(self):
+    def test_pending_jobs_only(self):
         # Let's see the assertion fail for a job that's not pending any more.
         assign_to_builder(self, 'gedit', 1, 'hppa')
         processor_fam = ProcessorFamilySet().getByName('hppa')
@@ -1193,6 +1202,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         gedit_build, gedit_job = find_job(self, 'gedit', 'hppa')
         self.assertRaises(AssertionError, gedit_job.getEstimatedJobStartTime)
 
+    def test_estimation_binary_virtual(self):
         gcc_build, gcc_job = find_job(self, 'gcc', '386')
         # The delay of 1671 seconds is calculated as follows:
         #                     386 jobs: (12+14+16)*60/3           = 840
@@ -1201,6 +1211,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         check_estimate(self, gcc_job, 1671)
         self.assertEquals(5, builders_for_job(gcc_job))
 
+    def test_proc_indep_virtual_true(self):
         xxr_build, xxr_job = find_job(self, 'xxr-apt-build', None)
         # The delay of 1802 seconds is calculated as follows:
         #                     386 jobs: 16*60                    = 960
@@ -1208,6 +1219,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         #       (11:05 + 18:30 + 16:38 + 14:47 + 9:14)/5         = 842
         check_estimate(self, xxr_job, 1802)
 
+    def test_estimation_binary_virtual_long_queue(self):
         gedit_build, gedit_job = find_job(self, 'gedit', '386')
         # The delay of 1671 seconds is calculated as follows:
         #                     386 jobs:
@@ -1216,22 +1228,26 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
         check_estimate(self, gedit_job, 1671)
 
+    def test_proc_indep_virtual_null_headjob(self):
         xxr_build, xxr_job = find_job(self, 'xxr-daptup', None)
         # This job is at the head of the queue for virtualized builders and
         # will get dispatched within the next 5 seconds.
         check_estimate(self, xxr_job, 5)
 
+    def test_proc_indep_virtual_false(self):
         xxr_build, xxr_job = find_job(self, 'xxr-aptitude', None)
         # The delay of 1403 seconds is calculated as follows:
         #                    hppa jobs: (9+11+13+15)*60/3        = 960
         #   processor-independent jobs: 7:23                     = 443
         check_estimate(self, xxr_job, 1403)
 
+    def test_proc_indep_virtual_false_headjob(self):
         xxr_build, xxr_job = find_job(self, 'xxr-auto-apt', None)
         # This job is at the head of the queue for native builders and
         # will get dispatched within the next 5 seconds.
         check_estimate(self, xxr_job, 5)
 
+    def test_estimation_binary_virtual_same_score(self):
         vim_build, vim_job = find_job(self, 'vim', '386')
         # The apg job is ahead of the vim job.
         # The delay of 1527 seconds is calculated as follows:
@@ -1240,23 +1256,29 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
         check_estimate(self, vim_job, 1527)
 
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
-        # Disable the virtual x86 builders.
-        for builder in self.builders[(x86_proc.id, True)]:
-            builder.builderok = False
+    def test_no_builder_no_estimate(self):
+        # No dispatch estimate is provided in the absence of builders that
+        # can run the job of interest (JOI).
+        disable_builders(self, 'x86', True)
+        vim_build, vim_job = find_job(self, 'vim', '386')
         check_estimate(self, vim_job, None)
 
+    def test_estimates_with_small_builder_pool(self):
+        # Test that a reduced builder pool results in longer dispatch time
+        # estimates.
+        vim_build, vim_job = find_job(self, 'vim', '386')
+        disable_builders(self, 'x86', True)
         # Re-enable one builder.
-        builder = self.builders[(x86_proc.id, True)][0]
+        builder = self.builders[(self.x86_proc.id, True)][0]
         builder.builderok = True
         # Dispatch the firefox job to it.
         assign_to_builder(self, 'firefox', 1, '386')
-        # Dispatch also the head job, making postgres/386 the new head job.
+        # Dispatch the head job, making postgres/386 the new head job and
+        # resulting in a 240 seconds head job dispatch delay.
         assign_to_builder(self, 'xxr-daptup', 1, None)
         check_mintime_to_builder(self, vim_job, 240)
         # Re-enable another builder.
-        builder = self.builders[(x86_proc.id, True)][1]
+        builder = self.builders[(self.x86_proc.id, True)][1]
         builder.builderok = True
         # Assign a job to it.
         assign_to_builder(self, 'gedit', 2, '386')
@@ -1272,6 +1294,15 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         self.assertEquals(9, builders_for_job(xxr_job))
         check_estimate(self, vim_job, 2747)
 
+    def test_estimation_binary_virtual_headjob(self):
         # The head job only waits for the next builder to become available.
+        disable_builders(self, 'x86', True)
+        # Re-enable one builder.
+        builder = self.builders[(self.x86_proc.id, True)][0]
+        builder.builderok = True
+        # Assign a job to it.
+        assign_to_builder(self, 'gedit', 1, '386')
+        # Dispatch the head job, making postgres/386 the new head job.
+        assign_to_builder(self, 'xxr-daptup', 1, None)
         postgres_build, postgres_job = find_job(self, 'postgres', '386')
         check_estimate(self, postgres_job, 120)
