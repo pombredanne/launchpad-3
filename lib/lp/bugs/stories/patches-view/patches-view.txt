@@ -16,11 +16,14 @@ We don't see any patches when we open the patches view.
     >>> def show_patches_view(contents):
     ...     for tag in find_tags_by_class(contents, 'listing'):
     ...         print extract_text(tag)
+    ...     messages = find_tags_by_class(expected_contents, 'informational')
+    ...     if len(messages) > 0:
+    ...         print extract_text(messages[0])
 
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
-    Bug Importance Status Patch Age
+    There are no patches associated with Patchy-product-1 at this time.
 
 After the product has a bug, it still doesn't show up in the patches
 view, because that bug has no patch attachments.
@@ -43,7 +46,7 @@ view, because that bug has no patch attachments.
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
-    Bug Importance Status Patch Age
+    There are no patches associated with Patchy-product-1 at this time.
 
 After we add a non-patch attachment to that bug, the patches view
 still shows no patches.
@@ -53,7 +56,7 @@ still shows no patches.
     <BugAttachment at...
     >>> anon_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
-    Bug Importance Status Patch Age
+    There are no patches associated with Patchy-product-1 at this time.
 
 After we add a patch attachment that's one day old, we see it in the
 patches view.

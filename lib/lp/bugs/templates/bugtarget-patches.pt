@@ -14,6 +14,7 @@
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="batchnav view/batchedPatchTasks;
                      batch batchnav/currentBatch">
+ <div tal:condition="python: len(batch) > 0">
 
   <form class="lesser" id="sort" method="get"
         tal:attributes="action string:${context/fmt:url}/+patches">
@@ -120,6 +121,13 @@
              </td>
              </tr></table>
     <div tal:replace="structure batchnav/@@+navigation-links-lower" />
+ </div>
+ <div class="informational message"
+      tal:condition="python: len(batch) == 0">
+   There are no patches associated with
+   <tal:target replace="context/displayname" />
+   at this time.
+ </div>
     </div><!-- main -->
   </body>
 </html>
