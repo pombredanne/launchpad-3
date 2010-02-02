@@ -248,8 +248,9 @@ class BaseLayer:
         # Kill any Memcached or Librarian left running from a previous
         # test run, or from the parent test process if the current
         # layer is being run in a subprocess.
-        kill_by_pidfile(MemcachedLayer.getPidFile())
-        LibrarianTestSetup().tearDown()
+        if os.environ.get('LP_PERSISTENT_TEST_SERVICES') is None:
+            kill_by_pidfile(MemcachedLayer.getPidFile())
+            LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
             DatabaseLayer.connect().close()
@@ -461,6 +462,9 @@ class MemcachedLayer(BaseLayer):
     def setUp(cls):
         # Create a client
         MemcachedLayer.client = memcache_client_factory()
+        if (os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None and
+            os.path.exists(MemcachedLayer.getPidFile())):
+            return
 
         # First, check to see if there is a memcached already running.
         # This happens when new layers are run as a subprocess.
@@ -496,16 +500,18 @@ class MemcachedLayer(BaseLayer):
 
         # Register an atexit hook just in case tearDown doesn't get
         # invoked for some perculiar reason.
-        atexit.register(kill_by_pidfile, pidfile)
+        if os.environ.get('LP_PERSISTENT_TEST_SERVICES') is None:
+            atexit.register(kill_by_pidfile, pidfile)
 
     @classmethod
     @profiled
     def tearDown(cls):
         MemcachedLayer.client.disconnect_all()
         MemcachedLayer.client = None
-        # Kill our memcached, and there is no reason to be nice about it.
-        kill_by_pidfile(MemcachedLayer.getPidFile())
-        MemcachedLayer._memcached_process = None
+        if os.environ.get('LP_PERSISTENT_TEST_SERVICES') is None:
+            # Kill our memcached, and there is no reason to be nice about it.
+            kill_by_pidfile(MemcachedLayer.getPidFile())
+            MemcachedLayer._memcached_process = None
 
     @classmethod
     @profiled
