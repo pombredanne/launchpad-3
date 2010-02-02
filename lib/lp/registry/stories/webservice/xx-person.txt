@@ -20,6 +20,7 @@ for teams (as they're defined in the ITeam interface).
     homepage_content: None
     invited_members_collection_link: u'http://.../~salgado/invited_members'
     irc_nicknames_collection_link: u'http://.../~salgado/irc_nicknames'
+    is_probationary: True
     is_team: False
     is_valid: True
     jabber_ids_collection_link: u'http://.../~salgado/jabber_ids'
@@ -64,6 +65,7 @@ for teams (as they're defined in the ITeam interface).
     homepage_content: None
     invited_members_collection_link: u'http://.../~ubuntu-team/invited_members'
     irc_nicknames_collection_link: u'http://.../~ubuntu-team/irc_nicknames'
+    is_probationary: False
     is_team: True
     is_valid: True
     jabber_ids_collection_link: u'http://.../~ubuntu-team/jabber_ids'

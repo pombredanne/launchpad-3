@@ -353,7 +353,50 @@ Non-administrators may not change a person's standing.
     >>> login(ANONYMOUS)
 
 
-=== Ubuntu Code of Conduct signees ===
+Probationary users
+------------------
+
+Users without karma have not demostrated their intentions and may not
+have the same privileges as users who have made contributions.
+Users who have made recent contributions are not on probation.
+
+    >>> active_user = personset.getByName('name12')
+    >>> active_user.is_probationary
+    False
+
+    >>> active_user.karma > 0
+    True
+
+    >>> active_user.is_valid_person
+    True
+
+New users (those without karma) are on probation.
+
+    >>> new_user = factory.makePerson()
+    >>> new_user.is_probationary
+    True
+
+    >>> new_user.karma > 0
+    False
+
+    >>> new_user.is_valid_person
+    True
+
+Teams are never on probation.
+
+    >>> team = factory.makeTeam()
+    >>> team.is_probationary_or_invalid_user
+    False
+
+    >>> team.karma > 0
+    False
+
+    >>> team.is_valid_person
+    False
+
+
+Ubuntu Code of Conduct signees
+..............................
 
 Some people have signed the latest version of the Ubuntu Code of Conduct and
 others have not.

@@ -443,12 +443,13 @@ also provides a custom widget, displayname_edit_widget.
     Edit the displayname
 
 The view provides the is_probationary_ppa property. The archive's description
-is not linkified when the owner is a probationary user.
+is not linkified when the owner is a probationary user to prevent spammers
+from using PPAs.
 
     >>> login('admin@canonical.com')
     >>> cprov.archive.description = 'http://example.dom/'
     >>> login(ANONYMOUS)
-    >>> view.is_probationary_ppa
+    >>> cprov.is_probationary
     True
 
     >>> print view.archive_description_html.value
@@ -466,7 +467,7 @@ The PPA description is linked when the user has made a contribution.
     >>> login(ANONYMOUS)
     >>> contributor_view = create_initialized_view(
     ...     contributor_ppa, name="+index")
-    >>> contributor_view.is_probationary_ppa
+    >>> contributor.is_probationary
     False
 
     >>> print contributor_view.archive_description_html.value

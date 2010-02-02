@@ -789,11 +789,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         return None
 
     @property
-    def is_probationary_ppa(self):
-        """Is this a PPA owned by a probationary user?"""
-        return self.context.is_ppa and self.context.owner.karma == 0
-
-    @property
     def archive_description_html(self):
         """The archive's description as HTML."""
         formatter = FormattersAPI
@@ -804,7 +799,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         else:
             description = ''
 
-        if not self.is_probationary_ppa:
+        if not (self.context.owner.is_probationary and self.context.is_ppa):
             description = formatter(description).text_to_html()
 
         return TextAreaEditorWidget(
