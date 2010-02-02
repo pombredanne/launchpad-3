@@ -391,7 +391,7 @@ class BuildQueue(SQLBase):
         # This will be used to capture per-platform job counts.
         job_counts = defaultdict(int)
 
-        # Apply weights to the estimated duration of the jobs as follows:
+        # Divide the estimated duration of the jobs as follows:
         #   - if a job is tied to a processor TP then divide the estimated
         #     duration of that job by the number of builders that target TP
         #     since only these can build the job.
@@ -414,7 +414,7 @@ class BuildQueue(SQLBase):
                 job_counts[platform] += job_count
 
         sum_of_delays = 0
-        # Now weight/average the delays based on a jobs/builders comparison.
+        # Now devide the delays based on a jobs/builders comparison.
         for platform, duration in delays.iteritems():
             jobs = job_counts[platform]
             builders = builder_stats[platform]
@@ -437,7 +437,7 @@ class BuildQueue(SQLBase):
               head of the respective build queue)
             * the estimated build durations of all jobs that
               precede the job of interest (JOI) in the build queue
-              (weighted by the number of machines in the respective
+              (divided by the number of machines in the respective
               build pool)
         """
         # This method may only be invoked for pending jobs.
