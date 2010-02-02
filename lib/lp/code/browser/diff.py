@@ -41,7 +41,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         """
         diff = self._context
         conflict_text = ''
-        if diff.conflicts is not None:
+        if diff.has_conflicts:
             conflict_text = _(' (has conflicts)')
 
         count_text = ''
