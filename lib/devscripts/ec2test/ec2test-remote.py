@@ -55,6 +55,36 @@ class SummaryResult(unittest.TestResult):
             'FAILURE', test, self._exc_info_to_string(error, test))
 
 
+class FlagFallStream:
+    """Wrapper around a stream that only starts forwarding after a flagfall.
+    """
+
+    def __init__(self, stream, flag):
+        """Construct a `FlagFallStream` that wraps 'stream'.
+
+        :param stream: A stream, a file-like object.
+        :param flag: A string that needs to be written to this stream before
+            we start forwarding the output.
+        """
+        self._stream = stream
+        self._flag = flag
+        self._flag_fallen = False
+
+    def write(self, bytes):
+        if self._flag_fallen:
+            self._stream.write(bytes)
+        else:
+            index = bytes.find(self._flag)
+            if index == -1:
+                return
+            else:
+                self._stream.write(bytes[index:])
+                self._flag_fallen = True
+
+    def flush(self):
+        self._stream.flush()
+
+
 class BaseTestRunner:
 
     def __init__(self, email=None, pqm_message=None, public_branch=None,
@@ -197,7 +227,8 @@ class BaseTestRunner:
         # Only write to stdout if we are running as the foreground process.
         echo_to_stdout = not self.daemonized
         result = SummaryResult(summary_file)
-        subunit_server = subunit.TestProtocolServer(result, summary_file)
+        subunit_server = subunit.TestProtocolServer(
+            result, FlagFallStream(summary_file, 'Running tests.'))
         for line in input_stream:
             subunit_server.lineReceived(line)
             out_file.write(line)
