@@ -1127,10 +1127,11 @@ class Archive(SQLBase):
             getUtility(ISourcePackageNameSet)[name]
             # Grabbing the item at index 0 ensures it's the most recent
             # publication.
-            sources.append(
-                from_archive.getPublishedSources(
-                    name=name, exact_match=True, 
-                    status=PackagePublishingStatus.PUBLISHED)[0])
+            published_sources = from_archive.getPublishedSources(
+                name=name, exact_match=True,
+                status=PackagePublishingStatus.PUBLISHED)
+            if published_sources.count() > 0:
+                sources.append(published_sources[0])
         return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
