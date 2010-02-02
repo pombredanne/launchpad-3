@@ -37,7 +37,7 @@ class BuildBase:
     the properties defined on IBuildBase on the inheriting class tables. 
     BuildBase cannot therefore implement IBuildBase itself, as storm requires
     that the corresponding __storm_table__ be defined for the class. Instead,
-    the inheriting content classes must ensure that they implement IBuildBase.
+    the classes using the BuildBase mixin must ensure that they implement IBuildBase.
     """
     policy_name = 'buildd'
 
