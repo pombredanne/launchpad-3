@@ -5,17 +5,13 @@
 Run the doctests and pagetests.
 """
 
-import logging
 import os
-import transaction
 
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import (
-    DatabaseLayer, DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
-from lp.registry.tests import mailinglists_helper
 from lp.services.testing import build_test_suite
 
 

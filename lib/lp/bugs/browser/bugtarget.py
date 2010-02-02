@@ -827,6 +827,7 @@ class FileBugViewBase(LaunchpadFormView):
         Returns a list of dicts, with each dict containing values for
         "preamble" and "content".
         """
+
         def target_name(target):
             # IProject can be considered the target of a bug during
             # the bug filing process, but does not extend IBugTarget
@@ -871,6 +872,7 @@ class FileBugAdvancedView(FileBugViewBase):
 
     This view exists only to redirect from +filebug-advanced to +filebug.
     """
+
     def initialize(self):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')

@@ -768,7 +768,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     def __init__(self, test_args=None):
         super(BaseDatabaseGarbageCollector, self).__init__(
             self.script_name,
-            dbuser=self.script_name.replace('-','_'),
+            dbuser=self.script_name.replace('-', '_'),
             test_args=test_args)
 
     def add_my_options(self):
