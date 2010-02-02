@@ -61,7 +61,18 @@ and in particular, mozilla-firefox in Ubuntu has 'em:
     >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
     >>> ubuntu_firefox_bugs.count() > 0
     True
+    
+== Person bugs ==
 
+To get all related tasks to a person call searchTasks() on the person
+pbject:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> user = getUtility(IPersonSet).getByName('name16')
+    >>> user_bugs = user.searchTasks(None, user=None)
+    >>> user_bugs.count() > 0
+    True
+    
 == Dupes and Conjoined tasks ==
 
 You can set flags to omit duplicates:
