@@ -34,6 +34,7 @@ TLA_MAP = dict(
     tes='testing',
     tra='translations',
     pkg='registry',
+    hdb='hardwaredb'
     )
 
 RENAME_MAP = dict(
