@@ -214,11 +214,6 @@ class BuildQueue(SQLBase):
             running the head job becomes available.
         """
         head_job_platform = self._getHeadJobPlatform()
-        if head_job_platform is None:
-            # The job of interest (JOI) is the head job.
-            head_job_platform = (
-                getattr(self.processor, 'id', None),
-                normalize_virtualization(self.virtualized))
 
         # Return a zero delay if we still have free builders available for the
         # given platform/virtualization combination.
@@ -335,8 +330,8 @@ class BuildQueue(SQLBase):
         query += """
             ORDER BY lastscore DESC, job LIMIT 1
             """
-        head_job_platform = store.execute(query).get_one()
-        return head_job_platform
+        result = store.execute(query).get_one()
+        return (my_platform if result is None else result)
 
     def _estimateJobDelay(self, builder_stats):
         """Sum of estimated durations for *pending* jobs ahead in queue.

@@ -1048,7 +1048,10 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         _postgres_build, postgres_job = find_job(self, 'postgres', '386')
         # The delay will be 0 since this is the head job now.
         check_delay_for_job(self, postgres_job, 0)
-        self.assertEquals(postgres_job._getHeadJobPlatform(), None)
+        # Also, the platform of the postgres job is returned since it *is*
+        # the head job now.
+        pg_platform = (postgres_job.processor.id, postgres_job.virtualized)
+        self.assertEquals(postgres_job._getHeadJobPlatform(), pg_platform)
 
     def test_job_delay_for_unspecified_virtualization(self):
         # Make sure that jobs with a NULL 'virtualized' flag get the same
