@@ -23,16 +23,23 @@ from zope.interface import classProvides, implements
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
+from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
+from lp.soyuz.adapters.archivedependencies import (
+    default_component_dependency_name,)
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+from lp.soyuz.model.buildqueue import BuildQueue
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
-
     __storm_table__ = 'SourcePackageRecipeBuild'
+
+    policy_name = 'recipe'
 
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
@@ -41,36 +48,67 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     id = Int(primary=True)
 
+    is_private = False
+
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
 
-    build_duration = TimeDelta(name='build_duration', default=None)
+    buildduration = TimeDelta(name='build_duration', default=None)
 
     builder_id = Int(name='builder', allow_none=True)
     builder = Reference(builder_id, 'Builder.id')
 
-    build_log_id = Int(name='build_log', allow_none=True)
-    build_log = Reference(build_log_id, 'LibraryFileAlias.id')
+    buildlog_id = Int(name='build_log', allow_none=True)
+    buildlog = Reference(buildlog_id, 'LibraryFileAlias.id')
 
-    build_state = EnumCol(
+    buildstate = EnumCol(
         dbName='build_state', notNull=True, schema=BuildStatus)
 
-    date_created = UtcDateTimeCol(notNull=True)
-    date_built = UtcDateTimeCol(notNull=False)
+    @property
+    def current_component(self):
+        return getUtility(IComponentSet)[default_component_dependency_name]
+
+    datecreated = UtcDateTimeCol(notNull=True, dbName='date_created')
+    datebuilt = UtcDateTimeCol(notNull=False, dbName='date_built')
     date_first_dispatched = UtcDateTimeCol(notNull=False)
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
+    # XXX wgrant 2010-01-15 bug=507751: Need a DB field for this.
+    dependencies = None
+
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(
         sourcepackagename_id, 'SourcePackageName.id')
+
+    @property
+    def distribution(self):
+        """See `IBuildBase`."""
+        return self.distroseries.distribution
+
+    @property
+    def pocket(self):
+        # XXX: JRV 2010-01-15 bug=507307: The database table really should
+        # have a pocket column, although this is not a big problem at the
+        # moment as recipe builds only happen for PPA's (so far).
+        return PackagePublishingPocket.RELEASE
 
     recipe_id = Int(name='recipe', allow_none=False)
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
 
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
+
+    @property
+    def buildqueue_record(self):
+        """See `IBuildBase`."""
+        store = Store.of(self)
+        results = store.find(
+            BuildQueue,
+            SourcePackageRecipeBuildJob.job == BuildQueue.jobID,
+            SourcePackageRecipeBuildJob.build == self.id)
+        return results.one()
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
                  archive, date_created=None, date_first_dispatched=None,
@@ -80,12 +118,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
         self.archive = archive
-        self.build_duration = build_duration
-        self.build_log = build_log
+        self.buildduration = build_duration
+        self.buildlog = build_log
         self.builder = builder
-        self.build_state = build_state
-        self.date_built = date_built
-        self.date_created = date_created
+        self.buildstate = build_state
+        self.datebuilt = date_built
+        self.datecreated = date_created
         self.date_first_dispatched = date_first_dispatched
         self.distroseries = distroseries
         self.recipe = recipe
@@ -93,7 +131,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, archive, 
+    def new(cls, sourcepackage, recipe, requester, archive,
             date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
@@ -126,12 +164,21 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def estimateDuration(self):
         """See `IBuildBase`."""
-        # XXX: Do this properly.
+        # XXX: wgrant 2010-01-19 bug=507764: Need proper implementation.
         return datetime.timedelta(minutes=2)
 
+    def storeUploadLog(self, content):
+        """See `IBuildBase`."""
+        # XXX: wgrant 2010-01-20 bug=509892: Store in the DB.
+        return
 
-class SourcePackageRecipeBuildJob(Storm):
+    def notify(self, extra_info=None):
+        """See `IBuildBase`."""
+        # XXX: wgrant 2010-01-20 bug=509893: Implement this.
+        return
 
+
+class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
@@ -154,34 +201,6 @@ class SourcePackageRecipeBuildJob(Storm):
         self.build = build
         self.job = job
 
-    def score(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def getLogFileName(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def getName(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def getTitle(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def jobStarted(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def jobReset(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def jobAborted(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
     @classmethod
     def new(cls, build, job):
         """See `ISourcePackageRecipeBuildJobSource`."""
@@ -189,3 +208,10 @@ class SourcePackageRecipeBuildJob(Storm):
         store = IMasterStore(SourcePackageRecipeBuildJob)
         store.add(specific_job)
         return specific_job
+
+    def getTitle(self):
+        """See `IBuildFarmJob`."""
+        return "%s-%s-%s-recipe-build-job" % (
+            self.build.distroseries.displayname,
+            self.build.sourcepackagename.name,
+            self.build.archive.displayname)

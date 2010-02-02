@@ -59,10 +59,12 @@ warned_database_imports = text_lines_to_set("""
 valid_imports_not_in_all = {
     'cookielib': set(['domain_match']),
     'email.Utils': set(['mktime_tz']),
+    'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),
     'zope.component': set(
         ['adapter',
          'ComponentLookupError',
+         'provideAdapter',
          'provideHandler',
          ]),
     }

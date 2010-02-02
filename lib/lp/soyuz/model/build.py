@@ -11,6 +11,9 @@ from cStringIO import StringIO
 import datetime
 import logging
 import operator
+import os
+import subprocess
+import time
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -27,7 +30,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote_like, SQLBase, sqlvalues)
+    clear_current_connection_cache, flush_database_updates, cursor,
+    quote_like, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.librarian import (
@@ -43,10 +47,12 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from canonical.librarian.utils import copy_and_close
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.pocket import (PackagePublishingPocket,
+    pocketsuffix)
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -96,15 +102,6 @@ class Build(BuildBase, SQLBase):
     upload_log = ForeignKey(
         dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
-    def _getProxiedFileURL(self, library_file):
-        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
-        # Avoiding circular imports.
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
-
-        proxied_file = ProxiedLibraryFileAlias(library_file, self)
-        return proxied_file.http_url
-
     @property
     def buildqueue_record(self):
         """See `IBuild`."""
@@ -121,13 +118,6 @@ class Build(BuildBase, SQLBase):
         if self.upload_log is None:
             return None
         return self._getProxiedFileURL(self.upload_log)
-
-    @property
-    def build_log_url(self):
-        """See `IBuild`."""
-        if self.buildlog is None:
-            return None
-        return self._getProxiedFileURL(self.buildlog)
 
     def _getLatestPublication(self):
         store = Store.of(self)
@@ -323,7 +313,7 @@ class Build(BuildBase, SQLBase):
         self.buildlog = None
         self.upload_log = None
         self.dependencies = None
-        self.createBuildQueueEntry()
+        self.queueBuild()
 
     def rescore(self, score):
         """See `IBuild`."""
@@ -839,7 +829,12 @@ class Build(BuildBase, SQLBase):
                 headers=extra_headers)
 
     def storeUploadLog(self, content):
-        """See `IBuild`."""
+        """See `IBuildBase`."""
+        # The given content is stored in the librarian, restricted as
+        # necessary according to the targeted archive's privacy.  The content
+        # object's 'upload_log' attribute will point to the
+        # `LibrarianFileAlias`.
+
         assert self.upload_log is None, (
             "Upload log information already exist and cannot be overridden.")
 

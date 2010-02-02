@@ -14,11 +14,11 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-from email.Encoders import encode_base64
-from email.Utils import make_msgid, formatdate
-from email.Message import Message as EmailMessage
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
+from email.encoders import encode_base64
+from email.utils import make_msgid, formatdate
+from email.message import Message as EmailMessage
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 import os.path
@@ -86,7 +86,8 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
     BranchType, CodeImportMachineState, CodeImportReviewStatus,
@@ -105,8 +106,8 @@ from lp.registry.model.distributionsourcepackage import (
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
@@ -125,8 +126,10 @@ from lp.registry.interfaces.sourcepackagename import (
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.model.buildqueue import BuildQueue
 from lp.testing import run_with_login, time_counter
 
 SPACE = ' '
@@ -288,10 +291,11 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
         key_id = self.getUniqueHexString(digits=8).upper()
+        fingerprint = key_id + 'A' * 32
         return getUtility(IGPGKeySet).new(
             owner.id,
             keyid=key_id,
-            fingerprint='A' * 40,
+            fingerprint=fingerprint,
             keysize=self.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
             active=True,
@@ -538,25 +542,34 @@ class LaunchpadObjectFactory(ObjectFactory):
                          productseries=productseries,
                          name=name)
 
-    def makeProductRelease(self, milestone=None, product=None):
+    def makeProductRelease(self, milestone=None, product=None,
+                           productseries=None):
         if milestone is None:
-            milestone = self.makeMilestone(product=product)
+            milestone = self.makeMilestone(product=product,
+                                           productseries=productseries)
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
 
-    def makeProductReleaseFile(self, signed=True):
+    def makeProductReleaseFile(self, signed=True,
+                               product=None, productseries=None,
+                               milestone=None,
+                               release=None,
+                               description="test file"):
         signature_filename = None
         signature_content = None
         if signed:
             signature_filename = 'test.txt.asc'
             signature_content = '123'
-        release = self.makeProductRelease()
+        if release is None:
+            release = self.makeProductRelease(product=product,
+                                              productseries=productseries,
+                                              milestone=milestone)
         return release.addReleaseFile(
             'test.txt', 'test', 'text/plain',
             uploader=release.milestone.product.owner,
             signature_filename=signature_filename,
             signature_content=signature_content,
-            description="test file")
+            description=description)
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an explicit transaction commit.
@@ -758,13 +771,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if product is None:
             product = self.makeProduct()
         return self.makeBranch(product=product, **kwargs)
-
-    def makeImportBranch(self, **kwargs):
-        """Make a in import branch on an arbitrary product.
-
-        See `makeBranch` for more information on arguments.
-        """
-        return self.makeBranch(branch_type=BranchType.IMPORTED, **kwargs)
 
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.
@@ -1236,8 +1242,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         passed in, but defaults to a Subversion import from an arbitrary
         unique URL.
         """
-        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is hg_repo_url
-            is None):
+        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
+            hg_repo_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if product is None:
@@ -1459,7 +1465,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             members, owner)
 
     def makeDistroRelease(self, distribution=None, version=None,
-                          status=DistroSeriesStatus.DEVELOPMENT,
+                          status=SeriesStatus.DEVELOPMENT,
                           parent_series=None, name=None):
         """Make a new distro release."""
         if distribution is None:
@@ -1605,10 +1611,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant, owner, distroseries, sourcepackagename, name, recipe)
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
-                                     requester=None, archive=None):
+                                     requester=None, archive=None,
+                                     sourcename=None):
         """Make a new SourcePackageRecipeBuild."""
         if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage()
+            sourcepackage = self.makeSourcePackage(sourcename=sourcename)
         if recipe is None:
             recipe = self.makeSourcePackageRecipe()
         if requester is None:
@@ -1620,6 +1627,24 @@ class LaunchpadObjectFactory(ObjectFactory):
             recipe=recipe,
             archive=archive,
             requester=requester)
+
+    def makeSourcePackageRecipeBuildJob(
+        self, score=9876, virtualized=True, estimated_duration=64,
+        sourcename=None):
+        """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
+        testing."""
+        recipe_build = self.makeSourcePackageRecipeBuild(
+            sourcename=sourcename)
+        recipe_build_job = recipe_build.makeJob()
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        bq = BuildQueue(
+            job=recipe_build_job.job, lastscore=score,
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
+            estimated_duration = timedelta(seconds=estimated_duration),
+            virtualized=virtualized)
+        store.add(bq)
+        return bq
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
@@ -1831,10 +1856,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             return self.makeSourcePackageName()
         return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
 
-    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
+    def makeSourcePackage(
+        self, sourcepackagename=None, distroseries=None, sourcename=None):
         """Make an `ISourcePackage`."""
         if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+            sourcepackagename = self.makeSourcePackageName(sourcename)
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)

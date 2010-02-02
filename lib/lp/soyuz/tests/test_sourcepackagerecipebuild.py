@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import datetime
 import unittest
 
 import transaction
@@ -49,13 +50,42 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         job = spb.makeJob()
         self.assertProvides(job, ISourcePackageRecipeBuildJob)
 
-    def test_createBuildQueueEntry(self):
+    def test_queueBuild(self):
         spb = self.makeSourcePackageRecipeBuild()
-        bq = spb.createBuildQueueEntry()
+        bq = spb.queueBuild()
         self.assertProvides(bq, IBuildQueue)
         self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
         self.assertEqual(True, bq.virtualized)
         self.assertIs(None, bq.processor)
+        self.assertEqual(bq, spb.buildqueue_record)
+
+    def test_getTitle(self):
+        # A build farm job implements getTitle().
+        spb = self.makeSourcePackageRecipeBuild()
+        job = spb.makeJob()
+        # The title describes the job and should be recognizable by users.
+        # Hence the choice of the "ingredients" below.
+        title = "%s-%s-%s-recipe-build-job" % (
+            job.build.distroseries.displayname, job.build.sourcepackagename,
+            job.build.archive.displayname)
+        self.assertEqual(job.getTitle(), title)
+
+    def test_distribution(self):
+        # A source package recipe build has a distribution derived from
+        # its series.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual(spb.distroseries.distribution, spb.distribution)
+
+    def test_is_private(self):
+        # A source package recipe build is currently always public.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual(False, spb.is_private)
+
+    def test_estimateDuration(self):
+        # The duration estimate is currently hard-coded as two minutes.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual(
+            datetime.timedelta(minutes=2), spb.estimateDuration())
 
 
 def test_suite():

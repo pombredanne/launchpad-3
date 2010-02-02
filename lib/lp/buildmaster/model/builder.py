@@ -128,9 +128,9 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.urlbase, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
-        self._sendFileToSlave(url, libraryfilealias.content.sha1)
+        self.sendFileToSlave(libraryfilealias.content.sha1, url)
 
-    def _sendFileToSlave(self, url, sha1, username="", password=""):
+    def sendFileToSlave(self, sha1, url, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
         present, info = self.ensurepresent(sha1, url, username, password)
         if not present:
@@ -365,6 +365,10 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.status()
 
+    def verifySlaveBuildID(self, slave_build_id):
+        """See `IBuilder`."""
+        return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
+
     def updateBuild(self, queueItem):
         """See `IBuilder`."""
         self.current_build_behavior.updateBuild(queueItem)
@@ -434,42 +438,53 @@ class Builder(SQLBase):
 
         :return: A candidate job.
         """
+        def qualify_subquery(job_type, sub_query):
+            """Put the sub-query into a job type context."""
+            qualified_query = """
+                ((BuildQueue.job_type != %s) OR EXISTS(%%s))
+            """ % sqlvalues(job_type)
+            qualified_query %= sub_query
+            return qualified_query
+
         logger = self._getSlaveScannerLogger()
         candidate = None
 
-        query_tables = set(('buildqueue', 'job'))
         general_query = """
-            SELECT buildqueue.id FROM %%s
+            SELECT buildqueue.id FROM buildqueue, job
             WHERE
                 buildqueue.job = job.id
                 AND job.status = %s
                 AND (
-                    (buildqueue.processor = %s
-                     AND buildqueue.virtualized = %s)
-                   OR
-                    (buildqueue.processor IS NULL
-                     AND buildqueue.virtualized IS NULL))
+                    -- The processor values either match or the candidate
+                    -- job is processor-independent.
+                    buildqueue.processor = %s OR
+                    buildqueue.processor IS NULL)
+                AND (
+                    -- The virtualized values either match or the candidate
+                    -- job does not care about virtualization and the idle
+                    -- builder *is* virtualized (the latter is a security
+                    -- precaution preventing the execution of untrusted code
+                    -- on native builders).
+                    buildqueue.virtualized = %s OR
+                    (buildqueue.virtualized IS NULL AND %s = TRUE))
                 AND buildqueue.builder IS NULL
-        """ % sqlvalues(JobStatus.WAITING, self.processor, self.virtualized)
+        """ % sqlvalues(
+            JobStatus.WAITING, self.processor, self.virtualized,
+            self.virtualized)
         order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
 
-        extra_tables = set()
         extra_queries = []
         job_classes = specific_job_classes()
-        for job_class in job_classes.values():
-            tables, query = job_class.addCandidateSelectionCriteria(
+        for job_type, job_class in job_classes.iteritems():
+            query = job_class.addCandidateSelectionCriteria(
                 self.processor, self.virtualized)
             if query == '':
                 # This job class does not need to refine candidate jobs
                 # further.
                 continue
 
-            # Table names are case-insensitive in SQL. All table names are in
-            # lower case in order to avoid duplicates in the FROM clause.
-            query_tables = query_tables.union(
-                set(table.lower() for table in tables))
-            extra_queries.append(query)
-        general_query = general_query % ', '.join(query_tables)
+            # The sub-query should only apply to jobs of the right type.
+            extra_queries.append(qualify_subquery(job_type, query))
         query = ' AND '.join([general_query] + extra_queries) + order_clause
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)

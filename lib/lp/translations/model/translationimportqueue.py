@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -37,8 +37,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries, DistroSeriesStatus)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPerson, validate_person_not_private_membership)
 from lp.registry.interfaces.product import IProduct
@@ -66,12 +66,16 @@ from lp.translations.utilities.gettext_po_importer import (
 from canonical.librarian.interfaces import ILibrarianClient
 
 
-# Period to wait before entries with terminal statuses are removed from
-# the queue.
+# Approximate number of days in a 6-month period.
+half_year = 366 / 2
+
+# Period after which entries with certain statuses are culled from the
+# queue.
 entry_gc_age = {
     RosettaImportStatus.DELETED: datetime.timedelta(days=3),
     RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
     RosettaImportStatus.FAILED: datetime.timedelta(days=30),
+    RosettaImportStatus.NEEDS_REVIEW: datetime.timedelta(days=half_year),
 }
 
 
@@ -1286,7 +1290,7 @@ class TranslationImportQueue:
                     Distribution.id = DistroSeries.distribution
                 WHERE DistroSeries.releasestatus = %s
                 LIMIT 100)
-            """ % quote(DistroSeriesStatus.OBSOLETE))
+            """ % quote(SeriesStatus.OBSOLETE))
         return cur.rowcount
 
     def cleanUpQueue(self):

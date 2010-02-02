@@ -13,12 +13,22 @@ from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Object, TextLine, Timedelta
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import exported
+from lazr.restful.fields import Reference
 
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.buildqueue import IBuildQueue
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
 
+
 class IBuildBase(Interface):
+    """Common interface shared by farm jobs that build a package."""
+
+    # XXX: wgrant 2010-01-20 bug=507712: Most of these attribute names
+    # are bad.
     datecreated = exported(
         Datetime(
             title=_('Date created'), required=True, readonly=True,
@@ -51,7 +61,6 @@ class IBuildBase(Interface):
         description=_("Build duration interval, calculated when the "
                       "build result gets collected."))
 
-    # XXX: jml 2010-01-12: Rename to build_log.
     buildlog = Object(
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))
@@ -62,11 +71,52 @@ class IBuildBase(Interface):
             description=_("A URL for the build log. None if there is no "
                           "log available.")))
 
-    buildqueue_record = Attribute("Corespondent BuildQueue record")
+    buildqueue_record = Object(
+        schema=IBuildQueue, required=True,
+        title=_("Corresponding BuildQueue record"))
 
     is_private = Attribute("Whether the build should be treated as private.")
 
-    def handleStatus(status, queueItem, librarian, slave_status):
+    policy_name = TextLine(
+        title=_("Policy name"), required=True,
+        description=_("The upload policy to use for handling these builds."))
+
+    archive = exported(
+        Reference(
+            title=_("Archive"), schema=IArchive,
+            required=True, readonly=True,
+            description=_("The Archive context for this build.")))
+
+    current_component = Attribute(
+        "Component where the source related to this build was last "
+        "published.")
+
+    pocket = exported(
+        Choice(
+            title=_('Pocket'), required=True,
+            vocabulary=PackagePublishingPocket,
+            description=_("The build targeted pocket.")))
+
+    dependencies = exported(
+        TextLine(
+            title=_("Dependencies"), required=False,
+            description=_("Debian-like dependency line that must be satisfied"
+                          " before attempting to build this request.")))
+
+    distribution = exported(
+        Reference(
+            schema=IDistribution,
+            title=_("Distribution"), required=True,
+            description=_("Shortcut for its distribution.")))
+
+    def getUploaderCommand(upload_leaf):
+        """Get the command to run as the uploader.
+
+        :return: A list of command line arguments, beginning with the
+            executable.
+        """
+
+    def handleStatus(status, librarian, slave_status):
         """Handle a finished build status from a slave.
 
         :param status: Slave build status string with 'BuildStatus.' stripped.
@@ -79,7 +129,7 @@ class IBuildBase(Interface):
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
-    def createBuildQueueEntry():
+    def queueBuild():
         """Create a BuildQueue entry for this build."""
 
     def estimateDuration():
@@ -90,6 +140,13 @@ class IBuildBase(Interface):
 
         Subclasses can override this as needed, and call it from custom status
         handlers, but it should not be called externally.
+        """
+
+    def storeUploadLog(content):
+        """Store the given content as the build upload_log.
+
+        :param content: string containing the upload-processor log output for
+            the binaries created in this build.
         """
 
     def notify(extra_info=None):

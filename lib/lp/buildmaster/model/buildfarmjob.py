@@ -5,16 +5,21 @@ __metaclass__ = type
 __all__ = ['BuildFarmJob']
 
 
+from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmCandidateJobSelection)
+    IBuildFarmJob, IBuildFarmCandidateJobSelection,
+    ISpecificBuildFarmJobClass)
 
 
 class BuildFarmJob:
     """Mix-in class for `IBuildFarmJob` implementations."""
     implements(IBuildFarmJob)
-    classProvides(IBuildFarmCandidateJobSelection)
+    classProvides(
+        IBuildFarmCandidateJobSelection, ISpecificBuildFarmJobClass)
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -22,9 +27,13 @@ class BuildFarmJob:
 
     def getLogFileName(self):
         """See `IBuildFarmJob`."""
-        raise NotImplementedError
+        return 'buildlog.txt'
 
     def getName(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError
+
+    def getTitle(self):
         """See `IBuildFarmJob`."""
         raise NotImplementedError
 
@@ -53,9 +62,19 @@ class BuildFarmJob:
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmCandidateJobSelection`."""
-        return ([], '')
+        return ('')
+
+    @classmethod
+    def getByJob(cls, job):
+        """See `ISpecificBuildFarmJobClass`.
+        This base implementation should work for most build farm job
+        types, but some need to override it.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(cls, cls.job == job).one()
 
     @staticmethod
     def postprocessCandidate(job, logger):
         """See `IBuildFarmCandidateJobSelection`."""
         return True
+
