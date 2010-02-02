@@ -7,7 +7,10 @@ export DH_COMPAT=4
 export DH_OPTIONS
 
 # This is an incomplete debian rules file for making the launchpad-buildd deb
-# Only ever invoke this as fakeroot debian/rules binary
+# Only ever invoke this as debian/rules package, which will build the source
+# package in the parent directory, after copying in the files that live above
+# this directory, so that the source package is valid.
+# after that, build the source package found in the parent directory.
 
 target = debian/launchpad-buildd
 topdir = ../../..
@@ -41,15 +44,15 @@ install:
 	# Do installs here
 	touch $(pytarget)/../launchpad/__init__.py
 	touch $(pytarget)/../launchpad/daemons/__init__.py
-	cp ../launchpad/daemons/tachandler.py $(pytarget)/../launchpad/daemons/
-	install -m644 $(daemons)/buildd-slave.tac $(targetshare)/buildd-slave.tac
+	cp launchpad-files/tachandler.py $(pytarget)/../launchpad/daemons/
+	install -m644 launchpad-files/buildd-slave.tac $(targetshare)/buildd-slave.tac
 	for pyfile in $(pyfiles); do \
-	 install -m644 $(buildd)/$$pyfile $(pytarget)/$$pyfile; \
+	 install -m644 ./$$pyfile $(pytarget)/$$pyfile; \
         done
 	for slavebin in $(slavebins); do \
-	 install -m755 $(buildd)/$$slavebin $(targetshare)/slavebin/$$slavebin; \
+	 install -m755 ./$$slavebin $(targetshare)/slavebin/$$slavebin; \
 	done
-	install -m755 $(buildd)/sbuild $(target)/usr/bin/sbuild
+	install -m755 ./sbuild $(target)/usr/bin/sbuild
 	touch $(targetshare)/canonical/__init__.py
 	install -m644 template-buildd-slave.conf $(targetshare)/template-buildd-slave.conf
 	install -m755 buildd-config.py $(target)/usr/bin/buildd-genconfig
@@ -57,6 +60,7 @@ install:
 	install -m644 sbuild.conf $(target)/etc/sbuild.conf
 	install -m644 example.chroot debian/launchpad-buildd/usr/share/doc/launchpad-buildd/
 	install -m755 debian/upgrade-config $(targetshare)/upgrade-config
+	install -m755 check-implicit-pointer-functions $(target)/usr/bin/check-implicit-pointer-functions
 	# Okay, that's installed all the slave-related files
 
 
@@ -83,6 +87,12 @@ binary: binary-indep
 
 clean:
 	dh_clean
+
+package:
+	mkdir -p launchpad-files
+	install -m644 $(daemons)/buildd-slave.tac launchpad-files/buildd-slave.tac
+	cp ../launchpad/daemons/tachandler.py launchpad-files/tachandler.py
+	debuild -uc -us -S
 
 build:
 	@echo Mmm builders

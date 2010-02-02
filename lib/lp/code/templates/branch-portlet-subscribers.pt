@@ -13,8 +13,7 @@
         tal:condition="link/enabled"
         id="selfsubscriptioncontainer"
         >
-        <a id="selfsubscription"
-           class="sprite add"
+        <a class="sprite add subscribe-self"
            tal:attributes="href link/url"
            tal:content="link/text" />
       </div>
@@ -24,38 +23,12 @@
         tal:content="structure link/render"
         />
       </div>
-      <h2>Subscribers</h2>
-      <p id="subscriber-list">
-        <noscript>
-          Please enable javascript to view branch subscribers.
-        </noscript>
-      </p>
-      <div id="subscribers-portlet-spinner"
-          style="text-align: center; display: none;">
-        <img src="/@@/spinner" />
-      </div>
+    </div>
+
+    <h2>Subscribers</h2>
+    <div id="branch-subscribers-outer">
+      <div tal:replace="structure context/@@+branch-portlet-subscriber-content"
+           />
     </div>
   </div>
-  <tal:script
-    replace="structure
-    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
-    <!--
-
-    LPS.use('io-base', 'node', 'code.branchsubscription', function(Y) {
-
-    if(Y.UA.ie) {
-        Y.one('#subscriber-list').set('innerHTML',
-            'Could not load subscribers, javascript is disabled.');
-        return;
-    }
-
-    Y.on('domready', function() {
-        Y.code.branchsubscription.update_subscriber_list();
-    });
-
-    });
-    -->
-  <tal:script replace="structure string:&lt;/script&gt;" />
-
-
 </div>

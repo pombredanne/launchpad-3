@@ -8,7 +8,7 @@ distribution source package.
     >>> eric_db = factory.makePerson(name='eric')
     >>> michael_db = factory.makePerson(name='michael')
     >>> pythons_db = factory.makeTeam(name='pythons', owner=michael_db)
-    >>> pythons_db.addMember(eric_db, michael_db)
+    >>> ignored = pythons_db.addMember(eric_db, michael_db)
 
     >>> fooix_db = factory.makeProduct(name='fooix', owner=eric_db)
     >>> fooix01_db = fooix_db.newSeries(eric_db, '0.1', 'Series 0.1')
