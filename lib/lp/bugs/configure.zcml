@@ -903,6 +903,7 @@
 
     <!-- CalculateBugHeatJobs -->
     <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
+        <allow interface="lp.bugs.interfaces.bugjob.IBugJob" />
         <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
     </class>
     <securedutility
