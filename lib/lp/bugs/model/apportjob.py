@@ -31,6 +31,7 @@ from lazr.delegates import delegates
 from lp.bugs.interfaces.apportjob import (
     ApportJobType, IApportJob, IApportJobSource, IProcessApportBlobJob,
     IProcessApportBlobJobSource)
+from lp.bugs.browser.bugtarget import FileBugDataParser
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
@@ -54,9 +55,18 @@ class ApportJob(Storm):
 
     _json_data = Unicode('json_data')
 
-    @property
-    def metadata(self):
+    # The metadata property because it needs to be modifyable by
+    # subclasses of ApportJobDerived. However, since ApportJobDerived
+    # only delegates() to ApportJob we can't simply directly access the
+    # _json_data property, so we use a getter and setter here instead.
+    def _set_metadata(self, metadata):
+        # XXX DO WE REALLY HAVE TO DO THIS? AAAAAAAH.
+        self._json_data = unicode(simplejson.dumps(metadata))
+
+    def _get_metadata(self):
         return simplejson.loads(self._json_data)
+
+    metadata = property(_get_metadata, _set_metadata)
 
     def __init__(self, blob, job_type, metadata):
         """Constructor.
@@ -168,4 +178,9 @@ class ProcessApportBlobJob(ApportJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
+        parser = FileBugDataParser(self.blob.file_alias)
+        parsed_data = parser.parse()
 
+        metadata = self.metadata
+        metadata.update({'processed_data': parsed_data.__dict__})
+        self.metadata = metadata
