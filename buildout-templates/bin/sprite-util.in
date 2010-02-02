@@ -10,20 +10,26 @@ if len(sys.argv) != 2:
         "Expected a single argument. Received %r" % sys.argv[1:])
 else:
     command = sys.argv[1]
+    if command not in ('create-image', 'create-css'):
+        raise AssertionError("Unknown argument: %s" % command)
 
 root = '${buildout:directory}'
 icing = os.path.join(root, 'lib/canonical/launchpad/icing')
 combined_image_file = os.path.join(icing, 'icon-sprites')
 positioning_file = os.path.join(icing, 'icon-sprites.positioning')
-css_file = os.path.join(icing, 'style-3-0.css')
-css_template_file = css_file + '.in'
+css_template_file = os.path.join(icing, 'style-3-0.css.in')
+css_file = '/var/tmp/style-3-0.css'
 
 sprite_util = SpriteUtil()
-sprite_util.loadCSSTemplate(css_template_file, 'icon-sprites')
+sprite_util.loadCSSTemplate(
+    css_template_file, 'icon-sprites',
+    url_prefix_substitutions={'/@@/': '../images/'})
 
 if command == 'create-image':
+    sprite_util.combineImages(icing)
     sprite_util.savePNG(combined_image_file)
     sprite_util.savePositioning(positioning_file)
 elif command == 'create-css':
     sprite_util.loadPositioning(positioning_file)
-    sprite_util.saveConvertedCSS(css_file)
+    # icon-sprites file is relative to the icing directory.
+    sprite_util.saveConvertedCSS(css_file, 'icon-sprites')

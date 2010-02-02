@@ -5,3 +5,7 @@
 
 Check icon alignment for:
     .footer .lp-arcana .search-icon {...
+
+Ensure that duplicate icons don't show up in consolidated image file.
+
+Ensure that repeat-x works.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Derived from make_master.py by Oran Looney.
@@ -30,7 +30,8 @@ class SpriteUtil:
         self.positions = None
         self.css_object = None
 
-    def loadCSSTemplate(self, css_file, group_name):
+    def loadCSSTemplate(self, css_file, group_name,
+                        url_prefix_substitutions=None):
         smartsprites_exp = re.compile(
             r'/\*+([^*]*sprite-ref: [^*]*)\*/')
         self.css_object = cssutils.parseFile(css_file)
@@ -41,17 +42,34 @@ class SpriteUtil:
             match = smartsprites_exp.search(rule.cssText)
             if match is not None:
                 smartsprites_info = match.group(1)
-                for parameter in smartsprites_info.split(';'):
-                    if parameter.strip() != '':
-                        name, value = parameter.split(':')
-                        name = name.strip()
-                        value = value.strip()
-                        if value == group_name:
-                            # Remove url() from string.
-                            filename = rule.style.backgroundImage[4:-1]
-                            sprites.append(dict(filename=filename, rule=rule))
+                parameters = self._parseCommentParameters(match.group(1))
+                if parameters['sprite-ref'] == group_name:
+                    filename = self._getSpriteImagePath(
+                        rule, url_prefix_substitutions)
+                    sprites.append(dict(filename=filename, rule=rule))
         self.sprites = sprites
         self.group_name = group_name
+
+    def _getSpriteImagePath(self, rule, url_prefix_substitutions=None):
+        # Remove url() from string.
+        filename = rule.style.backgroundImage[4:-1]
+        # Convert urls to paths relative to the css
+        # file, e.g. '/@@/foo.png' => '../images/foo.png'.
+        if url_prefix_substitutions is not None:
+            for old, new in url_prefix_substitutions.items():
+                if filename.startswith(old):
+                    filename = new + filename[len(old):]
+        return filename
+
+    def _parseCommentParameters(self, parameter_string):
+        results = {}
+        for parameter in parameter_string.split(';'):
+            if parameter.strip() != '':
+                name, value = parameter.split(':')
+                name = name.strip()
+                value = value.strip()
+                results[name] = value
+        return results
 
     def combineImages(self, css_dir):
         for sprite in self.sprites:
@@ -80,9 +98,11 @@ class SpriteUtil:
         y = 0
         positions = {}
         for index, sprite in enumerate(self.sprites):
-            position = (0, y)
-            master.paste(sprite['image'], position)
-            positions[sprite['filename']] = position
+            master.paste(sprite['image'], (0, y))
+            # This is the position of the combined image on an HTML
+            # element. Therefore, it subtracts the position of the
+            # sprite in the file to move it to the top of the element.
+            positions[sprite['filename']] = (0, -y)
             y += sprite['image'].size[1] + MARGIN
 
         self.positions = positions
