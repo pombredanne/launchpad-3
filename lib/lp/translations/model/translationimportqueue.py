@@ -288,13 +288,11 @@ class TranslationImportQueueEntry(SQLBase):
         # Rosetta experts and admins can administer the entry.
         return roles.in_rosetta_experts or roles.in_admin
 
-    def canEdit(self, roles):
-        """See `ITranslationImportQueueEntry`."""
+    def _canEditExcludeImporter(self, roles):
+        """All people that can edit the entry except the importer."""
         # Admin rights include edit rights.
         if self.canAdmin(roles):
             return True
-        # The importer can edit the entry.
-        if roles.inTeam(self.importer):
             return True
         # The maintainer and the drivers can edit the entry.
         if self.productseries is not None:
@@ -304,6 +302,13 @@ class TranslationImportQueueEntry(SQLBase):
             return (roles.isOwner(self.distroseries.distribution) or
                     roles.isOneOfDrivers(self.distroseries))
         return False
+
+    def canEdit(self, roles):
+        """See `ITranslationImportQueueEntry`."""
+        # The importer can edit the entry.
+        if roles.inTeam(self.importer):
+            return True
+        return self._canEditExcludeImporter(roles)
 
     def canSetStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
@@ -327,7 +332,7 @@ class TranslationImportQueueEntry(SQLBase):
             return roles.in_admin or roles.in_rosetta_experts
         if new_status == RosettaImportStatus.BLOCKED:
             # Importers are not allowed to set BLOCKED
-            return self.canEdit(roles) and not roles.inTeam(self.importer)
+            return self._canEditExcludeImporter(roles)
         # All other statuses can be set set by all authorized persons.
         return self.canEdit(roles)
 
