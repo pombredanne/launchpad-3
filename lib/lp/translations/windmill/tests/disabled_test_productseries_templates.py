@@ -6,16 +6,15 @@
 __metaclass__ = type
 __all__ = []
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser
 from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
-class EnableActionLinksTest(TestCaseWithFactory):
+class EnableActionLinksTest(WindmillTestCase):
     """Test that action links are enabled on mouseover."""
 
     layer = TranslationsWindmillLayer
+    suite_name = "Template links activation"
 
     MAX_ROW = 2
 
@@ -47,7 +46,7 @@ class EnableActionLinksTest(TestCaseWithFactory):
           * simulates moving the mouse cursor off the table row;
           * verifies that the action links of the row are deactivated;
         """
-        client = WindmillTestClient("Template links activation")
+        client = self.client
         url = ('http://translations.launchpad.dev:8085/evolution/trunk/'
                '+templates')
         user = lpuser.TRANSLATIONS_ADMIN
