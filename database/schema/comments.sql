@@ -22,6 +22,13 @@ COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that
 COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
 COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
 
+-- ApportJob
+
+COMMENT ON TABLE ApportJob IS 'Contains references to jobs to be run against Apport BLOBs.';
+COMMENT ON COLUMN ApportJob.blob IS 'The TemporaryBlobStorage entry on which the job is to be run.';
+COMMENT ON COLUMN ApportJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of ApportJobs.';
+COMMENT ON COLUMN ApportJob.json_data IS 'A JSON struct containing data for the job.';
+
 -- Branch
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
