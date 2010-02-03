@@ -2206,9 +2206,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             distrosourcepackage_context or sourcepackage_context):
             return ["id", "summary", "importance", "status", "heat"]
         elif distribution_context or distroseries_context:
-            return ["id", "summary", "packagename", "importance", "status", "heat"]
+            return [
+                "id", "summary", "packagename", "importance", "status",
+                "heat"]
         elif project_context:
-            return ["id", "summary", "productname", "importance", "status", "heat"]
+            return [
+                "id", "summary", "productname", "importance", "status",
+                "heat"]
         else:
             raise AssertionError(
                 "Unrecognized context; don't know which report "
@@ -2794,8 +2798,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
             if bug_listing_item.review_action_widget is not None]
         self.widgets = formlib.form.Widgets(widgets_list, len(self.prefix)+1)
 
-    @action('Save changes', name='submit',
-            condition=canApproveNominations)
+    @action('Save changes', name='submit', condition=canApproveNominations)
     def submit_action(self, action, data):
         """Accept/Decline bug nominations."""
         accepted = declined = 0
@@ -3583,7 +3586,8 @@ class BugTaskExpirableListingView(LaunchpadView):
         """Show the columns that summarise expirable bugs."""
         if (IDistribution.providedBy(self.context)
             or IDistroSeries.providedBy(self.context)):
-            return ['id', 'summary', 'packagename', 'date_last_updated', 'heat']
+            return [
+                'id', 'summary', 'packagename', 'date_last_updated', 'heat']
         else:
             return ['id', 'summary', 'date_last_updated', 'heat']
 
