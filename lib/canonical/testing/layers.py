@@ -1155,8 +1155,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
         disconnect_stores()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
-                               GoogleServiceLayer):
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     @profiled
