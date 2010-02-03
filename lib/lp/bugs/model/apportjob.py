@@ -19,7 +19,6 @@ from storm.locals import Int, Reference, Unicode
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.temporaryblobstorage import (

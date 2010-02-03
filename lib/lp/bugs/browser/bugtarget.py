@@ -19,10 +19,8 @@ __all__ = [
 
 import cgi
 from cStringIO import StringIO
-from email import message_from_string
 from operator import itemgetter
 from simplejson import dumps
-import tempfile
 import urllib
 
 from z3c.ptcompat import ViewPageTemplateFile
@@ -61,7 +59,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IProjectBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.utilities.filebugdataparser import FileBugDataParser
+from lp.bugs.utilities.filebugdataparser import (
+    FileBugData, FileBugDataParser)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
