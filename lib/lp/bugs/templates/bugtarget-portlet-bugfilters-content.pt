@@ -12,6 +12,12 @@
       <a tal:attributes="href view/open_bugs_url">Open bugs</a>
     </td>
   </tr>
+  <tr>
+    <td class="bugs-count" tal:content="view/inprogress_bugs_count|nothing" />
+    <td class="bugs-link">
+      <a tal:attributes="href view/inprogress_bugs_url">In-progress bugs</a>
+    </td>
+  </tr>
   <tr tal:condition="view/user">
     <td class="bugs-count" tal:content="view/my_bugs_count|nothing" />
     <td class="bugs-link">
@@ -22,6 +28,12 @@
     <td class="bugs-count" tal:content="view/critical_bugs_count|nothing" />
     <td class="bugs-link">
       <a tal:attributes="href view/critical_bugs_url">Critical bugs</a>
+    </td>
+  </tr>
+  <tr>
+    <td class="bugs-count" tal:content="view/high_bugs_count|nothing" />
+    <td class="bugs-link">
+      <a tal:attributes="href view/high_bugs_url">High priority bugs</a>
     </td>
   </tr>
   <tr>

@@ -1925,6 +1925,8 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
                 'open_bugs_url': self.getOpenBugsURL(package),
                 'critical_bugs_count': package_counts['open_critical'],
                 'critical_bugs_url': self.getCriticalBugsURL(package),
+                'high_bugs_count': package_counts['open_high'],
+                'high_bugs_url': self.getCriticalBugsURL(package),
                 'unassigned_bugs_count': package_counts['open_unassigned'],
                 'unassigned_bugs_url': self.getUnassignedBugsURL(package),
                 'inprogress_bugs_count': package_counts['open_inprogress'],
