@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 import simplejson
+from cStringIO import StringIO
 
 from sqlobject import SQLObjectNotFound
 from storm.base import Storm
@@ -23,6 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.temporaryblobstorage import (
     TemporaryBlobStorage)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -181,6 +183,30 @@ class ProcessApportBlobJob(ApportJobDerived):
         parser = FileBugDataParser(self.blob.file_alias)
         parsed_data = parser.parse()
 
+        # We transform the parsed_data object into a dict, because
+        # that's easier to store in JSON.
+        parsed_data_dict = parsed_data.__dict__
+
+        # If there are attachments, we loop over them and push them to
+        # the Librarian, since it's easier than trying to serialize file
+        # data to the ApportJob table.
+        if len(parsed_data_dict.get('attachments')) > 0:
+            attachments = parsed_data_dict['attachments']
+            attachment_file_alias_ids = []
+
+            for attachment in attachments:
+                file_content = attachment['content'].read()
+                file_alias = getUtility(ILibraryFileAliasSet).create(
+                    name=attachment['filename'], size=len(file_content),
+                    file=StringIO(file_content),
+                    contentType=attachment['content_type'])
+                attachment_file_alias_ids.append(file_alias.id)
+
+            # We cheekily overwrite the 'attachments' value in the
+            # parsed_data_dict so as to avoid trying to serialize file
+            # objects to JSON.
+            parsed_data_dict['attachments'] = attachment_file_alias_ids
+
         metadata = self.metadata
-        metadata.update({'processed_data': parsed_data.__dict__})
+        metadata.update({'processed_data': parsed_data_dict})
         self.metadata = metadata

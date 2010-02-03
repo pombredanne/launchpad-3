@@ -9,8 +9,11 @@ import os
 import transaction
 import unittest
 
+from zope.component import getUtility
+
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer, LibrarianLayer
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 from lp.bugs.browser.bugtarget import FileBugDataParser
 from lp.bugs.interfaces.apportjob import ApportJobType
@@ -59,7 +62,7 @@ class ApportJobDerivedTestCase(TestCaseWithFactory):
 class ProcessApportBlobJobTestCase(TestCaseWithFactory):
     """Test case for the ProcessApportBlobJob class."""
 
-    layer = LibrarianLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(ProcessApportBlobJobTestCase, self).setUp()
@@ -71,7 +74,6 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         blob_data = blob_file.read()
 
         self.blob = self.factory.makeBlob(blob_data)
-        transaction.commit()
 
         self.data_parser = FileBugDataParser(self.blob.file_alias)
 
@@ -80,6 +82,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # Apport BLOB and stores it in the job's metadata attribute.
         job = ProcessApportBlobJob.create(self.blob)
         job.run()
+        transaction.commit()
 
         # Once the job has been run, its metadata will contain a dict
         # called processed_data, which will contain the data parsed from
@@ -114,12 +117,45 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             filebug_data.comments, processed_data['comments'],
             "Values for comments do not match")
         self.assertEqual(
-            filebug_data.attachments, processed_data['attachments'],
-            "Values for attachments do not match")
-        self.assertEqual(
             filebug_data.hwdb_submission_keys,
             processed_data['hwdb_submission_keys'],
             "Values for hwdb_submission_keys do not match")
+
+        # The attachments list of of the processed_data dict will be of
+        # the same length as the attachments list in the filebug_data
+        # object.
+        self.assertEqual(
+            len(filebug_data.attachments),
+            len(processed_data['attachments']),
+            "Lengths of attachment lists do not match.")
+
+        # The attachments list of the processed_data dict contains the
+        # IDs of LibrarianFileAliases that contain the attachments
+        # themselves. The contents, filenames and filetypes of the files
+        # in the librarian will match the contents of the attachments.
+        for file_alias_id in processed_data['attachments']:
+            file_alias = getUtility(ILibraryFileAliasSet)[file_alias_id]
+            attachment = filebug_data.attachments[
+                processed_data['attachments'].index(file_alias_id)]
+
+            file_content = attachment['content'].read()
+            librarian_file_content = file_alias.read()
+            self.assertEqual(
+                file_content, librarian_file_content,
+                "File content values do not match for attachment %s and "
+                "LibrarianFileAlias %s" % (
+                    attachment['filename'], file_alias.filename))
+            self.assertEqual(
+                attachment['filename'], file_alias.filename,
+                "Filenames do not match for attachment %s and "
+                "LibrarianFileAlias %s" % (
+                    attachment['filename'], file_alias.id))
+            self.assertEqual(
+                attachment['content_type'], file_alias.mimetype,
+                "Content types do not match for attachment %s and "
+                "LibrarianFileAlias %s" % (
+                    attachment['filename'], file_alias.id))
+
 
 
 def test_suite():
