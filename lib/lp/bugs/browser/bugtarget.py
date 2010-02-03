@@ -71,6 +71,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
@@ -1399,7 +1400,10 @@ class BugsPatchesView(LaunchpadView):
     @property
     def label(self):
         """The display label for the view."""
-        return 'Patch attachments in %s' % self.context.displayname
+        if IPerson.providedBy(self.context):
+            return 'Patch attachments for %s' % self.context.displayname
+        else:
+            return 'Patch attachments in %s' % self.context.displayname
 
     def batchedPatchTasks(self):
         """Return a BatchNavigator for bug tasks with patch attachments."""
@@ -1430,8 +1434,17 @@ class BugsPatchesView(LaunchpadView):
         if (IDistribution.providedBy(self.context) or
             IDistroSeries.providedBy(self.context)):
             return "Package"
-        elif IProject.providedBy(self.context):
-            return "Project"  # meaning Product
+        elif (IProject.providedBy(self.context) or
+              IPerson.providedBy(self.context)):
+            # In the case of an IPerson, the target column can vary
+            # row-by-row, showing both packages and products.  We
+            # decided to go with the table header "Project" for both,
+            # as its meaning is broad and could conceivably cover
+            # packages too.  We also considered "Target", but rejected
+            # it because it's used as a verb elsewhere in Launchpad's
+            # UI, with a totally different meaning.  If anyone can
+            # think of a better term than "Project", please JFDI here.
+            return "Project"  # "Project" meaning Product, of course
         else:
             return None
 
