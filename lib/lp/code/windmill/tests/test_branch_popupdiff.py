@@ -10,14 +10,13 @@ import transaction
 import unittest
 
 import windmill
-from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
 from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
 POPUP_DIFF = (
@@ -42,14 +41,15 @@ BRANCH_SEARCCH_RESULT = (
     u'//ul[@class="yui-picker-results"]//span[@class="yui-picker-result-title"]')
 
 
-#class TestPopupOnBranchPage(TestCaseWithFactory):
+#class TestPopupOnBranchPage(WindmillTestCase):
 #    """Test the popup diff."""
 #
 #    layer = CodeWindmillLayer
+#    name = "Branch popup diffs"
 #
 #    def test_branch_popup_diff(self):
 #        """Test branch diff popups."""
-#        client = WindmillTestClient("Branch popup diffs")
+#        client = self.client
 #        make_erics_fooix_project(self.factory)
 #        transaction.commit()
 #
@@ -72,17 +72,18 @@ BRANCH_SEARCCH_RESULT = (
 #        client.asserts.assertNotNode(xpath=VISIBLE_DIFF)
 
 
-class TestPopupOnBugPage(TestCaseWithFactory):
+class TestPopupOnBugPage(WindmillTestCase):
     """Test the popup diff for bug pages.
 
     Need this to be in the BugsWindmillLayer to run from the right subdomain.
     """
 
     layer = BugsWindmillLayer
+    name = "Bug popup diffs"
 
     def test_bug_popup_diff(self):
         """Test bug page diff popups."""
-        client = WindmillTestClient("Bug popup diffs")
+        client = self.client
         objs = make_erics_fooix_project(self.factory)
         bug = self.factory.makeBug(product=objs['fooix'])
         bug.linkBranch(objs['proposed'], objs['fred'])
@@ -108,7 +109,7 @@ class TestPopupOnBugPage(TestCaseWithFactory):
 
     def test_newly_linked_branch_diff_popup(self):
         """Make sure a new branch linked has a js-action popup."""
-        client = WindmillTestClient("Bug popup diffs")
+        client = self.client
         objs = make_erics_fooix_project(self.factory)
         bug = self.factory.makeBug(product=objs['fooix'])
         transaction.commit()

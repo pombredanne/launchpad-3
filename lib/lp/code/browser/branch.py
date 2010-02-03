@@ -81,7 +81,8 @@ from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType, CodeImportJobState,
-    CodeImportReviewStatus, RevisionControlSystems, UICreatableBranchType)
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
+    UICreatableBranchType)
 from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
@@ -508,6 +509,13 @@ class BranchView(LaunchpadView, FeedsMixin):
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
+
+    def iconForCodeImportResultStatus(self, status):
+        """The icon to represent the `CodeImportResultStatus` `status`."""
+        if status in CodeImportResultStatus.successes:
+            return "/@@/yes"
+        else:
+            return "/@@/no"
 
     @property
     def is_svn_import(self):
