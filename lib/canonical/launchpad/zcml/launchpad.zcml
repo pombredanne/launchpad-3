@@ -176,13 +176,14 @@
       />
 
   <!-- Login and logout pages, and login status. -->
+  <!-- XXX: Need to register this page in Python so that we can skip the
+       registration when in production. -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       class="canonical.launchpad.webapp.login.BasicLoginPage"
       name="+basiclogin"
       permission="zope.Public"
       attribute="login"
-      layer="canonical.launchpad.layers.DebugLayer"
       />
 
   <!-- OpenID RP views -->

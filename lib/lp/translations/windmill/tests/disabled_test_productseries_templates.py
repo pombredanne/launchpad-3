@@ -48,13 +48,13 @@ class EnableActionLinksTest(TestCaseWithFactory):
           * verifies that the action links of the row are deactivated;
         """
         client = WindmillTestClient("Template links activation")
+        user.ensure_login(client)
         url = ('http://translations.launchpad.dev:8085/evolution/trunk/'
                '+templates')
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to templates page logged in as translations admin.
         client.open(url=url)
         client.waits.forPageLoad(timeout=u'20000')
-        user.ensure_login(client)
 
         client.waits.forElement(id=u'templates_table', timeout=u'8000')
         # All links are inactive to start with.

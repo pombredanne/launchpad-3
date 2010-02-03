@@ -40,11 +40,11 @@ class TestDupeFinder(TestCaseWithFactory):
         more information if they wish.
         """
         client = WindmillTestClient("Duplicate bug finder test")
+        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Go to the +filebug page for Firefox
         client.open(url=FILEBUG_URL)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Ensure the "search" field has finished loading, then enter a simple
         # search and hit search.

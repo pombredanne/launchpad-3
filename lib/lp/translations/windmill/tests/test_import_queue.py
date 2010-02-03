@@ -74,12 +74,11 @@ class ImportQueueEntryTest(TestCaseWithFactory):
     def test_import_queue_entry(self):
         """Tests that import queue entry fields behave correctly."""
         client = WindmillTestClient('Translations import queue entry')
+        lpuser.TRANSLATIONS_ADMIN.ensure_login(client)
         start_url = 'http://translations.launchpad.dev:8085/+imports/1'
-        user = lpuser.TRANSLATIONS_ADMIN
         # Go to import queue page logged in as translations admin.
         client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        user.ensure_login(client)
 
         # When the page is first called the file_type is set to POT and
         # only the relevant form fields are displayed. When the file type
@@ -113,12 +112,11 @@ class ImportQueueStatusTest(TestCaseWithFactory):
     def test_import_queue_status_admin(self):
         """Tests that the admin can use the status picker."""
         client = WindmillTestClient('Translations import queue status')
+        lpuser.TRANSLATIONS_ADMIN.ensure_login(client)
         queue_url = self.layer.base_url+'/+imports'
-        user = lpuser.TRANSLATIONS_ADMIN
         # Go to import queue page logged in as translations admin.
         client.open(url=queue_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        user.ensure_login(client)
 
         # Click on the element containing the import status.
         client.waits.forElement(xpath=IMPORT_STATUS_1, timeout=FOR_ELEMENT)

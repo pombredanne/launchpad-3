@@ -25,6 +25,7 @@ class TestBugTagsEntry(TestCaseWithFactory):
     def test_bug_tags_entry(self):
         """Test bug tags inline, auto-completing UI."""
         client = WindmillTestClient('Bug tags entry test')
+        lpuser.FOO_BAR.ensure_login(client)
 
         # First, we add some official tags to test with
 
@@ -41,7 +42,6 @@ class TestBugTagsEntry(TestCaseWithFactory):
 
         client.open(url=bug_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.FOO_BAR.ensure_login(client)
         client.waits.sleep(milliseconds=constants.SLEEP)
 
         # XXX intellectronica 2009-05-26:
@@ -64,6 +64,7 @@ class TestBugTagsEntry(TestCaseWithFactory):
 
         # Test that anonymous users are prompted to log in.
 
+        client = WindmillTestClient('Bug tags entry test')
         lpuser.ANONYMOUS.ensure_login(client)
         client.open(url=bug_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
@@ -71,7 +72,7 @@ class TestBugTagsEntry(TestCaseWithFactory):
         client.click(id=u'edit-tags-trigger')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertJS(
-            js=u'window.location.href.indexOf("+login") > 0')
+            js=u'window.location.href.indexOf("+openid") > 0')
 
 
 def test_suite():

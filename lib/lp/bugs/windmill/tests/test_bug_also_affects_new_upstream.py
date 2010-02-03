@@ -39,10 +39,10 @@ class TestBugAlsoAffects(TestCaseWithFactory):
         choose_link_id = 'show-widget-field-product'
         client = WindmillTestClient('test_bug_also_affects_register_link')
 
+        lpuser.SAMPLE_PERSON.ensure_login(client)
         # Open a bug page and wait for it to finish loading.
         client.open(url=CHOOSE_AFFECTED_URL)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         client.waits.forElement(
             id=choose_link_id, timeout=constants.FOR_ELEMENT)

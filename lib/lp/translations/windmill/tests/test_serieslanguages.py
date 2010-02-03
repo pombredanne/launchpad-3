@@ -6,15 +6,11 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
-
 from windmill.authoring import WindmillTestClient
-from zope.component import getUtility
 
 from canonical.launchpad.windmill.testing.constants import (
     PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
@@ -49,12 +45,11 @@ class LanguagesSeriesTest(TestCaseWithFactory):
         person having Catalan and Spanish as preferred languages.
         """
         self.client = WindmillTestClient('SeriesLanguages Tables')
+        lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
         start_url = 'http://translations.launchpad.dev:8085/ubuntu'
-        user = lpuser.TRANSLATIONS_ADMIN
         # Go to the distribution languages page
         self.client.open(url=start_url)
         self.client.waits.forPageLoad(timeout=PAGE_LOAD)
-        user.ensure_login(self.client)
 
         # A link will be displayed for viewing all languages
         # and only user preferred langauges are displayed

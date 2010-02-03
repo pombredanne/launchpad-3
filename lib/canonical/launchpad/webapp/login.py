@@ -280,6 +280,16 @@ class OpenIDCallbackView(OpenIDLogin):
     @cachedproperty
     def openid_response(self):
         consumer = self._getConsumer()
+        # XXX: Windmill will fail here because self.request.getURL() won't
+        # match the return_to URL.  It happens because when the +login page
+        # redirects the user to testopenid.lp.dev, all further requests to
+        # lp.dev (apparently) get caught by windmill and proxied to
+        # testopenid.lp.dev, so here self.request.getURL() will return
+        # testopenid.lp.dev/+openid-callback, although we should be at
+        # lp.dev/+openid-callback.
+        # It'd be easy to do a hack here to avoid this specific failure, but
+        # after logging in we wouldn't be able to go back to lp.dev, for the
+        # reason described above.
         return consumer.complete(self.request.form, self.request.getURL())
 
     def login(self, account):
@@ -312,8 +322,6 @@ class OpenIDLoginErrorView(LaunchpadView):
 
     def __init__(self, context, request, openid_response):
         super(OpenIDLoginErrorView, self).__init__(context, request)
-        if self.account is not None:
-            raise Exception(openid_response)
         assert self.account is None, (
             "Don't try to render this page when the user is logged in.")
         if openid_response.status == CANCEL:

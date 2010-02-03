@@ -3,6 +3,13 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
+* On windmill, why are we always redirected back to launchpad.dev after
+loading, say, bugs.launchpad.dev?  Why is shipit not accessible on windmill?
+
+* python-openid will use pycurl (if installed), falling back to urllib2. We
+should make it always use the same (be it in production or devel) so that
+we test the same things that we use on production.
+
 * Do we want to change c-i-p to use a separate cookie so that logging into
 login.lp.net doesn't cause you to end up logged into lp.net or should we just
 wait for ISD to roll a rebranded version of login.u.c on login.lp.net, which
@@ -27,3 +34,47 @@ stuff to the new system, so we'll drop it.
     # OpenIDCallbackView.openid_response to return my hand-crafted
     # openid response.
 
+
+
+Test failures not dealt with
+============================
+
+ - plenty of tests from launchpadlib-1.5.4-py2.5.egg/launchpadlib/docs
+
+
+Tests that rely on +login and thus are failing now
+--------------------------------------------------
+
+ - lib/canonical/signon/stories/openid/max-auth-age.txt
+ - lib/canonical/signon/stories/openid/per-version/sso-workflow-complete.txt
+ - lib/canonical/launchpad/pagetests/basics/demo-and-lpnet.txt
+ - lib/canonical/launchpad/pagetests/oauth/authorize-token.txt
+ - lib/canonical/launchpad/pagetests/standalone/xx-cookie-authentication.txt
+ - lib/canonical/launchpad/pagetests/standalone/xx-invalid-people-cant-login.txt
+ - lib/canonical/launchpad/pagetests/standalone/xx-login-and-join-links.txt
+ - lib/canonical/launchpad/pagetests/standalone/xx-login-without-preferredemail.txt
+ - lib/canonical/launchpad/pagetests/standalone/xx-new-account-redirection-url.txt
+ - lib/canonical/launchpad/pagetests/standalone/xx-no-anonymous-session-cookies.txt
+ - lib/lp/app/tests/../stories/launchpad-root/site-search.txt
+ - lib/lp/app/tests/../stories/basics/xx-beta-testers-redirection.txt
+ - lib/lp/bugs/tests/../stories/bugtracker/xx-bugtracker-remote-bug.txt
+ - lib/lp/bugs/tests/../stories/upstream-bugprivacy/10-file-private-upstream-bug.txt
+ - lib/lp/code/tests/../stories/branches/xx-register-a-branch.txt
+ - lib/lp/registry/tests/../stories/person/xx-deactivate-account.txt
+ - lib/lp/translations/tests/../stories/standalone/xx-person-editlanguages.txt
+
+
+Tests that can probably be removed as the functionality they test will be gone
+------------------------------------------------------------------------------
+
+ - lib/lp/registry/tests/../stories/person/xx-createaccount.txt
+ - lib/lp/registry/tests/../stories/person/xx-changepassword.txt
+ - lib/lp/registry/tests/../stories/person/xx-reg-with-existing-email.txt
+ - lib/lp/registry/tests/../stories/person/xx-resetpassword.txt
+ - lib/lp/services/openid/tests/../stories/xx-resetpassword-of-sso-account.txt
+
+ # This functionality will be dropped as it's no longer used.
+ - lib/lp/registry/tests/../stories/team/xx-team-restricted.txt
+
+ # There's a new one testing the +login view
+ - lib/lp/registry/tests/../stories/person/xx-login.txt

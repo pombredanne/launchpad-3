@@ -77,6 +77,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://shipit.ubuntu.dev/
     althosts:
     ----
+    testopenid @ testopenid.launchpad.dev
+    rooturl: http://testopenid.launchpad.dev/
+    althosts:
+    ----
     translations @ translations.launchpad.dev
     rooturl: http://translations.launchpad.dev/
     althosts:
@@ -112,6 +116,7 @@ request is headed to one of the officialy-used Launchpad host names:
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
+    testopenid.launchpad.dev
     translations.launchpad.dev
     ubuntu-openid.launchpad.dev
     xmlrpc-private.launchpad.dev
