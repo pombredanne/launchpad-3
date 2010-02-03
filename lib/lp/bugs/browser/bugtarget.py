@@ -62,7 +62,8 @@ from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, NotFoundError, UnexpectedFormData)
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IProjectBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
@@ -1406,10 +1407,9 @@ class BugsPatchesView(LaunchpadView):
         # Zope form instead of validating the values by hand in the
         # code.  Doing it the Zope form way would specify rendering
         # and validation from the same enum, and thus observe DRY.
-        orderby = self.request.get("orderby")
-        if (orderby is not None and
-            orderby not in ["-importance", "status", "targetname",
-                            "datecreated", "-datecreated"]):
+        orderby = self.request.get("orderby", "-latest_patch_uploaded")
+        if orderby not in ["-latest_patch_uploaded", "-importance", "status",
+                           "targetname", "datecreated", "-datecreated"]:
             raise UnexpectedFormData(
                 "Unexpected value for field 'orderby': '%s'" % orderby)
         return BatchNavigator(

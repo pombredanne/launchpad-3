@@ -32,7 +32,11 @@
 
     Order&nbsp;by:&nbsp;<select
                     name="orderby" id="orderby" size="1"
-                    tal:define="orderby request/orderby|string:-importance">
+                    tal:define="orderby request/orderby|string:-latest_patch_uploaded">
+      <option
+        value="-latest_patch_uploaded"
+        tal:attributes="selected python:orderby == '-latest_patch_uploaded'"
+      >patch age</option>
       <option
         value="-importance"
         tal:attributes="selected python:orderby == '-importance'"
