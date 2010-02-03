@@ -277,26 +277,31 @@ class TranslationImportQueueEntry(SQLBase):
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename).one()
 
-    def isUbuntuAndIsUserTranslationGroupOwner(self, user):
+    def canAdmin(self, roles):
         """See `ITranslationImportQueueEntry`."""
         # As a special case, the Ubuntu translation group owners can
         # manage Ubuntu uploads.
         if self.is_targeted_to_ubuntu:
             group = self.distroseries.distribution.translationgroup
-            if group is not None and user.inTeam(group.owner):
+            if group is not None and roles.inTeam(group.owner):
                 return True
-        return False
+        # Rosetta experts and admins can administer the entry.
+        return roles.in_rosetta_experts or roles.in_admin
 
-    def isUserUploaderOrOwner(self, user):
+    def canEdit(self, roles):
         """See `ITranslationImportQueueEntry`."""
-        roles = IPersonRoles(user)
+        # The importer can edit the entry.
         if roles.inTeam(self.importer):
             return True
+        # The maintainer and the drivers can edit the entry.
         if self.productseries is not None:
-            return roles.isOwner(self.productseries.product)
+            return (roles.isOwner(self.productseries.product) or
+                    roles.isOneOfDrivers(self.productseries))
         if self.distroseries is not None:
-            return roles.isOwner(self.distroseries.distribution)
-        return False
+            return (roles.isOwner(self.distroseries.distribution) or
+                    roles.isOneOfDrivers(self.distroseries))
+        # Admin rights include edit rights.
+        return self.canAdmin(roles)
 
     def canSetStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
@@ -304,13 +309,11 @@ class TranslationImportQueueEntry(SQLBase):
             # Anonymous user cannot do anything.
             return False
         roles = IPersonRoles(user)
-        can_admin = (roles.in_admin or roles.in_rosetta_experts or
-                     self.isUbuntuAndIsUserTranslationGroupOwner(user))
         if new_status == RosettaImportStatus.APPROVED:
             # Only administrators are able to set the APPROVED status, and
             # that's only possible if we know where to import it
             # (import_into not None).
-            return can_admin and self.import_into is not None
+            return self.canAdmin(roles) and self.import_into is not None
         if new_status == RosettaImportStatus.IMPORTED:
             # Only rosetta experts are able to set the IMPORTED status, and
             # that's only possible if we know where to import it
@@ -320,8 +323,12 @@ class TranslationImportQueueEntry(SQLBase):
         if new_status == RosettaImportStatus.FAILED:
             # Only rosetta experts are able to set the FAILED status.
             return roles.in_admin or roles.in_rosetta_experts
-        # All other statuses can bset set by all authorized persons.
-        return self.isUserUploaderOrOwner(user) or can_admin
+        if new_status == RosettaImportStatus.BLOCKED:
+            # Importers are not allowed to set BLOCKED
+            if roles.inTeam(self.importer):
+                return False
+        # All other statuses can be set set by all authorized persons.
+        return self.canEdit(user)
 
     def setStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
