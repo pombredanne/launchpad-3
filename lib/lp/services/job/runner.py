@@ -16,6 +16,7 @@ __all__ = [
 
 
 import contextlib
+import logging
 import os
 from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
@@ -123,6 +124,8 @@ class BaseJobRunner(object):
     def __init__(self, logger=None, error_utility=None):
         self.completed_jobs = []
         self.incomplete_jobs = []
+        if logger is None:
+            logger = logging.getLogger()
         self.logger = logger
         self.error_utility = error_utility
         if self.error_utility is None:
@@ -131,11 +134,16 @@ class BaseJobRunner(object):
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
         job = IRunnableJob(job)
+
+        self.logger.debug(
+            'Running job in status %s' % (job.status.title,))
+        job.start()
+        transaction.commit()
+
         try:
-            job.start()
-            transaction.commit()
             job.run()
-        except Exception:
+        except Exception, e:
+            self.logger.error(e)
             transaction.abort()
             job.fail()
             # Record the failure.
@@ -209,9 +217,13 @@ class JobRunner(BaseJobRunner):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
             job = IRunnableJob(job)
+            self.logger.debug(
+                'Trying to acquire lease for job in state %s' % (
+                    job.status.title,))
             try:
                 job.acquireLease()
             except LeaseHeld:
+                self.logger.debug('Could not acquire lease for job')
                 self.incomplete_jobs.append(job)
                 continue
             # Commit transaction to clear the row lock.
@@ -324,7 +336,10 @@ class TwistedJobRunner(BaseJobRunner):
 
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
-        consumer = ParallelLimitedTaskConsumer(1)
+        logger = logging.getLogger('gloop')
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+        logger.setLevel(logging.DEBUG)
+        consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 
     def runAll(self):
