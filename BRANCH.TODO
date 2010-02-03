@@ -9,3 +9,11 @@ Check icon alignment for:
 Ensure that duplicate icons don't show up in consolidated image file.
 
 Ensure that repeat-x works.
+
+Update python-imaging to 1.1.7 to improve png compression.
+
+Prevent 'make sprite_css' from running every time that "make run" is called.
+
+Firefox maxes out at around 64x34000 pixels.
+
+PIL can't handle interlaced pngs.

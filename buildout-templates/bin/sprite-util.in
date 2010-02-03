@@ -32,4 +32,4 @@ if command == 'create-image':
 elif command == 'create-css':
     sprite_util.loadPositioning(positioning_file)
     # icon-sprites file is relative to the icing directory.
-    sprite_util.saveConvertedCSS(css_file, 'icon-sprites')
+    sprite_util.saveConvertedCSS(css_file, '../icon-sprites')

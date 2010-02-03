@@ -117,6 +117,9 @@ css_combine: sprite_css
 sprite_css:
 	${SHHH} bin/sprite-util create-css
 
+sprite_image:
+	${SHHH} bin/sprite-util create-image
+
 jsbuild_lazr:
 	# We absolutely do not want to include the lazr.testing module and its
 	# jsTestDriver test harness modifications in the lazr.js and launchpad.js

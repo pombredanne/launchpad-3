@@ -21,14 +21,13 @@ import cssutils
 import Image
 import simplejson
 
-MARGIN = 18
-
 class SpriteUtil:
-    def __init__(self):
+    def __init__(self, margin=150):
         self.sprites = None
         self.combined_image = None
         self.positions = None
         self.css_object = None
+        self.margin=margin
 
     def loadCSSTemplate(self, css_file, group_name,
                         url_prefix_substitutions=None):
@@ -86,30 +85,35 @@ class SpriteUtil:
             max_width = max(width, max_width)
             total_height += height
 
-        master_width = max_width
         # Separate each image with lots of whitespace.
-        master_height = total_height + (MARGIN * len(self.sprites))
+        combined_image_height = (
+            total_height + (self.margin * len(self.sprites)))
         transparent = (0,0,0,0)
-        master = Image.new(
+        combined_image = Image.new(
             mode='RGBA',
-            size=(master_width, master_height),
+            size=(max_width, combined_image_height),
             color=transparent)
 
         y = 0
         positions = {}
         for index, sprite in enumerate(self.sprites):
-            master.paste(sprite['image'], (0, y))
+            try:
+                combined_image.paste(sprite['image'], (0, y))
+            except:
+                print >> sys.stderr, (
+                    "Error with image file %s" % sprite['filename'])
+                raise
             # This is the position of the combined image on an HTML
             # element. Therefore, it subtracts the position of the
             # sprite in the file to move it to the top of the element.
             positions[sprite['filename']] = (0, -y)
-            y += sprite['image'].size[1] + MARGIN
+            y += sprite['image'].size[1] + self.margin
 
         self.positions = positions
-        self.combined_image = master
+        self.combined_image = combined_image
 
     def savePNG(self, filename):
-        self.combined_image.save(filename, format='png')
+        self.combined_image.save(filename, format='png', optimize=True)
 
     def savePositioning(self, filename):
         simplejson.dump(self.positions, fp=open(filename, 'w'), indent=4)
