@@ -328,7 +328,7 @@ class TranslationImportQueueEntry(SQLBase):
             if roles.inTeam(self.importer):
                 return False
         # All other statuses can be set set by all authorized persons.
-        return self.canEdit(user)
+        return self.canEdit(roles)
 
     def setStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
