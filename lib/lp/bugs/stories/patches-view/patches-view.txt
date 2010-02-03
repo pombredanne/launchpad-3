@@ -23,7 +23,7 @@ We don't see any patches when we open the patches view.
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
-    There are no patches associated with Patchy-product-1 at this time.
+    There are no patches associated with Patchy 1 at this time.
 
 After the product has a bug, it still doesn't show up in the patches
 view, because that bug has no patch attachments.
@@ -46,7 +46,7 @@ view, because that bug has no patch attachments.
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
-    There are no patches associated with Patchy-product-1 at this time.
+    There are no patches associated with Patchy 1 at this time.
 
 After we add a non-patch attachment to that bug, the patches view
 still shows no patches.
@@ -56,7 +56,7 @@ still shows no patches.
     <BugAttachment at...
     >>> anon_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
-    There are no patches associated with Patchy-product-1 at this time.
+    There are no patches associated with Patchy 1 at this time.
 
 After we add a patch attachment that's one day old, we see it in the
 patches view.
@@ -376,24 +376,24 @@ The patches view works for people and teams.
     ...         patch_submitter.name,))
 
     >>> show_patches_view(anon_browser.contents)
-    Bug                  Importance  Status       Project         Patch Age
-    Bug #17: bug_b title  Critical  Confirmed  patchy-product-1 ...second...
-    From: Patchy Person
-    Link: patch_c.diff
-    description of patch c
-    Bug #18: bug_c title  High  Triaged  a52dec  ...second...
+    Bug                  Importance  Status        Project          Patch Age
+    Bug #18: bug_c title Wishlist  Fix Committed patchy-product-1 ...second...
     From: Patchy Person
     Link: patch_f.diff
     description of patch f
-    Bug #18: bug_c title  High  Triaged  warty  ...second...
+    Bug #18: bug_c title Wishlist  Fix Committed trunk            ...second...
     From: Patchy Person
     Link: patch_f.diff
     description of patch f
-    Bug #16: bug_a title  Medium  Fix Released  evolution  ...second...
+    Bug #18: bug_c title High      Triaged       a52dec           ...second...
     From: Patchy Person
-    Link: patch_a.diff
-    description of patch a
-    Bug #18: bug_c title  Wishlist  Fix Committed  patchy-product-1  ...second...
+    Link: patch_f.diff
+    description of patch f
+    Bug #18: bug_c title Undecided New           ubuntu           ...second...
+    From: Patchy Person
+    Link: patch_f.diff
+    description of patch f
+    Bug #18: bug_c title High      Triaged       warty            ...second...
     From: Patchy Person
     Link: patch_f.diff
     description of patch f
