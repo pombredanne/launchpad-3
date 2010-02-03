@@ -900,6 +900,7 @@ class SyncSource:
         dsc_filename = None
         for filename in self.files.keys():
             if os.path.exists(filename):
+                self.debug("  - <%s: cached>" % (filename))
                 continue
             self.debug(
                 "  - <%s: downloading from %s>" %

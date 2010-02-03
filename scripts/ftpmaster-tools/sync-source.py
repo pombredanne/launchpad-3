@@ -589,18 +589,13 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     for filename in Sources[pkg]["files"].keys():
         file_type = determine_source_file_type(filename)
         if file_type == SourcePackageFileType.ORIG_TARBALL:
-            have_orig_tarball = os.path.abspath(filename)
+            have_orig_tarball = filename
         elif file_type == SourcePackageFileType.DSC:
             dsc_filename = os.path.abspath(filename)
 
     import_dsc(dsc_filename, suite, previous_version, signing_rules,
                have_orig_tarball, requested_by, origin, current_sources,
                current_binaries)
-
-    # XXX JRV 20100202 - Why is just the orig tarball removed, not 
-    # all the files that were fetched?
-    if have_orig_tarball:
-        os.unlink(have_orig_tarball)
 
 
 def do_diff(Sources, Suite, origin, arguments, current_binaries):
