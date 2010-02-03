@@ -30,9 +30,9 @@ from canonical.testing import BaseLayer
 
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    BazaarBranchStore, BzrSvnImportWorker, CSCVSImportWorker,
+    BazaarBranchStore, BzrSvnImportWorker, CodeImportWorkerExitCode,
     ForeignTreeStore, GitImportWorker, HgImportWorker, ImportDataStore,
-    ImportWorker, get_default_bazaar_branch_store)
+    ImportWorker, CSCVSImportWorker, get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.tests.helpers import (
@@ -709,6 +709,28 @@ class TestActualImportMixin:
 
         self.assertEqual(
             self.foreign_commit_count, len(branch.revision_history()))
+
+    def test_script_exit_codes(self):
+        # After a successful import that imports revisions, the worker exits
+        # with a code of CodeImportWorkerExitCode.SUCCESS.  After a successful
+        # import that does not import revisions, the worker exits with a code
+        # of CodeImportWorkerExitCode.SUCCESS_NOCHANGE.
+        source_details = self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')])
+
+        clean_up_default_stores_for_import(source_details)
+
+        script_path = os.path.join(
+            config.root, 'scripts', 'code-import-worker.py')
+        output = tempfile.TemporaryFile()
+        retcode = subprocess.call(
+            [script_path] + source_details.asArguments(),
+            stderr=output, stdout=output)
+        self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS)
+        retcode = subprocess.call(
+            [script_path] + source_details.asArguments(),
+            stderr=output, stdout=output)
+        self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS_NOCHANGE)
 
 
 class CSCVSActualImportMixin(TestActualImportMixin):
