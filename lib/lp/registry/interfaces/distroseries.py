@@ -28,7 +28,8 @@ from canonical.launchpad.fields import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
-from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget, IHasBugs, IHasOfficialBugTags)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -154,7 +155,8 @@ class ISeriesMixin(Interface):
 
 class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           IBugTarget, ISpecificationGoal, IHasMilestones,
-                          IHasBuildRecords, ISeriesMixin):
+                          IHasBuildRecords, ISeriesMixin,
+                          IHasOfficialBugTags):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
