@@ -133,7 +133,7 @@ def sign_changes(changes, dsc):
 
 def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
                      lp_closes, section, priority, description,
-                     have_orig_tar_gz, requested_by, origin):
+                     files_from_librarian, requested_by, origin):
     """Generate a .changes as a string"""
 
     # XXX cprov 2007-07-03:
@@ -167,7 +167,7 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
     changes += changelog
     changes += "Files: \n"
     for filename in dsc_files:
-        if filename.endswith(".orig.tar.gz") and have_orig_tar_gz:
+        if filename in files_from_librarian:
             continue
         changes += " %s %s %s %s %s\n" % (dsc_files[filename]["md5sum"],
                                           dsc_files[filename]["size"],
@@ -366,7 +366,7 @@ def check_dsc(dsc, current_sources, current_binaries):
 
 
 def import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               have_orig_tar_gz, requested_by, origin, current_sources,
+               files_from_librarian, requested_by, origin, current_sources,
                current_binaries):
     dsc = dak_utils.parse_changes(dsc_filename, signing_rules)
     dsc_files = dak_utils.build_file_list(dsc, is_a_dsc=1)\
@@ -403,7 +403,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
 
     changes = generate_changes(
         dsc, dsc_files, suite, changelog, urgency, closes, lp_closes,
-        section, priority, description, have_orig_tar_gz, requested_by,
+        section, priority, description, files_from_librarian, requested_by,
         origin)
 
     # XXX cprov 2007-07-03: Soyuz wants an unsigned changes
@@ -571,11 +571,14 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     syncsource = SyncSource(Sources[pkg]["files"], origin, Log,
         urllib.urlretrieve, Options.todistro)
     try:
-        syncsource.fetchLibrarianFiles()
-        syncsource.fetchSyncFiles()
+        files_from_librarian = syncsource.fetchLibrarianFiles()
+        dsc_filename = syncsource.fetchSyncFiles()
         syncsource.checkDownloadedFiles()
     except SyncSourceError, e:
         dak_utils.fubar("Fetching files failed: %s" % (str(e),))
+
+    if dsc_filename is None:
+        dak_utils.fubar("No dsc filename in %r" % Sources[pkg]["files"].keys())
 
     if origin["dsc"] == "must be signed and valid":
         signing_rules = 1
@@ -584,18 +587,9 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     else:
         signing_rules = -1
 
-    have_orig_tarball = None
-    dsc_filename = None
-    for filename in Sources[pkg]["files"].keys():
-        file_type = determine_source_file_type(filename)
-        if file_type == SourcePackageFileType.ORIG_TARBALL:
-            have_orig_tarball = filename
-        elif file_type == SourcePackageFileType.DSC:
-            dsc_filename = os.path.abspath(filename)
-
-    import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               have_orig_tarball, requested_by, origin, current_sources,
-               current_binaries)
+    import_dsc(os.path.abspath(dsc_filename), suite, previous_version,
+               signing_rules, files_from_librarian, requested_by, origin,
+               current_sources, current_binaries)
 
 
 def do_diff(Sources, Suite, origin, arguments, current_binaries):

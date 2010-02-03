@@ -883,7 +883,8 @@ class SyncSource:
             file_type = determine_source_file_type(filename)
             # set the return code if an orig was, in fact,
             # fetched from Librarian
-            if file_type != SourcePackageFileType.ORIG_TARBALL:
+            if not file_type in (SourcePackageFileType.ORIG_TARBALL,
+                             SourcePackageFileType.COMPONENT_ORIG_TARBALL):
                 raise SyncSourceError(
                     'Oops, only orig tarball can be retrieved from librarian.')
             retrieved.append(filename)
@@ -897,6 +898,9 @@ class SyncSource:
         """
         dsc_filename = None
         for filename in self.files.keys():
+            file_type = determine_source_file_type(filename)
+            if file_type == SourcePackageFileType.DSC:
+                dsc_filename = filename
             if os.path.exists(filename):
                 self.logger.info("  - <%s: cached>" % (filename))
                 continue
@@ -907,13 +911,6 @@ class SyncSource:
                                     self.files[filename]["remote filename"]))
             sys.stdout.flush()
             self.downloader(download_f, filename)
-            # only set the dsc_filename if the DSC was really downloaded.
-            # this loop usually includes the other files for the upload,
-            # DIFF and ORIG.
-            file_type = determine_source_file_type(filename)
-            if file_type == SourcePackageFileType.DSC:
-                dsc_filename = filename
-
         return dsc_filename
 
     def checkDownloadedFiles(self):
