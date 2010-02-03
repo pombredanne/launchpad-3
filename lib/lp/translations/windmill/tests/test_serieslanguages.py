@@ -6,27 +6,22 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
-
-from windmill.authoring import WindmillTestClient
-from zope.component import getUtility
-
 from canonical.launchpad.windmill.testing.constants import (
     PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 LANGUAGE=(u"//table[@id='languagestats']/descendant::a[text()='%s']"
          u"/parent::td/parent::tr")
 UNSEEN_VALIDATOR='className|unseen'
 
 
-class LanguagesSeriesTest(TestCaseWithFactory):
+class LanguagesSeriesTest(WindmillTestCase):
     """Tests for serieslanguages."""
 
     layer = TranslationsWindmillLayer
+    suite_name = 'SeriesLanguages Tables'
 
     def _toggle_languages_visiblity(self):
         self.client.click(id="toggle-languages-visibility")
@@ -48,7 +43,7 @@ class LanguagesSeriesTest(TestCaseWithFactory):
         The test cannot fully cover all languages so we just test with a
         person having Catalan and Spanish as preferred languages.
         """
-        self.client = WindmillTestClient('SeriesLanguages Tables')
+        client = self.client
         start_url = 'http://translations.launchpad.dev:8085/ubuntu'
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to the distribution languages page

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
@@ -324,6 +324,15 @@ class BuildDSlave(object):
         f.write(content)
         f.close()
         return sha1sum
+
+    def addWaitingFile(self, path):
+        """Add a file to the cache and store its details for reporting."""
+        fn = os.path.basename(path)
+        f = open(path)
+        try:
+            self.waitingfiles[fn] = self.storeFile(f.read())
+        finally:
+            f.close()
 
     def fetchFile(self, sha1sum):
         """Fetch the file of the given sha1sum."""
