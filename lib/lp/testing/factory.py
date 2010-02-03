@@ -1084,7 +1084,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,
-                          description=None):
+                          description=None, is_patch=None):
         """Create and return a new bug attachment.
 
         :param bug: An `IBug` or a bug ID or name, or None, in which
@@ -1115,9 +1115,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             comment = self.getUniqueString()
         if filename is None:
             filename = self.getUniqueString()
+        # If the default value of is_patch when creating a new
+        # BugAttachment should ever change, we don't want to interfere
+        # with that.  So, we only override it if our caller explicitly
+        # passed it.
+        other_params = {}
+        if is_patch is not None:
+            other_params['is_patch'] = is_patch
         return bug.addAttachment(
             owner, data, comment, filename, content_type=content_type,
-            description=description)
+            description=description, **other_params)
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
