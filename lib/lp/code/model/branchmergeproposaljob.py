@@ -51,7 +51,7 @@ from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
-from lp.services.job.runner import BaseRunnableJob, JobRunnerProcess
+from lp.services.job.runner import BaseRunnableJob
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -281,14 +281,6 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
         self.branch_merge_proposal.preview_diff = preview
-
-
-class UpdatePreviewDiffProcess(JobRunnerProcess):
-    """A process that runs UpdatePreviewDiffJobs"""
-    job_class = UpdatePreviewDiffJob
-
-
-UpdatePreviewDiffJob.amp = UpdatePreviewDiffProcess
 
 
 class CreateMergeProposalJob(BaseRunnableJob):
