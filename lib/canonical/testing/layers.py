@@ -100,7 +100,6 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.testing import googletestservice
 from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
 from canonical.launchpad.webapp.interfaces import (
@@ -1113,19 +1112,13 @@ class GoogleServiceLayer(BaseLayer):
 
     @classmethod
     def setUp(cls):
-        if (persist_test_services() and
-            os.path.exists(
-                pidfile.pidfile_path(googletestservice.service_name))):
-            return
         google = GoogleServiceTestSetup()
         google.setUp()
-        if not persist_test_services():
-            atexit.register(google.tearDown)
+        atexit.register(google.tearDown)
 
     @classmethod
     def tearDown(cls):
-        if not persist_test_services():
-            GoogleServiceTestSetup().tearDown()
+        GoogleServiceTestSetup().tearDown()
 
     @classmethod
     def testSetUp(self):
