@@ -79,12 +79,14 @@
                     <dt>
                       <a tal:replace="structure product/fmt:link" /> project:
                     </dt>
-                    <dd tal:define="bool product/bug_supervisor">
+                    <dd title="Project bug supervisor"
+                      tal:define="bool product/bug_supervisor">
                       Bug supervisor:
                       <metal:yes-no
                         use-macro="context/@@+base-layout-macros/yes-no" />
                     </dd>
-                    <dd tal:define="bool product/official_malone|product/bugtracker">
+                    <dd title="Project bug tracker"
+                      tal:define="bool product/official_malone|product/bugtracker">
                       Bug tracker:
                       <metal:yes-no
                         use-macro="context/@@+base-layout-macros/yes-no"/>
@@ -97,12 +99,14 @@
                     <dt style="margin-bottom: 6px;">
                       <a tal:replace="structure series/fmt:link" />:
                     </dt>
-                    <dd tal:define="bool series/branch">
+                    <dd title="Series branch"
+                      tal:define="bool series/branch">
                       Branch:
                       <metal:yes-no
                         use-macro="context/@@+base-layout-macros/yes-no" />
                     </dd>
-                    <dd tal:condition="translations"
+                    <dd title="Series translations auto import"
+                      tal:condition="translations"
                       tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
                       Translations:
                       <metal:yes-no
