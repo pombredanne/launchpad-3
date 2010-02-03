@@ -823,20 +823,20 @@ class SyncSource:
     'aptMD5Sum' is provided as a classmethod during the integration time.
     """
 
-    def __init__(self, files, origin, debug, downloader, todistro):
+    def __init__(self, files, origin, logger, downloader, todistro):
         """Store local context.
 
         files: a dictionary where the keys are the filename and the
                value another dictionary with the file informations.
         origin: a dictionary similar to 'files' but where the values
                 contain information for download files to be synchronized
-        debug: a debug function, 'debug(message)'
+        logger: a logger
         downloader: a callable that fetchs URLs, 'downloader(url, destination)'
         todistro: target distribution object
         """
         self.files = files
         self.origin = origin
-        self.debug = debug
+        self.logger = logger
         self.downloader = downloader
         self.todistro = todistro
 
@@ -860,8 +860,8 @@ class SyncSource:
         except NotFoundError:
             return None
 
-        self.debug(
-            "\t%s: already in distro - downloading from librarian" %
+        self.logger.info(
+            "%s: already in distro - downloading from librarian" %
             filename)
 
         output_file = open(filename, 'w')
@@ -900,9 +900,9 @@ class SyncSource:
         dsc_filename = None
         for filename in self.files.keys():
             if os.path.exists(filename):
-                self.debug("  - <%s: cached>" % (filename))
+                self.logger.info("  - <%s: cached>" % (filename))
                 continue
-            self.debug(
+            self.logger.info(
                 "  - <%s: downloading from %s>" %
                 (filename, self.origin["url"]))
             download_f = ("%s%s" % (self.origin["url"],

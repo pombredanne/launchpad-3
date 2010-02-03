@@ -568,7 +568,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     if not Sources.has_key(pkg):
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
 
-    syncsource = SyncSource(Sources[pkg]["files"], origin, Log.debug,
+    syncsource = SyncSource(Sources[pkg]["files"], origin, Log,
         urllib.urlretrieve, Options.todistro)
     try:
         syncsource.fetchLibrarianFiles()

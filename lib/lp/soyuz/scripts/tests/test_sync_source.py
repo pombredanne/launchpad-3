@@ -15,6 +15,7 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.scripts import BufferLogger
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.testing import LaunchpadZopelessLayer
@@ -40,7 +41,7 @@ class TestSyncSource(TestCase):
         self._home = os.path.abspath('')
         self._jail = tempfile.mkdtemp()
         os.chdir(self._jail)
-        self.messages = []
+        self.logger = BufferLogger()
         self.downloads = []
 
     def tearDown(self):
@@ -57,9 +58,9 @@ class TestSyncSource(TestCase):
         """Return a list of files present in jail."""
         return os.listdir(self._jail)
 
-    def local_debug(self, message):
-        """Store debug messages for future inspection."""
-        self.messages.append(message)
+    def get_messages(self):
+        """Retrieve the messages sent using the logger."""
+        return self.logger.buffer.getvalue().splitlines()
 
     def local_downloader(self, url, filename):
         """Store download requests for future inspections."""
@@ -75,7 +76,7 @@ class TestSyncSource(TestCase):
         them later.
         """
         sync_source = SyncSource(
-            files=files, origin=origin, debug=self.local_debug,
+            files=files, origin=origin, logger=self.logger,
             downloader=self.local_downloader,
             todistro=getUtility(IDistributionSet)['ubuntu'])
         return sync_source
@@ -90,8 +91,8 @@ class TestSyncSource(TestCase):
         self.assertEqual(sync_source.files, files)
         self.assertEqual(sync_source.origin, origin)
 
-        sync_source.debug('opa')
-        self.assertEqual(self.messages, ['opa'])
+        sync_source.logger.debug('opa')
+        self.assertEqual(self.get_messages(), ['DEBUG: opa'])
 
         sync_source.downloader('somewhere', 'foo')
         self.assertEqual(self.downloads, [('somewhere', 'foo')])
@@ -205,8 +206,8 @@ class TestSyncSource(TestCase):
         self.assertEqual(orig_filename, 'netapplet_1.0.0.orig.tar.gz')
         self.assertEqual(self._listFiles(), ['netapplet_1.0.0.orig.tar.gz'])
         self.assertEqual(
-            self.messages,
-            ['\tnetapplet_1.0.0.orig.tar.gz: already in distro '
+            self.get_messages(),
+            ['INFO: netapplet_1.0.0.orig.tar.gz: already in distro '
              '- downloading from librarian'])
 
     def testFetchLibrarianFilesGotDuplicatedDSC(self):
@@ -228,8 +229,8 @@ class TestSyncSource(TestCase):
             sync_source.fetchLibrarianFiles)
 
         self.assertEqual(
-            self.messages,
-            ['\tfoobar-1.0.dsc: already in distro '
+            self.get_messages(),
+            ['INFO: foobar-1.0.dsc: already in distro '
              '- downloading from librarian'])
         self.assertEqual(self._listFiles(), ['foobar-1.0.dsc'])
 
@@ -292,15 +293,17 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(
             err.splitlines(),
             ['W: Could not find blacklist file on '
-                  '/srv/launchpad.net/dak/sync-blacklist.txt'])
+             '/srv/launchpad.net/dak/sync-blacklist.txt',
+             'INFO      - <bar_1.0-1.diff.gz: cached>',
+             'INFO      - <bar_1.0.orig.tar.gz: cached>',
+             'INFO      - <bar_1.0-1.dsc: cached>',
+             ])
         self.assertEqual(
             out.splitlines(),
             ['Getting binaries for hoary...',
              '[Updating] bar (0 [Ubuntu] < 1.0-1 [Debian])',
              ' * Trying to add bar...',
-             '  - <bar_1.0-1.diff.gz: cached>',
-             '  - <bar_1.0.orig.tar.gz: cached>',
-             '  - <bar_1.0-1.dsc: cached>'])
+             ])
 
         expected_changesfile = 'bar_1.0-1_source.changes'
         self.assertTrue(
