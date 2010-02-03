@@ -180,6 +180,7 @@ class ProcessApportBlobJob(ApportJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
+        self.blob.file_alias.open()
         parser = FileBugDataParser(self.blob.file_alias)
         parsed_data = parser.parse()
 

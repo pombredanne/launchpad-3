@@ -2188,5 +2188,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if blob is None:
             blob = self.getUniqueString()
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
+        transaction.commit()
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)

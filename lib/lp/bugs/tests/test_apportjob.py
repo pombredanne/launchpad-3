@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.browser.bugtarget import FileBugDataParser
 from lp.bugs.interfaces.apportjob import ApportJobType
@@ -62,7 +62,7 @@ class ApportJobDerivedTestCase(TestCaseWithFactory):
 class ProcessApportBlobJobTestCase(TestCaseWithFactory):
     """Test case for the ProcessApportBlobJob class."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(ProcessApportBlobJobTestCase, self).setUp()
@@ -74,7 +74,6 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         blob_data = blob_file.read()
 
         self.blob = self.factory.makeBlob(blob_data)
-
         self.data_parser = FileBugDataParser(self.blob.file_alias)
 
     def test_run(self):
@@ -96,6 +95,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # information parsed out of the BLOB. We can use our
         # FileBugDataParser to check that the items recorded in the
         # processed_data dict are correct.
+        self.blob.file_alias.open()
         filebug_data = self.data_parser.parse()
         self.assertEqual(
             filebug_data.initial_summary, processed_data['initial_summary'],
