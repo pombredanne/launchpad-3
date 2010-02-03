@@ -15,10 +15,10 @@ from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing import LaunchpadZopelessLayer
 
-from lp.bugs.browser.bugtarget import FileBugDataParser
 from lp.bugs.interfaces.apportjob import ApportJobType
 from lp.bugs.model.apportjob import (
     ApportJob, ApportJobDerived, ProcessApportBlobJob)
+from lp.bugs.utilities.filebugdataparser import FileBugDataParser
 from lp.testing import TestCaseWithFactory
 
 

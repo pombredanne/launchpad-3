@@ -33,7 +33,7 @@ from lazr.delegates import delegates
 from lp.bugs.interfaces.apportjob import (
     ApportJobType, IApportJob, IApportJobSource, IProcessApportBlobJob,
     IProcessApportBlobJobSource)
-from lp.bugs.browser.bugtarget import FileBugDataParser
+from lp.bugs.utilities.filebugdataparser import FileBugDataParser
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
