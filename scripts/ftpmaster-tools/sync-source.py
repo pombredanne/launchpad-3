@@ -570,7 +570,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     try:
         syncsource.fetchLibrarianFiles()
         dsc_filename = syncsource.fetchSyncFiles()
-        syncsource.checkDownloadFiles()
+        syncsource.checkDownloadedFiles()
     except SyncSourceError, e:
         dak_utils.fubar(str(e))
 
