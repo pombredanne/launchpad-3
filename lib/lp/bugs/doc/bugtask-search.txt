@@ -1058,6 +1058,7 @@ Another way of sorting searches is by bug heat.
     2 Blackhole Trash folder [heat: 2]
     1 Firefox does not support SVG [heat: 1]
 
+
 === Ordering by patch age ===
 
 We can also sort search results by the creation time of the youngest
@@ -1158,4 +1159,3 @@ relevant importance values.
     ...     importance=[BugTaskImportance.LOW, BugTaskImportance.MEDIUM]))
     4 Mozilla Firefox Reflow problems with complex page layouts NEW MEDIUM
     1 Mozilla Firefox Firefox does not support SVG NEW LOW
-
