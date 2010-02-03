@@ -80,7 +80,9 @@ class ISourcePackageRecipe(IHasOwner):
 
         :param archive: The IArchive which you want the build to end up in.
         :param requester: the person requesting the build.
-        :param pocket: the pocket that should be targetted.
+        :param pocket: the pocket that should be targeted.
+        :raises: various specific upload errors if the requestor is not
+            able to upload to the archive.
         """
 
 

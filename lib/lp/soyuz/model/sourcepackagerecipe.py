@@ -94,17 +94,19 @@ class SourcePackageRecipe(Storm):
         return sprecipe
 
     def requestBuild(self, archive, requester, pocket):
+        """See `ISourcePackageRecipe`."""
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
-        reject_reason = check_upload_to_archive(requester,
-                self.distroseries, self.sourcepackagename,
-                archive, component, pocket)
+        reject_reason = check_upload_to_archive(
+            requester, self.distroseries, self.sourcepackagename,
+            archive, component, pocket)
         if reject_reason is not None:
             raise reject_reason
+
         sourcepackage = self.distroseries.getSourcePackage(
-                self.sourcepackagename)
+            self.sourcepackagename)
         build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
-                self, requester, archive)
+            self, requester, archive)
         build.queueBuild()
         return build
