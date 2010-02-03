@@ -16,7 +16,6 @@ import pytz
 import subprocess
 
 from storm.store import Store
-from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config

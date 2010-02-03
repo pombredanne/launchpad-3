@@ -39,7 +39,7 @@ class TestBuildInterface(TestCaseWithFactory):
         # The IBuild.calculated_buildstart property asserts
         # that both datebuilt and buildduration are set.
         build.datebuilt = datetime.now(pytz.UTC)
-        build.buildduration = timedelta(0,1)
+        build.buildduration = timedelta(0, 1)
 
         self.assertProvides(build, IBuildBase)
         self.assertProvides(build, IBuild)

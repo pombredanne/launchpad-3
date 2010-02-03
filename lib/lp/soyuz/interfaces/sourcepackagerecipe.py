@@ -29,6 +29,7 @@ class ForbiddenInstruction(Exception):
     """A forbidden instruction was found in the recipe."""
 
     def __init__(self, instruction_name):
+        super(ForbiddenInstruction, self).__init__()
         self.instruction_name = instruction_name
 
 
@@ -36,6 +37,7 @@ class TooNewRecipeFormat(Exception):
     """The format of the recipe supplied was too new."""
 
     def __init__(self, supplied_format, newest_supported):
+        super(TooNewRecipeFormat, self).__init__()
         self.supplied_format = supplied_format
         self.newest_supported = newest_supported
 
@@ -75,7 +77,7 @@ class ISourcePackageRecipe(IHasOwner):
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
 
-    def requestBuild(self, archive, distroseries, requester, pocket):
+    def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.
 
         :param archive: The IArchive which you want the build to end up in.

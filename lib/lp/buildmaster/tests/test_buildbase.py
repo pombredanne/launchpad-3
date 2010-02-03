@@ -11,7 +11,6 @@ import unittest
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.testing import TestCase, TestCaseWithFactory

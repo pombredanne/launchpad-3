@@ -27,7 +27,8 @@ from lp.soyuz.model.sourcepackagerecipedata import _SourcePackageRecipeData
 
 
 class NonPPABuildRequest(Exception):
-    """A build was requested to a non-PPA and this is currently unsupported."""
+    """A build was requested to a non-PPA and this is currently
+    unsupported."""
 
 
 class SourcePackageRecipe(Storm):
