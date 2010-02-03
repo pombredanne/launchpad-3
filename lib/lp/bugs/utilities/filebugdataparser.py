@@ -179,4 +179,7 @@ class FileBugData:
         self.attachments = []
         self.hwdb_submission_keys = []
 
+    def asDict(self):
+        """Return the FileBugData instance as a dict."""
+        return self.__dict__.copy()
 

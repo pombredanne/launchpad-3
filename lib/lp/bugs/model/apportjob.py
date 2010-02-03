@@ -24,8 +24,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.temporaryblobstorage import (
     TemporaryBlobStorage)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 from lazr.delegates import delegates
 
@@ -56,13 +57,13 @@ class ApportJob(Storm):
 
     _json_data = Unicode('json_data')
 
-    # The metadata property because it needs to be modifyable by
+    # The metadata property because it needs to be modifiable by
     # subclasses of ApportJobDerived. However, since ApportJobDerived
     # only delegates() to ApportJob we can't simply directly access the
     # _json_data property, so we use a getter and setter here instead.
     def _set_metadata(self, metadata):
-        # XXX DO WE REALLY HAVE TO DO THIS? AAAAAAAH.
-        self._json_data = unicode(simplejson.dumps(metadata))
+        self._json_data = unicode(
+            simplejson.dumps(metadata, 'utf-8'))
 
     def _get_metadata(self):
         return simplejson.loads(self._json_data)
@@ -131,7 +132,7 @@ class ApportJobDerived(BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """Iterate through all ready ApportJobs."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IStore(ApportJob)
         jobs = store.find(
             ApportJob,
             And(ApportJob.job_type == cls.class_job_type,
@@ -185,7 +186,7 @@ class ProcessApportBlobJob(ApportJobDerived):
 
         # We transform the parsed_data object into a dict, because
         # that's easier to store in JSON.
-        parsed_data_dict = parsed_data.__dict__
+        parsed_data_dict = parsed_data.asDict()
 
         # If there are attachments, we loop over them and push them to
         # the Librarian, since it's easier than trying to serialize file

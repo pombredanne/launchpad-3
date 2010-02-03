@@ -74,7 +74,6 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         blob_data = blob_file.read()
 
         self.blob = self.factory.makeBlob(blob_data)
-        self.data_parser = FileBugDataParser(self.blob.file_alias)
 
     def test_run(self):
         # ProcessApportBlobJob.run() extracts salient data from an
@@ -96,7 +95,9 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # FileBugDataParser to check that the items recorded in the
         # processed_data dict are correct.
         self.blob.file_alias.open()
-        filebug_data = self.data_parser.parse()
+        data_parser = FileBugDataParser(self.blob.file_alias)
+        filebug_data = data_parser.parse()
+
         self.assertEqual(
             filebug_data.initial_summary, processed_data['initial_summary'],
             "Initial summaries do not match")
