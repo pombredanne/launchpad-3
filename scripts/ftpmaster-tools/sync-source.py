@@ -589,9 +589,9 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     for filename in Sources[pkg]["files"].keys():
         file_type = determine_source_file_type(filename)
         if file_type == SourcePackageFileType.ORIG_TARBALL:
-            have_orig_tarball = filename
+            have_orig_tarball = os.path.abspath(filename)
         elif file_type == SourcePackageFileType.DSC:
-            dsc_filename = filename
+            dsc_filename = os.path.abspath(filename)
 
     import_dsc(dsc_filename, suite, previous_version, signing_rules,
                have_orig_tarball, requested_by, origin, current_sources,
