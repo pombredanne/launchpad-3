@@ -201,9 +201,9 @@ class TestSyncSource(TestCase):
         origin = {}
         sync_source = self._getSyncSource(files, origin)
 
-        orig_filename = sync_source.fetchLibrarianFiles()
+        librarian_files = sync_source.fetchLibrarianFiles()
 
-        self.assertEqual(orig_filename, 'netapplet_1.0.0.orig.tar.gz')
+        self.assertEqual(librarian_files, ['netapplet_1.0.0.orig.tar.gz'])
         self.assertEqual(self._listFiles(), ['netapplet_1.0.0.orig.tar.gz'])
         self.assertEqual(
             self.get_messages(),

@@ -873,24 +873,22 @@ class SyncSource:
         """Try to fetch files from Librarian.
 
         It raises SyncSourceError if anything else then an
-        'orig.tar.*' was found in Librarian.
-        Return the name of the orig tarball if it was 
-        retrieved from the librarian.
+        orig tarball was found in Librarian.
+        Return the names of the files retrieved from the librarian.
         """
-        orig_filename = None
+        retrieved = []
         for filename in self.files.keys():
             if not self.fetchFileFromLibrarian(filename):
                 continue
             file_type = determine_source_file_type(filename)
             # set the return code if an orig was, in fact,
             # fetched from Librarian
-            if file_type == SourcePackageFileType.ORIG_TARBALL:
-                orig_filename = filename
-            else:
+            if file_type != SourcePackageFileType.ORIG_TARBALL:
                 raise SyncSourceError(
                     'Oops, only orig tarball can be retrieved from librarian.')
+            retrieved.append(filename)
 
-        return orig_filename
+        return retrieved
 
     def fetchSyncFiles(self):
         """Fetch files from the original sync source.
