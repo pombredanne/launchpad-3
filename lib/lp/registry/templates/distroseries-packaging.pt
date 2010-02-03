@@ -32,21 +32,23 @@
         </ul>
       </div>
 
-      <div style="max-width:70em;" tal:condition="packagings/batch">
+      <div tal:condition="packagings/batch">
         <h2>All upstream links</h2>
 
         <div class="results"
           tal:content="structure packagings/@@+navigation-links-upper" />
 
-        <table id="packagings" class="listing">
+        <table id="packagings" class="listing" style="compact">
+          <cols>
+            <col />
+            <col />
+            <col style="width: 20em;"/>
+          </cols>
           <thead>
             <tr>
-              <th>Source Package</th>
-              <th>Upstream Project</th>
-              <th>Bug contact</th>
-              <th>Bug tracker</th>
-              <th>Branch</th>
-              <th>Translations</th>
+              <th>Source package</th>
+              <th>Upstream project</th>
+              <th>Upstream information quality</th>
             </tr>
           </thead>
 
@@ -61,42 +63,58 @@
                     tal:attributes="href package/fmt:url"
                     tal:content="package/name">evolution</a>
                 </td>
+
                 <td>
-                  <a tal:replace="structure series/fmt:link" />
+                  <div>
+                    <a tal:replace="structure product/fmt:link" />
+                  </div>
+
+                  <div class="narrow"
+                    tal:condition="product/summary"
+                    tal:content="product/summary"/>
                 </td>
-                <td
-                  tal:define="upstream_contact product/bug_supervisor">
-                  <span class="sprite yes"
-                    tal:condition="upstream_contact">&nbsp;
-                    <span class="invisible-link">yes</span></span>
-                  <span class="sprite no"
-                    tal:condition="not: upstream_contact">&nbsp;
-                    <span class="invisible-link">no</span></span>
-                </td>
-                <td
-                  tal:define="bug_tracker product/official_malone|product/bugtracker">
-                  <span class="sprite yes"
-                    tal:condition="bug_tracker">&nbsp;</span>
-                  <span class="sprite no"
-                    tal:condition="not: bug_tracker">&nbsp;</span>
-                </td>
+
                 <td>
-                  <span class="sprite yes"
-                    tal:condition="series/branch">&nbsp;</span>
-                  <span class="sprite no"
-                    tal:condition="not: series/branch">&nbsp;</span>
-                </td>
-                <td tal:condition="translations">
-                  <tal:has-translations
-                    define="has_imports not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
-                    <span class="sprite yes"
-                      tal:condition="has_imports">&nbsp;</span>
-                    <span class="sprite no"
-                      tal:condition="not: has_imports">&nbsp;</span>
-                  </tal:has-translations>
-                </td>
-                <td tal:condition="not: translations">
-                  &mdash;
+                  <dl>
+                    <dt>
+                      <a tal:replace="structure product/fmt:link" /> project:
+                    </dt>
+                    <dd>
+                      <ul class="horizontal" style="margin-top: 0">
+                        <li tal:define="bool product/bug_supervisor">
+                          Bug supervisor:
+                          <metal:yes-no 
+                            use-macro="context/@@+base-layout-macros/yes-no" />
+                        </li>
+                        <li tal:define="bool product/official_malone|product/bugtracker">
+                          Bug tracker:
+                          <metal:yes-no
+                            use-macro="context/@@+base-layout-macros/yes-no"/>
+                        </li>
+                      </ul>
+                    </dd>
+                  </dl>
+
+                  <dl>
+                    <dt>
+                      <a tal:replace="structure series/fmt:link" />:
+                    </dt>
+                    <dd>
+                      <ul class="horizontal" style="margin-top: 0">
+                        <li tal:define="bool series/branch">
+                          Branch: 
+                          <metal:yes-no 
+                            use-macro="context/@@+base-layout-macros/yes-no" />
+                        </li>
+                        <li tal:condition="translations"
+                          tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
+                          Translations:
+                          <metal:yes-no 
+                            use-macro="context/@@+base-layout-macros/yes-no" />
+                        </li>
+                      <ul>
+                    </dd>
+                  </dl>
                 </td>
               </tr>
             </tal:packaging>
