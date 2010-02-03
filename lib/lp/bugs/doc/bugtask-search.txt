@@ -1035,6 +1035,30 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     19 Bug to be fixed in trunk [1 comments]
 
 
+=== Ordering by bug heat ===
+
+Another way of sorting searches is by bug heat.
+
+    >>> params = BugTaskSearchParams(
+    ...     orderby='id', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for task in ubuntu_tasks:
+    ...     task.bug.setHeat(task.bug.id)
+    >>> transaction.commit()
+    >>> params = BugTaskSearchParams(
+    ...     orderby='-heat', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     bug = bugtask.bug
+    ...     print '%s %s [heat: %s]' % (
+    ...     bug.id, bug.title, bug.heat)
+    19 Bug to be fixed in trunk [heat: 19]
+    10 another test bug [heat: 10]
+    9 Thunderbird crashes [heat: 9]
+    2 Blackhole Trash folder [heat: 2]
+    1 Firefox does not support SVG [heat: 1]
+
+
 === Ordering by patch age ===
 
 We can also sort search results by the creation time of the youngest
@@ -1135,4 +1159,3 @@ relevant importance values.
     ...     importance=[BugTaskImportance.LOW, BugTaskImportance.MEDIUM]))
     4 Mozilla Firefox Reflow problems with complex page layouts NEW MEDIUM
     1 Mozilla Firefox Firefox does not support SVG NEW LOW
-

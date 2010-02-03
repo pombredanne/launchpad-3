@@ -7,7 +7,6 @@ import warnings
 from datetime import datetime
 import re
 from textwrap import dedent
-
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
@@ -758,6 +757,17 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 
     Default database name is the one specified in the main configuration file.
     """
+    con = psycopg2.connect(connect_string(user, dbname))
+    con.set_isolation_level(isolation)
+    return con
+
+
+def connect_string(user, dbname=None):
+    """Return a PostgreSQL connection string.
+
+    Allows you to pass the generated connection details to external
+    programs like pg_dump or embed in slonik scripts.
+    """
     from canonical import lp
     # We start with the config string from the config file, and overwrite
     # with the passed in dbname or modifications made by db_options()
@@ -780,10 +790,7 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
         con_str_overrides.append('dbname=%s' % dbname)
 
     con_str = ' '.join([con_str] + con_str_overrides)
-
-    con = psycopg2.connect(con_str)
-    con.set_isolation_level(isolation)
-    return con
+    return con_str
 
 
 class cursor:

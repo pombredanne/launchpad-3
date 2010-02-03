@@ -41,9 +41,9 @@ def duplicate_schema():
     """Duplicate the master schema into the slaves."""
     log.info('Duplicating database schema')
 
-    master_cs = ConnectionString(config.database.main_master)
+    master_cs = ConnectionString(config.database.rw_main_master)
     master_cs.user = options.dbuser
-    slave1_cs = ConnectionString(config.database.main_slave)
+    slave1_cs = ConnectionString(config.database.rw_main_slave)
     slave1_cs.user = options.dbuser
 
     # We can't use pg_dump to replicate security as not all of the roles
@@ -70,7 +70,7 @@ def initialize_cluster():
     """Initialize the cluster."""
     log.info('Initializing Slony-I cluster')
     master_connection_string = ConnectionString(
-        config.database.main_master)
+        config.database.rw_main_master)
     master_connection_string.user = 'slony'
     helpers.execute_slonik("""
         node 1 admin conninfo = '%s';
@@ -224,7 +224,8 @@ def main():
             fails += 1
     for sequence in all_sequences_in_schema(cur, 'public'):
         times_seen = 0
-        for sequence_set in [authdb_sequences, lpmain_sequences]:
+        for sequence_set in [
+            authdb_sequences, lpmain_sequences, helpers.IGNORED_SEQUENCES]:
             if sequence in sequence_set:
                 times_seen += 1
         if times_seen == 0:

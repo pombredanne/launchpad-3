@@ -271,17 +271,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             "a message was sent to the bug reporter, and the bug is "
             "associated with pillars that have enabled bug expiration."),
         readonly=True)
-    can_expire = Bool(
+    can_expire = exported(
+        Bool(
         title=_("Can the Incomplete bug expire if it becomes inactive? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
-        readonly=True)
+        readonly=True))
     date_last_message = exported(
         Datetime(title=_('Date of last bug message'),
                  required=False, readonly=True))
-    number_of_duplicates = Int(
-        title=_('The number of bugs marked as duplicates of this bug'),
-        required=True, readonly=True)
+    number_of_duplicates = exported(
+        Int(title=_('The number of bugs marked as duplicates of this bug'),
+            required=True, readonly=True))
     message_count = Int(
         title=_('The number of comments on this bug'),
         required=True, readonly=True)
@@ -315,6 +316,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             title=_('Users affected (including duplicates)'),
             value_type=Reference(schema=IPerson),
             readonly=True))
+
+    heat = exported(
+        Int(title=_("The 'heat' of the bug"),
+        required=False, readonly=True))
 
     # Adding related BugMessages provides a hook for getting at
     # BugMessage.visible when building bug comments.
@@ -759,6 +764,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
+    def setHeat(heat):
+        """Set the heat for the bug."""
+
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
@@ -996,6 +1004,19 @@ class IBugSet(Interface):
 
         Otherwise, return False.
         """
+
+    def dangerousGetAllBugs():
+        """DO NOT CALL THIS METHOD.
+
+        This method exists solely to allow the bug heat script to grab
+        all the bugs in the database - including private ones - and
+        iterate over them. DO NOT USE IT UNLESS YOU KNOW WHAT YOU'RE
+        DOING. AND IF YOU KNOW WHAT YOU'RE DOING YOU KNOW BETTER THAN TO
+        USE THIS ANYWAY.
+        """
+        # XXX 2010-01-08 gmb bug=505850:
+        #     Note, this method should go away when we have a proper
+        #     permissions system for scripts.
 
 
 class InvalidBugTargetType(Exception):

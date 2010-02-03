@@ -259,25 +259,28 @@ class StuckJob(BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         if not cls.done:
-            yield StuckJob()
+            yield StuckJob(1)
+            yield StuckJob(2)
         cls.done = True
 
     @staticmethod
     def get(id):
-        return StuckJob()
+        return StuckJob(id)
 
-    def __init__(self):
-        self.id = 1
+    def __init__(self, id):
+        self.id = id
         self.job = Job()
 
     def acquireLease(self):
-        # Must be enough time for the setup to complete and runJobHandleError
-        # to be called.  7 was the minimum that worked on my computer.
-        # -- abentley
-        return self.job.acquireLease(10)
+        if self.id == 2:
+            lease_length = 1
+        else:
+            lease_length = 10000
+        return self.job.acquireLease(lease_length)
 
     def run(self):
-        sleep(30)
+        if self.id == 2:
+            sleep(30)
 
 
 class StuckJobProcess(JobRunnerProcess):
@@ -301,13 +304,16 @@ class TestTwistedJobRunner(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    # XXX: salgado, 2010-01-11, bug=505913: Disabled because of intermittent
-    # failures.
-    def disabled_test_timeout(self):
-        """When a job exceeds its lease, an exception is raised."""
+    def test_timeout(self):
+        """When a job exceeds its lease, an exception is raised.
+
+        Unfortunately, timeouts include the time it takes for the zope
+        machinery to start up, so we run a job that will not time out first,
+        followed by a job that is sure to time out.
+        """
         logger = ListLogger()
         runner = TwistedJobRunner.runFromSource(StuckJob, logger)
-        self.assertEqual([], runner.completed_jobs)
+        self.assertEqual(1, len(runner.completed_jobs))
         self.assertEqual(1, len(runner.incomplete_jobs))
         oops = errorlog.globalErrorUtility.getLastOopsReport()
         expected = [
