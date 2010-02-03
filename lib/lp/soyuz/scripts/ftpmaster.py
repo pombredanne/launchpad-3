@@ -36,11 +36,14 @@ from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.archiveuploader.utils import (
+    determine_source_file_type)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -870,7 +873,7 @@ class SyncSource:
         """Try to fetch files from Librarian.
 
         It raises SyncSourceError if anything else then an
-        'orig.tar.gz' was found in Librarian.
+        'orig.tar.*' was found in Librarian.
         Return the name of the orig tarball if it was 
         retrieved from the librarian.
         """
@@ -878,13 +881,14 @@ class SyncSource:
         for filename in self.files.keys():
             if not self.fetchFileFromLibrarian(filename):
                 continue
+            file_type = determine_source_file_type(filename)
             # set the return code if an orig was, in fact,
             # fetched from Librarian
-            if filename.endswith("orig.tar.gz"):
+            if file_type == SourcePackageFileType.ORIG_TARBALL:
                 orig_filename = filename
             else:
                 raise SyncSourceError(
-                    'Oops, only orig.tar.gz can be retrieved from librarian')
+                    'Oops, only orig tarball can be retrieved from librarian.')
 
         return orig_filename
 
@@ -907,7 +911,8 @@ class SyncSource:
             # only set the dsc_filename if the DSC was really downloaded.
             # this loop usually includes the other files for the upload,
             # DIFF and ORIG.
-            if filename.endswith(".dsc"):
+            file_type = determine_source_file_type(filename)
+            if file_type == SourcePackageFileType.DSC:
                 dsc_filename = filename
 
         return dsc_filename

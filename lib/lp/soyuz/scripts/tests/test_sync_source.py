@@ -163,26 +163,26 @@ class TestSyncSource(TestCase):
         test_file is skipped.
         """
         files = {
-            'foo.diff.gz': {'remote filename': 'xxx'},
-            'foo.dsc': {'remote filename': 'yyy'},
-            'foo.orig.gz': {'remote filename': 'zzz'},
+            'foo_0.1.diff.gz': {'remote filename': 'xxx'},
+            'foo_0.1.dsc': {'remote filename': 'yyy'},
+            'foo_0.1.orig.gz': {'remote filename': 'zzz'},
             }
         origin = {'url': 'http://somewhere/'}
 
         sync_source = self._getSyncSource(files, origin)
 
-        test_file = open('foo.diff.gz', 'w')
+        test_file = open('foo_0.1.diff.gz', 'w')
         test_file.write('nahhh')
         test_file.close()
 
         dsc_filename = sync_source.fetchSyncFiles()
 
-        self.assertEqual(dsc_filename, 'foo.dsc')
+        self.assertEqual(dsc_filename, 'foo_0.1.dsc')
 
         self.assertEqual(
             self.downloads,
-            [('http://somewhere/yyy', 'foo.dsc'),
-             ('http://somewhere/zzz', 'foo.orig.gz')])
+            [('http://somewhere/zzz', 'foo_0.1.orig.gz'),
+             ('http://somewhere/yyy', 'foo_0.1.dsc')])
 
         for filename in files.keys():
             self.assertTrue(os.path.exists(filename))
@@ -207,28 +207,6 @@ class TestSyncSource(TestCase):
         self.assertEqual(
             self.messages,
             ['\tnetapplet_1.0.0.orig.tar.gz: already in distro '
-             '- downloading from librarian'])
-
-    def testFetchLibrarianFilesBzip2Orig(self):
-        """Probe fetchLibrarianFiles.
-
-        Seek on files published from librarian and download matching filenames.
-        """
-        files = {
-            'netapplet_1.0.0.orig.tar.bz2': {},
-            'netapplet_1.0.1.dsc': {},
-            'netapplet_1.0.1.diff.gz': {},
-            }
-        origin = {}
-        sync_source = self._getSyncSource(files, origin)
-
-        orig_filename = sync_source.fetchLibrarianFiles()
-
-        self.assertEqual(orig_filename, 'netapplet_1.0.0.orig.tar.bz2')
-        self.assertEqual(self._listFiles(), ['netapplet_1.0.0.orig.tar.bz2'])
-        self.assertEqual(
-            self.messages,
-            ['\tnetapplet_1.0.0.orig.tar.bz2: already in distro '
              '- downloading from librarian'])
 
     def testFetchLibrarianFilesGotDuplicatedDSC(self):

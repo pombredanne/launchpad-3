@@ -42,7 +42,10 @@ from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
+from lp.archiveuploader.utils import (
+    determine_source_file_type)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.scripts.ftpmaster import SyncSource, SyncSourceError
 
 
@@ -569,10 +572,10 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         urllib.urlretrieve, Options.todistro)
     try:
         syncsource.fetchLibrarianFiles()
-        dsc_filename = syncsource.fetchSyncFiles()
+        syncsource.fetchSyncFiles()
         syncsource.checkDownloadedFiles()
     except SyncSourceError, e:
-        dak_utils.fubar(str(e))
+        dak_utils.fubar("Fetching files failed: %s" % (str(e),))
 
     if origin["dsc"] == "must be signed and valid":
         signing_rules = 1
@@ -582,9 +585,13 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         signing_rules = -1
 
     have_orig_tarball = None
-    for filename in Sources[pkg]["files"]:
-        if filename.endswith(".orig.tar.gz"):
+    dsc_filename = None
+    for filename in Sources[pkg]["files"].keys():
+        file_type = determine_source_file_type(filename)
+        if file_type == SourcePackageFileType.ORIG_TARBALL:
             have_orig_tarball = filename
+        elif file_type == SourcePackageFileType.DSC:
+            dsc_filename = filename
 
     import_dsc(dsc_filename, suite, previous_version, signing_rules,
                have_orig_tarball, requested_by, origin, current_sources,
