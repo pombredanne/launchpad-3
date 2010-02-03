@@ -1283,23 +1283,15 @@ class EditProductRelease(EditByOwnersOrAdmins):
             self, user)
 
 
-class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+class AdminTranslationImportQueueEntry(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
-            return True
-
-        # As a special case, the Ubuntu translation group owners can
-        # manage Ubuntu uploads.
-        if self.obj.isUbuntuAndIsUserTranslationGroupOwner(user.person):
-            return True
-
-        return False
+        return self.obj.canAdmin(user)
 
 
-class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
+class EditTranslationImportQueueEntry(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITranslationImportQueueEntry
 
@@ -1307,13 +1299,7 @@ class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
         """Anyone who can admin an entry, plus its owner or the owner of the
         product or distribution, can edit it.
         """
-        if AdminTranslationImportQueueEntry.checkAuthenticated(self, user):
-            return True
-        if self.obj.isUserUploaderOrOwner(user.person):
-            return True
-
-        return False
-
+        return self.obj.canEdit(user)
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
