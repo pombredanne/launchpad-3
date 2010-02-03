@@ -45,6 +45,9 @@ class Category:
         if self._compiled_regexp.search(request.url) is not None:
             self.times.add(request)
 
+    def __cmp__(self, other):
+        return cmp(self.title.lower(), other.title.lower())
+
 
 class Times:
     """Collection of request times."""
@@ -127,7 +130,7 @@ def main():
     if not os.path.exists(options.config):
         parser.error("Config file %s not found." % options.config)
 
-    # XXX: Need a better config as ConfigParser doesn't preserve order.
+    # Need a better config mechanism as ConfigParser doesn't preserve order.
     script_config = RawConfigParser()
     script_config.optionxform = str # Make keys case sensitive.
     script_config.readfp(open(options.config))
@@ -140,6 +143,7 @@ def main():
         except sre_constants.error, x:
             log.fatal("Unable to compile regexp %r (%s)" % (regexp, x))
             return 1
+    categories.sort()
 
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
