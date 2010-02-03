@@ -31,7 +31,7 @@ from canonical.launchpad import scripts
 
 
 def force_bzr_to_use_urllib():
-    """Rrevent bzr from using pycurl to connect to http: urls.
+    """Prevent bzr from using pycurl to connect to http: urls.
 
     We want this because pycurl rejects self signed certificates, which
     prevents a significant number of import branchs from updating.  Also see
