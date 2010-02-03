@@ -287,11 +287,14 @@ class CodeImportJobWorkflow:
         # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
             self.newJob(code_import)
-        # If the status was successful, update the date_last_successful and
-        # arrange for the branch to be mirrored.
-        if status == CodeImportResultStatus.SUCCESS:
+        # If the status was successful, update date_last_successful.
+        if status in [CodeImportResultStatus.SUCCESS,
+                      CodeImportResultStatus.SUCCESS_NOCHANGE]:
             naked_import = removeSecurityProxy(code_import)
             naked_import.date_last_successful = result.date_created
+        # If the status was successful and revisions were imported, arrange
+        # for the branch to be mirrored.
+        if status == CodeImportResultStatus.SUCCESS:
             code_import.branch.requestMirror()
         getUtility(ICodeImportEventSet).newFinish(
             code_import, machine)

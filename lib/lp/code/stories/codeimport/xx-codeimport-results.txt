@@ -23,6 +23,8 @@ file stored with the result.
     >>> browser.open(branch_url)
     >>> import_results = find_tag_by_id(browser.contents, 'import-results')
     >>> print extract_text(import_results).replace('&mdash;', '--')
+    Import started on 2007-12-10 on odin and finished on 2007-12-10
+      taking ten hours -- see the log
     Import started on 2007-12-09 on odin and finished on 2007-12-09
       taking nine hours -- see the log
     Import started on 2007-12-08 on odin and finished on 2007-12-08
@@ -58,4 +60,5 @@ is the text of the failure type.
     <img src="/@@/no" title="Source Checkout Failed" />
     <img src="/@@/no" title="Internal Failure" />
     <img src="/@@/no" title="Failure" />
+    <img src="/@@/yes" title="Success with no changes" />
     <img src="/@@/yes" title="Success" />
