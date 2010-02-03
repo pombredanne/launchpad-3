@@ -48,7 +48,7 @@
             <tr>
               <th>Source package</th>
               <th>Upstream project</th>
-              <th>Upstream information quality</th>
+              <th colspan="2">Upstream information quality</th>
             </tr>
           </thead>
 
@@ -79,40 +79,34 @@
                     <dt>
                       <a tal:replace="structure product/fmt:link" /> project:
                     </dt>
-                    <dd>
-                      <ul class="horizontal" style="margin-top: 0">
-                        <li tal:define="bool product/bug_supervisor">
-                          Bug supervisor:
-                          <metal:yes-no 
-                            use-macro="context/@@+base-layout-macros/yes-no" />
-                        </li>
-                        <li tal:define="bool product/official_malone|product/bugtracker">
-                          Bug tracker:
-                          <metal:yes-no
-                            use-macro="context/@@+base-layout-macros/yes-no"/>
-                        </li>
-                      </ul>
+                    <dd tal:define="bool product/bug_supervisor">
+                      Bug supervisor:
+                      <metal:yes-no
+                        use-macro="context/@@+base-layout-macros/yes-no" />
+                    </dd>
+                    <dd tal:define="bool product/official_malone|product/bugtracker">
+                      Bug tracker:
+                      <metal:yes-no
+                        use-macro="context/@@+base-layout-macros/yes-no"/>
                     </dd>
                   </dl>
+                </td>
 
+                <td>
                   <dl>
-                    <dt>
+                    <dt style="margin-bottom: 6px;">
                       <a tal:replace="structure series/fmt:link" />:
                     </dt>
-                    <dd>
-                      <ul class="horizontal" style="margin-top: 0">
-                        <li tal:define="bool series/branch">
-                          Branch: 
-                          <metal:yes-no 
-                            use-macro="context/@@+base-layout-macros/yes-no" />
-                        </li>
-                        <li tal:condition="translations"
-                          tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
-                          Translations:
-                          <metal:yes-no 
-                            use-macro="context/@@+base-layout-macros/yes-no" />
-                        </li>
-                      <ul>
+                    <dd tal:define="bool series/branch">
+                      Branch:
+                      <metal:yes-no
+                        use-macro="context/@@+base-layout-macros/yes-no" />
+                    </dd>
+                    <dd tal:condition="translations"
+                      tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
+                      Translations:
+                      <metal:yes-no
+                        use-macro="context/@@+base-layout-macros/yes-no" />
                     </dd>
                   </dl>
                 </td>
