@@ -27,26 +27,50 @@ from lp.scripts.helpers import LPOptionParser
 
 
 class Category:
+    """A Category in our report.
+
+    Requests belong to a Category if the URL matches a regular expression.
+    """
     def __init__(self, title, regexp, timeout):
         self.title = title
         self.regexp = regexp
-        self._compiled_regexp = re.compile(regexp)
+        self._compiled_regexp = re.compile(regexp, re.I | re.X)
         self.times = Times(timeout)
 
     def add(self, request):
+        """Add a request to a Category if it belongs.
+
+        Does nothing if the request does not belong in this Category.
+        """
         if self._compiled_regexp.search(request.url) is not None:
             self.times.add(request)
 
 
 class Times:
+    """Collection of request times."""
     def __init__(self, timeout):
         self.request_times = []
         self.timeout = timeout
 
     def add(self, request):
+        """Add the application time from the request to the collection.
+
+        The application time is capped to our timeout.
+        """
         self.request_times.append(min(request.app_seconds, self.timeout))
 
     def stats(self):
+        """Generate statistics about our request times.
+
+        Returns (mean, median, standard_deviation, histogram).
+
+        The histogram is a list of request counts per 1 second bucket.
+        ie. histogram[0] contains the number of requests taking between 0 and
+        1 second, histogram[1] contains the number of requests taking between
+        1 and 2 seconds etc. histogram is None if there are no requests in
+        this Category.
+        """
+
         if not self.request_times:
             return 0, 0, 0, None
         array = numpy.asarray(self.request_times, numpy.float32)
@@ -347,6 +371,7 @@ def print_html_report(categories):
             $.plot(
                 $("#histogram%d"),
                 [{data: d}], options);
+
             """ % (json.dumps(histogram), i))
 
     print dedent("""\
