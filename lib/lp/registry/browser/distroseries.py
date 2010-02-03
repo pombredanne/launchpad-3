@@ -468,7 +468,7 @@ class DistroSeriesAddView(LaunchpadFormView):
 class DistroSeriesPackagesView(DistroSeriesView):
     """A View to show series package to upstream package relationships."""
 
-    label = 'Mapping series packages to upstream project series'
+    label = 'All series packages linked to upstream project series'
     page_title = 'All upstream links'
 
     @cachedproperty

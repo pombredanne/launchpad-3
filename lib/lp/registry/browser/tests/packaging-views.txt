@@ -350,7 +350,7 @@ are linked to upstream projects.
 
     >>> view = create_initialized_view(hoary, name='+packaging')
     >>> print view.label
-    Mapping series packages to upstream project series
+    All series packages linked to upstream project series
 
     >>> print view.page_title
     All upstream links

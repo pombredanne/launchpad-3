@@ -18,7 +18,7 @@
         <p>
           The packages are listed by priority. Packages that greatest need to
           forward bugs, sync translations, or need the latest development
-          branch are listed first. Can you help provide the missing 
+          branch are listed first. Can you help provide the missing
           information for these registered Launchpad projects?
         </p>
 
@@ -32,7 +32,7 @@
         </ul>
       </div>
 
-      <tal:known_links condition="packagings/batch">
+      <div style="max-width:70em;" tal:condition="packagings/batch">
         <h2>All upstream links</h2>
 
         <div class="results"
@@ -42,27 +42,70 @@
           <thead>
             <tr>
               <th>Source Package</th>
-              <th>Upstream Project Series</th>
+              <th>Upstream Project</th>
+              <th>Bug contact</th>
+              <th>Bug tracker</th>
+              <th>Branch</th>
+              <th>Translations</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr tal:repeat="packaging packagings/batch">
-              <td>
-                <a class="sprite package-source"
-                  tal:attributes="href packaging/sourcepackage/fmt:url"
-                  tal:content="packaging/sourcepackagename/name">evolution</a>
-              </td>
-              <td>
-                <a tal:replace="structure packaging/productseries/fmt:link" />
-              </td>
-            </tr>
+            <tal:packaging repeat="packaging packagings/batch">
+              <tr tal:define="series packaging/productseries;
+                              product series/product;
+                              package packaging/sourcepackage;
+                              translations package/getTranslationTemplates;">
+                <td>
+                  <a class="sprite package-source"
+                    tal:attributes="href package/fmt:url"
+                    tal:content="package/name">evolution</a>
+                </td>
+                <td>
+                  <a tal:replace="structure series/fmt:link" />
+                </td>
+                <td
+                  tal:define="upstream_contact product/bug_supervisor">
+                  <span class="sprite yes"
+                    tal:condition="upstream_contact">&nbsp;
+                    <span class="invisible-link">yes</span></span>
+                  <span class="sprite no"
+                    tal:condition="not: upstream_contact">&nbsp;
+                    <span class="invisible-link">no</span></span>
+                </td>
+                <td
+                  tal:define="bug_tracker product/official_malone|product/bugtracker">
+                  <span class="sprite yes"
+                    tal:condition="bug_tracker">&nbsp;</span>
+                  <span class="sprite no"
+                    tal:condition="not: bug_tracker">&nbsp;</span>
+                </td>
+                <td>
+                  <span class="sprite yes"
+                    tal:condition="series/branch">&nbsp;</span>
+                  <span class="sprite no"
+                    tal:condition="not: series/branch">&nbsp;</span>
+                </td>
+                <td tal:condition="translations">
+                  <tal:has-translations
+                    define="has_imports not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
+                    <span class="sprite yes"
+                      tal:condition="has_imports">&nbsp;</span>
+                    <span class="sprite no"
+                      tal:condition="not: has_imports">&nbsp;</span>
+                  </tal:has-translations>
+                </td>
+                <td tal:condition="not: translations">
+                  &mdash;
+                </td>
+              </tr>
+            </tal:packaging>
           </tbody>
         </table>
 
         <div class="results"
           tal:content="structure packagings/@@+navigation-links-lower" />
-      </tal:known_links>
+      </div>
     </div>
   </body>
 </html>
