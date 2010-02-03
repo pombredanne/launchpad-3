@@ -91,7 +91,14 @@ class TestCanSetStatusBase(TestCaseWithFactory):
     def test_canSetStatus_product_owner(self):
         # The owner (maintainer) of the product gets to set Blocked as well.
         owner = self.productseries.product.owner
-        self._assertCanSetStatus(self.productseries.product.owner, self.entry,
+        self._assertCanSetStatus(owner, self.entry,
+            #  A      B     D     F      I     NR
+            [False, True, True, False, False, True])
+
+    def test_canSetStatus_owner_and_uploader(self):
+        # Corner case: Nothing changes if the maintainer is also the uploader.
+        self.productseries.product.owner = self.uploaderperson
+        self._assertCanSetStatus(self.uploaderperson, self.entry,
             #  A      B     D     F      I     NR
             [False, True, True, False, False, True])
 
@@ -102,10 +109,24 @@ class TestCanSetStatusBase(TestCaseWithFactory):
             #  A      B     D     F      I     NR
             [False, True, True, False, False, True])
 
+    def test_canSetStatus_driver_and_uploader(self):
+        # Corner case: Nothing changes if the driver is also the uploader.
+        self.productseries.driver = self.uploaderperson
+        self._assertCanSetStatus(self.uploaderperson, self.entry,
+            #  A      B     D     F      I     NR
+            [False, True, True, False, False, True])
+
     def test_canSetStatus_product_driver(self):
         # The driver of the product, too.
         driver = self.productseries.product.driver
         self._assertCanSetStatus(driver, self.entry,
+            #  A      B     D     F      I     NR
+            [False, True, True, False, False, True])
+
+    def test_canSetStatus_driver_and_uploader(self):
+        # Corner case: Nothing changes if the driver is also the uploader.
+        self.productseries.product.driver = self.uploaderperson
+        self._assertCanSetStatus(self.uploaderperson, self.entry,
             #  A      B     D     F      I     NR
             [False, True, True, False, False, True])
 
