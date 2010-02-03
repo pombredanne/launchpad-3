@@ -40,7 +40,7 @@
       </div>
 
       <tal:known_links condition="packagings/batch">
-        <h2>Upstream links</h2>
+        <h2>All upstream links</h2>
 
         <div class="results"
           tal:content="structure packagings/@@+navigation-links-upper" />

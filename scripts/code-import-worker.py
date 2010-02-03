@@ -19,6 +19,7 @@ __metaclass__ = type
 import _pythonpath
 
 from optparse import OptionParser
+import sys
 
 from bzrlib.transport import get_transport
 
@@ -58,9 +59,9 @@ class CodeImportWorker:
             source_details,
             get_transport(config.codeimport.foreign_tree_store),
             get_default_bazaar_branch_store(), self.logger)
-        import_worker.run()
+        return import_worker.run()
 
 
 if __name__ == '__main__':
     script = CodeImportWorker()
-    script.main()
+    sys.exit(script.main())
