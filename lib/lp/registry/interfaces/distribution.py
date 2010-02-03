@@ -524,6 +524,7 @@ class IDistribution(IDistributionEditRestricted, IDistributionPublic,
 # Patch the official_bug_tags field to make sure that it's
 # writable from the API, and not readonly like its definition
 # in IHasBugs.
+# XXX: Obsolete.
 writable_obt_field = copy_field(IDistribution['official_bug_tags'])
 writable_obt_field.readonly = False
 IDistribution._v_attrs['official_bug_tags'] = writable_obt_field

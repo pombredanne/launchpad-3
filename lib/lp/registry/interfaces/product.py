@@ -727,6 +727,7 @@ IProductRelease['product'].schema = IProduct
 # Patch the official_bug_tags field to make sure that it's
 # writable from the API, and not readonly like its definition
 # in IHasBugs.
+# XXX: Obsolete.
 writable_obt_field = copy_field(IProduct['official_bug_tags'])
 writable_obt_field.readonly = False
 IProduct._v_attrs['official_bug_tags'] = writable_obt_field

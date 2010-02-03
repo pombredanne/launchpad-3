@@ -272,14 +272,21 @@ class BugDistroSeriesTargetDetails:
         self.status = status
 
 
-class IOfficialBugTagTargetPublic(Interface):
-    """Public attributes for `IOfficialBugTagTarget`."""
+class IHasOfficialBugTags(Interface):
+    """An entity that exposes a set of official bug tags."""
 
     official_bug_tags = exported(List(
         title=_("Official Bug Tags"),
         description=_("The list of bug tags defined as official."),
         value_type=Tag(),
         readonly=True))
+
+
+class IOfficialBugTagTargetPublic(IHasOfficialBugTags):
+    """Public attributes for `IOfficialBugTagTarget`."""
+
+    official_bug_tags = copy_field(
+        IHasOfficialBugTags['official_bug_tags'], readonly=False)
 
 
 class IOfficialBugTagTargetRestricted(Interface):
