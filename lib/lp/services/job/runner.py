@@ -236,8 +236,8 @@ class JobRunnerProcess(child.AMPChild):
         segments = job_source_name.split('.')
         module = '.'.join(segments[:-1])
         name = segments[-1]
-        exec 'from %s import %s as job_source' % (module, name)
-        self.job_source = job_source
+        source_module = __import__(module, fromlist=[name])
+        self.job_source = getattr(source_module, name)
         self.context_manager = self.job_source.contextManager()
 
     @staticmethod
