@@ -123,7 +123,7 @@ class TestCanSetStatusBase(TestCaseWithFactory):
             #  A      B     D     F      I     NR
             [False, True, True, False, False, True])
 
-    def test_canSetStatus_driver_and_uploader(self):
+    def test_canSetStatus_product_driver_and_uploader(self):
         # Corner case: Nothing changes if the driver is also the uploader.
         self.productseries.product.driver = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,

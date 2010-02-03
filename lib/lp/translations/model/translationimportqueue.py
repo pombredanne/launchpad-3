@@ -293,7 +293,6 @@ class TranslationImportQueueEntry(SQLBase):
         # Admin rights include edit rights.
         if self.canAdmin(roles):
             return True
-            return True
         # The maintainer and the drivers can edit the entry.
         if self.productseries is not None:
             return (roles.isOwner(self.productseries.product) or
