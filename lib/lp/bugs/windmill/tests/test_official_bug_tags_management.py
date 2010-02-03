@@ -8,20 +8,19 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import constants, lpuser
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestOfficialBugTags(TestCaseWithFactory):
+class TestOfficialBugTags(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'Official bug tags management test'
 
     def test_official_bug_tags_management(self):
         """Test the official bug tags management interface."""
-        client = WindmillTestClient('Official bug tags management test')
+        client = self.client
 
     # Firefox is a product - an official bug tags target.
 
