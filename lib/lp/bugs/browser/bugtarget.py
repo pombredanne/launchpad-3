@@ -70,6 +70,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
@@ -1398,7 +1399,10 @@ class BugsPatchesView(LaunchpadView):
     @property
     def label(self):
         """The display label for the view."""
-        return 'Patch attachments in %s' % self.context.displayname
+        if IPerson.providedBy(self.context):
+            return 'Patch attachments for %s' % self.context.displayname
+        else:
+            return 'Patch attachments in %s' % self.context.displayname
 
     def batchedPatchTasks(self):
         """Return a BatchNavigator for bug tasks with patch attachments."""
@@ -1418,12 +1422,13 @@ class BugsPatchesView(LaunchpadView):
                 status=UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES,
                 omit_duplicates=True, has_patch=True),
             self.request)
-        
+
     def shouldShowTargetName(self):
         """Return True if current context can have different bugtargets."""
         return (IDistribution.providedBy(self.context) or
                 IDistroSeries.providedBy(self.context) or
-                IProject.providedBy(self.context))
+                IProject.providedBy(self.context) or
+                IPerson.providedBy(self.context))
 
     def youngestPatch(self, bug):
         """Return the youngest patch attached to a bug, else error."""

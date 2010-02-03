@@ -9,7 +9,7 @@ product.  At first, the product is new and has no bugs.
 
     >>> patchy_product = factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeProduct,
-    ...     name='patchy-product-1')
+    ...     name='patchy-product-1', displayname="Patchy 1")
 
 We don't see any patches when we open the patches view.
 
@@ -75,6 +75,13 @@ patches view.
     Bug #16: bug_a title                  Undecided     New     ...second...
     From: Patchy Person
     Link: patch_a.diff description of patch a
+
+The page title and other wording in the page reflects the contents.
+
+    >>> print_location(user_browser.contents)
+    Hierarchy: Patchy 1 > Bugs > Patch attachments in Patchy 1
+    Tabs: ...
+    Main heading: Patch attachments in Patchy 1
 
 After creating some more bugs, with some non-patch and some patch
 attachments...
@@ -218,7 +225,7 @@ Bugs in a product series show up in the patches view for that series.
     ...     'foo.bar@canonical.com', make_bugtask,
     ...     bug=bug_c, target=patchy_product_series)
     >>> user_browser.open(
-    ...     'https://launchpad.dev/patchy-product-1/trunk/+patches')
+    ...     'https://bugs.launchpad.dev/patchy-product-1/trunk/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug                       Importance     Status      Patch Age
     Bug #18: bug_c title       Wishlist  Fix Committed   ...second...
@@ -229,6 +236,13 @@ Bugs in a product series show up in the patches view for that series.
     From: Patchy Person
     Link: patch_a.diff
     description of patch a
+
+The page title and other wording in the page reflects the contents.
+
+    >>> print_location(user_browser.contents)
+    Hierarchy: Patchy 1 > Series trunk > Bugs > Patch attachments in trunk
+    Tabs: ...
+    Main heading: Patch attachments in trunk
 
 Patches View by Distro
 ----------------------
@@ -248,6 +262,7 @@ package when viewed via a distribution.
     ...     status=BugTaskStatus.TRIAGED)
 
     >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/+patches')
+
     >>> show_patches_view(user_browser.contents)
     Bug                       Importance   Status    Package    Patch Age
     Bug #18: bug_c title       High       Triaged    a52dec  ...second...
@@ -256,6 +271,11 @@ package when viewed via a distribution.
     Bug #16: bug_a title       Medium   Fix Released   evolution  ...second...
     From: Patchy Person
     Link: patch_a.diff description of patch a
+
+    >>> print_location(user_browser.contents)
+    Hierarchy: Ubuntu > Bugs > Patch attachments in Ubuntu
+    Tabs: ...
+    Main heading: Patch attachments in Ubuntu
 
 Patches View by Distro Series
 -----------------------------
@@ -276,14 +296,16 @@ The patches view works for distro series.
     ...     target='warty', target_is_distroseries_name=True,
     ...     importance=BugTaskImportance.HIGH,
     ...     status=BugTaskStatus.TRIAGED)
-    >>> user_browser.open('https://launchpad.dev/ubuntu/hoary/+patches')
+
+    >>> user_browser.open('https://bugs.launchpad.dev/ubuntu/hoary/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug                       Importance   Status   Package    Patch Age
     Bug #16: bug_a title     Undecided       New    hoary     ...second...
     From: Patchy Person
     Link: patch_a.diff
     description of patch a
-    >>> user_browser.open('https://launchpad.dev/ubuntu/warty/+patches')
+
+    >>> user_browser.open('https://bugs.launchpad.dev/ubuntu/warty/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug                       Importance   Status   Package    Patch Age
     Bug #18: bug_c title        High       Triaged   warty    ...second...
@@ -297,6 +319,11 @@ The patches view works for distro series.
     From: Patchy Person
     Link: patch_c.diff
     description of patch c
+
+    >>> print_location(user_browser.contents)
+    Hierarchy: Ubuntu > Warty (4.10) > Bugs > Patch attachments in Warty
+    Tabs: ...
+    Main heading: Patch attachments in Warty
 
 Patches View by Source Package
 ------------------------------
@@ -319,6 +346,11 @@ target package column in that case, because the package is implied.
     From: Patchy Person
     Link: patch_a.diff description of patch a
 
+    >>> print_location(user_browser.contents)
+    Hierarchy: Ubuntu > ?evolution? package > Bugs > Patch ...
+    Tabs: ...
+    Main heading: Patch attachments in evolution in ubuntu
+
 Patches View by Person and Team
 -------------------------------
 
@@ -327,25 +359,31 @@ The patches view works for people and teams.
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/~%s/+patches' % (
     ...         patch_submitter.name,))
+
     >>> show_patches_view(user_browser.contents)
-    Bug                     Importance  Status         Patch Age
-    Bug #17: bug_b title    Critical    Confirmed      ...second...
+    Bug  Importance  Status  Package  Patch Age
+    Bug #17: bug_b title  Critical  Confirmed  patchy-product-1 ...second...
     From: Patchy Person
     Link: patch_c.diff
     description of patch c
-    Bug #18: bug_c title    High        Triaged        ...second...
+    Bug #18: bug_c title  High  Triaged  a52dec  ...second...
     From: Patchy Person
     Link: patch_f.diff
     description of patch f
-    Bug #18: bug_c title    High        Triaged        ...second...
+    Bug #18: bug_c title  High  Triaged  warty  ...second...
     From: Patchy Person
     Link: patch_f.diff
     description of patch f
-    Bug #16: bug_a title    Medium      Fix Released   ...second...
+    Bug #16: bug_a title  Medium  Fix Released  evolution  ...second...
     From: Patchy Person
     Link: patch_a.diff
     description of patch a
-    Bug #18: bug_c title    Wishlist    Fix Committed  ...second...
+    Bug #18: bug_c title  Wishlist  Fix Committed  patchy-product-1  ...second...
     From: Patchy Person
     Link: patch_f.diff
     description of patch f
+
+    >>> print_location(user_browser.contents)
+    Hierarchy: Patchy Person > Patch attachments for Patchy Person
+    Tabs: ...
+    Main heading: Patch attachments for Patchy Person
