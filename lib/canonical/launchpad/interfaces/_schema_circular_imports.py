@@ -44,6 +44,7 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -264,6 +265,10 @@ patch_collection_return_type(
 patch_reference_property(
     IDistribution, 'main_archive', IArchive)
 IDistribution['all_distro_archives'].value_type.schema = IArchive
+
+
+# IDistributionMirror
+IDistributionMirror['distribution'].schema = IDistribution
 
 
 # IDistroSeries

@@ -20,7 +20,7 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Bool, Choice, Datetime, List, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
@@ -39,6 +39,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
+from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -184,18 +185,22 @@ class IDistributionPublic(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
-    mirror_admin = PublicPersonChoice(
+    mirror_admin = exported(PublicPersonChoice(
         title=_("Mirror Administrator"),
         description=_("The person or team that has the rights to review and "
                       "mark this distribution's mirrors as official."),
-        required=True, vocabulary='ValidPersonOrTeam')
+        required=True, vocabulary='ValidPersonOrTeam'))
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)
-    archive_mirrors = Attribute(
-        "All enabled and official ARCHIVE mirrors of this Distribution.")
-    cdimage_mirrors = Attribute(
-        "All enabled and official RELEASE mirrors of this Distribution.")
+    archive_mirrors = exported(CollectionField(
+        description=_("All enabled and official ARCHIVE mirrors of this "
+                      "Distribution."),
+        readonly=True, value_type=Object(schema=IDistributionMirror)))
+    cdimage_mirrors = exported(CollectionField(
+        description=_("All enabled and official RELEASE mirrors of this "
+                      "Distribution."),
+        readonly=True, value_type=Object(schema=IDistributionMirror)))
     disabled_mirrors = Attribute(
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
@@ -304,6 +309,10 @@ class IDistributionPublic(
             `IDistroSeries.version`.
         """
 
+    @operation_parameters(
+        name=TextLine(title=_("Name"), required=True))
+    @operation_returns_entry(IDistributionMirror)
+    @export_read_operation()
     def getMirrorByName(name):
         """Return the mirror with the given name for this distribution or None
         if it's not found.
