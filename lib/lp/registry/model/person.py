@@ -2367,12 +2367,6 @@ class Person(
         """See `IPerson`."""
         from canonical.launchpad.database.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
-        
-    
-    @property
-    def official_bug_tags(self):
-        """ a person does not have any official bug tags """
-        return set()
 
 
 class PersonSet:
