@@ -233,9 +233,7 @@ class JobRunnerProcess(child.AMPChild):
 
     def __init__(self, job_source_name):
         child.AMPChild.__init__(self)
-        segments = job_source_name.split('.')
-        module = '.'.join(segments[:-1])
-        name = segments[-1]
+        module, name = job_source_name.rsplit('.', 1)
         source_module = __import__(module, fromlist=[name])
         self.job_source = getattr(source_module, name)
         self.context_manager = self.job_source.contextManager()
