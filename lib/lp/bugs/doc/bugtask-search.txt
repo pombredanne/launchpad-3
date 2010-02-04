@@ -65,7 +65,7 @@ and in particular, mozilla-firefox in Ubuntu has 'em:
 == Person bugs ==
 
 To get all related tasks to a person call searchTasks() on the person
-pbject:
+object:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> user = getUtility(IPersonSet).getByName('name16')
