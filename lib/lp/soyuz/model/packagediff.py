@@ -147,7 +147,7 @@ class PackageDiff(SQLBase):
                 AND lfa.content IS NULL
             """ % sqlvalues((self.from_source, self.to_source))
         result = store.execute(query).get_one()
-        return result
+        return (0 if result is None else result)
 
     def performDiff(self):
         """See `IPackageDiff`.
