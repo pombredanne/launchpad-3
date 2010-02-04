@@ -33,7 +33,7 @@
   <tr>
     <td class="bugs-count" tal:content="view/high_bugs_count|nothing" />
     <td class="bugs-link">
-      <a tal:attributes="href view/high_bugs_url">High priority bugs</a>
+      <a tal:attributes="href view/high_bugs_url">High importance bugs</a>
     </td>
   </tr>
   <tr>

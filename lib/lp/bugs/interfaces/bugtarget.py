@@ -50,7 +50,7 @@ class IHasBugs(Interface):
     inprogress_bugtasks = Attribute(
         "A list of in-progress bugTasks for this target.")
     high_bugtasks = Attribute(
-        "A list of high priority BugTasks for this target.")
+        "A list of high importance BugTasks for this target.")
     critical_bugtasks = Attribute(
         "A list of critical BugTasks for this target.")
     new_bugtasks = Attribute("A list of New BugTasks for this target.")

@@ -36,7 +36,9 @@ general stats.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
+    In-progress bugs
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
@@ -45,7 +47,9 @@ general stats.
 
     >>> print_portlet_contents(anon_browser, path)
     3 Open bugs
+    0 In-progress bugs
     0 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     1 New bugs
     2 Open CVE bugs - CVE reports
@@ -55,8 +59,10 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
+    In-progress bugs
     Bugs assigned to me
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
@@ -65,8 +71,10 @@ bugs is also shown.
 
     >>> print_portlet_contents(user_browser, path)
     3 Open bugs
+    0 In-progress bugs
     0 Bugs assigned to me
     0 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     1 New bugs
     2 Open CVE bugs - CVE reports
@@ -86,7 +94,9 @@ link to review nominations.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
+    In-progress bugs
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
@@ -97,7 +107,9 @@ link to review nominations.
 
     >>> print_portlet_contents(anon_browser, path)
     2 Open bugs
+    0 In-progress bugs
     0 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bugs - CVE reports
@@ -107,8 +119,10 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
+    In-progress bugs
     Bugs assigned to me
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
@@ -119,8 +133,10 @@ bugs is also shown.
 
     >>> print_portlet_contents(user_browser, path)
     2 Open bugs
+    0 In-progress bugs
     0 Bugs assigned to me
     0 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bugs - CVE reports
@@ -139,7 +155,9 @@ If the user is not logged-in general stats are shown.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
+    In-progress bugs
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
@@ -148,7 +166,9 @@ If the user is not logged-in general stats are shown.
 
     >>> print_portlet_contents(anon_browser, path)
     3 Open bugs
+    0 In-progress bugs
     0 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     1 New bugs
     2 Open CVE bugs
@@ -158,8 +178,10 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
+    In-progress bugs
     Bugs assigned to me
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
@@ -168,8 +190,10 @@ bugs is also shown.
 
     >>> print_portlet_contents(user_browser, path)
     3 Open bugs
+    0 In-progress bugs
     0 Bugs assigned to me
     0 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     1 New bugs
     2 Open CVE bugs
@@ -192,14 +216,18 @@ option to subscribe to bug mail.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
+    In-progress bugs
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
 
     >>> print_portlet_contents(anon_browser, path)
     2 Open bugs
+    0 In-progress bugs
     0 Critical bugs
+    0 In-progress bugs
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bugs
@@ -209,16 +237,20 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
+    In-progress bugs
     Bugs assigned to me
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
 
     >>> print_portlet_contents(user_browser, path)
     2 Open bugs
+    0 In-progress bugs
     0 Bugs assigned to me
     0 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bugs
@@ -240,7 +272,9 @@ If the user is not logged-in general stats are shown.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
+    In-progress bugs
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
@@ -249,7 +283,9 @@ If the user is not logged-in general stats are shown.
 
     >>> print_portlet_contents(anon_browser, path)
     4 Open bugs
+    0 In-progress bugs
     1 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     4 New bugs
     1 Open CVE bugs
@@ -259,8 +295,10 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
+    In-progress bugs
     Bugs assigned to me
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
@@ -269,8 +307,10 @@ bugs is also shown.
 
     >>> print_portlet_contents(user_browser, path)
     4 Open bugs
+    0 In-progress bugs
     0 Bugs assigned to me
     1 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     4 New bugs
     1 Open CVE bugs
@@ -292,7 +332,9 @@ If the user is not logged-in general stats are shown.
 
     >>> print_portlet(anon_browser, path)
     Open bugs
+    In-progress bugs
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
@@ -301,7 +343,9 @@ If the user is not logged-in general stats are shown.
 
     >>> print_portlet_contents(anon_browser, path)
     3 Open bugs
+    0 In-progress bugs
     1 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     3 New bugs
     1 Open CVE bugs - CVE reports
@@ -311,8 +355,10 @@ bugs is also shown.
 
     >>> print_portlet(user_browser, path)
     Open bugs
+    In-progress bugs
     Bugs assigned to me
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
@@ -321,8 +367,10 @@ bugs is also shown.
 
     >>> print_portlet_contents(user_browser, path)
     3 Open bugs
+    0 In-progress bugs
     0 Bugs assigned to me
     1 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     3 New bugs
     1 Open CVE bugs - CVE reports
