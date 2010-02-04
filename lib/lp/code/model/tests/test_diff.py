@@ -123,6 +123,7 @@ class TestDiff(DiffTestCase):
         content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertEqual(content, diff.text)
+        self.assertTrue(diff.diff_text.restricted)
 
     def test_oversized_normal(self):
         # A diff smaller than config.diff.max_read_size is not oversized.

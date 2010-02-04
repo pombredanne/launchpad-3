@@ -195,7 +195,7 @@ class Diff(SQLBase):
             if filename is None:
                 filename = generate_uuid() + '.txt'
             diff_text = getUtility(ILibraryFileAliasSet).create(
-                filename, size, diff_content, 'text/x-diff')
+                filename, size, diff_content, 'text/x-diff', restricted=True)
             diff_content.seek(0)
             diff_content_bytes = diff_content.read(size)
             diff_lines_count = len(diff_content_bytes.strip().split('\n'))
