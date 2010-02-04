@@ -98,7 +98,7 @@ But if we use Karl, the mirror listing admin's, webservice, we can update the ow
     >>> print patched_canonical_archive['owner_link']
     http://.../~karl
 
-Only mirror admins may view certain things:
+Some attributes are read-only via the API:
 
     >>> patch = {
     ...     u'date_reviewed' : u'2010-02-04T17:19:16.424198+00:00',
