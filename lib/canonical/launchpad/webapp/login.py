@@ -198,8 +198,12 @@ class CaptchaMixin:
         return '%d + %d =' % (op1, op2)
 
 
-# XXX: Hack to make it never use the Curl fetcher.
+# The Python OpenID package uses pycurl by default, but pycurl chokes on
+# self-signed certificates (like the ones we use when developing), so we
+# change the default to urllib2 here.  That's also a good thing because it
+# ensures we test the same thing that we run on production.
 setDefaultFetcher(Urllib2Fetcher())
+
 
 class OpenIDLogin(LaunchpadView):
     """A view which initiates the OpenID handshake with our provider."""
@@ -277,19 +281,12 @@ class OpenIDCallbackView(OpenIDLogin):
     after the user has authenticated on the provider.
     """
 
+    suspended_account_template = ViewPageTemplateFile(
+        '../templates/login-suspended-account.pt')
+
     @cachedproperty
     def openid_response(self):
         consumer = self._getConsumer()
-        # XXX: Windmill will fail here because self.request.getURL() won't
-        # match the return_to URL.  It happens because when the +login page
-        # redirects the user to testopenid.lp.dev, all further requests to
-        # lp.dev (apparently) get caught by windmill and proxied to
-        # testopenid.lp.dev, so here self.request.getURL() will return
-        # testopenid.lp.dev/+openid-callback, although we should be at
-        # lp.dev/+openid-callback.
-        # It'd be easy to do a hack here to avoid this specific failure, but
-        # after logging in we wouldn't be able to go back to lp.dev, for the
-        # reason described above.
         return consumer.complete(self.request.form, self.request.getURL())
 
     def login(self, account):
@@ -302,9 +299,15 @@ class OpenIDCallbackView(OpenIDLogin):
             self.request, loginsource.getPrincipalByLogin(email), email)
 
     def render(self):
+        from zope.security.proxy import removeSecurityProxy
         if self.openid_response.status == SUCCESS:
             account = getUtility(IAccountSet).getByOpenIDIdentifier(
                 self.openid_response.identity_url.split('/')[-1])
+            if account.status == AccountStatus.SUSPENDED:
+                return self.suspended_account_template()
+            if IPerson(account, None) is None:
+                removeSecurityProxy(account).createPerson(
+                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
             self.login(account)
             target = self.request.form.get('starting_url')
             if target is None:

@@ -3,8 +3,8 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-* On windmill, why are we always redirected back to launchpad.dev after
-loading, say, bugs.launchpad.dev?  Why is shipit not accessible on windmill?
+* can the new +login page go live on edge before it goes to lpnet?  or should
+I it land in db-devel so that it only reaches edge after the roll out?
 
 * python-openid will use pycurl (if installed), falling back to urllib2. We
 should make it always use the same (be it in production or devel) so that
@@ -20,6 +20,8 @@ Account. We need to fix that if we're going to copy the Account table into the
 main replication set and stop using the one from the auth set.  If we fix
 that, though, the Account table won't be necessary so there'll be no point in
 copying it.  *I'm not sure this is feasible.*
+
+* We will need to copy the status from Account back to Person.
 
 * As discussed with Francis, it's not worth porting the team-restricted login
 stuff to the new system, so we'll drop it.
