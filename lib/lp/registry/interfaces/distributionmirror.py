@@ -325,7 +325,7 @@ class IDistributionMirror(Interface):
         description=_('e.g.: rsync://archive.ubuntu.com/ubuntu/')))
     enabled = exported(Bool(
         title=_('This mirror was probed successfully.'),
-        required=False, readonly=False, default=False))
+        required=False, readonly=True, default=False))
     speed = exported(Choice(
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary=MirrorSpeed))
