@@ -122,10 +122,6 @@ orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
 WAIT_INTERVAL = datetime.timedelta(seconds=180)
 
-def persist_test_services():
-    """Should test services be re-used between test runs?"""
-    return os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None
-
 
 class LayerError(Exception):
     pass
@@ -245,14 +241,21 @@ class BaseLayer:
     # in tearTestDown.
     disable_thread_check = False
 
+    # A flag to make services like Librarian and Memcached to persist
+    # between test runs. This flag is set in setUp() by looking at the
+    # LP_PERSISTENT_TEST_SERVICES environment variable.
+    persist_test_services = False
+
     @classmethod
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
+        BaseLayer.persist_test_services = (
+            os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
         # Kill any Memcached or Librarian left running from a previous
         # test run, or from the parent test process if the current
         # layer is being run in a subprocess.
-        if not persist_test_services():
+        if not BaseLayer.persist_test_services:
             kill_by_pidfile(MemcachedLayer.getPidFile())
             LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
@@ -466,7 +469,7 @@ class MemcachedLayer(BaseLayer):
     def setUp(cls):
         # Create a client
         MemcachedLayer.client = memcache_client_factory()
-        if (persist_test_services() and
+        if (BaseLayer.persist_test_services and
             os.path.exists(MemcachedLayer.getPidFile())):
             return
 
@@ -504,7 +507,7 @@ class MemcachedLayer(BaseLayer):
 
         # Register an atexit hook just in case tearDown doesn't get
         # invoked for some perculiar reason.
-        if not persist_test_services():
+        if not BaseLayer.persist_test_services:
             atexit.register(kill_by_pidfile, pidfile)
 
     @classmethod
@@ -512,7 +515,7 @@ class MemcachedLayer(BaseLayer):
     def tearDown(cls):
         MemcachedLayer.client.disconnect_all()
         MemcachedLayer.client = None
-        if not persist_test_services():
+        if not BaseLayer.persist_test_services:
             # Kill our memcached, and there is no reason to be nice about it.
             kill_by_pidfile(MemcachedLayer.getPidFile())
             MemcachedLayer._memcached_process = None
