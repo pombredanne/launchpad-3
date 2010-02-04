@@ -2,7 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
-"""Database classes that implement SourcePacakge items."""
+"""Database classes that implement SourcePackage items."""
 
 __metaclass__ = type
 
