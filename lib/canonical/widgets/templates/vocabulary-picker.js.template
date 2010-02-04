@@ -1,4 +1,4 @@
-YUI().use('node', 'lp.picker', function(Y) {
+YUI().use('node', 'lp.picker', 'plugin', function(Y) {
     if (Y.UA.ie) {
         return;
     }
@@ -9,15 +9,12 @@ YUI().use('node', 'lp.picker', function(Y) {
     // The vocabulary picker, created when used for the first time.
     var picker = null;
     function make_picker() {
-        var save = function (result) {
-            Y.DOM.byId(args.input_id).value = result.value;
-        };
         var config = {
             header: args.header,
             step_title: args.step_title,
             extra_no_results_message: args.extra_no_results_message
         };
-        var picker = Y.lp.picker.create(args.vocabulary, save, config);
+        var picker = Y.lp.picker.create(args.vocabulary, config);
         if (config.extra_no_results_message !== null) {
             picker.before('resultsChange', function (e) {
                 var new_results = e.details[0].newVal;
@@ -30,6 +27,8 @@ YUI().use('node', 'lp.picker', function(Y) {
                 }
             });
         }
+        picker.plug(Y.lazr.TextFieldPickerPlugin,
+                    {input_element: '[id="' + args.input_id + '"]'});
         return picker;
     }
 
