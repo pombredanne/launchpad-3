@@ -48,7 +48,12 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
-from lp.codehosting.scanner.bzrsync import BzrSync
+from lp.codehosting.scanner import buglinks, email, mergedetection
+from lp.codehosting.scanner.fixture import (
+    Fixtures, ServerFixture, make_zope_event_fixture)
+from lp.codehosting.scanner.bzrsync import (
+    BzrSync, schedule_diff_updates, schedule_translation_upload
+)
 from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
     get_scanner_server)
 from lp.services.job.model.job import Job
@@ -264,6 +269,7 @@ class BranchScanJob(BranchJobDerived):
 
     classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
+    server = None
 
     @classmethod
     def create(cls, branch):
@@ -273,18 +279,29 @@ class BranchScanJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchScanJob`."""
-        bzrsync = BzrSync(self.branch)
+        from canonical.launchpad.scripts import log
+        bzrsync = BzrSync(self.branch, log)
         bzrsync.syncBranchAndClose()
 
-    @staticmethod
+    @classmethod
     @contextlib.contextmanager
-    def contextManager():
+    def contextManager(cls):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        server = get_scanner_server()
-        server.setUp()
+        cls.server = get_scanner_server()
+        event_handlers = [
+            email.queue_tip_changed_email_jobs,
+            buglinks.got_new_revision,
+            mergedetection.auto_merge_branches,
+            mergedetection.auto_merge_proposals,
+            schedule_diff_updates,
+            schedule_translation_upload,
+            ]
+        fixture = Fixtures(
+            [ServerFixture(cls.server), make_zope_event_fixture(*event_handlers)])
+        fixture.setUp()
         yield
-        server.tearDown()
+        fixture.tearDown()
 
 
 class BranchUpgradeJob(BranchJobDerived):
@@ -311,9 +328,9 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
         server = get_multi_server(write_hosted=True)
-        server.setUp()
+        server.start_server()
         yield
-        server.tearDown()
+        server.stop_server()
 
     def run(self):
         """See `IBranchUpgradeJob`."""

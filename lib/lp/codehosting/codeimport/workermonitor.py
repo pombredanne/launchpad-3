@@ -10,10 +10,9 @@ __all__ = []
 
 
 import os
-import sys
 import tempfile
 
-from twisted.internet import defer, reactor, task
+from twisted.internet import defer, error, reactor, task
 from twisted.python import failure
 from twisted.python.util import mergeFunctionMetadata
 
@@ -32,7 +31,8 @@ from canonical.twistedsupport.processmonitor import (
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
-from lp.codehosting.codeimport.worker import CodeImportSourceDetails
+from lp.codehosting.codeimport.worker import (
+    CodeImportSourceDetails, CodeImportWorkerExitCode)
 from lp.testing import login, logout, ANONYMOUS
 
 
@@ -243,19 +243,15 @@ class CodeImportWorkerMonitor:
     def finishJob(self, status):
         """Call the finishJob method for the job we are working on.
 
-        This method uploads the log file to the librarian first.  If this
-        fails, we still try to call finishJob, but return the librarian's
-        failure if finishJob succeeded (if finishJob fails, that exception
-        'wins').
+        This method uploads the log file to the librarian first.
         """
         job = self.getJob()
         log_file_size = self._log_file.tell()
-        librarian_failure = None
         if log_file_size > 0:
             self._log_file.seek(0)
             branch = job.code_import.branch
-            log_file_name = '%s-%s-log.txt' % (
-                branch.product.name, branch.name)
+            log_file_name = '%s-%s-%s-log.txt' % (
+                branch.owner.name, branch.product.name, branch.name)
             try:
                 log_file_alias = self._createLibrarianFileAlias(
                     log_file_name, log_file_size, self._log_file,
@@ -300,16 +296,25 @@ class CodeImportWorkerMonitor:
         failure.trap(ExitQuietly)
         return None
 
+    def _reasonToStatus(self, reason):
+        if isinstance(reason, failure.Failure):
+            if reason.check(error.ProcessTerminated):
+                if reason.value.exitCode == \
+                       CodeImportWorkerExitCode.SUCCESS_NOCHANGE:
+                    return CodeImportResultStatus.SUCCESS_NOCHANGE
+            return CodeImportResultStatus.FAILURE
+        else:
+            return CodeImportResultStatus.SUCCESS
+
     def callFinishJob(self, reason):
         """Call finishJob() with the appropriate status."""
         if not self._call_finish_job:
             return reason
-        if isinstance(reason, failure.Failure):
+        status = self._reasonToStatus(reason)
+        if status == CodeImportResultStatus.FAILURE:
             self._log_file.write("Import failed:\n")
             reason.printTraceback(self._log_file)
             self._logOopsFromFailure(reason)
-            status = CodeImportResultStatus.FAILURE
         else:
             self._logger.info('Import succeeded.')
-            status = CodeImportResultStatus.SUCCESS
         return self.finishJob(status)
