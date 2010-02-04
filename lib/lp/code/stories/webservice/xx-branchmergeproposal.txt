@@ -457,7 +457,7 @@ The proposals can also be filtered by status.
     ...     status=[BranchMergeProposalStatus.REJECTED.title])
     http://.../~source/fooix/fix-it/+merge/... - Rejected
 
-== Gettting Merge Proposals A Person Has Been Asked To Review ==
+== Getting Merge Proposals a Person has been Asked To Review ==
 
 It's good to be able to find out which proposals you have been asked to
 review.
@@ -467,7 +467,7 @@ review.
     >>> fixit_proposal.requestReview()
     >>> logout()
 
-    >>> proposals = webservice.named_get('/~target', 'getRequestedReviews',
+    >>> proposals = webservice.named_get('/~target', 'getRequestedReviews'
     ...     ).jsonBody()
     >>> for proposal in proposals['entries']:
     ...     print_proposal(proposal)

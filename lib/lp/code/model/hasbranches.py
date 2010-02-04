@@ -52,10 +52,9 @@ class HasRequestedReviewsMixin:
     def getRequestedReviews(self, status=None, visible_by_user=None):
         """See `IHasRequestedReviews`."""
         if not status:
-            status = (
-                BranchMergeProposalStatus.NEEDS_REVIEW,
-                )
+            status = (BranchMergeProposalStatus.NEEDS_REVIEW,)
 
-        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        proposals = collection.getMergeProposalsForPerson(self, status)
+        visible_branches = getUtility(IAllBranches).visibleByUser(
+            visible_by_user)
+        proposals = visible_branches.getMergeProposalsForPerson(self, status)
         return proposals
