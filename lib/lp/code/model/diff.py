@@ -305,6 +305,10 @@ class PreviewDiff(Storm):
 
     conflicts = Unicode()
 
+    @property
+    def has_conflicts(self):
+        return self.conflicts is not None and self.conflicts != ''
+
     branch_merge_proposal = Reference(
         "PreviewDiff.id", "BranchMergeProposal.preview_diff_id",
         on_remote=True)
