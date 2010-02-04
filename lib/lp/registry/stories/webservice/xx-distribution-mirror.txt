@@ -31,6 +31,45 @@ mirrors:
     status: u'Official'
     whiteboard: None
 
+People who are not mirror listing admins or the mirrors registrar may not
+change the owner's of mirrors:
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from simplejson import dumps
+    >>> login(ANONYMOUS)
+    >>> karl_db = getUtility(IPersonSet).getByName('karl')
+    >>> test_db = getUtility(IPersonSet).getByName('name12')
+    >>> karl_webservice = webservice_for_person(karl_db,
+    ...     permission=OAuthPermission.WRITE_PUBLIC)
+    >>> test_webservice = webservice_for_person(test_db,
+    ...     permission=OAuthPermission.WRITE_PUBLIC)
+    >>> logout()
+    >>> karl = webservice.get("/~karl").jsonBody()
+    >>> patch = {
+    ...     u'owner_link': karl['self_link']
+    ... }
+
+Now trying to set the owner using Sample Person's webservice is not authorized.
+
+    >>> response = test_webservice.patch(
+    ...     canonical_archive['self_link'], 'application/json', dumps(patch))
+    >>> print response.getheader('status')
+    401 Unauthorized
+
+But if we use Karl, the mirror listing admin's, webservice, we can update the owner.
+
+    >>> response = karl_webservice.patch(
+    ...     canonical_archive['self_link'], 'application/json', dumps(patch))
+    >>> print response.getheader('status')
+    209 Content Returned
+
+    >>> patched_canonical_archive = response.jsonBody()
+    >>> print patched_canonical_archive['owner_link']
+    http://.../~karl
+
 And CD image mirrors:
 
     >>> ubuntu_cd_mirrors = webservice.get(ubuntu['cdimage_mirrors_collection_link']).jsonBody()
