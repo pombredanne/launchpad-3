@@ -1194,6 +1194,31 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         disconnect_stores()
 
 
+class GoogleLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,
+                                     GoogleServiceLayer):
+    """Provides Google service in addition to LaunchpadFunctionalLayer."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
 
 class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
     """Testing layer for unit tests with no need for librarian.
