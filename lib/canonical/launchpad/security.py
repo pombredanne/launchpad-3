@@ -818,7 +818,9 @@ class SeriesDrivers(AuthorizationBase):
 class ViewProductSeries(AuthorizationBase):
 
     usedfor = IProductSeries
-    permission = 'launchpad.View'
+    # XXX: JamalFanaian 2010-02-04 bug=514447: setting this correctly 
+    # breaks xx-product-package-pages
+    #permission = 'launchpad.View'
 
     def checkUnauthenticated(self):
         """See `IAuthorization.checkUnauthenticated`.
