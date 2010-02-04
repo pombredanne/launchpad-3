@@ -773,8 +773,8 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         """Make a CVS `CodeImportSourceDetails` pointing at a real CVS repo.
         """
         cvs_server = CVSServer(self.makeTemporaryDirectory())
-        cvs_server.setUp()
-        self.addCleanup(cvs_server.tearDown)
+        cvs_server.start_server()
+        self.addCleanup(cvs_server.stop_server)
 
         cvs_server.makeModule('trunk', [('README', 'original\n')])
 
@@ -804,8 +804,8 @@ class SubversionImportHelpers:
         """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
         """
         svn_server = SubversionServer(self.makeTemporaryDirectory())
-        svn_server.setUp()
-        self.addCleanup(svn_server.tearDown)
+        svn_server.start_server()
+        self.addCleanup(svn_server.stop_server)
 
         svn_branch_url = svn_server.makeBranch(branch_name, files)
         svn_branch_url = svn_branch_url.replace('://localhost/', ':///')
@@ -897,8 +897,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         """
         repository_path = self.makeTemporaryDirectory()
         git_server = GitServer(repository_path)
-        git_server.setUp()
-        self.addCleanup(git_server.tearDown)
+        git_server.start_server()
+        self.addCleanup(git_server.stop_server)
 
         git_server.makeRepo(files)
         self.foreign_commit_count = 1
@@ -948,8 +948,8 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         """
         repository_path = self.makeTemporaryDirectory()
         hg_server = MercurialServer(repository_path)
-        hg_server.setUp()
-        self.addCleanup(hg_server.tearDown)
+        hg_server.start_server()
+        self.addCleanup(hg_server.stop_server)
 
         hg_server.makeRepo(files)
         self.foreign_commit_count = 1
