@@ -290,9 +290,10 @@ class IDistributionMirror(Interface):
         title=_('Owner'), description=_("The person who is set as the "
             "current administrator of this mirror."), required=True,
         readonly=False, vocabulary='ValidOwner'))
-    reviewer = PublicPersonChoice(
-        title=_('Reviewer'), required=False, readonly=False,
-        vocabulary='ValidPersonOrTeam')
+    reviewer = exported(PublicPersonChoice(
+        title=_('Reviewer'), description=_("The person who last reviewed this "
+            "mirror"), required=False, readonly=True,
+        vocabulary='ValidPersonOrTeam'))
     distribution = exported(
         Reference(
             Interface,
