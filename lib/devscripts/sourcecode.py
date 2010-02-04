@@ -20,7 +20,7 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import BzrError, NotBranchError
 from bzrlib.plugin import load_plugins
 from bzrlib.revisionspec import RevisionSpec
-from bzrlib.trace import report_exception
+from bzrlib.trace import enable_default_logging, report_exception
 from bzrlib import ui
 from bzrlib.workingtree import WorkingTree
 
@@ -282,6 +282,7 @@ def main(args):
         parser.error("Too many arguments.")
     print 'Sourcecode: %s' % (sourcecode_directory,)
     print 'Config: %s' % (config_filename,)
+    enable_default_logging()
     # Tell bzr to use the terminal (if any) to show progress bars
     ui.ui_factory = ui.make_ui_for_terminal(
         sys.stdin, sys.stdout, sys.stderr)
