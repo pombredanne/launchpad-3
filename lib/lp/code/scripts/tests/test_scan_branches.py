@@ -6,12 +6,17 @@
 """Test the scan_branches script."""
 
 
+from storm.locals import Store
 import transaction
 
 from canonical.testing import ZopelessAppServerLayer
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
-from lp.code.model.branchjob import BranchScanJob
+from lp.code.enums import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
+from lp.code.model.branchjob import BranchJob, BranchJobType, BranchScanJob
+from lp.services.job.model.job import Job, JobStatus
 
 
 class TestScanBranches(TestCaseWithFactory):
@@ -44,11 +49,26 @@ class TestScanBranches(TestCaseWithFactory):
 
         db_branch = self.factory.makeAnyBranch()
         self.make_branch_with_commits_and_scan_job(db_branch)
+        db_branch.subscribe(
+            db_branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL)
+        transaction.commit()
 
         self.run_script_and_assert_success()
         self.assertEqual(db_branch.revision_count, 3)
 
-    def test_scan_branch_packagebranch(self):
+        store = Store.of(db_branch)
+        result = store.find(
+            BranchJob,
+            BranchJob.jobID == Job.id,
+            Job._status == JobStatus.WAITING,
+            BranchJob.job_type == BranchJobType.REVISION_MAIL,
+            BranchJob.branch == db_branch)
+        self.assertEqual(result.count(), 1)
+
+    def test_scan_packagebranch(self):
         """Test that scan_branches can scan package branches."""
         self.useBzrBranches(real_server=True)
 

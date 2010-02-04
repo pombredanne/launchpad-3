@@ -38,7 +38,8 @@ from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    CodeImportSourceDetails, get_default_bazaar_branch_store)
+    CodeImportSourceDetails, CodeImportWorkerExitCode,
+    get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
@@ -292,7 +293,39 @@ class TestWorkerMonitorUnit(TrialTestCase):
 
     def test_callFinishJobCallsFinishJobFailure(self):
         # callFinishJob calls finishJob with CodeImportResultStatus.FAILURE
-        # and swallows the failure if its argument is a Failure.
+        # and swallows the failure if its argument indicates that the
+        # subprocess exited with an exit code of
+        # CodeImportWorkerExitCode.FAILURE.
+        calls = self.patchOutFinishJob()
+        ret = self.worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.FAILURE))
+        self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
+        self.assertOopsesLogged([error.ProcessTerminated])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobSuccessNoChange(self):
+        # If the argument to callFinishJob indicates that the subprocess
+        # exited with a code of CodeImportWorkerExitCode.SUCCESS_NOCHANGE, it
+        # calls finishJob with a status of SUCCESS_NOCHANGE.
+        calls = self.patchOutFinishJob()
+        ret = self.worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.SUCCESS_NOCHANGE))
+        self.assertEqual(calls, [CodeImportResultStatus.SUCCESS_NOCHANGE])
+        self.assertOopsesLogged([])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobArbitraryFailure(self):
+        # If the argument to callFinishJob indicates that there was some other
+        # failure that had nothing to do with the subprocess, it records
+        # failure.
         calls = self.patchOutFinishJob()
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
@@ -324,6 +357,9 @@ class TestWorkerMonitorUnit(TrialTestCase):
 class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
     """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
     """
+
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
 
     class WorkerMonitor(CodeImportWorkerMonitor):
         """See `CodeImportWorkerMonitor`.
@@ -439,6 +475,9 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
+
     def setUp(self):
         BzrTestCase.setUp(self)
         login('no-priv@canonical.com')
@@ -456,8 +495,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
     def makeCVSCodeImport(self):
         """Make a `CodeImport` that points to a real CVS repository."""
         cvs_server = CVSServer(self.repo_path)
-        cvs_server.setUp()
-        self.addCleanup(cvs_server.tearDown)
+        cvs_server.start_server()
+        self.addCleanup(cvs_server.stop_server)
 
         cvs_server.makeModule('trunk', [('README', 'original\n')])
         self.foreign_commit_count = 2
@@ -468,8 +507,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
     def makeSVNCodeImport(self):
         """Make a `CodeImport` that points to a real Subversion repository."""
         self.subversion_server = SubversionServer(self.repo_path)
-        self.subversion_server.setUp()
-        self.addCleanup(self.subversion_server.tearDown)
+        self.subversion_server.start_server()
+        self.addCleanup(self.subversion_server.stop_server)
         url = self.subversion_server.makeBranch(
             'trunk', [('README', 'contents')])
         self.foreign_commit_count = 2
@@ -480,8 +519,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         """Make a `CodeImport` that points to a real Subversion repository."""
         self.subversion_server = SubversionServer(
             self.repo_path, use_svn_serve=True)
-        self.subversion_server.setUp()
-        self.addCleanup(self.subversion_server.tearDown)
+        self.subversion_server.start_server()
+        self.addCleanup(self.subversion_server.stop_server)
         url = self.subversion_server.makeBranch(
             'trunk', [('README', 'contents')])
         self.foreign_commit_count = 2
@@ -493,8 +532,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         """Make a `CodeImport` that points to a real Git repository."""
         load_optional_plugin('git')
         self.git_server = GitServer(self.repo_path)
-        self.git_server.setUp()
-        self.addCleanup(self.git_server.tearDown)
+        self.git_server.start_server()
+        self.addCleanup(self.git_server.stop_server)
 
         self.git_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
@@ -505,8 +544,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         """Make a `CodeImport` that points to a real Mercurial repository."""
         load_optional_plugin('hg')
         self.hg_server = MercurialServer(self.repo_path)
-        self.hg_server.setUp()
-        self.addCleanup(self.hg_server.tearDown)
+        self.hg_server.start_server()
+        self.addCleanup(self.hg_server.stop_server)
 
         self.hg_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1

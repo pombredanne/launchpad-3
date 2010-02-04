@@ -216,6 +216,7 @@ class ControlFormat(DBEnumeratedType):
 
 # A tuple of branch formats that should not suggest upgrading.
 CURRENT_BRANCH_FORMATS = (
+    None,
     BranchFormat.UNRECOGNIZED,
     BranchFormat.BRANCH_REFERENCE,
     BranchFormat.BZR_BRANCH_7,
@@ -226,6 +227,7 @@ CURRENT_BRANCH_FORMATS = (
 
 # A tuple of repository formats that should not suggest upgrading.
 CURRENT_REPOSITORY_FORMATS = (
+    None,
     RepositoryFormat.UNRECOGNIZED,
     RepositoryFormat.BZR_PACK_DEV_0,
     RepositoryFormat.BZR_PACK_DEV_0_SUBTREE,
