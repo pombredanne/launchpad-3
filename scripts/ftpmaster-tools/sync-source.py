@@ -18,6 +18,7 @@ import _pythonpath
 
 import apt_pkg
 import commands
+from debian_bundle.deb822 import Dsc
 import errno
 import optparse
 import os
@@ -365,9 +366,21 @@ def check_dsc(dsc, current_sources, current_binaries):
 def import_dsc(dsc_filename, suite, previous_version, signing_rules,
                files_from_librarian, requested_by, origin, current_sources,
                current_binaries):
-    dsc = dak_utils.parse_changes(dsc_filename, signing_rules)
-    dsc_files = dak_utils.build_file_list(dsc, is_a_dsc=1)\
+    dsc_file = open(dsc_filename, 'r')
+    dsc = Dsc(dsc_file)
 
+    if signing_rules.startswith("must be signed"):
+        dsc_file.seek(0)
+        (gpg_pre, payload, gpg_post) = dsc.split_gpg_and_payload(dsc_file)
+        if gpg_pre == [] and gpg_post == []:
+            dak_utils.fubar("signature required for %s but not present" 
+                % dsc_filename)
+        if signing_rules == "must be signed and valid":
+            if (gpg_pre[0] != "-----BEGIN PGP SIGNED MESSAGE-----" or
+                gpg_post[0] != "-----BEGIN PGP SIGNATURE-----"):
+                dak_utils.fubar("signature for %s invalid %r %r" % (dsc_filename, gpg_pre, gpg_post))
+
+    dsc_files = dict((entry['name'], entry) for entry in dsc['files'])
     check_dsc(dsc, current_sources, current_binaries)
 
     # Add the .dsc itself to dsc_files so it's listed in the Files: field
@@ -577,15 +590,8 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     if dsc_filename is None:
         dak_utils.fubar("No dsc filename in %r" % Sources[pkg]["files"].keys())
 
-    if origin["dsc"] == "must be signed and valid":
-        signing_rules = 1
-    elif origin["dsc"] == "must be signed":
-        signing_rules = 0
-    else:
-        signing_rules = -1
-
     import_dsc(os.path.abspath(dsc_filename), suite, previous_version,
-               signing_rules, files_from_librarian, requested_by, origin,
+               origin["dsc"], files_from_librarian, requested_by, origin,
                current_sources, current_binaries)
 
 
