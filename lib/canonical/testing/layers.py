@@ -30,6 +30,7 @@ __all__ = [
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
+    'GoogleLaunchpadFunctionalLayer',
     'GoogleServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
