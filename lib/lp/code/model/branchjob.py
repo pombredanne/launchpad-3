@@ -50,8 +50,7 @@ from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.scanner import buglinks, email, mergedetection
 from lp.codehosting.scanner.fixture import (
-    Fixtures, make_zope_event_fixture, run_with_fixture
-)
+    Fixtures, ServerFixture, make_zope_event_fixture)
 from lp.codehosting.scanner.bzrsync import (
     BzrSync, schedule_diff_updates, schedule_translation_upload
 )
@@ -299,7 +298,7 @@ class BranchScanJob(BranchJobDerived):
             schedule_translation_upload,
             ]
         fixture = Fixtures(
-            [cls.server, make_zope_event_fixture(*event_handlers)])
+            [ServerFixture(cls.server), make_zope_event_fixture(*event_handlers)])
         fixture.setUp()
         yield
         fixture.tearDown()
@@ -329,9 +328,9 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
         server = get_multi_server(write_hosted=True)
-        server.setUp()
+        server.start_server()
         yield
-        server.tearDown()
+        server.stop_server()
 
     def run(self):
         """See `IBranchUpgradeJob`."""
