@@ -41,7 +41,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         """
         diff = self._context
         conflict_text = ''
-        if diff.conflicts is not None:
+        if diff.has_conflicts:
             conflict_text = _(' (has conflicts)')
 
         count_text = ''
@@ -74,4 +74,5 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         else:
             return (
                 '<a href="%(url)s" class="diff-link">'
-                '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s</a>' % args)
+                '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s'
+                '</a>' % args)

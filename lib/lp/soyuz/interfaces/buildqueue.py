@@ -101,6 +101,15 @@ class IBuildQueue(Interface):
         title=_('Start time'),
         description=_('Time when the job started.'))
 
+    def getEstimatedJobStartTime():
+        """Get the estimated start time for a pending build farm job.
+
+        :return: a timestamp upon success or None on failure. None
+            indicates that an estimated start time is not available.
+        :raise: AssertionError when the build job is not in the
+            `JobStatus.WAITING` state.
+        """
+
 
 class IBuildQueueSet(Interface):
     """Launchpad Auto Build queue set handler and auxiliary methods."""

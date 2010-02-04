@@ -3,16 +3,15 @@
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestFilebugExtras(TestCaseWithFactory):
+class TestFilebugExtras(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = "File bug extra options test"
 
     def test_filebug_extra_options(self):
         """Test the extra options area on +filebug pages.
@@ -20,7 +19,7 @@ class TestFilebugExtras(TestCaseWithFactory):
         This test ensures that, with Javascript enabled, the extra options
         expander starts closed, and contains several fields when opened.
         """
-        client = WindmillTestClient("File bug extra options test")
+        client = self.client
 
         # Open a +filebug page and wait for it to finish loading.
         client.open(url=u'http://bugs.launchpad.dev:8085/firefox/+filebug')

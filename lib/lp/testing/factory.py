@@ -101,6 +101,7 @@ from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.diff import Diff, PreviewDiff
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
 from lp.registry.model.milestone import Milestone
@@ -133,6 +134,23 @@ from lp.soyuz.model.buildqueue import BuildQueue
 from lp.testing import run_with_login, time_counter
 
 SPACE = ' '
+
+DIFF = """\
+=== zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'
+--- yvo/yc/pbqr/vagresnprf/qvss.cl	2009-10-01 13:25:12 +0000
++++ yvo/yc/pbqr/vagresnprf/qvss.cl	2010-02-02 15:48:56 +0000
+@@ -121,6 +121,10 @@
+                 'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
+              ernqbayl=Gehr))
+ 
++    unf_pbasyvpgf = Obby(
++        gvgyr=_('Unf pbasyvpgf'), ernqbayl=Gehr,
++        qrfpevcgvba=_('Gur cerivrjrq zretr cebqhprf pbasyvpgf.'))
++
+     # Gur fpurzn sbe gur Ersrerapr trgf cngpurq va _fpurzn_pvephyne_vzcbegf.
+     oenapu_zretr_cebcbfny = rkcbegrq(
+         Ersrerapr(
+"""
 
 
 def default_master_store(func):
@@ -215,6 +233,9 @@ class ObjectFactory:
             prefix = "generic-string"
         string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
+
+    def getUniqueUnicode(self):
+        return self.getUniqueString().decode('latin-1')
 
     def getUniqueURL(self, scheme=None, host=None):
         """Return a URL unique to this run of the test case."""
@@ -916,6 +937,20 @@ class LaunchpadObjectFactory(ObjectFactory):
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
+
+    def makeDiff(self, diff_text=DIFF):
+        return Diff.fromFile(StringIO(diff_text), len(diff_text))
+
+    def makePreviewDiff(self, conflicts=u''):
+        diff = self.makeDiff()
+        bmp = self.makeBranchMergeProposal()
+        preview_diff = PreviewDiff()
+        preview_diff.branch_merge_proposal = bmp
+        preview_diff.conflicts = conflicts
+        preview_diff.diff = diff
+        preview_diff.source_revision_id = self.getUniqueUnicode()
+        preview_diff.target_revision_id = self.getUniqueUnicode()
+        return preview_diff
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
