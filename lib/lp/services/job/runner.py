@@ -15,6 +15,7 @@ __all__ = [
     ]
 
 
+from calendar import timegm
 import contextlib
 import logging
 import os
@@ -22,9 +23,8 @@ from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
 
 from ampoule import child, pool, main
-from twisted.internet import defer, error, reactor, stdio
+from twisted.internet import defer, reactor
 from twisted.protocols import amp
-from twisted.python import log, reflect
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -242,9 +242,23 @@ class RunJobCommand(amp.Command):
 class JobRunnerProcess(child.AMPChild):
     """Base class for processes that run jobs."""
 
-    def __init__(self):
+    def __init__(self, job_source_name):
         child.AMPChild.__init__(self)
-        self.context_manager = self.job_class.contextManager()
+        module, name = job_source_name.rsplit('.', 1)
+        source_module = __import__(module, fromlist=[name])
+        self.job_source = getattr(source_module, name)
+        self.context_manager = self.job_source.contextManager()
+
+    @staticmethod
+    def __enter__():
+        def handler(signum, frame):
+            raise TimeoutError
+        scripts.execute_zcml_for_scripts(use_web_security=False)
+        signal(SIGHUP, handler)
+
+    @staticmethod
+    def __exit__(exc_type, exc_val, exc_tb):
+        pass
 
     def makeConnection(self, transport):
         """The Job context is entered on connect."""
@@ -258,9 +272,9 @@ class JobRunnerProcess(child.AMPChild):
 
     @RunJobCommand.responder
     def runJobCommand(self, job_id):
-        """Run a job of this job_class according to its job id."""
+        """Run a job from this job_source according to its job id."""
         runner = BaseJobRunner()
-        job = self.job_class.get(job_id)
+        job = self.job_source.get(job_id)
         oops = runner.runJobHandleError(job)
         if oops is None:
             oops_id = ''
@@ -269,28 +283,22 @@ class JobRunnerProcess(child.AMPChild):
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
-class HUPProcessPool(pool.ProcessPool):
-    """A ProcessPool that kills with HUP."""
-
-    def _handleTimeout(self, child):
-        try:
-            child.transport.signalProcess(SIGHUP)
-        except error.ProcessExitedAlready:
-            pass
-
-
 class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
 
-    def __init__(self, job_source, job_amp, logger=None, error_utility=None):
+    def __init__(self, job_source, logger=None, error_utility=None):
         starter = main.ProcessStarter(
-            bootstrap=BOOTSTRAP, packages=('twisted', 'ampoule'),
+            packages=('twisted', 'ampoule'),
             env={'PYTHONPATH': os.environ['PYTHONPATH'],
             'PATH': os.environ['PATH'],
             'LPCONFIG': os.environ['LPCONFIG']})
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        self.pool = HUPProcessPool(job_amp, starter=starter, min=0)
+        import_name = '%s.%s' % (
+            removeSecurityProxy(job_source).__module__, job_source.__name__)
+        self.pool = pool.ProcessPool(
+            JobRunnerProcess, ampChildArgs=[import_name], starter=starter,
+            min=0, timeout_signal=SIGHUP)
 
     def runJobInSubprocess(self, job):
         """Run the job_class with the specified id in the process pool.
@@ -304,12 +312,9 @@ class TwistedJobRunner(BaseJobRunner):
             self.incomplete_jobs.append(job)
             return
         job_id = job.id
-        timeout = job.getTimeout()
-        # work around ampoule bug
-        if timeout == 0:
-            timeout = 0.0000000000001
+        deadline = timegm(job.lease_expires.timetuple())
         deferred = self.pool.doWork(
-            RunJobCommand, job_id = job_id, _timeout=timeout)
+            RunJobCommand, job_id = job_id, _deadline=deadline)
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)
@@ -362,8 +367,7 @@ class TwistedJobRunner(BaseJobRunner):
     def runFromSource(cls, job_source, logger, error_utility=None):
         """Run all ready jobs provided by the specified source."""
         logger.info("Running through Twisted.")
-        runner = cls(job_source, removeSecurityProxy(job_source).amp, logger,
-                     error_utility)
+        runner = cls(job_source, logger, error_utility)
         reactor.callWhenRunning(runner.runAll)
         handler = getsignal(SIGCHLD)
         try:
@@ -396,22 +400,3 @@ class TimeoutError(Exception):
 
     def __init__(self):
         Exception.__init__(self, "Job ran too long.")
-
-
-BOOTSTRAP = """\
-import sys
-from twisted.application import reactors
-reactors.installReactor(sys.argv[-2])
-from lp.services.job.runner import bootstrap
-bootstrap(sys.argv[-1])
-"""
-
-def bootstrap(ampChildPath):
-    def handler(signum, frame):
-        raise TimeoutError
-    signal(SIGHUP, handler)
-    log.startLogging(sys.stderr)
-    ampChild = reflect.namedAny(ampChildPath)
-    stdio.StandardIO(ampChild(), 3, 4)
-    scripts.execute_zcml_for_scripts(use_web_security=False)
-    reactor.run()
