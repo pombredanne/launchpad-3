@@ -6,12 +6,10 @@
 __metaclass__ = type
 __all__ = []
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing.constants import (
     PAGE_LOAD, SLEEP)
 from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 INPUT_FIELD = (u"//div[contains(@class,'searchform')]"+
              u"//input[@id='field.search_lang']")
@@ -21,10 +19,11 @@ LANGUAGE = u"//a[contains(@class, 'language') and text()='%s']/parent::li"
 UNSEEN_VALIDATOR = 'className|unseen'
 
 
-class LanguagesFilterTest(TestCaseWithFactory):
+class LanguagesFilterTest(WindmillTestCase):
     """Test that filtering on the +languages page works."""
 
     layer = TranslationsWindmillLayer
+    suite_name = 'Languages filter'
 
     def _enter_filter_string(self, filterstring):
         self.client.type(xpath=INPUT_FIELD, text=filterstring)
@@ -50,7 +49,7 @@ class LanguagesFilterTest(TestCaseWithFactory):
         Mende, because it contains a 'de' but the language code does not,
         French, because neither its name nor language code contain 'de'.
         """
-        self.client = WindmillTestClient('Languages filter')
+        client = self.client
         start_url = 'http://translations.launchpad.dev:8085/+languages'
         # Go to the languages page
         self.client.open(url=start_url)
