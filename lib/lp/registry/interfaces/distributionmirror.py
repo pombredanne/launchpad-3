@@ -362,8 +362,8 @@ class IDistributionMirror(Interface):
         title=_('Does this mirror have a FTP or Rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = exported(Datetime(
-        title=_('Date Created'), description=_("The date on which this mirror "
-            "was registered"), required=True, readonly=True))
+        title=_('Date Created'), required=True, readonly=True,
+        description=_("The date on which this mirror was registered.")))
     date_reviewed = exported(Datetime(
         title=_('Date reviewed'), required=False, readonly=True,
         description=_(
