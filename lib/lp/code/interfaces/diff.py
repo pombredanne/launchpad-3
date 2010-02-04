@@ -121,6 +121,10 @@ class IPreviewDiff(IDiff):
                 'The conflicts text describing any path or text conflicts.'),
              readonly=True))
 
+    has_conflicts = Bool(
+        title=_('Has conflicts'), readonly=True,
+        description=_('The previewed merge produces conflicts.'))
+
     # The schema for the Reference gets patched in _schema_circular_imports.
     branch_merge_proposal = exported(
         Reference(

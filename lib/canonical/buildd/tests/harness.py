@@ -80,7 +80,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
     ['Hello World']
 
     >>> s.info()
-    ['1.0', 'i386', ['debian']]
+    ['1.0', 'i386', ['sourcepackagerecipe', 'binarypackage', 'debian']]
 
     >>> s.status()
     ['BuilderStatus.IDLE', '']

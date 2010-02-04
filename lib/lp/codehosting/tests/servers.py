@@ -126,10 +126,10 @@ class SSHCodeHostingServer(Server):
         transport = get_transport(self.get_url()).clone(path)
         return transport
 
-    def setUp(self):
+    def start_server(self):
         self._real_home, self._fake_home = self.setUpFakeHome()
 
-    def tearDown(self):
+    def stop_server(self):
         os.environ['HOME'] = self._real_home
         shutil.rmtree(self._fake_home)
 
