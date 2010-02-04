@@ -7,12 +7,15 @@ __metaclass__ = type
 __all__ = [
     'HasBranchesMixin',
     'HasMergeProposalsMixin',
+    'HasRequestedReviewsMixin',
     ]
 
+from zope.component import getUtility
 
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
-from lp.code.interfaces.branchcollection import IBranchCollection
+from lp.code.interfaces.branchcollection import (
+    IAllBranches, IBranchCollection)
 
 
 class HasBranchesMixin:
@@ -41,3 +44,18 @@ class HasMergeProposalsMixin:
 
         collection = IBranchCollection(self).visibleByUser(visible_by_user)
         return collection.getMergeProposals(status)
+
+
+class HasRequestedReviewsMixin:
+    """A mixin implementation class for `IHasRequestedReviews`."""
+
+    def getRequestedReviews(self, status=None, visible_by_user=None):
+        """See `IHasRequestedReviews`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                )
+
+        collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
+        proposals = collection.getMergeProposalsForPerson(self, status)
+        return proposals
