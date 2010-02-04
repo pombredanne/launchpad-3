@@ -513,6 +513,50 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.archive.disable()
         self.assertRaises(AssertionError, self.archive.disable)
 
+class TestCollectLatestPublishedSources(TestCaseWithFactory):
+    """Ensure that the private helper method works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestCollectLatestPublishedSources, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create an archive with some published sources. We'll store
+        # a reference to the naked archive so that we can call
+        # the private method which is not defined on the interface.
+        self.archive = self.factory.makeArchive()
+        self.naked_archive = removeSecurityProxy(self.archive)
+        
+        self.pub_1 = self.publisher.getPubSource(
+            version='0.5.11~ppa1', archive=self.archive, sourcename="foo",
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.pub_2 = self.publisher.getPubSource(
+            version='0.5.11~ppa2', archive=self.archive, sourcename="foo",
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.pub_3 = self.publisher.getPubSource(
+            version='0.9', archive=self.archive, sourcename="bar",
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def test_collectLatestPublishedSources_returns_latest(self):
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual('0.5.11~ppa2', pubs[0].source_package_version)
+
+    def test_collectLatestPublishedSources_returns_published_only(self):
+        # Set the status of the latest pub to DELETED and ensure that it
+        # is not returned.
+        self.pub_2.secure_record.status = PackagePublishingStatus.DELETED
+
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

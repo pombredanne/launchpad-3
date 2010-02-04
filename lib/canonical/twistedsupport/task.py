@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=E0211,E0213
 
 """Tools for managing long-running or difficult tasks with Twisted."""
 
@@ -350,13 +351,9 @@ class ParallelLimitedTaskConsumer:
         self._log_state('_taskEnded')
         self._worker_count -= 1
         self._log_state('_taskEnded', 'Decremented')
-        if self._worker_count == 0:
-            self._log_state('_taskEnded', 'No workers, stopping.')
-            self._stop()
-        elif self._worker_count < self._worker_limit:
+        if self._worker_count < self._worker_limit:
             self._log_state('_taskEnded', 'Too few workers, asking for more.')
             self._task_source.start(self)
         else:
             # We're over the worker limit, nothing we can do.
             self._log_state('_taskEnded', 'Hit limit, doing nothing.')
-            pass

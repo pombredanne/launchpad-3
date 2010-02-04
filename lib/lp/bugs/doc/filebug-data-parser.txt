@@ -13,7 +13,7 @@ to be added to the bug report. The information is passed as a file
 object to the constructor.
 
     >>> from StringIO import StringIO
-    >>> from lp.bugs.browser.bugtarget import FileBugDataParser
+    >>> from lp.bugs.utilities.filebugdataparser import FileBugDataParser
     >>> parser = FileBugDataParser(StringIO('123456789'))
 
 To make parsing easier and more efficient, it has a buffer where it

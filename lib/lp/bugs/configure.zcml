@@ -575,7 +575,8 @@
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
                     heat
-                    has_patches"/>
+                    has_patches
+                    latest_patch_uploaded"/>
             <require
                 permission="launchpad.View"
                 attributes="
@@ -903,6 +904,7 @@
 
     <!-- CalculateBugHeatJobs -->
     <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
+        <allow interface="lp.bugs.interfaces.bugjob.IBugJob" />
         <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
     </class>
     <securedutility
