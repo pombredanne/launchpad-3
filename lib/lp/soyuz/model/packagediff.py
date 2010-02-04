@@ -145,9 +145,9 @@ class PackageDiff(SQLBase):
                 AND sprf.libraryfile = lfa.id
                 AND lfa.expires IS NOT NULL
                 AND lfa.content IS NULL
-            """ % sqlvalues((self.from_source, self.to_source))
+            """ % sqlvalues((self.from_source.id, self.to_source.id))
         result = store.execute(query).get_one()
-        return (0 if result is None else result)
+        return (0 if result is None else result[0])
 
     def performDiff(self):
         """See `IPackageDiff`.
