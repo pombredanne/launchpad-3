@@ -31,6 +31,34 @@ mirrors:
     status: u'Official'
     whiteboard: None
 
+And CD image mirrors:
+
+    >>> ubuntu_cd_mirrors = webservice.get(ubuntu['cdimage_mirrors_collection_link']).jsonBody()
+    >>> canonical_releases =  ubuntu_cd_mirrors['entries'][0]
+    >>> canonical_releases_json = webservice.get(canonical_releases['self_link']).jsonBody()
+    >>> pprint_entry(canonical_releases_json)
+    content: u'CD Image'
+    date_created: u'2006-10-16T18:31:43.434567+00:00'
+    date_reviewed: None
+    description: None
+    displayname: None
+    distribution_link: u'http://.../ubuntu'
+    enabled: True
+    ftp_base_url: None
+    http_base_url: u'http://releases.ubuntu.com/'
+    name: u'canonical-releases'
+    official_candidate: True
+    owner_link: u'http://.../~mark'
+    resource_type_link: u'http://.../#distribution_mirror'
+    reviewer_link: None
+    rsync_base_url: None
+    self_link: u'http://.../ubuntu/+mirror/canonical-releases'
+    speed: u'100 Mbps'
+    status: u'Official'
+    whiteboard: None
+
+= Security checks =
+
 People who are not mirror listing admins or the mirrors registrar may not
 change the owner's of mirrors:
 
@@ -70,31 +98,22 @@ But if we use Karl, the mirror listing admin's, webservice, we can update the ow
     >>> print patched_canonical_archive['owner_link']
     http://.../~karl
 
-And CD image mirrors:
+Only mirror admins may view certain things:
 
-    >>> ubuntu_cd_mirrors = webservice.get(ubuntu['cdimage_mirrors_collection_link']).jsonBody()
-    >>> canonical_releases =  ubuntu_cd_mirrors['entries'][0]
-    >>> canonical_releases_json = webservice.get(canonical_releases['self_link']).jsonBody()
-    >>> pprint_entry(canonical_releases_json)
-    content: u'CD Image'
-    date_created: u'2006-10-16T18:31:43.434567+00:00'
-    date_reviewed: None
-    description: None
-    displayname: None
-    distribution_link: u'http://.../ubuntu'
-    enabled: True
-    ftp_base_url: None
-    http_base_url: u'http://releases.ubuntu.com/'
-    name: u'canonical-releases'
-    official_candidate: True
-    owner_link: u'http://.../~mark'
-    resource_type_link: u'http://.../#distribution_mirror'
-    reviewer_link: None
-    rsync_base_url: None
-    self_link: u'http://.../ubuntu/+mirror/canonical-releases'
-    speed: u'100 Mbps'
-    status: u'Official'
-    whiteboard: None
+    >>> patch = {
+    ...     u'date_reviewed' : u'2010-02-04T17:19:16.424198+00:00',
+    ...     u'enabled' : False,
+    ...     u'reviewer_link' : karl['self_link']
+    ... }
+    >>> response = karl_webservice.patch(
+    ...     canonical_releases['self_link'], 'application/json', dumps(patch))
+    >>> print response
+    HTTP/1.1 400 Bad Request
+    Status: 400 Bad Request
+    ...
+    enabled: You tried to modify a read-only attribute.
+    date_reviewed: You tried to modify a read-only attribute.
+    reviewer_link: You tried to modify a read-only attribute.
 
 = Distribution Mirror Custom Operations =
 
