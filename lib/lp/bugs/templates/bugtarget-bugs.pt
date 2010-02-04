@@ -10,8 +10,9 @@
   i18n:domain="malone"
 >
   <metal:block fill-slot="head_epilogue">
-    <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
-    <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
+    <style type="text/css">
+      p#more-hot-bugs {float:right; margin-top:7px;}
+    </style>
   </metal:block>
   <body>
     <tal:side metal:fill-slot="side" condition="view/uses_launchpad_bugtracker">
@@ -123,7 +124,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="bugtask view/hot_bugs">
+            <tr tal:repeat="bugtask view/hot_bugs/bugtasks">
               <td class="icon left">
                 <span tal:replace="structure bugtask/image:icon" />
               </td>
@@ -146,6 +147,10 @@
             </tr>
           </tbody>
         </table>
+        <p id="more-hot-bugs"
+           tal:condition="view/hot_bugs/has_more_bugs">
+          <a href="+bugs?sort=-bug-heat">See all hot bugs</a>.
+        </p>
       </tal:has_hot_bugs>
 
       <tal:no_hot_bugs condition="not: view/hot_bugs">
