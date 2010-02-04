@@ -365,9 +365,9 @@ class IDistributionMirror(Interface):
         title=_('Date Created'), description=_("The date on which this mirror "
             "was registered"), required=True, readonly=True))
     date_reviewed = exported(Datetime(
-        title=_('Date reviewed'), description=_("The date on which this "
-            "mirror was last reviewed by a mirror admin."), required=False,
-        readonly=True))
+        title=_('Date reviewed'), required=False, readonly=True,
+        description=_(
+            "The date on which this mirror was last reviewed by a mirror admin.")))
     whiteboard = exported(Whiteboard(
         title=_('Whiteboard'), required=False, readonly=False,
         description=_("Notes on the current status of the mirror (only "
