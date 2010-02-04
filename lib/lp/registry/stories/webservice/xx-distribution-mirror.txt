@@ -121,6 +121,11 @@ While others can be set:
     ...     u'status' : 'Unofficial',
     ...     u'whiteboard' : u'This mirror is too shiny to be true'
     ... }
+    >>> response = test_webservice.patch(
+    ...     canonical_releases['self_link'], 'application/json', dumps(patch))
+    >>> print response.getheader('status')
+    401 Unauthorized
+
     >>> response = karl_webservice.patch(
     ...     canonical_releases['self_link'], 'application/json', dumps(patch)).jsonBody()
     >>> pprint_entry(response)
