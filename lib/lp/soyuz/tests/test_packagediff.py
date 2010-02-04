@@ -25,9 +25,6 @@ class TestPackageDiffs(TestPackageDiffsBase):
     layer = LaunchpadZopelessLayer
     dbuser = config.uploader.dbuser
 
-    def setUp(self):
-        super(TestPackageDiffs, self).setUp()
-
     def test_packagediff_working(self):
         # Test the case where none of the files required for the diff are
         # expired in the librarian and where everything works as expected.

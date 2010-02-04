@@ -22,9 +22,6 @@ class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
     layer = LaunchpadZopelessLayer
     dbuser = config.uploader.dbuser
 
-    def setUp(self):
-        super(TestProcessPendingPackageDiffsScript, self).setUp()
-
     def runProcessPendingPackageDiffs(self, extra_args=None):
         """Run process-pending-packagediffs.py.
 
