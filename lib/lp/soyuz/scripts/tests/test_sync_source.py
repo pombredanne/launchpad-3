@@ -266,7 +266,7 @@ class TestSyncSourceScript(TestCase):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
-    def testSyncSourceRun(self):
+    def testSyncSourceRunV1(self):
         """Try a simple sync-source.py run.
 
         It will run in a special tree prepared to cope with sync-source
@@ -332,6 +332,76 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(
             parsed_changes['maintainer'],
             'Launchpad team <launchpad@lists.canonical.com>')
+        self.assertEqual(
+            parsed_changes['changed-by'],
+            'Celso Providelo <celso.providelo@canonical.com>')
+
+        os.unlink(expected_changesfile)
+
+    def testSyncSourceRunV3(self):
+        """Try a simple sync-source.py run with a version 3 source format 
+        package.
+
+        It will run in a special tree prepared to cope with sync-source
+        requirements (see `setUp`). It contains a usable archive index
+        named as '$distribution_$suite_$component_Sources' and the
+        'etherwake' source files.
+
+        Check that:
+         * return code is ZERO,
+         * check standard error and standard output,
+         * check if the expected changesfile was generated,
+         * parse and inspect the changesfile using the archiveuploader
+           component (the same approach adopted by Soyuz).
+         * delete the changesfile.
+        """
+        returncode, out, err = self.runSyncSource(
+            extra_args=['-b', 'cprov', '-D', 'debian', '-C', 'main',
+                        '-S', 'incoming', 'sample1'])
+
+        self.assertEqual(
+            0, returncode, "\nScript Failed:%s\nStdout:\n%s\nStderr\n%s\n"
+            % (returncode, out, err))
+
+        self.assertEqual(
+            err.splitlines(),
+            ['W: Could not find blacklist file on '
+             '/srv/launchpad.net/dak/sync-blacklist.txt', 
+             'INFO      - <sample1_1.0.orig-component3.tar.gz: cached>',
+             'INFO      - <sample1_1.0-1.dsc: cached>',
+             'INFO      - <sample1_1.0-1.debian.tar.gz: cached>',
+             'INFO      - <sample1_1.0.orig-component1.tar.bz2: cached>',
+             'INFO      - <sample1_1.0.orig-component2.tar.lzma: cached>',
+             'INFO      - <sample1_1.0.orig.tar.gz: cached>'])
+        self.assertEqual(
+            out.splitlines(),
+            ['Getting binaries for hoary...',
+             '[Updating] sample1 (0 [Ubuntu] < 1.0-1 [Debian])',
+             ' * Trying to add sample1...',
+             ])
+
+        expected_changesfile = 'sample1_1.0-1_source.changes'
+        self.assertTrue(
+            os.path.exists(expected_changesfile),
+            "Couldn't find %s." % expected_changesfile)
+
+        # Parse the generated unsigned changesfile.
+        parsed_changes = parse_tagfile(
+            expected_changesfile, allow_unsigned=True)
+
+        # It refers to the right source/version.
+        self.assertEqual(parsed_changes['source'], 'sample1')
+        self.assertEqual(parsed_changes['version'], '1.0-1')
+
+        # It includes the correct 'origin' and 'target' information.
+        self.assertEqual(parsed_changes['origin'], 'Debian/incoming')
+        self.assertEqual(parsed_changes['distribution'], 'hoary')
+
+        # And finally, 'maintainer' role was preserved and 'changed-by'
+        # role was assigned as specified in the sync-source command-line.
+        self.assertEqual(
+            parsed_changes['maintainer'],
+            'Raphael Hertzog <hertzog@debian.org>')
         self.assertEqual(
             parsed_changes['changed-by'],
             'Celso Providelo <celso.providelo@canonical.com>')
