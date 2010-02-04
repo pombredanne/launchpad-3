@@ -1,3 +1,4 @@
+
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -53,6 +54,7 @@ class TestCanSetStatusBase(TestCaseWithFactory):
             RosettaImportStatus.FAILED,
             RosettaImportStatus.IMPORTED,
             RosettaImportStatus.NEEDS_REVIEW,
+            RosettaImportStatus.NEEDS_INFORMATION,
         ]
         self._switch_dbuser()
         # Do *not* use assertContentEqual here, as the order matters.
@@ -64,14 +66,14 @@ class TestCanSetStatusBase(TestCaseWithFactory):
         # A non-privileged users cannot set any status.
         some_user = self.factory.makePerson()
         self._assertCanSetStatus(some_user, self.entry,
-            #  A      B      D      F      I     NR
-            [False, False, False, False, False, False])
+            #  A      B      D      F      I     NR     NI
+            [False, False, False, False, False, False, False])
 
     def test_canSetStatus_rosetta_expert(self):
         # Rosetta experts are all-powerful, didn't you know that?
         self._assertCanSetStatus(self.rosetta_experts, self.entry,
-            #  A     B     D     F     I    NR
-            [True, True, True, True, True, True])
+            #  A     B     D     F     I    NR    NI
+            [True, True, True, True, True, True, True])
 
     def test_canSetStatus_rosetta_expert_no_target(self):
         # If the entry has no import target set, even Rosetta experts
@@ -79,56 +81,56 @@ class TestCanSetStatusBase(TestCaseWithFactory):
         self.entry.potemplate = None
         self.entry.pofile = None
         self._assertCanSetStatus(self.rosetta_experts, self.entry,
-            #  A      B     D     F     I    NR
-            [False, True, True, True, False, True])
+            #  A      B     D     F     I    NR     NI
+            [False, True, True, True, False, True, False])
 
     def test_canSetStatus_uploader(self):
         # The uploader can set some statuses.
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NR
-            [False, False, True, False, False, True])
+            #  A      B     D     F      I     NR     NI
+            [False, False, True, False, False, True, False])
 
     def test_canSetStatus_product_owner(self):
         # The owner (maintainer) of the product gets to set Blocked as well.
         owner = self.productseries.product.owner
         self._assertCanSetStatus(owner, self.entry,
-            #  A      B     D     F      I     NR
-            [False, True, True, False, False, True])
+            #  A      B     D     F      I     NR     NI
+            [False, True, True, False, False, True, False])
 
     def test_canSetStatus_owner_and_uploader(self):
         # Corner case: Nothing changes if the maintainer is also the uploader.
         self.productseries.product.owner = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NR
-            [False, True, True, False, False, True])
+            #  A      B     D     F      I     NR     NI
+            [False, True, True, False, False, True, False])
 
     def test_canSetStatus_driver(self):
         # The driver gets the same permissions as the maintainer.
         driver = self.productseries.driver
         self._assertCanSetStatus(driver, self.entry,
-            #  A      B     D     F      I     NR
-            [False, True, True, False, False, True])
+            #  A      B     D     F      I     NR     NI
+            [False, True, True, False, False, True, False])
 
     def test_canSetStatus_driver_and_uploader(self):
         # Corner case: Nothing changes if the driver is also the uploader.
         self.productseries.driver = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NR
-            [False, True, True, False, False, True])
+            #  A      B     D     F      I     NR     NI
+            [False, True, True, False, False, True, False])
 
     def test_canSetStatus_product_driver(self):
         # The driver of the product, too.
         driver = self.productseries.product.driver
         self._assertCanSetStatus(driver, self.entry,
-            #  A      B     D     F      I     NR
-            [False, True, True, False, False, True])
+            #  A      B     D     F      I     NR     NI
+            [False, True, True, False, False, True, False])
 
     def test_canSetStatus_product_driver_and_uploader(self):
         # Corner case: Nothing changes if the driver is also the uploader.
         self.productseries.product.driver = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NR
-            [False, True, True, False, False, True])
+            #  A      B     D     F      I     NR     NI
+            [False, True, True, False, False, True, False])
 
     def _setUpUbuntu(self):
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -146,16 +148,16 @@ class TestCanSetStatusBase(TestCaseWithFactory):
             sourcepackagename=self.factory.makeSourcePackageName(),
             potemplate=self.potemplate)
         self._assertCanSetStatus(self.ubuntu_group_owner, ubuntu_entry,
-            #  A     B     D     F      I     NR
-            [True, True, True, False, False, True])
+            #  A     B     D     F      I     NR    NI
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_ubuntu_translation_group_not_ubuntu(self):
         # Outside of Ubuntu, owners of the Ubuntu translation Groups have no
         # powers.
         self._setUpUbuntu()
         self._assertCanSetStatus(self.ubuntu_group_owner, self.entry,
-            #  A      B      D      F      I     NR
-            [False, False, False, False, False, False])
+            #  A      B      D      F      I     NR     NI
+            [False, False, False, False, False, False, False])
 
 
 class TestCanSetStatusPOTemplate(TestCanSetStatusBase):
