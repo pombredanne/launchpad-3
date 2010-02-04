@@ -127,7 +127,8 @@ class TestPackageDiffs(unittest.TestCase):
         # Test the case where files required for the diff are expired *and*
         # deleted in the librarian causing a package diff failure.
         [diff] = self.getPendingDiffs()
-        # Expire the files associated with the 'from_source' package.
+        # Expire and delete the files associated with the 'from_source'
+        # package.
         self.expireLFAsForSource(diff.from_source)
         # The helper method now finds 3 expired files.
         self.assertEqual(3, removeSecurityProxy(diff)._countExpiredLFAs())
@@ -140,7 +141,8 @@ class TestPackageDiffs(unittest.TestCase):
         # not deleted in the librarian still allowing the package diff to be
         # performed.
         [diff] = self.getPendingDiffs()
-        # Expire the files associated with the 'from_source' package.
+        # Expire but don't delete the files associated with the 'from_source'
+        # package.
         self.expireLFAsForSource(diff.from_source, delete_as_well=False)
         # The helper method now finds no expired files.
         self.assertEqual(0, removeSecurityProxy(diff)._countExpiredLFAs())
