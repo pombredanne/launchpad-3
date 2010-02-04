@@ -18,6 +18,8 @@ CREATE TRIGGER bug_latest_patch_uploaded_on_delete_t
 AFTER DELETE ON bugattachment
 FOR EACH ROW EXECUTE PROCEDURE bug_update_latest_patch_uploaded_on_delete();
 
+CREATE INDEX bugattachment__bug__idx ON BugAttachment(bug);
+
 SELECT DISTINCT ON (bugattachment.bug)
     bug_update_latest_patch_uploaded(bugattachment.bug)
     FROM bugattachment WHERE bugattachment.type=1;
