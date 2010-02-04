@@ -172,6 +172,19 @@ class ViewByLoggedInUser(AuthorizationBase):
         return True
 
 
+class AnonymousAuthorization(AuthorizationBase):
+    """Allow any authenticated and unauthenticated user access."""
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """Any unauthorized user can see this object."""
+        return True
+
+    def checkAuthenticated(self, user):
+        """Any authorized user can see this object."""
+        return True
+
+
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = Interface
@@ -815,24 +828,9 @@ class SeriesDrivers(AuthorizationBase):
                 user.in_admin)
 
 
-class ViewProductSeries(AuthorizationBase):
+class ViewProductSeries(AnonymousAuthorization):
 
     usedfor = IProductSeries
-    permission = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return True
-
-    def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
-
-        :return: True or False.
-        """
-        return True
 
 
 class EditProductSeries(EditByOwnersOrAdmins):
@@ -980,44 +978,14 @@ class EditBugAttachment(
             self, bugattachment.bug)
 
 
-class ViewBugSubscription(AuthorizationBase):
+class ViewBugSubscription(AnonymousAuthorization):
 
     usedfor = IBugSubscription
-    permission = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return True
-
-    def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
-
-        :return: True or False.
-        """
-        return True
 
 
-class ViewBugMessage(AuthorizationBase):
+class ViewBugMessage(AnonymousAuthorization):
 
     usedfor = IMessage
-    permission = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return True
-
-    def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
-
-        :return: True or False.
-        """
-        return True
 
 
 class ViewAnnouncement(AuthorizationBase):
@@ -1323,24 +1291,9 @@ class EditProductRelease(EditByOwnersOrAdmins):
             self, user)
 
 
-class ViewProductRelease(AuthorizationBase):
+class ViewProductRelease(AnonymousAuthorization):
 
     usedfor = IProductRelease
-    permission = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return True
-
-    def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
-
-        :return: True or False.
-        """
-        return True
 
 
 class AdminTranslationImportQueueEntry(AuthorizationBase):
