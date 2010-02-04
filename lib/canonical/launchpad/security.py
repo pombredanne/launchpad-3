@@ -798,6 +798,15 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
 
+class ViewDistroSeries(AuthorizationBase):
+    """Anyone can view a DistroSeries."""
+    permission = 'launchpad.View'
+    usedfor = IDistroSeries
+
+    def checkUnauthenticated(self):
+        return True
+    def checkAuthenticated(self, user):
+        return True
 
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
@@ -817,7 +826,7 @@ class SeriesDrivers(AuthorizationBase):
 class ViewProductSeries(AuthorizationBase):
 
     usedfor = IProductSeries
-    permision = 'launchpad.View'
+    permission = 'launchpad.View'
 
     def checkUnauthenticated(self):
         """See `IAuthorization.checkUnauthenticated`.
