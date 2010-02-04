@@ -297,7 +297,7 @@ class IDistributionMirror(Interface):
             Interface,
             # Really IDistribution, circular import fixed in
             # _schema_circular_imports.
-            title=_("Distribution"), required=True,
+            title=_("Distribution"), required=True, readonly=True,
             description=_("The distribution that is mirrored")))
     name = exported(DistributionMirrorNameField(
         title=_('Name'), required=True, readonly=False,
