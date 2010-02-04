@@ -1673,7 +1673,7 @@ class LayerProcessController:
         environ = dict(os.environ)
         environ['LPCONFIG'] = _config.instance_name
         cls.appserver = subprocess.Popen(
-            cmd, shell=True,#stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             env=environ, cwd=_config.root)
 
     @classmethod
