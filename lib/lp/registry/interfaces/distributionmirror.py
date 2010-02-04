@@ -287,13 +287,13 @@ class IDistributionMirror(Interface):
 
     id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = exported(PublicPersonChoice(
-        title=_('Owner'), description=_("The person who is set as the "
-            "current administrator of this mirror."), required=True,
-        readonly=False, vocabulary='ValidOwner'))
+        title=_('Owner'), readonly=False, vocabulary='ValidOwner',
+        required=True, description=_(
+            "The person who is set as the current administrator of this mirror.")))
     reviewer = exported(PublicPersonChoice(
-        title=_('Reviewer'), description=_("The person who last reviewed this "
-            "mirror."), required=False, readonly=True,
-        vocabulary='ValidPersonOrTeam'))
+        title=_('Reviewer'), required=False, readonly=True,
+        vocabulary='ValidPersonOrTeam', description=_(
+            "The person who last reviewed this mirror.")))
     distribution = exported(
         Reference(
             Interface,
@@ -345,9 +345,9 @@ class IDistributionMirror(Interface):
         title=_('Apply to be an official mirror of this distribution'),
         required=False, readonly=False, default=True))
     status = exported(Choice(
-        title=_('Status'), description=_("The current status of a mirror's "
-            "registration."), required=True, readonly=False,
-        vocabulary=MirrorStatus))
+        title=_('Status'), required=True, readonly=False,
+        vocabulary=MirrorStatus,
+        description=_("The current status of a mirror's registration.")))
 
     title = Attribute('The title of this mirror')
     cdimage_series = Attribute(
