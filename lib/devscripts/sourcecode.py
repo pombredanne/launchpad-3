@@ -188,7 +188,7 @@ def update_branches(sourcecode_directory, update_branches,
         # Update project from branch_url.
         destination = os.path.join(sourcecode_directory, project)
         print 'Updating %s to %s' % (
-                project, _format_revision_name(revision, tip)),
+                project, _format_revision_name(revision, tip))
         local_tree = WorkingTree.open(destination)
         try:
             remote_branch = Branch.open(
@@ -202,17 +202,17 @@ def update_branches(sourcecode_directory, update_branches,
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
         revision_id = get_revision_id(revision, remote_branch, tip)
-        result = local_tree.pull(
-            remote_branch, stop_revision=revision_id, overwrite=True,
-            possible_transports=possible_transports)
-        if result.old_revno == result.new_revno:
-            print '(No change)'
+        if revision_id == local_tree.last_revision():
+            print '  (No change)'
         else:
+            result = local_tree.pull(
+                remote_branch, stop_revision=revision_id, overwrite=True,
+                possible_transports=possible_transports)
             if result.old_revno < result.new_revno:
                 change = 'Updated'
             else:
                 change = 'Reverted'
-            print '(%s from %s to %s)' % (
+            print '  (%s from %s to %s)' % (
                 change, result.old_revno, result.new_revno)
 
 
