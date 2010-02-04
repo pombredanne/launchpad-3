@@ -201,22 +201,6 @@
       />
 
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      template="../templates/launchpad-login.pt"
-      class="canonical.launchpad.webapp.login.LoginOrRegister"
-      permission="zope.Public"
-      name="+login-old"
-      />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      template="../templates/launchpad-forgottenpassword.pt"
-      class="canonical.launchpad.webapp.login.ForgottenPasswordPage"
-      permission="zope.Public"
-      name="+forgottenpassword"
-      />
-
-  <browser:page
       for="*"
       attribute="logout"
       class="canonical.launchpad.webapp.login.CookieLogoutPage"
@@ -230,23 +214,6 @@
       template="../templates/launchpad-loginstatus.pt"
       class="canonical.launchpad.browser.LoginStatus"
       permission="zope.Public"
-      />
-
-  <!-- Special login and information pages for a site restricted so that just
-       one team given in launchpad.conf may access it.  -->
-  <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadRoot"
-      name="+restricted-login"
-      template="../templates/launchpad-restrictedlogin.pt"
-      permission="zope.Public"
-      class="canonical.launchpad.webapp.login.LoginOrRegister"
-      />
-  <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadRoot"
-      name="+restricted-info"
-      template="../templates/launchpad-restrictedinfo.pt"
-      permission="zope.Public"
-      class="canonical.launchpad.webapp.login.RestrictedLoginInfo"
       />
 
   <!-- Other non-application-specific pages. -->
