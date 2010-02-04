@@ -23,7 +23,7 @@ from lp.codehosting.scanner import buglinks, email, mergedetection
 from lp.codehosting.scanner.bzrsync import (
     BzrSync, schedule_diff_updates, schedule_translation_upload)
 from lp.codehosting.scanner.fixture import (
-    Fixtures, make_zope_event_fixture, run_with_fixture)
+    Fixtures, make_zope_event_fixture, run_with_fixture, ServerFixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 
@@ -100,7 +100,8 @@ class BranchScanner:
             schedule_translation_upload,
             ]
         server = get_scanner_server()
-        fixture = Fixtures([server, make_zope_event_fixture(*event_handlers)])
+        fixture = Fixtures(
+            [ServerFixture(server), make_zope_event_fixture(*event_handlers)])
         self.log.info('Starting branch scanning')
         branches = getUtility(IBranchScanner).getBranchesToScan()
         run_with_fixture(fixture, self.scanBranches, branches)

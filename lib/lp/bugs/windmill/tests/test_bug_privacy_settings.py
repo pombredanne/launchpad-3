@@ -3,11 +3,9 @@
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/15'
 MAIN_FORM_ELEMENT = u'//div[@id="privacy-form-container"]/table'
@@ -29,9 +27,10 @@ PRIVACY_TEXT_STRONG = u'//div[@id="privacy-text"]/strong'
 SECURITY_MESSAGE = u'security-message'
 
 
-class TestSecurityOverlay(TestCaseWithFactory):
+class TestSecurityOverlay(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = "Bug privacy settings test"
 
     def test_security_settings_form_overlay(self):
         """Test the change of the privacy settings on bug pages.
@@ -40,7 +39,7 @@ class TestSecurityOverlay(TestCaseWithFactory):
         is public[private]" on a bug page uses the formoverlay to update the
         flags "private" and "security vulnerability".
          """
-        client = WindmillTestClient("Bug privacy settings test")
+        client = self.client
         lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Open a bug page and wait for it to finish loading.

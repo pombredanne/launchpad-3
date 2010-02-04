@@ -9,22 +9,21 @@ __all__ = []
 import transaction
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import constants, lpuser
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 from zope.security.proxy import removeSecurityProxy
 
-class TestBugTagsEntry(TestCaseWithFactory):
+class TestBugTagsEntry(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'Bug tags entry test'
 
     def test_bug_tags_entry(self):
         """Test bug tags inline, auto-completing UI."""
-        client = WindmillTestClient('Bug tags entry test')
+        client = self.client
         lpuser.FOO_BAR.ensure_login(client)
 
         # First, we add some official tags to test with
@@ -64,7 +63,6 @@ class TestBugTagsEntry(TestCaseWithFactory):
 
         # Test that anonymous users are prompted to log in.
 
-        client = WindmillTestClient('Bug tags entry test')
         lpuser.ANONYMOUS.ensure_login(client)
         client.open(url=bug_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
