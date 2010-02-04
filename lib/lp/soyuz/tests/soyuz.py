@@ -133,7 +133,7 @@ class SoyuzTestHelper:
 
 
 class TestPackageDiffsBase(unittest.TestCase):
-    """Base class facilitating test related to package diffs."""
+    """Base class facilitating tests related to package diffs."""
     layer = LaunchpadZopelessLayer
     dbuser = config.uploader.dbuser
 
