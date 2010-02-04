@@ -140,7 +140,7 @@ class TestBranchPuller(PullerBranchTestCase):
         """Serve the current directory over HTTP, returning the server URL."""
         http_server = HttpServer()
         http_server.port = port
-        http_server.setUp()
+        http_server.start_server()
         # Join cleanup added before the tearDown so the tearDown is executed
         # first as this tells the thread to die.  We then join explicitly as
         # the HttpServer.tearDown does not join.  There is a check in the
@@ -149,7 +149,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # threads and let the garbage collector get them, however this causes
         # issues with the test runner.
         self.addCleanup(http_server._http_thread.join)
-        self.addCleanup(http_server.tearDown)
+        self.addCleanup(http_server.stop_server)
         return http_server.get_url().rstrip('/')
 
     def getLPServerForUser(self, user):
@@ -167,8 +167,8 @@ class TestBranchPuller(PullerBranchTestCase):
         # in a subprocess which would have no way of knowing which directories
         # to look in if we used freshly created temporary directories.
         lp_server = get_lp_server(user.id)
-        lp_server.setUp()
-        self.addCleanup(lp_server.tearDown)
+        lp_server.start_server()
+        self.addCleanup(lp_server.stop_server)
         return lp_server
 
     def openBranchAsUser(self, db_branch, user):

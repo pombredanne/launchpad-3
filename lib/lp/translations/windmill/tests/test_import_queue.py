@@ -8,7 +8,6 @@ __all__ = []
 
 import transaction
 
-from windmill.authoring import WindmillTestClient
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -19,12 +18,13 @@ from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
-class ImportQueueEntryTest(TestCaseWithFactory):
+class ImportQueueEntryTest(WindmillTestCase):
     """Test that the entries in the import queue can switch types."""
 
     layer = TranslationsWindmillLayer
+    suite_name = 'Translations import queue entry'
 
     FIELDS = {
         'POT': [
@@ -73,7 +73,7 @@ class ImportQueueEntryTest(TestCaseWithFactory):
 
     def test_import_queue_entry(self):
         """Tests that import queue entry fields behave correctly."""
-        client = WindmillTestClient('Translations import queue entry')
+        client = self.client
         start_url = 'http://translations.launchpad.dev:8085/+imports/1'
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to import queue page logged in as translations admin.
@@ -105,14 +105,15 @@ IMPORT_STATUS = u"//tr[@id='%d']//span[contains(@class,'status-choice')]"
 IMPORT_STATUS_1 = IMPORT_STATUS % 1
 OPEN_CHOICELIST = u"//div[contains(@class, 'yui-ichoicelist-content')]"
 
-class ImportQueueStatusTest(TestCaseWithFactory):
+class ImportQueueStatusTest(WindmillTestCase):
     """Test that the entries in the import queue can switch types."""
 
     layer = TranslationsWindmillLayer
+    suite_name = 'Translations import queue status'
 
     def test_import_queue_status_admin(self):
         """Tests that the admin can use the status picker."""
-        client = WindmillTestClient('Translations import queue status')
+        client = self.client
         queue_url = self.layer.base_url+'/+imports'
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to import queue page logged in as translations admin.
@@ -138,7 +139,7 @@ class ImportQueueStatusTest(TestCaseWithFactory):
 
     def test_import_queue_status_nopriv(self):
         """Tests that a none-admin will have less choices."""
-        client = WindmillTestClient('Translations import queue status')
+        client = self.client
         queue_url = self.layer.base_url+'/+imports'
         hubert = self.factory.makePerson(
             name="hubert", displayname="Hubert Hunt", password="test",

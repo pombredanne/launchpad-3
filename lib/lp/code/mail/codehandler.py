@@ -491,7 +491,7 @@ class CodeHandler:
 
         # Create the LP server as if the submitter was pushing a branch to LP.
         lp_server = get_lp_server(submitter.id)
-        lp_server.setUp()
+        lp_server.start_server()
         try:
             source_url = urljoin(lp_server.get_url(), db_source.unique_name)
             target_url = urljoin(lp_server.get_url(), db_target.unique_name)
@@ -512,7 +512,7 @@ class CodeHandler:
                 db_source.requestMirror()
             return db_source
         finally:
-            lp_server.tearDown()
+            lp_server.stop_server()
 
     def _pullRevisionsFromMergeDirectiveIntoSourceBranch(self, md,
                                                          target_url,

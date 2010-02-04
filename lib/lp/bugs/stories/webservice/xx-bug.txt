@@ -870,7 +870,7 @@ Each subscription can be accessed individually.
 Subscriptions can also be accessed anonymously.
 
   >>> subscriptions = anon_webservice.get(bug_one_subscriptions_url).jsonBody()
-  >>> print subscriptions[0]['self_link']
+  >>> print subscriptions['entries'][0]['self_link']
   http://.../bugs/1/+subscription/stevea
 
 We can also create new subscriptions.

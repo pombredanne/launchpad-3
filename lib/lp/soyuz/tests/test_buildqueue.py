@@ -15,15 +15,14 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType)
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.buildqueue import BuildQueue, get_builder_data
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
@@ -60,7 +59,9 @@ def nth_builder(test, bq, n):
     builder = None
     builders = test.builders.get(builder_key(bq), [])
     try:
-        builder = builders[n-1]
+        for builder in builders[n-1:]:
+            if builder.builderok:
+                break
     except IndexError:
         pass
     return builder
@@ -95,18 +96,13 @@ def print_build_setup(builds):
             queue_entry.lastscore)
 
 
-def check_mintime_to_builder(
-    test, bq, head_job_processor, head_job_virtualized, min_time):
+def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
-    delay = bq._estimateTimeToNextBuilder(
-        head_job_processor, head_job_virtualized)
-    if min_time is not None:
-        test.assertTrue(
-            almost_equal(delay, min_time),
-            "Wrong min time to next available builder (%s != %s)"
-            % (delay, min_time))
-    else:
-        test.assertTrue(delay is None, "No delay to next builder available")
+    delay = bq._estimateTimeToNextBuilder()
+    test.assertTrue(
+        almost_equal(delay, min_time),
+        "Wrong min time to next available builder (%s != %s)"
+        % (delay, min_time))
 
 
 def almost_equal(a, b, deviation=1):
@@ -126,10 +122,46 @@ def set_remaining_time_for_running_job(bq, remainder):
 
 def check_delay_for_job(test, the_job, delay):
     # Obtain the builder statistics pertaining to this job.
-    builder_data = the_job._getBuilderData()
-    builders_in_total, builders_for_job, builder_stats = builder_data
-    estimated_delay = the_job._estimateJobDelay(builder_stats)
-    test.assertEqual(estimated_delay, delay)
+    builder_data = get_builder_data()
+    estimated_delay = the_job._estimateJobDelay(builder_data)
+    test.assertEqual(delay, estimated_delay)
+
+
+def total_builders():
+    """How many available builders do we have in total?"""
+    builder_data = get_builder_data()
+    return builder_data[(None, False)] + builder_data[(None, True)]
+
+
+def builders_for_job(job):
+    """How many available builders can run the given job?"""
+    builder_data = get_builder_data()
+    return builder_data[(getattr(job.processor, 'id', None), job.virtualized)]
+
+
+def check_estimate(test, job, delay_in_seconds):
+    """Does the dispatch time estimate match the expectation?"""
+    estimate = job.getEstimatedJobStartTime()
+    if delay_in_seconds is None:
+        test.assertEquals(
+            delay_in_seconds, estimate,
+            "An estimate should not be possible at present but one was "
+            "returned (%s) nevertheless." % estimate)
+    else:
+        estimate -= datetime.utcnow()
+        test.assertTrue(
+            almost_equal(estimate.seconds, delay_in_seconds),
+            "The estimated delay (%s) deviates from the expected one (%s)" %
+            (estimate.seconds, delay_in_seconds))
+
+
+def disable_builders(test, processor, virtualized):
+    """Disable bulders with the given processor and virtualization setting."""
+    if processor is not None:
+        processor_fam = ProcessorFamilySet().getByName(processor)
+        processor = processor_fam.processors[0].id
+    for builder in test.builders[(processor, virtualized)]:
+        builder.builderok = False
 
 
 class TestBuildQueueSet(TestCaseWithFactory):
@@ -177,55 +209,55 @@ class TestBuildQueueBase(TestCaseWithFactory):
 
         # Next make seven 'hppa' builders.
         processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
+        self.hppa_proc = processor_fam.processors[0]
         self.h1 = self.factory.makeBuilder(
-            name='hppa-v-1', processor=hppa_proc)
+            name='hppa-v-1', processor=self.hppa_proc)
         self.h2 = self.factory.makeBuilder(
-            name='hppa-v-2', processor=hppa_proc)
+            name='hppa-v-2', processor=self.hppa_proc)
         self.h3 = self.factory.makeBuilder(
-            name='hppa-v-3', processor=hppa_proc)
+            name='hppa-v-3', processor=self.hppa_proc)
         self.h4 = self.factory.makeBuilder(
-            name='hppa-v-4', processor=hppa_proc)
+            name='hppa-v-4', processor=self.hppa_proc)
         self.h5 = self.factory.makeBuilder(
-            name='hppa-n-5', processor=hppa_proc, virtualized=False)
+            name='hppa-n-5', processor=self.hppa_proc, virtualized=False)
         self.h6 = self.factory.makeBuilder(
-            name='hppa-n-6', processor=hppa_proc, virtualized=False)
+            name='hppa-n-6', processor=self.hppa_proc, virtualized=False)
         self.h7 = self.factory.makeBuilder(
-            name='hppa-n-7', processor=hppa_proc, virtualized=False)
+            name='hppa-n-7', processor=self.hppa_proc, virtualized=False)
 
         # Finally make five 'amd64' builders.
         processor_fam = ProcessorFamilySet().getByName('amd64')
-        amd_proc = processor_fam.processors[0]
+        self.amd_proc = processor_fam.processors[0]
         self.a1 = self.factory.makeBuilder(
-            name='amd64-v-1', processor=amd_proc)
+            name='amd64-v-1', processor=self.amd_proc)
         self.a2 = self.factory.makeBuilder(
-            name='amd64-v-2', processor=amd_proc)
+            name='amd64-v-2', processor=self.amd_proc)
         self.a3 = self.factory.makeBuilder(
-            name='amd64-v-3', processor=amd_proc)
+            name='amd64-v-3', processor=self.amd_proc)
         self.a4 = self.factory.makeBuilder(
-            name='amd64-n-4', processor=amd_proc, virtualized=False)
+            name='amd64-n-4', processor=self.amd_proc, virtualized=False)
         self.a5 = self.factory.makeBuilder(
-            name='amd64-n-5', processor=amd_proc, virtualized=False)
+            name='amd64-n-5', processor=self.amd_proc, virtualized=False)
 
         self.builders = dict()
         processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
+        self.x86_proc = processor_fam.processors[0]
         # x86 native
-        self.builders[(x86_proc.id, False)] = [
+        self.builders[(self.x86_proc.id, False)] = [
             self.i6, self.i7, self.i8, self.i9]
         # x86 virtual
-        self.builders[(x86_proc.id, True)] = [
+        self.builders[(self.x86_proc.id, True)] = [
             self.i1, self.i2, self.i3, self.i4, self.i5]
 
         # amd64 native
-        self.builders[(amd_proc.id, False)] = [self.a4, self.a5]
+        self.builders[(self.amd_proc.id, False)] = [self.a4, self.a5]
         # amd64 virtual
-        self.builders[(amd_proc.id, True)] = [self.a1, self.a2, self.a3]
+        self.builders[(self.amd_proc.id, True)] = [self.a1, self.a2, self.a3]
 
         # hppa native
-        self.builders[(hppa_proc.id, False)] = [self.h5, self.h6, self.h7]
+        self.builders[(self.hppa_proc.id, False)] = [self.h5, self.h6, self.h7]
         # hppa virtual
-        self.builders[(hppa_proc.id, True)] = [
+        self.builders[(self.hppa_proc.id, True)] = [
             self.h1, self.h2, self.h3, self.h4]
 
         # Ensure all builders are operational.
@@ -237,20 +269,20 @@ class TestBuildQueueBase(TestCaseWithFactory):
         # Native builders irrespective of processor.
         self.builders[(None, False)] = []
         self.builders[(None, False)].extend(
-            self.builders[(x86_proc.id, False)])
+            self.builders[(self.x86_proc.id, False)])
         self.builders[(None, False)].extend(
-            self.builders[(amd_proc.id, False)])
+            self.builders[(self.amd_proc.id, False)])
         self.builders[(None, False)].extend(
-            self.builders[(hppa_proc.id, False)])
+            self.builders[(self.hppa_proc.id, False)])
 
         # Virtual builders irrespective of processor.
         self.builders[(None, True)] = []
         self.builders[(None, True)].extend(
-            self.builders[(x86_proc.id, True)])
+            self.builders[(self.x86_proc.id, True)])
         self.builders[(None, True)].extend(
-            self.builders[(amd_proc.id, True)])
+            self.builders[(self.amd_proc.id, True)])
         self.builders[(None, True)].extend(
-            self.builders[(hppa_proc.id, True)])
+            self.builders[(self.hppa_proc.id, True)])
 
         # Disable the sample data builders.
         getUtility(IBuilderSet)['bob'].builderok = False
@@ -343,130 +375,112 @@ class TestBuilderData(SingleArchBuildsBase):
         # Make sure the builder numbers are correct. The builder data will
         # be the same for all of our builds.
         bq = self.builds[0].buildqueue_record
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
         self.assertEqual(
-            builders_in_total, 21, "The total number of builders is wrong.")
+            21, total_builders(),
+            "The total number of builders is wrong.")
         self.assertEqual(
-            builders_for_job, 4,
+            4, builders_for_job(bq),
             "[1] The total number of builders that can build the job in "
             "question is wrong.")
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
+        builder_stats = get_builder_data()
         self.assertEqual(
-            builder_stats[(x86_proc.id, False)], 4,
+            4, builder_stats[(self.x86_proc.id, False)],
             "The number of native x86 builders is wrong")
         self.assertEqual(
-            builder_stats[(x86_proc.id, True)], 5,
+            5, builder_stats[(self.x86_proc.id, True)],
             "The number of virtual x86 builders is wrong")
-        processor_fam = ProcessorFamilySet().getByName('amd64')
-        amd_proc = processor_fam.processors[0]
         self.assertEqual(
-            builder_stats[(amd_proc.id, False)], 2,
+            2, builder_stats[(self.amd_proc.id, False)],
             "The number of native amd64 builders is wrong")
         self.assertEqual(
-            builder_stats[(amd_proc.id, True)], 3,
+            3, builder_stats[(self.amd_proc.id, True)],
             "The number of virtual amd64 builders is wrong")
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
         self.assertEqual(
-            builder_stats[(hppa_proc.id, False)], 3,
+            3, builder_stats[(self.hppa_proc.id, False)],
             "The number of native hppa builders is wrong")
         self.assertEqual(
-            builder_stats[(hppa_proc.id, True)], 4,
+            4, builder_stats[(self.hppa_proc.id, True)],
             "The number of virtual hppa builders is wrong")
         self.assertEqual(
-            builder_stats[(None, False)], 9,
+            9, builder_stats[(None, False)],
             "The number of *virtual* builders across all processors is wrong")
         self.assertEqual(
-            builder_stats[(None, True)], 12,
+            12, builder_stats[(None, True)],
             "The number of *native* builders across all processors is wrong")
         # Disable the native x86 builders.
-        for builder in self.builders[(x86_proc.id, False)]:
+        for builder in self.builders[(self.x86_proc.id, False)]:
             builder.builderok = False
-        # Get the builder statistics again.
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
         # Since all native x86 builders were disabled there are none left
         # to build the job.
         self.assertEqual(
-            builders_for_job, 0,
+            0, builders_for_job(bq),
             "[2] The total number of builders that can build the job in "
             "question is wrong.")
         # Re-enable one of them.
-        for builder in self.builders[(x86_proc.id, False)]:
+        for builder in self.builders[(self.x86_proc.id, False)]:
             builder.builderok = True
             break
-        # Get the builder statistics again.
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
         # Now there should be one builder available to build the job.
         self.assertEqual(
-            builders_for_job, 1,
+            1, builders_for_job(bq),
             "[3] The total number of builders that can build the job in "
             "question is wrong.")
         # Disable the *virtual* x86 builders -- should not make any
         # difference.
-        for builder in self.builders[(x86_proc.id, True)]:
+        for builder in self.builders[(self.x86_proc.id, True)]:
             builder.builderok = False
-        # Get the builder statistics again.
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
         # There should still be one builder available to build the job.
         self.assertEqual(
-            builders_for_job, 1,
+            1, builders_for_job(bq),
             "[4] The total number of builders that can build the job in "
             "question is wrong.")
 
     def test_free_builder_counts(self):
         # Make sure the builder numbers are correct. The builder data will
         # be the same for all of our builds.
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        proc_386 = processor_fam.processors[0]
         build = self.builds[0]
         # The build in question is an x86/native one.
-        self.assertEqual(build.processor.id, proc_386.id)
-        self.assertEqual(build.is_virtualized, False)
+        self.assertEqual(self.x86_proc.id, build.processor.id)
+        self.assertEqual(False, build.is_virtualized)
         bq = build.buildqueue_record
-        builder_data = bq._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
+        builder_stats = get_builder_data()
         # We have 4 x86 native builders.
         self.assertEqual(
-            builder_stats[(proc_386.id, False)], 4,
+            4, builder_stats[(self.x86_proc.id, False)],
             "The number of native x86 builders is wrong")
         # Initially all 4 builders are free.
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
-        self.assertEqual(free_count, 4)
+        self.assertEqual(4, free_count)
         # Once we assign a build to one of them we should see the free
         # builders count drop by one.
         assign_to_builder(self, 'postgres', 1)
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
-        self.assertEqual(free_count, 3)
+        self.assertEqual(3, free_count)
         # When we assign another build to one of them we should see the free
         # builders count drop by one again.
         assign_to_builder(self, 'gcc', 2)
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
-        self.assertEqual(free_count, 2)
+        self.assertEqual(2, free_count)
         # Let's use up another builder.
         assign_to_builder(self, 'apg', 3)
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
-        self.assertEqual(free_count, 1)
+        self.assertEqual(1, free_count)
         # And now for the last one.
         assign_to_builder(self, 'flex', 4)
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
-        self.assertEqual(free_count, 0)
+        self.assertEqual(0, free_count)
         # If we reset the 'flex' build the builder that was assigned to it
         # will be free again.
         build, bq = find_job(self, 'flex')
         bq.reset()
-        free_count = bq._freeBuildersCount(
+        free_count = bq._getFreeBuildersCount(
             build.processor, build.is_virtualized)
-        self.assertEqual(free_count, 1)
+        self.assertEqual(1, free_count)
 
 
 class TestMinTimeToNextBuilder(SingleArchBuildsBase):
@@ -491,38 +505,36 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         #
         # p=processor, v=virtualized, e=estimated_duration, s=score
 
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
         # This will be the job of interest.
         apg_build, apg_job = find_job(self, 'apg')
         # One of four builders for the 'apg' build is immediately available.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         # Assign the postgres job to a builder.
         assign_to_builder(self, 'postgres', 1)
         # Now one builder is gone. But there should still be a builder
         # immediately available.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'flex', 2)
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'bison', 3)
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'gcc', 4)
         # Now that no builder is immediately available, the shortest
         # remaing build time (based on the estimated duration) is returned:
         #   300 seconds
         # This is equivalent to the 'gcc' job's estimated duration.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 300)
+        check_mintime_to_builder(self, apg_job, 300)
 
         # Now we pretend that the 'postgres' started 6 minutes ago. Its
         # remaining execution time should be 2 minutes = 120 seconds and
         # it now becomes the job whose builder becomes available next.
         build, bq = find_job(self, 'postgres')
         set_remaining_time_for_running_job(bq, 120)
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 120)
+        check_mintime_to_builder(self, apg_job, 120)
 
         # What happens when jobs overdraw the estimated duration? Let's
         # pretend the 'flex' job started 8 minutes ago.
@@ -530,22 +542,40 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         set_remaining_time_for_running_job(bq, -60)
         # In such a case we assume that the job will complete within 2
         # minutes, this is a guess that has worked well so far.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 120)
+        check_mintime_to_builder(self, apg_job, 120)
 
         # If there's a job that will complete within a shorter time then
         # we expect to be given that time frame.
         build, bq = find_job(self, 'postgres')
         set_remaining_time_for_running_job(bq, 30)
-        check_mintime_to_builder(self, apg_job, x86_proc, False, 30)
+        check_mintime_to_builder(self, apg_job, 30)
 
         # Disable the native x86 builders.
-        for builder in self.builders[(x86_proc.id, False)]:
+        for builder in self.builders[(self.x86_proc.id, False)]:
             builder.builderok = False
 
-        # No builders capable of running the job at hand are available now,
-        # this is indicated by a None value.
-        check_mintime_to_builder(self, apg_job, x86_proc, False, None)
+        # No builders capable of running the job at hand are available now.
+        self.assertEquals(0, builders_for_job(apg_job))
+        # The "minimum time to builder" estimation logic is not aware of this
+        # though.
+        check_mintime_to_builder(self, apg_job, 0)
 
+        # The following job can only run on a native builder.
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=111, sourcename='xxr-gftp', score=1055,
+            virtualized=False)
+        self.builds.append(job.specific_job.build)
+
+        # Disable all native builders.
+        for builder in self.builders[(None, False)]:
+            builder.builderok = False
+
+        # All native builders are disabled now.  No builders capable of
+        # running the job at hand are available.
+        self.assertEquals(0, builders_for_job(job))
+        # The "minimum time to builder" estimation logic is not aware of the
+        # fact that no builders capable of running the job are available.
+        check_mintime_to_builder(self, job, 0)
 
 class MultiArchBuildsBase(TestBuildQueueBase):
     """Set up a test environment with builds and multiple processors."""
@@ -646,35 +676,32 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     def test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
-
         # One of four builders for the 'apg' build is immediately available.
         apg_build, apg_job = find_job(self, 'apg', 'hppa')
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         # Assign the postgres job to a builder.
         assign_to_builder(self, 'postgres', 1, 'hppa')
         # Now one builder is gone. But there should still be a builder
         # immediately available.
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'flex', 2, 'hppa')
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
         assign_to_builder(self, 'bison', 3, 'hppa')
         # Now that no builder is immediately available, the shortest
         # remaing build time (based on the estimated duration) is returned:
         #   660 seconds
         # This is equivalent to the 'bison' job's estimated duration.
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 660)
+        check_mintime_to_builder(self, apg_job, 660)
 
         # Now we pretend that the 'postgres' started 13 minutes ago. Its
         # remaining execution time should be 2 minutes = 120 seconds and
         # it now becomes the job whose builder becomes available next.
         build, bq = find_job(self, 'postgres', 'hppa')
         set_remaining_time_for_running_job(bq, 120)
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 120)
+        check_mintime_to_builder(self, apg_job, 120)
 
         # What happens when jobs overdraw the estimated duration? Let's
         # pretend the 'flex' job started 14 minutes ago.
@@ -682,30 +709,35 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         set_remaining_time_for_running_job(bq, -60)
         # In such a case we assume that the job will complete within 2
         # minutes, this is a guess that has worked well so far.
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 120)
+        check_mintime_to_builder(self, apg_job, 120)
 
         # If there's a job that will complete within a shorter time then
         # we expect to be given that time frame.
         build, bq = find_job(self, 'postgres', 'hppa')
         set_remaining_time_for_running_job(bq, 30)
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, 30)
+        check_mintime_to_builder(self, apg_job, 30)
 
         # Disable the native hppa builders.
-        for builder in self.builders[(hppa_proc.id, False)]:
+        for builder in self.builders[(self.hppa_proc.id, False)]:
             builder.builderok = False
 
-        # No builders capable of running the job at hand are available now,
-        # this is indicated by a None value.
-        check_mintime_to_builder(self, apg_job, hppa_proc, False, None)
+        # No builders capable of running the job at hand are available now.
+        self.assertEquals(0, builders_for_job(apg_job))
+        check_mintime_to_builder(self, apg_job, 0)
 
-        # Let's assume for the moment that the job at the head of the 'apg'
-        # build queue is processor independent. In that case we'd ask for
-        # *any* next available builder.
+        # Let's add a processor-independent job to the mix.
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            virtualized=False, estimated_duration=22,
+            sourcename='my-recipe-digikam', score=9999)
+        # There are still builders available for the processor-independent
+        # job.
+        self.assertEquals(6, builders_for_job(job))
+        # Even free ones.
         self.assertTrue(
-            bq._freeBuildersCount(None, None) > 0,
-            "Builders are immediately available for jobs that don't care "
-            "about processor architectures or virtualization")
-        check_mintime_to_builder(self, apg_job, None, None, 0)
+            bq._getFreeBuildersCount(job.processor, job.virtualized) > 0,
+            "Builders are immediately available for processor-independent "
+            "jobs.")
+        check_mintime_to_builder(self, job, 0)
 
         # Let's disable all builders.
         for builders in self.builders.itervalues():
@@ -713,21 +745,20 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
                 builder.builderok = False
 
         # There are no builders capable of running even the processor
-        # independent jobs now and that this is indicated by a None value.
-        check_mintime_to_builder(self, apg_job, None, None, None)
+        # independent jobs now.
+        self.assertEquals(0, builders_for_job(job))
+        check_mintime_to_builder(self, job, 0)
 
         # Re-enable the native hppa builders.
-        for builder in self.builders[(hppa_proc.id, False)]:
+        for builder in self.builders[(self.hppa_proc.id, False)]:
             builder.builderok = True
 
         # The builder that's becoming available next is the one that's
         # running the 'postgres' build.
-        check_mintime_to_builder(self, apg_job, None, None, 30)
+        check_mintime_to_builder(self, apg_job, 30)
 
         # Make sure we'll find an x86 builder as well.
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
-        builder = self.builders[(x86_proc.id, False)][0]
+        builder = self.builders[(self.x86_proc.id, False)][0]
         builder.builderok = True
 
         # Now this builder is the one that becomes available next (29 minutes
@@ -736,14 +767,14 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         build, bq = find_job(self, 'gcc', '386')
         set_remaining_time_for_running_job(bq, 29)
 
-        check_mintime_to_builder(self, apg_job, None, None, 29)
+        check_mintime_to_builder(self, apg_job, 29)
 
         # Make a second, idle x86 builder available.
-        builder = self.builders[(x86_proc.id, False)][1]
+        builder = self.builders[(self.x86_proc.id, False)][1]
         builder.builderok = True
 
         # That builder should be available immediately since it's idle.
-        check_mintime_to_builder(self, apg_job, None, None, 0)
+        check_mintime_to_builder(self, apg_job, 0)
 
 
 class TestJobClasses(TestCaseWithFactory):
@@ -781,20 +812,20 @@ class TestJobClasses(TestCaseWithFactory):
 
         # This is a binary package build.
         self.assertEqual(
-            bq.job_type, BuildFarmJobType.PACKAGEBUILD,
+            BuildFarmJobType.PACKAGEBUILD, bq.job_type,
             "This is a binary package build")
 
         # The class registered for 'PACKAGEBUILD' is `BuildPackageJob`.
         self.assertEqual(
-            specific_job_classes()[BuildFarmJobType.PACKAGEBUILD],
             BuildPackageJob,
+            specific_job_classes()[BuildFarmJobType.PACKAGEBUILD],
             "The class registered for 'PACKAGEBUILD' is `BuildPackageJob`")
 
         # The 'specific_job' object associated with this `BuildQueue`
         # instance is of type `BuildPackageJob`.
         self.assertTrue(bq.specific_job is not None)
         self.assertEqual(
-            bq.specific_job.__class__, BuildPackageJob,
+            BuildPackageJob, bq.specific_job.__class__,
             "The 'specific_job' object associated with this `BuildQueue` "
             "instance is of type `BuildPackageJob`")
 
@@ -913,23 +944,14 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         self.builds.append(job.specific_job.build)
 
         # Assign the same score to the '386' vim and apg build jobs.
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
         _apg_build, apg_job = find_job(self, 'apg', '386')
         apg_job.lastscore = 1024
         # print_build_setup(self.builds)
 
     def test_job_delay_for_binary_builds(self):
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
-
         # One of four builders for the 'flex' build is immediately available.
         flex_build, flex_job = find_job(self, 'flex', 'hppa')
-        check_mintime_to_builder(self, flex_job, hppa_proc, False, 0)
-
-        # Obtain the builder statistics pertaining to this job.
-        builder_data = flex_job._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
+        check_mintime_to_builder(self, flex_job, 0)
 
         # The delay will be 900 (= 15*60) + 222 seconds
         check_delay_for_job(self, flex_job, 1122)
@@ -942,11 +964,8 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         check_delay_for_job(self, flex_job, 222)
 
         # How about some estimates for x86 builds?
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
-
         _bison_build, bison_job = find_job(self, 'bison', '386')
-        check_mintime_to_builder(self, bison_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, bison_job, 0)
         # The delay will be 900 (= (14+16)*60/2) + 222 seconds.
         check_delay_for_job(self, bison_job, 1122)
 
@@ -958,13 +977,13 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # Also, this tests that jobs with equal score but a lower 'job' value
         # (i.e. older jobs) are queued ahead of the job of interest (JOI).
         _vim_build, vim_job = find_job(self, 'vim', '386')
-        check_mintime_to_builder(self, vim_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, vim_job, 0)
         # The delay will be 870 (= (6+10+12+14+16)*60/4) + 122 (= (222+22)/2)
         # seconds.
         check_delay_for_job(self, vim_job, 992)
 
         _gedit_build, gedit_job = find_job(self, 'gedit', '386')
-        check_mintime_to_builder(self, gedit_job, x86_proc, False, 0)
+        check_mintime_to_builder(self, gedit_job, 0)
         # The delay will be
         #   1080 (= (4+6+8+10+12+14+16)*60/4) + 122 (= (222+22)/2)
         # seconds.
@@ -973,11 +992,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
     def test_job_delay_for_recipe_builds(self):
         # One of the 9 builders for the 'bash' build is immediately available.
         bash_build, bash_job = find_job(self, 'xx-recipe-bash', None)
-        check_mintime_to_builder(self, bash_job, None, False, 0)
-
-        # Obtain the builder statistics pertaining to this job.
-        builder_data = bash_job._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
+        check_mintime_to_builder(self, bash_job, 0)
 
         # The delay will be 960 + 780 + 222 = 1962, where
         #   hppa job delays: 960 = (9+11+13+15)*60/3
@@ -986,17 +1001,15 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         # One of the 9 builders for the 'zsh' build is immediately available.
         zsh_build, zsh_job = find_job(self, 'xx-recipe-zsh', None)
-        check_mintime_to_builder(self, zsh_job, None, False, 0)
-
-        # Obtain the builder statistics pertaining to this job.
-        builder_data = zsh_job._getBuilderData()
-        builders_in_total, builders_for_job, builder_stats = builder_data
+        check_mintime_to_builder(self, zsh_job, 0)
 
         # The delay will be 0 since this is the head job.
         check_delay_for_job(self, zsh_job, 0)
 
         # Assign the zsh job to a builder.
+        self.assertEquals((None, False), bash_job._getHeadJobPlatform())
         assign_to_builder(self, 'xx-recipe-zsh', 1, None)
+        self.assertEquals((1, False), bash_job._getHeadJobPlatform())
 
         # Now that the highest-scored job is out of the way, the estimation
         # for the 'bash' recipe build is 222 seconds shorter.
@@ -1006,9 +1019,257 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         #    386 job delays: 780 = (10+12+14+16)*60/4
         check_delay_for_job(self, bash_job, 1740)
 
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        x86_proc = processor_fam.processors[0]
-
         _postgres_build, postgres_job = find_job(self, 'postgres', '386')
         # The delay will be 0 since this is the head job now.
         check_delay_for_job(self, postgres_job, 0)
+        # Also, the platform of the postgres job is returned since it *is*
+        # the head job now.
+        pg_platform = (postgres_job.processor.id, postgres_job.virtualized)
+        self.assertEquals(pg_platform, postgres_job._getHeadJobPlatform())
+
+    def test_job_delay_for_unspecified_virtualization(self):
+        # Make sure that jobs with a NULL 'virtualized' flag get the same
+        # treatment as the ones with virtualized=TRUE.
+        # First toggle the 'virtualized' flag for all hppa jobs.
+        for build in self.builds:
+            bq = build.buildqueue_record
+            if bq.processor == self.hppa_proc:
+                bq.virtualized = True
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            virtualized=True, estimated_duration=332,
+            sourcename='xxr-openssh-client', score=1050)
+        self.builds.append(job.specific_job.build)
+        # print_build_setup(self.builds)
+        #   ...
+        #   15,               flex, p: hppa, v: True e:0:13:00 *** s: 1039
+        #   16,               flex, p:  386, v:False e:0:14:00 *** s: 1042
+        #   17,           postgres, p: hppa, v: True e:0:15:00 *** s: 1045
+        #   18,           postgres, p:  386, v:False e:0:16:00 *** s: 1048
+        #   21, xxr-openssh-client, p: None, v: True e:0:05:32 *** s: 1050
+        #   20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
+
+        flex_build, flex_job = find_job(self, 'flex', 'hppa')
+        # The head job platform is the one of job #21 (xxr-openssh-client).
+        self.assertEquals((None, True), flex_job._getHeadJobPlatform())
+        # The delay will be 900 (= 15*60) + 332 seconds
+        check_delay_for_job(self, flex_job, 1232)
+
+        # Now add a job with a NULL 'virtualized' flag. It should be treated
+        # like jobs with virtualized=TRUE.
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=111, sourcename='xxr-gwibber', score=1051,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+        # print_build_setup(self.builds)
+        self.assertEqual(None, job.virtualized)
+        #   ...
+        #   15,               flex, p: hppa, v: True e:0:13:00 *** s: 1039
+        #   16,               flex, p:  386, v:False e:0:14:00 *** s: 1042
+        #   17,           postgres, p: hppa, v: True e:0:15:00 *** s: 1045
+        #   18,           postgres, p:  386, v:False e:0:16:00 *** s: 1048
+        #   21, xxr-openssh-client, p: None, v: True e:0:05:32 *** s: 1050
+        #   22,        xxr-gwibber, p: None, v: None e:0:01:51 *** s: 1051
+        #   20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
+
+        # The newly added 'xxr-gwibber' job is the new head job now.
+        self.assertEquals((None, None), flex_job._getHeadJobPlatform())
+        # The newly added 'xxr-gwibber' job now weighs in as well and the
+        # delay is 900 (= 15*60) + (332+111)/2 seconds
+        check_delay_for_job(self, flex_job, 1121)
+
+        # The '386' flex job does not care about the 'xxr-gwibber' and
+        # 'xxr-openssh-client' jobs since the 'virtualized' values do not
+        # match.
+        flex_build, flex_job = find_job(self, 'flex', '386')
+        self.assertEquals((None, False), flex_job._getHeadJobPlatform())
+        # delay is 960 (= 16*60) + 222 seconds
+        check_delay_for_job(self, flex_job, 1182)
+
+
+class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
+    """Test estimated job delays with various processors."""
+    score_increment = 2
+    def setUp(self):
+        """Add more processor-independent jobs to the mix, make the '386' jobs
+        virtual.
+
+            3,              gedit, p: hppa, v:False e:0:01:00 *** s: 1003
+            4,              gedit, p:  386, v: True e:0:02:00 *** s: 1006
+            5,            firefox, p: hppa, v:False e:0:03:00 *** s: 1009
+            6,            firefox, p:  386, v: True e:0:04:00 *** s: 1012
+            7,                apg, p: hppa, v:False e:0:05:00 *** s: 1015
+            9,                vim, p: hppa, v:False e:0:07:00 *** s: 1021
+           10,                vim, p:  386, v: True e:0:08:00 *** s: 1024
+            8,                apg, p:  386, v: True e:0:06:00 *** s: 1024
+           19,       xxr-aptitude, p: None, v:False e:0:05:32 *** s: 1025
+           11,                gcc, p: hppa, v:False e:0:09:00 *** s: 1027
+           12,                gcc, p:  386, v: True e:0:10:00 *** s: 1030
+           13,              bison, p: hppa, v:False e:0:11:00 *** s: 1033
+           14,              bison, p:  386, v: True e:0:12:00 *** s: 1036
+           15,               flex, p: hppa, v:False e:0:13:00 *** s: 1039
+           16,               flex, p:  386, v: True e:0:14:00 *** s: 1042
+           23,      xxr-apt-build, p: None, v: True e:0:12:56 *** s: 1043
+           22,       xxr-cron-apt, p: None, v: True e:0:11:05 *** s: 1043
+           26,           xxr-cupt, p: None, v: None e:0:18:30 *** s: 1044
+           25,            xxr-apt, p: None, v: None e:0:16:38 *** s: 1044
+           24,       xxr-debdelta, p: None, v: None e:0:14:47 *** s: 1044
+           17,           postgres, p: hppa, v:False e:0:15:00 *** s: 1045
+           18,           postgres, p:  386, v: True e:0:16:00 *** s: 1048
+           21,         xxr-daptup, p: None, v: None e:0:09:14 *** s: 1051
+           20,       xxr-auto-apt, p: None, v:False e:0:07:23 *** s: 1053
+
+         p=processor, v=virtualized, e=estimated_duration, s=score
+        """
+        super(TestJobDispatchTimeEstimation, self).setUp()
+
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            virtualized=False, estimated_duration=332,
+            sourcename='xxr-aptitude', score=1025)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            virtualized=False, estimated_duration=443,
+            sourcename='xxr-auto-apt', score=1053)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=554, sourcename='xxr-daptup', score=1051,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=665, sourcename='xxr-cron-apt', score=1043)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=776, sourcename='xxr-apt-build', score=1043)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=887, sourcename='xxr-debdelta', score=1044,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=998, sourcename='xxr-apt', score=1044,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            estimated_duration=1110, sourcename='xxr-cupt', score=1044,
+            virtualized=None)
+        self.builds.append(job.specific_job.build)
+
+        # Assign the same score to the '386' vim and apg build jobs.
+        _apg_build, apg_job = find_job(self, 'apg', '386')
+        apg_job.lastscore = 1024
+
+        # Also, toggle the 'virtualized' flag for all '386' jobs.
+        for build in self.builds:
+            bq = build.buildqueue_record
+            if bq.processor == self.x86_proc:
+                bq.virtualized = True
+
+    def test_pending_jobs_only(self):
+        # Let's see the assertion fail for a job that's not pending any more.
+        assign_to_builder(self, 'gedit', 1, 'hppa')
+        gedit_build, gedit_job = find_job(self, 'gedit', 'hppa')
+        self.assertRaises(AssertionError, gedit_job.getEstimatedJobStartTime)
+
+    def test_estimation_binary_virtual(self):
+        gcc_build, gcc_job = find_job(self, 'gcc', '386')
+        # The delay of 1671 seconds is calculated as follows:
+        #                     386 jobs: (12+14+16)*60/3           = 840
+        #   processor-independent jobs:
+        #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
+        check_estimate(self, gcc_job, 1671)
+        self.assertEquals(5, builders_for_job(gcc_job))
+
+    def test_proc_indep_virtual_true(self):
+        xxr_build, xxr_job = find_job(self, 'xxr-apt-build', None)
+        # The delay of 1802 seconds is calculated as follows:
+        #                     386 jobs: 16*60                    = 960
+        #   processor-independent jobs:
+        #       (11:05 + 18:30 + 16:38 + 14:47 + 9:14)/5         = 842
+        check_estimate(self, xxr_job, 1802)
+
+    def test_estimation_binary_virtual_long_queue(self):
+        gedit_build, gedit_job = find_job(self, 'gedit', '386')
+        # The delay of 1671 seconds is calculated as follows:
+        #                     386 jobs:
+        #       (4+6+8+10+12+14+16)*60/5                          = 840
+        #   processor-independent jobs:
+        #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
+        check_estimate(self, gedit_job, 1671)
+
+    def test_proc_indep_virtual_null_headjob(self):
+        xxr_build, xxr_job = find_job(self, 'xxr-daptup', None)
+        # This job is at the head of the queue for virtualized builders and
+        # will get dispatched within the next 5 seconds.
+        check_estimate(self, xxr_job, 5)
+
+    def test_proc_indep_virtual_false(self):
+        xxr_build, xxr_job = find_job(self, 'xxr-aptitude', None)
+        # The delay of 1403 seconds is calculated as follows:
+        #                    hppa jobs: (9+11+13+15)*60/3        = 960
+        #   processor-independent jobs: 7:23                     = 443
+        check_estimate(self, xxr_job, 1403)
+
+    def test_proc_indep_virtual_false_headjob(self):
+        xxr_build, xxr_job = find_job(self, 'xxr-auto-apt', None)
+        # This job is at the head of the queue for native builders and
+        # will get dispatched within the next 5 seconds.
+        check_estimate(self, xxr_job, 5)
+
+    def test_estimation_binary_virtual_same_score(self):
+        vim_build, vim_job = find_job(self, 'vim', '386')
+        # The apg job is ahead of the vim job.
+        # The delay of 1527 seconds is calculated as follows:
+        #                     386 jobs: (6+10+12+14+16)*60/5      = 696
+        #   processor-independent jobs:
+        #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
+        check_estimate(self, vim_job, 1527)
+
+    def test_no_builder_no_estimate(self):
+        # No dispatch estimate is provided in the absence of builders that
+        # can run the job of interest (JOI).
+        disable_builders(self, 'x86', True)
+        vim_build, vim_job = find_job(self, 'vim', '386')
+        check_estimate(self, vim_job, None)
+
+    def test_estimates_with_small_builder_pool(self):
+        # Test that a reduced builder pool results in longer dispatch time
+        # estimates.
+        vim_build, vim_job = find_job(self, 'vim', '386')
+        disable_builders(self, 'x86', True)
+        # Re-enable one builder.
+        builder = self.builders[(self.x86_proc.id, True)][0]
+        builder.builderok = True
+        # Dispatch the firefox job to it.
+        assign_to_builder(self, 'firefox', 1, '386')
+        # Dispatch the head job, making postgres/386 the new head job and
+        # resulting in a 240 seconds head job dispatch delay.
+        assign_to_builder(self, 'xxr-daptup', 1, None)
+        check_mintime_to_builder(self, vim_job, 240)
+        # Re-enable another builder.
+        builder = self.builders[(self.x86_proc.id, True)][1]
+        builder.builderok = True
+        # Assign a job to it.
+        assign_to_builder(self, 'gedit', 2, '386')
+        check_mintime_to_builder(self, vim_job, 120)
+
+        xxr_build, xxr_job = find_job(self, 'xxr-apt', None)
+        # The delay of 2627+120 seconds is calculated as follows:
+        #                     386 jobs : (6+10+12+14+16)*60/2     = 1740
+        #   processor-independent jobs :
+        #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47)/5         =  887
+        # waiting time for next builder:                          =  120
+        self.assertEquals(2, builders_for_job(vim_job))
+        self.assertEquals(9, builders_for_job(xxr_job))
+        check_estimate(self, vim_job, 2747)
+
+    def test_estimation_binary_virtual_headjob(self):
+        # The head job only waits for the next builder to become available.
+        disable_builders(self, 'x86', True)
+        # Re-enable one builder.
+        builder = self.builders[(self.x86_proc.id, True)][0]
+        builder.builderok = True
+        # Assign a job to it.
+        assign_to_builder(self, 'gedit', 1, '386')
+        # Dispatch the head job, making postgres/386 the new head job.
+        assign_to_builder(self, 'xxr-daptup', 1, None)
+        postgres_build, postgres_job = find_job(self, 'postgres', '386')
+        check_estimate(self, postgres_job, 120)

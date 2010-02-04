@@ -59,7 +59,6 @@ from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities,
     IPersonRoles)
-from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -70,8 +69,7 @@ from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
 from lp.translations.interfaces.pofile import IPOFile
-from lp.translations.interfaces.potemplate import (
-    IPOTemplate, IPOTemplateSubset)
+from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingEdit,
     ISourcePackagePublishingHistory)
@@ -389,7 +387,7 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
         return (user.in_admin or
                 user.isOwner(self.obj.target) or
                 user.isOneOf(
-                    self.obj, ['owner','drafter', 'assignee', 'approver']))
+                    self.obj, ['owner', 'drafter', 'assignee', 'approver']))
 
 
 class AdminSpecification(AuthorizationBase):
@@ -1160,8 +1158,6 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
                     self, user))
 
 
-# Please keep AdminPOTemplateSubset in sync with this, unless you
-# know exactly what you are doing.
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     """Controls administration of an `IPOTemplate`.
 
@@ -1170,6 +1166,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
 
     Product owners does not have administrative privileges.
     """
+
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplate
 
@@ -1346,23 +1343,15 @@ class ViewProductRelease(AuthorizationBase):
         return True
 
 
-class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+class AdminTranslationImportQueueEntry(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
-            return True
-
-        # As a special case, the Ubuntu translation group owners can
-        # manage Ubuntu uploads.
-        if self.obj.isUbuntuAndIsUserTranslationGroupOwner(user.person):
-            return True
-
-        return False
+        return self.obj.canAdmin(user)
 
 
-class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
+class EditTranslationImportQueueEntry(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITranslationImportQueueEntry
 
@@ -1370,13 +1359,7 @@ class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
         """Anyone who can admin an entry, plus its owner or the owner of the
         product or distribution, can edit it.
         """
-        if AdminTranslationImportQueueEntry.checkAuthenticated(self, user):
-            return True
-        if self.obj.isUserUploaderOrOwner(user.person):
-            return True
-
-        return False
-
+        return self.obj.canEdit(user)
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
@@ -1682,33 +1665,6 @@ class AdminBranch(AuthorizationBase):
                 user.in_bazaar_experts)
 
 
-# Please keep this in sync with AdminPOTemplateDetails. Note that
-# this permission controls access to browsing into individual
-# potemplates, but it's on a different object (POTemplateSubset)
-# from AdminPOTemplateDetails, even though it looks almost identical
-class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
-    """Controls administration of an `IPOTemplateSubset`.
-
-    Allow all persons that can also administer the translations to
-    which this template belongs to and also translation group owners.
-
-    Product owners does not have administrative privileges.
-    """
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IPOTemplateSubset
-
-    def checkAuthenticated(self, user):
-        template_set = self.obj
-        if template_set.distroseries is not None:
-            distribution = template_set.distroseries.distribution
-            return (
-                AdminDistributionTranslations(
-                    distribution).checkAuthenticated(user))
-        else:
-            # Template is on a product.
-            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user)
-
-
 class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
@@ -1718,6 +1674,7 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         Distribution managers can also manage IDistroSeries
         """
+
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
 
