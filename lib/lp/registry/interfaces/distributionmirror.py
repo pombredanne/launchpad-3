@@ -287,8 +287,9 @@ class IDistributionMirror(Interface):
 
     id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = exported(PublicPersonChoice(
-        title=_('Owner'), required=False, readonly=True,
-        vocabulary='ValidOwner'))
+        title=_('Owner'), description=_("The person who is set as the "
+            "current administrator of this mirror."), required=True,
+        readonly=False, vocabulary='ValidOwner'))
     reviewer = PublicPersonChoice(
         title=_('Reviewer'), required=False, readonly=False,
         vocabulary='ValidPersonOrTeam')
