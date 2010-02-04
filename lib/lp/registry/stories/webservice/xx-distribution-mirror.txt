@@ -13,21 +13,23 @@ mirrors:
     >>> pprint_entry(canonical_archive_json)
     content: u'Archive'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
+    date_reviewed: None
     description: None
     displayname: None
     distribution_link: u'http://.../ubuntu'
     enabled: True
     ftp_base_url: None
-    has_ftp_or_rsync_base_url: False
     http_base_url: u'http://archive.ubuntu.com/ubuntu/'
     name: u'canonical-archive'
     official_candidate: True
     owner_link: u'http://.../~mark'
     resource_type_link: u'http://.../#distribution_mirror'
+    reviewer_link: None
     rsync_base_url: None
     self_link: u'http://.../ubuntu/+mirror/canonical-archive'
     speed: u'100 Mbps'
     status: u'Official'
+    whiteboard: None
 
 And CD image mirrors:
 
@@ -37,21 +39,23 @@ And CD image mirrors:
     >>> pprint_entry(canonical_releases_json)
     content: u'CD Image'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
+    date_reviewed: None
     description: None
     displayname: None
     distribution_link: u'http://.../ubuntu'
     enabled: True
     ftp_base_url: None
-    has_ftp_or_rsync_base_url: False
     http_base_url: u'http://releases.ubuntu.com/'
     name: u'canonical-releases'
     official_candidate: True
     owner_link: u'http://.../~mark'
     resource_type_link: u'http://.../#distribution_mirror'
+    reviewer_link: None
     rsync_base_url: None
     self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
     status: u'Official'
+    whiteboard: None
 
 = Distribution Mirror Custom Operations =
 
