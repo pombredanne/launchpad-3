@@ -42,10 +42,7 @@ from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
-from lp.archiveuploader.utils import (
-    determine_source_file_type)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.scripts.ftpmaster import SyncSource, SyncSourceError
 
 
