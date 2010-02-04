@@ -17,11 +17,10 @@ import sys
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import BzrError
+from bzrlib.errors import BzrError, NotBranchError
 from bzrlib.plugin import load_plugins
 from bzrlib.revisionspec import RevisionSpec
 from bzrlib.trace import report_exception
-from bzrlib.transport import get_transport
 from bzrlib import ui
 from bzrlib.workingtree import WorkingTree
 
@@ -112,10 +111,16 @@ def plan_update(existing_branches, configuration):
 
 def find_branches(directory):
     """List the directory names in 'directory' that are branches."""
-    transport = get_transport(directory)
-    return (
-        os.path.basename(branch.base.rstrip('/'))
-        for branch in BzrDir.find_branches(transport))
+    branches = []
+    for name in os.listdir(directory):
+        if name in ('.', '..'):
+            continue
+        try:
+            Branch.open(os.path.join(directory, name))
+            branches.append(name)
+        except NotBranchError:
+            pass
+    return branches
 
 
 def get_revision_id(revision, from_branch, tip=False):
