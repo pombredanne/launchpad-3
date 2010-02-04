@@ -356,14 +356,15 @@ class EC2Instance:
         """
         if not self._ec2test_user_has_keys:
             if connection is None:
-                connection = self._connect('root')
+                connection = self._connect('ubuntu')
                 our_connection = True
             else:
                 our_connection = False
             self._upload_local_key(connection, 'local_key')
             connection.perform(
-                'cat /root/.ssh/authorized_keys local_key '
-                '> /home/ec2test/.ssh/authorized_keys && rm local_key')
+                'cat /home/ubuntu/.ssh/authorized_keys local_key '
+                '| sudo /home/ec2test/.ssh/authorized_keys '
+                '&& rm local_key')
             connection.perform('chown -R ec2test:ec2test /home/ec2test/')
             connection.perform('chmod 644 /home/ec2test/.ssh/*')
             if our_connection:
@@ -381,13 +382,13 @@ class EC2Instance:
         lot of set up.
         """
         if self._from_scratch:
-            root_connection = self._connect('root')
-            self._upload_local_key(root_connection, 'local_key')
-            root_connection.perform(
+            ubuntu_connection = self._connect('ubuntu')
+            self._upload_local_key(ubuntu_connection, 'local_key')
+            ubuntu_connection.perform(
                 'cat local_key >> ~/.ssh/authorized_keys && rm local_key')
-            root_connection.run_script(from_scratch_root)
-            self._ensure_ec2test_user_has_keys(root_connection)
-            root_connection.close()
+            ubuntu_connection.run_script(from_scratch_root, sudo=True)
+            self._ensure_ec2test_user_has_keys(ubuntu_connection)
+            ubuntu_connection.close()
             conn = self._connect('ec2test')
             conn.run_script(
                 from_scratch_ec2test
@@ -642,12 +643,15 @@ class EC2InstanceConnection:
             raise RuntimeError('Command failed: %s' % (cmd,))
         return res
 
-    def run_script(self, script_text):
+    def run_script(self, script_text, sudo=False):
         """Upload `script_text` to the instance and run it with bash."""
         script = self.sftp.open('script.sh', 'w')
         script.write(script_text)
         script.close()
-        self.run_with_ssh_agent('/bin/bash script.sh')
+        cmd = '/bin/bash script.sh'
+        if sudo:
+            cmd = 'sudo ' + cmd
+        self.run_with_ssh_agent(cmd)
         # At least for mwhudson, the paramiko connection often drops while the
         # script is running.  Reconnect just in case.
         self.reconnect()
