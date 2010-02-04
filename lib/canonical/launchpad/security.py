@@ -29,6 +29,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.soyuz.interfaces.build import IBuild
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
@@ -58,11 +59,13 @@ from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities,
     IPersonRoles)
+from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
@@ -817,7 +820,7 @@ class SeriesDrivers(AuthorizationBase):
 class ViewProductSeries(AuthorizationBase):
 
     usedfor = IProductSeries
-    permision = 'launchpad.View'
+    permission = 'launchpad.View'
 
     def checkUnauthenticated(self):
         """See `IAuthorization.checkUnauthenticated`.
@@ -977,6 +980,46 @@ class EditBugAttachment(
     def __init__(self, bugattachment):
         EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
             self, bugattachment.bug)
+
+
+class ViewBugSubscription(AuthorizationBase):
+
+    usedfor = IBugSubscription
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+    def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+
+class ViewBugMessage(AuthorizationBase):
+
+    usedfor = IMessage
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+    def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
+        """
+        return True
 
 
 class ViewAnnouncement(AuthorizationBase):
@@ -1281,6 +1324,26 @@ class EditProductRelease(EditByOwnersOrAdmins):
             return True
         return EditByOwnersOrAdmins.checkAuthenticated(
             self, user)
+
+
+class ViewProductRelease(AuthorizationBase):
+
+    usedfor = IProductRelease
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+    def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
+        """
+        return True
 
 
 class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
