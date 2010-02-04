@@ -369,7 +369,7 @@ class IDistributionMirror(Interface):
             "mirror was last reviewed by a mirror admin."), required=False,
         readonly=True))
     whiteboard = exported(Whiteboard(
-        title=_('Whiteboard'), required=False,
+        title=_('Whiteboard'), required=False, readonly=False,
         description=_("Notes on the current status of the mirror (only "
                       "visible to admins and the mirror's registrant).")))
 
