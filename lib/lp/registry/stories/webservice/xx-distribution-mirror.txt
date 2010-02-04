@@ -118,13 +118,16 @@ Some attributes are read-only via the API:
 While others can be set:
 
     >>> patch = {
-    ...     u'whiteboard' : u'This mirror is very shiny'
+    ...     u'status' : 'Unofficial',
+    ...     u'whiteboard' : u'This mirror is too shiny to be true'
     ... }
     >>> response = karl_webservice.patch(
     ...     canonical_releases['self_link'], 'application/json', dumps(patch)).jsonBody()
     >>> pprint_entry(response)
+    content: u'CD Image'
     ...
-    whiteboard: u'This mirror is very shiny'
+    status: u'Unofficial'
+    whiteboard: u'This mirror is too shiny to be true'
 
 = Distribution Mirror Custom Operations =
 
@@ -136,7 +139,7 @@ or not.
     >>> is_official_mirror = webservice.named_get(canonical_releases['self_link'],
     ...     'isOfficial').jsonBody()
     >>> print is_official_mirror
-    True
+    False
 
 "getOverallFreshness" returns the freshness of the mirror determined by the
 mirror prober from the mirror's last probe.
