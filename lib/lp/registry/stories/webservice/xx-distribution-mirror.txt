@@ -115,6 +115,17 @@ Some attributes are read-only via the API:
     date_reviewed: You tried to modify a read-only attribute.
     reviewer_link: You tried to modify a read-only attribute.
 
+While others can be set:
+
+    >>> patch = {
+    ...     u'whiteboard' : u'This mirror is very shiny'
+    ... }
+    >>> response = karl_webservice.patch(
+    ...     canonical_releases['self_link'], 'application/json', dumps(patch)).jsonBody()
+    >>> pprint_entry(response)
+    ...
+    whiteboard: u'This mirror is very shiny'
+
 = Distribution Mirror Custom Operations =
 
 DistributionMirror has some custom operations.
