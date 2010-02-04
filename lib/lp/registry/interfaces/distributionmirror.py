@@ -345,7 +345,8 @@ class IDistributionMirror(Interface):
         title=_('Apply to be an official mirror of this distribution'),
         required=False, readonly=False, default=True))
     status = exported(Choice(
-        title=_('Status'), required=True, readonly=False,
+        title=_('Status'), description=_("The current status of a mirror's "
+            "registration."), required=True, readonly=False,
         vocabulary=MirrorStatus))
 
     title = Attribute('The title of this mirror')
