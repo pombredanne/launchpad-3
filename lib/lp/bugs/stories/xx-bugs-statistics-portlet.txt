@@ -227,7 +227,7 @@ option to subscribe to bug mail.
     2 Open bugs
     0 In-progress bugs
     0 Critical bugs
-    0 In-progress bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bugs
