@@ -292,7 +292,7 @@ class IDistributionMirror(Interface):
         readonly=False, vocabulary='ValidOwner'))
     reviewer = exported(PublicPersonChoice(
         title=_('Reviewer'), description=_("The person who last reviewed this "
-            "mirror"), required=False, readonly=True,
+            "mirror."), required=False, readonly=True,
         vocabulary='ValidPersonOrTeam'))
     distribution = exported(
         Reference(
@@ -361,13 +361,16 @@ class IDistributionMirror(Interface):
         title=_('Does this mirror have a FTP or Rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = exported(Datetime(
-        title=_('Date Created'), required=True, readonly=True))
-    date_reviewed = Datetime(
-        title=_('Date reviewed'), required=False, readonly=False)
-    whiteboard = Whiteboard(
+        title=_('Date Created'), description=_("The date on which this mirror "
+            "was registered"), required=True, readonly=True))
+    date_reviewed = exported(Datetime(
+        title=_('Date reviewed'), description=_("The date on which this "
+            "mirror was last reviewed by a mirror admin."), required=False,
+        readonly=True))
+    whiteboard = exported(Whiteboard(
         title=_('Whiteboard'), required=False,
         description=_("Notes on the current status of the mirror (only "
-                      "visible to admins and the mirror's registrant)."))
+                      "visible to admins and the mirror's registrant).")))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
