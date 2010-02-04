@@ -69,7 +69,7 @@ The rules for (signing_rules == 1)-mode are:
     lines = changes_in.readlines()
 
     if not lines:
-	raise changes_parse_error_exc, "[Empty changes file]"
+        raise changes_parse_error_exc, "[Empty changes file]"
 
     # Reindex by line number so we can easily verify the format of
     # .dsc files...
@@ -115,7 +115,7 @@ The rules for (signing_rules == 1)-mode are:
         if slf:
             field = slf.groups()[0].lower()
             changes[field] = slf.groups()[1]
-	    first = 1
+            first = 1
             continue
         if line == " .":
             changes[field] += '\n'
@@ -127,9 +127,9 @@ The rules for (signing_rules == 1)-mode are:
             if first == 1 and changes[field] != "":
                 changes[field] += '\n'
             first = 0
-	    changes[field] += mlf.groups()[0] + '\n'
+            changes[field] += mlf.groups()[0] + '\n'
             continue
-	error += line
+        error += line
 
     if signing_rules == 1 and inside_signature:
         raise invalid_dsc_format_exc, index
@@ -138,7 +138,7 @@ The rules for (signing_rules == 1)-mode are:
     changes["filecontents"] = "".join(lines)
 
     if error:
-	raise changes_parse_error_exc, error
+        raise changes_parse_error_exc, error
 
     return changes
 
@@ -149,14 +149,14 @@ def build_file_list(changes, is_a_dsc=0):
 
     # Make sure we have a Files: field to parse...
     if not changes.has_key("files"):
-	raise no_files_exc;
+        raise no_files_exc;
 
     # Make sure we recognise the format of the Files: field
     format = changes.get("format", "");
     if format != "":
-	format = float(format.split()[0]);
+        format = float(format.split()[0]);
     if not is_a_dsc and (format < 1.5 or format > 2.0):
-	raise nk_format_exc, format;
+        raise nk_format_exc, format;
 
     # Parse each entry/line:
     for i in changes["files"].split('\n'):
@@ -309,9 +309,9 @@ def whoami ():
 ################################################################################
 
 def join_with_commas_and(list):
-	if len(list) == 0: return "nothing";
-	if len(list) == 1: return list[0];
-	return ", ".join(list[:-1]) + " and " + list[-1];
+    if len(list) == 0: return "nothing";
+    if len(list) == 1: return list[0];
+    return ", ".join(list[:-1]) + " and " + list[-1];
 
 ################################################################################
 
