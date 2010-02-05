@@ -50,6 +50,7 @@ class CodeImportWorkerExitCode:
     SUCCESS = 0
     FAILURE = 1
     SUCCESS_NOCHANGE = 2
+    SUCCESS_PARTIAL = 3
 
 
 class BazaarBranchStore:
@@ -407,11 +408,7 @@ class ImportWorker:
         saved_pwd = os.getcwd()
         os.chdir(working_directory)
         try:
-            non_trivial = self._doImport()
-            if non_trivial:
-                return CodeImportWorkerExitCode.SUCCESS
-            else:
-                return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
+            return self._doImport()
         finally:
             shutil.rmtree(working_directory)
             os.chdir(saved_pwd)
@@ -497,7 +494,10 @@ class CSCVSImportWorker(ImportWorker):
         self.importToBazaar(foreign_tree, bazaar_tree)
         non_trivial = self.pushBazaarWorkingTree(bazaar_tree)
         self.foreign_tree_store.archive(foreign_tree)
-        return non_trivial
+        if non_trivial:
+            return CodeImportWorkerExitCode.SUCCESS
+        else:
+            return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
 
 
 class PullingImportWorker(ImportWorker):
@@ -529,10 +529,22 @@ class PullingImportWorker(ImportWorker):
             else:
                 raise NotBranchError(self.source_details.url)
             foreign_branch = format.open(transport).open_branch()
-            bazaar_tree.branch.pull(foreign_branch, overwrite=True)
+            local_revno = bazaar_tree.branch.revno()
+            foreign_revno = foreign_branch.revno()
+            target_revno = min(local_revno + 2, foreign_revno)
+            target_revid = foreign_branch.get_rev_id(target_revno)
+            pull_result = bazaar_tree.branch.pull(
+                foreign_branch, overwrite=True, stop_revision=target_revid)
+            self.pushBazaarWorkingTree(bazaar_tree)
+            if target_revno == foreign_revno:
+                if pull_result.old_revid != pull_result.new_revid:
+                    return CodeImportWorkerExitCode.SUCCESS
+                else:
+                    return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
+            else:
+                return CodeImportWorkerExitCode.SUCCESS_PARTIAL
         finally:
             bzrlib.ui.ui_factory = saved_factory
-        return self.pushBazaarWorkingTree(bazaar_tree)
 
 
 class GitImportWorker(PullingImportWorker):
