@@ -16,14 +16,14 @@ from zope.interface import classProvides, implements
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.archiveuploader.permission import check_upload_to_archive
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipedata import _SourcePackageRecipeData
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
 
 
 class NonPPABuildRequest(Exception):
