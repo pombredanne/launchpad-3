@@ -196,3 +196,16 @@ And then reloading the page. The Fix Released bug, bug 18, is no longer shown.
     #23 Summary for new bug 8    New      Undecided     ...
     #24 Summary for new bug 9    New      Undecided     ...
     #25 Summary for new bug 10   New      Undecided     ...
+
+There is a link to see all bugs by heat if the project has more
+than 10 hot bugs.
+
+    >>> find_tag_by_id(anon_browser.contents, 'more-hot-bugs') is None
+    False
+
+Jokosher does not have more than 10 bugs and does not have a link
+to more hot bugs.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/jokosher')
+    >>> find_tag_by_id(anon_browser.contents, 'more-hot-bugs') is None
+    True
