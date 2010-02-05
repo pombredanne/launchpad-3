@@ -37,6 +37,9 @@ class SourcePackageName(SQLBase):
     def __unicode__(self):
         return self.name
 
+    def __repr__(self):
+        return '<SourcePackageName: %s>' % self.name
+
     def ensure(klass, name):
         try:
             return klass.byName(name)

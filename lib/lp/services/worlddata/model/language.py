@@ -4,21 +4,24 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Language', 'LanguageSet']
+__all__ = [
+    'Language',
+    'LanguageSet',
+    ]
 
-from zope.interface import implements
 
 from sqlobject import (
-    BoolCol, CONTAINSSTRING, IntCol, SQLObjectNotFound,
-    SQLRelatedJoin, StringCol)
+    BoolCol, CONTAINSSTRING, IntCol, SQLObjectNotFound, SQLRelatedJoin,
+    StringCol)
 from storm.locals import Or
+from zope.interface import implements
 
 from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import ISlaveStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.services.worlddata.interfaces.language import (
-    ILanguageSet, ILanguage, TextDirection)
+    ILanguage, ILanguageSet, TextDirection)
 
 
 class Language(SQLBase):
@@ -64,6 +67,9 @@ class Language(SQLBase):
     def displayname(self):
         """See `ILanguage`."""
         return '%s (%s)' % (self.englishname, self.code)
+
+    def __repr__(self):
+        return '<Language: %s>' % self.displayname
 
     @property
     def alt_suggestion_language(self):
