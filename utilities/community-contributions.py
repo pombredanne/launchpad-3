@@ -46,7 +46,7 @@ from bzrlib.osutils import format_date
 try:
     from editmoin import editshortcut
 except:
-    sys.stderr.write("""ERROR: Unable to import from 'editmoin'.  How to solve:
+    sys.stderr.write("""ERROR: Unable to import from 'editmoin'. How to solve:
 Get editmoin.py from launchpadlib's "contrib/" directory:
 
   http://bazaar.launchpad.net/~lazr-developers/launchpadlib/trunk/annotate/head%3A/contrib/editmoin.py
@@ -126,8 +126,10 @@ known_canonical_devs = (
 # Some people have made commits using various names and/or email 
 # addresses, so this map will be used to merge them accordingly.
 merge_names_map = {
-    u'Jamal Fanaian <jfanaian@gmail.com>': u'Jamal Fanaian <jamal.fanaian@gmail.com>',
-    u'Jamal Fanaian <jamal@jfvm1>': u'Jamal Fanaian <jamal.fanaian@gmail.com>',
+    u'Jamal Fanaian <jfanaian@gmail.com>': 
+        u'Jamal Fanaian <jamal.fanaian@gmail.com>',
+    u'Jamal Fanaian <jamal@jfvm1>': 
+        u'Jamal Fanaian <jamal.fanaian@gmail.com>',
     }
 
 class ContainerRevision():
@@ -170,8 +172,9 @@ class ContainerRevision():
         #
         #   -and-
         #
-        # http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/revision/\
-        # launchpad@pqm.canonical.com-20090821221206-ritpv21q8w61gbpt
+        # http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/\
+        # revision/launchpad@pqm.canonical.com-20090821221206-\
+        # ritpv21q8w61gbpt
         #
         # In our links, even when the link text is a revnum, we still
         # use a rev-id for the target.  This is both so that the URL will
