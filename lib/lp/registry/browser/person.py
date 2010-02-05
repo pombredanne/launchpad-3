@@ -2708,11 +2708,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         must not be indexed by search engines and their narrative linkified.
         """
         user = self.context
-        if user.isTeam():
-            # Teams are always valid and do not have probationary rules.
-            return False
-        else:
-            return user.karma == 0 or not user.is_valid_person
+        return user.is_probationary or not user.is_valid_person_or_team
 
     @cachedproperty
     def homepage_content(self):
