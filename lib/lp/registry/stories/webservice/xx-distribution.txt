@@ -134,8 +134,8 @@ packages matching (substring) the given text.
     name: u'canonical-releases'
     official_candidate: True
     owner_link: u'http://.../~mark'
-    reviewer_link: None
     resource_type_link: u'http://.../#distribution_mirror'
+    reviewer_link: None
     rsync_base_url: None
     self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
