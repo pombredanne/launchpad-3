@@ -79,7 +79,7 @@ from canonical.widgets.project import ProjectScopeWidget
 
 # Constant for the maximum bug heat we'll use for converting
 # IBug.heat to ratio. In the future this should come from the DB.
-# The value must be a float 
+# The value must be a float
 MAX_HEAT = 5000.0
 
 class BugNavigation(Navigation):
@@ -220,12 +220,16 @@ class BugContextMenu(ContextMenu):
         else:
             text = 'Subscribe'
             icon = 'add'
-        return Link('+subscribe', text, icon=icon)
+        return Link('+subscribe', text, icon=icon, summary=(
+                'When you are subscribed, Launchpad will email you each time '
+                'this bug changes'))
 
     def addsubscriber(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
-        return Link('+addsubscriber', text, icon='add')
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this bugs changes'))
 
     def nominate(self):
         """Return the 'Target/Nominate for release' Link."""
@@ -980,4 +984,3 @@ class BugHeatView(LaunchpadView):
                 html += '<img src="/@@/flame-bw-icon" />'
         html += '</span>'
         return html
-
