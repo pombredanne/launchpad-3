@@ -14,10 +14,10 @@ from zope.component import getUtility
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.buildmaster.interfaces.buildbase import IBuildBase
-from lp.soyuz.interfaces.buildqueue import IBuildQueue
-from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
+from lp.soyuz.interfaces.buildqueue import IBuildQueue
 from lp.testing import TestCaseWithFactory
 
 

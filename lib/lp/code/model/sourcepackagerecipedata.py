@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.code.model.branch import Branch
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.soyuz.interfaces.sourcepackagerecipe import (
+from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, TooNewRecipeFormat)
 
 
