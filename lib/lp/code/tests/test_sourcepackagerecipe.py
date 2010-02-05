@@ -20,23 +20,23 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
     ArchiveDisabled, CannotUploadToArchive, InvalidPocketForPPA)
+from lp.code.interfaces.sourcepackagerecipe import (
+    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
+    TooNewRecipeFormat)
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
+from lp.soyuz.model.buildqueue import (
+    BuildQueue)
+from lp.code.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildJob)
+from lp.code.model.sourcepackagerecipe import (
+    NonPPABuildRequest)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.buildqueue import (
     IBuildQueue)
-from lp.soyuz.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
-    TooNewRecipeFormat)
-from lp.soyuz.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
-from lp.soyuz.model.buildqueue import (
-    BuildQueue)
-from lp.soyuz.model.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuildJob)
-from lp.soyuz.model.sourcepackagerecipe import (
-    NonPPABuildRequest)
 from lp.testing import login_person, TestCaseWithFactory
 
 

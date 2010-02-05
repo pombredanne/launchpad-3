@@ -19,11 +19,11 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.archiveuploader.permission import check_upload_to_archive
-from lp.soyuz.interfaces.sourcepackagerecipe import (
+from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource)
-from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
-from lp.soyuz.model.sourcepackagerecipedata import _SourcePackageRecipeData
+from lp.code.model.sourcepackagerecipedata import _SourcePackageRecipeData
 
 
 class NonPPABuildRequest(Exception):
