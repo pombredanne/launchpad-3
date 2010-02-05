@@ -107,7 +107,7 @@ class RosettaImportStatus(DBEnumeratedType):
     NEEDS_INFORMATION = DBItem(7, """
         Needs Information
 
-        More information is needed to approve the entry.
+        The reviewer needs more information before this entry can be approved.
         """)
 
 
