@@ -127,7 +127,7 @@ apt-key adv --recv-keys --keyserver pool.sks-keyservers.net cbede690576d1e4e813f
 aptitude update
 aptitude -y full-upgrade
 
-apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
+DEBIAN_FRONTEND=noninteractive apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
 # Creat the ec2test user, give them passwordless sudo.
 adduser --gecos "" --disabled-password ec2test
@@ -363,10 +363,10 @@ class EC2Instance:
             self._upload_local_key(connection, 'local_key')
             connection.perform(
                 'cat /home/ubuntu/.ssh/authorized_keys local_key '
-                '| sudo /home/ec2test/.ssh/authorized_keys '
+                '| sudo tee /home/ec2test/.ssh/authorized_keys > /dev/null'
                 '&& rm local_key')
-            connection.perform('chown -R ec2test:ec2test /home/ec2test/')
-            connection.perform('chmod 644 /home/ec2test/.ssh/*')
+            connection.perform('sudo chown -R ec2test:ec2test /home/ec2test/')
+            connection.perform('sudo chmod 644 /home/ec2test/.ssh/*')
             if our_connection:
                 connection.close()
             self.log(
