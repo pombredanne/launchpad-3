@@ -651,6 +651,9 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             ['comment 0', 'comment 1', 'comment 2'],
             [comment.comment.message.subject for comment
              in view.conversation.comments])
+        self.assertFalse(view.conversation.comments[2].from_superseded)
+        self.assertTrue(view.conversation.comments[1].from_superseded)
+        self.assertTrue(view.conversation.comments[0].from_superseded)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

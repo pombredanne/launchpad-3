@@ -3,7 +3,8 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-  <tal:message replace="structure view/body_text/fmt:obfuscate-email/fmt:nice_pre" />
+   <div style='background-color: #ccf; padding: 1em;' tal:omit-tag="not: context/from_superseded">
+       <tal:message replace="structure view/body_text/fmt:obfuscate-email/fmt:nice_pre" />
 
   <tal:good-attachments repeat="attachment view/display_attachments">
     <div class="boardComment attachment">
@@ -21,6 +22,7 @@
                tal:replace="structure link/render">
       Reply
     </tal:reply>
+  </div>
   </div>
 
 </tal:root>

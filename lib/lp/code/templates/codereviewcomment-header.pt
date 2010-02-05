@@ -6,5 +6,7 @@
   <tal:author replace="structure view/comment_author/fmt:link:mainsite"/>
   <tal:has-body condition="view/has_body">wrote</tal:has-body>
   <tal:date replace="view/comment_date/fmt:displaydate" />
+  <tal:from-superseded condition="context/from_superseded">on a <a
+      tal:attributes="href context/branch_merge_proposal/fmt:url">previous version</a> of this proposal</tal:from-superseded>
 
 </tal:root>

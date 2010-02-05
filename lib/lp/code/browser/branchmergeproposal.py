@@ -601,8 +601,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         comments = self._getRevisionsSinceReviewStart()
         merge_proposal = self.context
         while merge_proposal is not None:
+            from_superseded = merge_proposal != self.context
             comments.extend(
-                CodeReviewDisplayComment(comment)
+                CodeReviewDisplayComment(comment, from_superseded)
                 for comment in merge_proposal.all_comments)
             merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
