@@ -30,6 +30,7 @@ __all__ = [
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
+    'GoogleLaunchpadFunctionalLayer',
     'GoogleServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
@@ -1168,8 +1169,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
         disconnect_stores()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
-                               GoogleServiceLayer):
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     @profiled
@@ -1206,6 +1206,31 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
 
         # Disconnect Storm so it doesn't get in the way of database resets
         disconnect_stores()
+
+
+class GoogleLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,
+                                     GoogleServiceLayer):
+    """Provides Google service in addition to LaunchpadFunctionalLayer."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
 
 
 
@@ -1403,7 +1428,7 @@ class MockHTTPTask:
         return self.request._orig_env
 
 
-class PageTestLayer(LaunchpadFunctionalLayer):
+class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
     """Environment for page tests.
     """
     @classmethod
