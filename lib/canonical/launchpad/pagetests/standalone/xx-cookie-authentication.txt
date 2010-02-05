@@ -14,6 +14,8 @@ so it cannot tell that it will end up overwriting the existing cookie.
 Our cookies need to have their domain attribute set to ensure that they
 are sent to other vhosts in the same domain.
 
+    # XXX: We need cookie login here, so we might have to turn this into an
+    # AppServerLayer test.
     >>> browser.open('http://blueprints.launchpad.dev/+login')
     >>> browser.getControl('E-mail', index=0).value = 'foo.bar@canonical.com'
     >>> browser.getControl('Password').value = 'test'
