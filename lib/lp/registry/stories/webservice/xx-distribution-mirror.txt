@@ -100,8 +100,12 @@ But if we use Karl, the mirror listing admin's, webservice, we can update the ow
 
 Some attributes are read-only via the API:
 
+    >>> distros = webservice.get("/distros").jsonBody()
+    >>> distro = distros['entries'][3]
+    >>> debian = webservice.get(distro['self_link']).jsonBody()
     >>> patch = {
     ...     u'date_reviewed' : u'2010-02-04T17:19:16.424198+00:00',
+    ...     u'distribution_link' : debian['self_link'],
     ...     u'enabled' : False,
     ...     u'reviewer_link' : karl['self_link']
     ... }
@@ -114,6 +118,7 @@ Some attributes are read-only via the API:
     enabled: You tried to modify a read-only attribute.
     date_reviewed: You tried to modify a read-only attribute.
     reviewer_link: You tried to modify a read-only attribute.
+    distribution_link: You tried to modify a read-only attribute.
 
 While others can be set with the appropriate authorization:
 
