@@ -65,7 +65,7 @@ class TestCanSetStatusBase(TestCaseWithFactory):
         # A non-privileged users cannot set any status.
         some_user = self.factory.makePerson()
         self._assertCanSetStatus(some_user, self.entry,
-            #  A      B      D      F      I     NR     NI
+            #  A      B      D      F      I     NI     NR
             [False, False, False, False, False, False, False])
 
     def test_canSetStatus_rosetta_expert(self):
