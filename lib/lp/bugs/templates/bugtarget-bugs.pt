@@ -149,7 +149,7 @@
         </table>
         <p id="more-hot-bugs"
            tal:condition="view/hot_bugs/has_more_bugs">
-          <a href="+bugs?sort=-bug-heat">See all hot bugs</a>.
+          <a href="+bugs?field.searchtext=&orderby=-heat&search=Search&field.status%3Alist=NEW&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.assignee=&field.bug_reporter=&field.omit_dupes=on&field.has_patch=&field.has_no_package=">See all hot bugs</a>.
         </p>
       </tal:has_hot_bugs>
 
