@@ -73,7 +73,7 @@ class FakeTransportServer:
         self._url_prefix = url_prefix
         self._chroot_server = None
 
-    def setUp(self):
+    def start_server(self):
         """Activate the transport URL."""
         # The scanner tests assume that branches live on a Launchpad virtual
         # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
@@ -81,11 +81,11 @@ class FakeTransportServer:
         # transport do the work.
         register_transport(self._url_prefix, self._transportFactory)
         self._chroot_server = ChrootServer(self._transport)
-        self._chroot_server.setUp()
+        self._chroot_server.start_server()
 
-    def tearDown(self):
+    def stop_server(self):
         """Deactivate the transport URL."""
-        self._chroot_server.tearDown()
+        self._chroot_server.stop_server()
         unregister_transport(self._url_prefix, self._transportFactory)
 
     def _transportFactory(self, url):
@@ -111,8 +111,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # Here we set up a fake so that we can test without worrying about
         # authservers and the like.
         server = FakeTransportServer(self.get_transport())
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        server.start_server()
+        self.addCleanup(server.stop_server)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""

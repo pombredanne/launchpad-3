@@ -126,7 +126,6 @@ jsbuild: jsbuild_lazr
 		-n launchpad \
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
-		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
 
@@ -135,10 +134,17 @@ eggs:
 	# deployment we create this ourselves.
 	mkdir eggs
 
+# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
+# want the parent directory where the download-cache and eggs directory
+# are. We re-use the variable that is using for the rocketfuel-get script.
 download-cache:
+ifdef LP_SOURCEDEPS_PATH
+	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
+else
 	@echo "Missing ./download-cache."
 	@echo "Developers: please run utilities/link-external-sourcecode."
 	@exit 1
+endif
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
@@ -211,7 +217,7 @@ pull_branches: support_files
 
 scan_branches:
 	# Scan branches from the filesystem into the database.
-	$(PY) cronscripts/branch-scanner.py
+	$(PY) cronscripts/scan_branches.py
 
 
 sync_branches: pull_branches scan_branches mpcreationjobs
@@ -350,9 +356,6 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart
-
-static:
-	$(PY) scripts/make-static.py
 
 TAGS: compile
 	# emacs tags

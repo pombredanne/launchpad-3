@@ -20,6 +20,7 @@ __all__ = [
     'BranchEditMenu',
     'BranchInProductView',
     'BranchSparkView',
+    'BranchUpgradeView',
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
@@ -41,7 +42,7 @@ from zope.event import notify
 from zope.formlib import form
 from zope.interface import Interface, implements, providedBy
 from zope.publisher.interfaces import NotFound
-from zope.schema import Choice, Text
+from zope.schema import Bool, Choice, Text
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -80,11 +81,13 @@ from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType, CodeImportJobState,
-    CodeImportReviewStatus, RevisionControlSystems, UICreatableBranchType)
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
+    UICreatableBranchType)
 from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
     user_has_special_branch_access)
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
@@ -186,7 +189,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_import', 'edit_whiteboard', 'delete')
+        'edit', 'reviewer', 'edit_whiteboard', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -208,14 +211,6 @@ class BranchEditMenu(NavigationMenu):
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
-    def edit_import(self):
-        text = 'Edit import source or review import'
-        enabled = (
-            self.branch_is_import() and
-            check_permission('launchpad.Edit', self.context.code_import))
-        return Link(
-            '+edit-import', text, icon='edit', enabled=enabled)
-
     @enabled_with_permission('launchpad.Edit')
     def reviewer(self):
         text = 'Set branch reviewer'
@@ -230,7 +225,7 @@ class BranchContextMenu(ContextMenu):
     links = [
         'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status']
+        'edit_status', 'edit_import', 'upgrade_branch']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -296,6 +291,23 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
+
+    def edit_import(self):
+        text = 'Edit import source or review import'
+        enabled = True
+        enabled = (
+            self.context.branch_type == BranchType.IMPORTED and
+            check_permission('launchpad.Edit', self.context.code_import))
+        return Link(
+            '+edit-import', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def upgrade_branch(self):
+        enabled = False
+        if self.context.needs_upgrading:
+            enabled = True
+        return Link(
+            '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
 
 class DecoratedBug:
@@ -498,6 +510,13 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
 
+    def iconForCodeImportResultStatus(self, status):
+        """The icon to represent the `CodeImportResultStatus` `status`."""
+        if status in CodeImportResultStatus.successes:
+            return "/@@/yes"
+        else:
+            return "/@@/no"
+
     @property
     def is_svn_import(self):
         """True if an imported branch is a SVN import."""
@@ -511,8 +530,8 @@ class BranchView(LaunchpadView, FeedsMixin):
         """True if an imported branch's SVN URL is HTTP or HTTPS."""
         # You should only be calling this if it's an SVN code import
         assert self.context.code_import
-        assert self.context.code_import.svn_branch_url
-        url = self.context.code_import.svn_branch_url
+        url = self.context.code_import.url
+        assert url
         # https starts with http too!
         return url.startswith("http")
 
@@ -876,6 +895,27 @@ class BranchDeletionView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
+class BranchUpgradeView(LaunchpadFormView):
+    """Used to upgrade a branch."""
+
+    schema = IBranch
+    field_names = []
+
+    @property
+    def page_title(self):
+        return smartquote('Upgrade branch "%s"' % self.context.displayname)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    @action('Upgrade', name='upgrade_branch')
+    def upgrade_branch_action(self, action, data):
+        self.context.requestUpgrade()
+
+
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
@@ -1156,6 +1196,13 @@ class RegisterProposalSchema(Interface):
         description=u'Lowercase keywords describing the type of review you '
                      'would like to be performed.')
 
+    commit_message = IBranchMergeProposal['commit_message']
+
+    needs_review = Bool(
+        title=_("Needs review"), required=True, default=True,
+        description=_(
+            "Is the proposal ready for review now?"))
+
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):
     """The view to register new branch merge proposals."""
@@ -1205,14 +1252,13 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             review_requests.append((reviewer, data.get('review_type')))
 
         try:
-            # Always default to needs review until we have the wonder of AJAX
-            # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                prerequisite_branch=prerequisite_branch, needs_review=True,
+                prerequisite_branch=prerequisite_branch,
+                needs_review=data['needs_review'],
                 initial_comment=data.get('comment'),
-                review_requests=review_requests)
-
+                review_requests=review_requests,
+                commit_message=data.get('commit_message'))
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))

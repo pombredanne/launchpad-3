@@ -474,6 +474,13 @@
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
+        name="+upgrade"
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branch.BranchUpgradeView"
+        facet="branches"
+        permission="launchpad.Edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+reviewer"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchReviewerEditView"
@@ -519,7 +526,7 @@
         class="lp.code.browser.branch.RegisterBranchMergeProposalView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/branch-register-merge.pt"/>
     <browser:page
         name="+linkbug"
         for="lp.code.interfaces.branch.IBranch"
@@ -560,6 +567,13 @@
         name="+try-again"
         template="../templates/inline-form-only-buttons.pt"
         permission="launchpad.AnyPerson"/>
+    <browser:page
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branchmergeproposallisting.BranchActiveReviewsView"
+        permission="zope.Public"
+        name="+activereviews"
+        facet="branches"
+        template="../templates/active-reviews.pt"/>
     <browser:page
         for="lp.code.interfaces.branch.IBranchBatchNavigator"
         name="+branch-listing"
@@ -684,6 +698,12 @@
             for="lp.code.interfaces.codeimport.ICodeImportSet"
             class="lp.code.browser.codeimport.CodeImportNewView"
             name="+new"
+            template="../templates/codeimport-new.pt"
+            permission="launchpad.AnyPerson"/>
+        <browser:page
+            for="lp.registry.interfaces.product.IProduct"
+            class="lp.code.browser.codeimport.CodeImportNewView"
+            name="+new-import"
             template="../templates/codeimport-new.pt"
             permission="launchpad.AnyPerson"/>
     </facet>

@@ -35,6 +35,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -43,6 +44,7 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -260,6 +262,10 @@ patch_reference_property(
 IDistribution['all_distro_archives'].value_type.schema = IArchive
 
 
+# IDistributionMirror
+IDistributionMirror['distribution'].schema = IDistribution
+
+
 # IDistroSeries
 patch_entry_return_type(
     IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
@@ -306,3 +312,5 @@ patch_reference_property(
 patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
+
+IBuildBase['buildstate'].vocabulary = BuildStatus

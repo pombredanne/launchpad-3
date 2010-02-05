@@ -31,7 +31,8 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
-from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
+from storm.expr import (
+    And, Count, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -68,6 +69,7 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
+from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -77,6 +79,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
@@ -90,8 +93,8 @@ from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
@@ -254,6 +257,8 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
+    heat = IntCol(notNull=True, default=0)
+    latest_patch_uploaded = UtcDateTimeCol(default=None)
 
     @property
     def comment_count(self):
@@ -265,7 +270,46 @@ class Bug(SQLBase):
         """See `IBug`."""
         return Store.of(self).find(
             Person, BugAffectsPerson.person == Person.id,
+            BugAffectsPerson.affected,
             BugAffectsPerson.bug == self)
+
+    @property
+    def users_unaffected(self):
+        """See `IBug`."""
+        return Store.of(self).find(
+            Person, BugAffectsPerson.person == Person.id,
+            Not(BugAffectsPerson.affected),
+            BugAffectsPerson.bug == self)
+
+    @property
+    def user_ids_affected_with_dupes(self):
+        """Return all IDs of Persons affected by this bug and its dupes.
+        The return value is a Storm expression.  Running a query with
+        this expression returns a result that may contain the same ID
+        multiple times, for example if that person is affected via
+        more than one duplicate."""
+        return Union(
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.affected,
+                       BugAffectsPerson.bug == self)),
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.bug == Bug.id,
+                       BugAffectsPerson.affected,
+                       Bug.duplicateof == self.id)))
+
+    @property
+    def users_affected_with_dupes(self):
+        """See `IBug`."""
+        return Store.of(self).find(
+            Person,
+            In(Person.id, self.user_ids_affected_with_dupes))
+
+    @property
+    def users_affected_count_with_dupes(self):
+        """See `IBug`."""
+        return self.users_affected_with_dupes.count()
 
     @property
     def indexed_messages(self):
@@ -402,6 +446,17 @@ class Bug(SQLBase):
         """See `IBug`."""
         return 'Re: '+ self.title
 
+    @property
+    def has_patches(self):
+        """See `IBug`."""
+        store = IStore(BugAttachment)
+        results = store.find(
+            BugAttachment,
+            BugAttachment.bug == self,
+            BugAttachment.type == BugAttachmentType.PATCH)
+
+        return not results.is_empty()
+
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
         # first look for an existing subscription
@@ -411,6 +466,9 @@ class Bug(SQLBase):
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+
+        getUtility(ICalculateBugHeatJobSource).create(self)
+
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
         return sub
@@ -717,6 +775,8 @@ class Bug(SQLBase):
             self.addChangeNotification(
                 notification_data['text'], change.person, recipients,
                 when)
+
+        getUtility(ICalculateBugHeatJobSource).create(self)
 
     def expireNotifications(self):
         """See `IBug`."""
@@ -1086,7 +1146,7 @@ class Bug(SQLBase):
         productseries = None
         if IDistroSeries.providedBy(target):
             distroseries = target
-            if target.status == DistroSeriesStatus.OBSOLETE:
+            if target.status == SeriesStatus.OBSOLETE:
                 raise NominationSeriesObsoleteError(
                     "%s is an obsolete series." % target.bugtargetdisplayname)
         else:
@@ -1341,6 +1401,13 @@ class Bug(SQLBase):
                 bap.affected = affected
                 self._flushAndInvalidate()
 
+        # Loop over dupes.
+        for dupe in self.duplicates:
+            if dupe._getAffectedUser(user) is not None:
+                dupe.markUserAffected(user, affected)
+
+        getUtility(ICalculateBugHeatJobSource).create(self)
+
     @property
     def readonly_duplicateof(self):
         """See `IBug`."""
@@ -1356,6 +1423,17 @@ class Bug(SQLBase):
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
+
+        if duplicate_of is not None:
+            # Create a job to update the heat of the master bug and set
+            # this bug's heat to 0 (since it's a duplicate, it shouldn't
+            # have any heat at all).
+            getUtility(ICalculateBugHeatJobSource).create(duplicate_of)
+            self.setHeat(0)
+        else:
+            # Otherwise, create a job to recalculate this bug's heat,
+            # since it will be 0 from having been a duplicate.
+            getUtility(ICalculateBugHeatJobSource).create(self)
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -1424,6 +1502,10 @@ class Bug(SQLBase):
             BugSubscription.person == person)
 
         return not subscriptions_from_dupes.is_empty()
+
+    def setHeat(self, heat):
+        """See `IBug`."""
+        self.heat = heat
 
 
 class BugSet:
@@ -1665,11 +1747,17 @@ class BugSet:
         return bugs
 
     def getByNumbers(self, bug_numbers):
-        """see `IBugSet`."""
+        """See `IBugSet`."""
         if bug_numbers is None or len(bug_numbers) < 1:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set.order_by('id')
+
+    def dangerousGetAllBugs(self):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        result_set = store.find(Bug)
         return result_set.order_by('id')
 
 
