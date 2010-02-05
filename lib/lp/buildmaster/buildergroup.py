@@ -427,11 +427,10 @@ class BuilderGroup:
             possible_locations = (
                 'failed', 'failed-to-move', 'rejected', 'accepted')
             for location_dir in possible_locations:
-                upload_final_location = os.path.join(
-                    root, location_dir, upload_leaf)
-                if os.path.exists(upload_final_location):
-                    log_filepath = os.path.join(
-                        upload_final_location, 'uploader.log')
+                log_filepath = os.path.join(
+                    root, location_dir, upload_leaf, 
+                    'uploader.log')
+                if os.path.exists(log_filepath):
                     uploader_log_file = open(log_filepath)
                     try:
                         uploader_log_content = uploader_log_file.read()
