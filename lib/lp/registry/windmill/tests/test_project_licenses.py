@@ -8,22 +8,17 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestProjectLicenses(TestCaseWithFactory):
+class TestProjectLicenses(WindmillTestCase):
     """Test project licenses picker."""
 
     layer = RegistryWindmillLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.client = WindmillTestClient('TestProjectLicenses')
+    suite_name = 'TestProjectLicenses'
 
     def test_project_licenses(self):
         """Test the dynamic aspects of the project license picker."""

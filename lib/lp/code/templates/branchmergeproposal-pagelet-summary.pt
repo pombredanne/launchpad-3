@@ -113,7 +113,7 @@
       <th>Diff against target:</th>
       <td>
         <tal:diff replace="structure context/preview_diff/fmt:link"/>
-        <pre tal:condition="context/preview_diff/conflicts"
+        <pre tal:condition="context/preview_diff/has_conflicts"
              tal:content="context/preview_diff/conflicts"/>
       </td>
     </tr>
