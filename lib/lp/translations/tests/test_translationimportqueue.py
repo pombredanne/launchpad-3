@@ -82,7 +82,7 @@ class TestCanSetStatusBase(TestCaseWithFactory):
         self.entry.pofile = None
         self._assertCanSetStatus(self.rosetta_experts, self.entry,
             #  A      B     D     F     I    NR     NI
-            [False, True, True, True, False, True, False])
+            [False, True, True, True, False, True, True])
 
     def test_canSetStatus_uploader(self):
         # The uploader can set some statuses.
