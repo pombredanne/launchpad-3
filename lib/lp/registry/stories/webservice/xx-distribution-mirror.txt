@@ -115,7 +115,7 @@ Some attributes are read-only via the API:
     date_reviewed: You tried to modify a read-only attribute.
     reviewer_link: You tried to modify a read-only attribute.
 
-While others can be set:
+While others can be set with the appropriate authorization:
 
     >>> patch = {
     ...     u'status' : 'Unofficial',
