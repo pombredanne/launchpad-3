@@ -241,6 +241,14 @@ class TestPermission(TestCaseWithFactory):
         self.assertCanUpload(
             person, spn, archive, component_a, strict_component=False)
 
+    def test_cannot_upload_to_disabled_archive(self):
+        spn = self.factory.makeSourcePackageName()
+        archive = self.factory.makeArchive()
+        removeSecurityProxy(archive).disable()
+        component = self.factory.makeComponent()
+        self.assertCannotUpload(u"%s is disabled." % (archive.displayname),
+            archive.owner, spn, archive, component)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

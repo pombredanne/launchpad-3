@@ -21,6 +21,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
@@ -41,7 +42,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     policy_name = 'recipe'
 
-    implements(ISourcePackageRecipeBuild)
+    implements(IBuildBase, ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
 
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
