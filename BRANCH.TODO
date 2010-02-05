@@ -3,9 +3,6 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-* lib/canonical/launchpad/pagetests/standalone/xx-login-and-join-links.txt
-should be removed, just noting here as I'm working on another thread right now.
-
 * Might want to change the new +login page to not start an OpenID dance when
 the user is already logged in?
 
