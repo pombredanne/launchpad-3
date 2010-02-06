@@ -14,7 +14,7 @@ First, we create some bugs.
 
     >>> login("no-priv@canonical.com")
     >>> firefox = getUtility(IProductSet).get(4)
-    >>> foobar = getUtility(IPersonSet).get(16)
+    >>> foobar = getUtility(IPersonSet).getByName("name16")
 
 The first bug is tagged with both 'test-tag-1' and 'test-tag-2'.
 
@@ -45,6 +45,19 @@ Both bugs are returned.
     Summary        Importance  Status   Heat
     16 test bug a  Undecided   New
     17 test bug b  Undecided   New
+    
+Same works for user related bugs:
+
+    >>> anon_browser.open('http://launchpad.dev/~name16/+bugs?advanced=1')
+    >>> anon_browser.getControl(
+    ...     name='field.tag').value = 'test-tag-1 test-tag-2'
+    >>> anon_browser.getControl(name='field.tags_combinator').value = ['ANY']
+    >>> anon_browser.getControl('Search', index=1).click()
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'buglisting'))
+    Summary        In               Importance  Status
+    16 test bug a  Mozilla Firefox  Undecided   New
+    17 test bug b  Mozilla Firefox  Undecided   New
 
 When we search for bugs with all the tags, though, only the first bug is
 returned, since it's the only bug with both tags.
@@ -58,3 +71,15 @@ returned, since it's the only bug with both tags.
     ...     find_tag_by_id(anon_browser.contents, 'buglisting'))
     Summary        Importance  Status   Heat
     16 test bug a  Undecided   New
+
+And also for user related bugs:
+
+    >>> anon_browser.open('http://launchpad.dev/~name16/+bugs?advanced=1')
+    >>> anon_browser.getControl(
+    ...     name='field.tag').value = 'test-tag-1 test-tag-2'
+    >>> anon_browser.getControl(name='field.tags_combinator').value = ['ALL']
+    >>> anon_browser.getControl('Search', index=1).click()
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'buglisting'))
+    Summary        In               Importance  Status
+    16 test bug a  Mozilla Firefox  Undecided   New
