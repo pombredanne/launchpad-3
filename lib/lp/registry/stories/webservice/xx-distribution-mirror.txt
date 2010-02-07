@@ -101,7 +101,7 @@ One must have special permissions to access certain attributes:
     name: u'archive-404-mirror'
     official_candidate: ...redacted...
     owner_link: u'http://.../~name12'
-    resource_type_link: u'http://.../beta/#distribution_mirror'
+    resource_type_link: u'http://.../#distribution_mirror'
     reviewer_link: ...redacted...
     rsync_base_url: None
     self_link: u'http://.../ubuntu/+mirror/archive-404-mirror'
@@ -126,7 +126,7 @@ Mirror registrars may see some:
     name: u'archive-404-mirror'
     official_candidate: True
     owner_link: u'http://.../~name12'
-    resource_type_link: u'http://api.launchpad.dev/beta/#distribution_mirror'
+    resource_type_link: u'http://.../#distribution_mirror'
     reviewer_link: ...redacted...
     rsync_base_url: None
     self_link: u'http://.../ubuntu/+mirror/archive-404-mirror'
