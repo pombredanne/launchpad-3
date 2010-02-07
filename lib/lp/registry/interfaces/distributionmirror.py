@@ -284,6 +284,8 @@ class DistroMirrorRsyncURIField(DistroMirrorURIField):
         return getUtility(IDistributionMirrorSet).getByRsyncUrl(url)
 
 class IDistributionMirrorAdminRestricted(Interface):
+    """IDistributionMirror properties requiring launchpad.Admin permission."""
+
     reviewer = exported(PublicPersonChoice(
         title=_('Reviewer'), required=False, readonly=True,
         vocabulary='ValidPersonOrTeam', description=_(
@@ -293,7 +295,10 @@ class IDistributionMirrorAdminRestricted(Interface):
         description=_(
             "The date on which this mirror was last reviewed by a mirror admin.")))
 
+
 class IDistributionMirrorEditRestricted(Interface):
+    """IDistributionMirror properties requiring launchpad.Edit permission."""
+
     last_probe_record = Attribute(
         'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
@@ -304,6 +309,8 @@ class IDistributionMirrorEditRestricted(Interface):
 
 
 class IDistributionMirrorPublic(Interface):
+    """Public IDistributionMirror properties."""
+
     id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = exported(PublicPersonChoice(
         title=_('Owner'), readonly=False, vocabulary='ValidOwner',
