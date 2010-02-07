@@ -298,7 +298,10 @@ class IDistributionMirrorAdminRestricted(Interface):
 
 class IDistributionMirrorEditRestricted(Interface):
     """IDistributionMirror properties requiring launchpad.Edit permission."""
-
+    
+    official_candidate = exported(Bool(
+        title=_('Apply to be an official mirror of this distribution'),
+        required=False, readonly=False, default=True))
     last_probe_record = Attribute(
         'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
@@ -363,9 +366,6 @@ class IDistributionMirrorPublic(Interface):
             'this distribution. Choose "Archive" if this is a '
             'mirror of packages for this distribution.'),
         vocabulary=MirrorContent))
-    official_candidate = exported(Bool(
-        title=_('Apply to be an official mirror of this distribution'),
-        required=False, readonly=False, default=True))
     status = exported(Choice(
         title=_('Status'), required=True, readonly=False,
         vocabulary=MirrorStatus,
