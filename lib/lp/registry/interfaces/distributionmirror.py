@@ -7,6 +7,9 @@ __metaclass__ = type
 
 __all__ = [
 'IDistributionMirror',
+'IDistributionMirrorAdminRestricted',
+'IDistributionMirrorEditRestricted',
+'IDistributionMirrorPublic',
 'IMirrorDistroArchSeries',
 'IMirrorDistroSeriesSource',
 'IMirrorProbeRecord',
@@ -280,20 +283,32 @@ class DistroMirrorRsyncURIField(DistroMirrorURIField):
     def getMirrorByURI(self, url):
         return getUtility(IDistributionMirrorSet).getByRsyncUrl(url)
 
+class IDistributionMirrorAdminRestricted(Interface):
+    reviewer = exported(PublicPersonChoice(
+        title=_('Reviewer'), required=False, readonly=True,
+        vocabulary='ValidPersonOrTeam', description=_(
+            "The person who last reviewed this mirror.")))
+    date_reviewed = exported(Datetime(
+        title=_('Date reviewed'), required=False, readonly=True,
+        description=_(
+            "The date on which this mirror was last reviewed by a mirror admin.")))
 
-class IDistributionMirror(Interface):
-    """A mirror of a given distribution."""
-    export_as_webservice_entry()
+class IDistributionMirrorEditRestricted(Interface):
+    last_probe_record = Attribute(
+        'The last MirrorProbeRecord for this mirror.')
+    all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
+    whiteboard = exported(Whiteboard(
+        title=_('Whiteboard'), required=False, readonly=False,
+        description=_("Notes on the current status of the mirror (only "
+                      "visible to admins and the mirror's registrant).")))
 
+
+class IDistributionMirrorPublic(Interface):
     id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = exported(PublicPersonChoice(
         title=_('Owner'), readonly=False, vocabulary='ValidOwner',
         required=True, description=_(
             "The person who is set as the current administrator of this mirror.")))
-    reviewer = exported(PublicPersonChoice(
-        title=_('Reviewer'), required=False, readonly=True,
-        vocabulary='ValidPersonOrTeam', description=_(
-            "The person who last reviewed this mirror.")))
     distribution = exported(
         Reference(
             Interface,
@@ -355,23 +370,12 @@ class IDistributionMirror(Interface):
     source_series = Attribute(
         'All MirrorDistroSeriesSources of this mirror')
     arch_series = Attribute('All MirrorDistroArchSeries of this mirror')
-    last_probe_record = Attribute(
-        'The last MirrorProbeRecord for this mirror.')
-    all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a FTP or Rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = exported(Datetime(
         title=_('Date Created'), required=True, readonly=True,
         description=_("The date on which this mirror was registered.")))
-    date_reviewed = exported(Datetime(
-        title=_('Date reviewed'), required=False, readonly=True,
-        description=_(
-            "The date on which this mirror was last reviewed by a mirror admin.")))
-    whiteboard = exported(Whiteboard(
-        title=_('Whiteboard'), required=False, readonly=False,
-        description=_("Notes on the current status of the mirror (only "
-                      "visible to admins and the mirror's registrant).")))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
@@ -506,6 +510,11 @@ class IDistributionMirror(Interface):
         PackagePublishingPocket and the Component to which that given
         Sources.gz file refer to and the path to the file itself.
         """
+
+class IDistributionMirror(IDistributionMirrorAdminRestricted,
+        IDistributionMirrorEditRestricted, IDistributionMirrorPublic):
+    """A mirror of a given distribution."""
+    export_as_webservice_entry()
 
 
 class UnableToFetchCDImageFileList(Exception):
