@@ -89,24 +89,14 @@ One must have special permissions to access certain attributes:
     >>> response = no_priv_webservice.get(
     ...     archive_404_mirror['self_link']).jsonBody()
     >>> pprint_entry(response)
-    content: u'Archive'
-    date_created: u'2006-10-16T18:31:43.438573+00:00'
+    content: ...
+    ...
     date_reviewed: ...redacted...
-    description: None
-    displayname: None
-    distribution_link: u'http://.../ubuntu'
-    enabled: True
-    ftp_base_url: None
-    http_base_url: u'http://localhost:11375/archive-mirror/'
-    name: u'archive-404-mirror'
+    ...
     official_candidate: ...redacted...
-    owner_link: u'http://.../~name12'
-    resource_type_link: u'http://.../#distribution_mirror'
+    ...
     reviewer_link: ...redacted...
-    rsync_base_url: None
-    self_link: u'http://.../ubuntu/+mirror/archive-404-mirror'
-    speed: u'512 Kbps'
-    status: u'Official'
+    ...
     whiteboard: ...redacted...
 
 Mirror registrars may see some:
@@ -114,25 +104,11 @@ Mirror registrars may see some:
     >>> response = test_webservice.get(
     ...     archive_404_mirror['self_link']).jsonBody()
     >>> pprint_entry(response)
-    content: u'Archive'
-    date_created: u'2006-10-16T18:31:43.438573+00:00'
+    content: ...
+    ...
     date_reviewed: ...redacted...
-    description: None
-    displayname: None
-    distribution_link: u'http://.../ubuntu'
-    enabled: True
-    ftp_base_url: None
-    http_base_url: u'http://localhost:11375/archive-mirror/'
-    name: u'archive-404-mirror'
-    official_candidate: True
-    owner_link: u'http://.../~name12'
-    resource_type_link: u'http://.../#distribution_mirror'
+    ...
     reviewer_link: ...redacted...
-    rsync_base_url: None
-    self_link: u'http://.../ubuntu/+mirror/archive-404-mirror'
-    speed: u'512 Kbps'
-    status: u'Official'
-    whiteboard: None
 
 Mirror listing admins may see all:
 
