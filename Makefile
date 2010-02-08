@@ -117,7 +117,7 @@ css_combine: sprite_css
 
 sprite_css: ${LP_BUILT_JS_ROOT}/style-3-0.css
 
-${LP_BUILT_JS_ROOT}/style-3-0.css: ${ICING}/style-3-0.css.in
+${LP_BUILT_JS_ROOT}/style-3-0.css: ${ICING}/style-3-0.css.in ${ICING}/icon-sprites.positioning
 	${SHHH} bin/sprite-util create-css
 
 sprite_image:

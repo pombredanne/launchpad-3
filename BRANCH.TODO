@@ -6,5 +6,3 @@
 Firefox maxes out at around 64x34000 pixels.
 
 PIL can't handle interlaced pngs.
-
-Add comment to top of json icon-sprites.positioning file.
