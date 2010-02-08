@@ -62,7 +62,7 @@ class RosettaStats(object):
         """See IRosettaStats."""
         untranslated = self.messageCount() - self.translatedCount(language)
         # Statistics should not be ever less than 0
-        assert (untranslated >= 0,
+        assert untranslated >= 0, (
             'Stats error in %r id %d, %d untranslated' % (
                 self, self.id, untranslated))
         return untranslated

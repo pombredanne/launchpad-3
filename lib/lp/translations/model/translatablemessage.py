@@ -34,7 +34,7 @@ class TranslatableMessage(object):
         Both potmsgset and pofile must be related, meaning they refer to the
         same `IPOTemplate` instance.
         """
-        assert (pofile.potemplate.getPOTMsgSetByID(potmsgset.id) != None,
+        assert pofile.potemplate.getPOTMsgSetByID(potmsgset.id) != None, (
           "POTMsgSet and POFile must refer to the same POTemplate.")
 
         self.potmsgset = potmsgset

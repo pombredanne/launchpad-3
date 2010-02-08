@@ -117,7 +117,7 @@ def check_builds(distroseries):
     pending_builds = parentseries.getBuildRecords(
         BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
-    assert (pending_builds.count() == 0,
+    assert pending_builds.count() == 0, (
             'Parent must not have PENDING builds')
 
 def check_queue(distroseries):
@@ -143,11 +143,11 @@ def check_queue(distroseries):
         PackageUploadStatus.UNAPPROVED,
         pocket=PackagePublishingPocket.RELEASE)
 
-    assert (new_items.count() == 0,
+    assert new_items.count() == 0, (
             'Parent NEW queue must be empty')
-    assert (accepted_items.count() == 0,
+    assert accepted_items.count() == 0, (
             'Parent ACCEPTED queue must be empty')
-    assert (unapproved_items.count() == 0,
+    assert unapproved_items.count() == 0, (
             'Parent UNAPPROVED queue must be empty')
 
 def copy_architectures(distroseries):
