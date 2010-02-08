@@ -109,7 +109,7 @@ class IBuildBase(Interface):
             title=_("Distribution"), required=True,
             description=_("Shortcut for its distribution.")))
 
-    def getUploaderCommand(upload_leaf):
+    def getUploaderCommand(upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
 
         :return: A list of command line arguments, beginning with the

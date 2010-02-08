@@ -655,6 +655,8 @@ ul.language, li.language             {
 .translationimportstatusNEEDS_REVIEW a {color: #f60;}
 .translationimportstatusBLOCKED,
 .translationimportstatusBLOCKED a {color: blue;}
+.translationimportstatusNEEDS_INFORMATION,
+.translationimportstatusNEEDS_INFORMATION a {color: maroon;}
 
 /* ==== Translations hand-made forms ==== */
 

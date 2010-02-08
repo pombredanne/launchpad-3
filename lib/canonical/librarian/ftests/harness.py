@@ -92,6 +92,9 @@ class LibrarianTestSetup:
 
     def setUp(self):
         """Start both librarian instances."""
+        if (os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None and
+            os.path.exists(TacLibrarianTestSetup().pidfile)):
+            return
         self.setUpRoot()
         try:
             TacLibrarianTestSetup().setUp()
@@ -102,6 +105,8 @@ class LibrarianTestSetup:
 
     def tearDown(self):
         """Shut downs both librarian instances."""
+        if os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None:
+            return
         TacLibrarianTestSetup().tearDown()
         self.tearDownRoot()
 
