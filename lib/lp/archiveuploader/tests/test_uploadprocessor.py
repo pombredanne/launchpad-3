@@ -1623,7 +1623,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Source was not rejected properly:\n%s" % raw_msg)
 
     def testUploadToWrongPocketIsRejected(self):
-        """Ensure that uploads to the wrong pocket are rejected."""
+        # Uploads to the wrong pocket are rejected.
         self.setupBreezy()
         breezy = self.ubuntu['breezy']
         breezy.status = SeriesStatus.CURRENT
