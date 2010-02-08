@@ -98,7 +98,16 @@ class SpriteUtil:
         positions = {}
         for index, sprite in enumerate(self.sprites):
             try:
-                combined_image.paste(sprite['image'], (0, y))
+                position = [0, y]
+                combined_image.paste(sprite['image'], tuple(position))
+                # An icon in a vertically combined image can be repeated
+                # horizontally, but we have to repeat it in the combined
+                # image so that we don't repeat white space.
+                if sprite['rule'].style.backgroundRepeat == 'repeat-x':
+                    width = sprite['image'].size[0]
+                    for x_position in range(width, max_width, width):
+                        position[0] = x_position
+                        combined_image.paste(sprite['image'], tuple(position))
             except:
                 print >> sys.stderr, (
                     "Error with image file %s" % sprite['filename'])
