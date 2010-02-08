@@ -275,7 +275,7 @@ class BugWatchUpdater(object):
         self._logout()
 
     def updateBugTrackers(
-        self, bug_tracker_names=None, batch_size=None, num_threads=1):
+        self, bug_tracker_names=None, batch_size=None, scheduler=None):
         """Update all the bug trackers that have watches pending.
 
         If bug tracker names are specified in bug_tracker_names only
@@ -287,19 +287,16 @@ class BugWatchUpdater(object):
         """
         self.log.debug("Using a global batch size of %s" % batch_size)
 
-        # Defer all the update jobs to a thread pool.
-        thread_pool = ThreadPool(0, num_threads)
-        update_jobs = [
-            deferToThreadPool(reactor, thread_pool, updater, batch_size)
-            for updater in self._bugTrackerUpdaters(bug_tracker_names)
-            ]
+        # Default to using the very simple SerialScheduler.
+        if scheduler is None:
+            scheduler = SerialScheduler()
 
-        update_jobs_done = DeferredList(update_jobs)
-        update_jobs_done.addBoth(lambda ignore: thread_pool.stop())
-        update_jobs_done.addBoth(lambda ignore: reactor.stop())
+        # Schedule all the jobs to run.
+        for updater in self._bugTrackerUpdaters(bug_tracker_names):
+            scheduler.schedule(updater, batch_size)
 
-        reactor.callWhenRunning(thread_pool.start)
-        reactor.run()
+        # Run all the jobs.
+        scheduler.run()
 
     def updateBugTracker(self, bug_tracker, batch_size):
         """Updates the given bug trackers's bug watches.
@@ -1154,6 +1151,60 @@ class BugWatchUpdater(object):
         self.log.error("%s (%s)" % (message, oops_info.oopsid))
 
 
+class BaseScheduler:
+    """Run jobs according to a policy."""
+
+    def schedule(self, func, *args, **kwargs):
+        """Add a job to be run."""
+        raise NotImplementedError(self.schedule)
+
+    def run(self):
+        """Run the jobs."""
+        raise NotImplementedError(self.run)
+
+
+class SerialScheduler(BaseScheduler):
+    """Run jobs in order, one at a time."""
+
+    def __init__(self):
+        self._jobs = []
+
+    def schedule(self, func, *args, **kwargs):
+        self._jobs.append((func, args, kwargs))
+
+    def run(self):
+        jobs, self._jobs = self._jobs[:], []
+        for (func, args, kwargs) in jobs:
+            func(*args, **kwargs)
+
+
+class TwistedThreadScheduler(BaseScheduler):
+    """Run jobs in threads, chaperoned by Twisted."""
+
+    def __init__(self, num_threads):
+        """Create a new `TwistedThreadScheduler`.
+
+        :param num_threads: The number of threads to allocate to the
+          thread pool.
+        :type num_threads: int
+        """
+        self._thread_pool = ThreadPool(0, num_threads)
+        self._jobs = []
+
+    def schedule(self, func, *args, **kwargs):
+        self._jobs.append(
+            deferToThreadPool(
+                reactor, self._thread_pool, func, *args, **kwargs))
+
+    def run(self):
+        jobs, self._jobs = self._jobs[:], []
+        jobs_done = DeferredList(jobs)
+        jobs_done.addBoth(lambda ignore: self._thread_pool.stop())
+        jobs_done.addBoth(lambda ignore: reactor.stop())
+        reactor.callWhenRunning(self._thread_pool.start)
+        reactor.run()
+
+
 class CheckWatchesCronScript(LaunchpadCronScript):
 
     def add_my_options(self):
@@ -1192,9 +1243,14 @@ class CheckWatchesCronScript(LaunchpadCronScript):
         else:
             # Otherwise we just update those watches that need updating,
             # and we let the BugWatchUpdater decide which those are.
+            if self.options.jobs <= 1:
+                scheduler = SerialScheduler()
+            else:
+                scheduler = TwistedThreadScheduler(self.options.jobs)
             updater.updateBugTrackers(
-                self.options.bug_trackers, self.options.batch_size,
-                self.options.jobs)
+                self.options.bug_trackers,
+                self.options.batch_size,
+                scheduler)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)
