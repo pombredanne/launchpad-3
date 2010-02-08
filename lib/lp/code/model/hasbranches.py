@@ -18,13 +18,16 @@ from lp.code.interfaces.branchcollection import IBranchCollection
 class HasBranchesMixin:
     """A mixin implementation for `IHasBranches`."""
 
-    def getBranches(self, status=None, visible_by_user=None):
+    def getBranches(self, status=None, visible_by_user=None,
+                    modified_since=None):
         """See `IHasBranches`."""
         if status is None:
             status = DEFAULT_BRANCH_STATUS_IN_LISTING
 
         collection = IBranchCollection(self).visibleByUser(visible_by_user)
         collection = collection.withLifecycleStatus(*status)
+        if modified_since is not None:
+            collection = collection.modifiedSince(modified_since)
         return collection.getBranches()
 
 
