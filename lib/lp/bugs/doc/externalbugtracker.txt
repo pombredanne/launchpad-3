@@ -1150,10 +1150,15 @@ thread.
     >>> # We should log in again because updateBugTrackers() logs out.
     >>> login('test@canonical.com')
 
-By default, the updateBugTrackers() only spawns one thread, but it can
-spawn as many as required.
+
+== Job Scheduling ==
+
+By default, updateBugTrackers() runs jobs serially, but a different
+scheduling policy can be plugged in. One such policy, for running
+several jobs in parallel, is TwistedThreadScheduler.
 
     >>> import threading
+    >>> from lp.bugs.scripts.checkwatches import TwistedThreadScheduler
 
     >>> class OutputFileForThreads:
     ...     def __init__(self):
@@ -1175,9 +1180,9 @@ spawn as many as required.
     >>> class ExternalBugTrackerForThreads(TestExternalBugTracker):
     ...     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
     ...         print >> output_file, (
-    ...             "getModifiedRemoteBugs(\n"
-    ...             "    remote_bug_ids=%r,\n"
-    ...             "    last_checked=%r)" % (remote_bug_ids, last_checked))
+    ...             "getModifiedRemoteBugs("
+    ...                 "remote_bug_ids=%r, last_checked=%r)" % (
+    ...                     remote_bug_ids, last_checked))
     ...         return [remote_bug_ids[0], remote_bug_ids[-1]]
     ...     def getRemoteStatus(self, bug_id):
     ...         print >> output_file, (
@@ -1193,9 +1198,10 @@ spawn as many as required.
 
     >>> threaded_bug_watch_updater = BugWatchUpdaterForThreads(
     ...     transaction, FakeLogger(output_file))
+    >>> threaded_bug_watch_scheduler = TwistedThreadScheduler(
+    ...     num_threads=10, signal_handlers=False)
     >>> threaded_bug_watch_updater.updateBugTrackers(
-    ...     batch_size=5, num_threads=10)
-
+    ...     batch_size=5, scheduler=threaded_bug_watch_scheduler)
 
     >>> for thread_name in sorted(output_file.output):
     ...     print '== %s ==' % thread_name

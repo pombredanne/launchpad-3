@@ -1181,14 +1181,19 @@ class SerialScheduler(BaseScheduler):
 class TwistedThreadScheduler(BaseScheduler):
     """Run jobs in threads, chaperoned by Twisted."""
 
-    def __init__(self, num_threads):
+    def __init__(self, num_threads, install_signal_handlers=True):
         """Create a new `TwistedThreadScheduler`.
 
         :param num_threads: The number of threads to allocate to the
           thread pool.
         :type num_threads: int
+
+        :param signal_handlers: Whether the Twisted reactor should
+          install signal handlers or not.
+        :type signal_handlers: bool
         """
         self._thread_pool = ThreadPool(0, num_threads)
+        self._install_signal_handlers = install_signal_handlers
         self._jobs = []
 
     def schedule(self, func, *args, **kwargs):
@@ -1202,7 +1207,7 @@ class TwistedThreadScheduler(BaseScheduler):
         jobs_done.addBoth(lambda ignore: self._thread_pool.stop())
         jobs_done.addBoth(lambda ignore: reactor.stop())
         reactor.callWhenRunning(self._thread_pool.start)
-        reactor.run()
+        reactor.run(self._install_signal_handlers)
 
 
 class CheckWatchesCronScript(LaunchpadCronScript):
@@ -1244,8 +1249,10 @@ class CheckWatchesCronScript(LaunchpadCronScript):
             # Otherwise we just update those watches that need updating,
             # and we let the BugWatchUpdater decide which those are.
             if self.options.jobs <= 1:
-                scheduler = SerialScheduler()
+                # Use the default scheduler.
+                scheduler = None
             else:
+                # Run jobs in parallel.
                 scheduler = TwistedThreadScheduler(self.options.jobs)
             updater.updateBugTrackers(
                 self.options.bug_trackers,
