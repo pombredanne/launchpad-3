@@ -1199,7 +1199,7 @@ several jobs in parallel, is TwistedThreadScheduler.
     >>> threaded_bug_watch_updater = BugWatchUpdaterForThreads(
     ...     transaction, FakeLogger(output_file))
     >>> threaded_bug_watch_scheduler = TwistedThreadScheduler(
-    ...     num_threads=10, signal_handlers=False)
+    ...     num_threads=10, install_signal_handlers=False)
     >>> threaded_bug_watch_updater.updateBugTrackers(
     ...     batch_size=5, scheduler=threaded_bug_watch_scheduler)
 
