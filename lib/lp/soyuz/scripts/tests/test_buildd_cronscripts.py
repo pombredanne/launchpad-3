@@ -15,8 +15,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.soyuz.model.build import Build
-from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory)
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
@@ -276,9 +275,8 @@ class TestRetryDepwait(TestCronscriptBase):
         # Moving the target source to universe, so it can reach the only
         # published binary we have in sampledata.
         source_release = depwait_build.distributionsourcepackagerelease
-        pub_id = source_release.publishing_history[0].id
-        secure_pub = SecureSourcePackagePublishingHistory.get(pub_id)
-        secure_pub.component = getUtility(IComponentSet)['universe']
+        pub = source_release.publishing_history[0]
+        pub.component = getUtility(IComponentSet)['universe']
 
         # Make it dependend on the only binary that can be satisfied in
         # the sampledata.

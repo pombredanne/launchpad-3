@@ -324,7 +324,7 @@ is from most recent.
 
     >>> from canonical.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')
-    >>> view.filtered_sources[1].secure_record.datepublished = UTC_NOW
+    >>> view.filtered_sources[1].datepublished = UTC_NOW
     >>> login(ANONYMOUS)
     >>> print_latest_updates(view.latest_updates)
     iceweasel - Successfully built
@@ -345,9 +345,9 @@ others will not.
     >>> import pytz
     >>> thirtyone_days_ago = datetime.now(tz=pytz.UTC) - timedelta(31)
     >>> login('foo.bar@canonical.com')
-    >>> view.filtered_sources[0].secure_record.datecreated = UTC_NOW
-    >>> view.filtered_sources[1].secure_record.datecreated = UTC_NOW
-    >>> view.filtered_sources[2].secure_record.datecreated = thirtyone_days_ago
+    >>> view.filtered_sources[0].datecreated = UTC_NOW
+    >>> view.filtered_sources[1].datecreated = UTC_NOW
+    >>> view.filtered_sources[2].datecreated = thirtyone_days_ago
     >>> login(ANONYMOUS)
 
     >>> view.num_updates_over_last_days()
