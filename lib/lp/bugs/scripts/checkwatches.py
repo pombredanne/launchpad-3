@@ -281,9 +281,9 @@ class BugWatchUpdater(object):
         If bug tracker names are specified in bug_tracker_names only
         those bug trackers will be checked.
 
-        The updates are run in threads, so that long running updates
-        don't block progress. However, by default the number of
-        threads is 1, to help with testing.
+        A custom scheduler can be passed in. This should inherit from
+        `BaseScheduler`. If no scheduler is given, `SerialScheduler`
+        will be used, which simply runs the jobs in order.
         """
         self.log.debug("Using a global batch size of %s" % batch_size)
 
