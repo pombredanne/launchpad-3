@@ -884,7 +884,7 @@ class SyncSource:
             # set the return code if an orig was, in fact,
             # fetched from Librarian
             if not file_type in (SourcePackageFileType.ORIG_TARBALL,
-                             SourcePackageFileType.COMPONENT_ORIG_TARBALL):
+                                 SourcePackageFileType.COMPONENT_ORIG_TARBALL):
                 raise SyncSourceError(
                     'Oops, only orig tarball can be retrieved from librarian.')
             retrieved.append(filename)
