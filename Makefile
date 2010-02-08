@@ -18,7 +18,8 @@ HERE:=$(shell pwd)
 LPCONFIG=development
 
 JSFLAGS=
-LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
+ICING=lib/canonical/launchpad/icing
+LP_BUILT_JS_ROOT=${ICING}/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
 
 MINS_TO_SHUTDOWN=15
@@ -114,7 +115,9 @@ build: $(BZR_VERSION_INFO) compile apidoc jsbuild css_combine
 css_combine: sprite_css
 	${SHHH} bin/combine-css
 
-sprite_css:
+sprite_css: ${LP_BUILT_JS_ROOT}/style-3-0.css
+
+${LP_BUILT_JS_ROOT}/style-3-0.css: ${ICING}/style-3-0.css.in
 	${SHHH} bin/sprite-util create-css
 
 sprite_image:
