@@ -31,6 +31,20 @@ from lp.codehosting.codeimport.worker import (
 from canonical.launchpad import scripts
 
 
+def force_bzr_to_use_urllib():
+    """Prevent bzr from using pycurl to connect to http: urls.
+
+    We want this because pycurl rejects self signed certificates, which
+    prevents a significant number of import branchs from updating.  Also see
+    https://bugs.edge.launchpad.net/bzr/+bug/516222.
+    """
+    from bzrlib.transport import register_lazy_transport
+    register_lazy_transport('http://', 'bzrlib.transport.http._urllib',
+                            'HttpTransport_urllib')
+    register_lazy_transport('https://', 'bzrlib.transport.http._urllib',
+                            'HttpTransport_urllib')
+
+
 class CodeImportWorker:
 
     def __init__(self):
@@ -40,6 +54,7 @@ class CodeImportWorker:
         self.logger = scripts.logger(options, 'code-import-worker')
 
     def main(self):
+        force_bzr_to_use_urllib()
         source_details = CodeImportSourceDetails.fromArguments(self.args)
         if source_details.rcstype == 'git':
             load_optional_plugin('git')
