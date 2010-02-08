@@ -126,7 +126,6 @@ jsbuild: jsbuild_lazr
 		-n launchpad \
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
-		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
 
@@ -218,7 +217,7 @@ pull_branches: support_files
 
 scan_branches:
 	# Scan branches from the filesystem into the database.
-	$(PY) cronscripts/branch-scanner.py
+	$(PY) cronscripts/scan_branches.py
 
 
 sync_branches: pull_branches scan_branches mpcreationjobs
@@ -357,9 +356,6 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart
-
-static:
-	$(PY) scripts/make-static.py
 
 TAGS: compile
 	# emacs tags

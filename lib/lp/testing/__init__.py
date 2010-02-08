@@ -27,6 +27,7 @@ __all__ = [
     # it from Zope.
     'verifyObject',
     'validate_mock_class',
+    'WindmillTestCase',
     'with_anonymous_login',
     ]
 
@@ -53,6 +54,8 @@ import testtools
 import transaction
 
 from twisted.python.util import mergeFunctionMetadata
+
+from windmill.authoring import WindmillTestClient
 
 from zope.component import getUtility
 import zope.event
@@ -417,7 +420,7 @@ class TestCaseWithFactory(TestCase):
         return BzrDir.create_branch_convenience(
             branch_url, format=format)
 
-    def create_branch_and_tree(self, tree_location='.', product=None,
+    def create_branch_and_tree(self, tree_location=None, product=None,
                                hosted=False, db_branch=None, format=None,
                                **kwargs):
         """Create a database branch, bzr branch and bzr checkout.
@@ -442,6 +445,9 @@ class TestCaseWithFactory(TestCase):
         if self.real_bzr_server:
             transaction.commit()
         bzr_branch = self.createBranchAtURL(branch_url, format=format)
+        if tree_location is None:
+            tree_location = tempfile.mkdtemp()
+            self.addCleanup(lambda: shutil.rmtree(tree_location))
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
 
@@ -518,18 +524,60 @@ class TestCaseWithFactory(TestCase):
             server = get_multi_server(
                 write_hosted=True, write_mirrored=True,
                 direct_database=direct_database)
-            server.setUp()
+            server.start_server()
             self.addCleanup(server.destroy)
         else:
             os.mkdir('lp-mirrored')
             mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
-            mirror_server.setUp()
-            self.addCleanup(mirror_server.tearDown)
+            mirror_server.start_server()
+            self.addCleanup(mirror_server.stop_server)
             os.mkdir('lp-hosted')
             hosted_server = FakeTransportServer(
                 get_transport('lp-hosted'), url_prefix='lp-hosted:///')
-            hosted_server.setUp()
-            self.addCleanup(hosted_server.tearDown)
+            hosted_server.start_server()
+            self.addCleanup(hosted_server.stop_server)
+
+
+class WindmillTestCase(TestCaseWithFactory):
+    """A TestCase class for Windmill tests.
+
+    It provides a WindmillTestClient (self.client) with Launchpad's front
+    page loaded.
+    """
+
+    suite_name = ''
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.client = WindmillTestClient(self.suite_name)
+        # Load the front page to make sure we don't get fooled by stale pages
+        # left by the previous test. (For some reason, when you create a new
+        # WindmillTestClient you get a new session and everything, but if you
+        # do anything before you open() something you'd be operating on the
+        # page that was last accessed by the previous test, which is the cause
+        # of things like https://launchpad.net/bugs/515494)
+        self.client.open(url=u'http://launchpad.dev:8085')
+
+
+class WindmillTestCase(TestCaseWithFactory):
+    """A TestCase class for Windmill tests.
+
+    It provides a WindmillTestClient (self.client) with Launchpad's front
+    page loaded.
+    """
+
+    suite_name = ''
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.client = WindmillTestClient(self.suite_name)
+        # Load the front page to make sure we don't get fooled by stale pages
+        # left by the previous test. (For some reason, when you create a new
+        # WindmillTestClient you get a new session and everything, but if you
+        # do anything before you open() something you'd be operating on the
+        # page that was last accessed by the previous test, which is the cause
+        # of things like https://launchpad.net/bugs/515494)
+        self.client.open(url=u'http://launchpad.dev:8085')
 
 
 def capture_events(callable_obj, *args, **kwargs):

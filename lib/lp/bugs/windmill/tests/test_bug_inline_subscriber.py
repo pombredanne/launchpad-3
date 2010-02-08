@@ -3,29 +3,29 @@
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.constants import (
     PAGE_LOAD, FOR_ELEMENT, SLEEP)
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/%s'
 SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'
 PERSON_LINK = u'//div[@id="subscribers-links"]/div/a[@name="%s"]'
 
-class TestInlineSubscribing(TestCaseWithFactory):
+class TestInlineSubscribing(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'Inline bug page subscribers test'
 
-    def test_inline_subscriber(self):
+    def DISABLED_test_inline_subscriber(self):
+        # This test fails intermittently.  See bug #516781.
         """Test inline subscribing on bugs pages.
 
         This test makes sure that subscribing and unsubscribing
         from a bug works inline on a bug page.
         """
-        client = WindmillTestClient('Inline bug page subscribers test')
+        client = self.client
 
         # Open a bug page and wait for it to finish loading.
         client.open(url=BUG_URL % 11)
