@@ -29,6 +29,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.soyuz.interfaces.build import IBuild
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
@@ -63,6 +64,7 @@ from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
@@ -167,6 +169,19 @@ class ViewByLoggedInUser(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
+        return True
+
+
+class AnonymousAuthorization(AuthorizationBase):
+    """Allow any authenticated and unauthenticated user access."""
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """Any unauthorized user can see this object."""
+        return True
+
+    def checkAuthenticated(self, user):
+        """Any authorized user can see this object."""
         return True
 
 
@@ -813,24 +828,9 @@ class SeriesDrivers(AuthorizationBase):
                 user.in_admin)
 
 
-class ViewProductSeries(AuthorizationBase):
+class ViewProductSeries(AnonymousAuthorization):
 
     usedfor = IProductSeries
-    permision = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return True
-
-    def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
-
-        :return: True or False.
-        """
-        return True
 
 
 class EditProductSeries(EditByOwnersOrAdmins):
@@ -976,6 +976,16 @@ class EditBugAttachment(
     def __init__(self, bugattachment):
         EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
             self, bugattachment.bug)
+
+
+class ViewBugSubscription(AnonymousAuthorization):
+
+    usedfor = IBugSubscription
+
+
+class ViewBugMessage(AnonymousAuthorization):
+
+    usedfor = IMessage
 
 
 class ViewAnnouncement(AuthorizationBase):
@@ -1279,6 +1289,11 @@ class EditProductRelease(EditByOwnersOrAdmins):
             return True
         return EditByOwnersOrAdmins.checkAuthenticated(
             self, user)
+
+
+class ViewProductRelease(AnonymousAuthorization):
+
+    usedfor = IProductRelease
 
 
 class AdminTranslationImportQueueEntry(AuthorizationBase):
