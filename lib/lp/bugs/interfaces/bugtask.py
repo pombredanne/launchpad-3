@@ -470,6 +470,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
+    task_age = Int(title=_("Age of the bug task"),
+            description=_("The age of this task in seconds, a delta between "
+                         "now and the date the bug task was created."))
     owner = exported(
         Reference(title=_("The owner"), schema=IPerson, readonly=True))
     target = exported(Reference(
@@ -820,6 +823,11 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
 
 
 class IUpstreamProductBugTaskSearch(IBugTaskSearch):

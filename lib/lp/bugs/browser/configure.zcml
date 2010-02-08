@@ -718,6 +718,13 @@
         name="+edit"
         permission="launchpad.AnyPerson"
         template="../templates/bug-attachment-edit.pt"/>
+    <browser:page
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment"
+        class="lp.bugs.browser.bugattachment.BugAttachmentPatchConfirmationView"
+        facet="bugs"
+        name="+confirm-is-patch"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-attachment-confirm-is-patch.pt"/>
     <browser:navigation
         module="lp.bugs.browser.bugattachment"
         classes="
@@ -1023,6 +1030,11 @@
             name="+bug-portlet-subscribers-ids"
             class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
             permission="zope.Public"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bug.BugHeatView"
+            permission="zope.Public"
+            name="+bug-heat"/>
         <browser:navigation
             module="lp.bugs.browser.bug"
             classes="

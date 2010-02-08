@@ -71,7 +71,7 @@ def main():
         cur.execute("""
             SELECT
                 COALESCE(SUM(filesize), 0),
-                pg_size_pretty(COALESCE(SUM(filesize), 0)),
+                pg_size_pretty(CAST(COALESCE(SUM(filesize), 0) AS bigint)),
                 COUNT(*)
             FROM (
                 SELECT DISTINCT ON (LFC.id) LFC.id, LFC.filesize

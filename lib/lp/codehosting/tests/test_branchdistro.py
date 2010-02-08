@@ -59,8 +59,8 @@ class TestSwitchBranches(TestCaseWithTransport):
         # location.
 
         chroot_server = ChrootServer(self.get_transport())
-        chroot_server.setUp()
-        self.addCleanup(chroot_server.tearDown)
+        chroot_server.start_server()
+        self.addCleanup(chroot_server.stop_server)
         scheme = chroot_server.get_url().rstrip('/:')
 
         old_branch = FakeBranch(1)

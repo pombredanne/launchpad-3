@@ -104,6 +104,12 @@ class RosettaImportStatus(DBEnumeratedType):
         The entry has been blocked to be imported by a Rosetta Expert.
         """)
 
+    NEEDS_INFORMATION = DBItem(7, """
+        Needs Information
+
+        The reviewer needs more information before this entry can be approved.
+        """)
+
 
 class SpecialTranslationImportTargetFilter(DBEnumeratedType):
     """Special "meta-targets" to filter the queue view by."""
@@ -266,15 +272,11 @@ class ITranslationImportQueueEntry(Interface):
             required=False,
             readonly=True))
 
-    def isUbuntuAndIsUserTranslationGroupOwner(self, user):
-        """Check for special Ubuntu Translation Group.
+    def canAdmin(roles):
+        """Check if the user can administer this entry."""
 
-        Return true if the entry is targeted to Ubuntu and the user is in
-        the team owning the Ubuntu translation group.
-        """
-
-    def isUserUploaderOrOwner(user):
-        """Check for entry uploader or series owner."""
+    def canEdit(roles):
+        """Check if the user can edit this entry."""
 
     def canSetStatus(new_status, user):
         """Check if the user can set this new status."""
