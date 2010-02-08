@@ -836,7 +836,7 @@ class SeriesDrivers(AuthorizationBase):
 class ViewProductSeries(AuthorizationBase):
 
     usedfor = IProductSeries
-    permission = 'launchpad.View'
+    permision = 'launchpad.View'
 
     def checkUnauthenticated(self):
         """See `IAuthorization.checkUnauthenticated`.
