@@ -20,8 +20,15 @@ FOR EACH ROW EXECUTE PROCEDURE bug_update_latest_patch_uploaded_on_delete();
 
 CREATE INDEX bugattachment__bug__idx ON BugAttachment(bug);
 
-SELECT DISTINCT ON (bugattachment.bug)
-    bug_update_latest_patch_uploaded(bugattachment.bug)
-    FROM bugattachment WHERE bugattachment.type=1;
+UPDATE Bug
+SET latest_patch_uploaded = LatestPatch.datecreated
+FROM (
+    SELECT BugAttachment.bug, max(Message.datecreated) AS datecreated
+    FROM BugAttachment, Message
+    WHERE BugAttachment.message = Message.id
+        AND BugAttachment.type = 1
+    GROUP BY BugAttachment.bug
+    ) AS LatestPatch
+WHERE LatestPatch.bug = Bug.id;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 29, 0);
