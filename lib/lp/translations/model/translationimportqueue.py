@@ -320,6 +320,10 @@ class TranslationImportQueueEntry(SQLBase):
             # that's only possible if we know where to import it
             # (import_into not None).
             return self.canAdmin(roles) and self.import_into is not None
+        if new_status == RosettaImportStatus.NEEDS_INFORMATION:
+            # Only administrators are able to set the NEEDS_INFORMATION
+            # status.
+            return self.canAdmin(roles)
         if new_status == RosettaImportStatus.IMPORTED:
             # Only rosetta experts are able to set the IMPORTED status, and
             # that's only possible if we know where to import it
