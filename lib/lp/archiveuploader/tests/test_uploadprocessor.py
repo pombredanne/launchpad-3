@@ -1621,6 +1621,38 @@ class TestUploadProcessor(TestUploadProcessorBase):
             in raw_msg,
             "Source was not rejected properly:\n%s" % raw_msg)
 
+    def testUploadToWrongPocketIsRejected(self):
+        """Ensure that uploads to the wrong pocket are rejected."""
+        self.setupBreezy()
+        breezy = self.ubuntu['breezy']
+        breezy.status = SeriesStatus.CURRENT
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        rejection_message = (
+            uploadprocessor.last_processed_upload.rejection_message)
+        self.assertEqual(
+            "Not permitted to upload to the RELEASE pocket in a series in "
+            "the 'CURRENT' state.",
+            rejection_message)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Not permitted to upload to the RELEASE pocket in a series "
+            "in the 'CURRENT' state.",
+            "If you don't understand why your files were rejected",
+            "http://answers.launchpad.net/soyuz",
+            "You are receiving this email because you are the "
+               "uploader, maintainer or",
+            "signer of the above package.",
+            ]
+        recipients = [
+            'Foo Bar <foo.bar@canonical.com>',
+            'Daniel Silverstone <daniel.silverstone@canonical.com>',
+            ]
+        self.assertEmail(contents, recipients=recipients)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
