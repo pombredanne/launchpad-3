@@ -529,7 +529,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
         # the private method which is not defined on the interface.
         self.archive = self.factory.makeArchive()
         self.naked_archive = removeSecurityProxy(self.archive)
-        
+
         self.pub_1 = self.publisher.getPubSource(
             version='0.5.11~ppa1', archive=self.archive, sourcename="foo",
             status=PackagePublishingStatus.PUBLISHED)
@@ -551,7 +551,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
     def test_collectLatestPublishedSources_returns_published_only(self):
         # Set the status of the latest pub to DELETED and ensure that it
         # is not returned.
-        self.pub_2.secure_record.status = PackagePublishingStatus.DELETED
+        self.pub_2.status = PackagePublishingStatus.DELETED
 
         pubs = self.naked_archive._collectLatestPublishedSources(
             self.archive, ["foo"])
