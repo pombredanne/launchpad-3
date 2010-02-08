@@ -798,21 +798,6 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.in_admin)
 
 
-# XXX: BradCrittenden 2010-02-08 bug=515761: Remove this class definition
-# before landing as it is being defined in the fix for the referenced bug.
-class AnonymousAuthorization(AuthorizationBase):
-    """Allow any authenticated and unauthenticated user access."""
-    permission = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """Any unauthorized user can see this object."""
-        return True
-
-    def checkAuthenticated(self, user):
-        """Any authorized user can see this object."""
-        return True
-
-
 class ViewDistroSeries(AnonymousAuthorization):
     """Anyone can view a DistroSeries."""
     usedfor = IDistroSeries
