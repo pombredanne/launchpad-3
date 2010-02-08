@@ -10,14 +10,33 @@ import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
 
+from storm.locals import Store
+
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.soyuz.interfaces.sourcepackagerecipe import (
+from lp.archiveuploader.permission import (
+    ArchiveDisabled, CannotUploadToArchive, InvalidPocketForPPA)
+from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
     TooNewRecipeFormat)
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
+from lp.soyuz.model.buildqueue import (
+    BuildQueue)
+from lp.code.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildJob)
+from lp.code.model.sourcepackagerecipe import (
+    NonPPABuildRequest)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.interfaces.job import (
+    IJob, JobStatus)
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.buildqueue import (
+    IBuildQueue)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -153,6 +172,54 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(
             TooNewRecipeFormat,
             self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
+
+    def test_requestBuild(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa = self.factory.makeArchive()
+        build = recipe.requestBuild(ppa, ppa.owner,
+                PackagePublishingPocket.RELEASE)
+        self.assertProvides(build, ISourcePackageRecipeBuild)
+        self.assertEqual(build.archive, ppa)
+        self.assertEqual(build.distroseries, recipe.distroseries)
+        self.assertEqual(build.requester, ppa.owner)
+        store = Store.of(build)
+        store.flush()
+        build_job = store.find(SourcePackageRecipeBuildJob,
+                SourcePackageRecipeBuildJob.build_id==build.id).one()
+        self.assertProvides(build_job, ISourcePackageRecipeBuildJob)
+        self.assertTrue(build_job.virtualized)
+        job = build_job.job
+        self.assertProvides(job, IJob)
+        self.assertEquals(job.status, JobStatus.WAITING)
+        build_queue = store.find(BuildQueue, BuildQueue.job==job.id).one()
+        self.assertProvides(build_queue, IBuildQueue)
+        self.assertTrue(build_queue.virtualized)
+
+    def test_requestBuildRejectsNotPPA(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        not_ppa = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertRaises(NonPPABuildRequest, recipe.requestBuild, not_ppa,
+                not_ppa.owner, PackagePublishingPocket.RELEASE)
+
+    def test_requestBuildRejectsNoPermission(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa = self.factory.makeArchive()
+        requester = self.factory.makePerson()
+        self.assertRaises(CannotUploadToArchive, recipe.requestBuild, ppa,
+                requester, PackagePublishingPocket.RELEASE)
+
+    def test_requestBuildRejectsInvalidPocket(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa = self.factory.makeArchive()
+        self.assertRaises(InvalidPocketForPPA, recipe.requestBuild, ppa,
+                ppa.owner, PackagePublishingPocket.BACKPORTS)
+
+    def test_requestBuildRejectsDisabledArchive(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa = self.factory.makeArchive()
+        removeSecurityProxy(ppa).disable()
+        self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
+                ppa.owner, PackagePublishingPocket.RELEASE)
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):

@@ -1048,6 +1048,15 @@ class Person(
         except SQLObjectNotFound:
             return False
 
+    @property
+    def is_probationary(self):
+        """See `IPerson`.
+
+        Users without karma have not demostrated their intentions may not
+        have the same privileges as users who have made contributions.
+        """
+        return not self.isTeam() and self.karma == 0
+
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None, datecreated=None):
         """See `IPerson`."""

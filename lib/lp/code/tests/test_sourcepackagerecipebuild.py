@@ -13,10 +13,11 @@ from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.soyuz.interfaces.buildqueue import IBuildQueue
-from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
+from lp.soyuz.interfaces.buildqueue import IBuildQueue
 from lp.testing import TestCaseWithFactory
 
 
@@ -33,9 +34,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             archive=self.factory.makeArchive(),
             requester=self.factory.makePerson())
 
-    def test_providesInterface(self):
-        # SourcePackageRecipeBuild provides ISourcePackageRecipeBuild.
+    def test_providesInterfaces(self):
+        # SourcePackageRecipeBuild provides IBuildBase and
+        # ISourcePackageRecipeBuild.
         spb = self.makeSourcePackageRecipeBuild()
+        self.assertProvides(spb, IBuildBase)
         self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_saves_record(self):
