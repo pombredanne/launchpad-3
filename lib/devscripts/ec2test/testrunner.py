@@ -341,6 +341,11 @@ class EC2TestRunner:
 
     def prepare_tests(self):
         user_connection = self._instance.connect()
+        # If after 8h we're still up, there's a huge chance the test suite
+        # crashed and we failed to shut down the instance, so we better force
+        # a shut down.
+        user_connection.perform(
+            "echo sudo shutdown -h now | at today + 8 hours")
         # Clean up the test branch left in the instance image.
         user_connection.perform('rm -rf /var/launchpad/test')
         # Get trunk.
