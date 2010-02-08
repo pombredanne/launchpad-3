@@ -302,9 +302,6 @@ class IDistributionMirrorEditRestricted(Interface):
     official_candidate = exported(Bool(
         title=_('Apply to be an official mirror of this distribution'),
         required=False, readonly=False, default=True))
-    last_probe_record = Attribute(
-        'The last MirrorProbeRecord for this mirror.')
-    all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     whiteboard = exported(Whiteboard(
         title=_('Whiteboard'), required=False, readonly=False,
         description=_("Notes on the current status of the mirror (only "
@@ -377,6 +374,9 @@ class IDistributionMirrorPublic(Interface):
     source_series = Attribute(
         'All MirrorDistroSeriesSources of this mirror')
     arch_series = Attribute('All MirrorDistroArchSeries of this mirror')
+    last_probe_record = Attribute(
+        'The last MirrorProbeRecord for this mirror.')
+    all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a FTP or Rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
