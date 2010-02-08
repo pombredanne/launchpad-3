@@ -72,7 +72,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.app.interfaces.headings import IRootContext
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.services.worlddata.interfaces.language import ILanguage
@@ -476,7 +477,8 @@ class IHasStanding(Interface):
 
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation, IPrivacy):
+                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
+                    IPrivacy):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
