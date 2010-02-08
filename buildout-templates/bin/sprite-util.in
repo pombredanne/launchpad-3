@@ -20,8 +20,7 @@ positioning_file = os.path.join(icing, 'icon-sprites.positioning')
 css_template_file = os.path.join(icing, 'style-3-0.css.in')
 css_file = os.path.join(icing, 'build/style-3-0.css')
 
-sprite_util = SpriteUtil()
-sprite_util.loadCSSTemplate(
+sprite_util = SpriteUtil(
     css_template_file, 'icon-sprites',
     url_prefix_substitutions={'/@@/': '../images/'})
 
