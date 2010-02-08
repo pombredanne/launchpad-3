@@ -797,15 +797,26 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
 
-class ViewDistroSeries(AuthorizationBase):
-    """Anyone can view a DistroSeries."""
+
+# XXX: BradCrittenden 2010-02-08 bug=515761: Remove this class definition
+# before landing as it is being defined in the fix for the referenced bug.
+class AnonymousAuthorization(AuthorizationBase):
+    """Allow any authenticated and unauthenticated user access."""
     permission = 'launchpad.View'
-    usedfor = IDistroSeries
 
     def checkUnauthenticated(self):
+        """Any unauthorized user can see this object."""
         return True
+
     def checkAuthenticated(self, user):
+        """Any authorized user can see this object."""
         return True
+
+
+class ViewDistroSeries(AnonymousAuthorization):
+    """Anyone can view a DistroSeries."""
+    usedfor = IDistroSeries
+
 
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
