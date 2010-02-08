@@ -287,17 +287,19 @@ class IDistributionMirror(Interface):
 
     id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = exported(PublicPersonChoice(
-        title=_('Owner'), required=False, readonly=True,
-        vocabulary='ValidOwner'))
-    reviewer = PublicPersonChoice(
-        title=_('Reviewer'), required=False, readonly=False,
-        vocabulary='ValidPersonOrTeam')
+        title=_('Owner'), readonly=False, vocabulary='ValidOwner',
+        required=True, description=_(
+            "The person who is set as the current administrator of this mirror.")))
+    reviewer = exported(PublicPersonChoice(
+        title=_('Reviewer'), required=False, readonly=True,
+        vocabulary='ValidPersonOrTeam', description=_(
+            "The person who last reviewed this mirror.")))
     distribution = exported(
         Reference(
             Interface,
             # Really IDistribution, circular import fixed in
             # _schema_circular_imports.
-            title=_("Distribution"), required=True,
+            title=_("Distribution"), required=True, readonly=True,
             description=_("The distribution that is mirrored")))
     name = exported(DistributionMirrorNameField(
         title=_('Name'), required=True, readonly=False,
@@ -325,7 +327,7 @@ class IDistributionMirror(Interface):
         description=_('e.g.: rsync://archive.ubuntu.com/ubuntu/')))
     enabled = exported(Bool(
         title=_('This mirror was probed successfully.'),
-        required=False, readonly=False, default=False))
+        required=False, readonly=True, default=False))
     speed = exported(Choice(
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary=MirrorSpeed))
@@ -344,7 +346,8 @@ class IDistributionMirror(Interface):
         required=False, readonly=False, default=True))
     status = exported(Choice(
         title=_('Status'), required=True, readonly=False,
-        vocabulary=MirrorStatus))
+        vocabulary=MirrorStatus,
+        description=_("The current status of a mirror's registration.")))
 
     title = Attribute('The title of this mirror')
     cdimage_series = Attribute(
@@ -355,17 +358,20 @@ class IDistributionMirror(Interface):
     last_probe_record = Attribute(
         'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
-    has_ftp_or_rsync_base_url = exported(Bool(
-        title=_('Does this mirror have a ftp or rsync base URL?')))
+    has_ftp_or_rsync_base_url = Bool(
+        title=_('Does this mirror have a FTP or Rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = exported(Datetime(
-        title=_('Date Created'), required=True, readonly=True))
-    date_reviewed = Datetime(
-        title=_('Date reviewed'), required=False, readonly=False)
-    whiteboard = Whiteboard(
-        title=_('Whiteboard'), required=False,
+        title=_('Date Created'), required=True, readonly=True,
+        description=_("The date on which this mirror was registered.")))
+    date_reviewed = exported(Datetime(
+        title=_('Date reviewed'), required=False, readonly=True,
+        description=_(
+            "The date on which this mirror was last reviewed by a mirror admin.")))
+    whiteboard = exported(Whiteboard(
+        title=_('Whiteboard'), required=False, readonly=False,
         description=_("Notes on the current status of the mirror (only "
-                      "visible to admins and the mirror's registrant)."))
+                      "visible to admins and the mirror's registrant).")))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
