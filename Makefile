@@ -366,9 +366,6 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart
 
-static:
-	$(PY) scripts/make-static.py
-
 TAGS: compile
 	# emacs tags
 	bin/tags -e
