@@ -276,7 +276,7 @@ class Bug(SQLBase):
         # bug, where bug_attachment_1.id < bug_attachment_2.id, while
         # the Message record for bug_attachment_2 is created before
         # the Message record for bug_attachment_1. The difference of
-        # the datecrated values of the Message records is in this case
+        # the datecreated values of the Message records is in this case
         # probably smaller than one second and the selection of the
         # "most recent" patch anyway somewhat arbitrary.
         return Store.of(self).find(

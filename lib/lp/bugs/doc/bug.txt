@@ -1704,11 +1704,22 @@ bug.latest_patch and bug.latest_patch_uploaded does not change.
     >>> print bug.latest_patch_uploaded == date_message_2_created
     True
 
-And if we delete attachment_2, bug.latest_patch and
-bug.latest_patch_uploaded are again None, because the bug has no
-longer any attachments that are patches.
+If we declare attachment_1 again to be a patch and if we delete
+attachment_2, bug.latest_patch references again attachment_1, and
+bug.bug.latest_patch_uploaded is its creation time.
 
+    >>> attachment_1.type = BugAttachmentType.PATCH
     >>> attachment_2.removeFromBug(user=bug.owner)
+    >>> transaction.commit()
+    >>> print bug.latest_patch == attachment_1
+    True
+    >>> print bug.latest_patch_uploaded == date_message_1_created
+    True
+
+If we delete attachment_1 too, bug.latest_patch and
+bug.latest_patch_uploaded are again None.
+
+    >>> attachment_1.removeFromBug(user=bug.owner)
     >>> transaction.commit()
     >>> print bug.latest_patch
     None

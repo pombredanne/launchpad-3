@@ -351,7 +351,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             title=_('Date when the most recent patch was uploaded.'),
             required=False, readonly=True))
 
-    latest_patch = Attribute("The most recently patch of this bug.")
+    latest_patch = Attribute("The most recent patch of this bug.")
 
     @operation_parameters(
         subject=optional_message_subject_field(),
