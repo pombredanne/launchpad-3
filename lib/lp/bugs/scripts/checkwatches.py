@@ -1188,9 +1188,11 @@ class TwistedThreadScheduler(BaseScheduler):
           thread pool.
         :type num_threads: int
 
-        :param signal_handlers: Whether the Twisted reactor should
-          install signal handlers or not.
-        :type signal_handlers: bool
+        :param install_signal_handlers: Whether the Twisted reactor
+          should install signal handlers or not. This is intented for
+          testing - set to False to avoid layer violations - but may
+          be useful in other situations.
+        :type install_signal_handlers: bool
         """
         self._thread_pool = ThreadPool(0, num_threads)
         self._install_signal_handlers = install_signal_handlers
