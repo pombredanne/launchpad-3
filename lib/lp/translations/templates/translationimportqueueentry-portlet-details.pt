@@ -4,41 +4,68 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-details">
-  <h2>Import entry details</h2>
+<div class="columns portlet" id="portlet-details">
+  <div class="two column left">
+    Upload attached to
+    <tal:package condition="context/sourcepackage">
+      <a tal:replace="structure context/sourcepackage/fmt:link">
+        Evolution in Ubuntu Hoary</a>.
+    </tal:package>
+    <tal:productseries condition="context/productseries">
+      <a tal:replace="structure context/productseries/fmt:link">
+        Evolution trunk series</a>.
+      <ul class="bulleted" tal:define="product context/productseries/product">
+        <li>
+          <tal:license
+            replace="structure product/license_status/description">
+            This project's license is open source.
+          </tal:license>
+        </li>
+        <li tal:define="series_templates context/productseries/potemplate_count">
+          Release series has
+          <tal:zero condition="python: series_templates == 0">
+              no templates.
+          </tal:zero>
+          <a tal:condition="series_templates"
+             tal:attributes="href context/productseries/fmt:url/+templates">
+            <tal:one condition="python: series_templates == 1">
+              1 template.
+            </tal:one>
+            <tal:many condition="python: series_templates > 1">
+              <tal:count replace="series_templates">2</tal:count> templates.
+            </tal:many>
+          </a>
+        </li>
+        <li>
+          <tal:translatable condition="product/translatable_series">
+            Project has translatable series.
+          </tal:translatable>
+          <tal:untranslatable condition="not: product/translatable_series">
+            Project has no translatable series.
+          </tal:untranslatable>
+        </li>
+      </ul>
+    </tal:productseries>
+  </div>
 
-    <div class="portletBody">
-        <div class="portletContent">
-            <b>Origin:</b><br />
-            <a tal:condition="context/sourcepackage"
-               tal:content="context/sourcepackage/title"
-               tal:attributes="href string:${context/sourcepackage/fmt:url}"
-               >evolution in Ubuntu Hoary</a>
-            <a tal:condition="context/productseries"
-               tal:content="context/productseries/title"
-               tal:attributes="href string:${context/productseries/fmt:url}"
-               >Evolution Series: MAIN</a><br />
-            <b>Path:</b>
-            <a tal:attributes="href context/content/http_url"
-               tal:content="context/path">po/foo.pot</a><br />
-            <b>Uploader:</b><br />
-            <a tal:replace="structure context/importer/fmt:link"
-               >Mark Shuttleworth</a><br />
-            <b>Waiting since:</b>
-            <span
-              tal:attributes="title context/dateimported/fmt:datetime"
-              tal:content="context/dateimported/fmt:approximatedate">
-              2004-05-22
-            </span><br />
-            <b>Status:</b>
-            <span tal:replace="context/status/title"></span><br />
-            <b>Status changed:</b>
-            <span
-              tal:attributes="title context/date_status_changed/fmt:datetime"
-              tal:content="context/date_status_changed/fmt:approximatedate">
-              2004-05-21
-            </span><br />
-        </div>
-    </div>
+  <div class="two column right">
+    File
+    <a tal:attributes="href context/content/http_url"
+       tal:content="context/path">po/messages.pot</a>
+    uploaded by
+    <a tal:replace="structure context/importer/fmt:link">
+      Arne Goetje
+    </a>
+    <tal:upload_date replace="context/dateimported/fmt:displaydate">
+      2010-02-10
+    </tal:upload_date>.
+    <tal:status_change
+      define="upload_date context/dateimported; change_date context/date_status_changed"
+      condition="python: change_date != upload_date">
+      Entry last changed
+      <tal:status_date replace="change_date/fmt:displaydate">
+        2010-02-12</tal:status_date>.
+    </tal:status_change>
+  </div>
 </div>
 </tal:root>
