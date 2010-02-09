@@ -215,15 +215,14 @@ class TestSerialScheduler(unittest.TestCase):
         # the job function at run time.
         self.scheduler.schedule(
             func, "Robin Hood", "Riding through the glen")
-        self.scheduler.run()
         # Keyword args specified when adding a job are passed to the
         # job function at run time.
         self.scheduler.schedule(
             func, name="Robin Hood", aptitude="Riding through the glen")
-        self.scheduler.run()
         # Positional and keyword args can both be specified.
         self.scheduler.schedule(
             func, "Robin Hood", aptitude="Riding through the glen")
+        # Run everything.
         self.scheduler.run()
 
     def test_ordering(self):
