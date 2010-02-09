@@ -387,6 +387,7 @@ And which organisation runs a mirror:
 
     >>> print extract_text(find_tag_by_id(content, 'organisation'))
     Organisation:
+    None
 
 The page contains a source list...
 
