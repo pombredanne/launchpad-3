@@ -100,7 +100,7 @@ class SpriteUtil:
         smartsprites_exp = re.compile(
             r'/\*+([^*]*sprite-ref: [^*]*)\*/')
         self.css_object = cssutils.parseFile(css_template_file)
-        self.sprites = []
+        self.sprite_info = []
         for rule in self.css_object:
             if rule.cssText is None:
                 continue
@@ -108,10 +108,15 @@ class SpriteUtil:
             if match is not None:
                 smartsprites_info = match.group(1)
                 parameters = self._parseCommentParameters(match.group(1))
+                # Currently, only a single combined image is supported.
                 if parameters['sprite-ref'] == group_name:
                     filename = self._getSpriteImagePath(
                         rule, url_prefix_substitutions)
-                    self.sprites.append(dict(filename=filename, rule=rule))
+                    self.sprite_info.append(dict(filename=filename, rule=rule))
+
+        if len(self.sprite_info) == 0:
+            raise AssertionError(
+                "No sprite-ref comments for group %r found" % group_name)
 
     def _getSpriteImagePath(self, rule, url_prefix_substitutions=None):
         """Convert the url path to a filesystem path."""
@@ -142,43 +147,44 @@ class SpriteUtil:
 
     def combineImages(self, css_dir):
         """Copy all the sprites into a single PIL image."""
-        for sprite in self.sprites:
-            filename = os.path.join(css_dir, sprite['filename'])
-            sprite['image'] = Image.open(filename)
 
-        if len(self.sprites) == 0:
-            raise AssertionError("No images found.")
+        # Open all the sprite images.
+        sprite_images = {}
+        max_sprite_width = 0
+        total_sprite_height = 0
+        for sprite in self.sprite_info:
+            abs_filename = os.path.join(css_dir, sprite['filename'])
+            sprite_images[sprite['filename']] = Image.open(abs_filename)
+            width, height = sprite_images[sprite['filename']].size
+            max_sprite_width = max(width, max_sprite_width)
+            total_sprite_height += height
 
-        max_width = 0
-        total_height = 0
-        for sprite in self.sprites:
-            width, height = sprite['image'].size
-            max_width = max(width, max_width)
-            total_height += height
-
-        # Separate each image with lots of whitespace.
+        # The combined image is the height of all the sprites
+        # plus the margin between each of them.
         combined_image_height = (
-            total_height + (self.margin * len(self.sprites)))
-        transparent = (0,0,0,0)
+            total_sprite_height + (self.margin * len(self.sprite_info) - 1))
+        transparent = (0, 0, 0, 0)
         combined_image = Image.new(
             mode='RGBA',
-            size=(max_width, combined_image_height),
+            size=(max_sprite_width, combined_image_height),
             color=transparent)
 
+        # Paste each sprite into the combined image.
         y = 0
         positions = {}
-        for index, sprite in enumerate(self.sprites):
+        for index, sprite in enumerate(self.sprite_info):
+            sprite_image = sprite_images[sprite['filename']]
             try:
                 position = [0, y]
-                combined_image.paste(sprite['image'], tuple(position))
+                combined_image.paste(sprite_image, tuple(position))
                 # An icon in a vertically combined image can be repeated
                 # horizontally, but we have to repeat it in the combined
                 # image so that we don't repeat white space.
                 if sprite['rule'].style.backgroundRepeat == 'repeat-x':
-                    width = sprite['image'].size[0]
-                    for x_position in range(width, max_width, width):
+                    width = sprite_image.size[0]
+                    for x_position in range(width, max_sprite_width, width):
                         position[0] = x_position
-                        combined_image.paste(sprite['image'], tuple(position))
+                        combined_image.paste(sprite_image, tuple(position))
             except:
                 print >> sys.stderr, (
                     "Error with image file %s" % sprite['filename'])
@@ -187,8 +193,9 @@ class SpriteUtil:
             # element. Therefore, it subtracts the position of the
             # sprite in the file to move it to the top of the element.
             positions[sprite['filename']] = (0, -y)
-            y += sprite['image'].size[1] + self.margin
+            y += sprite_image.size[1] + self.margin
 
+        # If there is an exception earlier, these attributes will remain None.
         self.positions = positions
         self.combined_image = combined_image
 
@@ -224,7 +231,7 @@ class SpriteUtil:
             background-image: url(combined_image_url_path)
             background-position: 0px 2344px
         """
-        for sprite in self.sprites:
+        for sprite in self.sprite_info:
             rule = sprite['rule']
             rule.style.backgroundImage = 'url(%s)' % combined_image_url_path
             position = self.positions[sprite['filename']]

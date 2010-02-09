@@ -3,15 +3,22 @@
 import os
 import sys
 
-from spriteutils import SpriteUtil
+from lp.services.spriteutils import SpriteUtil
+
+command_options = ('create-image', 'create-css')
 
 if len(sys.argv) != 2:
-    raise AssertionError(
-        "Expected a single argument. Received %r" % sys.argv[1:])
+    print >> sys.stderr, "Expected a single argument."
+    print >> sys.stderr, " Usage: %s %s" % (
+        sys.argv[0], '|'.join(command_options))
+    sys.exit(1)
 else:
     command = sys.argv[1]
-    if command not in ('create-image', 'create-css'):
-        raise AssertionError("Unknown argument: %s" % command)
+    if command not in command_options:
+        print >> sys.stderr, "Unknown argument: %s" % command
+        print >> sys.stderr, " Usage: %s %s" % (
+            sys.argv[0], '|'.join(command_options))
+        sys.exit(2)
 
 root = '${buildout:directory}'
 icing = os.path.join(root, 'lib/canonical/launchpad/icing')
