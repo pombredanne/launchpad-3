@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import bz2
 import gzip
+import hashlib
 import os
 import shutil
 import stat
@@ -20,8 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.publishing import (
-    Publisher, getPublisher, sha256)
+from lp.archivepublisher.publishing import Publisher, getPublisher
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
@@ -793,8 +793,8 @@ class TestPublisher(TestPublisherBase):
             test_file.write(content)
             test_file.close()
             # Generate the checksums for the two sources.
-            text = sha256(content).hexdigest()
-            file = sha256(open(test_filepath)).hexdigest()
+            text = hashlib.sha256(content).hexdigest()
+            file = hashlib.sha256(open(test_filepath)).hexdigest()
             # Remove the tempfile.
             os.unlink(test_filepath)
             return text, file

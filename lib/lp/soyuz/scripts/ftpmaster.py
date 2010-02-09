@@ -21,7 +21,7 @@ __all__ = [
 
 import apt_pkg
 import commands
-import md5
+import hashlib
 import os
 import stat
 import sys
@@ -836,7 +836,7 @@ class SyncSource:
     @classmethod
     def generateMD5Sum(self, filename):
         file_handle = open(filename)
-        md5sum = md5.md5(file_handle.read()).hexdigest()
+        md5sum = hashlib.md5(file_handle.read()).hexdigest()
         file_handle.close()
         return md5sum
 
