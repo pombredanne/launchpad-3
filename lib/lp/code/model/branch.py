@@ -1000,6 +1000,8 @@ class Branch(SQLBase):
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
+        if self.branch_type is not BranchType.HOSTED:
+            return False
         if self.upgrade_pending:
             return False
         return not (

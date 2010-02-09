@@ -799,6 +799,13 @@ class CodeImportResultStatus(DBEnumeratedType):
         Import job completed successfully.
         """)
 
+    SUCCESS_NOCHANGE = DBItem(110, """
+        Success with no changes
+
+        Import job completed successfully, but there were no new revisions to
+        import.
+        """)
+
     FAILURE = DBItem(200, """
         Failure
 
@@ -856,6 +863,8 @@ class CodeImportResultStatus(DBEnumeratedType):
         completed. It could have been an explicit request to kill the
         job, or the deletion of a CodeImport which had a running job.
         """)
+
+    successes = [SUCCESS, SUCCESS_NOCHANGE]
 
 
 class CodeReviewVote(DBEnumeratedType):

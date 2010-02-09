@@ -16,7 +16,6 @@ import pytz
 import subprocess
 
 from storm.store import Store
-from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -24,16 +23,21 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     clear_current_connection_cache, cursor, flush_database_updates)
 from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.model.buildqueue import BuildQueue
 
 
 class BuildBase:
+    """A mixin class providing functionality for farm jobs that build a
+    package.
 
-    implements(IBuildBase)
-
+    Note: this class does not implement IBuildBase as we currently duplicate
+    the properties defined on IBuildBase on the inheriting class tables. 
+    BuildBase cannot therefore implement IBuildBase itself, as storm requires
+    that the corresponding __storm_table__ be defined for the class. Instead,
+    the classes using the BuildBase mixin must ensure that they implement IBuildBase.
+    """
     policy_name = 'buildd'
 
     def getUploadLeaf(self, build_id, now=None):

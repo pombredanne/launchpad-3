@@ -850,8 +850,8 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         The client has write access to the branch.
         """
         lp_server = get_lp_server(db_branch.owner.id)
-        lp_server.setUp()
-        self.addCleanup(lp_server.tearDown)
+        lp_server.start_server()
+        self.addCleanup(lp_server.stop_server)
         branch_url = urljoin(lp_server.get_url(), db_branch.unique_name)
         return Branch.open(branch_url)
 
