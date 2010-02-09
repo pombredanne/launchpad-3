@@ -15,8 +15,7 @@ import pytz
 
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
-from twisted.internet.threads import deferToThreadPool
-from twisted.python.threadpool import ThreadPool
+from twisted.internet.threads import deferToThread
 
 from zope.component import getUtility
 from zope.event import notify
@@ -1194,21 +1193,19 @@ class TwistedThreadScheduler(BaseScheduler):
           be useful in other situations.
         :type install_signal_handlers: bool
         """
-        self._thread_pool = ThreadPool(0, num_threads)
+        self._num_threads = num_threads
         self._install_signal_handlers = install_signal_handlers
         self._jobs = []
 
     def schedule(self, func, *args, **kwargs):
         self._jobs.append(
-            deferToThreadPool(
-                reactor, self._thread_pool, func, *args, **kwargs))
+            deferToThread(func, *args, **kwargs))
 
     def run(self):
         jobs, self._jobs = self._jobs[:], []
         jobs_done = DeferredList(jobs)
-        jobs_done.addBoth(lambda ignore: self._thread_pool.stop())
         jobs_done.addBoth(lambda ignore: reactor.stop())
-        reactor.callWhenRunning(self._thread_pool.start)
+        reactor.suggestThreadPoolSize(self._num_threads)
         reactor.run(self._install_signal_handlers)
 
 
