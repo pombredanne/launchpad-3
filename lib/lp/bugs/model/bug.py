@@ -32,7 +32,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Max, Not, Select, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -259,6 +259,31 @@ class Bug(SQLBase):
     users_unaffected_count = IntCol(notNull=True, default=0)
     heat = IntCol(notNull=True, default=0)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def latest_patch(self):
+        """See `IBug`."""
+        # We want to retrieve the most recently added bug attachment
+        # that is of type BugAttachmentType.PATCH. In order to find
+        # this attachment, we should in theory sort by
+        # BugAttachment.message.datecreated. Since we don't have
+        # an index for Message.datecreated, such a query would be
+        # quite slow. We search instead for the BugAttachment with
+        # the largest ID for a given bug. This is "nearly" equivalent
+        # to searching the record with the maximum value of
+        # message.datecreated: The only exception is the rare case when
+        # two BugAttachment records are simultaneuosly added to the same
+        # bug, where bug_attachment_1.id < bug_attachment_2.id, while
+        # the Message record for bug_attachment_2 is created before
+        # the Message record for bug_attachment_1. The difference of
+        # the datecrated values of the Message records is in this case
+        # probably smaller than one second and the selection of the
+        # "most recent" patch anyway somewhat arbitrary.
+        return Store.of(self).find(
+            BugAttachment, BugAttachment.id == Select(
+                Max(BugAttachment.id),
+                And(BugAttachment.bug == self.id,
+                    BugAttachment.type == BugAttachmentType.PATCH))).one()
 
     @property
     def comment_count(self):
