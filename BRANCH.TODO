@@ -6,6 +6,9 @@
 * Might want to change the new +login page to not start an OpenID dance when
 the user is already logged in?
 
+* The LoginToken pages for creating new accounts and reset passwords can be
+removed.
+
 * can the new +login page go live on edge before it goes to lpnet?  or should
 I it land in db-devel so that it only reaches edge after the roll out?
 

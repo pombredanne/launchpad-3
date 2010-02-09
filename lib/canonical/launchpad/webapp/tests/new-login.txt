@@ -29,8 +29,8 @@ The OpenID Provider will ask us to authenticate.
     >>> browser.getControl(name='field.password').value = 'test'
     >>> browser.getControl('Continue').click()
 
-Once authenticated, we're redirected back to the page where we started, with the
-query args preserved.
+Once authenticated, we're redirected back to the page where we started, with
+the query args preserved.
 
     >>> url = browser.url
     >>> print url

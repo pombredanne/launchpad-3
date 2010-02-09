@@ -18,9 +18,10 @@ from zope.session.http import CookieClientIdManager, digestEncode
 
 from storm.zope.interfaces import IZStorm
 
+from lazr.uri import URI
+
 from canonical.config import config
 from canonical.launchpad.layers import TestOpenIDLayer
-from canonical.launchpad.webapp.url import urlparse
 
 
 SECONDS = 1
@@ -197,16 +198,16 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         # is copied from zope.session.http, replacing just self.namespace with
         # self.getNamespace(request).
         cookie = request.response.getCookie(self.getNamespace(request))
-        protocol, request_domain = urlparse(request.getURL())[:2]
+        uri = URI(request.getURL())
 
         # Set secure flag on cookie.
-        if protocol != 'http':
+        if uri.scheme != 'http':
             cookie['secure'] = True
         else:
             cookie['secure'] = False
 
         # Set domain attribute on cookie if vhosting requires it.
-        cookie_domain = get_cookie_domain(request_domain)
+        cookie_domain = get_cookie_domain(uri.host)
         if cookie_domain is not None:
             cookie['domain'] = cookie_domain
 

@@ -13,7 +13,7 @@ the underlying mechanize browser.
 Now we'll actually begin the demonstration. When we go to launchpad as an
 anonymous user, the browser has no cookies.
 
-    >>> browser.open('http://launchpad.dev')
+    >>> browser.open('http://launchpad.dev:8085')
     >>> len(cookies)
     0
 
@@ -25,16 +25,27 @@ Now let's log in and show that the session cookie is set.
     >>> now = datetime.datetime.now(pytz.UTC).replace(microsecond=0)
     >>> year_from_now = now + datetime.timedelta(days=365)
     >>> year_plus_from_now = year_from_now + datetime.timedelta(minutes=1)
-    >>> browser.open('http://launchpad.dev/+login')
-    >>> browser.getControl('E-mail', index=0).value = 'foo.bar@canonical.com'
-    >>> browser.getControl('Password').value = 'test'
-    >>> browser.getControl('Log In').click()
+    >>> browser.open('http://launchpad.dev:8085/+login')
+
+    # On a browser with JS support, this page would've been automatically
+    # submitted (thanks to the onload handler), but testbrowser doesn't support
+    # JS, so we have to submit the form manually.
+    >>> print browser.contents
+    <html>...<body onload="document.forms[0].submit();"...
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.getControl(name='field.email').value = 'foo.bar@canonical.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
+
+    # We have one cookie for the OpenID provider (testopenid) and one for
+    # Launchpad itself (launchpad_tests).
     >>> len(cookies)
-    1
-    >>> cookies.keys()
-    ['launchpad_tests']
+    2
+    >>> sorted(cookies.keys())
+    ['launchpad_tests', 'testopenid']
     >>> expires = cookies.getInfo('launchpad_tests')['expires']
     >>> year_from_now <= expires < year_plus_from_now
     True
@@ -48,7 +59,7 @@ time for browsers with bad system clocks.
 
     >>> browser.getControl('Log Out').click()
     >>> len(cookies)
-    1
+    2
     >>> expires = cookies.getInfo('launchpad_tests')['expires']
     >>> ten_minutes_from_now = now + datetime.timedelta(minutes=10)
     >>> eleven_minutes_from_now = now + datetime.timedelta(minutes=11)
