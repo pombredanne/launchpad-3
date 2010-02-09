@@ -20,7 +20,6 @@ from lp.archivepublisher.deathrow import DeathRow
 from lp.archivepublisher.diskpool import DiskPool
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase
 

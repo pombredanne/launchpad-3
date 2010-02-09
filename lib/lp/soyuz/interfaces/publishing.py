@@ -27,7 +27,7 @@ __all__ = [
     'name_priority_map',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
+from zope.schema import Choice, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 

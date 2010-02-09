@@ -294,7 +294,6 @@ Stanza generation
 =================
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IArchiveSafePublisher,
     ...     IBinaryPackagePublishingHistory,
     ...     ISourcePackageFilePublishing)
 

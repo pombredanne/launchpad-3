@@ -15,7 +15,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.soyuz.model.build import Build
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger

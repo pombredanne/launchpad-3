@@ -22,12 +22,11 @@ import operator
 import os
 import pytz
 import re
-from warnings import warn
 
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol
 
 from storm.expr import Desc, In, LeftJoin
 from storm.store import Store
