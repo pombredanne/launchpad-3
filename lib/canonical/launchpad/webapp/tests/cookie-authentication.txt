@@ -2,37 +2,47 @@ The feeds vhost should not set the cookie. Since it is running
 on http instead of https, it cannot read the secure cookie on https,
 so it cannot tell that it will end up overwriting the existing cookie.
 
-
     >>> from canonical.launchpad.testing.cookie import Cookies
     >>> cookies = Cookies(browser)
-    >>> browser.open('http://feeds.launchpad.dev/announcements.atom')
+    >>> browser.open('http://feeds.launchpad.dev:8085/announcements.atom')
     >>> browser.url
-    'http://feeds.launchpad.dev/announcements.atom'
+    'http://feeds.launchpad.dev:8085/announcements.atom'
     >>> len(cookies)
     0
 
 Our cookies need to have their domain attribute set to ensure that they
 are sent to other vhosts in the same domain.
 
-    # XXX: We need cookie login here, so we might have to turn this into an
-    # AppServerLayer test.
-    >>> browser.open('http://blueprints.launchpad.dev/+login')
-    >>> browser.getControl('E-mail', index=0).value = 'foo.bar@canonical.com'
-    >>> browser.getControl('Password').value = 'test'
-    >>> browser.getControl('Log In').click()
+    >>> browser.open('http://blueprints.launchpad.dev:8085/+login')
+
+    # On a browser with JS support, this page would've been automatically
+    # submitted (thanks to the onload handler), but testbrowser doesn't support
+    # JS, so we have to submit the form manually.
+    >>> print browser.contents
+    <html>...<body onload="document.forms[0].submit();"...
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.getControl(name='field.email').value = 'foo.bar@canonical.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
+
+    # We see two cookies because there's one for the OpenID provider we used
+    # when logging in (testopenid) and other for Launchpad itself.
     >>> len(cookies)
-    1
+    2
+    >>> sorted(cookies.keys())
+    ['launchpad_tests', 'testopenid']
     >>> session_cookie_name = cookies.keys()[0]
     >>> cookies.getInfo(session_cookie_name)['domain']
     '.launchpad.dev'
 
 If we visit another vhost in the domain, we remain logged in.
 
-    >>> browser.open('http://launchpad.dev/')
+    >>> browser.open('http://launchpad.dev:8085/')
     >>> browser.url
-    'http://launchpad.dev/'
+    'http://launchpad.dev:8085/'
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
     >>> cookies.getInfo(session_cookie_name)['domain']
@@ -40,9 +50,9 @@ If we visit another vhost in the domain, we remain logged in.
 
 Even if the browser passes in a cookie, the feeds vhost should not set one.
 
-    >>> browser.open('http://feeds.launchpad.dev/announcements.atom')
+    >>> browser.open('http://feeds.launchpad.dev:8085/announcements.atom')
     >>> browser.url
-    'http://feeds.launchpad.dev/announcements.atom'
+    'http://feeds.launchpad.dev:8085/announcements.atom'
     >>> print browser.headers.get('Set-Cookie')
     None
 
