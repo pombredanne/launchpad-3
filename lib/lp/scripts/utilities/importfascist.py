@@ -61,6 +61,7 @@ valid_imports_not_in_all = {
     'email.Utils': set(['mktime_tz']),
     'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),
+    'twisted.internet.threads': set(['deferToThreadPool']),
     'zope.component': set(
         ['adapter',
          'ComponentLookupError',
