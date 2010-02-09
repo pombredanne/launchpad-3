@@ -400,12 +400,14 @@ Another paragraph
     </text>
     <attachment>
       <mimetype>application/octet-stream;key=value</mimetype>
-      <contents>PGh0bWw+</contents>
+      <!-- contents ('<html><body></body></html>') is base64-encoded. -->
+      <contents>PGh0bWw+PGJvZHk+PC9ib2R5PjwvaHRtbD4=</contents>
     </attachment>
     <attachment>
       <type>PATCH</type>
       <filename>foo.patch</filename>
       <mimetype>text/html</mimetype>
+      <!-- contents ('A patch') is base64-encoded. -->
       <contents>QSBwYXRjaA==</contents>
     </attachment>
   </comment>
@@ -881,24 +883,27 @@ class TestExternalBugTracker(ExternalBugTracker):
 class TestBugWatchUpdater(BugWatchUpdater):
     """A mock `BugWatchUpdater` object."""
 
-    def updateBugTracker(self, bug_tracker):
+    def _updateBugTracker(self, bug_tracker):
         # Save the current bug tracker, so _getBugWatch can reference it.
         self.bugtracker = bug_tracker
-        super(TestBugWatchUpdater, self).updateBugTracker(bug_tracker)
+        super(TestBugWatchUpdater, self)._updateBugTracker(bug_tracker)
 
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """See `BugWatchUpdater`."""
         return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
 
-    def _getBugWatch(self, bug_watch_id):
-        """Returns a mock bug watch object.
+    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
+        """Returns a list of fake bug watch objects.
 
-        We override this method to force one of our two bug watches
-        to be returned. The first is guaranteed to trigger a db error,
-        the second should update successfuly.
+        We override this method so that we always return bug watches
+        from our list of fake bug watches.
         """
-        return self.bugtracker.getBugWatchesNeedingUpdate(0)[bug_watch_id - 1]
-
+        return [
+            bug_watch for bug_watch in (
+                self.bugtracker.getBugWatchesNeedingUpdate(0))
+            if (bug_watch.remotebug == remote_bug_id and
+                bug_watch.id in bug_watch_ids)
+            ]
 
 
 class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
@@ -926,7 +931,7 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
         # trigger a DB error, the second updates successfully.
         bug_tracker = TestBugTracker(test_bug_one, test_bug_two)
         bug_watch_updater = TestBugWatchUpdater(self.layer.txn)
-        bug_watch_updater.updateBugTracker(bug_tracker)
+        bug_watch_updater._updateBugTracker(bug_tracker)
         # We verify that the first bug watch didn't update the status,
         # and the second did.
         for bugtask in test_bug_one.bugtasks:

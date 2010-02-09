@@ -102,7 +102,7 @@ displayed.
 
     >>> anon_browser.open('http://launchpad.dev/~name16/+hwdb-submissions')
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Hardware submissions for Foo Bar
+    Hardware submissions for Foo Bar...
     Foo Bar has posted no submissions.
 
 Submissions that are marked as private and owned by a team are only
@@ -131,7 +131,7 @@ visible for members of the team and admins.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Hardware submissions for Ubuntu Team
+    Hardware submissions for Ubuntu Team...
     Ubuntu Team has posted no submissions.
 
     >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
@@ -233,5 +233,6 @@ A page for an unknown fingerprint displays an according message.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/+hwdb/+fingerprint/unknownfingerprint')
     >>> print extract_text(find_main_content(anon_browser.contents))
+    Hardware Database submissions for a fingerprint
     Submissions for system: unknownfingerprint
     There are no submissions for this system.

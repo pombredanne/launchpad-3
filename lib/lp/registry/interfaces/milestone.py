@@ -18,14 +18,14 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, Description, NoneableDescription, NoneableTextLine)
+    ContentNameField, NoneableDescription, NoneableTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type)
@@ -60,7 +60,7 @@ class MilestoneNameField(ContentNameField):
         elif IDistroSeries.providedBy(self.context):
             milestone = self.context.distribution.getMilestone(name)
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 'Editing a milestone in an unexpected context: %r'
                 % self.context)
         if milestone is not None:
@@ -161,6 +161,15 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget):
         :param changelog: Detailed changes in each version.
         :param release_notes: Overview of changes in each version.
         :returns: `IProductRelease` object.
+        """
+
+    def closeBugsAndBlueprints(user):
+        """Close completed bugs and blueprints.
+
+        Bugs that are fix committed status are updated to fix released.
+        Blueprints that are in deployment status are updated to implemented
+        status.
+        XXX sinzui 2010-01-27 bug=341687: blueprints not yet implemented.
         """
 
     @export_write_operation()

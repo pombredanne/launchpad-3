@@ -1,7 +1,7 @@
 = Changing Milestones of Bugtasks =
 
-Bugtasks associated with products, productserieses, distributions and
-distroserieses can be targeted to milestones.
+Bugtasks associated with products, productseries, distributions and
+distroseries can be targeted to milestones.
 
 Sample Person is the owner of the Firefox product. He decides to plan
 when bugs should be fixed by setting up some milestones.

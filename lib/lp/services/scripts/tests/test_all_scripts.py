@@ -19,11 +19,13 @@ class ScriptsTestCase(TestCase):
         # Walk through all scripts and check if they can run successfully
         # if passed '-h' (optparser help). We run the scripts in a clean
         # shell environment, i.e not PYTHONPATH set.
+        bad = []
         for script_path in find_lp_scripts():
             cmd_line = script_path + " -h"
             out, err, returncode = run_script(cmd_line)
-            self.assertEquals(
-                os.EX_OK, returncode, "%s failed\n%s" % (script_path, err))
+            if returncode != os.EX_OK:
+                bad.append("%s failed\n%s" % (script_path, err))
+        self.failIf(bad, '\n\n'.join(bad))
 
 
 def test_suite():

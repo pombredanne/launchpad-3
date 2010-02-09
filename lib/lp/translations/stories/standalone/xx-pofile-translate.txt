@@ -1,4 +1,7 @@
-= Translation Submissions =
+
+
+Translation Submissions
+=======================
 
 This pagetest is used to check general behaviour of IPOFile translation
 submissions.
@@ -15,10 +18,11 @@ xx-pofile-translate-newlines-check.txt
 xx-pofile-translate-performance.txt
 
 
-== Anonymous access ==
+Anonymous access
+----------------
 
-Anonymous users are able to browse translations, but not to change them through
-the translation form.
+Anonymous users are able to browse translations, but not to change them
+through the translation form.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
@@ -34,6 +38,22 @@ In fact, no input widgets at all are displayed.
 
     >>> for input in main_content.findAll('input'):
     ...     print 'Found input:\n%s' % input
+
+As an anynoymous user you will have access to the download and details
+pages for the pofile this message belongs to. The link to upload page
+should not be in that list.
+
+    >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
+    >>> print extract_text(nav)
+    Download translation Translation details
+
+Download translations and Translation details should linked to the proper
+pages
+
+    >> print nav.getLink("Download translation").url
+    https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
+    >> print nav.getLink("Translation details").url
+    https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
 Rendering the form in read-only mode does not actually stop an anonymous
 visitor (e.g. a spam bot, or a user whose login has expired) from submitting
@@ -53,7 +73,34 @@ submissions.
     our licensing terms cannot do POST submissions...
 
 
-== Requesting English and its variant languages ==
+Translation Admin Access
+------------------------
+
+Let's log in.
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+  ...     'evolution/+pots/evolution-2.2/es/+translate')
+
+As a translation admin you will have access to the download, upload
+and details pages for the pofile this message belongs to.
+
+  >>> nav = find_tag_by_id(admin_browser.contents, 'nav-pofile-subpages')
+  >>> print extract_text(nav)
+  Download translation Upload translation Translation details
+
+All those links should linked the proper pages
+
+  >> print nav.getLink("Download translation").url
+  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
+  >> print nav.getLink("Upload translation").url
+  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
+  >> print nav.getLink("Translation details").url
+  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+details
+
+
+Requesting English and its variant languages
+--------------------------------------------
 
 English is not translatable since we store the untranslated messages
 as English. The translate view uses often uses two languages during
@@ -77,7 +124,8 @@ See xx-pofile-translate-alternative-language.txt for details about
 the 'make suggestions from' feature.
 
 
-== Form elements ==
+Form elements
+-------------
 
 Because the server does not remember what forms it served to whom, it is
 essential that every form element identifier provide all the context the

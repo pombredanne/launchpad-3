@@ -21,20 +21,23 @@ from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
+from canonical.lazr.utils import smartquote
 from lp.code.model.branch import Branch
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.model.build import Build, BuildSet
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
-from canonical.launchpad.database.packaging import Packaging
+from lp.registry.model.packaging import Packaging
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate)
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
@@ -48,10 +51,12 @@ from lp.translations.model.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.packaging import PackagingType
+from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -152,7 +157,8 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
-                    HasTranslationImportsMixin, HasTranslationTemplatesMixin):
+                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
+                    HasBranchesMixin, HasMergeProposalsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -285,10 +291,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def title(self):
-        titlestr = self.sourcepackagename.name
-        titlestr += ' in ' + self.distribution.displayname
-        titlestr += ' ' + self.distroseries.displayname
-        return titlestr
+        """See `ISourcePackage`."""
+        return smartquote('"%s" source package in %s') % (
+            self.sourcepackagename.name, self.distroseries.displayname)
 
     @property
     def distribution(self):
@@ -377,7 +382,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `ISourcePackage`"""
         # First we look to see if there is packaging data for this
         # distroseries and sourcepackagename. If not, we look up through
-        # parent distroserieses, and when we hit Ubuntu, we look backwards in
+        # parent distroseries, and when we hit Ubuntu, we look backwards in
         # time through Ubuntu series till we find packaging information or
         # blow past the Warty Warthog.
 
@@ -390,9 +395,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntuserieses = self.distroseries.previous_serieses
-            if ubuntuserieses:
-                previous_ubuntu_series = ubuntuserieses[0]
+            ubuntuseries = self.distroseries.previous_series
+            if ubuntuseries:
+                previous_ubuntu_series = ubuntuseries[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
@@ -551,8 +556,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # It should present the builds in a more natural order.
         if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore"]
+            clauseTables.append('BuildPackageJob')
+            condition_clauses.append('BuildPackageJob.build = Build.id')
             clauseTables.append('BuildQueue')
-            condition_clauses.append('BuildQueue.build = Build.id')
+            condition_clauses.append('BuildQueue.job = BuildPackageJob.job')
         elif build_state == BuildStatus.SUPERSEDED or build_state is None:
             orderBy = ["-Build.datecreated"]
         else:
@@ -575,6 +582,21 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             return latest_publishing.component
         else:
             return None
+
+    def get_default_archive(self, component=None):
+        """See `ISourcePackage`."""
+        if component is None:
+            component = self.latest_published_component
+        distribution = self.distribution
+        if component is not None and component.name == 'partner':
+            archive = getUtility(IArchiveSet).getByDistroPurpose(
+                distribution, ArchivePurpose.PARTNER)
+            if archive is None:
+                raise NoPartnerArchive(distribution)
+            else:
+                return archive
+        else:
+            return distribution.main_archive
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -653,3 +675,39 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             self.distribution.name,
             self.distroseries.getSuite(pocket),
             self.name)
+
+    def getLatestTranslationsUploads(self):
+        """See `ISourcePackage`."""
+        our_format = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
+
+        packagename = self.sourcepackagename.name
+        displayname = self.displayname
+        distro = self.distroseries.distribution
+
+        histories = distro.main_archive.getPublishedSources(
+            name=packagename, distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED, exact_match=True)
+        histories = list(histories)
+
+        builds = []
+        for history in histories:
+            builds += list(history.getBuilds())
+
+        uploads = [
+            build.package_upload
+            for build in builds
+            if build.package_upload
+            ]
+        custom_files = []
+        for upload in uploads:
+            custom_files += [
+                custom for custom in upload.customfiles
+                if custom.customformat == our_format
+                ]
+
+        custom_files.sort(key=attrgetter('id'))
+        return [custom.libraryfilealias for custom in custom_files]
+
+    def linkedBranches(self):
+        """See `ISourcePackage`."""
+        return dict((p.name,b) for (p,b) in self.linked_branches)

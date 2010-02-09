@@ -172,8 +172,6 @@ Person's page to do it himself.
     >>> admin_browser.open('http://launchpad.dev/~no-priv')
     >>> admin_browser.title
     'No Privileges Person in Launchpad'
-
-    >>> admin_browser.getLink('Change details').click()
     >>> admin_browser.getLink('Set preferred languages').click()
     >>> print extract_text(
     ...     find_main_content(admin_browser.contents).find('h1'))
@@ -227,7 +225,7 @@ The nag message links to the languages editing page.
 
     >>> noi_browser.getLink(id='set-languages').click()
     >>> print noi_browser.title
-    +editlanguages : Translations : Noi
+    Language preferences...
 
 Once Noi has set one or more preferred languages, the nag message goes
 away.

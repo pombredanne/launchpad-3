@@ -1,6 +1,8 @@
 SourcePackage views
 ===================
 
+Edit packaging view
+-------------------
 
     >>> product = factory.makeProduct(name='bonkers', displayname='Bonkers')
     >>> productseries = factory.makeProductSeries(
@@ -13,20 +15,26 @@ SourcePackage views
     >>> package = factory.makeSourcePackage(
     ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
 
-    >>> view = create_view(package, name='+edit-packaging')
+    >>> view = create_initialized_view(package, name='+edit-packaging')
     >>> print view.label
-     Define upstream link for bonkers in Youbuntu Busy
+    Link to an upstream project
 
     >>> print view.page_title
-     Define upstream link for bonkers in Youbuntu Busy
+    Link to an upstream project
 
     >>> print view.cancel_url
     http://launchpad.dev/youbuntu/busy/+source/bonkers
 
-The view allows the owner or admin to change productseries field.
+
+The view allows the logged in user to change product series field. The value
+of the product series field is None by default because it is not required to
+create a source package.
 
     >>> view.field_names
     ['productseries']
+
+    >>> print view.widgets.get('productseries')._getFormValue()
+    <BLANKLINE>
 
     >>> print package.productseries
     None
@@ -51,3 +59,104 @@ The view allows the owner or admin to change productseries field.
 
     >>> print package.productseries.name
     crazy
+
+    >>> transaction.commit()
+
+The form shows the current product series if it is set.
+
+    >>> view = create_initialized_view(package, name='+edit-packaging')
+    >>> print view.widgets.get('productseries')._getFormValue().name
+    crazy
+
+The form requires a product series. An error is raised if the field is left
+empty.
+
+    >>> form = {
+    ...     'field.productseries': '',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     package, name='+edit-packaging', form=form,
+    ...     principal=product.owner)
+    >>> for error in view.errors:
+    ...     print error
+    ('productseries', u'Project series', RequiredMissing())
+    You must choose a project series.
+
+Submitting the same product series as the current packaging is not an error,
+but there is no notification message that the upstream link was updated.
+
+    >>> form = {
+    ...     'field.productseries': 'bonkers/crazy',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     package, name='+edit-packaging', form=form,
+    ...     principal=product.owner)
+    >>> view.errors
+    []
+
+    >>> print view.request.response.notifications
+    []
+
+Upstream associations portlet
+-----------------------------
+
+The upstreams associations portlet either displays the upstream
+information if it is already set or gives the user the opportunity to
+suggest the association.  The suggestion is based on a
+ProductVocabulary query using the source package name.
+
+Since the bonkers source project was associated previously with the
+bonkers project, the portlet will display that information.
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> for product in view.product_suggestions:
+    ...     print product.name
+    bonkers
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     extract_text, find_tag_by_id)
+    >>> content = extract_text(find_tag_by_id(view.render(), 'upstreams'))
+    >>> print content
+    Project:...Bonkers...
+    Series:...crazy...
+
+A new source project that is not linked to an upstream will result in
+the portlet showing the suggested project.
+
+    >>> product = factory.makeProduct(name='lernid', displayname='Lernid')
+    >>> sourcepackagename = factory.makeSourcePackageName(name='lernid')
+    >>> package = factory.makeSourcePackage(
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> for product in view.product_suggestions:
+    ...     print product.name
+    lernid
+
+    >>> content = extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
+    >>> print content
+    Launchpad doesn&#8217;t know which project and series this
+    package belongs to. ...
+    Is the following project the upstream for this source package?
+    Registered upstream project:
+    Lernid...
+
+If there are multiple potential matches they are all shown.
+
+    >>> product = factory.makeProduct(name='lernid-dev', displayname='Lernid Dev')
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> for product in view.product_suggestions:
+    ...     print product.name
+    lernid
+    lernid-dev
+
+    >>> content = extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
+    >>> print content
+    Launchpad doesn&#8217;t know which project and series this
+    package belongs to. ...
+    Is one of these projects the upstream for this source package?
+    Registered upstream project:
+    Lernid...
+    Lernid Dev...

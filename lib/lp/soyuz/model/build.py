@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-
 import apt_pkg
 from cStringIO import StringIO
 import datetime
@@ -18,7 +17,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from storm.expr import (
     Desc, In, Join, LeftJoin)
-from storm.references import Reference
 from storm.store import Store
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
@@ -46,15 +44,20 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.builder import Builder
+from lp.buildmaster.model.builder import Builder
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -62,10 +65,12 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
 
 
-class Build(SQLBase):
-    implements(IBuild)
+class Build(BuildBase, SQLBase):
+    implements(IBuildBase, IBuild)
     _table = 'Build'
     _defaultOrder = 'id'
+
+    build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
 
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
@@ -86,23 +91,21 @@ class Build(SQLBase):
                      notNull=True)
     dependencies = StringCol(dbName='dependencies', default=None)
     archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
-    estimated_build_duration = IntervalCol(default=None)
 
-    buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
-                                  on_remote=True)
     date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
 
     upload_log = ForeignKey(
         dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
-    def _getProxiedFileURL(self, library_file):
-        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
-        # Avoiding circular imports.
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
-
-        proxied_file = ProxiedLibraryFileAlias(library_file, self)
-        return proxied_file.http_url
+    @property
+    def buildqueue_record(self):
+        """See `IBuild`."""
+        store = Store.of(self)
+        results = store.find(
+            BuildQueue,
+            BuildPackageJob.job == BuildQueue.jobID,
+            BuildPackageJob.build == self.id)
+        return results.one()
 
     @property
     def upload_log_url(self):
@@ -110,13 +113,6 @@ class Build(SQLBase):
         if self.upload_log is None:
             return None
         return self._getProxiedFileURL(self.upload_log)
-
-    @property
-    def build_log_url(self):
-        """See `IBuild`."""
-        if self.buildlog is None:
-            return None
-        return self._getProxiedFileURL(self.buildlog)
 
     def _getLatestPublication(self):
         store = Store.of(self)
@@ -208,6 +204,11 @@ class Build(SQLBase):
     def is_virtualized(self):
         """See `IBuild`"""
         return self.archive.require_virtualized
+
+    @property
+    def is_private(self):
+        """See `IBuildBase`"""
+        return self.archive.private
 
     @property
     def title(self):
@@ -307,7 +308,7 @@ class Build(SQLBase):
         self.buildlog = None
         self.upload_log = None
         self.dependencies = None
-        self.createBuildQueueEntry()
+        self.queueBuild()
 
     def rescore(self, score):
         """See `IBuild`."""
@@ -315,6 +316,17 @@ class Build(SQLBase):
             raise CannotBeRescored("Build cannot be rescored.")
 
         self.buildqueue_record.manualScore(score)
+
+    def makeJob(self):
+        """See `IBuildBase`."""
+        store = Store.of(self)
+        job = Job()
+        store.add(job)
+        specific_job = BuildPackageJob()
+        specific_job.build = self.id
+        specific_job.job = job.id
+        store.add(specific_job)
+        return specific_job
 
     def getEstimatedBuildStartTime(self):
         """See `IBuild`.
@@ -346,13 +358,15 @@ class Build(SQLBase):
         # jobs [1 .. N-1] i.e. for the jobs that are ahead of job N.
         sum_query = """
             SELECT
-                EXTRACT(EPOCH FROM SUM(Build.estimated_build_duration))
+                EXTRACT(EPOCH FROM SUM(BuildQueue.estimated_duration))
             FROM
                 Archive
                 JOIN Build ON
                     Build.archive = Archive.id
+                JOIN BuildPackageJob ON
+                    Build.id = BuildPackageJob.build
                 JOIN BuildQueue ON
-                    Build.id = BuildQueue.build
+                    BuildPackageJob.job = BuildQueue.job
             WHERE
                 Build.buildstate = 0 AND
                 Build.processor = %s AND
@@ -411,17 +425,21 @@ class Build(SQLBase):
         delay_query = """
             SELECT
                 CAST (EXTRACT(EPOCH FROM
-                        (Build.estimated_build_duration -
-                        (NOW() - BuildQueue.buildstart))) AS INTEGER)
+                        (BuildQueue.estimated_duration -
+                        (NOW() - Job.date_started))) AS INTEGER)
                     AS remainder
             FROM
                 Archive
                 JOIN Build ON
                     Build.archive = Archive.id
+                JOIN BuildPackageJob ON
+                    Build.id = BuildPackageJob.build
                 JOIN BuildQueue ON
-                    Build.id = BuildQueue.build
+                    BuildQueue.job = BuildPackageJob.job
                 JOIN Builder ON
                     Builder.id = BuildQueue.builder
+                JOIN Job ON
+                    Job.id = BuildPackageJob.job
             WHERE
                 Archive.require_virtualized = %s AND
                 Archive.enabled = TRUE AND
@@ -603,12 +621,75 @@ class Build(SQLBase):
             breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific)
 
-    def createBuildQueueEntry(self):
-        """See `IBuild`"""
-        return BuildQueue(build=self)
+    def estimateDuration(self):
+        """See `IBuildBase`."""
+        # Always include the primary archive when looking for
+        # past build times (just in case that none can be found
+        # in a PPA or copy archive).
+        archives = [self.archive.id]
+        if self.archive.purpose != ArchivePurpose.PRIMARY:
+            archives.append(self.distroarchseries.main_archive.id)
+
+        # Look for all sourcepackagerelease instances that match the name
+        # and get the (successfully built) build records for this
+        # package.
+        completed_builds = Build.select("""
+            Build.sourcepackagerelease = SourcePackageRelease.id AND
+            Build.id != %s AND
+            Build.buildduration IS NOT NULL AND
+            SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
+            SourcePackageName.name = %s AND
+            distroarchseries = %s AND
+            archive IN %s AND
+            buildstate = %s
+            """ % sqlvalues(self, self.sourcepackagerelease.name,
+                            self.distroarchseries, archives,
+                            BuildStatus.FULLYBUILT),
+            orderBy=['-datebuilt', '-id'],
+            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
+
+        if completed_builds.count() > 0:
+            # Historic build data exists, use the most recent value.
+            most_recent_build = completed_builds[0]
+            estimated_duration = most_recent_build.buildduration
+        else:
+            # Estimate the build duration based on package size if no
+            # historic build data exists.
+
+            # Get the package size in KB.
+            package_size = self.sourcepackagerelease.getPackageSize()
+
+            if package_size > 0:
+                # Analysis of previous build data shows that a build rate
+                # of 6 KB/second is realistic. Furthermore we have to add
+                # another minute for generic build overhead.
+                estimate = int(package_size/6.0/60 + 1)
+            else:
+                # No historic build times and no package size available,
+                # assume a build time of 5 minutes.
+                estimate = 5
+            estimated_duration = datetime.timedelta(minutes=estimate)
+
+        return estimated_duration
 
     def notify(self, extra_info=None):
-        """See `IBuild`"""
+        """See `IBuildBase`.
+
+        If config.buildmaster.build_notification is disable, simply
+        return.
+
+        If config.builddmaster.notify_owner is enabled and SPR.creator
+        has preferredemail it will send an email to the creator, Bcc:
+        to the config.builddmaster.default_recipient. If one of the
+        conditions was not satisfied, no preferredemail found (autosync
+        or untouched packages from debian) or config options disabled,
+        it will only send email to the specified default recipient.
+
+        This notification will contain useful information about
+        the record in question (all states are supported), see
+        doc/build-notification.txt for further information.
+        """
+
         if not config.builddmaster.send_build_notification:
             return
 
@@ -743,7 +824,12 @@ class Build(SQLBase):
                 headers=extra_headers)
 
     def storeUploadLog(self, content):
-        """See `IBuild`."""
+        """See `IBuildBase`."""
+        # The given content is stored in the librarian, restricted as
+        # necessary according to the targeted archive's privacy.  The content
+        # object's 'upload_log' attribute will point to the
+        # `LibrarianFileAlias`.
+
         assert self.upload_log is None, (
             "Upload log information already exist and cannot be overridden.")
 
@@ -809,12 +895,12 @@ class BuildSet:
         except SQLObjectNotFound, e:
             raise NotFoundError(str(e))
 
-    def getPendingBuildsForArchSet(self, archserieses):
+    def getPendingBuildsForArchSet(self, archseries):
         """See `IBuildSet`."""
-        if not archserieses:
+        if not archseries:
             return None
 
-        archseries_ids = [d.id for d in archserieses]
+        archseries_ids = [d.id for d in archseries]
 
         return Build.select(
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
@@ -966,7 +1052,9 @@ class BuildSet:
         if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore", "Build.id"]
             clauseTables.append('BuildQueue')
-            condition_clauses.append('BuildQueue.build = Build.id')
+            clauseTables.append('BuildPackageJob')
+            condition_clauses.append('BuildPackageJob.build = Build.id')
+            condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
         elif status == BuildStatus.SUPERSEDED or status is None:
             orderBy = ["-Build.datecreated"]
         else:
@@ -1144,3 +1232,14 @@ class BuildSet:
         # this (pre_iter_hook()) method that will iterate over the
         # result set and force the query execution that way.
         return list(result_set)
+
+    def getByQueueEntry(self, queue_entry):
+        """See `IBuildSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            Build,
+            BuildPackageJob.build == Build.id,
+            BuildPackageJob.job == BuildQueue.jobID,
+            BuildQueue.job == queue_entry.job)
+
+        return result_set.one()

@@ -265,16 +265,18 @@ class Sprint(SQLBase):
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     # attendance
-    def attend(self, person, time_starts, time_ends):
+    def attend(self, person, time_starts, time_ends, is_physical):
         """See `ISprint`."""
         # first see if a relevant attendance exists, and if so, update it
         for attendance in self.attendances:
             if attendance.attendee.id == person.id:
                 attendance.time_starts = time_starts
                 attendance.time_ends = time_ends
+                attendance.is_physical = is_physical
                 return attendance
         # since no previous attendance existed, create a new one
-        return SprintAttendance(sprint=self, attendee=person,
+        return SprintAttendance(
+            sprint=self, attendee=person, is_physical=is_physical,
             time_starts=time_starts, time_ends=time_ends)
 
     def removeAttendance(self, person):

@@ -51,24 +51,22 @@ can use him to see builds from a buildd-admin perspective.
     ...     IPersonSet).getByName("launchpad-buildd-admins")
     >>> from lp.registry.interfaces.person import (
     ...     TeamMembershipStatus)
-    >>> buildd_admins.addMember(
+    >>> ignored = buildd_admins.addMember(
     ...     name12, reviewer=name12, status=TeamMembershipStatus.APPROVED)
 
     >>> flush_database_updates()
     >>> logout()
 
 So now we can go to frog's builder page and see what the page shows us.
-The status shown to an anonymous user hides the fact that it's building a
-private build:
+The status shown to an anonymous user hides the private source it is
+building.
 
     >>> anon_browser.open("http://launchpad.dev/+builds/frog")
     >>> print extract_text(find_main_content(anon_browser.contents))
     The frog builder...
     Current status
-    The frog builder
-    is deactivated.
+    Building private source
     ...
-
 
 Launchpad Administrators are allowed to see the build:
 
@@ -76,6 +74,7 @@ Launchpad Administrators are allowed to see the build:
     >>> print extract_text(find_main_content(admin_browser.contents))
     The frog builder...
     Current status
+    Building
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
     ...
 
@@ -86,7 +85,7 @@ Buildd Administrators are not allowed to see the build in the portlet:
     >>> print extract_text(find_main_content(name12_browser.contents))
     The frog builder...
     Current status
-    The frog builder is deactivated.
+    Building private source
     ...
 
 cprov is also allowed to see his own build:
@@ -97,6 +96,7 @@ cprov is also allowed to see his own build:
     >>> print extract_text(find_main_content(cprov_browser.contents))
     The frog builder...
     Current status
+    Building
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
     ...
 
@@ -229,7 +229,7 @@ An admin user can see builds even if they are private:
 
     >>> admin_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Register a new build machine
+    The Launchpad build farm
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
@@ -240,18 +240,18 @@ Launchpad Buildd admins cannot see private builds.
 
     >>> name12_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(name12_browser.contents))
-    Register a new build machine
+    The Launchpad build farm
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private build
+    frog  386        Building private source
     ...
 
 cprov can see his own private build:
 
     >>> cprov_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(cprov_browser.contents))
-    Register a new build machine
+    The Launchpad build farm
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
@@ -262,11 +262,12 @@ Anonymous users cannot see the private build:
 
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    1 available build machine, ...
+    The Launchpad build farm
+    2 available build machines, ...
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private build
+    frog  386        Building private source
     ...
 
 
@@ -326,7 +327,7 @@ Now the anonymous user can see the build:
     >>> anon_browser = setupBrowser()
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    2 available build machines, ...
+    The Launchpad build farm
     ...
     Name  Processor Status
     bob   386       Building i386 build of mozilla-firefox ...
@@ -337,7 +338,7 @@ Any other logged-in user will also see the build:
 
     >>> browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(browser.contents))
-    2 available build machines, ...
+    The Launchpad build farm
     ...
     Name  Processor Status
     bob   386       Building i386 build of mozilla-firefox ...

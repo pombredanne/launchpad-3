@@ -36,10 +36,12 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.archiveuploader.utils import determine_source_file_type
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.packagediff import (
+    PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.build import Build
@@ -51,7 +53,7 @@ from lp.soyuz.model.queue import (
 from lp.soyuz.scripts.queue import QueueActionError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
+    SourcePackageType, SourcePackageUrgency)
 
 
 def _filter_ubuntu_translation_file(filename):
@@ -104,8 +106,8 @@ class SourcePackageRelease(SQLBase):
     build_conflicts = StringCol(dbName='build_conflicts')
     build_conflicts_indep = StringCol(dbName='build_conflicts_indep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
-    format = EnumCol(dbName='format', schema=SourcePackageFormat,
-        default=SourcePackageFormat.DPKG, notNull=True)
+    format = EnumCol(dbName='format', schema=SourcePackageType,
+        default=SourcePackageType.DPKG, notNull=True)
     upload_distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='upload_distroseries')
     upload_archive = ForeignKey(
@@ -270,26 +272,13 @@ class SourcePackageRelease(SQLBase):
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
-        determined_filetype = None
-        if file.filename.endswith(".dsc"):
-            determined_filetype = SourcePackageFileType.DSC
-        elif file.filename.endswith(".orig.tar.gz"):
-            determined_filetype = SourcePackageFileType.ORIG
-        elif file.filename.endswith(".diff.gz"):
-            determined_filetype = SourcePackageFileType.DIFF
-        elif file.filename.endswith(".tar.gz"):
-            determined_filetype = SourcePackageFileType.TARBALL
+        return SourcePackageReleaseFile(
+            sourcepackagerelease=self,
+            filetype=determine_source_file_type(file.filename),
+            libraryfile=file)
 
-        return SourcePackageReleaseFile(sourcepackagerelease=self,
-                                        filetype=determined_filetype,
-                                        libraryfile=file)
-
-    def _getPackageSize(self):
-        """Get the size total (in KB) of files comprising this package.
-
-        Please note: empty packages (i.e. ones with no files or with
-        files that are all empty) have a size of zero.
-        """
+    def getPackageSize(self):
+        """See ISourcePackageRelease."""
         size_query = """
             SELECT
                 SUM(LibraryFileContent.filesize)/1024.0
@@ -333,60 +322,12 @@ class SourcePackageRelease(SQLBase):
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
 
-        # Always include the primary archive when looking for
-        # past build times (just in case that none can be found
-        # in a PPA or copy archive).
-        archives = [archive.id]
-        if archive.purpose != ArchivePurpose.PRIMARY:
-            archives.append(distroarchseries.main_archive.id)
-
-        # Look for all sourcepackagerelease instances that match the name.
-        matching_sprs = SourcePackageRelease.select("""
-            SourcePackageName.name = %s AND
-            SourcePackageRelease.sourcepackagename = SourcePackageName.id
-            """ % sqlvalues(self.name),
-            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
-
-        # Get the (successfully built) build records for this package.
-        completed_builds = Build.select("""
-            sourcepackagerelease IN %s AND
-            distroarchseries = %s AND
-            archive IN %s AND
-            buildstate = %s
-            """ % sqlvalues([spr.id for spr in matching_sprs],
-                            distroarchseries, archives,
-                            BuildStatus.FULLYBUILT),
-            orderBy=['-datebuilt', '-id'])
-
-        if completed_builds:
-            # Historic build data exists, use the most recent value.
-            most_recent_build = completed_builds[0]
-            estimated_build_duration = most_recent_build.buildduration
-        else:
-            # Estimate the build duration based on package size if no
-            # historic build data exists.
-
-            # Get the package size in KB.
-            package_size = self._getPackageSize()
-
-            if package_size > 0:
-                # Analysis of previous build data shows that a build rate
-                # of 6 KB/second is realistic. Furthermore we have to add
-                # another minute for generic build overhead.
-                estimate = int(package_size/6.0/60 + 1)
-            else:
-                # No historic build times and no package size available,
-                # assume a build time of 5 minutes.
-                estimate = 5
-            estimated_build_duration = datetime.timedelta(minutes=estimate)
-
         return Build(distroarchseries=distroarchseries,
                      sourcepackagerelease=self,
                      processor=processor,
                      buildstate=status,
                      datecreated=datecreated,
                      pocket=pocket,
-                     estimated_build_duration=estimated_build_duration,
                      archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
@@ -602,6 +543,14 @@ class SourcePackageRelease(SQLBase):
                 "%s was already requested by %s"
                 % (candidate.title, candidate.requester.displayname))
 
+        if self.sourcepackagename.name == 'udev':
+            # XXX 2009-11-23 Julian bug=314436
+            # Currently diff output for udev will fill disks.  It's
+            # disabled until diffutils is fixed in that bug.
+            status = PackageDiffStatus.FAILED
+        else:
+            status = PackageDiffStatus.PENDING
+
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
-            requester=requester)
+            requester=requester, status=status)

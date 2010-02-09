@@ -393,7 +393,7 @@
         user_is_official_translator view/user_is_official_translator;
         ">
       <metal:suggestion
-         use-macro="context/@@+translationmessage-macros/render-suggestion" />
+         use-macro="context/@@+translations-macros/render-suggestion" />
     </tal:imported_translation>
     <tal:shared_translation
       condition="translation_dictionary/shared_translation_message"
@@ -405,7 +405,7 @@
         user_is_official_translator view/user_is_official_translator;
         ">
       <metal:suggestion
-         use-macro="context/@@+translationmessage-macros/render-suggestion" />
+         use-macro="context/@@+translations-macros/render-suggestion" />
     </tal:shared_translation>
     <tal:locked condition="not:context/potmsgset/is_translation_credit">
       <tal:suggestions-title

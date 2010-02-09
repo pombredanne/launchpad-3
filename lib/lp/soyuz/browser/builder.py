@@ -32,16 +32,14 @@ from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.builder import IBuilderSet, IBuilder
+from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission, stepthrough)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from lazr.delegates import delegates
 from canonical.widgets import HiddenUserWidget
 
 
@@ -120,41 +118,22 @@ class BuilderOverviewMenu(ApplicationMenu):
         return Link('+mode', text, icon='edit')
 
 
-class CommonBuilderView(LaunchpadView):
-    """Common builder methods used in this file."""
-
-    def overrideHiddenBuilder(self, builder):
-        """Override the builder to HiddenBuilder as necessary.
-
-        HiddenBuilder is used if the user does not have permission to
-        see the build on the builder.
-        """
-        current_job = builder.currentjob
-        if (current_job and
-            not check_permission('launchpad.View', current_job.build)):
-            # Cloak the builder.
-            return HiddenBuilder(builder)
-        else:
-            # The build is public, don't cloak it.
-            return builder
-
-
-class BuilderSetView(CommonBuilderView):
-    """Default BuilderSet view class
-
-    Simply provides CommonBuilderView for the BuilderSet pagetemplate.
-    """
+class BuilderSetView(LaunchpadView):
+    """Default BuilderSet view class."""
     __used_for__ = IBuilderSet
+
+    @property
+    def label(self):
+        return self.context.title
+
+    @property
+    def page_title(self):
+        return self.label
 
     @cachedproperty
     def builders(self):
-        """Return all active builders, with private builds cloaked.
-
-        Any builders building a private build will be cloaked and returned
-        as a HiddenBuilder.
-        """
-        builders = self.context.getBuilders()
-        return [self.overrideHiddenBuilder(builder) for builder in builders]
+        """All active builders"""
+        return list(self.context.getBuilders())
 
     @property
     def number_of_registered_builders(self):
@@ -205,6 +184,7 @@ class BuilderGroup:
         else:
             self.duration = duration
 
+
 class BuilderCategory:
     """A category of builders.
 
@@ -246,62 +226,23 @@ class BuilderCategory:
             self._builder_groups.append(builder_group)
 
 
-class HiddenBuilder:
-    """Overrides a IBuilder building a private job.
-
-    This class modifies IBuilder attributes that should not be exposed
-    while building a job for private job (private PPA or Security).
-    """
-    delegates(IBuilder)
-
-    failnotes = None
-    currentjob = None
-    builderok = False
-    status = 'Building private build'
-
-    def __init__(self, context):
-        self.context = context
-
-    # This method is required because the builder history page will have this
-    # cloaked context if the builder is currently processing a private build.
-    def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
-        user=None):
-        """See `IHasBuildRecords`."""
-        return self.context.getBuildRecords(
-            build_state, name, arch_tag, user)
-
-
-class BuilderView(CommonBuilderView, BuildRecordsView):
+class BuilderView(LaunchpadView):
     """Default Builder view class
 
     Implements useful actions for the page template.
     """
     __used_for__ = IBuilder
 
-    def __init__(self, context, request):
-        context = self.overrideHiddenBuilder(context)
-        super(BuilderView, self).__init__(context, request)
-
-    @property
-    def default_build_state(self):
-        """Present all jobs by default."""
-        return None
-
-    @property
-    def show_builder_info(self):
-        """Hide Builder info, see BuildRecordsView for further details"""
-        return False
-
     @property
     def current_build_duration(self):
         """Return the delta representing the duration of the current job."""
         if (self.context.currentjob is None or
-            self.context.currentjob.buildstart is None):
+            self.context.currentjob.date_started is None):
             return None
         else:
             UTC = pytz.timezone('UTC')
-            buildstart = self.context.currentjob.buildstart
-            return datetime.datetime.now(UTC) - buildstart
+            date_started = self.context.currentjob.date_started
+            return datetime.datetime.now(UTC) - date_started
 
     @property
     def page_title(self):
@@ -318,14 +259,26 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
             return "Switch to manual-mode"
 
 
-class BuilderHistoryView(BuilderView):
+class BuilderHistoryView(BuildRecordsView):
     """This class exists only to override the page_title."""
+
+    __used_for__ = IBuilder
 
     @property
     def page_title(self):
         """Return a relevant page title for this view."""
         return smartquote(
             'Build history for "%s"' % self.context.title)
+
+    @property
+    def default_build_state(self):
+        """Present all jobs by default."""
+        return None
+
+    @property
+    def show_builder_info(self):
+        """Hide Builder info, see BuildRecordsView for further details"""
+        return False
 
 
 class BuilderSetAddView(LaunchpadFormView):

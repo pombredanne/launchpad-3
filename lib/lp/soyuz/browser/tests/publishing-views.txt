@@ -89,10 +89,10 @@ inspected.
     ...     name="+listing-archive-detailed")
 
     >>> ppa_source_view.published_source_and_binary_files
-    [{'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox-0.9.2.orig.tar.gz',
+    [{'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz',
       'class': 'source',
       'filesize': 9922560,
-      'filename': u'firefox-0.9.2.orig.tar.gz'},
+      'filename': u'firefox_0.9.2.orig.tar.gz'},
      {'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/iceweasel-1.0.dsc',
       'class': 'source',
       'filesize': 123,

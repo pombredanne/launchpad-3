@@ -15,6 +15,8 @@ from canonical.lazr.utils import smartquote
 class SourcePackageChangelogView:
     """View class for source package change logs."""
 
+    page_title = "Change log"
+
     @property
     def label(self):
         """<h1> for the change log page."""

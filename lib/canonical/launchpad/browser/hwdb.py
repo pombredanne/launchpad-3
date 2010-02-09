@@ -35,6 +35,8 @@ class HWDBUploadView(LaunchpadFormView):
     """View class for hardware database submissions."""
 
     schema = IHWSubmissionForm
+    label = 'Hardware Database Submission'
+    page_title = 'Submit New Data to the Launchpad Hardware Database'
 
     @action(u'Upload', name='upload')
     def upload_action(self, action, data):
@@ -55,7 +57,7 @@ class HWDBUploadView(LaunchpadFormView):
             info = (HWSubmissionMissingFields,
                     'Missing form fields: %s' % missing_fields, None)
             errorUtility = getUtility(IErrorReportingUtility)
-            errorUtility.raising(info, self.request)
+            errorUtility.handling(info, self.request)
             self.addCustomHeader(
                 'Error: Required fields not contained in POST data: '
                 + missing_fields)
@@ -149,6 +151,14 @@ class HWDBUploadView(LaunchpadFormView):
 
 class HWDBPersonSubmissionsView(LaunchpadView):
     """View class for preseting HWDB submissions by a person."""
+
+    @property
+    def label(self):
+        return 'Hardware submissions for %s' % (self.context.title,)
+
+    @property
+    def page_title(self):
+        return "Hardware Database submissions by %s" % (self.context.title,)
 
     def getAllBatched(self):
         """Return the list of HWDB submissions made by this person."""
@@ -255,6 +265,7 @@ class HWDBFingerprintSetView(LaunchpadView):
     """View class for lists of HWDB submissions for a system fingerprint."""
 
     implements(IBrowserPublisher)
+    label = page_title = "Hardware Database submissions for a fingerprint"
 
     template = ViewPageTemplateFile(
         '../templates/hwdb-fingerprint-submissions.pt')

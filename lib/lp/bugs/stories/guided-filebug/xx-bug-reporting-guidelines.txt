@@ -89,40 +89,6 @@ which the guidelines are taken from the respective distribution.
     The version of Ubuntu you're using.
 
 
-== Other contexts ==
-
-When filing a bug through the bugs front page the guidelines are also
-shown.
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/bugs/+filebug')
-    >>> user_browser.getControl('Distribution').selected = True
-    >>> user_browser.getControl(
-    ...     name='field.bugtarget.distribution').value = ['ubuntu']
-    >>> user_browser.getControl(
-    ...     name='field.bugtarget.package').value = "alsa-utils"
-    >>> user_browser.getControl('Summary').value = "It doesn't work"
-    >>> user_browser.getControl('Continue').click()
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bug-reporting-guidelines'))
-    alsa-utils (Ubuntu) guidelines:
-    The version of alsa-utils in Ubuntu you're using.
-    Ubuntu guidelines:
-    The version of Ubuntu you're using.
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/bugs/+filebug')
-    >>> user_browser.getControl('Project').selected = True
-    >>> user_browser.getControl(
-    ...     name='field.bugtarget.product').value = "firefox"
-    >>> user_browser.getControl('Summary').value = "It doesn't work"
-    >>> user_browser.getControl('Continue').click()
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Mozilla Firefox guidelines:
-    The version of Firefox you're using.
-
-
 == Limitations ==
 
 There are some limitations to where we can show guidelines, because

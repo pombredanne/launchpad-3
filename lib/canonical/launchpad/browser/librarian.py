@@ -130,7 +130,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         chain with this view. If the context file is public return the
         appropriate `RedirectionView` for its HTTP url.
         """
-        assert not self.context.content.deleted, (
+        assert not self.context.deleted, (
             "StreamOrRedirectLibraryFileAliasView can not operate on "
             "deleted librarian files, since their URL is undefined.")
 
@@ -170,7 +170,7 @@ class FileNavigationMixin:
         library_file  = self.context.getFileByName(filename)
 
         # Deleted library files result in NotFound-like error.
-        if library_file.content.deleted:
+        if library_file.deleted:
             raise DeletedProxiedLibraryFileAlias(filename, self.context)
 
         return StreamOrRedirectLibraryFileAliasView(
@@ -199,7 +199,7 @@ class ProxiedLibraryFileAlias:
         Mask webservice requests if it's the case, so the returned URL will
         be always relative to the parent webapp URL.
         """
-        if self.context.content.deleted:
+        if self.context.deleted:
             return None
 
         request = get_current_browser_request()

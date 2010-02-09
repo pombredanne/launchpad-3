@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -80,7 +80,7 @@ def main():
                 for archive in distribution.all_distro_archives]
 
         for archive, description in target_archives:
-            for distroseries in distribution.serieses:
+            for distroseries in distribution.series:
 
                 log.debug("Processing queue for %s %s" % (
                         distroseries.name, description))

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import os
+import re
 from subprocess import PIPE
 import unittest
 
@@ -30,7 +31,35 @@ class TestLaunchpadServe(TestCaseWithTransport):
 
     def assertFinishedCleanly(self, result):
         """Assert that a server process finished cleanly."""
-        self.assertEqual((0, '', ''), tuple(result))
+        # XXX gary 2009-10-15 bug 316192
+        # Ideally, this method would only be this single line:
+        #
+        # self.assertEqual((0, '', ''), tuple(result))
+        #
+        # However, because of the bug above, stderr (the last value) can
+        # include complaints that bzr tried to import certain plugins but
+        # was unable to.  This can make the last value into something like
+        # this (concatenate the strings):
+        #
+        #  "No module named dbus.bus\n"
+        #  "Unable to load plugin 'dbus' from "
+        #    "'/usr/lib/python2.4/site-packages/bzrlib/plugins'\n"
+        #  "No module named dbus.bus\n"
+        #  "Unable to load plugin 'avahi' from "
+        #    "'/usr/lib/python2.4/site-packages/bzrlib/plugins'\n"
+        #
+        # Therefore, for now, we allow stderr to have messages like
+        # that, with a regex.  A fix for the bzr bug mentioned above has
+        # already been released, so hopefully soon this method can
+        # return to the single assert above, this module will no longer
+        # have to import re, and this comment can be consigned to
+        # history.
+        self.assertEqual(0, result[0]) # the return code
+        self.assertEqual('', result[1]) # stdout
+        self.failUnless(re.match(
+            r"(No module named \S+\n|"
+               "Unable to load plugin \S+ from '/usr/lib/python[^']+'\n)*$",
+            result[2]))
 
     def get_python_path(self):
         """Return the path to the Python interpreter."""

@@ -32,11 +32,15 @@ __all__ = [
     'LocationField',
     'LogoImageUpload',
     'MugshotImageUpload',
+    'NoneableDescription',
     'NoneableTextLine',
     'ParticipatingPersonChoice',
     'PasswordField',
+    'PersonChoice',
     'PillarAliases',
     'PillarNameField',
+    'PrivateMembershipTeamNotAllowed',
+    'PrivateTeamNotAllowed',
     'ProductBugTracker',
     'ProductNameField',
     'PublicPersonChoice',
@@ -49,8 +53,8 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
-    'is_private_membership',
-    'is_valid_public_person',
+    'is_private_membership_person',
+    'is_public_person',
     ]
 
 
@@ -201,10 +205,15 @@ class IBaseImageUpload(IBytes):
 class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
+    def set(self, object, value):
+        """Strip the value and pass up."""
+        if value is not None:
+            value = value.strip()
+        super(StrippedTextLine, self).set(object, value)
+
 
 class NoneableTextLine(StrippedTextLine):
     implements(INoneableTextLine)
-
 
 # Title
 # A field to capture a launchpad object title
@@ -212,15 +221,29 @@ class Title(StrippedTextLine):
     implements(ITitle)
 
 
+class StrippableText(Text):
+    """A text that can be configured to strip when setting."""
+
+    def __init__(self, strip_text=False, **kwargs):
+        super(StrippableText, self).__init__(**kwargs)
+        self.strip_text = strip_text
+
+    def set(self, object, value):
+        """Strip the value and pass up."""
+        if self.strip_text and value is not None:
+            value = value.strip()
+        super(StrippableText, self).set(object, value)
+
+
 # Summary
 # A field capture a Launchpad object summary
-class Summary(Text):
+class Summary(StrippableText):
     implements(ISummary)
 
 
 # Description
 # A field capture a Launchpad object description
-class Description(Text):
+class Description(StrippableText):
     implements(IDescription)
 
 
@@ -230,7 +253,7 @@ class NoneableDescription(Description):
 
 # Whiteboard
 # A field capture a Launchpad object whiteboard
-class Whiteboard(Text):
+class Whiteboard(StrippableText):
     implements(IWhiteboard)
 
 
@@ -735,41 +758,52 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-def is_valid_public_person(person):
+def is_public_person(person):
     """Return True if the person is public."""
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
-        raise ConstraintNotSatisfied("Expected a person.")
-    if person.visibility == PersonVisibility.PUBLIC:
-        return True
-    else:
-        # PRIVATE_MEMBERSHIP or PRIVATE.
         return False
+    return person.visibility == PersonVisibility.PUBLIC
 
 
-def is_private_membership(person):
+def is_private_membership_person(person):
     """True if the person/team has private membership visibility."""
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
-        raise ConstraintNotSatisfied("Expected a person.")
-    if person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
-        # PRIVATE_MEMBERSHIP.
-        return True
-    else:
-        # PUBLIC or PRIVATE.
         return False
+    return person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP
 
 
-class PublicPersonChoice(Choice):
-    """A person or team who is public."""
+class PrivateTeamNotAllowed(ConstraintNotSatisfied):
+    __doc__ = _("A private team is not allowed.")
+
+
+class PrivateMembershipTeamNotAllowed(ConstraintNotSatisfied):
+    __doc__ = _("A private-membership team is not allowed.")
+
+
+class PersonChoice(Choice):
+    """A person or team.
+
+    This is useful as a superclass and provides a clearer error message than
+    "Constraint not satisfied".
+    """
     implements(IReferenceChoice)
     schema = IObject    # Will be set to IPerson once IPerson is defined.
 
+
+class PublicPersonChoice(PersonChoice):
+    """A person or team who is public."""
+
     def constraint(self, value):
-        return is_valid_public_person(value)
+        if is_public_person(value):
+            return True
+        else:
+            # The vocabulary prevents the revealing of private team names.
+            raise PrivateTeamNotAllowed(value)
 
 
-class ParticipatingPersonChoice(Choice):
+class ParticipatingPersonChoice(PersonChoice):
     """A person or team who is not a private membership team.
 
     A person can participate in all contexts.  A PRIVATE team can participate
@@ -777,8 +811,10 @@ class ParticipatingPersonChoice(Choice):
     user.  A PRIVATE MEMBERSHIP team is severely limited in the roles in which
     it can participate.
     """
-    implements(IReferenceChoice)
-    schema = IObject    # Will be set to IPerson once IPerson is defined.
 
     def constraint(self, value):
-        return not is_private_membership(value)
+        if not is_private_membership_person(value):
+            return True
+        else:
+            # The vocabulary prevents the revealing of private team names.
+            raise PrivateMembershipTeamNotAllowed(value)

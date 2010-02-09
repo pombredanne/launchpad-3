@@ -26,7 +26,7 @@ bug listing.
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> print anon_browser.title
-    Search all bug reports
+    Search
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
       mozilla-firefox (Debian) Unknown New
@@ -52,7 +52,7 @@ will be searched.
     >>> anon_browser.getControl(name='field.scope.target').value = 'evolution'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
-    'Search all bug reports'
+    'Search'
 
 The same is of course true if the target widget contains a non-existant
 project name.
@@ -63,7 +63,7 @@ project name.
     >>> anon_browser.getControl(name='field.scope.target').value = 'invalid'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
-    'Search all bug reports'
+    'Search'
 
 It's also possible to go to the search page directly, without submitting
 the form at the front page.
@@ -71,7 +71,7 @@ the form at the front page.
     >>> search_url, query = anon_browser.url.split('?', 1)
     >>> anon_browser.open(search_url)
     >>> anon_browser.title
-    'Search all bug reports'
+    'Search'
 
 == Searching one project ==
 
@@ -128,7 +128,7 @@ project.
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> print anon_browser.title
-    +bugs : Bugs in evolution : Evolution
+    Bugs in The Evolution Groupware...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/evolution/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
@@ -158,7 +158,7 @@ project.
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> print anon_browser.title
-    +bugs : Bugs in ubuntu : Ubuntu
+    Bugs in Ubuntu Linux...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)

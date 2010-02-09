@@ -26,7 +26,7 @@ release in the series.
     http://launchpad.dev/firefox/+milestone/1.0/+addrelease
 
     >>> print browser.title
-    +addrelease : Mozilla Firefox
+    Create a new release for Mozilla Firefox...
 
 Links to previous releases from the series are listed.
 
@@ -51,12 +51,6 @@ After creating the release, Sample Person sees the release page.
 
     >>> browser.url
     'http://launchpad.dev/firefox/+milestone/1.0'
-
-There is a warning that the milestone has been deactivated.
-
-    >>> print get_feedback_messages(browser.contents)
-    [u'The 1.0 milestone for this project release was deactivated so
-       that bugs and blueprints cannot be associated with this release.']
 
 The release's information is displayed in the page.
 
@@ -115,12 +109,12 @@ The release owner can edit the release via its +edit form:
     >>> browser.open('http://launchpad.dev/firefox/trunk/1.0')
     >>> browser.getLink('Change release details', index=1).click()
     >>> print browser.title
-    +edit : Series trunk : Mozilla Firefox
+    Edit Mozilla Firefox 1.0 release details...
 
     >>> browser.getControl('Changelog').value = 'This is not a joke.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Series trunk : Mozilla Firefox
+    1.0 : Series trunk : Mozilla Firefox
 
 
 == Editing permissions extend to product and series owners ==
@@ -154,12 +148,12 @@ Celso is a member of ubuntu-team, so he can edit this release too:
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
     >>> browser.getLink('Change release details', index=0).click()
     >>> print browser.title
-    +edit : Series trunk : Tomcat
+    Edit Tomcat 0.6.6.6 release details...
 
     >>> browser.getControl('Changelog').value = 'Fixes 3 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Series trunk : Tomcat
+    0.6.6.6 : Series trunk : Tomcat
 
 And if no-priv owns the series...
 
@@ -175,9 +169,9 @@ others:
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
     >>> browser.getLink('Change release details', index=0).click()
     >>> print browser.title
-    +edit : Series trunk : Tomcat
+    Edit Tomcat 0.6.6.6 release details...
 
     >>> browser.getControl('Changelog').value = 'Fixes 4 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Series trunk : Tomcat
+    0.6.6.6 : Series trunk : Tomcat

@@ -15,7 +15,7 @@ and permissions on a project.
 
     >>> gnome_owner_browser.getLink('Change permissions').click()
     >>> print gnome_owner_browser.title
-    +changetranslators : Translations : GNOME
+    Permissions and policies...
 
 Other users don't see the "Change translators" link and aren't allowed
 to access the page it leads to.

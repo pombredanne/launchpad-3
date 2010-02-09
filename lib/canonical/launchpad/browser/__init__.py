@@ -48,7 +48,6 @@ from lp.registry.browser.mentoringoffer import *
 from canonical.launchpad.browser.oauth import *
 from canonical.launchpad.browser.objectreassignment import *
 from canonical.launchpad.browser.packagerelationship import *
-from canonical.launchpad.browser.packaging import *
 from lp.registry.browser.peoplemerge import *
 from lp.registry.browser.poll import *
 from lp.soyuz.browser.publishedpackage import *

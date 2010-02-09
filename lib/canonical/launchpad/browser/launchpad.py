@@ -13,12 +13,14 @@ __all__ = [
     'IcingContribFolder',
     'IcingFolder',
     'LaunchpadImageFolder',
+    'LaunchpadGraphics',
     'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
     'NavigationMenuTabs',
+    'RDFIndexView',
     'SoftTimeoutView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
@@ -34,10 +36,12 @@ import time
 import urllib
 from datetime import timedelta, datetime
 
+from zope import i18n
 from zope.app import zapi
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
+from zope.i18nmessageid import Message
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
@@ -50,6 +54,7 @@ from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.layers import WebServiceLayer
 
+from lp.app.interfaces.headings import IMajorHeadingView
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
@@ -59,12 +64,13 @@ from lp.code.interfaces.branchnamespace import InvalidNamespace
 from lp.code.interfaces.linkedbranch import (
     CannotHaveLinkedBranch, NoLinkedBranch)
 from lp.bugs.interfaces.bug import IBugSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
@@ -74,7 +80,6 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
 from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
@@ -98,11 +103,12 @@ from canonical.launchpad.webapp import (
     stepto)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from lazr.uri import URI
+from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -250,11 +256,20 @@ class Hierarchy(LaunchpadView):
                 if extra_breadcrumb is not None:
                     breadcrumbs.insert(idx + 1, extra_breadcrumb)
                     break
-        if len(breadcrumbs):
+        if len(breadcrumbs) > 0:
             page_crumb = self.makeBreadcrumbForRequestedPage()
             if page_crumb:
                 breadcrumbs.append(page_crumb)
         return breadcrumbs
+
+    @property
+    def _naked_context_view(self):
+        """Return the unproxied view for the context of the hierarchy."""
+        from zope.security.proxy import removeSecurityProxy
+        if len(self.request.traversed_objects) > 0:
+            return removeSecurityProxy(self.request.traversed_objects[-1])
+        else:
+            return None
 
     def makeBreadcrumbForRequestedPage(self):
         """Return an `IBreadcrumb` for the requested page.
@@ -263,16 +278,28 @@ class Hierarchy(LaunchpadView):
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the requested page (as specified in self.request) is the default
-        one for the last traversed object, return None.
+        one for our parent view's context, return None.
         """
         url = self.request.getURL()
-        last_segment = URI(url).path.split('/')[-1]
-        default_view_name = zapi.getDefaultViewName(
-            self.request.traversed_objects[-1], self.request)
-        if last_segment.startswith('+') and last_segment != default_view_name:
+        obj = self.request.traversed_objects[-2]
+        default_view_name = zapi.getDefaultViewName(obj, self.request)
+        view = self._naked_context_view
+        if view.__name__ != default_view_name:
+            title = getattr(view, 'page_title', None)
+            if title is None:
+                title = getattr(view, 'label', None)
+            if title is None or title == '':
+                template = getattr(view, 'template', None)
+                if template is None:
+                    template = view.index
+                template_api = PageTemplateContextsAPI(
+                    dict(context=obj, template=template, view=view))
+                title = template_api.pagetitle()
+            if isinstance(title, Message):
+                title = i18n.translate(title, context=self.request)
             breadcrumb = Breadcrumb(None)
             breadcrumb._url = url
-            breadcrumb.text = last_segment
+            breadcrumb.text = title
             return breadcrumb
         else:
             return None
@@ -282,7 +309,11 @@ class Hierarchy(LaunchpadView):
         """Return whether the breadcrumbs should be displayed."""
         # If there is only one breadcrumb then it does not make sense
         # to display it as it will simply repeat the context.title.
-        return len(self.items) > 1
+        # If the view is an IMajorHeadingView then we do not want
+        # to display breadcrumbs either.
+        has_major_heading = IMajorHeadingView.providedBy(
+            self._naked_context_view)
+        return len(self.items) > 1 and not has_major_heading
 
 
 class MaintenanceMessage:
@@ -368,7 +399,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = ''
-        text = 'Code'
+        text = 'Branches'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
@@ -521,7 +552,6 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
-        '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,
@@ -564,14 +594,20 @@ class LaunchpadRootNavigation(Navigation):
                     status=301)
             else:
                 person = getUtility(IPersonSet).getByName(name[1:])
+                if person is None:
+                    return person
                 # Check to see if this is a team, and if so, whether the
                 # logged in user is allowed to view the team, by virtue of
                 # team membership or Launchpad administration.
-                if (person is None or
-                    not person.is_team or
-                    check_permission('launchpad.View', person)):
-                    return person
-                raise NotFound(self.context, name)
+                if (person.is_team
+                    and not check_permission('launchpad.View', person)):
+                    raise NotFound(self.context, name)
+                # Only admins are permitted to see suspended users.
+                if person.account_status == AccountStatus.SUSPENDED:
+                    if not check_permission('launchpad.Admin', person):
+                        raise GoneError(
+                            'User is suspended: %s' % name)
+                return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
@@ -908,7 +944,7 @@ class ApplicationButtons(LaunchpadView):
         Button(blueprints="Track blueprints through approval and "
             "implementation."),
         Button(translations="Localize software into your favorite language."),
-        Button(answers="Ask and answer questions about software.")
+        Button(answers="Ask and answer questions about software."),
         ]
 
     def render(self):
@@ -954,6 +990,10 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
+
+
+class LaunchpadGraphics(LaunchpadView):
+    label = page_title = 'Overview of Launchpad graphics and icons'
 
 
 def get_launchpad_views(cookies):
@@ -1004,3 +1044,8 @@ class DoesNotExistView:
 
     def __call__(self):
         raise NotFound(self.context, self.__name__)
+
+
+class RDFIndexView(LaunchpadView):
+    """View for /rdf page."""
+    page_title = label = "Launchpad RDF"

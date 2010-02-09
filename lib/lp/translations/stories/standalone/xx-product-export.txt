@@ -25,7 +25,7 @@ The translations export is implemented by the same machinery that does
 it for source packages (tested and documented separately).
 
     >>> print user_browser.title
-    +export : Translations : Series trunk : Evolution
+    Download : Translations...
 
     >>> user_browser.getControl('Request Download').click()
     >>> for message in get_feedback_messages(user_browser.contents):

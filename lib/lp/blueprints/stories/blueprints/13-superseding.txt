@@ -34,6 +34,8 @@ mind.
     >>> back_link = browser.getLink('Extension Manager System Upgrades')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
+    >>> browser.getLink('Cancel').url
+    'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
 
 Next, we will POST to that form, setting the spec which supersedes this one:
 

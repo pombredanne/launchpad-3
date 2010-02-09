@@ -56,6 +56,31 @@ without, mapped members.
     </participants>
     <BLANKLINE>
 
+The team index page has a map with data limited to 24 members and uses
+a slightly different URL.  We can see the URL works though there isn't
+enough test data to demonstrate the limit but that is done in the view
+test.
+
+    >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdataltd')
+    >>> print anon_browser.contents
+    <?xml version="1.0"...
+    <participants>
+      <!--
+        This collection of team location data is (c) Canonical Ltd and
+        contributors, and the format may be changed at any time.
+      -->
+      <participant
+        displayname="Colin Watson"
+        name="kamion"
+        logo_html="&lt;img alt=&quot;&quot; width=&quot;64&quot; height=&quot;64&quot; src=&quot;/@@/person-logo&quot; /&gt;"
+        url="/~kamion"
+        local_time="..."
+        lat="52.2"
+        lng="0.3"/>
+    </participants>
+    <BLANKLINE>
+
+
 It doesn't make sense to edit the location of the team itself, not even
 if we are an admin, so a team's +editlocation page will simply redirect
 to +map.

@@ -24,6 +24,7 @@ from canonical.cachedproperty import cachedproperty
 
 from lp.registry.interfaces.announcement import IAnnouncement
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
@@ -102,9 +103,8 @@ class AnnouncementFormMixin:
     """A mixin to provide the common form features."""
 
     @property
-    def page_title(self):
-        """The html page title."""
-        return self.label
+    def label(self):
+        return self.context.title
 
     @property
     def cancel_url(self):
@@ -127,6 +127,7 @@ class AnnouncementAddView(LaunchpadFormView):
 
     schema = AddAnnouncementForm
     label = "Make an announcement"
+    page_title = label
 
     custom_widget('publication_date', AnnouncementDateWidget)
 
@@ -157,7 +158,7 @@ class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
 
     schema = AddAnnouncementForm
     field_names = ['title', 'summary', 'url', ]
-    label = _('Modify this announcement')
+    page_title = 'Modify announcement'
 
     @property
     def initial_values(self):
@@ -189,7 +190,7 @@ class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
 
     schema = AnnouncementRetargetForm
     field_names = ['target']
-    label = _('Move this announcement to a different project')
+    page_title = 'Move announcement'
 
     def validate(self, data):
         """Ensure that the person can publish announcement at the new
@@ -224,7 +225,7 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
 
     schema = AddAnnouncementForm
     field_names = ['publication_date']
-    label = _('Publish this announcement')
+    page_title = 'Publish announcement'
 
     custom_widget('publication_date', AnnouncementDateWidget)
 
@@ -239,7 +240,7 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to unpublish an announcement."""
 
     schema = IAnnouncement
-    label = _('Retract this announcement')
+    page_title = 'Retract announcement'
 
     @action(_('Retract'), name='retract')
     def retract_action(self, action, data):
@@ -251,7 +252,7 @@ class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
     """A view to delete an annoucement."""
 
     schema = IAnnouncement
-    label = _('Delete this announcement')
+    page_title = 'Delete announcement'
 
     @action(_("Delete"), name="delete", validator='validate_cancel')
     def action_delete(self, action, data):
@@ -263,7 +264,7 @@ class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     """A view class for pillars which have announcements."""
     implements(IAnnouncementCreateMenu)
 
-    batch_size = 5
+    batch_size = config.launchpad.announcement_batch_size
 
     @cachedproperty
     def feed_url(self):
@@ -309,6 +310,13 @@ class AnnouncementSetView(HasAnnouncementsView):
         RootAnnouncementsFeedLink,
         )
 
+    page_title = 'Announcements from all projects hosted in Launchpad'
+    label = page_title
+
 
 class AnnouncementView(LaunchpadView):
     """A view class for a single announcement."""
+
+    @property
+    def label(self):
+        return self.context.title

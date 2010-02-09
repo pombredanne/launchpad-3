@@ -124,22 +124,9 @@ class BuildView(LaunchpadView):
     """Auxiliary view class for IBuild"""
     __used_for__ = IBuild
 
-    def retry_build(self):
-        """Check user confirmation and perform the build record retry."""
-        if not self.context.can_be_retried:
-            self.request.response.addErrorNotification(
-                'Build can not be retried')
-        else:
-            action = self.request.form.get('RETRY', None)
-            # No action, return None to present the form again.
-            if action is None:
-                return
-
-            # Invoke context method to retry the build record.
-            self.context.retry()
-            self.request.response.addInfoNotification('Build record active')
-
-        self.request.response.redirect(canonical_url(self.context))
+    @property
+    def label(self):
+        return self.context.title
 
     @property
     def user_can_retry_build(self):
@@ -204,16 +191,48 @@ class BuildView(LaunchpadView):
         files = []
         for package in self.context.binarypackages:
             for file in package.files:
-                files.append(
-                    ProxiedLibraryFileAlias(file.libraryfile, self.context))
+                if file.libraryfile.deleted is False:
+                    alias = ProxiedLibraryFileAlias(
+                        file.libraryfile, self.context)
+                    files.append(alias)
 
         return files
+
+class BuildRetryView(BuildView):
+    """View class for retrying `IBuild`s"""
+
+    __used_for__ = IBuild
+
+    @property
+    def label(self):
+        return 'Retry %s' % self.context.title
+
+    def retry_build(self):
+        """Check user confirmation and perform the build record retry."""
+        if not self.context.can_be_retried:
+            self.request.response.addErrorNotification(
+                'Build can not be retried')
+        else:
+            action = self.request.form.get('RETRY', None)
+            # No action, return None to present the form again.
+            if action is None:
+                return
+
+            # Invoke context method to retry the build record.
+            self.context.retry()
+            self.request.response.addInfoNotification('Build record active')
+
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""
 
     schema = IBuildRescoreForm
+
+    @property
+    def label(self):
+        return 'Rescore %s' % self.context.title
 
     def initialize(self):
         """See `ILaunchpadFormView`.
@@ -271,10 +290,10 @@ def setupCompleteBuilds(batch):
     prefetched_data = dict()
     build_ids = [build.id for build in builds]
     results = getUtility(IBuildQueueSet).getForBuilds(build_ids)
-    for (buildqueue, builder) in results:
+    for (buildqueue, _builder, build_job) in results:
         # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
-        prefetched_data[buildqueue.build.id] = buildqueue
+        prefetched_data[build_job.build.id] = buildqueue
 
     complete_builds = []
     for build in builds:
@@ -336,7 +355,7 @@ class BuildRecordsView(LaunchpadView):
     def architecture_options(self):
         """Return the architecture options for the context."""
         # Guard against contexts that cannot tell us the available
-        # distroarchserieses.
+        # distroarchseries.
         if safe_hasattr(self.context, 'architectures') is False:
             return []
 

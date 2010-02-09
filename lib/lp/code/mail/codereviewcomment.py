@@ -52,7 +52,8 @@ class CodeReviewCommentMailer(BMPMailer):
                 else:
                     content_type = part['content-type']
                 if (filename, content_type) in include_attachments:
-                    self.attachments.append(part)
+                    self.attachments.append(
+                        (part.get_payload(), filename, content_type))
         self._generateBodyBits()
 
     @classmethod
@@ -132,6 +133,7 @@ class CodeReviewCommentMailer(BMPMailer):
     def _addAttachments(self, ctrl, email):
         """Add the attachments from the original message."""
         # Only reattach the display_aliases.
-        for attachment in self.attachments:
+        for content, content_type, filename in self.attachments:
             # Append directly to the controller's list.
-            ctrl.attachments.append(attachment)
+            ctrl.addAttachment(
+                content, content_type=content_type, filename=filename)

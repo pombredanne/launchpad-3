@@ -143,7 +143,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IRootContext):
         """
 
     # subscription-related methods
-    def attend(person, time_starts, time_ends):
+    def attend(person, time_starts, time_ends, is_physical):
         """Record that this person will be attending the Sprint."""
 
     def removeAttendance(person):

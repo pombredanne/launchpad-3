@@ -8,9 +8,10 @@ Also define utilities that manipulate layers.
 
 __metaclass__ = type
 
-from zope.interface import directlyProvides, directlyProvidedBy, Interface
+from zope.interface import (
+    alsoProvides, directlyProvides, directlyProvidedBy, Interface)
 from zope.publisher.interfaces.browser import (
-    IBrowserRequest, IDefaultBrowserLayer)
+    IBrowserRequest, IDefaultBrowserLayer, IBrowserSkinType)
 
 from lazr.restful.interfaces import IWebServiceLayer
 
@@ -47,6 +48,7 @@ BlueprintsLayer = BlueprintLayer
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
 
+
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 
@@ -69,6 +71,10 @@ class PageTestLayer(LaunchpadLayer):
     The SystemErrorView base class looks at the request to see if it provides
     this interface.  If so, it renders tracebacks as plain text.
     """
+# A few tests register this interface directly as a layer, bypassing the zcml
+# machinery.  This means that they don't get the proper SkinType interface
+# applied to them.  We add it here for convenience.
+alsoProvides(PageTestLayer, IBrowserSkinType)
 
 
 class FeedsLayer(LaunchpadLayer):

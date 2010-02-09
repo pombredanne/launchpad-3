@@ -10,10 +10,8 @@
 <body>
 
 <div metal:fill-slot="main">
-  <h1>Publishing history of <tal:title content="context/title"/></h1>
 
   <div class="top-portlet">
-
     <table id="publishing-summary" class="listing">
        <thead>
          <tr>
@@ -33,7 +31,6 @@
          </tal:block>
        </tbody>
     </table>
-
   </div>
 
   <p>

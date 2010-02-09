@@ -159,7 +159,7 @@ class MaloneApplication:
     def latest_bugs(self):
         user = getUtility(ILaunchBag).user
         return getUtility(IBugSet).searchAsUser(
-            user=user, orderBy='-datecreated', limit=5)
+            user=user, orderBy=['-datecreated'], limit=5)
 
     def default_bug_list(self, user=None):
         return getUtility(IBugSet).searchAsUser(user)

@@ -83,9 +83,9 @@ Watermark and breadcrumbs.
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
-    <BLANKLINE>
+    ...
       <!-- Application Menu -->
-      <ul>
+      <ul class="facetmenu">
     <BLANKLINE>
           <li class="overview active"
               title="General information about Waffles"><a
@@ -93,8 +93,8 @@ Watermark and breadcrumbs.
     ...
               <div class="yui-b" dir="ltr">
                 <div>
-                <h2>Heading</h2>
-                  <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
+                  <h2>Heading</h2>
+                  <ol class="breadcrumbs">
     ...
 
 Top portlet.
@@ -190,7 +190,7 @@ Main content.
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
-                  <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
+                  <ol class="breadcrumbs">
     <BLANKLINE>
     </ol>
     <BLANKLINE>
@@ -286,9 +286,11 @@ Watermarks.
           <div class="watermark-apps-portlet top-portlet">
             <img alt="" width="64" height="64" src="/@@/person-logo" />
             <h2>Waffles</h2>
+            <div id="registration" class="registering">
+            </div>
     <BLANKLINE>
       <!-- Application Menu -->
-      <ul>
+      <ul class="facetmenu">
     <BLANKLINE>
           <li class="overview active"
               title="General information about Waffles"><a
@@ -308,7 +310,7 @@ Main content.
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
-                  <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
+                  <ol class="breadcrumbs">
     <BLANKLINE>
     </ol>
     ...
@@ -461,6 +463,34 @@ test. The template controlled the heading.
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print content.h1
     <h1>Heading</h1>
+
+
+Page registering
+----------------
+
+The 'registering' slot is presented on the right side of the 'heading'
+and can be filled with the context registering information (registrant
+and date_created, normally).
+
+    >>> class RegisteringView(LaunchpadView):
+    ...     """A simple view to test base-layout."""
+    ...     __launchpad_facetname__ = 'overview'
+    ...     template = ViewPageTemplateFile('testfiles/main-registering.pt')
+    ...     page_title = 'Test base-layout: main_registering'
+
+    >>> view = RegisteringView(user, request)
+    >>> html = view.render()
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     first_tag_by_class)
+
+    >>> print first_tag_by_class(html, 'registering')
+    <div id="registration" class="registering">
+    <p>something nice about the context registering.</p>
+    </div>
+
+Note that the slot itself will be already 'styled' and it rarely has
+to be changed.
 
 
 Public and private presentation

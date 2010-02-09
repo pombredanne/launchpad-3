@@ -324,7 +324,6 @@
         <!-- PO File -->
 
     <adapter
-        name="translations"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.translations.interfaces.pofile.IPOFile"
         factory="lp.translations.browser.translations.TranslationsLanguageBreadcrumb"
@@ -410,11 +409,22 @@
                 interface="lp.translations.interfaces.potemplate.IPOTemplate"/>
             <require
                 permission="launchpad.Edit"
-                set_attributes="owner priority description"/>
+                set_attributes="
+                    owner priority description translation_domain path
+                    iscurrent"/>
             <require
-                permission="launchpad.Admin"
-                set_attributes="name translation_domain productseries distroseries                                                                                                 sourcepackagename sourcepackageversion                                                                                                 binarypackagename languagepack path header                                                                                                 iscurrent from_sourcepackagename date_last_updated                                                                                                 source_file source_file_format"/>
+                permission="launchpad.TranslationsAdmin"
+                set_attributes="
+                    name productseries distroseries sourcepackagename
+                    sourcepackageversion binarypackagename languagepack
+                    source_file_format source_file date_last_updated
+                    from_sourcepackagename header"/>
         </class>
+        <adapter
+           provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+           for="lp.translations.interfaces.potemplate.IPOTemplate"
+           factory="lp.translations.browser.potemplate.POTemplateBreadcrumb"
+           permission="zope.Public"/>
         <adapter
             name="all_messages"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
@@ -507,7 +517,7 @@
                 set_schema="lp.translations.interfaces.languagepack.ILanguagePack"/>
         </class>
 
-        <!-- LanguageSet -->
+        <!-- LanguagePackSet -->
 
         <securedutility
             class="lp.translations.model.languagepack.LanguagePackSet"
@@ -545,6 +555,11 @@
                 interface="lp.translations.interfaces.translationmessage.ITranslationMessageSet"/>
         </securedutility>
     </facet>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        factory="lp.translations.browser.customlanguagecode.CustomLanguageCodeBreadcrumb"
+        permission="zope.Public"/>
     <class
         class="lp.translations.model.customlanguagecode.CustomLanguageCode">
         <allow
@@ -556,6 +571,37 @@
         <allow
             interface="lp.translations.interfaces.poexportrequest.IPOExportRequestSet"/>
     </securedutility>
+
+    <!-- TranslationTemplateBuildJob -->
+    <class
+        class="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob">
+        <allow
+            interface="lp.code.interfaces.branchjob.IBranchJob"/>
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
+    </class>
+    <securedutility
+        component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource">
+        <allow interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource"/>
+    </securedutility>
+    <utility
+        component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
+        name="TRANSLATIONTEMPLATESBUILD"/>
+
+    <!-- TranslationTemplateBuildBehavior -->
+    <class
+        class="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior">
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"/>
+    </class>
+
+    <adapter
+        provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
+        for="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        factory="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior"
+        />
 
   <webservice:register module="lp.translations.interfaces.webservice" />
 

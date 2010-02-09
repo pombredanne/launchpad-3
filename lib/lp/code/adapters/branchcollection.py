@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'branch_collection_for_distribution',
+    'branch_collection_for_distro_series',
     'branch_collection_for_person',
     'branch_collection_for_product',
     'branch_collection_for_project',
@@ -31,6 +33,16 @@ def branch_collection_for_project(project):
 def branch_collection_for_person(person):
     """Adapt a person to a branch collection."""
     return getUtility(IAllBranches).ownedBy(person)
+
+
+def branch_collection_for_distribution(distribution):
+    """Adapt a distribution to a branch collection."""
+    return getUtility(IAllBranches).inDistribution(distribution)
+
+
+def branch_collection_for_distro_series(distro_series):
+    """Adapt a distro_series to a branch collection."""
+    return getUtility(IAllBranches).inDistroSeries(distro_series)
 
 
 def branch_collection_for_source_package(source_package):

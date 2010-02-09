@@ -19,13 +19,15 @@ warn the uploader about this.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
 We need this for the Librarian to work properly.
 
@@ -80,7 +82,7 @@ comes from a previous export from Rosetta and when did it happen.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
 We do the import.
 
@@ -150,7 +152,7 @@ Now, attach the file again, but this time as published.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
 We do the import.
 

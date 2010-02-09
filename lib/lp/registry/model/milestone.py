@@ -28,10 +28,10 @@ from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.blueprints.model.specification import Specification
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+    BugTaskSearchParams, BugTaskStatus, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
@@ -176,18 +176,29 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         if self.product_release is not None:
             raise AssertionError(
-                'A milestone can only have one Productrelease.')
-        return ProductRelease(
+                'A milestone can only have one ProductRelease.')
+        release = ProductRelease(
             owner=owner,
             changelog=changelog,
             release_notes=release_notes,
             datereleased=datereleased,
             milestone=self)
+        return release
+
+    def closeBugsAndBlueprints(self, user):
+        """See `IMilestone`."""
+        for bugtask in self.open_bugtasks:
+            if bugtask.status == BugTaskStatus.FIXCOMMITTED:
+                bugtask.bug.setStatus(
+                    bugtask.target, BugTaskStatus.FIXRELEASED, user)
 
     def destroySelf(self):
         """See `IMilestone`."""
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
+        assert len(self.getSubscriptions()) == 0, (
+            "You cannot delete a milestone which has structural "
+            "subscriptions.")
         assert bugtasks.count() == 0, (
             "You cannot delete a milestone which has bugtasks targeted "
             "to it.")
@@ -237,6 +248,7 @@ class MilestoneSet:
     def getVisibleMilestones(self):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
         return Milestone.selectBy(active=True, orderBy='id')
+
 
 class ProjectMilestone(HasBugsBase):
     """A virtual milestone implementation for project.
@@ -302,3 +314,6 @@ class ProjectMilestone(HasBugsBase):
         """See `IHasBugs`."""
         return self.target.official_bug_tags
 
+    def userHasBugSubscriptions(self, user):
+        """See `IStructuralSubscriptionTarget`."""
+        return False

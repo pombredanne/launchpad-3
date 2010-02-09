@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -14,6 +14,7 @@ Long term once soyuz is monitoring other archives regularly, syncing
 will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
+import _pythonpath
 
 import apt_pkg
 import commands
@@ -29,7 +30,6 @@ import tempfile
 import time
 import urllib
 
-import _pythonpath
 import dak_utils
 from _syncorigins import origins
 
@@ -697,12 +697,12 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         else:
             if dest_version.find("ubuntu") != -1:
                 stat_uptodate_modified += 1
-                if Options.moreverbose:
+                if Options.moreverbose or not Options.all:
                     print ("[Nothing to update (Modified)] %s_%s (vs %s)"
                            % (pkg, dest_version, source_version))
             else:
                 stat_uptodate += 1
-                if Options.moreverbose:
+                if Options.moreverbose or not Options.all:
                     print (
                         "[Nothing to update] %s (%s [ubuntu] >= %s [debian])"
                         % (pkg, dest_version, source_version))

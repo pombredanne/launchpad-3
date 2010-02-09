@@ -196,4 +196,4 @@ The link in the error page links to the Launchpad filebug page.
 
     >>> browser.getLink('report this as a bug').click()
     >>> print browser.title
-    +filebug : Bugs in launchpad : Launchpad
+    Report a bug about Launchpad...

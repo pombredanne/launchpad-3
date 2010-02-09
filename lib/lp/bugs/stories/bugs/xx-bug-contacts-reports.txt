@@ -3,7 +3,7 @@ views for packages for which a user is a bug supervisor.
 
     >>> anon_browser.open("http://launchpad.dev/~name16/+packagebugs")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Foo Bar +packagebugs
+    Foo Bar
     ...
     Foo Bar is subscribed to these packages.
     ...
@@ -37,7 +37,7 @@ pmount.
 
     >>> anon_browser.open("http://launchpad.dev/~name16/+packagebugs")
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Foo Bar +packagebugs
+    Foo Bar
     ...
     Foo Bar is subscribed to these packages.
     ...
@@ -58,7 +58,7 @@ progress bugs.
     ...     "field.status=In+Progress&search=Search")
 
     >>> print anon_browser.title
-    +packagebugs-search : Foo Bar
+    Package bugs : Foo Bar
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~name16/+packagebugs-search?"
@@ -67,7 +67,7 @@ progress bugs.
     ...     "field.status=Confirmed&field.status=In+Progress&search=Search")
 
     >>> print anon_browser.title
-    +packagebugs-search : Foo Bar
+    Package bugs : Foo Bar
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~name16/+packagebugs-search?"
@@ -76,7 +76,7 @@ progress bugs.
     ...     "field.status=In+Progress&field.unassigned=on&search=Search")
 
     >>> print anon_browser.title
-    +packagebugs-search : Foo Bar
+    Package bugs : Foo Bar
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~name16/+packagebugs-search?"
@@ -84,7 +84,7 @@ progress bugs.
     ...     "field.status=In+Progress&search=Search")
 
     >>> print anon_browser.title
-    +packagebugs-search : Foo Bar
+    Package bugs : Foo Bar
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~name16/+packagebugs-search?"
@@ -93,7 +93,7 @@ progress bugs.
     ...     "field.status=In+Progress&search=Search")
 
     >>> print anon_browser.title
-    +packagebugs-search : Foo Bar
+    Package bugs : Foo Bar
 
 On the bug listing page, there is a searchtext field, for searching the
 title and description of the package's bugs.
@@ -104,7 +104,7 @@ title and description of the package's bugs.
     ...     "field.searchtext=support&search=Search")
 
     >>> print anon_browser.title
-    +packagebugs-search : Foo Bar
+    Package bugs : Foo Bar
 
 
 Error Handling

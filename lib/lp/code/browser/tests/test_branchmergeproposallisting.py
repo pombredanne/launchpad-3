@@ -5,17 +5,21 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 from unittest import TestLoader
 
+import pytz
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView, BranchMergeProposalListingView)
+    ActiveReviewsView, BranchMergeProposalListingItem,
+    BranchMergeProposalListingView)
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 
 _default = object()
 
@@ -28,7 +32,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
     def setUp(self):
         # Use an admin so we don't have to worry about launchpad.Edit
         # permissions on the merge proposals for adding comments.
-        TestCaseWithFactory.setUp(self, user="foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
 
     def _createComment(self, proposal, reviewer=None, vote=None,
                        comment=_default):
@@ -48,6 +52,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         view_context = proposal.source_branch.owner
         view = BranchMergeProposalListingView(
             view_context, LaunchpadTestRequest())
+        view.initialize()
         batch_navigator = view.proposals
         # There will only be one item in the list of proposals.
         [listing_item] = batch_navigator.proposals
@@ -248,6 +253,81 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
             reviewer, 'subject', vote=CodeReviewVote.APPROVE)
         self.assertReviewGroupForReviewer(
             reviewer, ActiveReviewsView.ARE_DOING)
+
+
+class TestBranchMergeProposalListingItem(TestCaseWithFactory):
+    """Tests specifically relating to the BranchMergeProposalListingItem."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_sort_key_needs_review(self):
+        # If the proposal is in needs review, the sort_key will be the
+        # date_review_requested.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+        login_person(bmp.registrant)
+        request_date = datetime(2009,7,1,tzinfo=pytz.UTC)
+        bmp.requestReview(request_date)
+        item = BranchMergeProposalListingItem(bmp, None, None)
+        self.assertEqual(request_date, item.sort_key)
+
+    def test_sort_key_approved(self):
+        # If the proposal is approved, the sort_key will default to the
+        # date_review_requested.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+        login_person(bmp.target_branch.owner)
+        request_date = datetime(2009,7,1,tzinfo=pytz.UTC)
+        bmp.requestReview(request_date)
+        bmp.approveBranch(
+            bmp.target_branch.owner, 'rev-id',
+            datetime(2009,8,1,tzinfo=pytz.UTC))
+        item = BranchMergeProposalListingItem(bmp, None, None)
+        self.assertEqual(request_date, item.sort_key)
+
+    def test_sort_key_approved_from_wip(self):
+        # If the proposal is approved and the review has been bypassed, the
+        # date_reviewed is used.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+        login_person(bmp.target_branch.owner)
+        review_date = datetime(2009,8,1,tzinfo=pytz.UTC)
+        bmp.approveBranch(
+            bmp.target_branch.owner, 'rev-id', review_date)
+        item = BranchMergeProposalListingItem(bmp, None, None)
+        self.assertEqual(review_date, item.sort_key)
+
+    def test_sort_key_wip(self):
+        # If the proposal is a work in progress, the date_created is used.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+        login_person(bmp.target_branch.owner)
+        item = BranchMergeProposalListingItem(bmp, None, None)
+        self.assertEqual(bmp.date_created, item.sort_key)
+
+
+class ActiveReviewSortingTest(TestCaseWithFactory):
+    """Test the sorting of the active review groups."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_oldest_first(self):
+        # The oldest requested reviews should be first.
+        product = self.factory.makeProduct()
+        bmp1 = self.factory.makeBranchMergeProposal(product=product)
+        login_person(bmp1.source_branch.owner)
+        bmp1.requestReview(datetime(2009,6,1,tzinfo=pytz.UTC))
+        bmp2 = self.factory.makeBranchMergeProposal(product=product)
+        login_person(bmp2.source_branch.owner)
+        bmp2.requestReview(datetime(2009,3,1,tzinfo=pytz.UTC))
+        bmp3 = self.factory.makeBranchMergeProposal(product=product)
+        login_person(bmp3.source_branch.owner)
+        bmp3.requestReview(datetime(2009,1,1,tzinfo=pytz.UTC))
+        login(ANONYMOUS)
+        view = create_initialized_view(product, name='+activereviews')
+        self.assertEqual(
+            [bmp3, bmp2, bmp1],
+            [item.context for item in view.review_groups[view.OTHER]])
 
 
 def test_suite():

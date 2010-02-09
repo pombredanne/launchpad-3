@@ -6,6 +6,15 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
 
+  <tal:css metal:fill-slot="head_epilogue"
+    condition="view/is_project_milestone">
+    <style id="hide-side-portlets" type="text/css">
+        .side {
+            background: #fff;
+            }
+    </style>
+  </tal:css>
+
   <body>
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="view/milestone/title" >project 1.x series</h1>
@@ -44,12 +53,12 @@
                   tal:condition="view/milestone/series_target" /></dd>
               </dl>
 
-              <dl>
+              <dl id="version">
                 <dt>Version:</dt>
                 <dd><tal:version replace="context/name" /></dd>
               </dl>
 
-              <dl>
+              <dl id="code-name">
                 <dt>Code name:</dt>
                 <dd>
                   <tal:code-name replace="view/milestone/code_name" />
@@ -58,7 +67,7 @@
                 </dd>
               </dl>
 
-              <dl>
+              <dl tal:condition="not: view/release">
                 <dt>Expected:</dt>
                 <dd><span
                   tal:attributes="title context/dateexpected/fmt:datetime"
@@ -138,11 +147,10 @@
             <dl>
               <dt>Assignees:</dt>
               <dd tal:define="count_statuses view/assignment_counts">
-                <tal:statuses repeat="count_status count_statuses">
-                  <strong tal:content="count_status/count">2</strong>&nbsp;<a
+                <span class="pre"
+                  tal:repeat="count_status count_statuses"><strong tal:content="count_status/count">2</strong> <a
                     tal:replace="structure count_status/status/fmt:link" /><tal:comma
-                    condition="not: repeat/count_status/end">,</tal:comma>
-                </tal:statuses>
+                    condition="not: repeat/count_status/end">,</tal:comma></span>
                 <tal:no-statuses condition="not: count_statuses">
                   No users assigned to blueprints and bugs.
                 </tal:no-statuses>
@@ -183,11 +191,11 @@
         </div>
       </div>
 
-    <tal:release
-      condition="view/release"
-      replace="structure view/milestone/@@+productrelease-data" />
+    <div class="full-page-width"
+      tal:condition="view/release"
+      tal:content="structure view/milestone/@@+productrelease-data" />
 
-    <div class="portlet">
+    <div class="portlet full-page-width">
         <h2>
           <span id="specification-count" style="color: #3594bb;"
             tal:content="structure view/specification_count_text">2</span>
@@ -205,7 +213,7 @@
                 <th colspan="2">Blueprint</th>
                 <th style="width: 14em"
                   tal:condition="view/is_project_milestone">
-                  Product
+                  Project
                 </th>
                 <th style="width: 9em;">Priority</th>
                 <th style="width: 14em;">Assignee</th>
@@ -261,7 +269,7 @@
                 <th colspan="4">Bug report</th>
                 <th style="width: 14em"
                   tal:condition="view/is_project_milestone">
-                  Product
+                  Project
                 </th>
                 <th style="width: 9em;">Importance</th>
                 <th style="width: 14em;">Assignee</th>
@@ -277,23 +285,9 @@
                 <td tal:content="string:#${bugtask/bug/id}" class="amount">12345</td>
                 <td>
                   <a tal:attributes="href bugtask/bug/fmt:url"
-                     tal:content="bugtask/bug/title/fmt:shorten/65">
+                     tal:content="bugtask/bug/title">
                      Bug Title Here
                   </a>
-                  <tal:has-tags
-                    condition="bugtask/bug/tags|nothing">
-                    <br />
-                    <span id="tag-list">
-                      <a tal:repeat="tag bugtask/@@+index/official_tags"
-                         tal:content="tag"
-                         class="official-tag"
-                         tal:attributes="href string:${context/target/fmt:url:bugs}/+bugs?field.tag=${tag}">tag</a>
-                      <a tal:repeat="tag bugtask/@@+index/unofficial_tags"
-                         tal:content="tag"
-                         class="unofficial-tag"
-                         tal:attributes="href string:${context/target/fmt:url:bugs}/+bugs?field.tag=${tag}">tag</a>
-                    </span>
-                  </tal:has-tags>
                 </td>
                 <td style="padding-right: 5px; text-align:right">
                   <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
@@ -341,22 +335,30 @@
 
         <ul>
           <li>
-            <a tal:attributes="
-              href view/milestone/target/fmt:url/+milestones">All milestones for
+            <a class="sprite info"
+              tal:attributes="href view/milestone/target/menu:overview/milestones/fmt:url">View
+              milestones for
               <tal:project replace="view/milestone/target/displayname" /></a>
           </li>
+          <li tal:condition="view/milestone/target/project|nothing">
+            <a class="sprite info"
+              tal:attributes="href view/milestone/target/project/menu:overview/milestones/fmt:url">View
+              milestones for
+              <tal:project replace="view/milestone/target/project/displayname" /></a>
+          </li>
           <li tal:condition="view/milestone/series_target">
-            <a tal:attributes="
-              href view/milestone/series_target/fmt:url">All releases for the
+            <a class="sprite info"
+              tal:attributes="href view/milestone/series_target/fmt:url">View
+              releases for the
               <tal:project replace="view/milestone/target/displayname" />
-              <tal:project replace="view/milestone/series_target/displayname" /> series</a>
+              <tal:project replace="view/milestone/series_target/displayname" />
+              series</a>
           </li>
         </ul>
       </div>
     </div>
 
-    <tal:side metal:fill-slot="side"
-      define="overview_menu context/menu:overview">
+    <tal:side metal:fill-slot="side">
       <tal:menu replace="structure view/milestone/@@+global-actions" />
     </tal:side>
   </body>

@@ -18,7 +18,6 @@ __all__ = [
     ]
 
 
-import mimetypes
 import operator
 import re
 from cStringIO import StringIO
@@ -32,8 +31,9 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
-from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
-from storm.store import Store
+from storm.expr import (
+    And, Count, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
+from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
@@ -49,9 +49,10 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel, IStructuralSubscriptionTarget)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -77,6 +78,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
@@ -90,24 +92,16 @@ from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
+from lp.registry.model.person import Person
 from lp.registry.model.pillar import pillar_sort_key
-
-
-# XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
-# for Intrepid, to add .debdiff to /etc/mime.types, so we may be able
-# to remove this setting once a new /etc/mime.types has been installed
-# on the app servers. Additionally, Firefox does not display content
-# of type text/x-diff inline, so making this text/plain because
-# viewing .debdiff inline is the most common use-case.
-mimetypes.add_type('text/plain', '.debdiff')
 
 
 _bug_tag_query_template = """
@@ -262,6 +256,7 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
+    heat = IntCol(notNull=True, default=0)
 
     @property
     def comment_count(self):
@@ -271,16 +266,67 @@ class Bug(SQLBase):
     @property
     def users_affected(self):
         """See `IBug`."""
-        return [bap.person for bap
-                in Store.of(self).find(BugAffectsPerson, bug=self)]
+        return Store.of(self).find(
+            Person, BugAffectsPerson.person == Person.id,
+            BugAffectsPerson.affected,
+            BugAffectsPerson.bug == self)
+
+    @property
+    def users_unaffected(self):
+        """See `IBug`."""
+        return Store.of(self).find(
+            Person, BugAffectsPerson.person == Person.id,
+            Not(BugAffectsPerson.affected),
+            BugAffectsPerson.bug == self)
+
+    @property
+    def user_ids_affected_with_dupes(self):
+        """Return all IDs of Persons affected by this bug and its dupes.
+        The return value is a Storm expression.  Running a query with
+        this expression returns a result that may contain the same ID
+        multiple times, for example if that person is affected via
+        more than one duplicate."""
+        return Union(
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.affected,
+                       BugAffectsPerson.bug == self)),
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.bug == Bug.id,
+                       BugAffectsPerson.affected,
+                       Bug.duplicateof == self.id)))
+
+    @property
+    def users_affected_with_dupes(self):
+        """See `IBug`."""
+        return Store.of(self).find(
+            Person,
+            In(Person.id, self.user_ids_affected_with_dupes))
+
+    @property
+    def users_affected_count_with_dupes(self):
+        """See `IBug`."""
+        return self.users_affected_with_dupes.count()
 
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
         inside = self.default_bugtask
-        return [
-            IndexedMessage(message, inside, index)
-            for index, message in enumerate(self.messages)]
+        messages = list(self.messages)
+        message_set = set(messages)
+
+        indexed_messages = []
+        for index, message in enumerate(messages):
+            if message.parent not in message_set:
+                parent = None
+            else:
+                parent = message.parent
+
+            indexed_message = IndexedMessage(message, inside, index, parent)
+            indexed_messages.append(indexed_message)
+
+        return indexed_messages
 
     @property
     def displayname(self):
@@ -397,6 +443,17 @@ class Bug(SQLBase):
     def followup_subject(self):
         """See `IBug`."""
         return 'Re: '+ self.title
+
+    @property
+    def has_patches(self):
+        """See `IBug`."""
+        store = IStore(BugAttachment)
+        results = store.find(
+            BugAttachment,
+            BugAttachment.bug == self,
+            BugAttachment.type == BugAttachmentType.PATCH)
+
+        return not results.is_empty()
 
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
@@ -1082,7 +1139,7 @@ class Bug(SQLBase):
         productseries = None
         if IDistroSeries.providedBy(target):
             distroseries = target
-            if target.status == DistroSeriesStatus.OBSOLETE:
+            if target.status == SeriesStatus.OBSOLETE:
                 raise NominationSeriesObsoleteError(
                     "%s is an obsolete series." % target.bugtargetdisplayname)
         else:
@@ -1306,10 +1363,11 @@ class Bug(SQLBase):
         :param user: An `IPerson` that may be affected by the bug.
         :return: An `IBugAffectsPerson` or None.
         """
-        return Store.of(self).find(
-            BugAffectsPerson,
-            And(BugAffectsPerson.bug == self,
-                BugAffectsPerson.person == user)).one()
+        if user is None:
+            return None
+        else:
+            return Store.of(self).get(
+                BugAffectsPerson, (self.id, user.id))
 
     def isUserAffected(self, user):
         """See `IBug`."""
@@ -1335,6 +1393,10 @@ class Bug(SQLBase):
             if bap.affected != affected:
                 bap.affected = affected
                 self._flushAndInvalidate()
+        # Loop over dupes.
+        for dupe in self.duplicates:
+            if dupe._getAffectedUser(user) is not None:
+                dupe.markUserAffected(user, affected)
 
     @property
     def readonly_duplicateof(self):
@@ -1387,6 +1449,42 @@ class Bug(SQLBase):
     def getHWSubmissions(self, user=None):
         """See `IBug`."""
         return getUtility(IHWSubmissionBugSet).submissionsForBug(self, user)
+
+    def personIsDirectSubscriber(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person)
+
+        return not subscriptions.is_empty()
+
+    def personIsAlsoNotifiedSubscriber(self, person):
+        """See `IBug`."""
+        # We have to use getAlsoNotifiedSubscribers() here and iterate
+        # over what it returns because "also notified subscribers" is
+        # actually a composite of bug contacts, structural subscribers
+        # and assignees. As such, it's not possible to get them all with
+        # one query.
+        also_notified_subscribers = self.getAlsoNotifiedSubscribers()
+
+        return person in also_notified_subscribers
+
+    def personIsSubscribedToDuplicate(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions_from_dupes = store.find(
+            BugSubscription,
+            Bug.duplicateof == self,
+            BugSubscription.bugID == Bug.id,
+            BugSubscription.person == person)
+
+        return not subscriptions_from_dupes.is_empty()
+
+    def setHeat(self, heat):
+        """See `IBug`."""
+        self.heat = heat
 
 
 class BugSet:
@@ -1627,9 +1725,24 @@ class BugSet:
 
         return bugs
 
+    def getByNumbers(self, bug_numbers):
+        """See `IBugSet`."""
+        if bug_numbers is None or len(bug_numbers) < 1:
+            return EmptyResultSet()
+        store = IStore(Bug)
+        result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set.order_by('id')
+
+    def dangerousGetAllBugs(self):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        result_set = store.find(Bug)
+        return result_set.order_by('id')
+
 
 class BugAffectsPerson(SQLBase):
     """A bug is marked as affecting a user."""
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     affected = BoolCol(notNull=True, default=True)
+    __storm_primary__ = "bugID", "personID"

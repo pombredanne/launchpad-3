@@ -59,7 +59,7 @@ class PersonProductFacets(StandardLaunchpadFacets):
     enable_only = ['branches']
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         summary = ('Bazaar Branches of %s owned by %s' %
                    (self.context.product.displayname,
                     self.context.person.displayname))

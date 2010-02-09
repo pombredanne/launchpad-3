@@ -8,7 +8,6 @@ __all__ = [
     'BranchFileSystem',
     'BranchPuller',
     'datetime_from_tuple',
-    'iter_split',
     ]
 
 
@@ -37,6 +36,7 @@ from lp.code.interfaces.codehosting import (
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.utils import iter_split
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -337,21 +337,3 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             raise faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
 
-
-def iter_split(string, splitter):
-    """Iterate over ways to split 'string' in two with 'splitter'.
-
-    If 'string' is empty, then yield nothing. Otherwise, yield tuples like
-    ('a/b/c', ''), ('a/b', 'c'), ('a', 'b/c') for a string 'a/b/c' and a
-    splitter '/'.
-
-    The tuples are yielded such that the first tuple has everything in the
-    first tuple. With each iteration, the first element gets smaller and the
-    second gets larger. It stops iterating just before it would have to yield
-    ('', 'a/b/c').
-    """
-    if string == '':
-        return
-    tokens = string.split(splitter)
-    for i in reversed(range(1, len(tokens) + 1)):
-        yield splitter.join(tokens[:i]), splitter.join(tokens[i:])

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'SourcePackageAssociationPortletView',
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
@@ -16,8 +17,19 @@ __all__ = [
     ]
 
 from apt_pkg import ParseSrcDepends
+from cgi import escape
 from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
+from zope.formlib.form import Fields, FormFields
+from zope.interface import Interface
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
+
+from lazr.restful.interface import copy_field
+
+from canonical.cachedproperty import cachedproperty
+from canonical.widgets import LaunchpadRadioWidget
 
 from canonical.launchpad import helpers
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -26,14 +38,15 @@ from canonical.launchpad.browser.packagerelationship import (
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from lp.services.worlddata.interfaces.country import ICountry
-from canonical.launchpad.interfaces.packaging import IPackaging
+from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, GetitemNavigation, LaunchpadEditFormView, Link,
-    redirection, StandardLaunchpadFacets, stepto)
+    action, ApplicationMenu, custom_widget, GetitemNavigation,
+    LaunchpadEditFormView, LaunchpadFormView, Link, redirection,
+    StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -53,7 +66,8 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroseries=self.context.distroseries,
             sourcepackagename=self.context.sourcepackagename)
 
-        if not check_permission('launchpad.Admin', sourcepackage_pots):
+        if not check_permission(
+            'launchpad.TranslationsAdmin', sourcepackage_pots):
             self.context.distroseries.checkTranslationsViewable()
 
         return sourcepackage_pots
@@ -65,14 +79,18 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
             sourcepackage.name)
 
-        return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
+        redirection_url = canonical_url(
+            distro_sourcepackage, view_name='+filebug')
+        if self.request.form.get('no-redirect') is not None:
+            redirection_url += '?no-redirect'
+        return redirection(redirection_url)
 
 
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     @property
     def text(self):
-        return smartquote('"%s" package') % (self.context.name)
+        return smartquote('"%s" source package') % (self.context.name)
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -86,13 +104,18 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     usedfor = ISourcePackage
     facet = 'overview'
     links = [
-        'packaging', 'edit_packaging', 'changelog', 'builds', 'set_upstream']
+        'distribution_source_package', 'edit_packaging',
+        'changelog', 'builds', 'set_upstream',
+        ]
+
+    def distribution_source_package(self):
+        target = canonical_url(self.context.distribution_sourcepackage)
+        text = 'All versions of %s source in %s' % (
+            self.context.name, self.context.distribution.displayname)
+        return Link(target, text, icon='package-source')
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
-
-    def packaging(self):
-        return Link('+packaging', 'Show upstream links', icon='info')
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
@@ -117,26 +140,50 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
 
 class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
+    """A view to set the `IProductSeries` of a sourcepackage."""
     schema = ISourcePackage
     field_names = ['productseries']
 
-    @property
-    def label(self):
-        """See `LaunchpadFormView`."""
-        return 'Define upstream link for %s' % self.context.title
-
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    label = 'Link to an upstream project'
+    page_title = label
 
     @property
     def cancel_url(self):
         return canonical_url(self.context)
 
+    def setUpFields(self):
+        """ See `LaunchpadFormView`.
+
+        The productseries field is required by the view.
+        """
+        super(SourcePackageChangeUpstreamView, self).setUpFields()
+        field = copy_field(ISourcePackage['productseries'], required=True)
+        self.form_fields = self.form_fields.omit('productseries')
+        self.form_fields = self.form_fields + FormFields(field)
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`.
+
+        Set the current `IProductSeries` as the default value.
+        """
+        super(SourcePackageChangeUpstreamView, self).setUpWidgets()
+        if self.context.productseries is not None:
+            widget = self.widgets.get('productseries')
+            widget.setRenderedValue(self.context.productseries)
+
+    def validate(self, data):
+        productseries = data.get('productseries', None)
+        if productseries is None:
+            message = "You must choose a project series."
+            self.setFieldError('productseries', message)
+
     @action(_("Change"), name="change")
     def change(self, action, data):
-        self.context.setPackaging(data['productseries'], self.user)
+        productseries = data['productseries']
+        if self.context.productseries == productseries:
+            # There is nothing to do.
+            return
+        self.context.setPackaging(productseries, self.user)
         self.request.response.addNotification('Upstream link updated.')
         self.next_url = canonical_url(self.context)
 
@@ -159,9 +206,8 @@ class SourcePackageView:
         self.processForm()
 
     @property
-    def page_title(self):
-        """The HTML page title."""
-        return '%s package' % self.context.name
+    def label(self):
+        return self.context.title
 
     @property
     def cancel_url(self):
@@ -254,13 +300,52 @@ class SourcePackageView:
         return list(self.context.getCurrentTranslationTemplates())
 
 
-class SourcePackagePackaging(SourcePackageView):
-    """A View to show where the package is packged."""
-
-    page_title = 'Upstream links'
-
-
 class SourcePackageHelpView:
     """A View to show Answers help."""
 
     page_title = 'Help and support options'
+
+
+class SourcePackageAssociationPortletView(LaunchpadFormView):
+    """A view for linking to an upstream package."""
+
+    schema = Interface
+    custom_widget(
+        'upstream', LaunchpadRadioWidget, orientation='vertical')
+    product_suggestions = None
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(SourcePackageAssociationPortletView, self).setUpFields()
+        # Find registered products that are similarly named to the source
+        # package.
+        product_vocab = getVocabularyRegistry().get(None, 'Product')
+        matches = product_vocab.searchForTerms(self.context.name)
+        # Based upon the matching products, create a new vocabulary with
+        # term descriptions that include a link to the product.
+        self.product_suggestions = []
+        vocab_terms = []
+        for item in matches:
+            product = item.value
+            self.product_suggestions.append(product)
+            item_url = canonical_url(product)
+            description = """<a href="%s">%s</a>""" % (
+                item_url, escape(product.displayname))
+            vocab_terms.append(SimpleTerm(product, product.name, description))
+        upstream_vocabulary = SimpleVocabulary(vocab_terms)
+
+        self.form_fields = Fields(
+            Choice(__name__='upstream',
+                   title=_('Registered upstream project'),
+                   default=None,
+                   vocabulary=upstream_vocabulary,
+                   required=True))
+
+    @action('Link to Upstream Project', name='link')
+    def link(self, action, data):
+        upstream = data.get('upstream')
+        self.context.setPackaging(upstream.development_focus, self.user)
+        self.request.response.addInfoNotification(
+            'The project %s was linked to this source package.' %
+            upstream.displayname)
+        self.next_url = self.request.getURL()

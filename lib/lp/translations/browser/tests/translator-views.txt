@@ -30,7 +30,7 @@ Translator +admin view provides a nice page title and a form label.
     Edit Serbian translation team in Test translators
 
     >>> print view.page_title
-    Edit Serbian translation team in Test translators
+    Edit Serbian translation team
 
 Canceling changes to the Translator takes one back to the group
 page.
@@ -52,7 +52,7 @@ describe that appropriately.
     Set Serbian guidelines for Test translators
 
     >>> print view.page_title
-    Set Serbian guidelines for Test translators
+    Set Serbian guidelines
 
 Canceling changes to the guidelines takes one back to the team page.
 
@@ -73,7 +73,7 @@ for a language in a TranslationGroup.
     Unset 'Bad translators' as the Serbian translator in Test translators
 
     >>> print view.page_title
-    Unset 'Bad translators' as the Serbian translator in Test translators
+    Remove translation team
 
 Canceling removal of a translation team takes one back to the group page.
 

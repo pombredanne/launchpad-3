@@ -14,9 +14,13 @@ from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.testing import TestCaseWithFactory
 from lp.translations.utilities.gettext_po_exporter import (
+    comments_text_representation, strip_last_newline)
+from lp.translations.utilities.gettext_po_exporter import (
     GettextPOExporter)
 from lp.translations.utilities.gettext_po_parser import (
     POParser)
+from lp.translations.utilities.translation_common_format import (
+    TranslationMessageData)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -259,33 +263,9 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         for pofile in pofiles:
             compare(self, pofile)
 
-
-    def testBrokenEncodingExport(self):
-        """Test what happens when the content and the encoding don't agree.
-
-        If a pofile fails to encode using the character set specified in the
-        header, the header should be changed to specify to UTF-8 and the
-        pofile exported accordingly.
-        """
-
-        pofile = dedent('''
-            msgid ""
-            msgstr ""
-            "Project-Id-Version: foo\\n"
-            "Report-Msgid-Bugs-To: \\n"
-            "POT-Creation-Date: 2007-07-09 03:39+0100\\n"
-            "PO-Revision-Date: 2001-09-09 01:46+0000\\n"
-            "Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"
-            "Language-Team: LANGUAGE <LL@li.org>\\n"
-            "MIME-Version: 1.0\\n"
-            "Content-Type: text/plain; charset=%s\\n"
-            "Content-Transfer-Encoding: 8bit\\n"
-
-            msgid "a"
-            msgstr "%s"
-            ''')
+    def _testBrokenEncoding(self, pofile_content):
         translation_file = self.parser.parse(
-            pofile % ('ISO-8859-15', '\xe1'))
+            pofile_content % {'charset': 'ISO-8859-15', 'special': '\xe1'})
         translation_file.is_template = False
         translation_file.language_code = 'es'
         translation_file.path = 'po/es.po'
@@ -298,8 +278,64 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
             [translation_file])
 
         self._compareImportAndExport(
-            pofile.strip() % ('UTF-8', '\xc3\xa1'),
+            pofile_content.strip() % {
+                'charset': 'UTF-8', 'special': '\xc3\xa1'},
             exported_file.read().strip())
+
+    def testBrokenEncodingExport(self):
+        """Test what happens when the content and the encoding don't agree.
+
+        If a pofile fails to encode using the character set specified in the
+        header, the header should be changed to specify to UTF-8 and the
+        pofile exported accordingly.
+        """
+
+        pofile_content = dedent('''
+            msgid ""
+            msgstr ""
+            "Project-Id-Version: foo\\n"
+            "Report-Msgid-Bugs-To: \\n"
+            "POT-Creation-Date: 2007-07-09 03:39+0100\\n"
+            "PO-Revision-Date: 2001-09-09 01:46+0000\\n"
+            "Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"
+            "Language-Team: LANGUAGE <LL@li.org>\\n"
+            "MIME-Version: 1.0\\n"
+            "Content-Type: text/plain; charset=%(charset)s\\n"
+            "Content-Transfer-Encoding: 8bit\\n"
+
+            msgid "a"
+            msgstr "%(special)s"
+            ''')
+        self._testBrokenEncoding(pofile_content)
+
+    def testBrokenEncodingHeader(self):
+        """A header field might require a different encoding, too.
+
+        This usually happens if the Last-Translator name contains non-ascii
+        characters.
+
+        If a pofile fails to encode using the character set specified in the
+        header, the header should be changed to specify to UTF-8 and the
+        pofile exported accordingly.
+        """
+
+        pofile_content = dedent('''
+            msgid ""
+            msgstr ""
+            "Project-Id-Version: foo\\n"
+            "Report-Msgid-Bugs-To: \\n"
+            "POT-Creation-Date: 2007-07-09 03:39+0100\\n"
+            "PO-Revision-Date: 2001-09-09 01:46+0000\\n"
+            "Last-Translator: Kubla K%(special)shn <kk@pleasure-dome.com>\\n"
+            "Language-Team: LANGUAGE <LL@li.org>\\n"
+            "MIME-Version: 1.0\\n"
+            "Content-Type: text/plain; charset=%(charset)s\\n"
+            "Content-Transfer-Encoding: 8bit\\n"
+
+            msgid "a"
+            msgstr "b"
+            ''')
+        self._testBrokenEncoding(pofile_content)
 
     def testIncompletePluralMessage(self):
         """Test export correctness for partial plural messages."""
@@ -396,6 +432,44 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
 
         body = exported_file.split('\n\n', 1)[1].strip()
         self.assertEqual(body, expected_output)
+
+    def test_strip_last_newline(self):
+        # `strip_last_newline` strips only the last newline.
+        self.assertEqual('text\n', strip_last_newline('text\n\n'))
+        self.assertEqual('text\nx', strip_last_newline('text\nx'))
+        self.assertEqual('text', strip_last_newline('text'))
+
+        # It supports '\r' as well (Mac-style).
+        self.assertEqual('text', strip_last_newline('text\r'))
+        # And DOS-style '\r\n'.
+        self.assertEqual('text', strip_last_newline('text\r\n'))
+
+        # With weird combinations, it strips only the last
+        # newline-indicating character.
+        self.assertEqual('text\n', strip_last_newline('text\n\r'))
+
+    def test_comments_text_representation_multiline(self):
+        # Comments with newlines should be correctly exported.
+        data = TranslationMessageData()
+        data.comment = "Line One\nLine Two"
+        self.assertEqual("#Line One\n#Line Two",
+                         comments_text_representation(data))
+
+        # It works the same when there's a final newline as well.
+        data.comment = "Line One\nLine Two\n"
+        self.assertEqual("#Line One\n#Line Two",
+                         comments_text_representation(data))
+
+        # And similar processing happens for source comments.
+        data = TranslationMessageData()
+        data.source_comment = "Line One\nLine Two"
+        self.assertEqual("#. Line One\n#. Line Two",
+                         comments_text_representation(data))
+
+        # It works the same when there's a final newline as well.
+        data.source_comment = "Line One\nLine Two\n"
+        self.assertEqual("#. Line One\n#. Line Two",
+                         comments_text_representation(data))
 
 
 def test_suite():

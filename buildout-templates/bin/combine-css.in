@@ -1,0 +1,36 @@
+#! /usr/bin/env ${buildout:directory}/bin/py
+
+import os
+
+from lazr.js.combo import combine_files
+
+
+root = '${buildout:directory}'
+icing = os.path.join(root, 'lib/canonical/launchpad/icing')
+# It'd probably be nice to have this script find all the CSS files we might
+# need and combine them together, but if we do that we'd certainly end up
+# including lots of styles that we don't need/want, so keeping this hard-coded
+# list seems like the best option for now.
+names = [
+    'style.css',
+    'lazr/build/yui/cssreset/reset.css',
+    'lazr/build/yui/cssfonts/fonts.css',
+    'lazr/build/yui/cssgrids/grids.css',
+    'lazr/build/lazr/assets/skins/sam/lazr.css',
+    'lazr/build/inlineedit/assets/skins/sam/editor.css',
+    'lazr/build/autocomplete/assets/skins/sam/autocomplete.css',
+    'lazr/build/overlay/assets/skins/sam/pretty-overlay.css',
+    'lazr/build/formoverlay/assets/formoverlay-core.css',
+    'lazr/build/picker/assets/skins/sam/picker.css',
+    'lazr/build/activator/assets/skins/sam/activator.css',
+    'lazr/build/choiceedit/assets/choiceedit-core.css',
+    # This one goes at the end because it's our main stylesheet and should
+    # take precedence over the others.
+    'style-3-0.css']
+result = ''
+for content in combine_files(names, icing):
+    result += content
+
+f = open(os.path.join(icing, 'combo.css'), 'w')
+f.write(result)
+f.close()

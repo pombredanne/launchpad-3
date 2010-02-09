@@ -130,6 +130,14 @@ class TestExpandURL(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         self.assertFault(distro.name, faults.CannotHaveLinkedBranch(distro))
 
+    def test_distroseries_name(self):
+        # Resolving lp:///distro/series' should explain that distribution
+        # series don't have default branches.
+        series = self.factory.makeDistroSeries()
+        self.assertFault(
+            '%s/%s' % (series.distribution.name, series.name),
+            faults.CannotHaveLinkedBranch(series))
+
     def test_invalid_product_name(self):
         # If we get a string that cannot be a name for a product where we
         # expect the name of a product, we should error appropriately.

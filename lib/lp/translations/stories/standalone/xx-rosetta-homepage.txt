@@ -11,7 +11,7 @@ in the left column.
     ...     browser.contents, 'three column left')[0]
     >>> print extract_text(left_column)
     Translatable operating systems
-    Ubuntu 5.04
+    Ubuntu Hoary (5.04)
 
 The middle lists translatable products, Evolution is one of most
 translated projects.

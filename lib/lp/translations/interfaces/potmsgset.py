@@ -4,7 +4,8 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, Object, Text
+from zope.schema import Bool, Choice, Int, List, Object, Text
+from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pomsgid import IPOMsgID
@@ -15,7 +16,36 @@ __all__ = [
     'IPOTMsgSet',
     'BrokenTextError',
     'POTMsgSetInIncompatibleTemplatesError',
+    'TranslationCreditsType',
     ]
+
+
+class TranslationCreditsType(EnumeratedType):
+    """Identify a POTMsgSet as translation credits."""
+
+    NOT_CREDITS = Item("""
+        Not a translation credits message
+
+        This is a standard msgid and not translation credits.
+        """)
+
+    GNOME = Item("""
+        Gnome credits message
+
+        How they do them in Gnome.
+        """)
+
+    KDE_EMAILS = Item("""
+        KDE emails credits message
+
+        How they do them in KDE for translator emails.
+        """)
+
+    KDE_NAMES = Item("""
+        KDE names credits message
+
+        How they do them in KDE for translator names.
+        """)
 
 
 class BrokenTextError(ValueError):
@@ -80,6 +110,14 @@ class IPOTMsgSet(Interface):
         description=_("""
             Some formats, such as Mozilla's XPI, use symbolic msgids where
             gettext uses the original English strings to identify messages.
+            """))
+
+    credits_message_ids = List(
+        title=_("List of possible msgids for translation credits"),
+        readonly=True,
+        description=_("""
+            This class attribute is intended to be used to construct database
+            queries that search for credits messages.
             """))
 
     def getCurrentDummyTranslationMessage(potemplate, language):
@@ -165,7 +203,8 @@ class IPOTMsgSet(Interface):
 
     def updateTranslation(pofile, submitter, new_translations, is_imported,
                           lock_timestamp, force_suggestion=False,
-                          ignore_errors=False, force_edition_rights=False):
+                          ignore_errors=False, force_edition_rights=False,
+                          allow_credits=False):
         """Update or create a translation message using `new_translations`.
 
         :param pofile: a `POFile` to add `new_translations` to.
@@ -183,6 +222,8 @@ class IPOTMsgSet(Interface):
             should be stored even when an error is detected.
         :param force_edition_rights: A flag that 'forces' handling this
             submission as coming from an editor, even if `submitter` is not.
+        :param allow_credits: Override the protection of translation credits
+            message.
 
         If there is an error with the translations and ignore_errors is not
         True or it's not a fuzzy submit, raises gettextpo.error
@@ -251,6 +292,11 @@ class IPOTMsgSet(Interface):
     is_translation_credit = Attribute(
         """Whether this is a message set for crediting translators.""")
 
+    translation_credits_type = Choice(
+        title=u"The type of translation credit of this message.",
+        required=True,
+        vocabulary = TranslationCreditsType)
+
     def makeHTMLID(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.
 
@@ -282,6 +328,17 @@ class IPOTMsgSet(Interface):
         :param potemplate: `IPOTemplate` where the sequence number applies.
         :param sequence: The sequence number of this `IPOTMsgSet` in the given
             `IPOTemplate`.
+        """
+
+    def setTranslationCreditsToTranslated(pofile):
+        """Set the current translation for this translation credits message.
+
+        Sets a fixed dummy string as the current translation, if this is a
+        translation credits message, so that these get counted as
+        'translated', too.
+        Credits messages that already have a translation, imported messages
+        and normal messages are left untouched.
+        :param pofile: the POFile to set this translation in.
         """
 
     def getAllTranslationMessages():

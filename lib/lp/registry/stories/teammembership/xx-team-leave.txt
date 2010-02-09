@@ -10,7 +10,7 @@ by choosing the 'Leave' button.
 
     >>> admin_browser.getLink('Leave').click()
     >>> admin_browser.title
-    '+leave : \xe2\x80\x9cUbuntu Team\xe2\x80\x9d team'
+    'Leave Ubuntu Team...
     >>> content = find_main_content(admin_browser.contents)
     >>> print content.p
     <p>Are you sure you want to leave this team?</p>
@@ -36,7 +36,7 @@ team's overview page.
     You are a member of this team...
     >>> browser.getLink('Leave the Team').click()
     >>> browser.title
-    '+leave : \xe2\x80\x9cLaunchpad Administrators\xe2\x80\x9d team'
+    'Leave Launchpad Administrators...
     >>> browser.getControl('Leave').click()
     >>> print browser.title
     Launchpad Administrators in Launchpad

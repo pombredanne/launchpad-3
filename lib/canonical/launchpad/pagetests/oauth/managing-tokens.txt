@@ -19,7 +19,7 @@ and/or revoked from that user's +oauth-tokens page.
     >>> my_browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
     >>> my_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')
     >>> print my_browser.title
-    +oauth-tokens : Guilherme Salgado
+    Authorized applications...
     >>> main_content = find_tag_by_id(my_browser.contents, 'maincontent')
     >>> print extract_text(main_content)
     Authorized applications
@@ -71,7 +71,7 @@ shown as one of the authorized ones.
 
     >>> my_browser.getControl('Revoke Authorization', index=1).click()
     >>> print my_browser.title
-    +oauth-tokens : Guilherme Salgado
+    Authorized applications...
     >>> for message in get_feedback_messages(my_browser.contents):
     ...     print message
     Authorization revoked successfully.

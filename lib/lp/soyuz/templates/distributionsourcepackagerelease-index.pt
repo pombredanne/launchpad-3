@@ -9,10 +9,6 @@
 
 <body>
 
-<div metal:fill-slot="heading">
-  <h1 tal:content="view/page_title">foo-bar 1.0 (source) in ubuntu</h1>
-</div>
-
 <div metal:fill-slot="main">
 
   <div id="source-changelog" class="top-portlet">
@@ -170,7 +166,7 @@
   </div> <!-- source-files -->
 
   <div id="source-binaries" class="portlet">
-   <h2>Binary packages</h2>
+   <h2>Binary packages built by this source</h2>
    <div class="two-column-list">
      <dl tal:repeat="binary context/sample_binary_packages">
       <dt>

@@ -1,9 +1,10 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
+import _pythonpath
 
 import sys, time
 import os, errno
@@ -34,7 +35,7 @@ def main():
 
     # Tabnanny
     # NB. If tabnanny raises an exception, run
-    # python /usr/lib/python2.4/tabnanny.py -vv lib/canonical
+    # python /usr/lib/python2.5/tabnanny.py -vv lib/canonical
     # for more detailed output.
     org_stdout = sys.stdout
     sys.stdout = StringIO()
@@ -136,13 +137,19 @@ def main():
 
     print 'Running tests.'
     os.chdir(here)
-    cmd = [os.path.join(here, 'bin', 'test')] + sys.argv[1:]
-    print ' '.join(cmd)
+    cmd = [
+        'xvfb-run',
+        '-s',
+        "'-screen 0 1024x768x24'",
+        os.path.join(here, 'bin', 'test')] + sys.argv[1:]
+    command_line = ' '.join(cmd)
+    print command_line
 
     # Run the test suite and return the error code
     #return call(cmd)
 
-    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+    proc = Popen(
+        command_line, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
     proc.stdin.close()
 
     # Do proc.communicate(), but timeout if there's no activity on stdout or

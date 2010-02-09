@@ -11,5 +11,4 @@ Make sure we can actually display the Translation Groups page.
     http://translations.launchpad.dev/+groups
 
     >>> print anon_browser.title
-    Launchpad translation groups
-
+    Translation groups

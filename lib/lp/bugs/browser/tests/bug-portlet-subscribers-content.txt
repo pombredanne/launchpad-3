@@ -15,7 +15,7 @@ of the list.
     <BugSubscription at ...>
     >>> bug.subscribe(view.user.teams_participated_in[0], view.user)
     <BugSubscription at ...>
-    >>> for subscription in view.getSortedDirectSubscriptions():
+    >>> for subscription in view.sorted_direct_subscriptions:
     ...     print '%s   %s' % (
     ...         subscription.person.displayname,
     ...         subscription.canBeUnsubscribedByUser(view.user))

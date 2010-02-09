@@ -14,8 +14,11 @@ The OOPS id is put into the comment at the end of the document.
 
     >>> (page, summary) = browser.contents.split('</html>')
     >>> print summary
-    <!-- at least ... queries issued in ... seconds OOPS-... -->
-    <!-- Launchpad ... -->
+    <!-- ...
+    At least ... queries issued in ... seconds OOPS-...
+    <BLANKLINE>
+    Launchpad ...
+    -->
 
 The ++oops++ can be anywhere in the traversal.
 

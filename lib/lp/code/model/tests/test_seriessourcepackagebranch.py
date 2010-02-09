@@ -10,6 +10,7 @@ import unittest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet)
+from lp.code.tests.helpers import make_linked_package_branch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 
@@ -25,17 +26,8 @@ class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
 
     def makeLinkedPackageBranch(self, distribution, sourcepackagename):
         """Make a new package branch and make it official."""
-        distro_series = self.factory.makeDistroRelease(distribution)
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename=sourcepackagename, distroseries=distro_series)
-        branch = self.factory.makePackageBranch(sourcepackage=source_package)
-        pocket = PackagePublishingPocket.RELEASE
-        # It is possible for the param to be None, so reset to the factory
-        # generated one.
-        sourcepackagename = source_package.sourcepackagename
-        self.link_set.new(
-            distro_series, pocket, sourcepackagename, branch, branch.owner)
-        return branch
+        return make_linked_package_branch(
+            self.factory, distribution, sourcepackagename)
 
     def test_findForDistributionSourcePackage(self):
         # Make sure that the find method finds official links for all distro

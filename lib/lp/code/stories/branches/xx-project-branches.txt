@@ -8,9 +8,9 @@
 Projects link their branch listing page.
 
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> browser.getLink('Code').click()
+    >>> browser.getLink('Branches').click()
     >>> print browser.title
-    Bazaar branches of the Mozilla Project
+    Branches : the Mozilla Project
 
 
 == Default page for code site ==
@@ -35,7 +35,7 @@ If there are not any branches, a relevant message is shown.
 
     >>> browser.open('http://code.launchpad.dev/aaa')
     >>> print browser.title
-    Bazaar branches of the Test Project
+    Branches : the Test Project
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print extract_text(message)
     There are no branches registered for the Test Project in Launchpad...

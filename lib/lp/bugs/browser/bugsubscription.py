@@ -5,10 +5,12 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugPortletDuplicateSubcribersContents',
     'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
     ]
 
+from simplejson import dumps
 from zope.event import notify
 
 from lazr.delegates import delegates
@@ -61,7 +63,8 @@ class BugSubscriptionAddView(LaunchpadFormView):
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
 
-    def getSortedDirectSubscriptions(self):
+    @property
+    def sorted_direct_subscriptions(self):
         """Get the list of direct subscriptions to the bug.
 
         The list is sorted such that subscriptions you can unsubscribe appear
@@ -83,11 +86,29 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
                 cannot_unsubscribe.append(subscription)
         return can_unsubscribe + cannot_unsubscribe
 
-    def getSortedSubscriptionsFromDuplicates(self):
+
+class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
+    """View for the contents for the subscribers-from-dupes portlet block."""
+
+    @property
+    def sorted_subscriptions_from_dupes(self):
         """Get the list of subscriptions to duplicates of this bug."""
         return [
             SubscriptionAttrDecorator(subscription)
             for subscription in self.context.getSubscriptionsFromDuplicates()]
+
+
+class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
+    """A view that returns a JSON dump of the subscriber IDs for a bug."""
+
+    @property
+    def subscriber_ids_js(self):
+        """Return subscriber_ids in a form suitable for JavaScript use."""
+        return dumps(self.subscriber_ids)
+
+    def render(self):
+        """Override the default render() to return only JSON."""
+        return self.subscriber_ids_js
 
 
 class SubscriptionAttrDecorator:

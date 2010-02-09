@@ -154,7 +154,7 @@ class DistributionMirror(SQLBase):
         # (which may mean the mirror was never verified or it was verified
         # and no content was found).
         if self.content == MirrorContent.RELEASE:
-            if self.cdimage_serieses:
+            if self.cdimage_series:
                 return MirrorFreshness.UP
             else:
                 return MirrorFreshness.UNKNOWN
@@ -198,10 +198,10 @@ class DistributionMirror(SQLBase):
                     'For series mirrors we need to know the '
                     'expected_file_count in order to tell if it should '
                     'be disabled or not.')
-            if expected_file_count > self.cdimage_serieses.count():
+            if expected_file_count > self.cdimage_series.count():
                 return True
         else:
-            if not (self.source_serieses or self.arch_serieses):
+            if not (self.source_series or self.arch_series):
                 return True
         return False
 
@@ -306,27 +306,27 @@ class DistributionMirror(SQLBase):
         if mirror is not None:
             mirror.destroySelf()
 
-    def deleteAllMirrorCDImageSerieses(self):
+    def deleteAllMirrorCDImageSeries(self):
         """See IDistributionMirror"""
-        for mirror in self.cdimage_serieses:
+        for mirror in self.cdimage_series:
             mirror.destroySelf()
 
     @property
-    def arch_serieses(self):
+    def arch_series(self):
         """See IDistributionMirror"""
         return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
 
     @property
-    def cdimage_serieses(self):
+    def cdimage_series(self):
         """See IDistributionMirror"""
         return MirrorCDImageDistroSeries.selectBy(distribution_mirror=self)
 
     @property
-    def source_serieses(self):
+    def source_series(self):
         """See IDistributionMirror"""
         return MirrorDistroSeriesSource.selectBy(distribution_mirror=self)
 
-    def getSummarizedMirroredSourceSerieses(self):
+    def getSummarizedMirroredSourceSeries(self):
         """See IDistributionMirror"""
         query = """
             MirrorDistroSeriesSource.id IN (
@@ -344,7 +344,7 @@ class DistributionMirror(SQLBase):
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
         return MirrorDistroSeriesSource.select(query)
 
-    def getSummarizedMirroredArchSerieses(self):
+    def getSummarizedMirroredArchSeries(self):
         """See IDistributionMirror"""
         query = """
             MirrorDistroArchSeries.id IN (
@@ -365,7 +365,7 @@ class DistributionMirror(SQLBase):
     def getExpectedPackagesPaths(self):
         """See IDistributionMirror"""
         paths = []
-        for series in self.distribution.serieses:
+        for series in self.distribution.series:
             for pocket, suffix in pocketsuffix.items():
                 for component in series.components:
                     for arch_series in series.architectures:
@@ -384,7 +384,7 @@ class DistributionMirror(SQLBase):
     def getExpectedSourcesPaths(self):
         """See IDistributionMirror"""
         paths = []
-        for series in self.distribution.serieses:
+        for series in self.distribution.series:
             for pocket, suffix in pocketsuffix.items():
                 for component in series.components:
                     path = ('dists/%s%s/%s/source/Sources.gz'

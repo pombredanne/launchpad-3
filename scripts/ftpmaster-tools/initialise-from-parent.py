@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -81,7 +81,7 @@ def main():
     log.debug('Check for no pending builds in parentseries')
     check_builds(distroseries)
 
-    log.debug('Copying distroarchserieses from parent '
+    log.debug('Copying distroarchseries from parent '
               'and setting nominatedarchindep.')
     copy_architectures(distroseries)
 

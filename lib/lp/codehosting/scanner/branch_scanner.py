@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -23,7 +23,7 @@ from lp.codehosting.scanner import buglinks, email, mergedetection
 from lp.codehosting.scanner.bzrsync import (
     BzrSync, schedule_diff_updates, schedule_translation_upload)
 from lp.codehosting.scanner.fixture import (
-    Fixtures, make_zope_event_fixture, run_with_fixture)
+    Fixtures, make_zope_event_fixture, run_with_fixture, ServerFixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 
@@ -33,8 +33,7 @@ class BranchScanner:
     This class is used by cronscripts/branch-scanner.py to perform its task.
     """
 
-    def __init__(self, ztm, log):
-        self.ztm = ztm
+    def __init__(self, log):
         self.log = log
 
     def _failsafe(self, log_message, default, function, *args, **kwargs):
@@ -101,7 +100,8 @@ class BranchScanner:
             schedule_translation_upload,
             ]
         server = get_scanner_server()
-        fixture = Fixtures([server, make_zope_event_fixture(*event_handlers)])
+        fixture = Fixtures(
+            [ServerFixture(server), make_zope_event_fixture(*event_handlers)])
         self.log.info('Starting branch scanning')
         branches = getUtility(IBranchScanner).getBranchesToScan()
         run_with_fixture(fixture, self.scanBranches, branches)
@@ -110,7 +110,7 @@ class BranchScanner:
     def scanOneBranch(self, branch):
         """Run BzrSync on a single branch and handle expected exceptions."""
         try:
-            bzrsync = BzrSync(self.ztm, branch, self.log)
+            bzrsync = BzrSync(branch, self.log)
         except NotBranchError:
             # The branch is not present in the Warehouse
             self._failsafe(

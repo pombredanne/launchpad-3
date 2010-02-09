@@ -7,9 +7,11 @@ __metaclass__ = type
 
 __all__ = [
     'MilestoneAddView',
+    'MilestoneBreadcrumb',
     'MilestoneContextMenu',
     'MilestoneDeleteView',
     'MilestoneEditView',
+    'MilestoneInlineNavigationMenu',
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
@@ -21,11 +23,11 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import implements, Interface
 from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.lazr.utils import smartquote
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
@@ -33,12 +35,14 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, ContextMenu, Link, NavigationMenu)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -59,7 +63,19 @@ class MilestoneNavigation(Navigation,
     usedfor = IMilestone
 
 
-class MilestoneLinkMixin:
+class MilestoneBreadcrumb(Breadcrumb):
+    """The Breadcrumb for an `IMilestone`."""
+
+    @property
+    def text(self):
+        milestone = IMilestone(self.context)
+        if milestone.code_name:
+            return '%s "%s"' % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
+
+
+class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
     """The menu for this milestone."""
 
     @enabled_with_permission('launchpad.Edit')
@@ -72,12 +88,6 @@ class MilestoneLinkMixin:
         summary = "Edit this milestone"
         return Link(
             '+edit', text, icon='edit', summary=summary, enabled=enabled)
-
-    def subscribe(self):
-        """The link to subscribe to bug mail."""
-        enabled = not IProjectMilestone.providedBy(self.context)
-        return Link('+subscribe', 'Subscribe to bug mail',
-                    icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def create_release(self):
@@ -110,7 +120,7 @@ class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
-    """Overview navigation menus for `IMilestone` objects."""
+    """Overview navigation menu for `IMilestone` objects."""
     usedfor = IMilestone
     facet = 'overview'
     links = ('edit', 'delete', 'subscribe')
@@ -123,11 +133,22 @@ class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
     links = ('create_release', )
 
 
+class IMilestoneInline(Interface):
+    """A marker interface for views that show a milestone inline."""
+
+
+class MilestoneInlineNavigationMenu(NavigationMenu, MilestoneLinkMixin):
+    """An inline navigation menus for milestone views."""
+    usedfor = IMilestoneInline
+    facet = 'overview'
+    links = ('edit', )
+
+
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     """A View for listing milestones and releases."""
     # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
     # to a mixin so that MilestoneView and others can use it.
-
+    implements(IMilestoneInline)
     show_series_context = False
 
     def __init__(self, context, request):
@@ -153,6 +174,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `LaunchpadView`."""
         self.form = self.request.form
         self.processDeleteFiles()
+
+    @property
+    def should_show_bugs_and_blueprints(self):
+        """Display the summary of bugs/blueprints for this milestone?"""
+        return (not self.show_series_context) and self.milestone.active
 
     @property
     def page_title(self):
@@ -188,7 +214,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The list of non-conjoined bugtasks targeted to this milestone."""
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
-                    orderby=['-importance', 'datecreated', 'id'],
+                    orderby=['status', '-importance', 'id'],
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
         # We could replace all the code below with a simple
@@ -218,7 +244,8 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             bugtask,
             badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
-            badge_property['has_specification'])
+            badge_property['has_specification'],
+            badge_property['has_patch'])
 
     @cachedproperty
     def bugtasks(self):

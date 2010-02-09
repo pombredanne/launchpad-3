@@ -12,6 +12,7 @@ __all__ = [
     'DistributionMirrorReassignmentView',
     'DistributionMirrorDeleteView',
     'DistributionMirrorProberLogView',
+    'DistributionMirrorBreadcrumb',
     ]
 
 from datetime import datetime
@@ -37,6 +38,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Link, NavigationMenu, action,
     canonical_url, enabled_with_permission)
+from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
 
 
 class DistributionMirrorOverviewMenu(NavigationMenu):
@@ -62,7 +64,7 @@ class DistributionMirrorOverviewMenu(NavigationMenu):
         text = 'Delete this mirror'
         return Link('+delete', text, icon='remove', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change owner'
         return Link('+reassign', text, icon='edit')
@@ -81,6 +83,10 @@ class _FlavoursByDistroSeries:
     def __init__(self, distroseries, flavours):
         self.distroseries = distroseries
         self.flavours = flavours
+
+
+class DistributionMirrorBreadcrumb(TitleBreadcrumb):
+    """Breadcrumb for distribution mirrors."""
 
 
 class DistributionMirrorView(LaunchpadView):
@@ -113,7 +119,7 @@ class DistributionMirrorView(LaunchpadView):
     # Cached because it is used to construct the entries in initialize()
     @cachedproperty
     def summarized_arch_series(self):
-        mirrors = self.context.getSummarizedMirroredArchSerieses()
+        mirrors = self.context.getSummarizedMirroredArchSeries()
         return sorted(
             mirrors, reverse=True,
             key=lambda mirror: Version(
@@ -121,7 +127,7 @@ class DistributionMirrorView(LaunchpadView):
 
     @property
     def summarized_source_series(self):
-        mirrors = self.context.getSummarizedMirroredSourceSerieses()
+        mirrors = self.context.getSummarizedMirroredSourceSeries()
         return sorted(mirrors, reverse=True,
                       key=lambda mirror: Version(mirror.distroseries.version))
 
@@ -129,16 +135,16 @@ class DistributionMirrorView(LaunchpadView):
         """Return a list of _FlavoursByDistroSeries objects ordered
         descending by version.
         """
-        serieses = {}
-        for cdimage in self.context.cdimage_serieses:
+        all_series = {}
+        for cdimage in self.context.cdimage_series:
             series, flavour = cdimage.distroseries, cdimage.flavour
-            flavours_by_series = serieses.get(series)
+            flavours_by_series = all_series.get(series)
             if flavours_by_series is None:
                 flavours_by_series = _FlavoursByDistroSeries(series, [])
-                serieses[series] = flavours_by_series
+                all_series[series] = flavours_by_series
             flavours_by_series.flavours.append(flavour)
-        flavours_by_serieses = serieses.values()
-        return sorted(flavours_by_serieses, reverse=True,
+        flavours_by_series = all_series.values()
+        return sorted(flavours_by_series, reverse=True,
                       key=lambda item: Version(item.distroseries.version))
 
 
@@ -168,7 +174,8 @@ class DistributionMirrorDeleteView(LaunchpadFormView):
             self.next_url = canonical_url(self.context)
             return
 
-        self.next_url = canonical_url(self.context.distribution)
+        self.next_url = canonical_url(self.context.distribution,
+            view_name='+pendingreviewmirrors')
         self.request.response.addInfoNotification(
             "Mirror %s has been deleted." % self.context.title)
         self.context.destroySelf()
@@ -183,7 +190,7 @@ class DistributionMirrorAddView(LaunchpadFormView):
 
     implements(IDistributionMirrorMenuMarker)
     schema = IDistributionMirror
-    field_names = ["displayname", "description", "http_base_url",
+    field_names = ["displayname", "description", "whiteboard", "http_base_url",
                    "ftp_base_url", "rsync_base_url", "speed", "country",
                    "content", "official_candidate"]
     @property
@@ -207,6 +214,7 @@ class DistributionMirrorAddView(LaunchpadFormView):
             owner=self.user, speed=data['speed'], country=data['country'],
             content=data['content'], displayname=data['displayname'],
             description=data['description'],
+            whiteboard=data['whiteboard'],
             http_base_url=data['http_base_url'],
             ftp_base_url=data['ftp_base_url'],
             rsync_base_url=data['rsync_base_url'],
@@ -249,9 +257,9 @@ class DistributionMirrorReviewView(LaunchpadEditFormView):
 class DistributionMirrorEditView(LaunchpadEditFormView):
 
     schema = IDistributionMirror
-    field_names = ["name", "displayname", "description", "http_base_url",
-                   "ftp_base_url", "rsync_base_url", "speed", "country",
-                   "content", "official_candidate"]
+    field_names = ["name", "displayname", "description", "whiteboard",
+                   "http_base_url", "ftp_base_url", "rsync_base_url", "speed",
+                   "country", "content", "official_candidate"]
     @property
     def label(self):
         """See `LaunchpadFormView`."""

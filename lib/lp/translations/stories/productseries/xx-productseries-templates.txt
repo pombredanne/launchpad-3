@@ -1,38 +1,55 @@
-= Templates view for ProductSeries =
+Templates view for ProductSeries
+================================
 
 The +templates view for ProductSeries gives an overview of the translation
 templates in this series and provides easy access to the various subpages of
 each template.
 
 
-== Getting there ==
+Preparation
+-----------
 
-The view is only visible to the owner of the ProductSeries and administrators.
+To test the ordering of templates in the listing, we need another
+template that is new but must appear at the top of the list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> template = factory.makePOTemplate(productseries=evolution_trunk,
+    ...                                   name='at-the-top')
+    >>> template = factory.makePOTemplate(productseries=evolution_trunk,
+    ...                                   name='disabled')
+    >>> template.iscurrent = False
+    >>> logout()
+    >>> owner_browser = setupBrowser('Basic test@canonical.com:test')
+
+Getting there
+-------------
+
+To get to the listing of all templates, one needs to use the link
+from the product series translations page.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('full list of templates')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> browser = setupBrowser('Basic test@canonical.com:test')
-    >>> browser.open(
-    ...     'http://translations.launchpad.dev/evolution/trunk')
-    >>> browser.getLink('full list of templates').click()
-    >>> print browser.url
+    >>> user_browser.getLink('full list of templates').click()
+    >>> print user_browser.url
     http://translations.launchpad.dev/evolution/trunk/+templates
 
 
-== The templates table ==
+The templates table
+-------------------
 
 The page shows a table of all templates and links to their subpages.
+Users will not see disabled templates.
 
-    >>> table = find_tag_by_id(browser.contents, 'templates_table')
+    >>> table = find_tag_by_id(user_browser.contents, 'templates_table')
     >>> print extract_text(table)
-    Template name       Actions
-    evolution-2.2       Edit Upload Download
-    evolution-2.2-test  Edit Upload Download
+    Template name       Last update  Actions
+    at-the-top          ...          Download
+    evolution-2.2       2005-08-25   Download
+    evolution-2.2-test  2006-12-13   Download
 
 If an administrator views this page, links to the templates admin page are
 shown, too.
@@ -41,12 +58,15 @@ shown, too.
     ...     'http://translations.launchpad.dev/evolution/trunk/+templates')
     >>> table = find_tag_by_id(admin_browser.contents, 'templates_table')
     >>> print extract_text(table)
-    Template name       Actions
-    evolution-2.2       Edit Upload Download Administer
-    evolution-2.2-test  Edit Upload Download Administer
+    Template name       Last update  Actions
+    at-the-top          ...          Edit Upload Download Administer
+    disabled (inactive) ...          Edit Upload Download Administer
+    evolution-2.2       2005-08-25   Edit Upload Download Administer
+    evolution-2.2-test  2006-12-13   Edit Upload Download Administer
 
 
-== Links to the templates ==
+Links to the templates
+----------------------
 
 Clicking on a template name will take the user to that template's overview
 page.
@@ -55,11 +75,21 @@ page.
     >>> print admin_browser.url
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2
 
-Clicking on 'Edit' will take the user to the page to edit the template
-details. Likewise for the other links for each template.
+Clicking on 'Admin' will take the user to the page to administer the template.
+Likewise for the other links for each template.
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+templates')
-    >>> admin_browser.getLink('Edit').click()
+    >>> admin_browser.getLink('Admin', index=0).click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
+    http://translations.launchpad.dev/evolution/trunk/+pots/at-the-top/+admin
+
+Clicking on 'Edit' will take the user to the page to edit the template
+details, even if the translation of the templates are not active.
+
+    >>> owner_browser.open(
+    ...     'http://translations.launchpad.dev/evolution/trunk/+templates')
+    >>> owner_browser.getLink('Edit', index=1).click()
+    >>> print owner_browser.url
+    http://translations.launchpad.dev/evolution/trunk/+pots/disabled/+edit
+

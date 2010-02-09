@@ -1,4 +1,5 @@
-= Code Review Comments =
+Code Review Comments
+====================
 
 Set up required objects
 
@@ -91,7 +92,8 @@ Email addresses in code review comments are hidden for users not logged in.
     Email me at &lt;email address hidden&gt; for more details
     Reply
 
-== Reviewing ==
+Reviewing
+---------
 
 If the user wants to review the branch, they click on the 'Add a review or
 comment' link.
@@ -108,7 +110,8 @@ comment' link.
     >>> print_comments('boardCommentBody', eric_browser, index=2)
 
 
-== Vote summaries ==
+Vote summaries
+--------------
 
 The summary of the votes that have been made for a code review are shown
 in a table at the top of the page.
@@ -119,3 +122,43 @@ in a table at the top of the page.
     Eric the Viking (community)  timeless       ...               Abstain...
     second...ago
     Review via email: mp+1@code.launchpad.dev
+
+
+Commits shown in the conversation
+---------------------------------
+
+If the source branch is updated during the review process, the commits are
+shown as part of the conversation at the time they were pushed to Launchpad.
+
+    >>> login('admin@canonical.com')
+    >>> from lp.code.tests.helpers import add_revision_to_branch
+    >>> bmp = factory.makeBranchMergeProposal()
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
+    >>> bmp.requestReview(review_date)
+    >>> revision_date = review_date + timedelta(days=1)
+    >>> for date in range(2):
+    ...     ignored = add_revision_to_branch(
+    ...         factory, bmp.source_branch, revision_date,
+    ...         commit_msg='Testing commits in conversation')
+    ...     ignored = add_revision_to_branch(
+    ...         factory, bmp.source_branch, revision_date,
+    ...         commit_msg='and it works!')
+    ...     revision_date += timedelta(days=1)
+    >>> url = canonical_url(bmp)
+    >>> logout()
+
+    >>> browser.open(url)
+    >>> print_tag_with_id(browser.contents, 'conversation')
+    lp://dev/... updated on 2009-09-11
+    1. By ... on 2009-09-11
+    Testing commits in conversation
+    2. By ... on 2009-09-11
+    and it works!
+    lp://dev/... updated on 2009-09-12
+    3. By ... on 2009-09-12
+    Testing commits in conversation
+    4. By ... on 2009-09-12
+    and it works!
+

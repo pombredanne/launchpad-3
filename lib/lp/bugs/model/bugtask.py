@@ -52,6 +52,7 @@ from canonical.database.enumcol import EnumCol
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
@@ -526,6 +527,11 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return now - self.datecreated
 
+    @property
+    def task_age(self):
+        """See `IBugTask`."""
+        return self.age.seconds
+
     # Several other classes need to generate lists of bug tasks, and
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
@@ -932,7 +938,8 @@ class BugTask(SQLBase, BugTaskMixin):
                     "to another project.")
         else:
             if (IDistributionSourcePackage.providedBy(target) and
-                target.distribution == self.target.distribution):
+                (target.distribution == self.target or
+                 target.distribution == self.target.distribution)):
                 self.sourcepackagename = target.sourcepackagename
             else:
                 raise IllegalTarget(
@@ -949,7 +956,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getPackageComponent(self):
         """See `IBugTask`."""
-        sourcepackage = None
         if ISourcePackage.providedBy(self.target):
             return self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
@@ -1257,6 +1263,7 @@ class BugTaskSet:
         "number_of_duplicates": "Bug.number_of_duplicates",
         "message_count": "Bug.message_count",
         "users_affected_count": "Bug.users_affected_count",
+        "heat": "Bug.heat",
         }
 
     _open_resolved_upstream = """
@@ -1322,6 +1329,13 @@ class BugTaskSet:
                       FROM BugBranch, BugTask
                       WHERE BugBranch.bug = BugTask.bug
                         AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        bugs_with_patches = list(Bug.select(
+            """id IN (SELECT BugAttachment.bug
+                      FROM BugAttachment, BugTask
+                      WHERE BugAttachment.bug = BugTask.bug
+                      AND BugAttachment.type = %s
+                        AND BugTask.id IN %s)""" % sqlvalues(
+            BugAttachmentType.PATCH, bugtask_ids)))
         badge_properties = {}
         for bugtask in bugtasks:
             badge_properties[bugtask] = {
@@ -1329,6 +1343,7 @@ class BugTaskSet:
                     bugtask.bug in bugs_with_mentoring_offers,
                 'has_specification': bugtask.bug in bugs_with_specifications,
                 'has_branch': bugtask.bug in bugs_with_branches,
+                'has_patch': bugtask.bug in bugs_with_patches,
                 }
         return badge_properties
 
@@ -1617,6 +1632,8 @@ class BugTaskSet:
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
 
+        if params.affects_me:
+            params.affected_user = params.user
         if params.affected_user:
             affected_user_clause = """
             BugTask.id IN (
@@ -2020,22 +2037,37 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         bug_privacy_filter = get_bug_privacy_filter(user)
         if bug_privacy_filter != "":
-            bug_privacy_filter = ' AND ' + bug_privacy_filter
+            bug_privacy_filter = 'AND ' + bug_privacy_filter
         cur = cursor()
-        condition = """
-            (BugTask.productseries = %s
-                 OR Milestone.productseries = %s)
-            """ % sqlvalues(product_series, product_series)
+
+        # The union is actually much faster than a LEFT JOIN with the
+        # Milestone table, since postgres optimizes it to perform index
+        # scans instead of sequential scans on the BugTask table.
         query = """
-            SELECT BugTask.status, count(*)
-            FROM BugTask
-                JOIN Bug ON BugTask.bug = Bug.id
-                LEFT JOIN Milestone ON BugTask.milestone = Milestone.id
-            WHERE
-                %s
-                %s
-            GROUP BY BugTask.status
-            """ % (condition, bug_privacy_filter)
+            SELECT status, count(*)
+            FROM (
+                SELECT BugTask.status
+                FROM BugTask
+                    JOIN Bug ON BugTask.bug = Bug.id
+                WHERE
+                    BugTask.productseries = %(series)s
+                    %(privacy)s
+
+                UNION ALL
+
+                SELECT BugTask.status
+                FROM BugTask
+                    JOIN Bug ON BugTask.bug = Bug.id
+                    JOIN Milestone ON BugTask.milestone = Milestone.id
+                WHERE
+                    BugTask.productseries IS NULL
+                    AND Milestone.productseries = %(series)s
+                    %(privacy)s
+                ) AS subquery
+            GROUP BY status
+            """ % dict(series=quote(product_series),
+                       privacy=bug_privacy_filter)
+
         cur.execute(query)
         return cur.fetchall()
 

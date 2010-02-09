@@ -89,6 +89,12 @@ special = {
         '../doc/cve-update.txt',
         setUp=cveSetUp, tearDown=tearDown, layer=LaunchpadZopelessLayer
         ),
+    'bug-heat.txt': LayeredDocFileSuite(
+        '../doc/bug-heat.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
     'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
         setUp=uploaderBugsSetUp,
@@ -199,6 +205,12 @@ special = {
     'bugwatch.txt':
         LayeredDocFileSuite(
         '../doc/bugwatch.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
+    'bugtracker.txt':
+        LayeredDocFileSuite(
+        '../doc/bugtracker.txt',
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),

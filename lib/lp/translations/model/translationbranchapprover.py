@@ -11,6 +11,7 @@ import os.path
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators.name import sanitize_name
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
@@ -164,6 +165,8 @@ class TranslationBranchApprover(object):
 
         # Approve the entry
         entry.potemplate = potemplate
-        entry.setStatus(RosettaImportStatus.APPROVED)
+        if entry.status == RosettaImportStatus.NEEDS_REVIEW:
+            entry.setStatus(RosettaImportStatus.APPROVED,
+                            getUtility(ILaunchpadCelebrities).rosetta_experts)
         return entry
 

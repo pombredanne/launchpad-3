@@ -8,7 +8,7 @@
 __metaclass__ = type
 __all__ = []
 
-PAGE_LOAD = unicode(20000)
-FOR_ELEMENT = unicode(10000)
+PAGE_LOAD = unicode(40000)
+FOR_ELEMENT = unicode(20000)
 SLEEP = unicode(5000)
 

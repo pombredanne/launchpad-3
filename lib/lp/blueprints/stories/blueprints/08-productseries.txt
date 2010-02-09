@@ -16,6 +16,8 @@ First we load the page to target to the series.
     >>> back_link = browser.getLink('Support Native SVG Objects')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
+    >>> browser.getLink('Cancel').url
+    'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
 
 We can see two potential series candidates, the "trunk" and the "1.0" series.
 
@@ -54,6 +56,7 @@ so the targeting should NOT be automatically approved.
   ... -----------------------------26999413214087432371486976730--
   ... """)
   HTTP/1.1 303 See Other
+  ...
   Content-Length: 0
   ...
   Location: http://.../firefox/+spec/svg-support
@@ -97,6 +100,7 @@ OK, we will also pitch the e4x spec to the same series:
   ... -----------------------------26999413214087432371486976730--
   ... """)
   HTTP/1.1 303 See Other
+  ...
   Content-Length: 0
   ...
   Location: http://.../firefox/+spec/e4x
@@ -185,6 +189,7 @@ because we are an admin, then we will move it back.
   ... -----------------------------26999413214087432371486976730--
   ... """)
   HTTP/1.1 303 See Other
+  ...
   Content-Length: 0
   ...
   Location: http://.../firefox/+spec/svg-support
@@ -226,6 +231,7 @@ And lets put it back:
   ... -----------------------------26999413214087432371486976730--
   ... """)
   HTTP/1.1 303 See Other
+  ...
   Content-Length: 0
   ...
   Location: http://.../firefox/+spec/svg-support

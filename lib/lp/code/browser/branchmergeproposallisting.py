@@ -7,26 +7,37 @@ __metaclass__ = type
 
 __all__ = [
     'ActiveReviewsView',
+    'BranchActiveReviewsView',
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     'PersonActiveReviewsView',
     'PersonProductActiveReviewsView',
     ]
 
+from operator import attrgetter
+
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, Interface
+from zope.schema import Choice
+
+from lazr.delegates import delegates
+from lazr.enum import EnumeratedType, Item, use_template
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad import _
+from canonical.launchpad.webapp import custom_widget, LaunchpadFormView
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.widgets import LaunchpadDropdownWidget
+
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal,
-    IBranchMergeProposalGetter, IBranchMergeProposalListingBatchNavigator)
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from lazr.delegates import delegates
+    IBranchMergeProposal, IBranchMergeProposalGetter,
+    IBranchMergeProposalListingBatchNavigator)
+from lp.code.interfaces.hasbranches import IHasMergeProposals
 
 
 class BranchMergeProposalListingItem:
@@ -86,6 +97,26 @@ class BranchMergeProposalListingItem:
         """A vote from the specified reviewer."""
         return self.context.getUsersVoteReference(self.proposal_reviewer)
 
+    @property
+    def sort_key(self):
+        """The value to order by.
+
+        This defaults to date_review_requested, but there are occasions where
+        this is not set if the proposal went directly from work in progress to
+        approved.  In this case the date_reviewed is used.
+
+        The value is always not None as proposals in needs review state will
+        always have date_review_requested set, and approved proposals will
+        always have date_reviewed set.  These are the only two states that are
+        shown in the active reviews page, so they can always be sorted on.
+        """
+        if self.context.date_review_requested is not None:
+            return self.context.date_review_requested
+        elif self.context.date_reviewed is not None:
+            return self.context.date_reviewed
+        else:
+            return self.context.date_created
+
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
@@ -97,10 +128,6 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
-        # Add preview_diff to self.show_column dict if there are any diffs.
-        for proposal in self.proposals:
-            if proposal.preview_diff is not None:
-                self.show_column['preview_diff'] = True
 
     @cachedproperty
     def _proposals_for_current_batch(self):
@@ -133,11 +160,63 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
             return "listing sortable"
 
 
-class BranchMergeProposalListingView(LaunchpadView):
+class FilterableStatusValues(EnumeratedType):
+    """Selectable values for filtering the merge proposal listings."""
+    use_template(BranchMergeProposalStatus)
+
+    sort_order = (
+        'ALL', 'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED',
+        'REJECTED', 'MERGED', 'MERGE_FAILED', 'QUEUED', 'SUPERSEDED')
+
+    ALL = Item("Any status")
+
+
+class BranchMergeProposalFilterSchema(Interface):
+    """Schema for generating the filter widget for listing views."""
+
+    # Stats and status attributes
+    status = Choice(
+        title=_('Status'), vocabulary=FilterableStatusValues,
+        default=FilterableStatusValues.ALL,)
+
+
+class BranchMergeProposalListingView(LaunchpadFormView):
     """A base class for views of branch merge proposal listings."""
+
+    schema = BranchMergeProposalFilterSchema
+    field_names = ['status']
+    custom_widget('status', LaunchpadDropdownWidget)
 
     extra_columns = []
     _queue_status = None
+
+    @property
+    def page_title(self):
+        return "Merge Proposals for %s" % self.context.displayname
+    label = page_title
+
+    @property
+    def initial_values(self):
+        return {
+            'status': FilterableStatusValues.ALL,
+            }
+
+    @cachedproperty
+    def status_value(self):
+        """The effective value of the status widget."""
+        widget = self.widgets['status']
+        if widget.hasValidInput():
+            return widget.getInputValue()
+        else:
+            return FilterableStatusValues.ALL
+
+    @cachedproperty
+    def status_filter(self):
+        """Return the status values to filter on."""
+        if self.status_value == FilterableStatusValues.ALL:
+            return BranchMergeProposalStatus.items
+        else:
+            return (BranchMergeProposalStatus.items[self.status_value.name], )
 
     @property
     def proposals(self):
@@ -150,25 +229,22 @@ class BranchMergeProposalListingView(LaunchpadView):
 
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""
-        return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, self._queue_status, self.user)
+        has_proposals = IHasMergeProposals(self.context)
+        return has_proposals.getMergeProposals(self.status_filter, self.user)
 
     @cachedproperty
     def proposal_count(self):
         """Return the number of proposals that will be returned."""
         return self.getVisibleProposalsForUser().count()
 
-
-class PersonBMPListingView(BranchMergeProposalListingView):
-    """Base class for the proposal listings that defines the user."""
-
-    def _getCollection(self):
-        """Return the branch collection for the view."""
-        return getUtility(IAllBranches).visibleByUser(self.user)
-
-    def getUserFromContext(self):
-        """Get the relevant user from the context."""
-        return self.context
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        if self.status_value == FilterableStatusValues.ALL:
+            return "%s has no merge proposals." % self.context.displayname
+        else:
+            return "%s has no merge proposals with status: %s" % (
+                self.context.displayname, self.status_value.title)
 
 
 class ActiveReviewsView(BranchMergeProposalListingView):
@@ -269,6 +345,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             if proposal.preview_diff is not None:
                 self.show_diffs = True
         # Sort each collection...
+        for group in self.review_groups.values():
+            group.sort(key=attrgetter('sort_key'))
         self.proposal_count = len(proposals)
 
     @cachedproperty
@@ -321,6 +399,16 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         return "%s has no active code reviews." % self.context.displayname
 
 
+class BranchActiveReviewsView(ActiveReviewsView):
+    """Branch merge proposals for a branch that are needing review."""
+
+    def getProposals(self):
+        """See `ActiveReviewsView`."""
+        candidates = self.context.landing_candidates
+        return [proposal for proposal in candidates
+                if check_permission('launchpad.View', proposal)]
+
+
 class PersonActiveReviewsView(ActiveReviewsView):
     """Branch merge proposals for the person that are needing review."""
 
@@ -336,8 +424,7 @@ class PersonActiveReviewsView(ActiveReviewsView):
         proposals = collection.getMergeProposalsForPerson(
             self._getReviewer(),
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW,
-             BranchMergeProposalStatus.WORK_IN_PROGRESS])
+             BranchMergeProposalStatus.NEEDS_REVIEW])
 
         return proposals
 

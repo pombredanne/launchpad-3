@@ -10,10 +10,11 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
-    'HostedBranchRestrictedOnOwnerVocabulary',
     'BranchRestrictedOnProductVocabulary',
     'BranchVocabulary',
-    'BugNominatableSeriesesVocabulary',
+    'BugNominatableDistroSeriesVocabulary',
+    'BugNominatableProductSeriesVocabulary',
+    'BugNominatableSeriesVocabulary',
     'BugTrackerVocabulary',
     'BugVocabulary',
     'BugWatchVocabulary',
@@ -25,11 +26,13 @@ __all__ = [
     'FilteredFullLanguagePackVocabulary',
     'FilteredLanguagePackVocabulary',
     'FutureSprintVocabulary',
+    'HostedBranchRestrictedOnOwnerVocabulary',
     'LanguageVocabulary',
-    'PPAVocabulary',
     'PackageReleaseVocabulary',
+    'PPAVocabulary',
     'ProcessorFamilyVocabulary',
     'ProcessorVocabulary',
+    'project_products_using_malone_vocabulary_factory',
     'SpecificationDepCandidatesVocabulary',
     'SpecificationDependenciesVocabulary',
     'SpecificationVocabulary',
@@ -39,7 +42,6 @@ __all__ = [
     'TranslationMessageVocabulary',
     'TranslationTemplateVocabulary',
     'WebBugTrackerVocabulary',
-    'project_products_using_malone_vocabulary_factory',
     ]
 
 import cgi
@@ -90,8 +92,8 @@ from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries    
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -705,9 +707,8 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
-def BugNominatableSeriesesVocabulary(context=None):
-    """Return a nominatable serieses vocabulary."""
-
+def BugNominatableSeriesVocabulary(context=None):
+    """Return a nominatable series vocabulary."""
     if getUtility(ILaunchBag).distribution:
         return BugNominatableDistroSeriesVocabulary(
             context, getUtility(ILaunchBag).distribution)
@@ -723,9 +724,9 @@ class BugNominatableSeriesVocabularyBase(NamedSQLObjectVocabulary):
     def __iter__(self):
         bug = self.context.bug
 
-        serieses = self._getNominatableObjects()
+        all_series = self._getNominatableObjects()
 
-        for series in sorted(serieses, key=attrgetter("displayname")):
+        for series in sorted(all_series, key=attrgetter("displayname")):
             if bug.canBeNominatedFor(series):
                 yield self.toTerm(series)
 
@@ -760,7 +761,7 @@ class BugNominatableProductSeriesVocabulary(
 
     def _getNominatableObjects(self):
         """See BugNominatableSeriesVocabularyBase."""
-        return shortlist(self.product.serieses)
+        return shortlist(self.product.series)
 
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""
@@ -778,10 +779,10 @@ class BugNominatableDistroSeriesVocabulary(
         self.distribution = distribution
 
     def _getNominatableObjects(self):
-        """Return all non-obsolete distribution serieses"""
+        """Return all non-obsolete distribution series"""
         return [
-            series for series in shortlist(self.distribution.serieses)
-            if series.status != DistroSeriesStatus.OBSOLETE]
+            series for series in shortlist(self.distribution.series)
+            if series.status != SeriesStatus.OBSOLETE]
 
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""

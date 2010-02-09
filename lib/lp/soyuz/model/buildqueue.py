@@ -7,32 +7,85 @@ __metaclass__ = type
 
 __all__ = [
     'BuildQueue',
-    'BuildQueueSet'
+    'BuildQueueSet',
+    'specific_job_classes',
     ]
 
-from datetime import datetime
+from collections import defaultdict
+from datetime import datetime, timedelta
 import logging
-import pytz
 
-from zope.component import getUtility
+from zope.component import getSiteManager, getUtility
+
 from zope.interface import implements
 
 from sqlobject import (
-    StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
-from storm.expr import In, LeftJoin
+    StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
+from storm.expr import In, Join, LeftJoin
+from storm.store import Store
 
-from canonical import encoding
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJob)
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior)
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
+
+def normalize_virtualization(virtualized):
+    """Jobs with NULL virtualization settings should be treated the
+       same way as virtualized jobs."""
+    return virtualized is None or virtualized
+
+
+def specific_job_classes():
+    """Job classes that may run on the build farm."""
+    job_classes = dict()
+    # Get all components that implement the `IBuildFarmJob` interface.
+    components = getSiteManager()
+    implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
+    # The above yields a collection of 2-tuples where the first element
+    # is the name of the `BuildFarmJobType` enum and the second element
+    # is the implementing class respectively.
+    for job_enum_name, job_class in implementations:
+        job_enum = getattr(BuildFarmJobType, job_enum_name)
+        job_classes[job_enum] = job_class
+
+    return job_classes
+
+
+def get_builder_data():
+    """How many working builders are there, how are they configured?"""
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    builder_data = """
+        SELECT processor, virtualized, COUNT(id) FROM builder
+        WHERE builderok = TRUE AND manual = FALSE
+        GROUP BY processor, virtualized;
+    """
+    results = store.execute(builder_data).get_all()
+    builders_in_total = builders_for_job = virtualized_total = 0
+
+    builder_stats = defaultdict(int)
+    for processor, virtualized, count in results:
+        builders_in_total += count
+        if virtualized:
+            virtualized_total += count
+        builder_stats[(processor, virtualized)] = count
+
+    builder_stats[(None, True)] = virtualized_total
+    # Jobs with a NULL virtualized flag should be treated the same as
+    # jobs where virtualized=TRUE.
+    builder_stats[(None, None)] = virtualized_total
+    builder_stats[(None, False)] = builders_in_total - virtualized_total
+    return builder_stats
 
 
 class BuildQueue(SQLBase):
@@ -40,243 +93,376 @@ class BuildQueue(SQLBase):
     _table = "BuildQueue"
     _defaultOrder = "id"
 
-    build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
+    job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
+    job_type = EnumCol(
+        enum=BuildFarmJobType, notNull=True,
+        default=BuildFarmJobType.PACKAGEBUILD, dbName='job_type')
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
-    created = UtcDateTimeCol(dbName='created', default=UTC_NOW)
-    buildstart = UtcDateTimeCol(dbName='buildstart', default= None)
     logtail = StringCol(dbName='logtail', default=None)
     lastscore = IntCol(dbName='lastscore', default=0)
     manual = BoolCol(dbName='manual', default=False)
+    estimated_duration = IntervalCol()
+    processor = ForeignKey(dbName='processor', foreignKey='Processor')
+    virtualized = BoolCol(dbName='virtualized')
+
+    @property
+    def required_build_behavior(self):
+        """See `IBuildQueue`."""
+        return IBuildFarmJobBehavior(self.specific_job)
+
+    @property
+    def specific_job(self):
+        """See `IBuildQueue`."""
+        specific_class = specific_job_classes()[self.job_type]
+        return specific_class.getByJob(self.job)
+
+    @property
+    def date_started(self):
+        """See `IBuildQueue`."""
+        return self.job.date_started
+
+    def destroySelf(self):
+        """Remove this record and associated job/specific_job."""
+        job = self.job
+        specific_job = self.specific_job
+        SQLBase.destroySelf(self)
+        Store.of(specific_job).remove(specific_job)
+        job.destroySelf()
 
     def manualScore(self, value):
         """See `IBuildQueue`."""
         self.lastscore = value
         self.manual = True
 
-    @property
-    def archseries(self):
-        """See `IBuildQueue`."""
-        return self.build.distroarchseries
-
-    @property
-    def urgency(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.urgency
-
-    @property
-    def archhintlist(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.architecturehintlist
-
-    @property
-    def name(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.name
-
-    @property
-    def version(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.version
-
-    @property
-    def files(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.files
-
-    @property
-    def builddependsindep(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.builddependsindep
-
-    @property
-    def buildduration(self):
-        """See `IBuildQueue`."""
-        if self.buildstart:
-            UTC = pytz.timezone('UTC')
-            now = datetime.now(UTC)
-            return now - self.buildstart
-        return None
-
-    @property
-    def is_virtualized(self):
-        """See `IBuildQueue`."""
-        return self.build.is_virtualized
-
     def score(self):
         """See `IBuildQueue`."""
         # Grab any logger instance available.
         logger = logging.getLogger()
+        name = self.specific_job.getName()
 
         if self.manual:
             logger.debug(
-                "%s (%d) MANUALLY RESCORED" % (self.name, self.lastscore))
+                "%s (%d) MANUALLY RESCORED" % (name, self.lastscore))
             return
 
-        # XXX Al-maisan, 2008-05-14 (bug #230330):
-        # We keep touching the code here whenever a modification to the
-        # scoring parameters/weights is needed. Maybe the latter can be
-        # externalized?
-
-        score_pocketname = {
-            PackagePublishingPocket.BACKPORTS: 0,
-            PackagePublishingPocket.RELEASE: 1500,
-            PackagePublishingPocket.PROPOSED: 3000,
-            PackagePublishingPocket.UPDATES: 3000,
-            PackagePublishingPocket.SECURITY: 4500,
-            }
-
-        score_componentname = {
-            'multiverse': 0,
-            'universe': 250,
-            'restricted': 750,
-            'main': 1000,
-            'partner' : 1250,
-            }
-
-        score_urgency = {
-            SourcePackageUrgency.LOW: 5,
-            SourcePackageUrgency.MEDIUM: 10,
-            SourcePackageUrgency.HIGH: 15,
-            SourcePackageUrgency.EMERGENCY: 20,
-            }
-
-        # Define a table we'll use to calculate the score based on the time
-        # in the build queue.  The table is a sorted list of (upper time
-        # limit in seconds, score) tuples.
-        queue_time_scores = [
-            (14400, 100),
-            (7200, 50),
-            (3600, 20),
-            (1800, 15),
-            (900, 10),
-            (300, 5),
-        ]
-
-        private_archive_increment = 10000
-
-        # For build jobs in rebuild archives a score value of -1
-        # was chosen because their priority is lower than build retries
-        # or language-packs. They should be built only when there is
-        # nothing else to build.
-        rebuild_archive_score = -10
-
-        score = 0
-        msg = "%s (%d) -> " % (self.build.title, self.lastscore)
-
-        # Please note: the score for language packs is to be zero because
-        # they unduly delay the building of packages in the main component
-        # otherwise.
-        if self.build.sourcepackagerelease.section.name == 'translations':
-            msg += "LPack => score zero"
-        elif self.build.archive.purpose == ArchivePurpose.COPY:
-            score = rebuild_archive_score
-            msg += "Rebuild archive => -10"
-        else:
-            # Calculates the urgency-related part of the score.
-            urgency = score_urgency[self.urgency]
-            score += urgency
-            msg += "U+%d " % urgency
-
-            # Calculates the pocket-related part of the score.
-            score_pocket = score_pocketname[self.build.pocket]
-            score += score_pocket
-            msg += "P+%d " % score_pocket
-
-            # Calculates the component-related part of the score.
-            score_component = score_componentname[
-                self.build.current_component.name]
-            score += score_component
-            msg += "C+%d " % score_component
-
-            # Calculates the build queue time component of the score.
-            right_now = datetime.now(pytz.timezone('UTC'))
-            eta = right_now - self.created
-            for limit, dep_score in queue_time_scores:
-                if eta.seconds > limit:
-                    score += dep_score
-                    msg += "T+%d " % dep_score
-                    break
-            else:
-                msg += "T+0 "
-
-            # Private builds get uber score.
-            if self.build.archive.private:
-                score += private_archive_increment
-
-            # Lastly, apply the archive score delta.  This is to boost
-            # or retard build scores for any build in a particular
-            # archive.
-            score += self.build.archive.relative_build_score
-
-        # Store current score value.
-        self.lastscore = score
-
-        logger.debug("%s= %d" % (msg, self.lastscore))
+        # Allow the `IBuildFarmJob` instance with the data/logic specific to
+        # the job at hand to calculate the score as appropriate.
+        self.lastscore = self.specific_job.score()
 
     def getLogFileName(self):
         """See `IBuildQueue`."""
-        sourcename = self.build.sourcepackagerelease.name
-        version = self.build.sourcepackagerelease.version
-        # we rely on previous storage of current buildstate
-        # in the state handling methods.
-        state = self.build.buildstate.name
-
-        dar = self.build.distroarchseries
-        distroname = dar.distroseries.distribution.name
-        distroseriesname = dar.distroseries.name
-        archname = dar.architecturetag
-
-        # logfilename format:
-        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
-        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
-        # as:
-        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
-        # it fix request from bug # 30617
-        return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
-            distroname, distroseriesname, archname, sourcename, version, state
-            ))
+        # Allow the `IBuildFarmJob` instance with the data/logic specific to
+        # the job at hand to calculate the log file name as appropriate.
+        return self.specific_job.getLogFileName()
 
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
-        self.buildstart = UTC_NOW
-        self.build.buildstate = BuildStatus.BUILDING
-        # The build started, set the start time if not set already.
-        if self.build.date_first_dispatched is None:
-            self.build.date_first_dispatched = UTC_NOW
+        if self.job.status != JobStatus.RUNNING:
+            self.job.start()
+        self.specific_job.jobStarted()
 
     def reset(self):
         """See `IBuildQueue`."""
         self.builder = None
-        self.buildstart = None
+        if self.job.status != JobStatus.WAITING:
+            self.job.queue()
+        self.job.date_started = None
+        self.job.date_finished = None
         self.logtail = None
-        self.build.buildstate = BuildStatus.NEEDSBUILD
+        self.specific_job.jobReset()
 
-    def updateBuild_IDLE(self, build_id, build_status, logtail,
-                         filemap, dependencies, logger):
+    def setDateStarted(self, timestamp):
         """See `IBuildQueue`."""
-        logger.warn(
-            "Builder %s forgot about build %s -- resetting buildqueue record"
-            % (self.builder.url, self.build.title))
-        self.reset()
+        self.job.date_started = timestamp
 
-    def updateBuild_BUILDING(self, build_id, build_status,
-                             logtail, filemap, dependencies, logger):
-        """See `IBuildQueue`."""
-        self.logtail = encoding.guess(str(logtail))
+    def _getFreeBuildersCount(self, processor, virtualized):
+        """How many builders capable of running jobs for the given processor
+        and virtualization combination are idle/free at present?"""
+        query = """
+            SELECT COUNT(id) FROM builder
+            WHERE
+                builderok = TRUE AND manual = FALSE
+                AND id NOT IN (
+                    SELECT builder FROM BuildQueue WHERE builder IS NOT NULL)
+                AND virtualized = %s
+            """ % sqlvalues(normalize_virtualization(virtualized))
+        if processor is not None:
+            query += """
+                AND processor = %s
+            """ % sqlvalues(processor)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.execute(query)
+        free_builders = result_set.get_one()[0]
+        return free_builders
 
-    def updateBuild_ABORTING(self, buildid, build_status,
-                             logtail, filemap, dependencies, logger):
-        """See `IBuildQueue`."""
-        self.logtail = "Waiting for slave process to be terminated"
+    def _estimateTimeToNextBuilder(self):
+        """Estimate time until next builder becomes available.
 
-    def updateBuild_ABORTED(self, buildid, build_status,
-                            logtail, filemap, dependencies, logger):
-        """See `IBuildQueue`."""
-        self.builder.cleanSlave()
-        self.builder = None
-        self.buildstart = None
-        self.build.buildstate = BuildStatus.BUILDING
+        For the purpose of estimating the dispatch time of the job of interest
+        (JOI) we need to know how long it will take until the job at the head
+        of JOI's queue is dispatched.
+
+        There are two cases to consider here: the head job is
+
+            - processor dependent: only builders with the matching
+              processor/virtualization combination should be considered.
+            - *not* processor dependent: all builders with the matching
+              virtualization setting should be considered.
+
+        :return: The estimated number of seconds untils a builder capable of
+            running the head job becomes available.
+        """
+        head_job_platform = self._getHeadJobPlatform()
+
+        # Return a zero delay if we still have free builders available for the
+        # given platform/virtualization combination.
+        free_builders = self._getFreeBuildersCount(*head_job_platform)
+        if free_builders > 0:
+            return 0
+
+        head_job_processor, head_job_virtualized = head_job_platform
+
+        delay_query = """
+            SELECT MIN(
+              CASE WHEN
+                EXTRACT(EPOCH FROM
+                  (BuildQueue.estimated_duration -
+                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))  >= 0
+              THEN
+                EXTRACT(EPOCH FROM
+                  (BuildQueue.estimated_duration -
+                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))
+              ELSE
+                -- Assume that jobs that have overdrawn their estimated
+                -- duration time budget will complete within 2 minutes.
+                -- This is a wild guess but has worked well so far.
+                --
+                -- Please note that this is entirely innocuous i.e. if our
+                -- guess is off nothing bad will happen but our estimate will
+                -- not be as good as it could be.
+                120
+              END)
+            FROM
+                BuildQueue, Job, Builder
+            WHERE
+                BuildQueue.job = Job.id
+                AND BuildQueue.builder = Builder.id
+                AND Builder.manual = False
+                AND Builder.builderok = True
+                AND Job.status = %s
+                AND Builder.virtualized = %s
+            """ % sqlvalues(
+                JobStatus.RUNNING,
+                normalize_virtualization(head_job_virtualized))
+
+        if head_job_processor is not None:
+            # Only look at builders with specific processor types.
+            delay_query += """
+                AND Builder.processor = %s
+                """ % sqlvalues(head_job_processor)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.execute(delay_query)
+        head_job_delay = result_set.get_one()[0]
+        return (0 if head_job_delay is None else int(head_job_delay))
+
+    def _getPendingJobsClauses(self):
+        """WHERE clauses for pending job queries, used for dipatch time
+        estimation."""
+        virtualized = normalize_virtualization(self.virtualized)
+        clauses = """
+            BuildQueue.job = Job.id
+            AND Job.status = %s
+            AND (
+                -- The score must be either above my score or the
+                -- job must be older than me in cases where the
+                -- score is equal.
+                BuildQueue.lastscore > %s OR
+                (BuildQueue.lastscore = %s AND Job.id < %s))
+            -- The virtualized values either match or the job
+            -- does not care about virtualization and the job
+            -- of interest (JOI) is to be run on a virtual builder
+            -- (we want to prevent the execution of untrusted code
+            -- on native builders).
+            AND COALESCE(buildqueue.virtualized, TRUE) = %s
+            """ % sqlvalues(
+                JobStatus.WAITING, self.lastscore, self.lastscore, self.job,
+                virtualized)
+        processor_clause = """
+            AND (
+                -- The processor values either match or the candidate
+                -- job is processor-independent.
+                buildqueue.processor = %s OR
+                buildqueue.processor IS NULL)
+            """ % sqlvalues(self.processor)
+        # We don't care about processors if the estimation is for a
+        # processor-independent job.
+        if self.processor is not None:
+            clauses += processor_clause
+        return clauses
+
+    def _getHeadJobPlatform(self):
+        """Find the processor and virtualization setting for the head job.
+
+        Among the jobs that compete with the job of interest (JOI) for
+        builders and are queued ahead of it the head job is the one in pole
+        position i.e. the one to be dispatched to a builder next.
+
+        :return: A (processor, virtualized) tuple which is the head job's
+        platform or None if the JOI is the head job.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        my_platform = (
+            getattr(self.processor, 'id', None),
+            normalize_virtualization(self.virtualized))
+        query = """
+            SELECT
+                processor,
+                virtualized
+            FROM
+                BuildQueue, Job
+            WHERE
+            """
+        query += self._getPendingJobsClauses()
+        query += """
+            ORDER BY lastscore DESC, job LIMIT 1
+            """
+        result = store.execute(query).get_one()
+        return (my_platform if result is None else result)
+
+    def _estimateJobDelay(self, builder_stats):
+        """Sum of estimated durations for *pending* jobs ahead in queue.
+
+        For the purpose of estimating the dispatch time of the job of
+        interest (JOI) we need to know the delay caused by all the pending
+        jobs that are ahead of the JOI in the queue and that compete with it
+        for builders.
+
+        :param builder_stats: A dictionary with builder counts where the
+            key is a (processor, virtualized) combination (aka "platform") and
+            the value is the number of builders that can take on jobs
+            requiring that combination.
+        :return: An integer value holding the sum of delays (in seconds)
+            caused by the jobs that are ahead of and competing with the JOI.
+        """
+        def jobs_compete_for_builders(a, b):
+            """True if the two jobs compete for builders."""
+            a_processor, a_virtualized = a
+            b_processor, b_virtualized = b
+            if a_processor is None or b_processor is None:
+                # If either of the jobs is platform-independent then the two
+                # jobs compete for the same builders if the virtualization
+                # settings match.
+                if a_virtualized == b_virtualized:
+                    return True
+            else:
+                # Neither job is platform-independent, match processor and
+                # virtualization settings.
+                return a == b
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        my_platform = (
+            getattr(self.processor, 'id', None),
+            normalize_virtualization(self.virtualized))
+        query = """
+            SELECT
+                BuildQueue.processor,
+                BuildQueue.virtualized,
+                COUNT(BuildQueue.job),
+                CAST(EXTRACT(
+                    EPOCH FROM
+                        SUM(BuildQueue.estimated_duration)) AS INTEGER)
+            FROM
+                BuildQueue, Job
+            WHERE
+            """
+        query += self._getPendingJobsClauses()
+        query += """
+            GROUP BY BuildQueue.processor, BuildQueue.virtualized
+            """
+
+        delays_by_platform = store.execute(query).get_all()
+
+        # This will be used to capture per-platform delay totals.
+        delays = defaultdict(int)
+        # This will be used to capture per-platform job counts.
+        job_counts = defaultdict(int)
+
+        # Divide the estimated duration of the jobs as follows:
+        #   - if a job is tied to a processor TP then divide the estimated
+        #     duration of that job by the number of builders that target TP
+        #     since only these can build the job.
+        #   - if the job is processor-independent then divide its estimated
+        #     duration by the total number of builders with the same
+        #     virtualization setting because any one of them may run it.
+        for processor, virtualized, job_count, delay in delays_by_platform:
+            virtualized = normalize_virtualization(virtualized)
+            platform = (processor, virtualized)
+            builder_count = builder_stats.get(platform, 0)
+            if builder_count == 0:
+                # There is no builder that can run this job, ignore it
+                # for the purpose of dispatch time estimation.
+                continue
+
+            if jobs_compete_for_builders(my_platform, platform):
+                # The jobs that target the platform at hand compete with
+                # the JOI for builders, add their delays.
+                delays[platform] += delay
+                job_counts[platform] += job_count
+
+        sum_of_delays = 0
+        # Now devide the delays based on a jobs/builders comparison.
+        for platform, duration in delays.iteritems():
+            jobs = job_counts[platform]
+            builders = builder_stats[platform]
+            # If there are less jobs than builders that can take them on,
+            # the delays should be averaged/divided by the number of jobs.
+            denominator = (jobs if jobs < builders else builders)
+            if denominator > 1:
+                duration = int(duration/float(denominator))
+
+            sum_of_delays += duration
+
+        return sum_of_delays
+
+    def getEstimatedJobStartTime(self):
+        """See `IBuildQueue`.
+
+        The estimated dispatch time for the build farm job at hand is
+        calculated from the following ingredients:
+            * the start time for the head job (job at the
+              head of the respective build queue)
+            * the estimated build durations of all jobs that
+              precede the job of interest (JOI) in the build queue
+              (divided by the number of machines in the respective
+              build pool)
+        """
+        # This method may only be invoked for pending jobs.
+        if self.job.status != JobStatus.WAITING:
+            raise AssertionError(
+                "The start time is only estimated for pending jobs.")
+
+        builder_stats = get_builder_data()
+        platform = (getattr(self.processor, 'id', None), self.virtualized)
+        if builder_stats[platform] == 0:
+            # No builders that can run the job at hand
+            #   -> no dispatch time estimation available.
+            return None
+
+        # Get the sum of the estimated run times for *pending* jobs that are
+        # ahead of us in the queue.
+        sum_of_delays = self._estimateJobDelay(builder_stats)
+
+        # Get the minimum time duration until the next builder becomes
+        # available.
+        min_wait_time = self._estimateTimeToNextBuilder()
+
+        # A job will not get dispatched in less than 5 seconds no matter what.
+        start_time = max(5, min_wait_time + sum_of_delays)
+        result = datetime.utcnow() + timedelta(seconds=start_time)
+
+        return result
 
 
 class BuildQueueSet(object):
@@ -290,16 +476,21 @@ class BuildQueueSet(object):
         """See `IBuildQueueSet`."""
         return iter(BuildQueue.select())
 
-    def __getitem__(self, job_id):
+    def __getitem__(self, buildqueue_id):
         """See `IBuildQueueSet`."""
         try:
-            return BuildQueue.get(job_id)
+            return BuildQueue.get(buildqueue_id)
         except SQLObjectNotFound:
-            raise NotFoundError(job_id)
+            raise NotFoundError(buildqueue_id)
 
-    def get(self, job_id):
+    def get(self, buildqueue_id):
         """See `IBuildQueueSet`."""
-        return BuildQueue.get(job_id)
+        return BuildQueue.get(buildqueue_id)
+
+    def getByJob(self, job):
+        """See `IBuildQueueSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(BuildQueue, BuildQueue.job == job).one()
 
     def count(self):
         """See `IBuildQueueSet`."""
@@ -311,7 +502,14 @@ class BuildQueueSet(object):
 
     def getActiveBuildJobs(self):
         """See `IBuildQueueSet`."""
-        return BuildQueue.select('buildstart is not null')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            BuildQueue,
+            BuildQueue.job == Job.id,
+            # status is a property. Let's use _status.
+            Job._status == JobStatus.RUNNING,
+            Job.date_started != None)
+        return result_set
 
     def calculateCandidates(self, archseries):
         """See `IBuildQueueSet`."""
@@ -323,30 +521,37 @@ class BuildQueueSet(object):
         query = """
            Build.distroarchseries IN %s AND
            Build.buildstate = %s AND
-           BuildQueue.build = build.id AND
+           BuildQueue.job_type = %s AND
+           BuildQueue.job = BuildPackageJob.job AND
+           BuildPackageJob.build = build.id AND
            BuildQueue.builder IS NULL
-        """ % sqlvalues(arch_ids, BuildStatus.NEEDSBUILD)
+        """ % sqlvalues(
+            arch_ids, BuildStatus.NEEDSBUILD, BuildFarmJobType.PACKAGEBUILD)
 
         candidates = BuildQueue.select(
-            query, clauseTables=['Build'], orderBy=['-BuildQueue.lastscore'])
+            query, clauseTables=['Build', 'BuildPackageJob'],
+            orderBy=['-BuildQueue.lastscore'])
 
         return candidates
 
     def getForBuilds(self, build_ids):
         """See `IBuildQueueSet`."""
         # Avoid circular import problem.
-        from lp.soyuz.model.builder import Builder
+        from lp.soyuz.model.build import Build
+        from lp.buildmaster.model.builder import Builder
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         origin = (
-            BuildQueue,
+            BuildPackageJob,
+            Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
+            Join(Build, BuildPackageJob.build == Build.id),
             LeftJoin(
                 Builder,
                 BuildQueue.builderID == Builder.id),
             )
         result_set = store.using(*origin).find(
-            (BuildQueue, Builder),
-            In(BuildQueue.buildID, build_ids))
+            (BuildQueue, Builder, BuildPackageJob),
+            In(Build.id, build_ids))
 
         return result_set

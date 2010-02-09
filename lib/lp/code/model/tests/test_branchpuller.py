@@ -58,6 +58,26 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.requestMirror()
         self.assertEqual(UTC_NOW, branch.next_mirror_time)
 
+    def test_requestMirror_doesnt_demote_branch(self):
+        # requestMirror() sets the mirror request time to 'now' unless
+        # next_mirror_time is already in the past, i.e. calling
+        # requestMirror() doesn't move the branch backwards in the queue of
+        # branches that need mirroring.
+        branch = self.makeAnyBranch()
+        past_time = datetime.now(pytz.UTC) - timedelta(days=1)
+        removeSecurityProxy(branch).next_mirror_time = past_time
+        branch.requestMirror()
+        self.assertEqual(past_time, branch.next_mirror_time)
+
+    def test_requestMirror_can_promote_branch(self):
+        # requestMirror() sets the mirror request time to 'now' if
+        # next_mirror_time is set and in the future.
+        branch = self.makeAnyBranch()
+        future_time = datetime.now(pytz.UTC) - timedelta(days=1)
+        removeSecurityProxy(branch).next_mirror_time = future_time
+        branch.requestMirror()
+        self.assertEqual(UTC_NOW, branch.next_mirror_time)
+
     def test_requestMirrorDuringPull(self):
         """Branches can have mirrors requested while they are being mirrored.
         If so, they should not be removed from the pull queue when the mirror

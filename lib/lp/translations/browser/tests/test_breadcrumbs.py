@@ -3,10 +3,11 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
+from canonical.lazr.utils import smartquote
+
+from canonical.launchpad.layers import TranslationsLayer
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
@@ -18,7 +19,10 @@ from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 
+
 class BaseTranslationsBreadcrumbTestCase(BaseBreadcrumbTestCase):
+    request_layer = TranslationsLayer
+
     def setUp(self):
         super(BaseTranslationsBreadcrumbTestCase, self).setUp()
         self.traversed_objects = [self.root]
@@ -77,7 +81,7 @@ class TestTranslationsVHostBreadcrumb(BaseTranslationsBreadcrumbTestCase):
             ['http://launchpad.dev/crumb-tester',
              'http://launchpad.dev/crumb-tester/test',
              'http://translations.launchpad.dev/crumb-tester/test'],
-            ["Crumb Tester", "1.0", "Translations"])
+            ["Crumb Tester", "Test (1.0)", "Translations"])
 
     def test_project(self):
         project = self.factory.makeProject(
@@ -103,12 +107,10 @@ class TestTranslationGroupsBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
     def test_translationgroupset(self):
         group_set = getUtility(ITranslationGroupSet)
         url = canonical_url(group_set, rootsite='translations')
-        # Translation group listing is top-level, so no breadcrumbs show up.
-        # Note that the first parameter is an empty list because
-        # ITranslationGroupSet doesn't register Navigation class, and
-        # thus doesn't show up in request.traversed_objects.
         self._testContextBreadcrumbs(
-            [], [], [],
+            [group_set],
+            ['http://translations.launchpad.dev/+groups'],
+            ['Translation groups'],
             url=url)
 
     def test_translationgroup(self):
@@ -140,7 +142,7 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
              "http://launchpad.dev/crumb-tester/test",
              "http://translations.launchpad.dev/crumb-tester/test",
              "http://translations.launchpad.dev/crumb-tester/test/+lang/sr"],
-            ["Crumb Tester", "1.0", "Translations", "Serbian (sr)"])
+            ["Crumb Tester", "Test (1.0)", "Translations", "Serbian (sr)"])
 
     def test_productserieslanguage(self):
         product = self.factory.makeProduct(
@@ -156,6 +158,25 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
              "http://translations.launchpad.dev/crumb-tester/test",
              "http://translations.launchpad.dev/crumb-tester/test/+lang/sr"],
             ["Crumb Tester", "Series test", "Translations", "Serbian (sr)"])
+
+
+class TestPOTemplateBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
+    def test_potemplate(self):
+        product = self.factory.makeProduct(
+            name='crumb-tester', displayname="Crumb Tester")
+        series = self.factory.makeProductSeries(
+            name="test", product=product)
+        potemplate = self.factory.makePOTemplate(name="template",
+                                                 productseries=series)
+        self._testContextBreadcrumbs(
+            [product, series, potemplate],
+            ["http://launchpad.dev/crumb-tester",
+             "http://launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test"
+             "/+pots/template"],
+            ["Crumb Tester", "Series test", "Translations",
+             smartquote('Template "template"')])
 
 
 class TestPOFileBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
@@ -176,9 +197,11 @@ class TestPOFileBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
             [self.product, self.series, self.potemplate, self.pofile],
             ["http://launchpad.dev/crumb-tester",
              "http://launchpad.dev/crumb-tester/test",
-             "http://translations.launchpad.dev/crumb-tester/test"],
-            ["Crumb Tester", "Series test", "Translations"])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+             "http://translations.launchpad.dev/crumb-tester/test",
+             "http://translations.launchpad.dev/crumb-tester/test"
+               "/+pots/test-template",
+             "http://translations.launchpad.dev/crumb-tester/test"
+               "/+pots/test-template/eo",
+             ],
+            ["Crumb Tester", "Series test", "Translations",
+             smartquote('Template "test-template"'), "Esperanto (eo)"])

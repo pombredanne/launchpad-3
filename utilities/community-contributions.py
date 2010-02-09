@@ -46,12 +46,12 @@ from bzrlib.osutils import format_date
 try:
     from editmoin import editshortcut
 except:
-    sys.stderr.write("""ERROR: Unable to import from 'editmoin'.  How to solve:
-As of 2009-09-01, you can get editmoin.py from
+    sys.stderr.write("""ERROR: Unable to import from 'editmoin'. How to solve:
+Get editmoin.py from launchpadlib's "contrib/" directory:
 
-  https://bazaar.launchpad.net/~kfogel/lp-dev-utils/lp-user-tools/files
+  http://bazaar.launchpad.net/~lazr-developers/launchpadlib/trunk/annotate/head%3A/contrib/editmoin.py
 
-(This is a transitional location; it may move to a more public place.)
+(Put it in the same directory as this script and everything should work.)
 """)
     sys.exit(1)
 
@@ -67,6 +67,7 @@ known_canonical_devs = (
     u'Abel Deuring',
     u'Adam Conrad',
     u'Andrew Bennetts',
+    u'Anthony Lenton',
     u'Barry Warsaw',
     u'Brad Crittenden',
     u'Carlos Perello Marin',
@@ -78,6 +79,8 @@ known_canonical_devs = (
     u'Dafydd Harries',
     u'Daniel Silverstone',
     u'Danilo Šegan',
+    u'Данило Шеган',
+    u'данило шеган',
     u'David Allouche',
     u'Deryck Hodge',
     u'Diogo Matsubara',
@@ -95,6 +98,7 @@ known_canonical_devs = (
     u'Jonathan Lange',
     u'Julian Edwards',
     u'Karl Fogel',
+    u'Kees Cook',
     u'Launch Pad',
     u'Launchpad Developers',
     u'Leonard Richardson',
@@ -119,6 +123,14 @@ known_canonical_devs = (
     u'kiko@beetle',
     )
 
+# Some people have made commits using various names and/or email 
+# addresses, so this map will be used to merge them accordingly.
+merge_names_map = {
+    u'Jamal Fanaian <jfanaian@gmail.com>': 
+        u'Jamal Fanaian <jamal.fanaian@gmail.com>',
+    u'Jamal Fanaian <jamal@jfvm1>': 
+        u'Jamal Fanaian <jamal.fanaian@gmail.com>',
+    }
 
 class ContainerRevision():
     """A wrapper for a top-level LogRevision containing child LogRevisions."""
@@ -160,8 +172,9 @@ class ContainerRevision():
         #
         #   -and-
         #
-        # http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/revision/\
-        # launchpad@pqm.canonical.com-20090821221206-ritpv21q8w61gbpt
+        # http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/\
+        # revision/launchpad@pqm.canonical.com-20090821221206-\
+        # ritpv21q8w61gbpt
         #
         # In our links, even when the link text is a revnum, we still
         # use a rev-id for the target.  This is both so that the URL will
@@ -243,6 +256,11 @@ def get_ex_cons(authors, all_ex_cons):
                 known = True
                 break
         if not known:
+            # Use the merge names map to merge contributions from the same
+            # person using alternate names and/or emails.
+            if a in merge_names_map:
+                a = merge_names_map[a]
+
             ### There's a variant of the Singleton pattern that could be
             ### used for this, whereby instantiating an ExCon object would
             ### just get back an existing object if such has already been

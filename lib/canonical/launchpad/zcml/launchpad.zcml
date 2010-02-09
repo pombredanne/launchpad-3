@@ -9,17 +9,6 @@
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
-  <!--  XXX: Steve Alexander 2004-11-24:
-        yuck... registering a main template as a view for everything.
-        This should be a non-published resource.
-    -->
-  <browser:page
-      name="main_template"
-      for="*"
-      permission="zope.Public"
-      template="../templates/main-template.pt"
-      />
-
   <!-- Error pages -->
   <!-- System Errors -->
   <browser:page
@@ -46,6 +35,15 @@
       permission="zope.Public"
       template="../templates/launchpad-notfound.pt"
       class="canonical.launchpad.webapp.error.NotFoundView"
+      />
+
+  <!-- Gone -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.GoneError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-gone.pt"
+      class="canonical.launchpad.webapp.error.GoneView"
       />
 
   <!-- RequestExpired -->
@@ -168,13 +166,6 @@
       permission="zope.Public"
       />
 
-  <browser:page
-      for="*"
-      name="+main-template-macros"
-      template="../templates/main-template-macros.pt"
-      permission="zope.Public"
-      />
-
   <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt and
   shipit-forbidden.pt, initially. -->
   <browser:page
@@ -256,6 +247,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+graphics"
+      class="canonical.launchpad.browser.launchpad.LaunchpadGraphics"
       template="../templates/launchpad-graphics.pt"
       permission="zope.Public"
       />
@@ -287,27 +279,6 @@
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
 
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-      name="+search"
-      class="lp.registry.browser.root.LaunchpadSearchView"
-      template="../templates/launchpad-search.pt"
-      permission="zope.Public" />
-
-  <browser:page
-      for="*"
-      name="+search-form"
-      class="lp.registry.browser.root.LaunchpadSearchFormView"
-      template="../templates/launchpad-search-form.pt"
-      permission="zope.Public" />
-
-  <browser:page
-      for="*"
-      name="+primary-search-form"
-      class="lp.registry.browser.root.LaunchpadPrimarySearchFormView"
-      template="../templates/launchpad-search-form.pt"
-      permission="zope.Public" />
-
   <!-- Declare robots.txt file for the root -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadRoot"
@@ -320,23 +291,6 @@
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
       classes="LaunchpadRootFacets"
-      />
-
-  <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
-  <browser:page
-      for="*"
-      name="+menubox"
-      class="canonical.launchpad.browser.launchpad.MenuBox"
-      template="../templates/launchpad-menubox.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="*"
-      name="+navigationmenutabs"
-      class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
-      template="../templates/launchpad-navigation-menutabs.pt"
-      permission="zope.Public"
       />
 
   <browser:defaultView
@@ -380,6 +334,16 @@
       />
 
 </facet>
+
+<class
+    class="canonical.launchpad.utilities.personroles.PersonRoles">
+    <allow
+        interface="canonical.launchpad.interfaces.IPersonRoles"/>
+</class>
+<adapter
+    for="lp.registry.interfaces.person.IPerson"
+    provides="canonical.launchpad.interfaces.IPersonRoles"
+    factory="canonical.launchpad.utilities.personroles.PersonRoles" />
 
 
 <adapter

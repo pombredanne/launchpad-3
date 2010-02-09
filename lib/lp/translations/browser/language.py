@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'LanguageAddView',
     'LanguageAdminView',
+    'LanguageSetBreadcrumb',
     'LanguageSetContextMenu',
     'LanguageSetNavigation',
     'LanguageSetView',
@@ -16,22 +17,51 @@ __all__ = [
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
+from zope.app.form.browser import TextWidget
+from zope.interface import Interface
+from zope.schema import TextLine
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp import (
+    action, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, NavigationMenu)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.tales import LanguageFormatterAPI
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.browser.translations import TranslationsMixin
-from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadView, LaunchpadFormView,
-    LaunchpadEditFormView, action, canonical_url, ContextMenu, NavigationMenu,
-    enabled_with_permission, Link, custom_widget)
 from lp.translations.utilities.pluralforms import make_friendly_plural_forms
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
+
+def describe_language(language):
+    """Return full name for `language`."""
+    englishname = language.englishname
+    if language.nativename:
+        return "%s (%s)" % (englishname, language.nativename)
+    else:
+        return englishname
+
+
+class LanguageBreadcrumb(Breadcrumb):
+    """`Breadcrumb` for `ILanguage`."""
+    @property
+    def text(self):
+        return self.context.englishname
+
+
 class LanguageSetNavigation(GetitemNavigation):
     usedfor = ILanguageSet
+
+
+class LanguageSetBreadcrumb(Breadcrumb):
+    """`Breadcrumb` for `ILanguageSet`."""
+    text = u"Languages"
 
 
 class LanguageSetContextMenu(ContextMenu):
@@ -54,14 +84,38 @@ class LanguageNavigationMenu(NavigationMenu):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
-class LanguageSetView:
-    """View class to render main ILanguageSet page."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        form = self.request.form
-        self.language_search = form.get('language_search')
+def _format_language(language):
+    """Format a language as a link."""
+    return LanguageFormatterAPI(language).link(None)
+
+
+class ILanguageSetSearch(Interface):
+    """The collection of languages."""
+
+    search_lang = TextLine(
+        title=u'Name of the language to search for.',
+        required=True)
+
+class LanguageSetView(LaunchpadFormView):
+    """View class to render main ILanguageSet page."""
+    label = "Languages in Launchpad"
+    page_title = "Languages"
+
+    schema = ILanguageSetSearch
+
+    custom_widget('search_lang', TextWidget, displayWidth=30)
+
+    def initialize(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.initialize(self)
+
+        self.language_search = None
+
+        search_lang_widget = self.widgets.get('search_lang')
+        if (search_lang_widget is not None and
+            search_lang_widget.hasValidInput()):
+            self.language_search = search_lang_widget.getInputValue()
         self.search_requested = self.language_search is not None
 
     @cachedproperty
@@ -74,6 +128,14 @@ class LanguageSetView:
             return self.search_results.count()
         else:
             return 0
+
+    @cachedproperty
+    def user_languages(self):
+        """The user's preferred languages, or English if none are set."""
+        languages = list(self.user.languages)
+        if len(languages) == 0:
+            languages = [getUtility(ILaunchpadCelebrities).english]
+        return ", ".join(map(_format_language, languages))
 
 
 # There is no easy way to remove an ILanguage from the database due all the
@@ -89,6 +151,9 @@ class LanguageAddView(LaunchpadFormView):
                    'pluralexpression', 'visible', 'direction']
     language = None
 
+    page_title = "Register a language"
+    label = "Register a language in Launchpad"
+
     @action('Add', name='add')
     def add_action(self, action, data):
         """Create the new Language from the form details."""
@@ -101,16 +166,6 @@ class LanguageAddView(LaunchpadFormView):
             visible=data['visible'],
             direction=data['direction'])
         notify(ObjectCreatedEvent(self.language))
-
-    @property
-    def page_title(self):
-        """Sets the page title."""
-        return 'Add a new language to Launchpad'
-
-    @property
-    def label(self):
-        """The form label."""
-        return 'Register a language in Launchpad'
 
     @property
     def cancel_url(self):
@@ -135,12 +190,17 @@ class LanguageAddView(LaunchpadFormView):
 class LanguageView(TranslationsMixin, LaunchpadView):
     """View class to render main ILanguage page."""
 
+    @property
+    def page_title(self):
+        return self.context.englishname
+
+    @property
+    def label(self):
+        return "%s in Launchpad" % self.language_name
+
     @cachedproperty
     def language_name(self):
-        if self.context.nativename is None:
-            return self.context.englishname
-        else:
-            return self.context.nativename
+        return describe_language(self.context)
 
     @cachedproperty
     def translation_teams(self):
@@ -177,6 +237,13 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
         return pluralforms_list
 
+    @property
+    def add_question_url(self):
+        rosetta = getUtility(ILaunchpadCelebrities).lp_translations
+        return canonical_url(
+            rosetta,
+            view_name='+addquestion',
+            rootsite='answers')
 
 class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
@@ -191,18 +258,12 @@ class LanguageAdminView(LaunchpadEditFormView):
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction', 'countries']
 
-    @property
-    def page_title(self):
-        return "Edit %s" % self.context.displayname
+    page_title = "Change details"
 
     @property
     def label(self):
         """The form label"""
-        if self.context.nativename is None:
-            name = self.context.englishname
-        else:
-            name = self.context.nativename
-        return "Edit %s in Launchpad" % name
+        return "Edit %s in Launchpad" % describe_language(self.context)
 
     @property
     def cancel_url(self):

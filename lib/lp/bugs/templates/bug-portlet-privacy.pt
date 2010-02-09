@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="privacy"
   tal:attributes="
-    class python: path('context/private') and 'aside private' or 'aside public'
+    class python: path('context/private') and 'first portlet private' or 'first portlet public'
   "
   tal:define="link context/menu:context/visibility"
 >

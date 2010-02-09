@@ -8,6 +8,7 @@ __metaclass__ = type
 from datetime import datetime
 import logging
 import os
+import sys
 import textwrap
 import unittest
 
@@ -16,7 +17,7 @@ import pytz
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 
-from twisted.internet import defer, error
+from twisted.internet import defer, error, reactor, task
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -223,8 +224,8 @@ class TestPullerMonitorProtocol(
         def startMirroring(self):
             self.calls.append('startMirroring')
 
-        def mirrorSucceeded(self, last_revision):
-            self.calls.append(('mirrorSucceeded', last_revision))
+        def mirrorSucceeded(self, revid_before, revid_after):
+            self.calls.append(('mirrorSucceeded', revid_before, revid_after))
 
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
@@ -261,8 +262,9 @@ class TestPullerMonitorProtocol(
         """Receiving a mirrorSucceeded message notifies the listener."""
         self.protocol.do_startMirroring()
         self.listener.calls = []
-        self.protocol.do_mirrorSucceeded('1234')
-        self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
+        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
+        self.assertEqual(
+            [('mirrorSucceeded', 'rev1', 'rev2')], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorDeferred(self):
@@ -319,7 +321,7 @@ class TestPullerMonitorProtocol(
         """
         self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.protocol.do_mirrorSucceeded('rev1')
+        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -445,12 +447,11 @@ class TestPullerMaster(TrialTestCase):
                 self.eventHandler.unique_name), oops.url)
 
     def test_startMirroring(self):
-        deferred = self.eventHandler.startMirroring()
+        # startMirroring does not send a message to the endpoint.
+        deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
         def checkMirrorStarted(ignored):
-            self.assertEqual(
-                [('startMirroring', self.arbitrary_branch_id)],
-                self.status_client.calls)
+            self.assertEqual([], self.status_client.calls)
 
         return deferred.addCallback(checkMirrorStarted)
 
@@ -476,25 +477,25 @@ class TestPullerMaster(TrialTestCase):
         return deferred.addCallback(checkSetStackedOn)
 
     def test_mirrorComplete(self):
-        arbitrary_revision_id = 'rev1'
-        deferred = self.eventHandler.startMirroring()
+        arbitrary_revision_ids = ('rev1', 'rev2')
+        deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
-        def mirrorSucceeded(ignored):
+        def mirrorSucceeded(*ignored):
             self.status_client.calls = []
-            return self.eventHandler.mirrorSucceeded(arbitrary_revision_id)
+            return self.eventHandler.mirrorSucceeded(*arbitrary_revision_ids)
         deferred.addCallback(mirrorSucceeded)
 
         def checkMirrorCompleted(ignored):
             self.assertEqual(
                 [('mirrorComplete', self.arbitrary_branch_id,
-                  arbitrary_revision_id)],
+                  arbitrary_revision_ids[1])],
                 self.status_client.calls)
         return deferred.addCallback(checkMirrorCompleted)
 
     def test_mirrorFailed(self):
         arbitrary_error_message = 'failed'
 
-        deferred = self.eventHandler.startMirroring()
+        deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
         def mirrorFailed(ignored):
             self.status_client.calls = []
@@ -639,6 +640,11 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
     layer = TwistedAppServerLayer
 
+    # XXX: Hacky workaround for Trial. It interprets the skip method as a
+    # reason to skip the tests, but the default test result object doesn't
+    # support skipping, hence errors.
+    skip = None
+
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
@@ -652,6 +658,11 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakePullerEndpointProxy()
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.
@@ -704,8 +715,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         def check_authserver_called(ignored):
             self.assertEqual(
-                [('startMirroring', self.db_branch.id),
-                 ('setStackedOn', 77, ''),
+                [('setStackedOn', 77, ''),
                  ('mirrorComplete', self.db_branch.id, revision_id)],
                 self.client.calls)
             return ignored
@@ -785,7 +795,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         check_lock_id_script = """
         branch.lock_write()
-        protocol.mirrorSucceeded('b')
+        protocol.mirrorSucceeded('a', 'b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()
@@ -963,19 +973,8 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
                 script_text=lower_timeout_script)
             deferred = puller_master.mirror()
             def check_mirror_failed(ignored):
-                # In Bazaar 1.15, set_stacked_on_url locks the branch. With
-                # 1.14, there's an extra 'setStackedOn' call to the XML-RPC
-                # server, which is wrong. With 1.15, that call no longer takes
-                # place.
-                #
-                # Assert that the call length is 2 (not 3) when we upgrade to
-                # Bazaar 1.15.
-                self.assertIn(len(self.client.calls), [2, 3])
-                start_mirroring_call = self.client.calls[0]
-                mirror_failed_call = self.client.calls[-1]
-                self.assertEqual(
-                    start_mirroring_call,
-                    ('startMirroring', self.db_branch.id))
+                self.assertEqual(len(self.client.calls), 1)
+                mirror_failed_call = self.client.calls[0]
                 self.assertEqual(
                     mirror_failed_call[:2],
                     ('mirrorFailed', self.db_branch.id))

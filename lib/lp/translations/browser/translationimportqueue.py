@@ -231,21 +231,25 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                             path, self.context.productseries,
                             self.context.distroseries,
                             self.context.sourcepackagename))
+                    already_exists = existing_file is not None
                 else:
                     pofile_set = getUtility(IPOFileSet)
-                    existing_file = pofile_set.getPOFileByPathAndOrigin(
+                    existing_files = pofile_set.getPOFilesByPathAndOrigin(
                         path, self.context.productseries,
                         self.context.distroseries,
                         self.context.sourcepackagename)
-                if existing_file is None:
-                    # There is no other pofile in the given path for this
-                    # context, let's change it as requested by admins.
-                    path_changed = True
-                else:
+                    already_exists = not existing_files.is_empty()
+
+                if already_exists:
                     # We already have an IPOFile in this path, let's notify
                     # the user about that so they choose another path.
                     self.setFieldError('path',
                         'There is already a file in the given path.')
+                else:
+                    # There is no other pofile in the given path for this
+                    # context, let's change it as requested by admins.
+                    path_changed = True
+
         return path_changed
 
     def _validatePOT(self, data):
@@ -414,7 +418,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         # Store the associated IPOTemplate.
         self.context.potemplate = potemplate
 
-        self.context.setStatus(RosettaImportStatus.APPROVED)
+        self.context.setStatus(RosettaImportStatus.APPROVED, self.user)
         self.context.date_status_changed = UTC_NOW
 
 
@@ -424,11 +428,8 @@ class TranslationImportQueueNavigation(GetitemNavigation):
 
 class TranslationImportQueueView(HasTranslationImportsView):
     """The global Translation Import Queue."""
-    @property
-    def page_title(self):
-        """See `HasTranslationImportsView`."""
-        # There's no useful context here, so dumb down the title.
-        return "Translation import queue"
+
+    label = "Translation import queue"
 
     def initialize(self):
         """Useful initialization for this view class."""

@@ -8,6 +8,7 @@ __metaclass__ = type
 from canonical.launchpad.ftests import logout
 from canonical.launchpad.testing.pages import setupBrowser
 from canonical.launchpad.webapp import canonical_url
+from lp.testing.registration import set_captcha_answer
 
 
 def start_registration_through_the_web(email):
@@ -20,6 +21,7 @@ def start_registration_through_the_web(email):
     browser = setupBrowser()
     browser.open('http://launchpad.dev/+login')
     browser.getControl(name='loginpage_email', index=1).value = email
+    set_captcha_answer(browser, prefix='loginpage_')
     browser.getControl('Register').click()
     return browser
 

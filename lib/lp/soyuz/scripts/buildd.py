@@ -16,12 +16,12 @@ from zope.component import getUtility
 from lp.archivepublisher.debversion import Version
 from lp.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 
 # XXX cprov 2009-04-16: This function should live in
 # lp.registry.interfaces.distroseries. It cannot be done right now
@@ -92,7 +92,7 @@ class QueueBuilder(LaunchpadCronScript):
         if not self.options.score_only:
             # For each distroseries we care about, scan for
             # sourcepackagereleases with no build associated
-            # with the distroarchserieses we're interested in.
+            # with the distroarchseries we're interested in.
             self.logger.info("Rebuilding build queue.")
             for distroseries in sorted_distroseries:
                 buildMaster.createMissingBuilds(distroseries)
@@ -113,7 +113,7 @@ class QueueBuilder(LaunchpadCronScript):
                 "Could not find distribution: %s" % self.options.distribution)
 
         if len(self.options.suite) == 0:
-            return sorted(distribution.serieses, key=distroseries_sort_key)
+            return sorted(distribution.series, key=distroseries_sort_key)
 
         distroseries_set = set()
         for suite in self.options.suite:
@@ -159,7 +159,7 @@ class RetryDepwait(LaunchpadCronScript):
         # Iterate over all supported distroarchseries with available chroot.
         build_set = getUtility(IBuildSet)
         for distroseries in distribution:
-            if distroseries.status == DistroSeriesStatus.OBSOLETE:
+            if distroseries.status == SeriesStatus.OBSOLETE:
                 self.logger.debug(
                     "Skipping obsolete distroseries: %s" % distroseries.title)
                 continue
@@ -201,12 +201,10 @@ class SlaveScanner(LaunchpadCronScript):
             if not builder.is_available:
                 self.logger.warn('builder is not available. Ignored.')
                 continue
-            candidate = builder.findBuildCandidate()
+
+            candidate = builder.findAndStartJob()
             if candidate is None:
-                self.logger.debug(
-                    "No candidates available for builder.")
                 continue
-            builder.dispatchBuildCandidate(candidate)
             self.txn.commit()
 
         self.logger.info("Slave Scan Process Finished.")

@@ -21,11 +21,11 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad.fields import (
     ContentNameField, NoneableDescription, ParticipatingPersonChoice,
     PublicPersonChoice, Title)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers)
 from lp.registry.interfaces.role import IHasOwner
@@ -106,8 +106,8 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     status = exported(
         Choice(
-            title=_('Status'), required=True, vocabulary=DistroSeriesStatus,
-            default=DistroSeriesStatus.DEVELOPMENT))
+            title=_('Status'), required=True, vocabulary=SeriesStatus,
+            default=SeriesStatus.DEVELOPMENT))
 
     parent = Attribute('The structural parent of this series - the product')
 
@@ -332,9 +332,6 @@ class IProductSeriesSet(Interface):
 
         Return the default value if there is no such series.
         """
-
-    def getSeriesForBranches(branches):
-        """Return the ProductSeries associated with a branch in branches."""
 
 
 class NoSuchProductSeries(NameLookupFailed):

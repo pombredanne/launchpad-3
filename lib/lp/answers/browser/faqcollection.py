@@ -20,14 +20,14 @@ from lp.answers.interfaces.questionenums import QuestionSort
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, LaunchpadFormView, Link,
+    action, NavigationMenu, canonical_url, LaunchpadFormView, Link,
     safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import enabled_with_permission
 from lp.registry.interfaces.project import IProject
 
 
-class FAQCollectionMenu(ApplicationMenu):
+class FAQCollectionMenu(NavigationMenu):
     """Base menu definition for `IFAQCollection`."""
 
     usedfor = IFAQCollection
@@ -70,8 +70,8 @@ class SearchFAQsView(LaunchpadFormView):
     matching_questions_count = 0
 
     @property
-    def heading(self):
-        """Return the heading that should be used for the listing."""
+    def page_title(self):
+        """Return the page_title that should be used for the listing."""
         replacements = dict(
             displayname=self.context.displayname,
             search_text=self.search_text)
@@ -80,6 +80,8 @@ class SearchFAQsView(LaunchpadFormView):
                      u'$displayname', mapping=replacements)
         else:
             return _('FAQs for $displayname', mapping=replacements)
+
+    label = page_title
 
     @property
     def empty_listing_message(self):

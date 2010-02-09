@@ -48,16 +48,20 @@ Using the UnicodeWriter, write the single row to the temporary file.
 
 The data in the file has been converted to UTF-8.  If the file is read
 in and compared to the original string they will not match due to the
-encoding difference -- in fact, you can't even compare them as the
-codec raises an error.
+encoding difference -- in fact, you should not compare them directly, and
+trying to convert the data read into unicode will raise an error.
 
     >>> file_data = open(fname, "rb").readline()
     >>> file_data == test_string
     Traceback (most recent call last):
     ...
+    UnicodeWarning: Unicode equal comparison failed to convert...
+    >>> unicode(file_data) == test_string
+    Traceback (most recent call last):
+    ...
     UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3...
 
-The data is can be read back using the UnicodeCSVReader.
+The data can be read back using the UnicodeCSVReader.
 
     >>> temp_file = open(fname, "rb")
     >>> reader = UnicodeCSVReader(temp_file, encoding="utf-8")

@@ -13,9 +13,11 @@ import os
 
 import boto
 
+from bzrlib.errors import BzrCommandError
+
 from devscripts.ec2test.account import EC2Account
 
-class CredentialsError(Exception):
+class CredentialsError(BzrCommandError):
     """Raised when AWS credentials could not be loaded."""
 
     def __init__(self, filename, extra=None):

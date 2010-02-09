@@ -85,6 +85,49 @@ To search the set of IDistroSeriess, use IDistroSeriesSet.search:
     >>> all_ubuntu_releases.count()
     4
 
+
+Distroseries identifying attributes
+-----------------------------------
+
+A distroseries has a set of attributes that identify it. The launchpad id is
+the name attribute.
+
+    >>> print warty.name
+    warty
+
+It has a title for heading and titles...
+
+    >>> print warty.title
+    The Warty Warthog Release
+
+And a displayname for referring to it in a sentence.
+
+    >>> print warty.displayname
+    Warty
+
+The fullseriesname attribute is used when the context of the series name
+can be confused. Note that the value is created from the launchpad id names
+of the distribution and the series, though it may look like the displayname
+attributes were used.
+
+    >>> print warty.fullseriesname
+    Ubuntu Warty
+
+The version attribute holds the debversion of the series.
+
+    >>> print warty.version
+    4.10
+
+The named_version attribute is used is used to present the series displayname
+and version values consistently.
+
+    >>> print warty.named_version
+    Warty (4.10)
+
+
+Published releases
+------------------
+
 DistroSeries.getPublishedReleases:
 
     >>> from lp.registry.model.distroseries import DistroSeries
@@ -127,7 +170,7 @@ not, according the distroseries status and the upload target pocket.
    >>> hoary = ubuntu['hoary']
 
    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-   >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+   >>> from canonical.launchpad.interfaces import SeriesStatus
 
    >>> warty.status.name
    'CURRENT'
@@ -147,7 +190,7 @@ The FROZEN status is special.  Uploads are allowed for all pockets as
 the upload will have to wait for manual approval anyway:
 
    >>> from zope.security.proxy import removeSecurityProxy
-   >>> removeSecurityProxy(hoary).status = DistroSeriesStatus.FROZEN
+   >>> removeSecurityProxy(hoary).status = SeriesStatus.FROZEN
 
    >>> hoary.status.name
    'FROZEN'
@@ -334,8 +377,27 @@ the SPR returns all build records for it.
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
    4
 
+The new series also has the same packaging links as its parent series.
 
-== Hiding translations ==
+    >>> for packaging in warty.packagings:
+    ...     print packaging.sourcepackagename.name
+    a52dec
+    alsa-utils
+    evolution
+    mozilla-firefox
+    netapplet
+
+    >>> for packaging in bumpy.packagings:
+    ...     print packaging.sourcepackagename.name
+    a52dec
+    alsa-utils
+    evolution
+    mozilla-firefox
+    netapplet
+
+
+Hiding translations
+-------------------
 
 The hide_all_translations flag, if set, hides a distroseries'
 translations in the user interface.  The check for visibility happens in
@@ -368,35 +430,35 @@ But when translations are hidden, it raises TranslationUnavailable.
 
 Exactly what message is displayed depends on the series' status.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.EXPERIMENTAL
+    >>> untranslatable_series.status = SeriesStatus.EXPERIMENTAL
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not available yet.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.DEVELOPMENT
+    >>> untranslatable_series.status = SeriesStatus.DEVELOPMENT
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not available yet.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.FROZEN
+    >>> untranslatable_series.status = SeriesStatus.FROZEN
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not currently available.
     Please come back soon.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.CURRENT
+    >>> untranslatable_series.status = SeriesStatus.CURRENT
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not currently available.
     Please come back soon.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.SUPPORTED
+    >>> untranslatable_series.status = SeriesStatus.SUPPORTED
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not currently available.
     Please come back soon.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.OBSOLETE
+    >>> untranslatable_series.status = SeriesStatus.OBSOLETE
     >>> print get_visibility_notice(untranslatable_series)
     This release series is obsolete.  Its translations are no longer
     available.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.FUTURE
+    >>> untranslatable_series.status = SeriesStatus.FUTURE
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not available yet.
 
@@ -438,7 +500,37 @@ From the results above you can notice that neither mozilla-firefox nor
 netapplet are translatable in Hoary.
 
 
-== DistroSeries can build meta objects for packages ==
+Packages that need linking and packagings that need upstream information
+-----------------------------------------------------------------------
+
+The distroseries getPriorizedUnlinkedSourcePackages() method that returns
+a prioritized list of `ISourcePackage` objects that need a packaging link to
+an `IProductSeries` to provide the the upstream information to share bugs,
+translations, and code. Each item in the list is a dict with the 'package',
+total_bugs, and total_messages (translatable messages).
+
+    >>> for summary in hoary.getPriorizedUnlinkedSourcePackages():
+    ...     print  summary['package'].name
+    ...     print '%(total_bugs)s %(total_messages)s' % summary
+    pmount  0  64
+    alsa-utils  0  0
+    cnews  0  0
+    libstdc++  0  0
+    linux-source-2.6.15  1  0
+
+
+The distroseries getPriorizedlPackagings() method that returns a prioritized
+list of `IPackaging` that need more information about the upstream project to
+share bugs, translations, and code.
+
+    >>> for packaging in hoary.getPriorizedlPackagings():
+    ...     print packaging.sourcepackagename.name
+    netapplet
+    evolution
+
+
+DistroSeries can build meta objects for packages
+------------------------------------------------
 
    >>> from canonical.launchpad.interfaces import (
    ...     ISourcePackage,
@@ -493,8 +585,8 @@ an ILibraryFileAlias:
 
    >>> firefox_srcrel =  warty.getSourcePackage(
    ...    'mozilla-firefox').currentrelease
-   >>> firefox_srcrel.title
-   u'mozilla-firefox 0.9 (source) in ubuntu warty'
+   >>> print firefox_srcrel.title
+   "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
    >>> firefox_srcrel.changesfile
    <LibraryFileAlias at ...>
@@ -1014,7 +1106,7 @@ Each element is an IDistroSeriesSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
     ...     print upload.title
-    mozilla-firefox 0.9 (source) in ubuntu warty
+    "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:

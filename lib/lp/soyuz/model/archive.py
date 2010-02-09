@@ -31,6 +31,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
@@ -54,9 +55,9 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
+    ArchivePurpose, CannotCopy, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, default_name_by_purpose)
+    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -77,7 +78,7 @@ from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.scripts.packagecopier import CannotCopy, do_copy
+from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -130,7 +131,8 @@ class Archive(SQLBase):
     purpose = EnumCol(
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
-    enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+    _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+    enabled = property(lambda x: x._enabled)
 
     publish = BoolCol(dbName='publish', notNull=True, default=True)
 
@@ -174,6 +176,12 @@ class Archive(SQLBase):
     relative_build_score = IntCol(
         dbName='relative_build_score', notNull=True, default=0)
 
+    # This field is specifically and only intended for OEM migration to
+    # Launchpad and should be re-examined in October 2010 to see if it
+    # is still relevant.
+    external_dependencies = StringCol(
+        dbName='external_dependencies', notNull=False, default=None)
+
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -214,7 +222,7 @@ class Archive(SQLBase):
         # Import DistroSeries here to avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
 
-        distro_serieses = store.find(
+        distro_series = store.find(
             DistroSeries,
             DistroSeries.distribution == self.distribution,
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
@@ -222,12 +230,12 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.status.is_in(
                 active_publishing_status))
 
-        distro_serieses.config(distinct=True)
+        distro_series.config(distinct=True)
 
         # Ensure the ordering is the same as presented by
-        # Distribution.serieses
+        # Distribution.series
         return sorted(
-            distro_serieses, key=lambda a: Version(a.version), reverse=True)
+            distro_series, key=lambda a: Version(a.version), reverse=True)
 
     @property
     def dependencies(self):
@@ -254,11 +262,21 @@ class Archive(SQLBase):
         return archives
 
     @property
+    def debug_archive(self):
+        """See `IArchive`."""
+        if self.purpose == ArchivePurpose.PRIMARY:
+            return getUtility(IArchiveSet).getByDistroPurpose(
+                self.distribution, ArchivePurpose.DEBUG)
+        else:
+            return self
+
+    @property
     def archive_url(self):
         """See `IArchive`."""
         archive_postfixes = {
             ArchivePurpose.PRIMARY : '',
             ArchivePurpose.PARTNER : '-partner',
+            ArchivePurpose.DEBUG : '-debug',
         }
 
         if self.is_ppa:
@@ -320,8 +338,10 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
             clauses.append("""
                 SourcePackageRelease.version = %s
             """ % sqlvalues(version))
@@ -442,8 +462,10 @@ class Archive(SQLBase):
     def sources_size(self):
         """See `IArchive`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(
-            (LibraryFileContent),
+        result = store.find((
+            LibraryFileAlias.filename,
+            LibraryFileContent.sha1,
+            LibraryFileContent.filesize,),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -451,15 +473,22 @@ class Archive(SQLBase):
             SourcePackageReleaseFile.libraryfileID == LibraryFileAlias.id,
             LibraryFileAlias.contentID == LibraryFileContent.id)
 
-        # We need to select distinct `LibraryFileContent`s because that how
-        # they end up published in the archive disk. Duplications may happen
-        # because of the publishing records join, the same `LibraryFileAlias`
-        # gets logically re-published in several locations and the fact that
-        # the same `LibraryFileContent` can be shared by multiple
-        # `LibraryFileAlias.` (librarian-gc).
+        # Note: we can't use the LFC.sha1 instead of LFA.filename above
+        # because some archives publish the same file content with different
+        # names in the archive, so although the duplication will be removed
+        # in the librarian by the librarian-gc, we do not (yet) remove
+        # this duplication in the pool when the filenames are different.
+
+        # We need to select distinct on the (filename, filesize) result
+        # so that we only count duplicate files (with the same filename)
+        # once (ie. the same tarball used for different distroseries) as
+        # we do avoid this duplication in the pool when the names are
+        # the same.
         result = result.config(distinct=True)
-        size = sum([lfc.filesize for lfc in result])
-        return size
+
+        # Using result.sum(LibraryFileContent.filesize) throws errors when
+        # the result is empty, so instead:
+        return sum(result.values(LibraryFileContent.filesize))
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
@@ -491,8 +520,11 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
+
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
@@ -974,11 +1006,12 @@ class Archive(SQLBase):
         return permission_set.packagesetsForSource(
             self, sourcepackagename, direct_permissions)
 
-    def isSourceUploadAllowed(self, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        self, sourcepackagename, person, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
-            self, sourcepackagename, person)
+            self, sourcepackagename, person, distroseries)
 
     def getFileByName(self, filename):
         """See `IArchive`."""
@@ -1063,26 +1096,43 @@ class Archive(SQLBase):
                     to_series=None, include_binaries=False):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
-        sources = []
-        for name in source_names:
-            source_package_name = getUtility(ISourcePackageNameSet)[name]
-            # Grabbing the item at index 0 ensures it's the most recent
-            # publication.
-            sources.append(
-                from_archive.getPublishedSources(
-                    name=name, exact_match=True)[0])
-
+        sources = self._collectLatestPublishedSources(
+            from_archive, source_names)
         self._copySources(sources, to_pocket, to_series, include_binaries)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
         """See `IArchive`."""
+        # Check to see if the source package exists, and raise a useful error
+        # if it doesn't.
+        getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
-        source_package_name = getUtility(ISourcePackageNameSet)[source_name]
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True)[0]
 
         self._copySources([source], to_pocket, to_series, include_binaries)
+
+    def _collectLatestPublishedSources(self, from_archive, source_names):
+        """Private helper to collect the latest published sources for an 
+        archive.
+
+        :raises NoSuchSourcePackageName: If any of the source_names do not
+            exist.
+        """
+        sources = []
+        for name in source_names:
+            # Check to see if the source package exists. This will raise
+            # a NoSuchSourcePackageName exception if the source package
+            # doesn't exist.
+            getUtility(ISourcePackageNameSet)[name]
+            # Grabbing the item at index 0 ensures it's the most recent
+            # publication.
+            published_sources = from_archive.getPublishedSources(
+                name=name, exact_match=True,
+                status=PackagePublishingStatus.PUBLISHED)
+            if published_sources.count() > 0:
+                sources.append(published_sources[0])
+        return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False):
@@ -1185,6 +1235,54 @@ class Archive(SQLBase):
         notify(ObjectCreatedEvent(subscription))
 
         return subscription
+
+    def getSourcePackageReleases(self, build_status=None):
+        """See `IArchive`."""
+        store = Store.of(self)
+
+        extra_exprs = []
+        if build_status is not None:
+            extra_exprs.append(Build.buildstate == build_status)
+
+        result_set = store.find(
+            SourcePackageRelease, 
+            Build.sourcepackagereleaseID == SourcePackageRelease.id,
+            Build.archive == self,
+            *extra_exprs)
+
+        result_set.config(distinct=True).order_by(SourcePackageRelease.id)
+        return result_set
+
+    def _setBuildStatuses(self, status):
+        """Update the pending Build Jobs' status for this archive."""
+
+        query = """
+            UPDATE Job SET status = %s
+            FROM Build, BuildPackageJob, BuildQueue
+            WHERE
+                -- insert self.id here
+                Build.archive = %s
+                AND BuildPackageJob.build = Build.id
+                AND BuildPackageJob.job = BuildQueue.job
+                AND Job.id = BuildQueue.job
+                -- Build is in state BuildStatus.NEEDSBUILD (0)
+                AND Build.buildstate = %s;
+        """ % sqlvalues(status, self, BuildStatus.NEEDSBUILD)
+
+        store = Store.of(self)
+        store.execute(query)
+
+    def enable(self):
+        """See `IArchive`."""
+        assert self._enabled == False, "This archive is already enabled."
+        self._enabled = True
+        self._setBuildStatuses(JobStatus.WAITING)
+
+    def disable(self):
+        """See `IArchive`."""
+        assert self._enabled == True, "This archive is already disabled."
+        self._enabled = False
+        self._setBuildStatuses(JobStatus.SUSPENDED)
 
 
 class ArchiveSet:
@@ -1327,7 +1425,11 @@ class ArchiveSet:
             owner=owner, distribution=distribution, name=name,
             displayname=displayname, description=description,
             purpose=purpose, publish=publish, signing_key=signing_key,
-            enabled=enabled, require_virtualized=require_virtualized)
+            require_virtualized=require_virtualized)
+
+        # Upon creation archives are enabled by default.
+        if enabled == False:
+            new_archive.disable()
 
         # Private teams cannot have public PPAs.
         if owner.visibility == PersonVisibility.PRIVATE:
@@ -1368,6 +1470,19 @@ class ArchiveSet:
             return 0
         return int(size)
 
+    def getPPAOwnedByPerson(self, person, name=None):
+        """See `IArchiveSet`."""
+        store = Store.of(person)
+        clause = [
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.owner == person]
+        if name is not None:
+            clause.append(Archive.name == name)
+        result = store.find(Archive, *clause).order_by(Archive.id).first()
+        if name is not None and result is None:
+            raise NoSuchPPA(name)
+        return result
+
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
         # Avoiding circular imports.
@@ -1380,14 +1495,15 @@ class ArchiveSet:
             TeamParticipation.team == Archive.ownerID,
             TeamParticipation.person == user,
             )
-        third_part_upload_acl = store.find(
+        third_party_upload_acl = store.find(
             Archive,
             Archive.purpose == ArchivePurpose.PPA,
             ArchivePermission.archiveID == Archive.id,
-            ArchivePermission.person == user,
+            TeamParticipation.person == user,
+            TeamParticipation.team == ArchivePermission.personID,
             )
 
-        result = direct_membership.union(third_part_upload_acl)
+        result = direct_membership.union(third_party_upload_acl)
         result.order_by(Archive.displayname)
 
         return result
@@ -1403,7 +1519,7 @@ class ArchiveSet:
             Archive,
             Archive.signing_key == None,
             Archive.purpose == ArchivePurpose.PPA,
-            Archive.enabled == True)
+            Archive._enabled == True)
         results.order_by(Archive.date_created)
         return results.config(distinct=True)
 
@@ -1501,7 +1617,8 @@ class ArchiveSet:
             Archive.purpose == ArchivePurpose.PPA)
 
     def getArchivesForDistribution(self, distribution, name=None,
-                                   purposes=None, user=None):
+                                   purposes=None, user=None,
+                                   exclude_disabled=True):
         """See `IArchiveSet`."""
         extra_exprs = []
 
@@ -1515,6 +1632,12 @@ class ArchiveSet:
 
         if name is not None:
             extra_exprs.append(Archive.name == name)
+
+        if exclude_disabled:
+            public_archive = And(Archive.private == False,
+                                 Archive._enabled == True)
+        else:
+            public_archive = (Archive.private == False)
 
         if user is not None:
             admins = getUtility(ILaunchpadCelebrities).admin
@@ -1540,16 +1663,13 @@ class ArchiveSet:
                 # that consists of themselves.
                 extra_exprs.append(
                     Or(
-                        And(Archive.private == False,
-                            Archive.enabled == True),
+                        public_archive,
                         Archive.ownerID.is_in(user_teams_subselect)))
 
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
-            extra_exprs.append(Archive.private == False)
-            extra_exprs.append(Archive.enabled == True)
-
+            extra_exprs.append(public_archive)
 
         query = Store.of(distribution).find(
             Archive,

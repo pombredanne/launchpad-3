@@ -210,5 +210,23 @@ class TestBranchMailerDiff(TestCaseWithFactory):
         self.assertNotIn('larger than your specified limit', ctrl.body)
 
 
+class TestBranchMailerSubject(TestCaseWithFactory):
+    """The subject for a BranchMailer is returned verbatim."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_subject(self):
+        # No string interpolation should occur on the subject.
+        branch = self.factory.makeAnyBranch()
+        # Subscribe the owner to get revision email.
+        branch.getSubscription(branch.owner).notification_level = (
+            BranchSubscriptionNotificationLevel.FULL)
+        mailer = BranchMailer.forRevision(
+            branch, 1, 'test@example.com', 'content', 'diff',
+            'Testing %j foo')
+        self.assertEqual('Testing %j foo', mailer._getSubject(
+                branch.owner.preferredemail.email))
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
