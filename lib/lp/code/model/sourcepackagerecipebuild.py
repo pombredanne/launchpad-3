@@ -108,13 +108,14 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return results.one()
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
-                 archive, date_created=None, date_first_dispatched=None,
+                 archive, pocket, date_created=None, date_first_dispatched=None,
                  date_built=None, builder=None,
                  build_state=BuildStatus.NEEDSBUILD, build_log=None,
                  build_duration=None):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
         self.archive = archive
+        self.pocket = pocket
         self.buildduration = build_duration
         self.buildlog = build_log
         self.builder = builder
@@ -129,6 +130,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     @classmethod
     def new(cls, sourcepackage, recipe, requester, archive,
+            pocket=PackagePublishingPocket.RELEASE,
             date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
@@ -140,6 +142,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             recipe,
             requester,
             archive,
+            pocket,
             date_created=date_created)
         store.add(spbuild)
         return spbuild
