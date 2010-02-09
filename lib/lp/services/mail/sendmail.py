@@ -26,7 +26,6 @@ __all__ = [
 
 from binascii import b2a_qp
 import sha
-import sets
 from email.Encoders import encode_base64
 from email.Utils import getaddresses, make_msgid, formatdate, formataddr
 from email.Message import Message
@@ -80,7 +79,7 @@ def do_paranoid_envelope_to_validation(to_addrs):
     to header.  The to header and envelope_to addresses may vary
     independently, and the to header cannot break Z3.
     """
-    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
+    assert (zisinstance(to_addrs, (list, tuple, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
