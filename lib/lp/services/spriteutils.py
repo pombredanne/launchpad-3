@@ -112,7 +112,8 @@ class SpriteUtil:
                 if parameters['sprite-ref'] == group_name:
                     filename = self._getSpriteImagePath(
                         rule, url_prefix_substitutions)
-                    self.sprite_info.append(dict(filename=filename, rule=rule))
+                    self.sprite_info.append(
+                        dict(filename=filename, rule=rule))
 
         if len(self.sprite_info) == 0:
             raise AssertionError(
