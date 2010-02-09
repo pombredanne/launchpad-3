@@ -202,5 +202,52 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
             self.bugtask_with_question.status.title))
 
 
+class TestSerialScheduler(unittest.TestCase):
+
+    def setUp(self):
+        self.scheduler = checkwatches.SerialScheduler()
+
+    def test_args_and_kwargs(self):
+        def func(name, aptitude):
+            self.failUnlessEqual("Robin Hood", name)
+            self.failUnlessEqual("Riding through the glen", aptitude)
+        # Positional args specified when adding a job are passed to
+        # the job function at run time.
+        self.scheduler.schedule(
+            func, "Robin Hood", "Riding through the glen")
+        self.scheduler.run()
+        # Keyword args specified when adding a job are passed to the
+        # job function at run time.
+        self.scheduler.schedule(
+            func, name="Robin Hood", aptitude="Riding through the glen")
+        self.scheduler.run()
+        # Positional and keyword args can both be specified.
+        self.scheduler.schedule(
+            func, "Robin Hood", aptitude="Riding through the glen")
+        self.scheduler.run()
+
+    def test_ordering(self):
+        # The numbers list will be emptied in the order we add jobs to
+        # the scheduler.
+        numbers = [1, 2, 3]
+        # Remove 3 and check.
+        self.scheduler.schedule(
+            list.remove, numbers, 3)
+        self.scheduler.schedule(
+            lambda: self.failUnlessEqual([1, 2], numbers))
+        # Remove 1 and check.
+        self.scheduler.schedule(
+            list.remove, numbers, 1)
+        self.scheduler.schedule(
+            lambda: self.failUnlessEqual([2], numbers))
+        # Remove 2 and check.
+        self.scheduler.schedule(
+            list.remove, numbers, 2)
+        self.scheduler.schedule(
+            lambda: self.failUnlessEqual([], numbers))
+        # Run the scheduler.
+        self.scheduler.run()
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
