@@ -2349,13 +2349,17 @@ hoary:
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> discard = test_publisher.getPubSource(
-    ...     sourcename="package1", version="1.0", archive=cprov.archive)
+    ...     sourcename="package1", version="1.0", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED) 
+    >>> discard = test_publisher.getPubSource( 
+    ...     sourcename="package1", version="1.1", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> discard = test_publisher.getPubSource(
-    ...     sourcename="package1", version="1.1", archive=cprov.archive)
+    ...     sourcename="package2", version="1.0", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> discard = test_publisher.getPubSource(
-    ...     sourcename="package2", version="1.0", archive=cprov.archive)
-    >>> discard = test_publisher.getPubSource(
-    ...     sourcename="pack", version="1.0", archive=cprov.archive)
+    ...     sourcename="pack", version="1.0", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
 
 Now we have package1 1.0 and 1.1, and package2 1.0 in cprov's PPA.  We
 can ask syncSources to synchronise these packages into mark's PPA in the

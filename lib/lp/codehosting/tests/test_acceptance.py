@@ -89,15 +89,15 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         self.disable_directory_isolation()
         tac_handler = SSHServerLayer.getTacHandler()
         self.server = SSHCodeHostingServer(self.scheme, tac_handler)
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        self.server.start_server()
+        self.addCleanup(self.server.stop_server)
 
         # Prevent creation of in-process sftp:// and bzr+ssh:// transports --
         # such connections tend to leak threads and occasionally create
         # uncollectable garbage.
         ssh_denier = DenyingServer(['bzr+ssh://', 'sftp://'])
-        ssh_denier.setUp()
-        self.addCleanup(ssh_denier.tearDown)
+        ssh_denier.start_server()
+        self.addCleanup(ssh_denier.stop_server)
 
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')

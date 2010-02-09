@@ -108,18 +108,33 @@ def print_bugs_list(content, list_id):
         print extract_text(node)
 
 
-def print_bugtasks(text):
+def print_bugtasks(text, show_heat=None):
     """Print all the bugtasks in the text."""
-    print '\n'.join(extract_bugtasks(text))
+    print '\n'.join(extract_bugtasks(text, show_heat=show_heat))
 
 
-def extract_bugtasks(text):
+def extract_bugtasks(text, show_heat=None):
     """Extracts a list of strings for all the bugtasks in the text."""
     main_content = find_main_content(text)
     table = main_content.find('table', {'id': 'buglisting'})
     if table is None:
         return []
-    return [extract_text(tr) for tr in table('tr') if tr.td is not None]
+    rows = []
+    for tr in table('tr'):
+        if tr.td is not None:
+            row_text = extract_text(tr)
+            if show_heat:
+                heat_text = ''
+                for img in tr.findAll('img'):
+                    if img['src'] == '/@@/flame-icon':
+                        heat_text += '*'
+                    elif img['src'] == '/@@/flame-bw-icon':
+                        heat_text += '-'
+                    else:
+                        pass
+                row_text += '\n' + heat_text
+            rows.append(row_text)
+    return rows
 
 
 def create_task_from_strings(bug, owner, product, watchurl=None):

@@ -86,7 +86,7 @@ def repair_with_slonik(log, options, con):
         log.debug('Broken or no Slony-I install.')
         return False
 
-    connection_string = ConnectionString(config.database.main_master)
+    connection_string = ConnectionString(config.database.rw_main_master)
     if options.dbname:
         connection_string.dbname = options.dbname
     if options.dbuser:

@@ -487,7 +487,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
-                    requestUpgrade
+                    upgrade_pending
                     getUpgradeFormat
                     isBranchMergeable
                     visibleByUser
@@ -495,7 +495,7 @@
     <require
         permission="launchpad.Edit"
         attributes="destroySelf destroySelfBreakReferences setPrivate 
-		            setOwner setTarget"
+		            setOwner setTarget requestUpgrade"
         set_attributes="name url mirror_status_message
                         description lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
@@ -937,6 +937,67 @@
       interface="lp.code.interfaces.diff.IStaticDiffSource" />
   </securedutility>
 
+  <!-- SourcePackageRecipe -->
+
+  <securedutility
+     component="lp.code.model.sourcepackagerecipe.SourcePackageRecipe"
+     provides="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource">
+    <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource"/>
+  </securedutility>
+
+  <class
+     class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild">
+    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
+  </class>
+
+  <securedutility
+     component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild"
+     provides="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildSource">
+    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildSource"/>
+  </securedutility>
+
+  <class
+     class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
+    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
+  </class>
+
+  <securedutility
+     component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
+     provides="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJobSource">
+    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJobSource"/>
+  </securedutility>
+
+  <adapter factory="lp.code.model.recipebuilder.RecipeBuildBehavior"
+           permission="zope.Public" />
+
+  <!-- SourcePackageRecipe -->
+  <class
+     class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">
+    <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
+    <require
+       permission="launchpad.Edit"
+       set_attributes="builder_recipe"/>
+  </class>
+  <class
+     class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">
+    <allow attributes="name url revspec revid child_branches deb_version __str__" />
+  </class>
+  <class
+     class="bzrlib.plugins.builder.recipe.RecipeBranch">
+    <allow attributes="name url revspec revid child_branches __str__" />
+  </class>
+  <class
+     class="bzrlib.plugins.builder.recipe.MergeInstruction">
+    <allow attributes="as_tuple recipe_branch nest_path" />
+  </class>
+  <class
+     class="bzrlib.plugins.builder.recipe.NestInstruction">
+    <allow attributes="as_tuple recipe_branch nest_path" />
+  </class>
+
+  <utility component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
+        name="RECIPEBRANCHBUILD"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
   <webservice:register module="lp.code.interfaces.webservice" />
 
 </configure>

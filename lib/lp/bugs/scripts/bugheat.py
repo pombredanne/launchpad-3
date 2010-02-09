@@ -4,14 +4,9 @@
 """The innards of the Bug Heat cronscript."""
 
 __metaclass__ = type
-__all__ = []
-
-
-from zope.component import getUtility
-from zope.interface import implements
-
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import DBLoopTuner
+__all__ = [
+    'BugHeatCalculator',
+    ]
 
 
 class BugHeatConstants:

@@ -19,7 +19,6 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
-from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
@@ -45,14 +44,18 @@ from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url, errorlog
-from lp.code.bzr import (
-    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
-from lp.codehosting.scanner.bzrsync import BzrSync
-from lp.codehosting.vfs import branch_id_to_path, get_multi_server
+from lp.codehosting.scanner import buglinks, email, mergedetection
+from lp.codehosting.scanner.fixture import (
+    Fixtures, ServerFixture, make_zope_event_fixture)
+from lp.codehosting.scanner.bzrsync import (
+    BzrSync, schedule_diff_updates, schedule_translation_upload
+)
+from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
+    get_scanner_server)
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
@@ -266,6 +269,7 @@ class BranchScanJob(BranchJobDerived):
 
     classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
+    server = None
 
     @classmethod
     def create(cls, branch):
@@ -275,18 +279,29 @@ class BranchScanJob(BranchJobDerived):
 
     def run(self):
         """See `IBranchScanJob`."""
-        bzrsync = BzrSync(self.branch)
+        from canonical.launchpad.scripts import log
+        bzrsync = BzrSync(self.branch, log)
         bzrsync.syncBranchAndClose()
 
-    @staticmethod
+    @classmethod
     @contextlib.contextmanager
-    def contextManager():
+    def contextManager(cls):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        server = get_multi_server()
-        server.setUp()
+        cls.server = get_scanner_server()
+        event_handlers = [
+            email.queue_tip_changed_email_jobs,
+            buglinks.got_new_revision,
+            mergedetection.auto_merge_branches,
+            mergedetection.auto_merge_proposals,
+            schedule_diff_updates,
+            schedule_translation_upload,
+            ]
+        fixture = Fixtures(
+            [ServerFixture(cls.server), make_zope_event_fixture(*event_handlers)])
+        fixture.setUp()
         yield
-        server.tearDown()
+        fixture.tearDown()
 
 
 class BranchUpgradeJob(BranchJobDerived):
@@ -302,6 +317,8 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         if not branch.needs_upgrading:
             raise AssertionError('Branch does not need upgrading.')
+        if branch.upgrade_pending:
+            raise AssertionError('Branch already has upgrade pending.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
@@ -311,9 +328,9 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
         server = get_multi_server(write_hosted=True)
-        server.setUp()
+        server.start_server()
         yield
-        server.tearDown()
+        server.stop_server()
 
     def run(self):
         """See `IBranchUpgradeJob`."""
@@ -326,7 +343,7 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
             # Perform the upgrade.
-            upgrade(upgrade_branch.base, self.upgrade_format)
+            upgrade(upgrade_branch.base)
 
             # Re-open the branch, since its format has changed.
             upgrade_branch = BzrBranch.open_from_transport(
@@ -343,26 +360,10 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_transport.delete_tree('backup.bzr')
             source_branch_transport.rename('.bzr', 'backup.bzr')
             upgrade_transport.copy_tree_to_transport(source_branch_transport)
+
+            self.branch.requestMirror()
         finally:
             shutil.rmtree(upgrade_branch_path)
-
-    @property
-    def upgrade_format(self):
-        """See `IBranch`."""
-        format = BzrDirMetaFormat1()
-        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
-            self.branch.branch_format)
-        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
-            self.branch.repository_format)
-        if branch_format is None or repository_format is None:
-            branch = BzrBranch.open(self.branch.getPullURL())
-            if branch_format is None:
-                branch_format = type(branch._format)
-            if repository_format is None:
-                repository_format = type(branch.repository._format)
-        format.set_branch_format(branch_format())
-        format._set_repository_format(repository_format())
-        return format
 
 
 class RevisionMailJob(BranchDiffJob):

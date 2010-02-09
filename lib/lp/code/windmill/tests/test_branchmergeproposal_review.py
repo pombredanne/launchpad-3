@@ -9,7 +9,6 @@ import unittest
 
 import transaction
 import windmill
-from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import lpuser
@@ -17,7 +16,7 @@ from canonical.launchpad.windmill.testing.widgets import (
     search_and_select_picker_widget)
 from canonical.uuid import generate_uuid
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import login_person, WindmillTestCase
 
 WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'
@@ -26,15 +25,16 @@ ADD_COMMENT_BUTTON = (
     u'//input[@id="field.actions.add" and @class="button js-action"]')
 
 
-class TestRequestReview(TestCaseWithFactory):
+class TestRequestReview(WindmillTestCase):
     """Test the javascript functions of code review."""
 
     layer = CodeWindmillLayer
+    suite_name = "Code review"
 
     def test_inline_request_a_reviewer(self):
         """Request a review."""
 
-        client = WindmillTestClient("Code review")
+        client = self.client
 
         lpuser.FOO_BAR.ensure_login(client)
 
@@ -57,10 +57,11 @@ class TestRequestReview(TestCaseWithFactory):
         client.waits.forElement(id=u'review-mark', timeout=u'10000')
 
 
-class TestReviewCommenting(TestCaseWithFactory):
+class TestReviewCommenting(WindmillTestCase):
     """Test commenting and reviewing on a merge proposal."""
 
     layer = CodeWindmillLayer
+    suite_name = 'Code review commenting'
 
     def open_proposal_page(self, client, proposal):
         transaction.commit()
@@ -69,7 +70,7 @@ class TestReviewCommenting(TestCaseWithFactory):
 
     def test_merge_proposal_commenting(self):
         """Comment on a merge proposal."""
-        client = WindmillTestClient('Code review commenting')
+        client = self.client
         lpuser.NO_PRIV.ensure_login(client)
 
         proposal = self.factory.makeBranchMergeProposal()
@@ -88,7 +89,7 @@ class TestReviewCommenting(TestCaseWithFactory):
 
     def test_merge_proposal_replying(self):
         """Reply to a review comment."""
-        client = WindmillTestClient('Code review commenting')
+        client = self.client
         lpuser.NO_PRIV.ensure_login(client)
         proposal = self.factory.makeBranchMergeProposal()
         login_person(proposal.registrant)
@@ -105,6 +106,21 @@ class TestReviewCommenting(TestCaseWithFactory):
         client.waits.forElement(
             xpath='//div[@id="conversation"]//div[@class="boardCommentBody"]'
             '/pre[contains(., "%s")]' % new_comment_text)
+
+    def test_merge_proposal_reviewing(self):
+        """Comment on a merge proposal."""
+        client = self.client
+        lpuser.NO_PRIV.ensure_login(client)
+
+        proposal = self.factory.makeBranchMergeProposal()
+        self.open_proposal_page(client, proposal)
+        client.waits.forElement(xpath=ADD_COMMENT_BUTTON)
+
+        new_comment_text = generate_uuid()
+        client.type(text=new_comment_text, id="field.comment")
+        client.select(id=u'field.vote', val=u'APPROVE')
+        client.click(xpath=ADD_COMMENT_BUTTON)
+        client.waits.forElement(id=u'review-no-priv', timeout=u'40000')
 
 
 def test_suite():

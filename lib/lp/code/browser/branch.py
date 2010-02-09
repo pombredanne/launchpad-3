@@ -20,6 +20,7 @@ __all__ = [
     'BranchEditMenu',
     'BranchInProductView',
     'BranchSparkView',
+    'BranchUpgradeView',
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
@@ -80,7 +81,8 @@ from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType, CodeImportJobState,
-    CodeImportReviewStatus, RevisionControlSystems, UICreatableBranchType)
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
+    UICreatableBranchType)
 from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
@@ -187,7 +189,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_import', 'edit_whiteboard', 'delete')
+        'edit', 'reviewer', 'edit_whiteboard', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -209,14 +211,6 @@ class BranchEditMenu(NavigationMenu):
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
-    def edit_import(self):
-        text = 'Edit import source or review import'
-        enabled = (
-            self.branch_is_import() and
-            check_permission('launchpad.Edit', self.context.code_import))
-        return Link(
-            '+edit-import', text, icon='edit', enabled=enabled)
-
     @enabled_with_permission('launchpad.Edit')
     def reviewer(self):
         text = 'Set branch reviewer'
@@ -231,7 +225,7 @@ class BranchContextMenu(ContextMenu):
     links = [
         'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status']
+        'edit_status', 'edit_import', 'upgrade_branch']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -297,6 +291,23 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
+
+    def edit_import(self):
+        text = 'Edit import source or review import'
+        enabled = True
+        enabled = (
+            self.context.branch_type == BranchType.IMPORTED and
+            check_permission('launchpad.Edit', self.context.code_import))
+        return Link(
+            '+edit-import', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def upgrade_branch(self):
+        enabled = False
+        if self.context.needs_upgrading:
+            enabled = True
+        return Link(
+            '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
 
 class DecoratedBug:
@@ -498,6 +509,13 @@ class BranchView(LaunchpadView, FeedsMixin):
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
+
+    def iconForCodeImportResultStatus(self, status):
+        """The icon to represent the `CodeImportResultStatus` `status`."""
+        if status in CodeImportResultStatus.successes:
+            return "/@@/yes"
+        else:
+            return "/@@/no"
 
     @property
     def is_svn_import(self):
@@ -875,6 +893,27 @@ class BranchDeletionView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class BranchUpgradeView(LaunchpadFormView):
+    """Used to upgrade a branch."""
+
+    schema = IBranch
+    field_names = []
+
+    @property
+    def page_title(self):
+        return smartquote('Upgrade branch "%s"' % self.context.displayname)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    @action('Upgrade', name='upgrade_branch')
+    def upgrade_branch_action(self, action, data):
+        self.context.requestUpgrade()
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):

@@ -19,11 +19,14 @@ from lp.buildmaster.interfaces.builder import IBuilder
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.buildqueue import IBuildQueue
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
 
+
 class IBuildBase(Interface):
     """Common interface shared by farm jobs that build a package."""
+
     # XXX: wgrant 2010-01-20 bug=507712: Most of these attribute names
     # are bad.
     datecreated = exported(
@@ -68,9 +71,15 @@ class IBuildBase(Interface):
             description=_("A URL for the build log. None if there is no "
                           "log available.")))
 
-    buildqueue_record = Attribute("Corespondent BuildQueue record")
+    buildqueue_record = Object(
+        schema=IBuildQueue, required=True,
+        title=_("Corresponding BuildQueue record"))
 
     is_private = Attribute("Whether the build should be treated as private.")
+
+    policy_name = TextLine(
+        title=_("Policy name"), required=True,
+        description=_("The upload policy to use for handling these builds."))
 
     archive = exported(
         Reference(
@@ -100,7 +109,14 @@ class IBuildBase(Interface):
             title=_("Distribution"), required=True,
             description=_("Shortcut for its distribution.")))
 
-    def handleStatus(status, queueItem, librarian, slave_status):
+    def getUploaderCommand(upload_leaf, uploader_logfilename):
+        """Get the command to run as the uploader.
+
+        :return: A list of command line arguments, beginning with the
+            executable.
+        """
+
+    def handleStatus(status, librarian, slave_status):
         """Handle a finished build status from a slave.
 
         :param status: Slave build status string with 'BuildStatus.' stripped.

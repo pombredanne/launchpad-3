@@ -576,9 +576,12 @@ ubuntu primary archive.
     ...     sourcename="package1", version="1.0",
     ...     archive=ubuntu_db.main_archive)
 
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     PackagePublishingStatus)
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package1", version="1.1",
-    ...     archive=ubuntu_db.main_archive)
+    ...     archive=ubuntu_db.main_archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package2", version="1.0",
@@ -742,6 +745,8 @@ Make Celso's PPA private and create a private source publication.
 
     >>> private_publication = test_publisher.createSource(
     ...     cprov.archive, 'foocomm', '1.0-1')
+    >>> private_publication.secure_record.status = (
+    ...     PackagePublishingStatus.PUBLISHED)
 
     >>> logout()
 
@@ -908,8 +913,10 @@ In the same way we can use 'syncSources' for syncing an subsequent
 version.
 
     >>> login('foo.bar@canonical.com')
-    >>> unused = test_publisher.createSource(
+    >>> subsequent_version = test_publisher.createSource(
     ...     cprov.archive, 'foocomm', '1.0-2')
+    >>> subsequent_version.secure_record.status = (
+    ...     PackagePublishingStatus.PUBLISHED)
     >>> logout()
 
     >>> print cprov_webservice.named_post(

@@ -12,6 +12,7 @@ __all__ = [
     'IBugAttachment',
     'IBugAttachmentSet',
     'IBugAttachmentEditForm',
+    'IBugAttachmentIsPatchConfirmationForm',
     ]
 
 from zope.interface import Interface
@@ -82,6 +83,10 @@ class IBugAttachment(IHasBug):
     message = exported(
         Reference(IMessage, title=_("The message that was created when we "
                                     "added this attachment.")))
+    is_patch = Bool(
+        title=_('Patch?'),
+        description=_('Is this attachment a patch?'),
+        readonly=True)
 
     @call_with(user=REQUEST_USER)
     @export_write_operation()
@@ -93,7 +98,6 @@ class IBugAttachment(IHasBug):
 
         The library file content for this attachment is set to None.
         """
-
 
 # Need to do this here because of circular imports.
 IMessage['bugattachments'].value_type.schema = IBugAttachment
@@ -133,5 +137,11 @@ class IBugAttachmentEditForm(Interface):
             "text/plain"),
         required=True)
     patch = Bool(
-        title=u"This attachment is a patch",
+        title=u"This attachment contains a solution (patch) for this bug",
         required=True, default=False)
+
+
+class IBugAttachmentIsPatchConfirmationForm(Interface):
+    """Schema used to confirm the setting of the "patch" flag."""
+
+    patch = Bool(title=u"Is this file a patch", required=True, default=False)

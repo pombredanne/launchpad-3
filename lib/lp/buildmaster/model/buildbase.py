@@ -14,7 +14,6 @@ import logging
 import os
 import pytz
 import subprocess
-import time
 from cStringIO import StringIO
 
 from storm.store import Store
@@ -34,6 +33,53 @@ from lp.soyuz.model.buildqueue import BuildQueue
 
 
 class BuildBase:
+    """A mixin class providing functionality for farm jobs that build a
+    package.
+
+    Note: this class does not implement IBuildBase as we currently duplicate
+    the properties defined on IBuildBase on the inheriting class tables. 
+    BuildBase cannot therefore implement IBuildBase itself, as storm requires
+    that the corresponding __storm_table__ be defined for the class. Instead,
+    the classes using the BuildBase mixin must ensure that they implement IBuildBase.
+    """
+    policy_name = 'buildd'
+
+    def getUploadLeaf(self, build_id, now=None):
+        """Return a directory name to store build things in.
+
+        :param build_id: The id as returned by the slave, normally
+            $BUILD_ID-$BUILDQUEUE_ID
+        :param now: The `datetime` to use. If not provided, defaults to now.
+        """
+        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD_ID>-<BUILDQUEUE_ID>
+        if now is None:
+            now = datetime.datetime.now()
+        return '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id)
+
+    def getUploadDir(self, upload_leaf):
+        """Return the directory that things will be stored in."""
+        return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
+
+    def getUploaderCommand(self, upload_leaf, uploader_logfilename):
+        """See `IBuildBase`."""
+        root = os.path.abspath(config.builddmaster.root)
+        uploader_command = list(config.builddmaster.uploader.split())
+
+        # add extra arguments for processing a binary upload
+        extra_args = [
+            "--log-file", "%s" % uploader_logfilename,
+            "-d", "%s" % self.distribution.name,
+            "-s", "%s" % (self.distroseries.name +
+                          pocketsuffix[self.pocket]),
+            "-b", "%s" % self.id,
+            "-J", "%s" % upload_leaf,
+            '--context=%s' % self.policy_name,
+            "%s" % root,
+            ]
+
+        uploader_command.extend(extra_args)
+        return uploader_command
+
     def _getProxiedFileURL(self, library_file):
         """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
         # Avoiding circular imports.
@@ -85,12 +131,10 @@ class BuildBase:
         # ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]
         root = os.path.abspath(config.builddmaster.root)
-        incoming = os.path.join(root, 'incoming')
 
         # create a single directory to store build result files
-        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD_ID>-<BUILDQUEUE_ID>
-        upload_leaf = "%s-%s" % (time.strftime("%Y%m%d-%H%M%S"), buildid)
-        upload_dir = os.path.join(incoming, upload_leaf)
+        upload_leaf = self.getUploadLeaf(buildid)
+        upload_dir = self.getUploadDir(upload_leaf)
         logger.debug("Storing build result at '%s'" % upload_dir)
 
         # Build the right UPLOAD_PATH so the distribution and archive
@@ -110,29 +154,16 @@ class BuildBase:
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
-        uploader_argv = list(config.builddmaster.uploader.split())
         uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
-        logger.debug("Saving uploader log at '%s'"
-                     % uploader_logfilename)
-
-        # add extra arguments for processing a binary upload
-        extra_args = [
-            "--log-file", "%s" %  uploader_logfilename,
-            "-d", "%s" % self.distribution.name,
-            "-s", "%s" % (self.distroseries.name +
-                          pocketsuffix[self.pocket]),
-            "-b", "%s" % self.id,
-            "-J", "%s" % upload_leaf,
-            "%s" % root,
-            ]
-
-        uploader_argv.extend(extra_args)
+        uploader_command = self.getUploaderCommand(
+            upload_leaf, uploader_logfilename)
+        logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
 
         logger.debug("Invoking uploader on %s" % root)
-        logger.debug("%s" % uploader_argv)
+        logger.debug("%s" % uploader_command)
 
         uploader_process = subprocess.Popen(
-            uploader_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            uploader_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # Nothing should be written to the stdout/stderr.
         upload_stdout, upload_stderr = uploader_process.communicate()
