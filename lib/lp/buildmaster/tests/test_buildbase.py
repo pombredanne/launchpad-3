@@ -11,7 +11,6 @@ import unittest
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.testing import TestCase, TestCaseWithFactory
@@ -19,13 +18,6 @@ from lp.testing import TestCase, TestCaseWithFactory
 
 class TestBuildBase(TestCase):
     """Tests for `IBuildBase`."""
-
-    def disabled_test_build_base_provides_interface(self):
-        # XXX: JonathanLange 2010-01-22 bug=510919: BuildBase is supposed to
-        # implement IBuildBase, but doesn't atm. Since it's not the focus of
-        # the branch, we'll postpone the work.
-        build_base = BuildBase()
-        self.assertProvides(build_base, IBuildBase)
 
     def test_getUploadLeaf(self):
         # getUploadLeaf returns the current time, followed by the build id.
