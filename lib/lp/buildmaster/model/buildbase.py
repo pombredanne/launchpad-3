@@ -358,7 +358,10 @@ class BuildBase:
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
-        self.dependencies = slave_status.get('dependencies')
+        if slave_status.get('dependencies') is not None:
+            self.dependencies = unicode(slave_status.get('dependencies'))
+        else:
+            self.dependencies = None
 
     def storeUploadLog(self, content):
         """See `IBuildBase`."""
