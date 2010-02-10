@@ -28,8 +28,7 @@ special = {
         '../doc/hwdb-device-tables.txt',
         setUp=hwdbDeviceTablesSetup,
         tearDown=tearDown,
-        layer=LaunchpadZopelessLayer,
-        ),
+        layer=LaunchpadZopelessLayer),
     }
 
 
