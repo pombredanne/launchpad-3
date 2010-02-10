@@ -254,28 +254,28 @@ def get_ex_cons(authors, all_ex_cons):
     the bzr logs, i.e., with email address undisguised) to ExCon objects.
     """
     ex_cons_this_rev = []
-    for a in authors:
+    for author in authors:
         known = False
         for name_fragment in known_canonical_devs:
-            if u"@canonical.com" in a or name_fragment in a:
+            if u"@canonical.com" in author or name_fragment in author:
                 known = True
                 break
         if not known:
             # Use the merge names map to merge contributions from the same
             # person using alternate names and/or emails.
-            if a in merge_names_map:
-                a = merge_names_map[a]
+            if author in merge_names_map:
+                author = merge_names_map[author]
 
             ### There's a variant of the Singleton pattern that could be
             ### used for this, whereby instantiating an ExCon object would
             ### just get back an existing object if such has already been
             ### instantiated for this name.  But that would make this code
             ### non-reentrant, and that's just not cool.
-            if a in all_ex_cons:
-                ec = all_ex_cons[a]
+            if author in all_ex_cons:
+                ec = all_ex_cons[author]
             else:
-                ec = ExCon(a)
-                all_ex_cons[a] = ec
+                ec = ExCon(author)
+                all_ex_cons[author] = ec
             ex_cons_this_rev.append(ec)
     return ex_cons_this_rev
 
