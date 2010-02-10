@@ -3,34 +3,33 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import os
 import subprocess
 import sys
 import time
 import unittest
 
-from datetime import datetime
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.packagecopyrequest import (
-    IPackageCopyRequestSet, PackageCopyStatus)
-from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.scripts.ftpmaster import (
-    PackageLocationError, SoyuzScriptError)
-from lp.soyuz.scripts.populate_archive import ArchivePopulator
 from canonical.launchpad.scripts import BufferLogger
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.packagecopyrequest import (
+    IPackageCopyRequestSet, PackageCopyStatus)
+from lp.soyuz.scripts.ftpmaster import PackageLocationError, SoyuzScriptError
+from lp.soyuz.scripts.populate_archive import ArchivePopulator
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import TestCase
 
 
 def get_spn(build):
@@ -649,6 +648,29 @@ class TestPopulateArchiveScript(TestCase):
         # archive at hand were stored in the database.
         rset = getUtility(IArchiveArchSet).getByArchive(copy_archive)
         self.assertEqual(get_family_names(rset), [u'amd64', u'x86'])
+
+    def testBuildsPendingAndSuspended(self):
+        """All builds in the new copy archive are pending and suspended."""
+        def build_not_pending_and_suspended(build):
+            """True if the given build is not pending and suspended."""
+            return (
+                build.buildstate != BuildStatus.NEEDSBUILD or
+                build.buildqueue_record.job.status != JobStatus.SUSPENDED)
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+
+        # Verify that we have the right source packages in the sample data.
+        self._verifyPackagesInSampleData(hoary)
+
+        extra_args = ['-a', '386']
+        archive = self.runScript(extra_args=extra_args, exists_after=True)
+
+        # Make sure the right source packages were cloned.
+        self._verifyClonedSourcePackages(archive, hoary)
+
+        # Now check that we have the build records expected.
+        builds = list(getUtility(IBuildSet).getBuildsForArchive(archive))
+        wrong_builds = filter(build_not_pending_and_suspended, builds)
+        self.assertEqual(len(wrong_builds), 0)
 
     def testPrivateOriginArchive(self):
         """Try copying from a private archive.
