@@ -1268,7 +1268,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
 
     @property
     def hot_bugs(self):
-        """Return the 10 hottest bugtasks according to IBug.heat."""
+        """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
         has_more_bugs = False
         params = BugTaskSearchParams(
             orderby='-heat', omit_dupes=True,
