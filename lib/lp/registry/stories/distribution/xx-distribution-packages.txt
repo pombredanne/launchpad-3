@@ -360,7 +360,7 @@ A link to further PPA searches is also included.
     ...     url='http://launchpad.dev/ubuntutest/+ppas?'
     ...         'name_filter=netapplet')
     >>> link.text
-    "...more untrusted versions of..."
+    "...other untrusted versions of..."
 
 
 Source package change logs
