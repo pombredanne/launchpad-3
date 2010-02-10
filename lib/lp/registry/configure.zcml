@@ -1375,7 +1375,13 @@
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="displayname title summary description                                                                                         translation_focus translationgroup translationpermission                                                                                         driver members owner security_contact mirror_admin                                                                                         homepage_content icon logo mugshot enable_bug_expiration                                                                                         bug_reporting_guidelines official_blueprints                                                                                         official_malone official_rosetta official_answers                                                                                         official_bug_tags"/>
+            set_attributes="displayname title summary description
+            		    translation_focus translationgroup translationpermission
+                            driver members owner security_contact mirror_admin
+                            homepage_content icon logo mugshot enable_bug_expiration
+                            bug_reporting_guidelines official_blueprints
+                            official_malone official_rosetta official_answers
+                            official_bug_tags"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="language_pack_admin"/>
@@ -1608,14 +1614,17 @@
 
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
-        <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirror" />
+        <allow
+            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorPublic" />
         <require
             permission="launchpad.Edit"
+            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorEditRestricted"
             set_attributes="name displayname description whiteboard
                             http_base_url ftp_base_url rsync_base_url enabled
                             speed country content official_candidate owner" />
         <require
             permission="launchpad.Admin"
+            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorAdminRestricted"
             set_attributes="status reviewer date_reviewed"
             attributes="destroySelf" />
     </class>
@@ -1701,7 +1710,7 @@
     </securedutility>
 
     <!-- StructuralSubscription -->
-    
+
     <class
         class="lp.registry.model.structuralsubscription.StructuralSubscription">
         <allow

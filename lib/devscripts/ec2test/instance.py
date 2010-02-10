@@ -105,6 +105,7 @@ hostnames=$(cat <<EOF
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
+    testopenid.launchpad.dev
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
