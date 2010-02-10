@@ -21,6 +21,7 @@ Options:
   -q          Print no non-essential messages.
   -h, --help  Print this help.
   --dry-run   Don't update the wiki, just print the new wiki page to stdout.
+  --draft-run Update the wiki, but the "/Draft" page not the real page.
 """
 
 # General notes:
@@ -363,13 +364,15 @@ def main():
     target = None
     dry_run = False
 
+    wiki_dest = "https://dev.launchpad.net/Contributions"
+
     if len(sys.argv) < 2:
         usage()
         sys.exit(1)
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], '?hq',
-                                   ['help', 'usage', 'dry-run'])
+                                   ['help', 'usage', 'dry-run', 'draft-run'])
     except getopt.GetoptError, e:
         sys.stderr.write("ERROR: " + str(e) + '\n\n')
         usage()
@@ -383,6 +386,8 @@ def main():
             quiet = True
         elif opt == '--dry-run':
             dry_run = True
+        elif opt == '--draft-run':
+            wiki_dest += "/Draft"
 
     # Ensure we have the arguments we need.
     if len(args) < 1:
@@ -419,8 +424,7 @@ def main():
         if not quiet:
             print "Updating wiki..."
         # Not sure how to get editmoin to obey our quiet flag.
-        editshortcut("https://dev.launchpad.net/Contributions",
-                     editfile_func=update_if_modified)
+        editshortcut(wiki_dest, editfile_func=update_if_modified)
         if not quiet:
             print "Done updating wiki."
     else:
