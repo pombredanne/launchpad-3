@@ -12,7 +12,7 @@ from unittest import TestCase, TestLoader
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from canonical.launchpad.scripts.hwdbsubmissions import SubmissionParser
+from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser
 from canonical.testing import BaseLayer
 
 

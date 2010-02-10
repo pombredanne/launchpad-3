@@ -226,7 +226,7 @@ by name works.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
-    >>> from canonical.launchpad.interfaces.hwdb import IHWDriverSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> login(ANONYMOUS)
     >>> driver_set = getUtility(IHWDriverSet)
     >>> # A typical graphics card driver
