@@ -116,7 +116,7 @@ entry is created:
     --------------------------------------
     <BLANKLINE>
     Celso Providelo has granted you access to a private software archive
-    "PPA for Celso Providelo", which is hosted by Launchpad.
+    "PPA for Celso Providelo (ppa)", which is hosted by Launchpad.
     <BLANKLINE>
     To start downloading and using software from this archive you need to
     view your access details by visiting this link:
