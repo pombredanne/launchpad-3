@@ -205,7 +205,7 @@ class ProductSeriesOverviewMenu(
         summary = "Register a new Bazaar branch for this series' project"
         return Link('+addbranch', text, summary, icon='add')
 
-    @enabled_with_permission('launchpad.View')
+    @enabled_with_permission('launchpad.AnyPerson')
     def ubuntupkg(self):
         """Return a link to link this series to an ubuntu sourcepackage."""
         text = 'Link to Ubuntu package'

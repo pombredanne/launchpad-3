@@ -282,6 +282,13 @@ A list of series can be accessed through the series_collection_link.
     >>> print series_1_0['self_link']
     http://.../firefox/1.0
 
+Series can also be accessed anonymously.
+
+    >>> response = anon_webservice.get(firefox['series_collection_link'])
+    >>> series = response.jsonBody()
+    >>> print series['total_size']
+    2
+
 A list of releases can be accessed through the releases_collection_link.
 
     >>> response = webservice.get(firefox['releases_collection_link'])
@@ -301,6 +308,13 @@ A list of releases can be accessed through the releases_collection_link.
     ...     firefox['self_link'], "getRelease", version="0.9.1").jsonBody()
     >>> print release_0_9_1['self_link']
     http://.../firefox/trunk/0.9.1
+
+Releases can also be accessed anonymously.
+
+    >>> response = anon_webservice.get(firefox['releases_collection_link'])
+    >>> releases = response.jsonBody()
+    >>> print releases['total_size']
+    4
 
 The development focus series can be accessed through the
 development_focus_link.
