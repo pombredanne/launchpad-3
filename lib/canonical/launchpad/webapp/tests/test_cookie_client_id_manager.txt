@@ -20,14 +20,15 @@ be provided.
 
     >>> from StringIO import StringIO
     >>> from zope.publisher.http import HTTPRequest
-    >>> request = HTTPRequest(StringIO(''), {}, None)
+    >>> environ = {'SERVER_URL': 'http://launchpad.dev'}
+    >>> request = HTTPRequest(StringIO(''), environ, None)
     >>> bim.getNamespace(request)
     'launchpad_tests'
 
 When the request is in the TestOpenIDLayer, a separate cookie is used.
 
     >>> from canonical.launchpad.layers import setFirstLayer, TestOpenIDLayer
-    >>> testopenid_request = HTTPRequest(StringIO(''), {}, None)
+    >>> testopenid_request = HTTPRequest(StringIO(''), environ, None)
     >>> setFirstLayer(testopenid_request, TestOpenIDLayer)
     >>> bim.getNamespace(testopenid_request)
     'testopenid'
@@ -53,7 +54,7 @@ And get it back:
 When we set the request id, we also set a response cookie.  We
 can simulate getting this cookie back in a subsequent request:
 
-    >>> request2 = HTTPRequest(StringIO(''), {}, None)
+    >>> request2 = HTTPRequest(StringIO(''), environ, None)
     >>> request2._cookies = dict(
     ...   [(name, cookie['value'])
     ...    for (name, cookie) in request.response._cookies.items()
@@ -76,7 +77,7 @@ If another server is managing the ClientId cookies (Apache, Nginx)
 we're returning their value without checking:
 
     >>> bim.thirdparty = True
-    >>> request3 = HTTPRequest(StringIO(''), {}, None)
+    >>> request3 = HTTPRequest(StringIO(''), environ, None)
     >>> request3._cookies = {
     ...     bim.getNamespace(request3): 'AQAAf0Y4gjgAAAQ3AwMEAg=='}
     >>> bim.getRequestId(request3)
@@ -88,7 +89,7 @@ we're returning their value without checking:
 Note that the id is checked for validity. Setting an
 invalid value is silently ignored:
 
-    >>> request = HTTPRequest(StringIO(''), {}, None)
+    >>> request = HTTPRequest(StringIO(''), environ, None)
     >>> bim = LaunchpadCookieClientIdManager()
     >>> bim.getRequestId(request)
     >>> bim.setRequestId(request, 'invalid id')
@@ -110,7 +111,7 @@ By default, session cookies have a lifetime of 1 year:
 Expiry time of 0 means never (well - close enough)
 
     >>> bim.cookieLifetime = 0
-    >>> request = HTTPRequest(StringIO(''), {}, None)
+    >>> request = HTTPRequest(StringIO(''), environ, None)
     >>> sid = bim.getRequestId(request)
     >>> bim.setRequestId(request, sid)
     >>> cookie = request.response.getCookie(bim.getNamespace(request))
@@ -120,7 +121,7 @@ Expiry time of 0 means never (well - close enough)
 If another server in front of Zope (Apache, Nginx) is managing the
 cookies we won't set any ClientId cookies:
 
-    >>> request = HTTPRequest(StringIO(''), {}, None)
+    >>> request = HTTPRequest(StringIO(''), environ, None)
     >>> bim.thirdparty = True
     >>> bim.setRequestId(request, '1234')
     WARNING:root:ClientIdManager is using thirdparty cookies...
