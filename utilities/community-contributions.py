@@ -324,8 +324,7 @@ def get_ex_cons(authors, all_ex_cons):
 
         # Use the merge names map to merge contributions from the same
         # person using alternate names and/or emails.
-        if author in merge_names_map:
-            author = merge_names_map[author]
+        author = merge_names_map.get(author, author)
 
         if u" {_AT_} canonical.com" in author:
             known_canonical_non_lp_dev = True
