@@ -576,6 +576,7 @@
                     personIsSubscribedToDuplicate
                     heat
                     has_patches
+                    latest_patch
                     latest_patch_uploaded"/>
             <require
                 permission="launchpad.View"

@@ -22,6 +22,7 @@ for teams (as they're defined in the ITeam interface).
     irc_nicknames_collection_link: u'http://.../~salgado/irc_nicknames'
     is_probationary: True
     is_team: False
+    is_ubuntu_coc_signer: False
     is_valid: True
     jabber_ids_collection_link: u'http://.../~salgado/jabber_ids'
     karma: 0
@@ -67,6 +68,7 @@ for teams (as they're defined in the ITeam interface).
     irc_nicknames_collection_link: u'http://.../~ubuntu-team/irc_nicknames'
     is_probationary: False
     is_team: True
+    is_ubuntu_coc_signer: False
     is_valid: True
     jabber_ids_collection_link: u'http://.../~ubuntu-team/jabber_ids'
     karma: 0

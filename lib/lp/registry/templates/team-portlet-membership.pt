@@ -97,6 +97,16 @@
       <td style="padding: 0px 1em 1em 0px;"
           tal:define="link context/menu:overview/add_member"
           tal:condition="link/enabled">
+        <script type="text/javascript"
+                tal:content="string:
+          YUI().use('registry.team', function(Y) {
+              Y.on('load',
+                  function(e) {
+                      Y.registry.team.setup_add_member_handler();
+                  },
+                  window);
+          });
+        "/>
         <span id="add-member-spinner"
               class="unseen update-in-progress-message">
           Saving...
