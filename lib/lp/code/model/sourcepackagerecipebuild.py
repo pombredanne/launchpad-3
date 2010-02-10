@@ -21,18 +21,19 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.soyuz.model.buildqueue import BuildQueue
 
 
@@ -41,7 +42,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     policy_name = 'recipe'
 
-    implements(ISourcePackageRecipeBuild)
+    implements(IBuildBase, ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
 
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD

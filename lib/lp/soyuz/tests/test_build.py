@@ -3,6 +3,8 @@
 
 """Test Build features."""
 
+from datetime import datetime, timedelta
+import pytz
 import unittest
 
 from storm.store import Store
@@ -10,9 +12,10 @@ from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.model.job import Job
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import BuildStatus, IBuild, IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
@@ -20,6 +23,26 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
+
+class TestBuildInterface(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterfaces(self):
+        # Build provides IBuildBase and IBuild.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        gedit_src_hist = publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
+        build = gedit_src_hist.createMissingBuilds()[0]
+
+        # The IBuild.calculated_buildstart property asserts
+        # that both datebuilt and buildduration are set.
+        build.datebuilt = datetime.now(pytz.UTC)
+        build.buildduration = timedelta(0, 1)
+
+        self.assertProvides(build, IBuildBase)
+        self.assertProvides(build, IBuild)
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
 

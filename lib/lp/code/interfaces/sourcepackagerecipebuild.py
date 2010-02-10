@@ -20,11 +20,11 @@ from canonical.launchpad import _
 
 from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.job.interfaces.job import IJob
-from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 
 
 class ISourcePackageRecipeBuild(IBuildBase):
