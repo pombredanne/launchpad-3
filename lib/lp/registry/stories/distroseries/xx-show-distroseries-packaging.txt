@@ -14,9 +14,15 @@ The page lists the upstream packaging links.
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'packagings'))
-    Source Package   Upstream Project Series
-    netapplet        NetApplet trunk series
-    evolution        Evolution trunk series
+    Source Package   Upstream Project   Upstream Contributor Connections
+    netapplet
+      NetApplet ... The Novell Network Applet
+        NetApplet ... project:  Bug supervisor: no   Bug tracker: no
+        NetApplet trunk series:  Branch: no
+    evolution
+      Evolution ... Evolution is an email client, addressbook ...
+        Evolution ... project: Bug supervisor: no   Bug tracker: yes
+        Evolution trunk series: Branch: yes   Translations: no
 
 Any use can see that this page is related to the needs packaging report. It is
 linked, but the link to this page is not enabled.
@@ -40,14 +46,14 @@ links packages. Users can also hack the URL to set their own batch size.
     ...     'http://launchpad.dev/ubuntu/hoary/+packaging?start=0&batch=1')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'packagings'))
-    Source Package   Upstream Project Series
-    netapplet        NetApplet trunk series
+    Source Package   Upstream Project   Upstream Contributor Connections
+    netapplet ...
 
     >>> anon_browser.getLink('Next', index=0).click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'packagings'))
-    Source Package   Upstream Project Series
-    evolution        Evolution trunk series
+    Source Package   Upstream Project   Upstream Contributor Connections
+    evolution ...
 
 
 Source packages that need packaging links

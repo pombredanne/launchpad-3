@@ -46,9 +46,9 @@
           </cols>
           <thead>
             <tr>
-              <th>Source package</th>
-              <th>Upstream project</th>
-              <th colspan="2">Upstream information quality</th>
+              <th>Source Package</th>
+              <th>Upstream Project</th>
+              <th colspan="2">Upstream Contributor Connections</th>
             </tr>
           </thead>
 
