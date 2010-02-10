@@ -104,6 +104,12 @@ class RosettaImportStatus(DBEnumeratedType):
         The entry has been blocked to be imported by a Rosetta Expert.
         """)
 
+    NEEDS_INFORMATION = DBItem(7, """
+        Needs Information
+
+        The reviewer needs more information before this entry can be approved.
+        """)
+
 
 class SpecialTranslationImportTargetFilter(DBEnumeratedType):
     """Special "meta-targets" to filter the queue view by."""
