@@ -25,6 +25,7 @@ __all__ = [
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
+    'IllegalRelatedBugTasksParams',
     'ImmutableVisibilityError',
     'InvalidName',
     'JoinNotAllowed',
@@ -2055,6 +2056,12 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+class IllegalRelatedBugTasksParams(Exception):
+    """Exception raised when trying to overwirte all relevant parameter
+    in a search for related bug tasks"""
+    webservice_error(400) #Bad request.
 
 
 class NoSuchPerson(NameLookupFailed):
