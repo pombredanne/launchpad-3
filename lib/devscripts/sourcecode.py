@@ -17,11 +17,10 @@ import sys
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import BzrError
+from bzrlib.errors import BzrError, NotBranchError
 from bzrlib.plugin import load_plugins
 from bzrlib.revisionspec import RevisionSpec
-from bzrlib.trace import report_exception
-from bzrlib.transport import get_transport
+from bzrlib.trace import enable_default_logging, report_exception
 from bzrlib import ui
 from bzrlib.workingtree import WorkingTree
 
@@ -112,10 +111,16 @@ def plan_update(existing_branches, configuration):
 
 def find_branches(directory):
     """List the directory names in 'directory' that are branches."""
-    transport = get_transport(directory)
-    return (
-        os.path.basename(branch.base.rstrip('/'))
-        for branch in BzrDir.find_branches(transport))
+    branches = []
+    for name in os.listdir(directory):
+        if name in ('.', '..'):
+            continue
+        try:
+            Branch.open(os.path.join(directory, name))
+            branches.append(name)
+        except NotBranchError:
+            pass
+    return branches
 
 
 def get_revision_id(revision, from_branch, tip=False):
@@ -183,7 +188,7 @@ def update_branches(sourcecode_directory, update_branches,
         # Update project from branch_url.
         destination = os.path.join(sourcecode_directory, project)
         print 'Updating %s to %s' % (
-                project, _format_revision_name(revision, tip)),
+                project, _format_revision_name(revision, tip))
         local_tree = WorkingTree.open(destination)
         try:
             remote_branch = Branch.open(
@@ -197,17 +202,17 @@ def update_branches(sourcecode_directory, update_branches,
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
         revision_id = get_revision_id(revision, remote_branch, tip)
-        result = local_tree.pull(
-            remote_branch, stop_revision=revision_id, overwrite=True,
-            possible_transports=possible_transports)
-        if result.old_revno == result.new_revno:
-            print '(No change)'
+        if revision_id == local_tree.last_revision():
+            print '  (No change)'
         else:
+            result = local_tree.pull(
+                remote_branch, stop_revision=revision_id, overwrite=True,
+                possible_transports=possible_transports)
             if result.old_revno < result.new_revno:
                 change = 'Updated'
             else:
                 change = 'Reverted'
-            print '(%s from %s to %s)' % (
+            print '  (%s from %s to %s)' % (
                 change, result.old_revno, result.new_revno)
 
 
@@ -277,6 +282,7 @@ def main(args):
         parser.error("Too many arguments.")
     print 'Sourcecode: %s' % (sourcecode_directory,)
     print 'Config: %s' % (config_filename,)
+    enable_default_logging()
     # Tell bzr to use the terminal (if any) to show progress bars
     ui.ui_factory = ui.make_ui_for_terminal(
         sys.stdin, sys.stdout, sys.stderr)

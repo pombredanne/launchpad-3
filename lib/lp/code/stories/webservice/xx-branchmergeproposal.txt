@@ -456,3 +456,20 @@ The proposals can also be filtered by status.
     >>> print_proposals(webservice, url='/widgets',
     ...     status=[BranchMergeProposalStatus.REJECTED.title])
     http://.../~source/fooix/fix-it/+merge/... - Rejected
+
+== Getting Merge Proposals a Person has been Asked To Review ==
+
+It's good to be able to find out which proposals you have been asked to
+review.
+
+    >>> login('admin@canonical.com')
+    >>> from lp.code.enums import BranchMergeProposalStatus
+    >>> fixit_proposal.requestReview()
+    >>> logout()
+
+    >>> proposals = webservice.named_get('/~target', 'getRequestedReviews'
+    ...     ).jsonBody()
+    >>> for proposal in proposals['entries']:
+    ...     print_proposal(proposal)
+    http://.../~source/fooix/fix-it/+merge/2 - Needs review
+

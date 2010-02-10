@@ -36,15 +36,15 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
-    )
-from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
