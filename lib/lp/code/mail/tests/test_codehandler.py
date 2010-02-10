@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.interaction import (
     get_current_principal, setupInteraction)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.testing import LaunchpadZopelessLayer, ZopelessAppServerLayer
+
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
     BranchType, CodeReviewNotificationLevel, CodeReviewVote)
@@ -1071,10 +1072,11 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
             'Error Creating Merge Proposal', notifications[0]['subject'])
         body = notifications[0].get_payload(decode=True)
         sender = getUtility(IPersonSet).getByEmail(message['from'])
-        expected = ('Launchpad cannot create the branch requested by'
+        expected = (
+            'Launchpad cannot create the branch requested by'
             ' your merge directive:\n'
-            'You cannot create branches in "~%s/%s"\n' % (sender.name,
-                branch.product.name))
+            'You cannot create branches in "~%s/%s"\n' %
+            (sender.name, branch.product.name))
         self.assertEqual(expected, body)
 
 
