@@ -67,7 +67,7 @@ Get editmoin.py from launchpadlib's "contrib/" directory:
 
 # People on the Canonical Launchpad team.
 known_canonical_lp_devs = \
-    [x.encode('ascii', 'xmlcharrefreplace') \
+    [x.encode('utf-8', 'xmlcharrefreplace') \
          for x in (u'Aaron Bentley',
                    u'Abel Deuring',
                    u'Andrew Bennetts',
@@ -144,7 +144,7 @@ known_canonical_lp_devs = \
 # their personal email addresses; this list contains people known to
 # do that, so we can treat them appropriately in the output.
 known_canonical_non_lp_devs = \
-    [x.encode('ascii', 'xmlcharrefreplace') \
+    [x.encode('utf-8', 'xmlcharrefreplace') \
          for x in (u'Adam Conrad',
                    u'Andrew Bennetts',
                    u'Anthony Lenton',
@@ -169,12 +169,12 @@ known_canonical_non_lp_devs = \
 # Some people have made commits using various names and/or email 
 # addresses, so this map will be used to merge them accordingly.
 merge_names_map = {
-    u'Jamal Fanaian <jfanaian {_AT_} gmail.com>': 
-        u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>',
-    u'Jamal Fanaian <jamal {_AT_} jfvm1>': 
-        u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>',
-    u'LaMont Jones <lamont {_AT_} rover3>':
-      u'LaMont Jones <lamont {_AT_} debian.org>'
+    u'Jamal Fanaian <jfanaian {_AT_} gmail.com>'.encode('utf-8', 'xmlcharrefreplace'): 
+        u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>'.encode('utf-8', 'xmlcharrefreplace'),
+    u'Jamal Fanaian <jamal {_AT_} jfvm1>'.encode('utf-8', 'xmlcharrefreplace'): 
+        u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>'.encode('utf-8', 'xmlcharrefreplace'),
+    u'LaMont Jones <lamont {_AT_} rover3>'.encode('utf-8', 'xmlcharrefreplace'):
+      u'LaMont Jones <lamont {_AT_} debian.org>'.encode('utf-8', 'xmlcharrefreplace')
     }
 
 class ContainerRevision():
@@ -313,7 +313,7 @@ def get_ex_cons(authors, all_ex_cons):
         # disguised (since this source code is public).  We must
         # disguise the ones coming from the Bazaar logs in the same way,
         # so string matches will work.
-        author = author.encode('ascii', 'xmlcharrefreplace')
+        author = author.encode('utf-8', 'xmlcharrefreplace')
         author = author.replace("@", " {_AT_} ")
         for name_fragment in known_canonical_lp_devs:
             if name_fragment in author:
@@ -326,7 +326,7 @@ def get_ex_cons(authors, all_ex_cons):
         # person using alternate names and/or emails.
         author = merge_names_map.get(author, author)
 
-        if u" {_AT_} canonical.com" in author:
+        if u" {_AT_} canonical.com".encode('utf-8', 'xmlcharrefreplace') in author:
             known_canonical_non_lp_dev = True
         else:
             for name_fragment in known_canonical_non_lp_devs:
