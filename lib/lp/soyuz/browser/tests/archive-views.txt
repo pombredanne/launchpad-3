@@ -442,6 +442,37 @@ also provides a custom widget, displayname_edit_widget.
     >>> print view.displayname_edit_widget.title
     Edit the displayname
 
+The view provides the is_probationary_ppa property. The archive's description
+is not linkified when the owner is a probationary user to prevent spammers
+from using PPAs.
+
+    >>> login('admin@canonical.com')
+    >>> cprov.archive.description = 'http://example.dom/'
+    >>> login(ANONYMOUS)
+    >>> cprov.is_probationary
+    True
+
+    >>> print view.archive_description_html.value
+    http://example.dom/
+
+The PPA description is linked when the user has made a contribution.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+
+    >>> login('admin@canonical.com')
+    >>> contributor = getUtility(IPersonSet).getByName('name12')
+    >>> contributor_ppa = factory.makeArchive(
+    ...     distribution=ubuntu, name='ppa', owner=contributor)
+    >>> contributor_ppa.description = 'http://example.dom/'
+    >>> login(ANONYMOUS)
+    >>> contributor_view = create_initialized_view(
+    ...     contributor_ppa, name="+index")
+    >>> contributor.is_probationary
+    False
+
+    >>> print contributor_view.archive_description_html.value
+    <p><a rel="nofollow" href="http://example.dom/">http://...example...
+
 
 == ArchivePackageView ==
 

@@ -28,9 +28,10 @@ from canonical.launchpad.testing.systemdocs import (
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
-from canonical.testing import (
+from canonical.testing.layers import (
     AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    GoogleLaunchpadFunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -268,6 +269,11 @@ special = {
             setUp=setUp,
             tearDown=tearDown,
             layer=FunctionalLayer,
+            ),
+    'google-searchservice.txt': LayeredDocFileSuite(
+            '../doc/google-searchservice.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=GoogleLaunchpadFunctionalLayer,
             ),
     }
 

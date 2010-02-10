@@ -101,6 +101,13 @@
         template="../templates/distroseries-packaging.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesNeedsPackagesView"
+        permission="zope.Public"
+        name="+needs-packaging"
+        facet="overview"
+        template="../templates/distroseries-needs-packaging.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Admin"
         facet="overview"
         class="canonical.launchpad.browser.ObjectReassignmentView"
@@ -1599,7 +1606,7 @@
         template="../templates/productseries-ubuntupkg.pt"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
-        permission="launchpad.View"/>
+        permission="launchpad.AnyPerson"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
