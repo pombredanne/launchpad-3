@@ -62,8 +62,6 @@ class TestPermission(TestCaseWithFactory):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
         if distroseries is None:
-            distroseries = archive.distribution.currentseries
-        if distroseries is None:
             distroseries = self.factory.makeDistroSeries(
                 distribution=archive.distribution)
         pocket = PackagePublishingPocket.RELEASE
@@ -86,8 +84,6 @@ class TestPermission(TestCaseWithFactory):
         :param component: The IComponent to which the package belongs.
         :param distroseries: The upload's target distro series.
         """
-        if distroseries is None:
-            distroseries = archive.distribution.currentseries
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
