@@ -656,7 +656,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         build = self.sourcepackagerelease.createBuild(
             distroarchseries=arch, archive=self.archive, pocket=self.pocket)
-        build_queue = build.queueBuild()
+        build_queue = build.queueBuild(suspended=not self.archive.enabled)
         build_queue.score()
         Store.of(build).flush()
 
