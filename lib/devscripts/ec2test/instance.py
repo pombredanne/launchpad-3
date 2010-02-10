@@ -105,6 +105,7 @@ hostnames=$(cat <<EOF
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
+    testopenid.launchpad.dev
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
@@ -129,7 +130,7 @@ aptitude -y full-upgrade
 
 apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
-# Creat the ec2test user, give them passwordless sudo.
+# Create the ec2test user, give them passwordless sudo.
 adduser --gecos "" --disabled-password ec2test
 echo 'ec2test\tALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
