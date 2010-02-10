@@ -18,10 +18,10 @@ Requirements:
        have it, the error message will tell you where to get it).
 
 Options:
-  -q          Print no non-essential messages.
-  -h, --help  Print this help.
-  --dry-run   Don't update the wiki, just print the new wiki page to stdout.
-  --draft-run Update the wiki, but the "/Draft" page not the real page.
+  -q            Print no non-essential messages.
+  -h, --help    Print this help.
+  --dry-run     Don't update the wiki, just print the new wiki page to stdout.
+  --draft-run   Update the wiki "/Draft" page instead of the real page.
 """
 
 # General notes:
