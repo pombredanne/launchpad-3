@@ -168,14 +168,22 @@ known_canonical_non_lp_devs = \
 
 # Some people have made commits using various names and/or email 
 # addresses, so this map will be used to merge them accordingly.
-merge_names_map = {
-    u'Jamal Fanaian <jfanaian {_AT_} gmail.com>'.encode('utf-8', 'xmlcharrefreplace'): 
-        u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>'.encode('utf-8', 'xmlcharrefreplace'),
-    u'Jamal Fanaian <jamal {_AT_} jfvm1>'.encode('utf-8', 'xmlcharrefreplace'): 
-        u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>'.encode('utf-8', 'xmlcharrefreplace'),
-    u'LaMont Jones <lamont {_AT_} rover3>'.encode('utf-8', 'xmlcharrefreplace'):
-      u'LaMont Jones <lamont {_AT_} debian.org>'.encode('utf-8', 'xmlcharrefreplace')
-    }
+# The map is initialized from this list of pairs, where each pair is
+# of the form (CONTRIBUTOR_AS_SEEN, UNIFYING_IDENTITY_FOR_CONTRIBUTOR).
+merge_names_pairs = (
+    (u'Jamal Fanaian <jfanaian {_AT_} gmail.com>',
+     u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>'),
+    (u'Jamal Fanaian <jamal {_AT_} jfvm1>',
+     u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>'),
+    (u'LaMont Jones <lamont {_AT_} rover3>',
+     u'LaMont Jones <lamont {_AT_} debian.org>'),
+    )
+# Then put it in dictionary form with the correct encodings.
+merge_names_map = { }
+for pair in merge_names_pairs:
+    merge_names_map[pair[0].encode('utf-8', 'xmlcharrefreplace')] = \
+        pair[1].encode('utf-8', 'xmlcharrefreplace')
+
 
 class ContainerRevision():
     """A wrapper for a top-level LogRevision containing child LogRevisions."""
@@ -305,6 +313,18 @@ def get_ex_cons(authors, all_ex_cons):
     ALL_EX_CONS is a dictionary mapping author names (as received from
     the bzr logs, i.e., with email address undisguised) to ExCon objects.
     """
+
+    # If a contributor's address contains this, then they are a
+    # Canonical developer -- maybe on the Launchpad team, maybe not.
+    #
+    # (It'd be nice to have the equivalent of a C static variable, so
+    # this doesn't have to get reinitialized on each entry.  We could
+    # always abuse the fact that keyword parameters to functions are
+    # evaluated only once, at function definition time... but that
+    # hardly seems like playing by the Marquess of Queensberry Rules.)
+    canonical_addr = \
+        u" {_AT_} canonical.com".encode('utf-8', 'xmlcharrefreplace')
+
     ex_cons_this_rev = []
     for author in authors:
         known_canonical_lp_dev = False
@@ -326,7 +346,7 @@ def get_ex_cons(authors, all_ex_cons):
         # person using alternate names and/or emails.
         author = merge_names_map.get(author, author)
 
-        if u" {_AT_} canonical.com".encode('utf-8', 'xmlcharrefreplace') in author:
+        if canonical_addr in author:
             known_canonical_non_lp_dev = True
         else:
             for name_fragment in known_canonical_non_lp_devs:
