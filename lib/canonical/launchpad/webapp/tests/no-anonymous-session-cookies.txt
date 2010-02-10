@@ -19,7 +19,6 @@ anonymous user, the browser has no cookies.
 
 Now let's log in and show that the session cookie is set.
 
-    # XXX: We also need cookie auth here; another tricky one.
     >>> import datetime
     >>> import pytz
     >>> now = datetime.datetime.now(pytz.UTC).replace(microsecond=0)
