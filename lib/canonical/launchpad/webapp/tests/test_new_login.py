@@ -9,12 +9,15 @@ __all__ = []
 import httplib
 import unittest
 
+import mechanize
+
 from openid.consumer.consumer import FAILURE, SUCCESS
 
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.testing.pages import extract_text, find_main_content
+from canonical.launchpad.testing.pages import (
+    extract_text, find_main_content, find_tag_by_id, find_tags_by_class)
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.launchpad.testing.browser import setUp, tearDown
+from canonical.launchpad.testing.browser import Browser, setUp, tearDown
 from canonical.launchpad.webapp.login import OpenIDCallbackView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import AppServerLayer, DatabaseFunctionalLayer
@@ -118,10 +121,62 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertIn('Your login was unsuccessful', main_content)
 
 
+urls_redirected_to = []
+
+
+class MyHTTPRedirectHandler(mechanize.HTTPRedirectHandler):
+    """Custom HTTPRedirectHandler which stores the URLs redirected to."""
+
+    def redirect_request(self, newurl, req, fp, code, msg, headers):
+        urls_redirected_to.append(newurl)
+        return mechanize.HTTPRedirectHandler.redirect_request(
+            self, newurl, req, fp, code, msg, headers)
+
+
+class MyMechanizeBrowser(mechanize.Browser):
+    """Custom Browser which uses MyHTTPRedirectHandler to handle redirects."""
+    handler_classes = mechanize.Browser.handler_classes.copy()
+    handler_classes['_redirect'] = MyHTTPRedirectHandler
+
+
+class TestOpenIDReplayAttack(TestCaseWithFactory):
+    layer = AppServerLayer
+
+    def test_replay_attacks_do_not_succeed(self):
+        browser = Browser(mech_browser=MyMechanizeBrowser())
+        browser.open('http://launchpad.dev:8085/+login')
+        # On a JS-enabled browser this page would've been auto-submitted
+        # (thanks to the onload handler), but here we have to do it manually.
+        self.assertIn('body onload', browser.contents)
+        browser.getControl('Continue').click()
+
+        self.assertEquals('Login', browser.title)
+        browser.getControl(name='field.email').value = 'test@canonical.com'
+        browser.getControl(name='field.password').value = 'test'
+        browser.getControl('Continue').click()
+        login_status = extract_text(
+            find_tag_by_id(browser.contents, 'logincontrol'))
+        self.assertIn('Sample Person', login_status)
+
+        # Now we look up (in urls_redirected_to) the +openid-callback URL that
+        # was used to complete the authentication and open it on a different
+        # browser with a fresh set of cookies.
+        replay_browser = Browser()
+        [callback_url] = [
+            url for url in urls_redirected_to if '+openid-callback' in url]
+        self.assertIsNot(None, callback_url)
+        replay_browser.open(callback_url)
+        login_status = extract_text(
+            find_tag_by_id(replay_browser.contents, 'logincontrol'))
+        self.assertEquals('Log in / Register', login_status)
+        error_msg = find_tags_by_class(replay_browser.contents, 'error')[0]
+        self.assertEquals('Nonce already used or out of range',
+                          extract_text(error_msg))
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     suite.addTest(LayeredDocFileSuite(
-        'new-login.txt', setUp=setUp, tearDown=tearDown,
-        layer=AppServerLayer))
+        'login.txt', setUp=setUp, tearDown=tearDown, layer=AppServerLayer))
     return suite

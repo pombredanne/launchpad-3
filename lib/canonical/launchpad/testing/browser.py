@@ -61,8 +61,8 @@ _live_browser_set = set()
 class Browser(_Browser):
     """A browser subclass that knows about basic auth."""
 
-    def __init__(self, auth=None):
-        super(Browser, self).__init__()
+    def __init__(self, auth=None, mech_browser=None):
+        super(Browser, self).__init__(mech_browser=mech_browser)
         # We have to add the error handler to the mechanize browser underlying
         # the Zope browser, because it's the former that's actually doing all
         # the work.
