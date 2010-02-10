@@ -87,7 +87,7 @@ known_canonical_devs = (
     u'Diogo Matsubara',
     u'Elliot Murphy',
     u'Francis J. Lacoste',
-    u'Gabriel Neuman gneuman@async.com',
+    u'Gabriel Neuman gneuman {_AT_} async.com',
     u'Gary Poster',
     u'Guilherme Salgado',
     u'Gustavo Niemeyer',
@@ -124,17 +124,17 @@ known_canonical_devs = (
     u'Stuart Bishop',
     u'Tom Berger',
     u'david',
-    u'jml@mumak.net',
-    u'kiko@beetle',
+    u'jml {_AT_} mumak.net',
+    u'kiko {_AT_} beetle',
     )
 
 # Some people have made commits using various names and/or email 
 # addresses, so this map will be used to merge them accordingly.
 merge_names_map = {
-    u'Jamal Fanaian <jfanaian@gmail.com>': 
-        u'Jamal Fanaian <jamal.fanaian@gmail.com>',
-    u'Jamal Fanaian <jamal@jfvm1>': 
-        u'Jamal Fanaian <jamal.fanaian@gmail.com>',
+    u'Jamal Fanaian <jfanaian {_AT_} gmail.com>': 
+        u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>',
+    u'Jamal Fanaian <jamal {_AT_} jfvm1>': 
+        u'Jamal Fanaian <jamal.fanaian {_AT_} gmail.com>',
     }
 
 class ContainerRevision():
@@ -207,10 +207,8 @@ class ExCon():
 
     def __init__(self, name):
         """Create a new external contributor named NAME.  NAME is usually
-        e.g. "Veronica Random <veronica@example.com>", but any "@"-sign
-        will be disguised in the new object."""
-
-        self.name = name.replace("@", " {_AT_} ")
+        e.g. "Veronica Random <veronica {_AT_} example.com>"."""
+        self.name = name
         # If name is "Veronica Random <veronica {_AT_} example.com>",
         # then name_as_anchor will be "veronica_random".
         self.name_as_anchor = \
@@ -256,8 +254,16 @@ def get_ex_cons(authors, all_ex_cons):
     ex_cons_this_rev = []
     for author in authors:
         known = False
+        # The authors we list in the source code have their addresses
+        # disguised (since this source code is public).  We must
+        # disguise the ones coming from the Bazaar logs in the same way,
+        # so string matches will work.
+        author = author.encode('ascii', 'xmlcharrefreplace')
+        author = author.replace("@", " {_AT_} ")
         for name_fragment in known_canonical_devs:
-            if u"@canonical.com" in author or name_fragment in author:
+            if ((u" {_AT_} canonical.com" in author)
+                or (name_fragment.encode('ascii', 'xmlcharrefreplace')
+                    in author)):
                 known = True
                 break
         if not known:
