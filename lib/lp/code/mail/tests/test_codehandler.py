@@ -22,33 +22,35 @@ from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.code.enums import (
-    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
-from lp.codehosting.vfs import get_lp_server
-from lp.services.job.runner import JobRunner
-from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.database import MessageSet
-from lp.code.model.branchmergeproposaljob import (
-    CreateMergeProposalJob, MergeProposalCreatedJob)
-from lp.code.model.diff import PreviewDiff
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
-from lp.code.mail.codehandler import (
-    AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
-    CodeReviewEmailCommandExecutionContext,
-    InvalidBranchMergeProposalAddress,
-    MissingMergeDirective, NonLaunchpadTarget,
-    UpdateStatusEmailCommand, VoteEmailCommand)
 from canonical.launchpad.mail.handlers import mail_handlers
-from lp.testing import login, login_person, TestCase, TestCaseWithFactory
-from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import (
     get_current_principal, setupInteraction)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.testing import LaunchpadZopelessLayer, ZopelessAppServerLayer
+from lp.code.enums import (
+    BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
+    BranchType, CodeReviewNotificationLevel, CodeReviewVote)
+from lp.code.enums import BranchVisibilityRule
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.model.branchmergeproposaljob import (
+    CreateMergeProposalJob, MergeProposalCreatedJob)
+from lp.code.mail.codehandler import (
+    AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
+    CodeReviewEmailCommandExecutionContext,
+    InvalidBranchMergeProposalAddress,
+    MissingMergeDirective, NonLaunchpadTarget,
+    UpdateStatusEmailCommand, VoteEmailCommand)
+from lp.code.model.diff import PreviewDiff
+from lp.codehosting.vfs import get_lp_server
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.job.runner import JobRunner
+from lp.testing import login, login_person, TestCase, TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestGetCodeEmailCommands(TestCase):
@@ -1053,6 +1055,27 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         hosted = self._openBazaarBranchAsClient(bmp.source_branch)
         # The hosted copy has not been updated.
         self.assertEqual('rev2', hosted.last_revision())
+
+    def test_forbidden_target(self):
+        """Specifying a branch in a forbidden target generates email."""
+        self.useBzrBranches(real_server=True)
+        branch, source, message = self._createTargetSourceAndBundle(
+            format="pack-0.92")
+        branch.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        result = self._processMergeDirective(message)
+        self.assertIs(None, result)
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'Error Creating Merge Proposal', notifications[0]['subject'])
+        body = notifications[0].get_payload(decode=True)
+        sender = getUtility(IPersonSet).getByEmail(message['from'])
+        expected = ('Launchpad cannot create the branch requested by'
+            ' your merge directive:\n'
+            'You cannot create branches in "~%s/%s"\n' % (sender.name,
+                branch.product.name))
+        self.assertEqual(expected, body)
 
 
 class TestVoteEmailCommand(TestCase):
