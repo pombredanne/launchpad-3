@@ -18,9 +18,9 @@ launchpad build daemon.
     >>> binaries = test_publisher.getPubBinaries(
     ...     binaryname='firefox', pub_source=source)
     >>> [firefox_build] = source.getBuilds()
-    >>> the_job = removeSecurityProxy(firefox_build.buildqueue_record.job)
-    >>> the_job.start()
-    >>> the_job.complete()
+    >>> job = firefox_build.buildqueue_record.job
+    >>> removeSecurityProxy(job).start()
+    >>> removeSecurityProxy(job).complete()
     >>> login(ANONYMOUS)
 
 A build has a title which describes the context source version and in
