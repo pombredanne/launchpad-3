@@ -24,11 +24,12 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility)
+    PersonCreationRationale, PersonVisibility,
+    IllegalRelatedBugTasksParams)
 from canonical.launchpad.database import Bug, BugTask, BugSubscription
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
-from lp.registry.model.person import Person
+from lp.registry.model.person import Person, getRelatedBugTasksParams
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import TestCaseWithFactory
@@ -493,6 +494,29 @@ class TestCreatePersonAndEmail(unittest.TestCase):
             InvalidName, self.person_set.createPersonAndEmail,
             'testing@example.com', PersonCreationRationale.UNKNOWN,
             name='/john')
+            
+            
+class TestPersonRelatedBugTaskSearch(unittest.TestCase):
+    
+    layer = LaunchpadFunctionalLayer
+    
+    def test_getRelatedBugTasksParams(self):
+        user = Person.byName('name12')
+        context = Person.byName('name20')
+        search_params = getRelatedBugTasksParams(user, context)
+        self.assertEqual(len(search_params), 4)
+        search_params = getRelatedBugTasksParams(user, context,
+            assignee=context)
+        self.assertEqual(len(search_params), 4)
+        search_params = getRelatedBugTasksParams(user, context,
+            assignee=user)
+        self.assertEqual(len(search_params), 3)
+        
+        self.assertRaises(
+            IllegalRelatedBugTasksParams,
+            getRelatedBugTasksParams, user, context,
+            assignee=user, owner=user, bug_commenter=user,
+            bug_subscriber=user)
 
 
 def test_suite():
