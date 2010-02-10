@@ -669,8 +669,9 @@ class TestPopulateArchiveScript(TestCase):
 
         # Now check that we have the build records expected.
         builds = list(getUtility(IBuildSet).getBuildsForArchive(archive))
+        self.assertTrue(len(builds) > 0)
         wrong_builds = filter(build_not_pending_and_suspended, builds)
-        self.assertEqual(len(wrong_builds), 0)
+        self.assertEqual(0, len(wrong_builds))
 
     def testPrivateOriginArchive(self):
         """Try copying from a private archive.
