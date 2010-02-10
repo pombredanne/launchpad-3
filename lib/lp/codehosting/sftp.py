@@ -251,7 +251,7 @@ def avatar_to_sftp_server(avatar):
         config.codehosting.mirrored_branches_root)
     server = LaunchpadServer(
         avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
-    server.setUp()
+    server.start_server()
     transport = AsyncLaunchpadTransport(server, server.get_url())
     notify(accesslog.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
