@@ -116,12 +116,11 @@ IBranchMergeProposal['nominateReviewer'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewVoteReference
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
-IHasBranches['getBranches'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBranch
-IHasMergeProposals['getMergeProposals'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBranchMergeProposal
-IHasRequestedReviews['getRequestedReviews'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBranchMergeProposal
+patch_collection_return_type(IHasBranches, 'getBranches', IBranch)
+patch_collection_return_type(
+    IHasMergeProposals, 'getMergeProposals', IBranchMergeProposal)
+patch_collection_return_type(
+    IHasRequestedReviews, 'getRequestedReviews', IBranchMergeProposal)
 
 # IBugTask
 
