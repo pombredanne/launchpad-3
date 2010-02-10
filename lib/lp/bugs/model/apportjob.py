@@ -178,6 +178,27 @@ class ProcessApportBlobJob(ApportJobDerived):
         else:
             return super(ProcessApportBlobJob, cls).create(blob)
 
+    @classmethod
+    def getByBlobUUID(cls, uuid):
+        """See `IApportJobSource`."""
+        store = IStore(ApportJob)
+        blob = store.get(TemporaryBlobStorage, uuid == uuid)
+        jobs_for_blob = store.find(
+            ApportJob,
+            ApportJob.blob == blob,
+            ApportJob.job_type == cls.class_job_type,
+            ApportJob.job == Job.id
+            )
+
+        if jobs_for_blob.is_empty():
+            raise SQLObjectNotFound(
+                "No ProcessApportBlobJob found for UUID %s" % uuid)
+
+        assert jobs_for_blob.count() < 2, (
+            "There can only be one ProcessApportBlobJob for a BLOB.")
+
+        return cls(jobs_for_blob.any())
+
     def run(self):
         """See `IRunnableJob`."""
         self.blob.file_alias.open()
