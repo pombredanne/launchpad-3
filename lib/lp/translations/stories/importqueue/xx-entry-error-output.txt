@@ -32,7 +32,7 @@ show.
     >>> entry.error_output = "Things went horribly wrong."
     >>> admin_browser.open(entry_url)
     >>> output_panel = find_error_output(admin_browser)
-    >>> print extract_text(output_panel.renderContents())
+    >>> print extract_text(output_panel)
     Error output for this entry:
     Things went horribly wrong.
 

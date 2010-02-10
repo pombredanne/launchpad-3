@@ -22,7 +22,7 @@ entry and its target that may be helpful in queue review.
 
     >>> admin_browser.open(entry_url)
     >>> details = find_tag_by_id(admin_browser.contents, 'portlet-details')
-    >>> details_text = extract_text(details.renderContents())
+    >>> details_text = extract_text(details)
     >>> print details_text
     Upload attached to ... trunk series.
     This project...s license is open source.
@@ -56,17 +56,17 @@ and there will be a link to the templates list.
 
     >>> admin_browser.open(entry_url)
     >>> details = find_tag_by_id(admin_browser.contents, 'portlet-details')
-    >>> details_text = extract_text(details.renderContents())
+    >>> details_text = extract_text(details)
     >>> print details_text
     Upload attached to
     ...
     Release series has 1 template.
     ...
 
-    >>> print admin_browser.getLink('1 template.').url
+    >>> print admin_browser.getLink('1 template').url
     http...://translations.launchpad.dev/.../trunk/+templates
 
-    >>> admin_browser.getLink('1 template.').click()
+    >>> admin_browser.getLink('1 template').click()
     >>> print admin_browser.title
     All templates : Translations : Series trunk : ...
 
@@ -75,22 +75,7 @@ In that case, the product is also shown to have translatable series.
     >>> print details_text
     Upload attached to
     ...
-    Project has translatable series.
-    ...
-
-The string "1 template" neatly adjusts to the actual number of
-templates.
-
-    >>> login(ANONYMOUS)
-    >>> template = factory.makePOTemplate(productseries=trunk)
-    >>> logout()
-
-    >>> admin_browser.open(entry_url)
-    >>> details = find_tag_by_id(admin_browser.contents, 'portlet-details')
-    >>> print extract_text(details.renderContents())
-    Upload attached to
-    ...
-    Release series has 2 templates.
+    Project has translatable series: trunk.
     ...
 
 
@@ -115,7 +100,7 @@ This only shows the source package and the file.
 
     >>> admin_browser.open(entry_url)
     >>> details = find_tag_by_id(admin_browser.contents, 'portlet-details')
-    >>> details_text = extract_text(details.renderContents())
+    >>> details_text = extract_text(details)
     >>> print details_text
     Upload attached to xpad in Ubuntu Hoary.
     File po/foo.pot uploaded by ...

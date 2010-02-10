@@ -7,13 +7,10 @@
 <div class="columns portlet" id="portlet-details">
   <div class="two column left">
     Upload attached to
-    <tal:package condition="context/sourcepackage">
-      <a tal:replace="structure context/sourcepackage/fmt:link">
+    <a tal:replace="structure view/import_target/fmt:link">
         Evolution in Ubuntu Hoary</a>.
-    </tal:package>
+
     <tal:productseries condition="context/productseries">
-      <a tal:replace="structure context/productseries/fmt:link">
-        Evolution trunk series</a>.
       <ul class="bulleted" tal:define="product context/productseries/product">
         <li>
           <tal:license
@@ -21,28 +18,15 @@
             This project's license is open source.
           </tal:license>
         </li>
-        <li tal:define="series_templates context/productseries/potemplate_count">
+        <li>
           Release series has
-          <tal:zero condition="python: series_templates == 0">
-              no templates.
-          </tal:zero>
-          <a tal:condition="series_templates"
-             tal:attributes="href context/productseries/fmt:url/+templates">
-            <tal:one condition="python: series_templates == 1">
-              1 template.
-            </tal:one>
-            <tal:many condition="python: series_templates > 1">
-              <tal:count replace="series_templates">2</tal:count> templates.
-            </tal:many>
-          </a>
+          <tal:templates replace="structure view/productseries_templates_link">
+              2 templates</tal:templates>.
         </li>
         <li>
-          <tal:translatable condition="product/translatable_series">
-            Project has translatable series.
-          </tal:translatable>
-          <tal:untranslatable condition="not: product/translatable_series">
-            Project has no translatable series.
-          </tal:untranslatable>
+          <tal:series replace="structure view/product_translatable_series">
+            Project has translatable series: trunk, 0.1, 0.2, ...
+          </tal:series>
         </li>
       </ul>
     </tal:productseries>
@@ -59,12 +43,8 @@
     <tal:upload_date replace="context/dateimported/fmt:displaydate">
       2010-02-10
     </tal:upload_date>.
-    <tal:status_change
-      define="upload_date context/dateimported; change_date context/date_status_changed"
-      condition="python: change_date != upload_date">
-      Entry last changed
-      <tal:status_date replace="change_date/fmt:displaydate">
-        2010-02-12</tal:status_date>.
+    <tal:status_change replace="view/status_change_date">
+      Entry last changed on 2010-02-12.
     </tal:status_change>
   </div>
 </div>

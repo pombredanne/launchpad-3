@@ -99,11 +99,6 @@
     </script>
   </metal:script>
 
-  <div metal:fill-slot="extra_info">
-    <input type="hidden" name="next_url"
-           tal:attributes="value view/referrer_url" />
-  </div>
-
   <div metal:fill-slot="main">
     <div metal:use-macro="context/@@launchpad_form/form">
       <div metal:fill-slot="extra_info">
