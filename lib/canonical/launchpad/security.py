@@ -813,6 +813,11 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.in_admin)
 
 
+class ViewDistroSeries(AnonymousAuthorization):
+    """Anyone can view a DistroSeries."""
+    usedfor = IDistroSeries
+
+
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
 
