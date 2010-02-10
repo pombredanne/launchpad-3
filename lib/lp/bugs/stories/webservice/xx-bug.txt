@@ -1643,6 +1643,26 @@ a given device.
     >>> for bugtask in bugtasks:
     ...     print bugtask['self_link']
     http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
+    
+    
+User related bug tasks
+~~~~~~~~~~~~~~~~~~~~~~
+
+Calling searchTasks() on a Person object returns a collection of tasks
+related to this person.
+
+    >>> json = webservice.named_get(
+    ...     '/~name12', 'searchTasks'
+    ...     ).jsonBody()
+    >>> related = json['entries']
+    >>> len(related) > 0
+    True
+    >>> name12 = webservice.get("/~name12").jsonBody()
+    >>> json = webservice.named_get(
+    ...     '/~name12', 'searchTasks', assignee=name12['self_link']
+    ...     ).jsonBody()
+    >>> len(json['entries']) < len(related)
+    True
 
 
 Affected users

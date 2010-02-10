@@ -164,22 +164,3 @@ site, yet all the menu links point to the bugs site.
     >>> anon_browser.open('http://launchpad.dev/~name12/+commentedbugs')
     >>> print anon_browser.getLink('List assigned bugs').url
     http://bugs.launchpad.dev/~name12/+assignedbugs
-
-
-== It is possible to get related tasks via the webservice API ==
-
-Calling searchTasks() on a Person object returns a collection of tasks
-related to this person.
-
-    >>> json = webservice.named_get(
-    ...     '/~name12', 'searchTasks'
-    ...     ).jsonBody()
-    >>> related = json['entries']
-    >>> len(related) > 0
-    True
-    >>> name12 = webservice.get("/~name12").jsonBody()
-    >>> json = webservice.named_get(
-    ...     '/~name12', 'searchTasks', assignee=name12['self_link']
-    ...     ).jsonBody()
-    >>> len(json['entries']) < len(related)
-    True
