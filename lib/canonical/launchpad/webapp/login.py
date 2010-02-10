@@ -299,6 +299,9 @@ class OpenIDCallbackView(OpenIDLogin):
             self.request, loginsource.getPrincipalByLogin(email), email)
 
     def render(self):
+        # XXX: Need a commit here as well because the consumer.complete() call
+        # above might create entries in OpenIDConsumerNonce, to prevent replay
+        # attacks.
         from zope.security.proxy import removeSecurityProxy
         if self.openid_response.status == SUCCESS:
             account = getUtility(IAccountSet).getByOpenIDIdentifier(

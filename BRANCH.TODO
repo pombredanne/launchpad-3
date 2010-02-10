@@ -3,8 +3,14 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-* lib/canonical/launchpad/pagetests/standalone/xx-login-and-join-links.txt
-should be removed, just noting here as I'm working on another thread right now.
+* Can perform a replay attack against shipit, but not against launchpad.dev.
+Need tests for both.  Might be a consequence of the nonces not being committed
+to the database.
+
+* Can we clear out just the edge sessions but not the lpnet ones?
+
+* Need a migration plan, for existing NEWACCOUNT login tokens that end up
+used only after we roll out.
 
 * Might want to change the new +login page to not start an OpenID dance when
 the user is already logged in?
@@ -34,58 +40,3 @@ copying it.  *I'm not sure this is feasible.*
 
 * As discussed with Francis, it's not worth porting the team-restricted login
 stuff to the new system, so we'll drop it.
-
-* Functionality needed in the callback view:
- - reactivate accounts when credentials belong to a deactivated profile
- - create Person entries when the credentials don't exist in our db
- - forbid to log suspended accounts in. btw, I guess we're going to copy the
-   AccountStatus table to the main db.
-
-    # To test all this I'll just have to monkey patch
-    # OpenIDCallbackView.openid_response to return my hand-crafted
-    # openid response.
-
-
-
-Test failures not dealt with
-============================
-
- - plenty of tests from launchpadlib-1.5.4-py2.5.egg/launchpadlib/docs
-
-
-Tests that rely on +login and thus are failing now
---------------------------------------------------
-
- - lib/canonical/signon/stories/openid/max-auth-age.txt
- - lib/canonical/signon/stories/openid/per-version/sso-workflow-complete.txt
- - lib/canonical/launchpad/pagetests/basics/demo-and-lpnet.txt
- - lib/canonical/launchpad/pagetests/oauth/authorize-token.txt
- - lib/canonical/launchpad/pagetests/standalone/xx-cookie-authentication.txt
- - lib/canonical/launchpad/pagetests/standalone/xx-invalid-people-cant-login.txt
- - lib/canonical/launchpad/pagetests/standalone/xx-login-and-join-links.txt
- - lib/canonical/launchpad/pagetests/standalone/xx-login-without-preferredemail.txt
- - lib/canonical/launchpad/pagetests/standalone/xx-new-account-redirection-url.txt
- - lib/canonical/launchpad/pagetests/standalone/xx-no-anonymous-session-cookies.txt
- - lib/lp/app/tests/../stories/launchpad-root/site-search.txt
- - lib/lp/app/tests/../stories/basics/xx-beta-testers-redirection.txt
- - lib/lp/bugs/tests/../stories/bugtracker/xx-bugtracker-remote-bug.txt
- - lib/lp/bugs/tests/../stories/upstream-bugprivacy/10-file-private-upstream-bug.txt
- - lib/lp/code/tests/../stories/branches/xx-register-a-branch.txt
- - lib/lp/registry/tests/../stories/person/xx-deactivate-account.txt
- - lib/lp/translations/tests/../stories/standalone/xx-person-editlanguages.txt
-
-
-Tests that can probably be removed as the functionality they test will be gone
-------------------------------------------------------------------------------
-
- - lib/lp/registry/tests/../stories/person/xx-createaccount.txt
- - lib/lp/registry/tests/../stories/person/xx-changepassword.txt
- - lib/lp/registry/tests/../stories/person/xx-reg-with-existing-email.txt
- - lib/lp/registry/tests/../stories/person/xx-resetpassword.txt
- - lib/lp/services/openid/tests/../stories/xx-resetpassword-of-sso-account.txt
-
- # This functionality will be dropped as it's no longer used.
- - lib/lp/registry/tests/../stories/team/xx-team-restricted.txt
-
- # There's a new one testing the +login view
- - lib/lp/registry/tests/../stories/person/xx-login.txt
