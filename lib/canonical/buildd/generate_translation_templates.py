@@ -39,8 +39,8 @@ class GenerateTranslationTemplates:
         The branch is checked out to the location specified by
         `self.branch_dir`.
         """
-        command = ['/usr/bin/bzr', 'export', branch_url, self.branch_dir]
-        return call(command, cwd=self.home)
+        # XXX JeroenVermeulen 2010-02-11 bug=520651: Read the contents
+        # of the branch using bzrlib.
 
     def generate(self):
         """Do It.  Generate templates."""
