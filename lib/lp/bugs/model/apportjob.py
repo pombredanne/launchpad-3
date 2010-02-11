@@ -163,14 +163,16 @@ class ProcessApportBlobJob(ApportJobDerived):
     @classmethod
     def create(cls, blob):
         """See `IProcessApportBlobJobSource`."""
-        # If there's already a job for the bug, don't create a new one.
+        # If there's already a job for the BLOB, don't create a new one.
+        # We also include jobs which have been completed when checking
+        # for exisiting jobs, since a BLOB should only be processed
+        # once.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         job_for_blob = store.find(
             ApportJob,
             ApportJob.blob == blob,
             ApportJob.job_type == cls.class_job_type,
             ApportJob.job == Job.id,
-            Job.id.is_in(Job.ready_jobs)
             ).any()
 
         if job_for_blob is not None:

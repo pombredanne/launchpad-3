@@ -13,8 +13,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing import (
     LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
@@ -23,6 +25,7 @@ from lp.bugs.model.apportjob import (
     ApportJob, ApportJobDerived, ProcessApportBlobJob)
 from lp.bugs.utilities.filebugdataparser import FileBugDataParser
 from lp.testing import TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 
 
 class ApportJobTestCase(TestCaseWithFactory):
@@ -199,6 +202,29 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             "There should be only one ProcessApportBlobJob. Found %s" %
             len(current_jobs))
 
+        # If the job is complete, it will no longer show up in the list
+        # of ready jobs. However, it won't be possible to create a new
+        # job to process the BLOB because each BLOB can only have one
+        # ProcessApportBlobJob.
+        job.job.start()
+        job.job.complete()
+        current_jobs = list(ProcessApportBlobJob.iterReady())
+        self.assertEqual(
+            0, len(current_jobs),
+            "There should be no ready ProcessApportBlobJobs. Found %s" %
+            len(current_jobs))
+
+        yet_another_job = ProcessApportBlobJob.create(self.blob)
+        current_jobs = list(ProcessApportBlobJob.iterReady())
+        self.assertEqual(
+            0, len(current_jobs),
+            "There should be no new ProcessApportBlobJobs. Found %s" %
+            len(current_jobs))
+
+        # In fact, yet_another_job will be the same job as before, since
+        # it's attached to the same BLOB.
+        self.assertEqual(job.id, yet_another_job.id, "Jobs do not match.")
+
 
 class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
     """Test case for the TemporaryBlobStorageAddView."""
@@ -218,8 +244,6 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
     def test_adding_blob_adds_job(self):
         # Using the TemporaryBlobStorageAddView to upload a new BLOB
         # will add a new ProcessApportBlobJob for that BLOB.
-        from lp.testing.views import create_initialized_view
-        from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
         view = create_initialized_view(
             getUtility(ILaunchpadRoot), '+storeblob')
 
