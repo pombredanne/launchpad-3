@@ -196,7 +196,7 @@ class ProcessApportBlobJob(ApportJobDerived):
             raise SQLObjectNotFound(
                 "No ProcessApportBlobJob found for UUID %s" % uuid)
 
-        if jobs_for_blob.count() > 1
+        if jobs_for_blob.count() > 1:
             raise AssertionError(
                 "There can only be one ProcessApportBlobJob for a BLOB.")
 
