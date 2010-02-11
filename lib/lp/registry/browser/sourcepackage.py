@@ -28,7 +28,6 @@ from zope.schema.vocabulary import (
 
 from lazr.restful.interface import copy_field
 
-from canonical.cachedproperty import cachedproperty
 from canonical.widgets import LaunchpadRadioWidget
 
 from canonical.launchpad import helpers
@@ -349,3 +348,22 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             'The project %s was linked to this source package.' %
             upstream.displayname)
         self.next_url = self.request.getURL()
+
+    @property
+    def has_bugtracker(self):
+        """Does the product have a bugtracker set?"""
+        def getTrackerName(bugtracker):
+            if bugtracker is None:
+                return False
+            else:
+                return True
+        product = self.context.productseries.product
+        if product.official_malone:
+            return True
+        bugtracker = product.bugtracker
+        if bugtracker is None:
+            if product.project is not None:
+                bugtracker = product.project.bugtracker
+        if bugtracker is None:
+            return False
+        return True
