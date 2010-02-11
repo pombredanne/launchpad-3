@@ -651,11 +651,11 @@ class TestPopulateArchiveScript(TestCase):
 
     def testBuildsPendingAndSuspended(self):
         """All builds in the new copy archive are pending and suspended."""
-        def build_not_pending_and_suspended(build):
-            """True if the given build is not pending and suspended."""
-            return (
-                build.buildstate != BuildStatus.NEEDSBUILD or
-                build.buildqueue_record.job.status != JobStatus.SUSPENDED)
+        def build_in_wrong_state(build):
+            """True if the given build is not (pending and suspended)."""
+            return not (
+                build.buildstate == BuildStatus.NEEDSBUILD and
+                build.buildqueue_record.job.status == JobStatus.SUSPENDED)
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
         # Verify that we have the right source packages in the sample data.
@@ -667,11 +667,20 @@ class TestPopulateArchiveScript(TestCase):
         # Make sure the right source packages were cloned.
         self._verifyClonedSourcePackages(archive, hoary)
 
-        # Now check that we have the build records expected.
+        # Get the binary builds generated for the copy archive at hand.
         builds = list(getUtility(IBuildSet).getBuildsForArchive(archive))
+        # At least one binary build was generated for the target copy archive.
         self.assertTrue(len(builds) > 0)
-        wrong_builds = filter(build_not_pending_and_suspended, builds)
-        self.assertEqual(0, len(wrong_builds))
+        # Now check that the binary builds and their associated job records
+        # are in the state expected:
+        #   - binary build: pending
+        #   - job: suspended
+        builds_in_wrong_state = filter(build_in_wrong_state, builds)
+        self.assertEqual (
+            [], builds_in_wrong_state,
+            "The binary builds generated for the target copy archive "
+            "should all be pending and suspended. However, at least one of "
+            "the builds is in the wrong state.")
 
     def testPrivateOriginArchive(self):
         """Try copying from a private archive.
