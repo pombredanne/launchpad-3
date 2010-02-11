@@ -7,6 +7,9 @@ __metaclass__ = type
 
 __all__ = [
 'IDistributionMirror',
+'IDistributionMirrorAdminRestricted',
+'IDistributionMirrorEditRestricted',
+'IDistributionMirrorPublic',
 'IMirrorDistroArchSeries',
 'IMirrorDistroSeriesSource',
 'IMirrorProbeRecord',
@@ -280,20 +283,39 @@ class DistroMirrorRsyncURIField(DistroMirrorURIField):
     def getMirrorByURI(self, url):
         return getUtility(IDistributionMirrorSet).getByRsyncUrl(url)
 
+class IDistributionMirrorAdminRestricted(Interface):
+    """IDistributionMirror properties requiring launchpad.Admin permission."""
 
-class IDistributionMirror(Interface):
-    """A mirror of a given distribution."""
-    export_as_webservice_entry()
+    reviewer = exported(PublicPersonChoice(
+        title=_('Reviewer'), required=False, readonly=True,
+        vocabulary='ValidPersonOrTeam', description=_(
+            "The person who last reviewed this mirror.")))
+    date_reviewed = exported(Datetime(
+        title=_('Date reviewed'), required=False, readonly=True,
+        description=_(
+            "The date on which this mirror was last reviewed by a mirror admin.")))
+
+
+class IDistributionMirrorEditRestricted(Interface):
+    """IDistributionMirror properties requiring launchpad.Edit permission."""
+    
+    official_candidate = exported(Bool(
+        title=_('Apply to be an official mirror of this distribution'),
+        required=False, readonly=False, default=True))
+    whiteboard = exported(Whiteboard(
+        title=_('Whiteboard'), required=False, readonly=False,
+        description=_("Notes on the current status of the mirror (only "
+                      "visible to admins and the mirror's registrant).")))
+
+
+class IDistributionMirrorPublic(Interface):
+    """Public IDistributionMirror properties."""
 
     id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = exported(PublicPersonChoice(
         title=_('Owner'), readonly=False, vocabulary='ValidOwner',
         required=True, description=_(
             "The person who is set as the current administrator of this mirror.")))
-    reviewer = exported(PublicPersonChoice(
-        title=_('Reviewer'), required=False, readonly=True,
-        vocabulary='ValidPersonOrTeam', description=_(
-            "The person who last reviewed this mirror.")))
     distribution = exported(
         Reference(
             Interface,
@@ -341,9 +363,6 @@ class IDistributionMirror(Interface):
             'this distribution. Choose "Archive" if this is a '
             'mirror of packages for this distribution.'),
         vocabulary=MirrorContent))
-    official_candidate = exported(Bool(
-        title=_('Apply to be an official mirror of this distribution'),
-        required=False, readonly=False, default=True))
     status = exported(Choice(
         title=_('Status'), required=True, readonly=False,
         vocabulary=MirrorStatus,
@@ -364,14 +383,6 @@ class IDistributionMirror(Interface):
     date_created = exported(Datetime(
         title=_('Date Created'), required=True, readonly=True,
         description=_("The date on which this mirror was registered.")))
-    date_reviewed = exported(Datetime(
-        title=_('Date reviewed'), required=False, readonly=True,
-        description=_(
-            "The date on which this mirror was last reviewed by a mirror admin.")))
-    whiteboard = exported(Whiteboard(
-        title=_('Whiteboard'), required=False, readonly=False,
-        description=_("Notes on the current status of the mirror (only "
-                      "visible to admins and the mirror's registrant).")))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
@@ -506,6 +517,11 @@ class IDistributionMirror(Interface):
         PackagePublishingPocket and the Component to which that given
         Sources.gz file refer to and the path to the file itself.
         """
+
+class IDistributionMirror(IDistributionMirrorAdminRestricted,
+        IDistributionMirrorEditRestricted, IDistributionMirrorPublic):
+    """A mirror of a given distribution."""
+    export_as_webservice_entry()
 
 
 class UnableToFetchCDImageFileList(Exception):

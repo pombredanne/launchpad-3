@@ -1512,7 +1512,7 @@ We can link a HWDB submission to a bug, indicating that the
 submission contains information that could help developers
 fix the bug.
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
     >>> test_bug.linkHWSubmission(submission)
