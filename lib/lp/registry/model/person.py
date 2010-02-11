@@ -128,7 +128,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtask import (
+    BugTask, get_related_bugtasks_search_params)
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
@@ -209,47 +210,6 @@ def validate_person_visibility(person, attr, value):
             raise ImmutableVisibilityError(warning)
 
     return value
-    
-def getRelatedBugTasksParams(user, user_context, **kwargs):
-    """Returns a list of `BugTaskSearchParams` which can be used to
-    search for all tasks related to a user given by `user_context`.
-    
-    Which tasks are related to a user?
-      * the user has to be either assignee or owner of this tasks
-        OR
-      * the user has to be subscriber or commenter to the underlying bug
-        OR
-      * the user is reporter of the underlying bug, but this condition
-        is automatically fulfilled by the first one as each new bug
-        always get one task owned by the bug reporter
-    """
-    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter')
-    search_params = []
-    for key in relevant_fields:
-        # all these parameter default to None
-        user_param = kwargs.get(key)
-        if user_param is None or user_param == user_context:
-            # we are only creating a `BugTaskSearchParams` object if
-            # the field is None or equal to the context
-            arguments = kwargs.copy()
-            arguments[key] = user_context
-            if key == 'owner':
-                # Specify both owner and bug_reporter to try to
-                # prevent the same bug (but different tasks)
-                # being displayed.
-                # see `PersonRelatedBugTaskSearchListingView.searchUnbatched`
-                arguments['bug_reporter'] = user_context
-            search_params.append(
-                BugTaskSearchParams.fromSearchForm(user, **arguments))
-    if len(search_params) == 0:
-        # unable to search for related tasks to user_context because user
-        # modified the query in an invalid way by overwriting all user
-        # related parameters
-        raise IllegalRelatedBugTasksParams(
-            ('Cannot search for related tasks to \'%s\', at least one '
-             'of these parameter has to be empty: %s'
-                %(user_context.name, ", ".join(relevant_fields))))
-    return search_params
 
 
 class Person(
@@ -885,7 +845,8 @@ class Person(
             # webservice API means searching for user related tasks
             user = kwargs.pop('user')
             try:
-                search_params = getRelatedBugTasksParams(user, self, **kwargs)
+                search_params = get_related_bugtasks_search_params(
+                    user, self, **kwargs)
             except IllegalRelatedBugTasksParams, e:
                 # dirty hack, marking an exception with a HTTP error
                 # only works if the exception is raised in the exported

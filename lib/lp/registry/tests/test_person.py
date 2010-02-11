@@ -29,7 +29,8 @@ from lp.registry.interfaces.person import (
 from canonical.launchpad.database import Bug, BugTask, BugSubscription
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
-from lp.registry.model.person import Person, getRelatedBugTasksParams
+from lp.registry.model.person import Person
+from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import TestCaseWithFactory
@@ -500,21 +501,21 @@ class TestPersonRelatedBugTaskSearch(unittest.TestCase):
     
     layer = LaunchpadFunctionalLayer
     
-    def test_getRelatedBugTasksParams(self):
+    def test_get_related_bugtasks_search_params(self):
         user = Person.byName('name12')
         context = Person.byName('name20')
-        search_params = getRelatedBugTasksParams(user, context)
+        search_params = get_related_bugtasks_search_params(user, context)
         self.assertEqual(len(search_params), 4)
-        search_params = getRelatedBugTasksParams(user, context,
+        search_params = get_related_bugtasks_search_params(user, context,
             assignee=context)
         self.assertEqual(len(search_params), 4)
-        search_params = getRelatedBugTasksParams(user, context,
+        search_params = get_related_bugtasks_search_params(user, context,
             assignee=user)
         self.assertEqual(len(search_params), 3)
         
         self.assertRaises(
             IllegalRelatedBugTasksParams,
-            getRelatedBugTasksParams, user, context,
+            get_related_bugtasks_search_params, user, context,
             assignee=user, owner=user, bug_commenter=user,
             bug_subscriber=user)
 
