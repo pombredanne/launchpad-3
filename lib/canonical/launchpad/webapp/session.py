@@ -112,8 +112,10 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
             self._secret = result.get_one()[0]
         return self._secret
 
-    # Re-implement the parent's method so that we can use
-    # self.getNamespace(request) instead of self.namespace.
+    # XXX: salgado, 2010-02-11, bug=520582: Re-implement the parent's method
+    # so that we can use self.getNamespace(request) instead of self.namespace.
+    # This method can be removed (just like the block between the dashed lines
+    # below) as soon as we ditch canonical-identity-provider.
     def getRequestId(self, request):
         """Return the browser id encoded in request as a string
 
@@ -157,6 +159,14 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         We also log the referrer url on creation of a new
         requestid so we can track where first time users arrive from.
         """
+
+        # XXX: salgado, 2010-02-11, bug=520582: Everything enclosed between
+        # the dashed lines has been cut-n-pasted from the parent class so that
+        # we can use .getNamespace(request) instead of .namespace.  We need
+        # that in order to have separate cookies between *.launchpad.net and
+        # login.launchpad.net.  This code can be removed once we stop using
+        # canonical-identity-provider to run login.launchpad.net.
+        # -------------------------------------------------------------------
         # TODO: Currently, the path is the ApplicationURL. This is reasonable,
         #     and will be adequate for most purposes.
         #     A better path to use would be that of the folder that contains
@@ -192,10 +202,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
             'Cache-Control', 'no-cache="Set-Cookie,Set-Cookie2"')
         response.setHeader('Pragma', 'no-cache')
         response.setHeader('Expires', 'Mon, 26 Jul 1997 05:00:00 GMT')
+        # -------------------------------------------------------------------
+        # End of the code cut-n-pasted from zope.
 
-        # From here on it's our custom code -- everything else in this method
-        # is copied from zope.session.http, replacing just self.namespace with
-        # self.getNamespace(request).
         cookie = request.response.getCookie(self.getNamespace(request))
         protocol, request_domain = urlparse(request.getURL())[:2]
 
