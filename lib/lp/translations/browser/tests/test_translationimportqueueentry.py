@@ -7,7 +7,7 @@ from datetime import datetime
 from pytz import timezone
 from unittest import TestLoader
 
-from zope.component import getMultiAdapter
+from zope.component import getMultiAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -15,10 +15,9 @@ from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.layers import TranslationsLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import TestCaseWithFactory
-from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue)
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 
 
 class TestTranslationImportQueueEntryView(TestCaseWithFactory):
@@ -29,7 +28,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
     def setUp(self):
         super(TestTranslationImportQueueEntryView, self).setUp(
             'foo.bar@canonical.com')
-        self.queue = TranslationImportQueue()
+        self.queue = getUtility(ITranslationImportQueue)
         self.uploader = self.factory.makePerson()
 
     def _makeProductSeries(self):
@@ -70,7 +69,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         # import_target is the corresponding SourcePackage.
         series = self.factory.makeDistroSeries()
         packagename = self.factory.makeSourcePackageName()
-        package = SourcePackage(packagename, series)
+        package = self.factory.makeSourcePackage(packagename, series)
         entry = self._makeEntry(
             distroseries=series, sourcepackagename=packagename)
         view = self._makeView(entry)
