@@ -1454,7 +1454,7 @@ def register_launchpad_request_publication_factories():
             'xmlrpc', PublicXMLRPCRequest, PublicXMLRPCPublication)
         ]
 
-    if config.devmode:
+    if config.launchpad.enable_test_openid_provider:
         factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
                               TestOpenIDBrowserPublication))
 
