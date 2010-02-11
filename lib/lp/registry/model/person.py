@@ -84,7 +84,7 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.model.hasbranches import (
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+    BugTaskSearchParams, IBugTaskSet, IllegalRelatedBugTasksParams)
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConductSet)
@@ -107,7 +107,7 @@ from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
     JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
     PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy, IllegalRelatedBugTasksParams)
+    TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from lp.registry.interfaces.pillar import IPillarNameSet

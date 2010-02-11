@@ -24,13 +24,13 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility,
-    IllegalRelatedBugTasksParams)
+    PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import Bug, BugTask, BugSubscription
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from lp.registry.model.person import Person
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import TestCaseWithFactory

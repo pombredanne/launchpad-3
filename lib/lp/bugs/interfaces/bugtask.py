@@ -26,6 +26,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
     'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
@@ -338,6 +339,13 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
     webservice_error(400) #Bad request.
+    
+
+class IllegalRelatedBugTasksParams(Exception):
+    """Exception raised when trying to overwrite all relevant parameters
+    in a search for related bug tasks"""
+    webservice_error(400) #Bad request.
+    
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
