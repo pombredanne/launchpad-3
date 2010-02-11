@@ -34,7 +34,8 @@
                   <tal:display_name content="subscription/archive/displayname">
                     Private PPA for Celso
                   </tal:display_name>
-                  (<tal:name content="subscription/archive/name">ppa</tal:name>)
+                  (<tal:reference content="subscription/archive/fmt:reference">
+                    ppa:cprov/ppa</tal:reference>)
                 </td>
                 <td><tal:owner content="structure subscription/archive/owner/fmt:link">
                         Celso Providelo</tal:owner>
