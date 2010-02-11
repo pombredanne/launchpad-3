@@ -3,10 +3,6 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-* Can perform a replay attack against shipit, but not against launchpad.dev.
-Need tests for both.  Might be a consequence of the nonces not being committed
-to the database.
-
 * Can we clear out just the edge sessions but not the lpnet ones?
 
 * Need a migration plan, for existing NEWACCOUNT login tokens that end up
