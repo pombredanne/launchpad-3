@@ -47,10 +47,18 @@ class CodeReviewDisplayComment:
     def __init__(self, comment, from_superseded=False):
         self.comment = comment
         self.has_body = bool(self.comment.message_body)
-        self.has_footer = self.comment.vote is not None
+        self.has_footer = (
+            self.comment.vote is not None or from_superseded)
         # The date attribute is used to sort the comments in the conversation.
         self.date = self.comment.message.datecreated
         self.from_superseded = from_superseded
+
+    @property
+    def css_class(self):
+        classes = ['boardComment']
+        if self.from_superseded:
+            classes.append('from-superseded')
+        return ' '.join(classes)
 
 
 class CodeReviewCommentPrimaryContext:

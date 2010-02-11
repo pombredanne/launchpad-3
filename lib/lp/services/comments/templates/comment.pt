@@ -3,7 +3,7 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-  <div class="boardComment">
+  <div tal:attributes="class context/css_class">
     <div class="boardCommentDetails"
          tal:content="structure context/@@+comment-header">
       Details - everyone has details.
