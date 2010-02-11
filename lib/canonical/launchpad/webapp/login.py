@@ -300,14 +300,9 @@ class OpenIDCallbackView(OpenIDLogin):
 
     def render(self):
         from zope.security.proxy import removeSecurityProxy
-        import transaction
-        # Commit because the consumer.complete() call above will create
-        # entries in OpenIDConsumerNonce to prevent replay attacks.
-        response = self.openid_response
-
-        if response.status == SUCCESS:
+        if self.openid_response.status == SUCCESS:
             account = getUtility(IAccountSet).getByOpenIDIdentifier(
-                response.identity_url.split('/')[-1])
+                self.openid_response.identity_url.split('/')[-1])
             if account.status == AccountStatus.SUSPENDED:
                 return self.suspended_account_template()
             if IPerson(account, None) is None:
@@ -318,16 +313,18 @@ class OpenIDCallbackView(OpenIDLogin):
             if target is None:
                 target = self.getApplicationURL()
             self.request.response.redirect(target, temporary_if_possible=True)
-            # XXX: If I move this transaction.commit() call up to the top, I
-            # get test failures; it looks like the request is being retried,
-            # but that must happen after we've committed the transaction (for
-            # the nonce), or else the retry wouldn't fail with a 'nonce
-            # already used' error.
-            transaction.commit()
+            # No need to return anything as we redirect above.
+            retval = None
         else:
-            transaction.commit()
-            return OpenIDLoginErrorView(
-                self.context, self.request, response)()
+            retval = OpenIDLoginErrorView(
+                self.context, self.request, self.openid_response)()
+
+        # Commit because the consumer.complete() call above (will create
+        # entries in OpenIDConsumerNonce to prevent replay attacks.
+        import transaction
+        transaction.commit()
+
+        return retval
 
 
 class OpenIDLoginErrorView(LaunchpadView):
