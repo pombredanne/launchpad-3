@@ -13,13 +13,18 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryStorageManager)
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.testing import (
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 from lp.bugs.interfaces.apportjob import ApportJobType
 from lp.bugs.model.apportjob import (
     ApportJob, ApportJobDerived, ProcessApportBlobJob)
 from lp.bugs.utilities.filebugdataparser import FileBugDataParser
 from lp.testing import TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 
 
 class ApportJobTestCase(TestCaseWithFactory):
@@ -157,6 +162,104 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
                 "LibrarianFileAlias %s" % (
                     attachment['filename'], file_alias.id))
 
+    def test_getByBlobUUID(self):
+        # ProcessApportBlobJob.getByBlobUUID takes a BLOB UUID as a
+        # parameter and returns any jobs for that BLOB.
+        uuid = self.blob.uuid
+
+        job = ProcessApportBlobJob.create(self.blob)
+        job_from_uuid = ProcessApportBlobJob.getByBlobUUID(uuid)
+        self.assertEqual(
+            job, job_from_uuid,
+            "Job returend by getByBlobUUID() did not match original job.")
+        self.assertEqual(
+            self.blob, job_from_uuid.blob,
+            "BLOB referenced by Job returned by getByBlobUUID() did not "
+            "match original BLOB.")
+
+    def test_create_job_creates_only_one(self):
+        # ProcessApportBlobJob.create() will create only one
+        # ProcessApportBlobJob for a given BLOB, no matter how many
+        # times it is called.
+        current_jobs = list(ProcessApportBlobJob.iterReady())
+        self.assertEqual(
+            0, len(current_jobs),
+            "There should be no ProcessApportBlobJobs. Found %s" %
+            len(current_jobs))
+
+        job = ProcessApportBlobJob.create(self.blob)
+        current_jobs = list(ProcessApportBlobJob.iterReady())
+        self.assertEqual(
+            1, len(current_jobs),
+            "There should be only one ProcessApportBlobJob. Found %s" %
+            len(current_jobs))
+
+        another_job = ProcessApportBlobJob.create(self.blob)
+        current_jobs = list(ProcessApportBlobJob.iterReady())
+        self.assertEqual(
+            1, len(current_jobs),
+            "There should be only one ProcessApportBlobJob. Found %s" %
+            len(current_jobs))
+
+        # If the job is complete, it will no longer show up in the list
+        # of ready jobs. However, it won't be possible to create a new
+        # job to process the BLOB because each BLOB can only have one
+        # ProcessApportBlobJob.
+        job.job.start()
+        job.job.complete()
+        current_jobs = list(ProcessApportBlobJob.iterReady())
+        self.assertEqual(
+            0, len(current_jobs),
+            "There should be no ready ProcessApportBlobJobs. Found %s" %
+            len(current_jobs))
+
+        yet_another_job = ProcessApportBlobJob.create(self.blob)
+        current_jobs = list(ProcessApportBlobJob.iterReady())
+        self.assertEqual(
+            0, len(current_jobs),
+            "There should be no new ProcessApportBlobJobs. Found %s" %
+            len(current_jobs))
+
+        # In fact, yet_another_job will be the same job as before, since
+        # it's attached to the same BLOB.
+        self.assertEqual(job.id, yet_another_job.id, "Jobs do not match.")
+
+
+class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
+    """Test case for the TemporaryBlobStorageAddView."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestTemporaryBlobStorageAddView, self).setUp()
+
+        # Create a BLOB using existing testing data.
+        testfiles = os.path.join(config.root, 'lib/lp/bugs/tests/testfiles')
+        blob_file = open(
+            os.path.join(testfiles, 'extra_filebug_data.msg'))
+        self.blob_data = blob_file.read()
+        blob_file.close()
+
+    def test_adding_blob_adds_job(self):
+        # Using the TemporaryBlobStorageAddView to upload a new BLOB
+        # will add a new ProcessApportBlobJob for that BLOB.
+        view = create_initialized_view(
+            getUtility(ILaunchpadRoot), '+storeblob')
+
+        # The view's store_blob method stores the blob in the database
+        # and returns its UUID.
+        blob_uuid = view.store_blob(self.blob_data)
+        transaction.commit()
+
+        # A new ProcessApportBlobJob will have been created for the
+        # BLOB.
+        blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
+        job = ProcessApportBlobJob.getByBlobUUID(blob_uuid)
+
+        self.assertEqual(
+            blob, job.blob,
+            "BLOB attached to Job returned by getByBlobUUID() did not match "
+            "expected BLOB.")
 
 
 def test_suite():

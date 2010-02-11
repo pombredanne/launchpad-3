@@ -83,8 +83,8 @@ class ApportJob(Storm):
         self.job = Job()
         self.blob = blob
         self.job_type = job_type
-        # XXX AaronBentley 2009-01-29 blob=322819: This should be a bytestring,
-        # but the DB representation is unicode.
+        # XXX AaronBentley 2009-01-29 bug=322819: This should be a
+        # bytestring, but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
 
     @classmethod
@@ -163,20 +163,44 @@ class ProcessApportBlobJob(ApportJobDerived):
     @classmethod
     def create(cls, blob):
         """See `IProcessApportBlobJobSource`."""
-        # If there's already a job for the bug, don't create a new one.
+        # If there's already a job for the BLOB, don't create a new one.
+        # We also include jobs which have been completed when checking
+        # for exisiting jobs, since a BLOB should only be processed
+        # once.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         job_for_blob = store.find(
             ApportJob,
             ApportJob.blob == blob,
             ApportJob.job_type == cls.class_job_type,
             ApportJob.job == Job.id,
-            Job.id.is_in(Job.ready_jobs)
             ).any()
 
         if job_for_blob is not None:
             return cls(job_for_blob)
         else:
             return super(ProcessApportBlobJob, cls).create(blob)
+
+    @classmethod
+    def getByBlobUUID(cls, uuid):
+        """See `IApportJobSource`."""
+        store = IStore(ApportJob)
+        blob = store.get(TemporaryBlobStorage, uuid == uuid)
+        jobs_for_blob = store.find(
+            ApportJob,
+            ApportJob.blob == blob,
+            ApportJob.job_type == cls.class_job_type,
+            ApportJob.job == Job.id
+            )
+
+        if jobs_for_blob.is_empty():
+            raise SQLObjectNotFound(
+                "No ProcessApportBlobJob found for UUID %s" % uuid)
+
+        if jobs_for_blob.count() > 1:
+            raise AssertionError(
+                "There can only be one ProcessApportBlobJob for a BLOB.")
+
+        return cls(jobs_for_blob.any())
 
     def run(self):
         """See `IRunnableJob`."""

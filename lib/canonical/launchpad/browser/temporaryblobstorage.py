@@ -16,6 +16,8 @@ from canonical.launchpad.interfaces.temporaryblobstorage import (
     BlobTooLarge, ITemporaryBlobStorage, ITemporaryStorageManager)
 from canonical.librarian.interfaces import UploadFailed
 
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+
 
 class TemporaryBlobStorageAddView(LaunchpadFormView):
     # XXX: gary 2009-09-18 bug=31358
@@ -40,13 +42,21 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
     # being named like that.
     @action('Continue', name='FORM_SUBMIT')
     def continue_action(self, action, data):
+        uuid = self.store_blob(data['blob'])
+        self.request.response.setHeader('X-Launchpad-Blob-Token', uuid)
+        self.request.response.addInfoNotification(
+            'Your ticket is "%s"' % uuid)
+
+    def store_blob(self, blob):
+        """Store a blob and return its UUID."""
         try:
-            uuid = getUtility(ITemporaryStorageManager).new(data['blob'])
-            self.request.response.setHeader('X-Launchpad-Blob-Token', uuid)
-            self.request.response.addInfoNotification(
-                'Your ticket is "%s"' % uuid)
+            uuid = getUtility(ITemporaryStorageManager).new(blob)
         except BlobTooLarge:
             self.addError('Uploaded file was too large.')
         except UploadFailed:
             self.addError('File storage unavailable - try again later.')
 
+        # Create ProcessApportBlobJob for the BLOB.
+        blob = getUtility(ITemporaryStorageManager).fetch(uuid)
+        getUtility(IProcessApportBlobJobSource).create(blob)
+        return uuid
