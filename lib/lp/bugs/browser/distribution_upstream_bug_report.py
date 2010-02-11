@@ -344,7 +344,8 @@ class DistributionUpstreamBugReport(LaunchpadView):
         packages_to_exclude = self.context.upstream_report_excluded_packages
         counts = self.context.getPackagesAndPublicUpstreamBugCounts(
             limit=self.LIMIT, exclude_packages=packages_to_exclude)
-        for (dsp, product, open, triaged, upstream, watched) in counts:
+        for (dsp, product, open, triaged, upstream, watched, with_patches
+             ) in counts:
             # The +edit-packaging page is only available for
             # IDistributionSeriesSourcepackages, so deduce one here. If
             # the distribution doesn't have series we can't offer a link

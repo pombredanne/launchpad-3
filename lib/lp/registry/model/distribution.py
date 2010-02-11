@@ -31,6 +31,7 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
@@ -1369,7 +1370,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
                   (RelatedBugTask.bugwatch IS NOT NULL OR
                   RelatedProduct.official_malone IS TRUE) THEN
-                  RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
+                  RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch,
+            COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
+                  RelatedBugTask.bugwatch IS NULL AND
+                  RelatedProduct.official_malone IS FALSE AND
+                  Bug.latest_patch_uploaded IS NOT NULL
+                  THEN
+                  RelatedBugTask.bug END)
+                  AS bugs_without_upstream_bugwatch_with_patch
             FROM
                 SourcePackageName AS SPN
                 JOIN Bugtask ON SPN.id = Bugtask.sourcepackagename
@@ -1400,6 +1408,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                'distro': self.id,
                'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES),
                'excluded_packages': quote(exclude_packages),
+               'patchtype': quote(BugAttachmentType.PATCH),
                 })
         counts = cur.fetchall()
         cur.close()
@@ -1447,7 +1456,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # in a reasonable data structure.
         results = []
         for (spn_id, spn_name, open_bugs, bugs_triaged,
-             bugs_affecting_upstream, bugs_with_upstream_bugwatch) in counts:
+             bugs_affecting_upstream, bugs_with_upstream_bugwatch,
+             bugs_without_upstream_bugwatch_with_patch) in counts:
             sourcepackagename = SourcePackageName.get(spn_id)
             dsp = self.getSourcePackage(sourcepackagename)
             if spn_id in sources_to_products:
@@ -1457,7 +1467,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 product = None
             results.append(
                 (dsp, product, open_bugs, bugs_triaged,
-                 bugs_affecting_upstream, bugs_with_upstream_bugwatch))
+                 bugs_affecting_upstream, bugs_with_upstream_bugwatch,
+                 bugs_without_upstream_bugwatch_with_patch))
         return results
 
     def setBugSupervisor(self, bug_supervisor, user):
