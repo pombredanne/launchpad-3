@@ -57,85 +57,116 @@ Get editmoin.py from launchpadlib's "contrib/" directory:
     sys.exit(1)
 
 
+def wiki_encode(x):
+    """Encode a Unicode string for display on the wiki."""
+    return x.encode('utf-8', 'xmlcharrefreplace')
+
+
+
 # The output contains two classes of contributors: people who don't
 # work for Canonical at all, and people who do work for Canonical but
 # not on the Launchpad team.
+#
+# People who used to work for Canonical on the Launchpad team are not
+# shown in the output, since they don't help us from a "contributions
+# from outside the team" perspective, so they are listed as known
+# Canonical Launchpad developers even though they aren't actually on
+# the team anymore.  There may be a few former Canonicalites who
+# didn't work on the Launchpad team but who still contributed to
+# Launchpad; most of them would have done so before Launchpad was open
+# sourced in July 2009, though, and since this script is really about
+# showing things that have happened since Launchpad was open sourced,
+# they may be listed as Launchpad team members anyway just to ensure
+# they don't appear in the output.
+#
+# (As time goes on, that assumption will be less and less correct, of
+# course, and eventually we may wish to do something about it.  Also,
+# there are some people, e.g. Jelmer Vernooij, who made contributions
+# to Launchpad before working at Canonical, but who now work on the
+# Launchpad team at Canonical.  Ideally, each potentially listable
+# contributor could have a set of roles, and a date range associated
+# with each role... but that would be overkill for this script.  That
+# last 2% of correctness would cost way too much to achieve.)
 #
 # XXX: Karl Fogel 2009-09-10 bug=513608: We should use launchpadlib
 # to consult Launchpad itself to find out who's a Canonical developer,
 # and within that who's a Launchpad developer.
 
+
+# If a contributor's address contains this, then they are or were a
+# Canonical developer -- maybe on the Launchpad team, maybe not.
+CANONICAL_ADDR = wiki_encode(u" {_AT_} canonical.com")
+
 # People on the Canonical Launchpad team.
 known_canonical_lp_devs = \
-    [x.encode('utf-8', 'xmlcharrefreplace') \
-         for x in (u'Aaron Bentley',
-                   u'Abel Deuring',
-                   u'Andrew Bennetts',
-                   u'Barry Warsaw',
-                   u'Bjorn Tillenius',
-                   u'Björn Tillenius',
-                   u'Brad Crittenden',
-                   u'Brian Fromme',
-                   u'Carlos Perello Marin',
-                   u'Carlos Perelló Marín',
-                   u'Celso Providelo',
-                   u'Christian Reis',
-                   u'kiko {_AT_} beetle',
-                   u'Curtis Hovey',
-                   u'Dafydd Harries',
-                   u'Danilo Šegan',
-                   u'Данило Шеган',
-                   u'данило шеган',
-                   u'Daniel Silverstone',
-                   u'David Allouche',
-                   u'Deryck Hodge',
-                   u'Diogo Matsubara',
-                   u'Edwin Grubbs',
-                   u'Francis Lacoste',
-                   u'Francis J. Lacoste',
-                   u'Gary Poster',
-                   u'Gavin Panella',
-                   u'Graham Binns',
-                   u'Guilherme Salgado',
-                   u'Henning Eggers',
-                   u'James Henstridge',
-                   u'Jelmer Vernooij',
-                   u'Jeroen Vermeulen',
-                   u'Jeroen T. Vermeulen',
-                   u'Joey Stanford',
-                   u'Jonathan Lange',
-                   u'jml {_AT_} canonical.com',
-                   u'jml {_AT_} mumak.net',
-                   u'Jonathan Knowles',
-                   u'Julian Edwards',
-                   u'Karl Fogel',
-                   u'Launchpad APA',
-                   u'Launchpad Patch Queue Manager',
-                   u'Launchpad PQM Bot',
-                   u'Leonard Richardson',
-                   u'Malcolm Cleaton',
-                   u'Maris Fogels',
-                   u'Mark Shuttleworth',
-                   u'Martin Albisetti',
-                   u'Martin Pool',
-                   u'Matt Zimmerman',
-                   u'Matthew Paul Thomas',
-                   u'Matthew Revell',
-                   u'matthew.revell {_AT_} canonical.com',
-                   u'Michael Hudson',
-                   u'Michael Nelson',
-                   u'Muharem Hrnjadovic',
-                   u'muharem {_AT_} canonical.com',
-                   u'Paul Hummer',
-                   u'Robert Collins',
-                   u'Stuart Bishop',
-                   u'Steve McInerney',
-                   u'<steve {_AT_} stedee.id.au>',
-                   u'Tom Haddon',
-                   u'Tim Penhey',
-                   u'Tom Berger',
-                   u'Ursula Junque',
-                   )]
+    [wiki_encode(x) for x in (u'Aaron Bentley',
+                              u'Abel Deuring',
+                              u'Andrew Bennetts',
+                              u'Barry Warsaw',
+                              u'Bjorn Tillenius',
+                              u'Björn Tillenius',
+                              u'Brad Crittenden',
+                              u'Brian Fromme',
+                              u'Carlos Perello Marin',
+                              u'Carlos Perelló Marín',
+                              u'Celso Providelo',
+                              u'Christian Reis',
+                              u'kiko {_AT_} beetle',
+                              u'Curtis Hovey',
+                              u'Dafydd Harries',
+                              u'Danilo Šegan',
+                              u'Данило Шеган',
+                              u'данило шеган',
+                              u'Daniel Silverstone',
+                              u'David Allouche',
+                              u'Deryck Hodge',
+                              u'Diogo Matsubara',
+                              u'Edwin Grubbs',
+                              u'Francis Lacoste',
+                              u'Francis J. Lacoste',
+                              u'Gary Poster',
+                              u'Gavin Panella',
+                              u'Graham Binns',
+                              u'Guilherme Salgado',
+                              u'Henning Eggers',
+                              u'James Henstridge',
+                              u'Jelmer Vernooij',
+                              u'Jeroen Vermeulen',
+                              u'Jeroen T. Vermeulen',
+                              u'Joey Stanford',
+                              u'Jonathan Lange',
+                              u'jml {_AT_} canonical.com',
+                              u'jml {_AT_} mumak.net',
+                              u'Jonathan Knowles',
+                              u'Julian Edwards',
+                              u'Karl Fogel',
+                              u'Launchpad APA',
+                              u'Launchpad Patch Queue Manager',
+                              u'Launchpad PQM Bot',
+                              u'Leonard Richardson',
+                              u'Malcolm Cleaton',
+                              u'Maris Fogels',
+                              u'Mark Shuttleworth',
+                              u'Martin Albisetti',
+                              u'Martin Pool',
+                              u'Matt Zimmerman',
+                              u'Matthew Paul Thomas',
+                              u'Matthew Revell',
+                              u'matthew.revell {_AT_} canonical.com',
+                              u'Michael Hudson',
+                              u'Michael Nelson',
+                              u'Muharem Hrnjadovic',
+                              u'muharem {_AT_} canonical.com',
+                              u'Paul Hummer',
+                              u'Robert Collins',
+                              u'Stuart Bishop',
+                              u'Steve McInerney',
+                              u'<steve {_AT_} stedee.id.au>',
+                              u'Tom Haddon',
+                              u'Tim Penhey',
+                              u'Tom Berger',
+                              u'Ursula Junque',
+                              )]
 
 # People known to work for Canonical but not on the Launchpad team.
 # Anyone with "@canonical.com" in their email address is considered to
@@ -143,27 +174,26 @@ known_canonical_lp_devs = \
 # their personal email addresses; this list contains people known to
 # do that, so we can treat them appropriately in the output.
 known_canonical_non_lp_devs = \
-    [x.encode('utf-8', 'xmlcharrefreplace') \
-         for x in (u'Adam Conrad',
-                   u'Andrew Bennetts',
-                   u'Anthony Lenton',
-                   u'Cody Somerville',
-                   u'Cody A.W. Somerville',
-                   u'David Murphy',
-                   u'Elliot Murphy',
-                   u'Gabriel Neuman gneuman {_AT_} async.com',
-                   u'Gustavo Niemeyer',
-                   u'James Henstridge',
-                   u'John Lenton',
-                   u'Kees Cook',
-                   u'LaMont Jones',
-                   u'Martin Pool',
-                   u'Matt Zimmerman',
-                   u'Michael Casadevall',
-                   u'Michael Vogt',
-                   u'Sidnei da Silva',
-                   u'Steve Kowalik',
-                   )]
+    [wiki_encode(x) for x in (u'Adam Conrad',
+                              u'Andrew Bennetts',
+                              u'Anthony Lenton',
+                              u'Cody Somerville',
+                              u'Cody A.W. Somerville',
+                              u'David Murphy',
+                              u'Elliot Murphy',
+                              u'Gabriel Neuman gneuman {_AT_} async.com',
+                              u'Gustavo Niemeyer',
+                              u'James Henstridge',
+                              u'John Lenton',
+                              u'Kees Cook',
+                              u'LaMont Jones',
+                              u'Martin Pool',
+                              u'Matt Zimmerman',
+                              u'Michael Casadevall',
+                              u'Michael Vogt',
+                              u'Sidnei da Silva',
+                              u'Steve Kowalik',
+                              )]
 
 # Some people have made commits using various names and/or email 
 # addresses, so this map will be used to merge them accordingly.
@@ -178,10 +208,8 @@ merge_names_pairs = (
      u'LaMont Jones <lamont {_AT_} debian.org>'),
     )
 # Then put it in dictionary form with the correct encodings.
-merge_names_map = { }
-for pair in merge_names_pairs:
-    merge_names_map[pair[0].encode('utf-8', 'xmlcharrefreplace')] = \
-        pair[1].encode('utf-8', 'xmlcharrefreplace')
+merge_names_map = dict((wiki_encode(a), wiki_encode(b))
+                       for a, b in merge_names_pairs)
 
 
 class ContainerRevision():
@@ -241,9 +269,9 @@ class ContainerRevision():
                 ["[[%s|%s]]" % (rev_url_base + lr.rev.revision_id, lr.revno)
                  for lr in self.contained_revs])
         else:
-            commits_block = "''see the [[%s|full revision]] for details " \
-                "(it contains %d commits)''" \
-                % (rev_id_url, len(self.contained_revs))
+            commits_block = ("''see the [[%s|full revision]] for details "
+                             "(it contains %d commits)''"
+                             % (rev_id_url, len(self.contained_revs)))
 
         text = [
             " * [[%s|r%s]] -- %s\n" % (rev_id_url, self.top_rev.revno,
@@ -261,10 +289,12 @@ class ExCon():
     """A contributor to Launchpad from outside Canonical's Launchpad team."""
 
     def __init__(self, name, is_canonical=False):
-        """Create a new external contributor named NAME.
-        If IS_CANONICAL is True, then this is a contributor from
+        """Create a new external contributor named 'name'.
+
+        If 'is_canonical' is True, then this is a contributor from
         within Canonical, but not on the Launchpad team at Canonical.
-        NAME is something like "Veronica Random <vr {_AT_} example.com>"."""
+        'name' is something like "Veronica Random <vr {_AT_} example.com>".
+        """
         self.name = name
         self.is_canonical = is_canonical
         # If name is "Veronica Random <veronica {_AT_} example.com>",
@@ -312,18 +342,6 @@ def get_ex_cons(authors, all_ex_cons):
     ALL_EX_CONS is a dictionary mapping author names (as received from
     the bzr logs, i.e., with email address undisguised) to ExCon objects.
     """
-
-    # If a contributor's address contains this, then they are a
-    # Canonical developer -- maybe on the Launchpad team, maybe not.
-    #
-    # (It'd be nice to have the equivalent of a C static variable, so
-    # this doesn't have to get reinitialized on each entry.  We could
-    # always abuse the fact that keyword parameters to functions are
-    # evaluated only once, at function definition time... but that
-    # hardly seems like playing by the Marquess of Queensberry Rules.)
-    canonical_addr = \
-        u" {_AT_} canonical.com".encode('utf-8', 'xmlcharrefreplace')
-
     ex_cons_this_rev = []
     for author in authors:
         known_canonical_lp_dev = False
@@ -332,8 +350,11 @@ def get_ex_cons(authors, all_ex_cons):
         # disguised (since this source code is public).  We must
         # disguise the ones coming from the Bazaar logs in the same way,
         # so string matches will work.
-        author = author.encode('utf-8', 'xmlcharrefreplace')
+        author = wiki_encode(author)
         author = author.replace("@", " {_AT_} ")
+
+        # If someone works/worked for Canonical on the Launchpad team,
+        # then skip them -- we don't want to show them in the output.
         for name_fragment in known_canonical_lp_devs:
             if name_fragment in author:
                 known_canonical_lp_dev = True
@@ -345,7 +366,7 @@ def get_ex_cons(authors, all_ex_cons):
         # person using alternate names and/or emails.
         author = merge_names_map.get(author, author)
 
-        if canonical_addr in author:
+        if CANONICAL_ADDR in author:
             known_canonical_non_lp_dev = True
         else:
             for name_fragment in known_canonical_non_lp_devs:
@@ -353,14 +374,13 @@ def get_ex_cons(authors, all_ex_cons):
                     known_canonical_non_lp_dev = True
                     break
 
-        ### There's a variant of the Singleton pattern that could be
-        ### used for this, whereby instantiating an ExCon object would
-        ### just get back an existing object if such has already been
-        ### instantiated for this name.  But that would make this code
-        ### non-reentrant, and that's just not cool.
-        if author in all_ex_cons:
-            ec = all_ex_cons[author]
-        else:
+        # There's a variant of the Singleton pattern that could be
+        # used for this, whereby instantiating an ExCon object would
+        # just get back an existing object if such has already been
+        # instantiated for this name.  But that would make this code
+        # non-reentrant, and that's just not cool.
+        ec = all_ex_cons.get(author, None)
+        if ec is None:
             ec = ExCon(author, is_canonical=known_canonical_non_lp_dev)
             all_ex_cons[author] = ec
         ex_cons_this_rev.append(ec)
@@ -460,6 +480,8 @@ def usage():
     print __doc__
 
 
+# Use backslashes to suppress newlines because this is wiki syntax,
+# not HTML, so newlines would be rendered as line breaks.
 page_intro = """This page shows contributions to Launchpad from \
 developers not on the Launchpad team at Canonical.
 
