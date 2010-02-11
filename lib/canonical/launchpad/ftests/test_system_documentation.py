@@ -168,11 +168,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
 
-def hwdbDeviceTablesSetup(test):
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
-
-
 def updateRemoteProductSetup(test):
     """Setup to use the 'updateremoteproduct' db user."""
     setUp(test)
@@ -238,11 +233,6 @@ special = {
             setUp=test_notifications.setUp,
             tearDown=test_notifications.tearDown,
             stdout_logging=False, layer=None
-            ),
-    'hwdb-device-tables.txt': LayeredDocFileSuite(
-            '../doc/hwdb-device-tables.txt',
-            setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer,
             ),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.

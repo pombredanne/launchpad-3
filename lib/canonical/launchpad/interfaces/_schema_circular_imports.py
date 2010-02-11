@@ -50,7 +50,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
-from canonical.launchpad.interfaces.hwdb import HWBus, IHWSubmission
+from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries

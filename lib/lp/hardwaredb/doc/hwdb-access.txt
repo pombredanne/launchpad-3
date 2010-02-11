@@ -34,7 +34,7 @@ The access to most HWDB tables is restricted to members of the team
 HWDriver
 --------
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWDriverSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> login('test@canonical.com')
     >>> driver = getUtility(IHWDriverSet).search(name='sd')[0]
     >>> logout()
@@ -71,7 +71,7 @@ HWDriverPackageName
 HWVendorID
 ----------
 
-    >>> from canonical.launchpad.interfaces.hwdb import HWBus, IHWVendorIDSet
+    >>> from lp.hardwaredb.interfaces.hwdb import HWBus, IHWVendorIDSet
     >>> login('test@canonical.com')
     >>> vendor_id = getUtility(IHWVendorIDSet).getByBusAndVendorID(
     ...     HWBus.PCI, '0x10de')
@@ -85,7 +85,7 @@ HWVendorID
 HWDevice
 --------
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWDeviceSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDeviceSet
     >>> login('test@canonical.com')
     >>> device = getUtility(IHWDeviceSet).getByDeviceID(
     ...     HWBus.PCI, '0x10de', '0x0455')
@@ -115,7 +115,7 @@ No-Priv is not (see above).
 HWSubmissionDevice
 ------------------
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionDeviceSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionDeviceSet
     >>> login('test@canonical.com')
     >>> submission_device = getUtility(IHWSubmissionDeviceSet).get(1)
     >>> logout()
@@ -129,7 +129,7 @@ HWSubmissionDevice
 Methods of IHWDBApplication
 ---------------------------
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWDBApplication
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
     >>> app = getUtility(IHWDBApplication)
     >>> check_authorized_only_for_hwdb_team(app, 'numOwnersOfDevice')
     Access for launchpad.anonymous denied

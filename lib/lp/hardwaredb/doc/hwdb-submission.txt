@@ -23,7 +23,7 @@ The POST data consists of the following fields:
 
     >>> from StringIO import StringIO
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IHWDBApplication
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
     >>> data = StringIO('some data.')
     >>> data.filename = 'hardware-info'
     >>> form={'field.date_created':    u'2007-08-01',
@@ -222,13 +222,13 @@ the validity of each submission, populates the HWDB tables with data
 from a submission and sets the submission state to VALID. If any error
 occurs when a submission is processed, its status is set to INVALID and
 according error is logged. For details, see
-lib/canonical/launchpad/scripts/tests/test_hwdb_submission_processing.py.
+lp/hardwaredb/scripts/tests/test_hwdb_submission_processing.py.
 
 We have currently three unprocessed submissions in the database, one
 submission with the status PROCESSED and no submissions with the status
 INVALID.
 
-    >>> from canonical.launchpad.interfaces.hwdb import (
+    >>> from lp.hardwaredb.interfaces.hwdb import (
     ...     HWSubmissionProcessingStatus)
     >>> new_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED)
