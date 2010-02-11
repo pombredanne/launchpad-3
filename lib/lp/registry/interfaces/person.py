@@ -2059,7 +2059,7 @@ class NameAlreadyTaken(Exception):
 
 
 class IllegalRelatedBugTasksParams(Exception):
-    """Exception raised when trying to overwirte all relevant parameter
+    """Exception raised when trying to overwrite all relevant parameters
     in a search for related bug tasks"""
     webservice_error(400) #Bad request.
 
