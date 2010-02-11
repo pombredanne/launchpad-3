@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import (
     LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
@@ -223,6 +224,19 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # In fact, yet_another_job will be the same job as before, since
         # it's attached to the same BLOB.
         self.assertEqual(job.id, yet_another_job.id, "Jobs do not match.")
+
+    def test_cronscript_succeeds(self):
+        # The process-apport-blobs cronscript will run all pending
+        # ProcessApportBlobJobs.
+        ProcessApportBlobJob.create(self.blob)
+        transaction.commit()
+
+        retcode, stdout, stderr = run_script(
+            'cronscripts/process-apport-blobs.py', [],
+            expect_returncode=0)
+        self.assertEqual('', stdout)
+        self.assertIn(
+            'INFO    Ran 1 ProcessApportBlobJobSource jobs.\n', stderr)
 
 
 class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
