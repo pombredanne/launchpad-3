@@ -8,7 +8,7 @@ librarian file. A reference to this file is stored in the table HWSubmission,
 together with the following data:
 
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> sample_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
 
@@ -445,7 +445,7 @@ The set of submissions with a given status can be retrieved by
 IHWSubmissionSet.getByStatus(). Only the publicly visible
 submissions are returned if no user is specified.
 
-    >>> from canonical.launchpad.interfaces.hwdb import (
+    >>> from lp.hardwaredb.interfaces.hwdb import (
     ...     HWSubmissionProcessingStatus)
     >>> def print_submissions(submissions):
     ...     for submission in submissions:
@@ -467,7 +467,7 @@ submissions are returned if no user is specified.
 If a user is passed, private submissions of this user are returned too.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces.hwdb import (
+    >>> from lp.hardwaredb.interfaces.hwdb import (
     ...     HWSubmissionProcessingStatus)
     >>> new_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED, user=sample_person)
@@ -481,7 +481,7 @@ If a user is passed, private submissions of this user are returned too.
 
 Submissions of other users are not returned.
 
-    >>> from canonical.launchpad.interfaces.hwdb import (
+    >>> from lp.hardwaredb.interfaces.hwdb import (
     ...     HWSubmissionProcessingStatus)
     >>> new_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED, user=no_priv)
@@ -497,7 +497,7 @@ submissions...
 
     >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.hwdb import (
+    >>> from lp.hardwaredb.interfaces.hwdb import (
     ...     HWSubmissionProcessingStatus)
     >>> new_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED, user=foobar)
@@ -539,7 +539,7 @@ HWDB submissions can be linked to bugs. These links are created by
 IHWSubmissionBugSet.create().
 
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> submission_bug_set = getUtility(IHWSubmissionBugSet)
     >>> submission_bug = submission_bug_set.create(
@@ -682,7 +682,7 @@ for that architecture are returned.
 If a device is specified, only those submissions that include
 the device are returned.
 
-    >>> from canonical.launchpad.interfaces.hwdb import HWBus, IHWDeviceSet
+    >>> from lp.hardwaredb.interfaces.hwdb import HWBus, IHWDeviceSet
     >>> device_set = getUtility(IHWDeviceSet)
     >>> msi_mainboard = device_set.getByDeviceID(
     ...     HWBus.SYSTEM, 'MSI', 'MS-7369')
@@ -693,7 +693,7 @@ the device are returned.
 If a driver is specified, only those submissions for that driver
 are returned.
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWDriverSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> driver_set = getUtility(IHWDriverSet)
     >>> ehci_driver = driver_set.getByPackageAndName(
     ...     'linux-image-2.6.24-19-generic', 'ehci_hcd')
