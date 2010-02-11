@@ -119,8 +119,11 @@ bonkers project, the portlet will display that information.
     ...     extract_text, find_tag_by_id)
     >>> content = extract_text(find_tag_by_id(view.render(), 'upstreams'))
     >>> print content
-    Project:...Bonkers...
-    Series:...crazy...
+    Bonkers project
+    Bug supervisor: no
+    Bug tracker: no
+    Bonkers crazy series
+    Branch: no
 
 A new source project that is not linked to an upstream will result in
 the portlet showing the suggested project.

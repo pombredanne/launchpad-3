@@ -40,7 +40,7 @@
           </dl>
           <dl>
             <dt>
-              <a tal:replace="structure series/fmt:link" />:
+              <a tal:replace="structure series/fmt:link" />
             </dt>
             <dd title="Series branch"
                 tal:define="bool series/branch">
