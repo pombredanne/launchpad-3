@@ -26,6 +26,8 @@
 
         <class
             class="canonical.launchpad.database.BinaryPackagePublishingHistory">
+            <allow
+                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryPublic"/>
@@ -110,6 +112,8 @@
 
         <class
             class="canonical.launchpad.database.SourcePackagePublishingHistory">
+            <allow
+                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryPublic"/>
