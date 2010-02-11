@@ -11,12 +11,14 @@ __all__ = [
     'IArchiveSafePublisher',
     'IBinaryPackageFilePublishing',
     'IBinaryPackagePublishingHistory',
+    'IBinaryPackagePublishingHistoryPublic',
     'ICanPublishPackages',
     'IFilePublishing',
     'IPublishingEdit',
     'IPublishingSet',
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
+    'ISourcePackagePublishingHistoryPublic',
     'MissingSymlinkInPool',
     'NotInPool',
     'PackagePublishingPriority',
@@ -320,7 +322,6 @@ class IPublishingView(Interface):
 
 class IPublishingEdit(Interface):
     """Base interface for writeable Publishing classes."""
-    export_as_webservice_entry()
 
     @call_with(removed_by=REQUEST_USER)
     @operation_parameters(
@@ -396,10 +397,8 @@ class ISourcePackageFilePublishing(IFilePublishing):
             )
 
 
-class ISourcePackagePublishingHistory(IPublishingView):
+class ISourcePackagePublishingHistoryPublic(IPublishingView):
     """A source package publishing history record."""
-    export_as_webservice_entry()
-
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -677,6 +676,12 @@ class ISourcePackagePublishingHistory(IPublishingView):
         """
 
 
+class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
+                                      IPublishingEdit):
+    """A source package publishing history record."""
+    export_as_webservice_entry()
+
+
 #
 # Binary package publishing
 #
@@ -700,10 +705,8 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
 
 
-class IBinaryPackagePublishingHistory(IPublishingView):
+class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     """A binary package publishing record."""
-    export_as_webservice_entry()
-
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -852,6 +855,12 @@ class IBinaryPackagePublishingHistory(IPublishingView):
         :return: a list of `IBinaryPackagePublishingHistory` records
             representing the binaries copied to the destination location.
         """
+
+
+class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
+                                      IPublishingEdit):
+    """A binary package publishing record."""
+    export_as_webservice_entry()
 
 
 class IPublishingSet(Interface):

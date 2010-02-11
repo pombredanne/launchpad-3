@@ -360,9 +360,7 @@ class IndexStanzaFields:
 
 class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
-    implements(
-        ISourcePackagePublishingHistory, IArchiveSafePublisher,
-        IPublishingEdit)
+    implements(ISourcePackagePublishingHistory)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
@@ -768,9 +766,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record."""
 
-    implements(
-        IBinaryPackagePublishingHistory, IArchiveSafePublisher,
-        IPublishingEdit)
+    implements(IBinaryPackagePublishingHistory)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')

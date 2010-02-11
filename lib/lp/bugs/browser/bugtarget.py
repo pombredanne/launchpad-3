@@ -53,7 +53,7 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
@@ -665,6 +665,7 @@ class FileBugViewBase(LaunchpadFormView):
         Returns a list of dicts, with each dict containing values for
         "preamble" and "content".
         """
+
         def target_name(target):
             # IProject can be considered the target of a bug during
             # the bug filing process, but does not extend IBugTarget
@@ -709,6 +710,7 @@ class FileBugAdvancedView(FileBugViewBase):
 
     This view exists only to redirect from +filebug-advanced to +filebug.
     """
+
     def initialize(self):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
@@ -1277,23 +1279,6 @@ class BugsPatchesView(LaunchpadView):
             return "Project"  # "Project" meaning Product, of course
         else:
             return None
-
-    def youngestPatch(self, bug):
-        """Return the youngest patch attached to a bug, else error."""
-        youngest = None
-        # Loop over bugtasks, gathering youngest patch for each's bug.
-        for attachment in bug.attachments:
-            if attachment.is_patch:
-                if youngest is None:
-                    youngest = attachment
-                elif (attachment.message.datecreated >
-                      youngest.message.datecreated):
-                    youngest = attachment
-        if youngest is None:
-            # This is the patches view, so every bug under
-            # consideration should have at least one patch attachment.
-            raise AssertionError("bug %i has no patch attachments" % bug.id)
-        return youngest
 
     def patchAge(self, patch):
         """Return a timedelta object for the age of a patch attachment."""

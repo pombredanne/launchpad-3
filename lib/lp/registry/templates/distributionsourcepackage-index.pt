@@ -258,7 +258,7 @@
 
       <p>You can also search for
          <a tal:attributes="href view/further_ppa_versions_url">
-           more untrusted versions of
+           other untrusted versions of
            '<span tal:replace="context/name" />'</a>.
       </p>
     </div>
