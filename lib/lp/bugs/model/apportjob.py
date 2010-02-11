@@ -196,8 +196,9 @@ class ProcessApportBlobJob(ApportJobDerived):
             raise SQLObjectNotFound(
                 "No ProcessApportBlobJob found for UUID %s" % uuid)
 
-        assert jobs_for_blob.count() < 2, (
-            "There can only be one ProcessApportBlobJob for a BLOB.")
+        if jobs_for_blob.count() > 1
+            raise AssertionError(
+                "There can only be one ProcessApportBlobJob for a BLOB.")
 
         return cls(jobs_for_blob.any())
 
