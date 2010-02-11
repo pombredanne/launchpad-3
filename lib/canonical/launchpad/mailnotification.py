@@ -1206,7 +1206,7 @@ def notify_new_ppa_subscription(subscription, event):
     archive = subscription.archive
     registrant_name = subscription.registrant.displayname
     ppa_displayname = archive.displayname
-    ppa_identifier = "ppa:%s/%s" % (
+    ppa_reference = "ppa:%s/%s" % (
         archive.owner.name, archive.name)
     ppa_description = archive.description
     subject = 'PPA access granted for ' + ppa_displayname
@@ -1227,7 +1227,7 @@ def notify_new_ppa_subscription(subscription, event):
             'registrant_name': registrant_name,
             'registrant_profile_url': canonical_url(subscription.registrant),
             'ppa_displayname': ppa_displayname,
-            'ppa_identifier': ppa_identifier,
+            'ppa_reference': ppa_reference,
             'ppa_description': ppa_description,
             'recipient_subscriptions_url': recipient_subscriptions_url,
             }
