@@ -19,7 +19,7 @@ class RealActualClass:
         way to do that is to replace this method with a fake method.
         """
         self.doing_impossible_stuff = True
-        do_something_you_cant_test()
+        raise AssertionError("Trying to do impossible stuff.")
 
     def testableMethod(self):
         """This part of the class logic that you do want to exercise."""
