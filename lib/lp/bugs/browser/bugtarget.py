@@ -51,7 +51,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
@@ -827,6 +827,7 @@ class FileBugViewBase(LaunchpadFormView):
         Returns a list of dicts, with each dict containing values for
         "preamble" and "content".
         """
+
         def target_name(target):
             # IProject can be considered the target of a bug during
             # the bug filing process, but does not extend IBugTarget
@@ -871,6 +872,7 @@ class FileBugAdvancedView(FileBugViewBase):
 
     This view exists only to redirect from +filebug-advanced to +filebug.
     """
+
     def initialize(self):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
@@ -894,6 +896,18 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
 
     _MATCHING_BUGS_LIMIT = 10
     show_summary_in_results = False
+
+    @property
+    def action_url(self):
+        """Return the +filebug page as the action URL.
+
+        This enables better validation error handling,
+        since the form is always used inline on the +filebug page.
+        """
+        url = '%s/+filebug' % canonical_url(self.context)
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
 
     @property
     def search_context(self):

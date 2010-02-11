@@ -81,7 +81,8 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -212,7 +213,7 @@ def validate_person_visibility(person, attr, value):
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
-    HasBranchesMixin, HasMergeProposalsMixin):
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -1047,6 +1048,15 @@ class Person(
             return True
         except SQLObjectNotFound:
             return False
+
+    @property
+    def is_probationary(self):
+        """See `IPerson`.
+
+        Users without karma have not demostrated their intentions may not
+        have the same privileges as users who have made contributions.
+        """
+        return not self.isTeam() and self.karma == 0
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None, datecreated=None):
@@ -2346,7 +2356,7 @@ class Person(
     @property
     def hardware_submissions(self):
         """See `IPerson`."""
-        from canonical.launchpad.database.hwdb import HWSubmissionSet
+        from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
 
 
@@ -2839,6 +2849,8 @@ class PersonSet:
             (decorator_table.lower(), person_pointer_column.lower()))
 
     def _mergeBranches(self, cur, from_id, to_id):
+        # XXX MichaelHudson 2010-01-13 bug=506630: This code does not account
+        # for package branches.
         cur.execute('''
             SELECT product, name FROM Branch WHERE owner = %(to_id)d
             ''' % vars())
@@ -3348,6 +3360,10 @@ class PersonSet:
         # ones that *do* conflict.
         self._mergeBranches(cur, from_id, to_id)
         skip.append(('branch','owner'))
+
+        # XXX MichaelHudson 2010-01-13: Write _mergeSourcePackageRecipes!
+        #self._mergeSourcePackageRecipes(cur, from_id, to_id))
+        skip.append(('sourcepackagerecipe','owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)
         skip.append(('mailinglistsubscription', 'person'))

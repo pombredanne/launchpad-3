@@ -832,7 +832,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
             target branch.
         """
         db_target_branch, target_tree = self.create_branch_and_tree(
-            format=format)
+            tree_location='.', format=format)
         target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
         target_tree.commit('rev1')
         # Make sure that the created branch has been mirrored.
@@ -850,8 +850,8 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         The client has write access to the branch.
         """
         lp_server = get_lp_server(db_branch.owner.id)
-        lp_server.setUp()
-        self.addCleanup(lp_server.tearDown)
+        lp_server.start_server()
+        self.addCleanup(lp_server.stop_server)
         branch_url = urljoin(lp_server.get_url(), db_branch.unique_name)
         return Branch.open(branch_url)
 

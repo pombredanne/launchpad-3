@@ -274,8 +274,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         productseries = productseries.order_by(ProductSeries.id)
 
         bzrserver = get_multi_server(write_hosted=True)
-        bzrserver.setUp()
+        bzrserver.start_server()
         try:
             self._exportToBranches(productseries)
         finally:
-            bzrserver.tearDown()
+            bzrserver.stop_server()

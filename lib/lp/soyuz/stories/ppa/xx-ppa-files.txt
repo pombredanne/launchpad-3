@@ -91,7 +91,7 @@ Commit everything.
 Links to files accessible via +files/ proxy in the PPA page.
 
     >>> ppa_links = [
-    ...     ('(sources.changes)',
+    ...     ('(changes file)',
     ...         another_test_source.sourcepackagerelease.upload_changesfile),
     ...     ]
 
