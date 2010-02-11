@@ -5,21 +5,15 @@
 
 * Can we clear out just the edge sessions but not the lpnet ones?
 
-* Need a migration plan, for existing NEWACCOUNT login tokens that end up
-used only after we roll out.
-
-* Might want to change the new +login page to not start an OpenID dance when
-the user is already logged in?
+* Need a migration plan, for existing NEWACCOUNT/RESETPASSWORD login
+tokens that end up used only after we roll out.
+   * This is specially important if we take into account that we plan to
+     roll this out together with the main/auth DBs split, meaning it won't
+     be possible for people to create new accounts and/or reset passwords in
+     Launchpad itself.
 
 * The LoginToken pages for creating new accounts and reset passwords can be
 removed.
-
-* can the new +login page go live on edge before it goes to lpnet?  or should
-I it land in db-devel so that it only reaches edge after the roll out?
-
-* python-openid will use pycurl (if installed), falling back to urllib2. We
-should make it always use the same (be it in production or devel) so that
-we test the same things that we use on production.
 
 * Do we want to change c-i-p to use a separate cookie so that logging into
 login.lp.net doesn't cause you to end up logged into lp.net or should we just
