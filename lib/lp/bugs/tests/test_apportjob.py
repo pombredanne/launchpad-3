@@ -13,7 +13,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
