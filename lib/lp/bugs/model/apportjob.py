@@ -83,8 +83,8 @@ class ApportJob(Storm):
         self.job = Job()
         self.blob = blob
         self.job_type = job_type
-        # XXX AaronBentley 2009-01-29 blob=322819: This should be a bytestring,
-        # but the DB representation is unicode.
+        # XXX AaronBentley 2009-01-29 blob=322819: This should be a
+        # bytestring, but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
 
     @classmethod
