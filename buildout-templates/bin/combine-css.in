@@ -1,4 +1,4 @@
-#! /usr/bin/env ${buildout:directory}/bin/py
+#!/usr/bin/env ${buildout:directory}/bin/py
 
 import os
 
@@ -26,7 +26,7 @@ names = [
     'lazr/build/choiceedit/assets/choiceedit-core.css',
     # This one goes at the end because it's our main stylesheet and should
     # take precedence over the others.
-    'style-3-0.css']
+    'build/style-3-0.css']
 result = ''
 for content in combine_files(names, icing):
     result += content
