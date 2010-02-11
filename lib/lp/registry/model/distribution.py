@@ -180,7 +180,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     active = True # Required by IPillar interface.
 
     def __repr__(self):
-        return '<Distribution: %s (%s)>' % (self.displayname, self.name)
+        return "<%s '%s' (%s)>" % (
+            self.__class__.__name__, self.displayname, self.name)
 
     def _init(self, *args, **kw):
         """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""

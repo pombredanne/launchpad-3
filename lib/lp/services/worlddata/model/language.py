@@ -69,7 +69,8 @@ class Language(SQLBase):
         return '%s (%s)' % (self.englishname, self.code)
 
     def __repr__(self):
-        return '<Language: %s>' % self.displayname
+        return "<%s '%s' (%s)>" % (
+            self.__class__.__name__, self.englishname, self.code)
 
     @property
     def alt_suggestion_language(self):

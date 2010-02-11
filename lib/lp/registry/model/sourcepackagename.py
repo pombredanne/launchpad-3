@@ -38,7 +38,7 @@ class SourcePackageName(SQLBase):
         return self.name
 
     def __repr__(self):
-        return '<SourcePackageName: %s>' % self.name
+        return "<%s '%s'>" % (self.__class__.__name__, self.name)
 
     def ensure(klass, name):
         try:
