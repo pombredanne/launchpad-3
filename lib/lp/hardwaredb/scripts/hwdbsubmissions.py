@@ -36,7 +36,7 @@ from canonical.lazr.xml import RelaxNGValidator
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.librarian.interfaces import LibrarianServerError
-from canonical.launchpad.interfaces.hwdb import (
+from lp.hardwaredb.interfaces.hwdb import (
     HWBus, HWSubmissionProcessingStatus, IHWDeviceDriverLinkSet, IHWDeviceSet,
     IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
     IHWVendorNameSet)

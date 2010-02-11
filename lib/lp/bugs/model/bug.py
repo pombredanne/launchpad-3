@@ -46,7 +46,7 @@ from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -100,7 +100,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person
+from lp.registry.model.person import Person, ValidPersonCache
 from lp.registry.model.pillar import pillar_sort_key
 
 
@@ -227,7 +227,7 @@ class Bug(SQLBase):
                            prejoins=['owner'],
                            orderBy=['datecreated', 'id'])
     bug_messages = SQLMultipleJoin(
-        'BugMessage', joinColumn='bug',orderBy='id')
+        'BugMessage', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
@@ -530,7 +530,6 @@ class Bug(SQLBase):
         # the same time as retrieving the bug subscriptions (as a left
         # join). However, this ran slowly (far from optimal query
         # plan), so we're doing it as two queries now.
-        from lp.registry.model.person import Person, ValidPersonCache
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
@@ -553,7 +552,6 @@ class Bug(SQLBase):
         the relevant subscribers and rationales will be registered on
         it.
         """
-        from lp.registry.model.person import Person
         subscribers = list(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -614,7 +612,6 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        from lp.registry.model.person import Person
         dupe_subscribers = set(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -969,7 +966,7 @@ class Bug(SQLBase):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
-    completeness_clause =  """
+    completeness_clause = """
         BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
 
     def canBeAQuestion(self):
@@ -1109,7 +1106,6 @@ class Bug(SQLBase):
         # Since we can't prejoin, cache all people at once so we don't
         # have to do it while rendering, which is a big deal for bugs
         # with a million comments.
-        from lp.registry.model.person import Person
         owner_ids = set()
         for chunk in chunks:
             if chunk.message.ownerID:
@@ -1327,8 +1323,7 @@ class Bug(SQLBase):
         """Get the tags as a sorted list of strings."""
         tags = [
             bugtag.tag
-            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')
-            ]
+            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')]
         return tags
 
     def _setTags(self, tags):
