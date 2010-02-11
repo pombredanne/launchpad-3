@@ -1663,6 +1663,17 @@ related to this person.
     ...     ).jsonBody()
     >>> len(json['entries']) < len(related)
     True
+    
+You are not allowed to overwrite all user related parameter in the same
+query, because in this case this bug will no be related to the person
+anymore. In this case a `400 Bad Request`-Error will be returned
+
+    >>> print webservice.named_get(
+    ...     '/~name16', 'searchTasks', assignee=name12['self_link'],
+    ...     owner=name12['self_link'], bug_subscriber=name12['self_link'],
+    ...     bug_commenter=name12['self_link']
+    ...     )
+    HTTP/1.1 400 Bad Request...
 
 
 Affected users
