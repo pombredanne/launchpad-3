@@ -3,7 +3,11 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-* Can we clear out just the edge sessions but not the lpnet ones?
+1. New config for enabling/disabling the testopenid vhost
+2. Register the +basiclogin page using python so that we can have it enabled
+   for Windmill tests.
+3. Email Matt describing what I, as a LP user, would need to know about the
+change to use OpenID.
 
 * Need a migration plan, for existing NEWACCOUNT/RESETPASSWORD login
 tokens that end up used only after we roll out.
@@ -14,6 +18,8 @@ tokens that end up used only after we roll out.
 
 * The LoginToken pages for creating new accounts and reset passwords can be
 removed.
+
+* Can we clear out just the edge sessions but not the lpnet ones?
 
 * Do we want to change c-i-p to use a separate cookie so that logging into
 login.lp.net doesn't cause you to end up logged into lp.net or should we just
