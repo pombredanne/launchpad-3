@@ -346,6 +346,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     has_patches = Attribute("Does this bug have any patches?")
 
+    latest_patch_uploaded = exported(
+        Datetime(
+            title=_('Date when the most recent patch was uploaded.'),
+            required=False, readonly=True))
+
+    latest_patch = Attribute("The most recent patch of this bug.")
+
     @operation_parameters(
         subject=optional_message_subject_field(),
         content=copy_field(IMessage['content']))

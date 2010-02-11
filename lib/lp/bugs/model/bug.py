@@ -32,7 +32,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Max, Not, Select, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -69,6 +69,7 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
+from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -257,6 +258,32 @@ class Bug(SQLBase):
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
     heat = IntCol(notNull=True, default=0)
+    latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def latest_patch(self):
+        """See `IBug`."""
+        # We want to retrieve the most recently added bug attachment
+        # that is of type BugAttachmentType.PATCH. In order to find
+        # this attachment, we should in theory sort by
+        # BugAttachment.message.datecreated. Since we don't have
+        # an index for Message.datecreated, such a query would be
+        # quite slow. We search instead for the BugAttachment with
+        # the largest ID for a given bug. This is "nearly" equivalent
+        # to searching the record with the maximum value of
+        # message.datecreated: The only exception is the rare case when
+        # two BugAttachment records are simultaneuosly added to the same
+        # bug, where bug_attachment_1.id < bug_attachment_2.id, while
+        # the Message record for bug_attachment_2 is created before
+        # the Message record for bug_attachment_1. The difference of
+        # the datecreated values of the Message records is in this case
+        # probably smaller than one second and the selection of the
+        # "most recent" patch anyway somewhat arbitrary.
+        return Store.of(self).find(
+            BugAttachment, BugAttachment.id == Select(
+                Max(BugAttachment.id),
+                And(BugAttachment.bug == self.id,
+                    BugAttachment.type == BugAttachmentType.PATCH))).one()
 
     @property
     def comment_count(self):
@@ -464,6 +491,9 @@ class Bug(SQLBase):
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+
+        getUtility(ICalculateBugHeatJobSource).create(self)
+
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
         return sub
@@ -767,6 +797,8 @@ class Bug(SQLBase):
             self.addChangeNotification(
                 notification_data['text'], change.person, recipients,
                 when)
+
+        getUtility(ICalculateBugHeatJobSource).create(self)
 
     def expireNotifications(self):
         """See `IBug`."""
@@ -1388,10 +1420,13 @@ class Bug(SQLBase):
             if bap.affected != affected:
                 bap.affected = affected
                 self._flushAndInvalidate()
+
         # Loop over dupes.
         for dupe in self.duplicates:
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
+
+        getUtility(ICalculateBugHeatJobSource).create(self)
 
     @property
     def readonly_duplicateof(self):
@@ -1408,6 +1443,17 @@ class Bug(SQLBase):
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
+
+        if duplicate_of is not None:
+            # Create a job to update the heat of the master bug and set
+            # this bug's heat to 0 (since it's a duplicate, it shouldn't
+            # have any heat at all).
+            getUtility(ICalculateBugHeatJobSource).create(duplicate_of)
+            self.setHeat(0)
+        else:
+            # Otherwise, create a job to recalculate this bug's heat,
+            # since it will be 0 from having been a duplicate.
+            getUtility(ICalculateBugHeatJobSource).create(self)
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""

@@ -36,6 +36,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -287,6 +288,9 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
 
+UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES = (
+    UNRESOLVED_BUGTASK_STATUSES + (BugTaskStatus.FIXRELEASED,))
+
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
     BugTaskStatus.INVALID,
@@ -470,9 +474,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
-    task_age = Int(title=_("Age of the bug task"),
+    task_age = exported(
+        Int(title=_("Age of the bug task"),
             description=_("The age of this task in seconds, a delta between "
-                         "now and the date the bug task was created."))
+                         "now and the date the bug task was created."),
+            readonly=True))
     owner = exported(
         Reference(title=_("The owner"), schema=IPerson, readonly=True))
     target = exported(Reference(
