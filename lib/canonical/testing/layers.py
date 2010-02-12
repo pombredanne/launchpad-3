@@ -1880,8 +1880,7 @@ class BaseWindmillLayer(AppServerLayer):
                 'rooturl: http://blueprints.launchpad.dev:8085/'),
             ('vhost.bugs', 'rooturl: http://bugs.launchpad.dev:8085/'),
             ('vhost.code', 'rooturl: http://code.launchpad.dev:8085/'),
-            ('vhost.testopenid',
-                'rooturl: http://testopenid.launchpad.dev:8085/'),
+            ('vhost.testopenid', 'rooturl: http://testopenid.dev:8085/'),
             ('vhost.translations',
                 'rooturl: http://translations.launchpad.dev:8085/'))
         for site in sites:
