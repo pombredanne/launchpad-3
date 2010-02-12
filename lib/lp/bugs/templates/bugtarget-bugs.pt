@@ -96,7 +96,7 @@
           </ul>
         </div>
 
-      <tal:has_hot_bugs condition="view/hot_bugs/bugtasks">
+      <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks">
         <div class="search-box">
           <metal:search
             use-macro="context/@@+bugtarget-macros-search/simple-search-form"
@@ -124,7 +124,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="bugtask view/hot_bugs/bugtasks">
+            <tr tal:repeat="bugtask view/hot_bugs_info/bugtasks">
               <td class="icon left">
                 <span tal:replace="structure bugtask/image:icon" />
               </td>
@@ -148,12 +148,12 @@
           </tbody>
         </table>
         <p id="more-hot-bugs"
-           tal:condition="view/hot_bugs/has_more_bugs">
-          <a href="+bugs?field.searchtext=&orderby=-heat&search=Search&field.status%3Alist=NEW&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.assignee=&field.bug_reporter=&field.omit_dupes=on&field.has_patch=&field.has_no_package=">See all hot bugs</a>.
+           tal:condition="view/hot_bugs_info/has_more_bugs">
+          <a tal:attributes="href string:${context/fmt:url/+bugs}?orderby=-heat&field.status%3Alist=NEW&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.omit_dupes=on">See all hot bugs</a>
         </p>
       </tal:has_hot_bugs>
 
-      <tal:no_hot_bugs condition="not: view/hot_bugs/bugtasks">
+      <tal:no_hot_bugs condition="not: view/hot_bugs_info/bugtasks">
         <p id="no-bugs-filed"><strong>There are currently no bugs filed against
           <tal:project_title replace="context/title" />.</strong></p>
 

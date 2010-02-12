@@ -1266,8 +1266,8 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         else:
             return 'None specified'
 
-    @property
-    def hot_bugs(self):
+    @cachedproperty
+    def hot_bugs_info(self):
         """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
         has_more_bugs = False
         params = BugTaskSearchParams(
@@ -1275,18 +1275,18 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
             user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         # Use 4x as many tasks as bugs that are needed to improve performance.
         bugtasks = self.context.searchTasks(params)[:40]
+        hot_bugtasks = []
         hot_bugs = []
-        count = 0
         for task in bugtasks:
-            # Ensure we only represent a bug once in the list.
-            if task.bug not in [hot_task.bug for hot_task in hot_bugs]:
-                if count < 10:
-                    hot_bugs.append(task)
-                    count += 1
+            # Use hot_bugs list to ensure a bug is only listed once.
+            if task.bug not in hot_bugs:
+                if len(hot_bugtasks) < 10:
+                    hot_bugtasks.append(task)
+                    hot_bugs.append(task.bug)
                 else:
                     has_more_bugs = True
                     break
-        return {'has_more_bugs': has_more_bugs, 'bugtasks': hot_bugs}
+        return {'has_more_bugs': has_more_bugs, 'bugtasks': hot_bugtasks}
 
 
 class BugTargetBugTagsView(LaunchpadView):
