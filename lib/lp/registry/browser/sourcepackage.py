@@ -18,9 +18,10 @@ __all__ = [
 
 from apt_pkg import ParseSrcDepends
 from cgi import escape
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
-from zope.formlib.form import Fields, FormFields
+from zope.formlib.form import Fields
 from zope.interface import Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import (
@@ -32,6 +33,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.widgets import LaunchpadRadioWidget
 
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
@@ -40,6 +42,9 @@ from lp.answers.browser.questiontarget import (
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
@@ -139,13 +144,101 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
         return Link('+gethelp', 'Help and support options', icon='info')
 
 
-class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
+class SourcePackageChangeUpstreamStepOne(StepView):
     """A view to set the `IProductSeries` of a sourcepackage."""
-    schema = ISourcePackage
-    field_names = ['productseries']
+    schema = IProductSeries
+    _field_names = ['product']
 
+    step_name = 'sourcepackage_change_upstream_step1'
+    template = ViewPageTemplateFile(
+        '../templates/sourcepackage-edit-packaging.pt')
     label = 'Link to an upstream project'
     page_title = label
+    step_description = 'Choose project'
+    product = None
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    def main_action(self, data):
+        """See `MultiStepView`."""
+        self.next_step = SourcePackageChangeUpstreamStepTwo
+        self.request.form['product'] = data['product']
+
+
+class SourcePackageChangeUpstreamStepTwo(StepView):
+    """A view to set the `IProductSeries` of a sourcepackage."""
+    schema = IProductSeries
+    _field_names = ['product']
+
+    step_name = 'sourcepackage_change_upstream_step2'
+    template = ViewPageTemplateFile(
+        '../templates/sourcepackage-edit-packaging.pt')
+    label = 'Link to an upstream project'
+    page_title = label
+    step_description = 'Choose project series'
+    product = None
+
+    custom_widget('productseries', LaunchpadRadioWidget)
+    #custom_widget(
+    #    'upstream', LaunchpadRadioWidget, orientation='vertical')
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    def setUpFields(self):
+        super(SourcePackageChangeUpstreamStepTwo, self).setUpFields()
+        # Vocabulary for the productseries field.
+        product_name = self.request.form['field.product']
+        self.product = getUtility(IProductSet)[product_name]
+        series_list = [
+            series for series in self.product.series
+            if series.status in (
+                SeriesStatus.DEVELOPMENT, SeriesStatus.CURRENT)
+            ]
+        dev_focus = self.product.development_focus
+        if dev_focus in series_list:
+            series_list.remove(dev_focus)
+        vocab_terms = [
+            SimpleTerm(series, series.name, series.name)
+            for series in series_list
+            ]
+        vocab_terms.insert(
+            0,
+            SimpleTerm(
+                dev_focus, dev_focus, "%s (Recommended)" % dev_focus.name))
+
+        choice = Choice(
+            __name__='productseries',
+            title=_("Series"),
+            description=_("The series in this project."),
+            vocabulary=SimpleVocabulary(vocab_terms),
+            required=True)
+        field = Fields(choice, render_context=self.render_context)
+        self.form_fields = self.form_fields + field
+
+
+    @action(_("Change"), name="change")
+    def change(self, action, data):
+        productseries = data['productseries']
+        if self.context.productseries == productseries:
+            # There is nothing to do.
+            return
+        self.context.setPackaging(productseries, self.user)
+        self.request.response.addNotification('Upstream link updated.')
+        self.next_url = canonical_url(self.context)
+
+
+class SourcePackageChangeUpstreamView(MultiStepView):
+    """A view to set the `IProductSeries` of a sourcepackage."""
+    page_title = SourcePackageChangeUpstreamStepOne.page_title
+    total_steps = 2
+    first_step = SourcePackageChangeUpstreamStepOne
+
+
+class Foo:
 
     @property
     def cancel_url(self):
@@ -159,7 +252,7 @@ class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
         super(SourcePackageChangeUpstreamView, self).setUpFields()
         field = copy_field(ISourcePackage['productseries'], required=True)
         self.form_fields = self.form_fields.omit('productseries')
-        self.form_fields = self.form_fields + FormFields(field)
+        self.form_fields = self.form_fields + Fields(field)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`.
