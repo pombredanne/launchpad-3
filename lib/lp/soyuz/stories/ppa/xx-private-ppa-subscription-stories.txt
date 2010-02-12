@@ -245,7 +245,7 @@ subscription is displayed.
     >>> print(extract_text(regeneration_info))
     Reset password
     If you believe...
-    Reset password
+    Reset Password
     Note: after ...
 
 When Joe clicks on the 'Generate new personal subscription' link then

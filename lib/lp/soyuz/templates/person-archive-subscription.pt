@@ -56,7 +56,7 @@
       </p>
       <form action="" method="post">
         <button type="submit" name="regenerate" value="1">
-          Reset password
+          Reset Password
         </button>
       </form>
       <p class="discreet">
