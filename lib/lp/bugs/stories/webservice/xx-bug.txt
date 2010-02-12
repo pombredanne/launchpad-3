@@ -676,7 +676,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
     ...
     Location: http://.../bugs/.../nominations/...
     ...
-  
+
     >>> nominations = webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
     >>> pprint_collection(nominations)
@@ -699,7 +699,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
 John cannot approve or decline the nomination.
 
     >>> nom_url = nominations['entries'][0]['self_link']
-    
+
     >>> print john_webservice.named_get(nom_url, 'canApprove').jsonBody()
     False
 
@@ -715,9 +715,9 @@ John cannot approve or decline the nomination.
     >>> logout()
 
 Eric, however, can and does decline the nomination.
-    
+
     >>> eric_webservice = webservice_for_person(
-    ...     eric, permission=OAuthPermission.WRITE_PRIVATE)    
+    ...     eric, permission=OAuthPermission.WRITE_PRIVATE)
     >>> print eric_webservice.named_post(nom_url, 'decline')
     HTTP/1.1 200 Ok...
 
@@ -1643,8 +1643,8 @@ a given device.
     >>> for bugtask in bugtasks:
     ...     print bugtask['self_link']
     http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
-    
-    
+
+
 User related bug tasks
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1690,10 +1690,10 @@ user:
     True
     >>> int(related['entries'][0]['bug_link'].split('/')[-1]) == testbug2.id
     True
-    
+
 `testuser3` is not active, so the collection of related tasks to him is
 empty:
-    
+
     >>> related = webservice.named_get(
     ...     '/~testuser3', 'searchTasks'
     ...     ).jsonBody()
@@ -1701,11 +1701,11 @@ empty:
     start: None
     total_size: 0
     ---
-    
+
 You are not allowed to overwrite all user related parameter in the same
 query, because in this case this bug will no be related to the person
 anymore. In this case a `400 Bad Request`-Error will be returned
-    
+
     >>> name12 = webservice.get("/~name12").jsonBody()
     >>> print webservice.named_get(
     ...     '/~name16', 'searchTasks', assignee=name12['self_link'],
