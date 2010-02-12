@@ -11,6 +11,7 @@ __all__ = [
     'ALLOW_RELEASE_BUILDS',
     'AlreadySubscribed',
     'ArchiveDependencyError',
+    'ArchiveDisabled',
     'ArchiveNotPrivate',
     'ArchivePurpose',
     'CannotCopy',
@@ -125,17 +126,14 @@ class VersionRequiresName(Exception):
     webservice_error(400) # Bad request.
 
 
-class CannotUploadToArchive:
+class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
     def __init__(self, **args):
         """Construct a `CannotUploadToArchive`."""
-        self._message = self._fmt % args
-
-    def __str__(self):
-        return self._message
+        Exception.__init__(self, self._fmt % args)
 
 
 class InvalidPocketForPartnerArchive(CannotUploadToArchive):
@@ -148,7 +146,7 @@ class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
 
     def __init__(self, distroseries, pocket):
-        super(CannotUploadToPocket, self).__init__(
+        Exception.__init__(self, 
             "Not permitted to upload to the %s pocket in a series in the "
             "'%s' state." % (pocket.name, distroseries.status.name))
 
@@ -183,13 +181,22 @@ class NoRightsForComponent(CannotUploadToArchive):
         "Signer is not permitted to upload to the component '%(component)s'.")
 
     def __init__(self, component):
-        super(NoRightsForComponent, self).__init__(component=component.name)
+        CannotUploadToArchive.__init__(self, component=component.name)
 
 
 class InvalidPocketForPPA(CannotUploadToArchive):
     """PPAs only support some pockets."""
 
     _fmt = "PPA uploads must be for the RELEASE pocket."
+
+
+class ArchiveDisabled(CannotUploadToArchive):
+    """Uploading to a disabled archive is not allowed."""
+
+    _fmt = ("%(archive_name)s is disabled.")
+
+    def __init__(self, archive_name):
+        CannotUploadToArchive.__init__(self, archive_name=archive_name)
 
 
 class IArchivePublic(IHasOwner, IPrivacy):
@@ -999,8 +1006,8 @@ class IArchiveAppend(Interface):
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
 
-        It will copy the most recent versions of the named sources to
-        the destination archive if necessary.
+        It will copy the most recent PUBLISHED versions of the named
+        sources to the destination archive if necessary.
 
         This operation will only succeeds when all requested packages
         are synchronised between the archives. If any of the requested

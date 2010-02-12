@@ -87,6 +87,10 @@ class RecordingSlave:
         self.ensurepresent(
             libraryfilealias.content.sha1, libraryfilealias.http_url, '', '')
 
+    def sendFileToSlave(self, *args):
+        """Helper to send a file to this builder."""
+        return self.ensurepresent(*args)
+
     def ensurepresent(self, *args):
         """Download files needed for the build."""
         self.calls.append(('ensurepresent', args))
@@ -168,7 +172,7 @@ class FailDispatchResult(BaseDispatchResult):
         from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
-        builder.failbuilder(self.info)
+        builder.failBuilder(self.info)
         self._cleanJob(builder.currentjob)
 
 
@@ -243,7 +247,8 @@ class BuilddManager(service.Service):
     def scanFailed(self, error):
         """Deal with scanning failures."""
         self.logger.info(
-            'Scanning failed with: %s' % error.getErrorMessage())
+            'Scanning failed with: %s\n%s' %
+            (error.getErrorMessage(), error.getTraceback()))
         self.finishCycle()
 
     def nextCycle(self):

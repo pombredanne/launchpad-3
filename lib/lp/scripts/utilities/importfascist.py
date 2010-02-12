@@ -59,10 +59,12 @@ warned_database_imports = text_lines_to_set("""
 valid_imports_not_in_all = {
     'cookielib': set(['domain_match']),
     'email.Utils': set(['mktime_tz']),
+    'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),
     'zope.component': set(
         ['adapter',
          'ComponentLookupError',
+         'provideAdapter',
          'provideHandler',
          ]),
     }
@@ -172,11 +174,11 @@ class NotFoundPolicyViolation(JackbootError):
 
 
 # pylint: disable-msg=W0102,W0602
-def import_fascist(module_name, globals={}, locals={}, from_list=[]):
+def import_fascist(module_name, globals={}, locals={}, from_list=[], level=-1):
     global naughty_imports
 
     try:
-        module = original_import(module_name, globals, locals, from_list)
+        module = original_import(module_name, globals, locals, from_list, level)
     except ImportError:
         # XXX sinzui 2008-04-17 bug=277274:
         # import_fascist screws zope configuration module which introspects
@@ -188,7 +190,7 @@ def import_fascist(module_name, globals={}, locals={}, from_list=[]):
         # module.
         if module_name.startswith('zope.app.layers.'):
             module_name = module_name[16:]
-            module = original_import(module_name, globals, locals, from_list)
+            module = original_import(module_name, globals, locals, from_list, level)
         else:
             raise
     # Python's re module imports some odd stuff every time certain regexes

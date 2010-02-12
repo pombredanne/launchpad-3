@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import DatabaseFunctionalLayer
 
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -60,8 +60,6 @@ class TestPermission(TestCaseWithFactory):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
         if distroseries is None:
-            distroseries = archive.distribution.currentseries
-        if distroseries is None:
             distroseries = self.factory.makeDistroSeries(
                 distribution=archive.distribution)
         pocket = PackagePublishingPocket.RELEASE
@@ -84,8 +82,6 @@ class TestPermission(TestCaseWithFactory):
         :param component: The IComponent to which the package belongs.
         :param distroseries: The upload's target distro series.
         """
-        if distroseries is None:
-            distroseries = archive.distribution.currentseries
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
@@ -129,7 +125,7 @@ class TestPermission(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA, owner=person)
         spn = self.factory.makeSourcePackageName()
         distroseries = self.factory.makeDistroSeries(
-            status=DistroSeriesStatus.CURRENT)
+            status=SeriesStatus.CURRENT)
         self.assertCanUpload(
             person, spn, ppa, None, distroseries=distroseries)
 
@@ -238,6 +234,14 @@ class TestPermission(TestCaseWithFactory):
         self.permission_set.newComponentUploader(archive, person, component_b)
         self.assertCanUpload(
             person, spn, archive, component_a, strict_component=False)
+
+    def test_cannot_upload_to_disabled_archive(self):
+        spn = self.factory.makeSourcePackageName()
+        archive = self.factory.makeArchive()
+        removeSecurityProxy(archive).disable()
+        component = self.factory.makeComponent()
+        self.assertCannotUpload(u"%s is disabled." % (archive.displayname),
+            archive.owner, spn, archive, component)
 
 
 def test_suite():

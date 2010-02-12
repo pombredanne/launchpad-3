@@ -17,7 +17,6 @@
     <include file="decoratedresultset.zcml" />
     <include file="emailaddress.zcml" />
     <include file="feeds.zcml" />
-    <include file="hwdb.zcml" />
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />

@@ -18,7 +18,8 @@ HERE:=$(shell pwd)
 LPCONFIG=development
 
 JSFLAGS=
-LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
+ICING=lib/canonical/launchpad/icing
+LP_BUILT_JS_ROOT=${ICING}/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
 
 MINS_TO_SHUTDOWN=15
@@ -111,8 +112,16 @@ inplace: build
 
 build: $(BZR_VERSION_INFO) compile apidoc jsbuild css_combine
 
-css_combine:
+css_combine: sprite_css
 	${SHHH} bin/combine-css
+
+sprite_css: ${LP_BUILT_JS_ROOT}/style-3-0.css
+
+${LP_BUILT_JS_ROOT}/style-3-0.css: ${ICING}/style-3-0.css.in ${ICING}/icon-sprites.positioning
+	${SHHH} bin/sprite-util create-css
+
+sprite_image:
+	${SHHH} bin/sprite-util create-image
 
 jsbuild_lazr:
 	# We absolutely do not want to include the lazr.testing module and its
@@ -126,7 +135,6 @@ jsbuild: jsbuild_lazr
 		-n launchpad \
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
-		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
 
@@ -218,7 +226,7 @@ pull_branches: support_files
 
 scan_branches:
 	# Scan branches from the filesystem into the database.
-	$(PY) cronscripts/branch-scanner.py
+	$(PY) cronscripts/scan_branches.py
 
 
 sync_branches: pull_branches scan_branches mpcreationjobs
@@ -357,9 +365,6 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart
-
-static:
-	$(PY) scripts/make-static.py
 
 TAGS: compile
 	# emacs tags

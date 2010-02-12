@@ -137,6 +137,7 @@
             permission="zope.Public"
             layer="canonical.launchpad.layers.TranslationsLayer"
             name="+portlet-details"
+            class="lp.translations.browser.translationimportqueue.TranslationImportQueueEntryView"
             template="../templates/translationimportqueueentry-portlet-details.pt"/>
         <browser:url
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
@@ -391,9 +392,9 @@
             <browser:page
                 name="+chart"
                 template="../templates/potemplate-chart.pt"/>
-            
+
             <!-- Potemplate Portlets -->
-            
+
             <browser:page
                 name="+portlet-details"
                 template="../templates/potemplate-portlet-details.pt"/>

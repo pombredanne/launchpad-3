@@ -798,7 +798,7 @@ product ID. If we search for bugs related to the PCI device (0x10de,
 0x0455), which appears in a HWDB submission from Sample Person, bugs
 reported by him will be returned.
 
-    >>> from canonical.launchpad.interfaces.hwdb import HWBus
+    >>> from lp.hardwaredb.interfaces.hwdb import HWBus
     >>> search_params = BugTaskSearchParams(
     ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
@@ -902,7 +902,7 @@ Finally, we can search for who bugs which are directly linked to
 a HWDB submission, where the submission contains the given device or
 driver.
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> hw_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
     >>> bug_19 = getUtility(IBugSet).get(19)
@@ -949,6 +949,21 @@ private submission.
     ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
     >>> ubuntu.searchTasks(search_params).count()
     0
+
+== Searching for bugs affecting me ==
+
+The user searching for bugs can search for bugs affecting him.
+
+We search for bugs affecting foo_bar, then check that all the results
+return True for isUserAffected(foo_bar).
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=foo_bar, affects_me=True)
+    >>> print reduce(
+    ...     lambda x, y: x and y,
+    ...     [task.bug.isUserAffected(foo_bar)
+    ...      for task in firefox.searchTasks(search_params)]) 
+    True
 
 
 == Ordering search results ==
@@ -1018,6 +1033,30 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
     19 Bug to be fixed in trunk [1 comments]
+
+
+=== Ordering by bug heat ===
+
+Another way of sorting searches is by bug heat.
+
+    >>> params = BugTaskSearchParams(
+    ...     orderby='id', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for task in ubuntu_tasks:
+    ...     task.bug.setHeat(task.bug.id)
+    >>> transaction.commit()
+    >>> params = BugTaskSearchParams(
+    ...     orderby='-heat', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     bug = bugtask.bug
+    ...     print '%s %s [heat: %s]' % (
+    ...     bug.id, bug.title, bug.heat)
+    19 Bug to be fixed in trunk [heat: 19]
+    10 another test bug [heat: 10]
+    9 Thunderbird crashes [heat: 9]
+    2 Blackhole Trash folder [heat: 2]
+    1 Firefox does not support SVG [heat: 1]
 
 
 == Searching using a flat interface ==

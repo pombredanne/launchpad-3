@@ -66,7 +66,7 @@ from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from lp.soyuz.interfaces.packagecopyrequest import (
@@ -763,7 +763,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             id="displayname", title="Edit the displayname")
         return widget
 
-
     @property
     def sources_list_entries(self):
         """Setup and return the source list entries widget."""
@@ -796,10 +795,12 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
         description = self.context.description
         if description is not None:
-            hide_email = formatter(self.context.description).obfuscate_email()
-            description = formatter(hide_email).text_to_html()
+            description = formatter(description).obfuscate_email()
         else:
             description = ''
+
+        if not (self.context.owner.is_probationary and self.context.is_ppa):
+            description = formatter(description).text_to_html()
 
         return TextAreaEditorWidget(
             self.context,
@@ -1171,7 +1172,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                 continue
             token = '%s/%s' % (ppa.owner.name, ppa.name)
             terms.append(
-                SimpleTerm(ppa, token, ppa.displayname))
+                SimpleTerm(ppa, token, '%s (%s)' % (ppa.displayname, token)))
 
         return form.Fields(
             Choice(__name__='destination_archive',
@@ -1190,7 +1191,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         # it will be probably simpler to use the DistroSeries vocabulary
         # and validate the selected value before copying.
         for series in self.context.distribution.series:
-            if series.status == DistroSeriesStatus.OBSOLETE:
+            if series.status == SeriesStatus.OBSOLETE:
                 continue
             terms.append(
                 SimpleTerm(series, str(series.name), series.displayname))

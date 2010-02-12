@@ -56,3 +56,18 @@ class IBuildFarmJobBehavior(Interface):
         :return: a dict of extra key/values to be included in the result
             of IBuilder.slaveStatus().
         """
+
+    def verifySlaveBuildID(slave_build_id):
+        """Verify that a slave's build ID shows no signs of corruption.
+
+        :param slave_build_id: The slave's build ID, as specified in
+           dispatchBuildToSlave.
+        :raises CorruptBuildID: if the build ID is determined to be corrupt.
+        """
+
+    def updateBuild(queueItem):
+        """Verify the current build job status.
+
+        Perform the required actions for each state.
+        """
+

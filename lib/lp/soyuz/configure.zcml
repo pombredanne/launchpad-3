@@ -28,7 +28,7 @@
             class="canonical.launchpad.database.BinaryPackagePublishingHistory">
             <require
                 permission="launchpad.View"
-                interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
+                interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryPublic"/>
             <require
                 permission="launchpad.Edit"
                 interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
@@ -121,7 +121,7 @@
             class="canonical.launchpad.database.SourcePackagePublishingHistory">
             <require
                 permission="launchpad.View"
-                interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
+                interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryPublic"/>
             <require
                 permission="launchpad.Edit"
                 interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
@@ -260,10 +260,24 @@
             <allow
                 interface="lp.soyuz.interfaces.binarypackagename.IBinaryPackageName"/>
         </class>
-        <utility
+        <securedutility
             name="BinaryPackageName"
             component="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary"
-            provides="zope.schema.interfaces.IVocabularyFactory"/>
+            provides="zope.schema.interfaces.IVocabularyFactory">
+          <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+        </securedutility>
+
+        <class class="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary">
+          <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+        </class>
+
+        <!-- BinaryPackagenameIterator -->
+
+        <class
+            class="lp.soyuz.model.binarypackagename.BinaryPackageNameIterator">
+            <allow
+                interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
+        </class>
 
         <!-- BinaryPackageNameSet -->
 
