@@ -197,8 +197,8 @@ then he'll see a list of his current subscriptions.
     >>> joe_browser.open("http://launchpad.dev/~joesmith")
     >>> joe_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive
-    PPA for Celso Providelo            View
+    Archive      Owner
+    PPA for ...  Celso Providelo  View
 
 When Joe clicks on the View button for Celso's PPA then the
 details of the subscription are displayed with the newly created
@@ -223,8 +223,9 @@ link to view the details.
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive
-    PPA for Celso Providelo     View
+    Archive      Owner
+    PPA for ...  Celso Providelo  View
+
     >>> joe_browser.getLink('View').click()
     >>> print(extract_text(joe_browser.contents))
     Access to PPA for Celso Providelo...
@@ -244,13 +245,12 @@ subscription is displayed.
     >>> print(extract_text(regeneration_info))
     Reset password
     If you believe...
-    Reset password
     Note: after ...
 
 When Joe clicks on the 'Generate new personal subscription' link then
 the page is redisplayed with new sources.list entries and a notification.
 
-    >>> joe_browser.getControl(name='regenerate').click()
+    >>> joe_browser.getControl(name='regenerate_btn').click()
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
     Launchpad has generated the new password you requested for your
@@ -278,7 +278,7 @@ a user Mark who is a member of the Launchpad team,
     >>> transaction.commit()
     >>> logout()
 
-When Mark, a member of the Launchpad team, visits his profile and clicks 
+When Mark, a member of the Launchpad team, visits his profile and clicks
 'View your private PPA subscriptions', then he'll see a list of his current
 subscriptions.
 
@@ -288,8 +288,8 @@ subscriptions.
 
     >>> mark_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(mark_browser.contents)
-    Archive
-    PPA for Celso Providelo            View
+    Archive      Owner
+    PPA for ...  Celso Providelo  View
 
 When Mark clicks on the view button, then he is taken to the page for
 his personal subscription for Celso's private PPA and the newly-created
@@ -314,8 +314,8 @@ link to view the details.
     >>> mark_browser.open(
     ...     "http://launchpad.dev/~mark/+archivesubscriptions")
     >>> print_subscriptions_for_person(mark_browser.contents)
-    Archive
-    PPA for Celso Providelo     View
+    Archive      Owner
+    PPA for ...  Celso Providelo  View
 
     >>> mark_browser.getLink('View').click()
     >>> print(extract_text(mark_browser.contents))
