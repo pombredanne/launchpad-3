@@ -352,11 +352,8 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
     @property
     def has_bugtracker(self):
         """Does the product have a bugtracker set?"""
-        def getTrackerName(bugtracker):
-            if bugtracker is None:
-                return False
-            else:
-                return True
+        if self.context.productseries is None:
+            return False
         product = self.context.productseries.product
         if product.official_malone:
             return True

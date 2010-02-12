@@ -163,3 +163,88 @@ If there are multiple potential matches they are all shown.
     Registered upstream project:
     Lernid...
     Lernid Dev...
+
+
+The view includes a property for determining if the project has a bug
+tracker, though the rules are somewhat complicated.
+
+If the view's package has no productseries set then has_bugtracker is False.
+
+
+    >>> product = factory.makeProduct(name='stinky', displayname='Stinky')
+    >>> productseries = factory.makeProductSeries(
+    ...     name='stinkyseries', product=product)
+    >>> distroseries = factory.makeDistroRelease(name='wonky',
+    ...     distribution=distribution)
+    >>> sourcepackagename = factory.makeSourcePackageName(name='stinkypackage')
+    >>> package = factory.makeSourcePackage(
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+
+    >>> print package.productseries
+    None
+    >>> print view.has_bugtracker
+    False
+
+So let's set the product series so we can do more interesting testing.
+
+    >>> login_person(product.owner)
+    >>> form = {
+    ...     'field.productseries': 'stinky/stinkyseries',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     package, name='+edit-packaging', form=form,
+    ...     principal=product.owner)
+    >>> view.errors
+    []
+    >>> print package.productseries.name
+    stinkyseries
+
+If a product is not part of a project group and its bug tracker is not
+set then the view property is false.
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+
+    >>> print product.official_malone
+    False
+    >>> print product.bugtracker
+    None
+    >>> print view.has_bugtracker
+    False
+
+Having official_malone set results in has_bugtracker being true.
+
+    >>> product.official_malone = True
+    >>> print view.has_bugtracker
+    True
+
+Having a bug_tracker set also results in has_bugtracker being true (a
+bit of a tautology you'd think).
+
+    >>> product.official_malone = False
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> product.bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
+    >>> print view.has_bugtracker
+    True
+
+If the product has no bug tracker and is in a project group with no
+bug tracker then the property is false.
+
+    >>> product.bugtracker = None
+    >>> project = factory.makeProject()
+    >>> print project.bugtracker
+    None
+    >>> product.project = project
+    >>> print view.has_bugtracker
+    False
+
+If the product's project does have a bug tracker then the product
+inherits it.
+
+    >>> login_person(project.owner)
+    >>> project.bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
+    >>> print view.has_bugtracker
+    True

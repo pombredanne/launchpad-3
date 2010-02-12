@@ -48,15 +48,29 @@
               <metal:yes-no
                  use-macro="context/@@+base-layout-macros/yes-no" />
             </dd>
+            <dd title="Series translations auto import"
+                tal:condition="context/getTranslationTemplates"
+                tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
+              Translations:
+              <metal:yes-no
+                 use-macro="context/@@+base-layout-macros/yes-no" />
+            </dd>
           </dl>
 
         </div>
 
         <ul class="horizontal">
           <li>
-            <a
-               tal:attributes="href series/product/menu:overview/packages/fmt:url"
+            <a tal:attributes="href series/product/menu:overview/packages/fmt:url;
+                               class string:sprite info"
                >Show upstream links</a>
+          </li>
+          <li>
+            <a tal:attributes="
+                 href context/menu:overview/edit_packaging/fmt:url;
+                 class string:sprite edit">
+              Change upstream project and series
+            </a>
           </li>
         </ul>
       </tal:has_series>
