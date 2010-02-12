@@ -119,6 +119,73 @@ class VersionRequiresName(Exception):
     webservice_error(400) # Bad request.
 
 
+class CannotUploadToArchive:
+    """A reason for not being able to upload to an archive."""
+
+    _fmt = '%(person)s has no upload rights to %(archive)s.'
+
+    def __init__(self, **args):
+        """Construct a `CannotUploadToArchive`."""
+        self._message = self._fmt % args
+
+    def __str__(self):
+        return self._message
+
+
+class InvalidPocketForPartnerArchive(CannotUploadToArchive):
+    """Partner archives only support some pockets."""
+
+    _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
+
+
+class CannotUploadToPocket(Exception):
+    """Returned when a pocket is closed for uploads."""
+
+    def __init__(self, distroseries, pocket):
+        super(CannotUploadToPocket, self).__init__(
+            "Not permitted to upload to the %s pocket in a series in the "
+            "'%s' state." % (pocket.name, distroseries.status.name))
+
+
+class CannotUploadToPPA(CannotUploadToArchive):
+    """Raised when a person cannot upload to a PPA."""
+
+    _fmt = 'Signer has no upload rights to this PPA.'
+
+
+class NoRightsForArchive(CannotUploadToArchive):
+    """Raised when a person has absolutely no upload rights to an archive."""
+
+    _fmt = (
+        "The signer of this package has no upload rights to this "
+        "distribution's primary archive.  Did you mean to upload to "
+        "a PPA?")
+
+
+class InsufficientUploadRights(CannotUploadToArchive):
+    """Raised when a person has insufficient upload rights."""
+    _fmt = (
+        "The signer of this package is lacking the upload rights for "
+        "the source package, component or package set in question.")
+
+
+class NoRightsForComponent(CannotUploadToArchive):
+    """Raised when a person tries to upload to a component without permission.
+    """
+
+    _fmt = (
+        "Signer is not permitted to upload to the component '%(component)s'.")
+
+    def __init__(self, component):
+        super(NoRightsForComponent, self).__init__(component=component.name)
+
+
+class InvalidPocketForPPA(CannotUploadToArchive):
+    """PPAs only support some pockets."""
+
+    _fmt = "PPA uploads must be for the RELEASE pocket."
+
+
 class IArchivePublic(IHasOwner, IPrivacy):
     """An Archive interface for publicly available operations."""
     id = Attribute("The archive ID.")
@@ -653,23 +720,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
             archive.
         """
 
-    def verifyUpload(person, sourcepackagename, component,
-                      distroseries, strict_component=True):
-        """Can 'person' upload 'sourcepackagename' to this archive ?
-
-        :param person: The `IPerson` trying to upload to the package. Referred to
-            as 'the signer' in upload code.
-        :param sourcepackagename: The source package being uploaded. None if the
-            package is new.
-        :param archive: The `IArchive` being uploaded to.
-        :param component: The `IComponent` that the source package belongs to.
-        :param distroseries: The upload's target distro series.
-        :param strict_component: True if access to the specific component for the
-            package is needed to upload to it. If False, then access to any
-            package will do.
-        :return: CannotUploadToArchive if 'person' cannot upload to the archive,
-            None otherwise.
-        """
 
 
 class IArchiveView(IHasBuildRecords):

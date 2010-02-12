@@ -24,9 +24,9 @@ from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
 from lp.archivepublisher.debversion import Version
-from lp.archiveupload.permission import (CannotUploadToPocket, 
+from lp.archiveupload.permission import (
     CannotUploadToPPA, InsufficientUploadRights, 
-    InvalidPocketForPartnerArchive, InvalidPocketForPPA,
+    InvalidPocketForPPA,
     NoRightsForArchive, NoRightsForComponent)
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
@@ -59,9 +59,11 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, CannotCopy, DistroSeriesNotFound, IArchive, IArchiveSet,
-    IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    ArchivePurpose, CannotCopy, CannotUploadToPocket, DistroSeriesNotFound,
+    IArchive, IArchiveSet, IDistributionArchive, 
+    InvalidPocketForPartnerArchive, InvalidComponent, IPPA, 
+    MAIN_ARCHIVE_PURPOSES, NoSuchPPA, PocketNotFound, 
+    VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -896,6 +898,7 @@ class Archive(SQLBase):
             source_ids,
             archive=self)
 
+    # FROM HERE
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
@@ -953,13 +956,27 @@ class Archive(SQLBase):
             if not distroseries.canUploadToPocket(pocket):
                 return CannotUploadToPocket(distroseries, pocket)
 
-        return self.verifyUpload(
+        return self._verifyUpload(
             person, sourcepackagename, component, distroseries,
             strict_component)
 
-    def verifyUpload(self, person, sourcepackagename, component,
+    def _verifyUpload(self, person, sourcepackagename, component,
                       distroseries, strict_component=True):
-        """See `IArchive`."""
+        """Can 'person' upload 'sourcepackagename' to this archive ?
+
+        :param person: The `IPerson` trying to upload to the package. Referred to
+            as 'the signer' in upload code.
+        :param sourcepackagename: The source package being uploaded. None if the
+            package is new.
+        :param archive: The `IArchive` being uploaded to.
+        :param component: The `IComponent` that the source package belongs to.
+        :param distroseries: The upload's target distro series.
+        :param strict_component: True if access to the specific component for the
+            package is needed to upload to it. If False, then access to any
+            package will do.
+        :return: CannotUploadToArchive if 'person' cannot upload to the archive,
+            None otherwise.
+        """
         # For PPAs...
         if self.is_ppa:
             if not self.canUpload(person):
@@ -1093,6 +1110,8 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
             self, sourcepackagename, person, distroseries)
+
+    # END HERE
 
     def getFileByName(self, filename):
         """See `IArchive`."""
