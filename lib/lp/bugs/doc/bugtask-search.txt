@@ -61,7 +61,7 @@ and in particular, mozilla-firefox in Ubuntu has 'em:
     >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
     >>> ubuntu_firefox_bugs.count() > 0
     True
-    
+
 == Person bugs ==
 
 To get all related tasks to a person call searchTasks() on the person
@@ -72,7 +72,7 @@ object:
     >>> user_bugs = user.searchTasks(None, user=None)
     >>> user_bugs.count() > 0
     True
-    
+
 == Dupes and Conjoined tasks ==
 
 You can set flags to omit duplicates:
@@ -973,7 +973,7 @@ return True for isUserAffected(foo_bar).
     >>> print reduce(
     ...     lambda x, y: x and y,
     ...     [task.bug.isUserAffected(foo_bar)
-    ...      for task in firefox.searchTasks(search_params)]) 
+    ...      for task in firefox.searchTasks(search_params)])
     True
 
 
