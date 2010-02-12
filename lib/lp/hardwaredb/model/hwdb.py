@@ -55,7 +55,7 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.interfaces.hwdb import (
+from lp.hardwaredb.interfaces.hwdb import (
     HWBus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
     HWSubmissionProcessingStatus, IHWDevice, IHWDeviceClass,
     IHWDeviceClassSet, IHWDeviceDriverLink, IHWDeviceDriverLinkSet,

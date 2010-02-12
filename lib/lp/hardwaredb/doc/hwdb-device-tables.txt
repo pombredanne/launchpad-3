@@ -1313,7 +1313,7 @@ package_name is None or the empty string.
 Older HWDriver records may store None as the package name. We can
 retrieve these records by passing None for package_name...
 
-    >>> from canonical.launchpad.database.hwdb import HWDriver
+    >>> from lp.hardwaredb.model.hwdb import HWDriver
     >>> old_driver = HWDriver(package_name=None, name=u'foo', license=None)
     >>> print old_driver.name
     foo
@@ -1486,7 +1486,7 @@ HWDriverSet.all_package_names() returns a list of distinct package
 names. Note that the package name value None (used in older submissions)
 is not included.
 
-    >>> from canonical.launchpad.database.hwdb import HWDriver
+    >>> from lp.hardwaredb.model.hwdb import HWDriver
     >>> store.add(HWDriver(name='foo', package_name=None))
     <HWDriver at...
     >>> for package_name in driver_set.all_package_names():
@@ -1906,7 +1906,7 @@ for the "plain" disk and for the disk driven by the sd driver.
     >>> factory.makeHWSubmissionDevice(
     ...     submission, ide_disk, driver, first_device, 2)
     <HWSubmissionDevice at...
-    >>> from canonical.launchpad.interfaces.hwdb import (
+    >>> from lp.hardwaredb.interfaces.hwdb import (
     ...    HWSubmissionProcessingStatus)
     >>> # We consider only submissions in the status PROCESSED for
     >>> # statistics.
