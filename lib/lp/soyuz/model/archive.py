@@ -24,10 +24,6 @@ from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
 from lp.archivepublisher.debversion import Version
-from lp.archiveupload.permission import (
-    CannotUploadToPPA, InsufficientUploadRights, 
-    InvalidPocketForPPA,
-    NoRightsForArchive, NoRightsForComponent)
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -59,11 +55,12 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, CannotCopy, CannotUploadToPocket, DistroSeriesNotFound,
-    IArchive, IArchiveSet, IDistributionArchive, 
+    ArchivePurpose, CannotCopy, CannotUploadToPPA, CannotUploadToPocket,
+    DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive, 
+    InsufficientUploadRights, InvalidPocketForPPA,
     InvalidPocketForPartnerArchive, InvalidComponent, IPPA, 
-    MAIN_ARCHIVE_PURPOSES, NoSuchPPA, PocketNotFound, 
-    VersionRequiresName, default_name_by_purpose)
+    MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
+    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
