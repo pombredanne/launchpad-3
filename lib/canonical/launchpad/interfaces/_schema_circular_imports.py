@@ -72,7 +72,7 @@ from lp.soyuz.interfaces.queue import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.message import (
     IIndexedMessage, IMessage, IUserToUserEmail)
-    
+
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 
@@ -318,7 +318,7 @@ patch_reference_property(
 patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
-    
+
 IBuildBase['buildstate'].vocabulary = BuildStatus
 
 # IHasBugs
@@ -336,7 +336,7 @@ patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'owner', IPerson)
 patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'affected_user', IPerson)
-    
+
 # IBugTask
 patch_reference_property(IBugTask, 'owner', IPerson)
 
@@ -362,7 +362,7 @@ patch_plain_parameter_type(
     IBug, 'getNominationFor', 'target', IBugTarget)
 patch_plain_parameter_type(
     IBug, 'getNominations', 'target', IBugTarget)
-    
+
 # IFrontPageBugAddForm
 patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
