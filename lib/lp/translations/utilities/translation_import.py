@@ -766,9 +766,10 @@ class POFileImporter(FileImporter):
                 self.pofile.language.displayname, self.potemplate.displayname)
 
             try:
-                person, dummy = personset.createPersonAndEmail(
-                    email, PersonCreationRationale.POFILEIMPORT,
-                    displayname=name, comment=comment)
+                person = personset.ensurePerson(
+                    email, displayname=name,
+                    rationale=PersonCreationRationale.POFILEIMPORT,
+                    comment=comment)
             except InvalidEmailAddress:
                 return None
 
