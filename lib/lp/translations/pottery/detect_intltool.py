@@ -6,6 +6,8 @@
 """Functions to detect if intltool can be used to generate a POT file for the
 package in the current directory."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 __all__ = [
     'check_potfiles_in',
@@ -13,8 +15,6 @@ __all__ = [
     'find_intltool_dirs',
     'find_potfiles_in',
     ]
-
-from __future__ import with_statement
 
 import errno
 import os.path
