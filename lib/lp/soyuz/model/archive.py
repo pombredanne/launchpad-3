@@ -24,8 +24,10 @@ from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
 from lp.archivepublisher.debversion import Version
-from lp.archiveupload.permission import (CannotUploadToPocket,
-    InvalidPocketForPartnerArchive, InvalidPocketForPPA, verify_upload)
+from lp.archiveupload.permission import (CannotUploadToPocket, 
+    CannotUploadToPPA, InsufficientUploadRights, 
+    InvalidPocketForPartnerArchive, InvalidPocketForPPA,
+    NoRightsForArchive, NoRightsForComponent)
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -951,9 +953,43 @@ class Archive(SQLBase):
             if not distroseries.canUploadToPocket(pocket):
                 return CannotUploadToPocket(distroseries, pocket)
 
-        return verify_upload(
-            person, sourcepackagename, self, component, distroseries,
+        return self.verifyUpload(
+            person, sourcepackagename, component, distroseries,
             strict_component)
+
+    def verifyUpload(self, person, sourcepackagename, component,
+                      distroseries, strict_component=True):
+        """See `IArchive`."""
+        # For PPAs...
+        if self.is_ppa:
+            if not self.canUpload(person):
+                return CannotUploadToPPA()
+            else:
+                return None
+
+        if sourcepackagename is not None:
+            # Check whether user may upload because they hold a permission for
+            #   - the given source package directly
+            #   - a package set in the correct distro series that includes the
+            #     given source package
+            source_allowed = self.canUpload(person, sourcepackagename)
+            set_allowed = self.isSourceUploadAllowed(
+                sourcepackagename, person, distroseries)
+            if source_allowed or set_allowed:
+                return None
+
+        if not self.getComponentsForUploader(person):
+            if not self.getPackageSetsForUploader(person):
+                return NoRightsForArchive()
+            else:
+                return InsufficientUploadRights()
+
+        if (component is not None
+            and strict_component
+            and not self.canUpload(person, component)):
+            return NoRightsForComponent(component)
+
+        return None
 
     def canAdministerQueue(self, user, component):
         """See `IArchive`."""
@@ -1027,6 +1063,11 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.deletePackagesetUploader(
             self, person, packageset, explicit)
+
+    def getComponentsForUploader(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.componentsForUploader(self, person)
 
     def getPackagesetsForUploader(self, person):
         """See `IArchive`."""

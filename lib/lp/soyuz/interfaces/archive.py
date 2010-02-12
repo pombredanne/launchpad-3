@@ -544,6 +544,13 @@ class IArchivePublic(IHasOwner, IPrivacy):
             'person' is allowed to upload to.
         """
 
+    def getComponentsForUploader(person):
+        """Return the components that 'person' can upload to this archive.
+
+        :param person: An `IPerson` wishing to upload to an archive.
+        :return: A `set` of `IComponent`s that 'person' can upload to.
+        """
+
     @operation_parameters(
         sourcepackagename=TextLine(
             title=_("Source package name"), required=True),
@@ -645,6 +652,25 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: A `ResultSet` of distinct `SourcePackageReleases` for this
             archive.
         """
+
+    def verifyUpload(person, sourcepackagename, component,
+                      distroseries, strict_component=True):
+        """Can 'person' upload 'sourcepackagename' to this archive ?
+
+        :param person: The `IPerson` trying to upload to the package. Referred to
+            as 'the signer' in upload code.
+        :param sourcepackagename: The source package being uploaded. None if the
+            package is new.
+        :param archive: The `IArchive` being uploaded to.
+        :param component: The `IComponent` that the source package belongs to.
+        :param distroseries: The upload's target distro series.
+        :param strict_component: True if access to the specific component for the
+            package is needed to upload to it. If False, then access to any
+            package will do.
+        :return: CannotUploadToArchive if 'person' cannot upload to the archive,
+            None otherwise.
+        """
+
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
