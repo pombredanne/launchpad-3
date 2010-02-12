@@ -218,14 +218,13 @@ Global search.
 
     >>> print html
     <!DOCTYPE html ...
-    ...
-          <form id="globalsearch" method="get"
-                accept-charset="UTF-8"
-                class="sprite-after search-icon"
-                action="http://launchpad.dev/+search">
-            <input type="search" id="search-text" name="field.text" />
-          </form>
-        </div>
+      <form id="globalsearch" method="get"
+            accept-charset="UTF-8"
+            action="http://launchpad.dev/+search">
+        <input type="search" id="search-text" name="field.text" />
+        <input type="submit" value="" class="icon-only sprite search-icon" />
+      </form>
+    </div>
     ...
 
 Footer.
