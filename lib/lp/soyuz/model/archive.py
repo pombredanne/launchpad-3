@@ -934,12 +934,8 @@ class Archive(SQLBase):
             strict_component=True)
         return reason is None
 
-    def _checkUploadToPocket(self, distroseries, pocket):
-        """Check if uploading to a particular pocket in an archive is possible.
-
-        :param distroseries: A `IDistroSeries`
-        :param pocket: A `PackagePublishingPocket`
-        """
+    def checkUploadToPocket(self, distroseries, pocket):
+        """See `IArchive`."""
         if self.purpose == ArchivePurpose.PARTNER:
             if pocket not in (
                 PackagePublishingPocket.RELEASE,
@@ -959,7 +955,7 @@ class Archive(SQLBase):
     def checkUpload(self, person, distroseries, sourcepackagename, component, 
                     pocket, strict_component=True):
         """See `IArchive`."""
-        reason = self._checkUploadToPocket(distroseries, pocket)
+        reason = self.checkUploadToPocket(distroseries, pocket)
         if reason is not None:
             return reason
         return self._verifyUpload(

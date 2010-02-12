@@ -18,8 +18,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.archiveuploader.permission import (
-    ArchiveDisabled, CannotUploadToArchive, InvalidPocketForPPA)
 from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
     TooNewRecipeFormat)
@@ -34,7 +32,8 @@ from lp.code.model.sourcepackagerecipe import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import (ArchiveDisabled,
+    ArchivePurpose, CannotUploadToArchive, InvalidPocketForPPA)
 from lp.soyuz.interfaces.buildqueue import (
     IBuildQueue)
 from lp.testing import login_person, TestCaseWithFactory

@@ -30,6 +30,7 @@ __all__ = [
     'InsufficientUploadRights',
     'InvalidComponent',
     'InvalidPocketForPartnerArchive',
+    'InvalidPocketForPPA',
     'IPPA',
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
@@ -460,6 +461,13 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param person: An `IPerson` who might be uploading.
         :param suitesourcepackage: An `ISuiteSourcePackage` to be uploaded.
         :return: True if they can, False if they cannot.
+        """
+
+    def checkUploadToPocket(distroseries, pocket):
+        """Check if uploading to a particular pocket in an archive is possible.
+
+        :param distroseries: A `IDistroSeries`
+        :param pocket: A `PackagePublishingPocket`
         """
 
     def checkUpload(person, distroseries, sourcepackagename, component, 
