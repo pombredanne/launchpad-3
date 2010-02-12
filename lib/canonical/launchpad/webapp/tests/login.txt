@@ -38,3 +38,10 @@ the query args preserved.
     >>> import re
     >>> print sorted(re.sub('.*\?', '', url).split('&'))
     ['name=foo', 'searchfor=all']
+
+If we load the +login page while already logged in, it will say we're already
+logged in and ask us to log out if we're somebody else.
+
+    >>> browser.open('http://launchpad.dev:8085/+login')
+    >>> print extract_text(find_main_content(browser.contents))
+    You are already logged in...

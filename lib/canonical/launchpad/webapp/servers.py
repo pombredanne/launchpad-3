@@ -1454,10 +1454,7 @@ def register_launchpad_request_publication_factories():
             'xmlrpc', PublicXMLRPCRequest, PublicXMLRPCPublication)
         ]
 
-    # XXX: Need to hook this up with a different config as we want it running
-    # on the AppServerLayer, and that layer uses devmode=off.
-    #if config.devmode:
-    if True:
+    if config.launchpad.enable_test_openid_provider:
         factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
                               TestOpenIDBrowserPublication))
 

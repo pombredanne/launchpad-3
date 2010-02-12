@@ -151,6 +151,9 @@ class OpenIDLogin(LaunchpadView):
         return Consumer(session, openid_store)
 
     def render(self):
+        if self.account is not None:
+            return AlreadyLoggedInView(self.context, self.request)()
+
         # Allow unauthenticated users to have sessions for the OpenID
         # handshake to work.
         allowUnauthenticatedSession(self.request)
@@ -278,6 +281,12 @@ class OpenIDLoginErrorView(LaunchpadView):
             self.login_error = openid_response.message
         else:
             self.login_error = "Unknown error: %s" % openid_response
+
+
+class AlreadyLoggedInView(LaunchpadView):
+
+    page_title = 'Already logged in'
+    template = ViewPageTemplateFile("../templates/login-already.pt")
 
 
 def logInPrincipal(request, principal, email):
