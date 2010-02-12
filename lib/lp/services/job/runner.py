@@ -388,6 +388,7 @@ class JobCronScript(LaunchpadCronScript):
         self.runner_class = runner_class
 
     def main(self):
+        errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         runner = self.runner_class.runFromSource(job_source, self.logger)
         self.logger.info(
