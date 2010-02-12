@@ -11,9 +11,10 @@ __all__ = [
     'SlaveScanner',
     ]
 
+from debian_bundle.changelog import Version
+
 from zope.component import getUtility
 
-from lp.archivepublisher.debversion import Version
 from lp.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -23,14 +24,10 @@ from lp.services.scripts.base import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 
-# XXX cprov 2009-04-16: This function should live in
-# lp.registry.interfaces.distroseries. It cannot be done right now
-# because we haven't decided if archivepublisher.debversion will be
-# released as FOSS yet.
 def distroseries_sort_key(series):
     """Sort `DistroSeries` by version.
 
-    See `lp.archivepublisher.debversion.Version` for more
+    See `debian_bundle.changelog.Version` for more
     information.
     """
     return Version(series.version)

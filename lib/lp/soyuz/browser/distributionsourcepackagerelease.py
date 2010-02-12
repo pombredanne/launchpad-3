@@ -9,6 +9,7 @@ __all__ = [
     'DistributionSourcePackageReleasePublishingHistoryView',
     ]
 
+from debian_bundle.changelog import Version
 import operator
 
 from zope.component import getUtility
@@ -18,7 +19,6 @@ from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, stepthrough)
-from lp.archivepublisher.debversion import Version
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)

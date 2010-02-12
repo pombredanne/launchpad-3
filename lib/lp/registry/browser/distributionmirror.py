@@ -16,13 +16,13 @@ __all__ = [
     ]
 
 from datetime import datetime
+from debian_bundle.changelog import Version
 import pytz
 
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.event import notify
 from zope.interface import implements
 
-from lp.archivepublisher.debversion import Version
 from canonical.launchpad import _
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)

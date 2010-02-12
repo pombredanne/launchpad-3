@@ -17,7 +17,6 @@ import shutil
 
 from lp.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)
-from lp.archivepublisher.debversion import Version as make_version
 
 
 class DebianInstallerAlreadyExists(CustomUploadError):

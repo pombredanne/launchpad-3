@@ -15,7 +15,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
 
-from lp.archivepublisher.debversion import Version
+from debian_bundle.changelog import Version
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
