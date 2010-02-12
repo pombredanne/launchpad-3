@@ -322,6 +322,15 @@ class FileImporterTestCase(TestCaseWithFactory):
         # The same person will come up for the same address next time.
         self.assertEqual(person, po_importer._getPersonByEmail(test_email))
 
+    def test_getPersonByEmail_bad_address(self):
+        # _getPersonByEmail returns None for malformed addresses.
+        (pot_importer, po_importer) = self._createImporterForExportedEntries()
+        test_email = 'john over at swansea'
+
+        person = po_importer._getPersonByEmail(test_email)
+
+        self.assertEqual(None, person)
+
     def test_FileImporter_importFile_ok(self):
         # Test correct import operation for both
         # exported and published files.

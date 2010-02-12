@@ -758,22 +758,18 @@ class POFileImporter(FileImporter):
             return None
 
         personset = getUtility(IPersonSet)
-        person = personset.getByEmail(email)
 
-        if person is None:
-            # We create a new person, without a password.
-            comment = 'when importing the %s translation of %s' % (
-                self.pofile.language.displayname, self.potemplate.displayname)
+        # We may have to create a new person.  If we do, this is the
+        # rationale.
+        comment = 'when importing the %s translation of %s' % (
+            self.pofile.language.displayname, self.potemplate.displayname)
+        rationale = PersonCreationRationale.POFILEIMPORT
 
-            try:
-                person = personset.ensurePerson(
-                    email, displayname=name,
-                    rationale=PersonCreationRationale.POFILEIMPORT,
-                    comment=comment)
-            except InvalidEmailAddress:
-                return None
-
-        return person
+        try:
+            return personset.ensurePerson(
+                email, displayname=name, rationale=rationale, comment=comment)
+        except InvalidEmailAddress:
+            return None
 
     def importMessage(self, message):
         """See FileImporter."""
