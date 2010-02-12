@@ -14,10 +14,39 @@ __all__ = [
     'find_potfiles_in',
     ]
 
+from __future__ import with_statement
+
 import errno
 import os.path
 import re
 from subprocess import call
+
+
+class ReadLockTree(object):
+    """Context manager to claim a read lock on a bzr tree."""
+
+    def __init__(self, tree):
+        self.tree = tree
+
+    def __enter__(self):
+        self.tree.lock_read()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.tree.unlock()
+        return False
+
+
+def is_intltool_structure(tree):
+    """If the tree may contain an intltool structure."""
+    with ReadLockTree(tree):
+        for dir, files in tree.walkdirs():
+            for afile in files:
+                file_path, file_name, file_type = afile[:3]
+                if file_type != 'file':
+                    continue
+                if file_name == "POTFILES.in":
+                    return True
+    return False
 
 
 def find_potfiles_in():
