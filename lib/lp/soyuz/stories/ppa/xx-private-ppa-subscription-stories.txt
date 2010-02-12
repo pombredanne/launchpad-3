@@ -245,13 +245,12 @@ subscription is displayed.
     >>> print(extract_text(regeneration_info))
     Reset password
     If you believe...
-    Reset Password
     Note: after ...
 
 When Joe clicks on the 'Generate new personal subscription' link then
 the page is redisplayed with new sources.list entries and a notification.
 
-    >>> joe_browser.getControl(name='regenerate').click()
+    >>> joe_browser.getControl(name='regenerate_btn').click()
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
     Launchpad has generated the new password you requested for your
