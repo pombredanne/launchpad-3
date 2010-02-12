@@ -3,7 +3,7 @@ Logging in using the TestOpenID provider
 ========================================
 
 A user with an existing account may log into Launchpad using the OpenID
-provider available on testopenid.launchpad.dev.
+provider available on testopenid.dev.
 
 First we will set up the helper view that lets us test the final
 portion of the authentication process:
@@ -25,8 +25,8 @@ checkid_setup request, sending the user to Launchpad:
     >>> request = consumer.beginWithoutDiscovery(
     ...     make_identifier_select_endpoint())
     >>> browser.open(request.redirectURL(
-    ...     'http://testopenid.launchpad.dev/',
-    ...     'http://testopenid.launchpad.dev/+echo'))
+    ...     'http://testopenid.dev/',
+    ...     'http://testopenid.dev/+echo'))
 
 At this point, the user is presented with a login form:
 
@@ -53,12 +53,12 @@ the relying party, with the user's identity URL:
     >>> browser.getControl(name='field.password').value = 'test'
     >>> browser.getControl('Continue').click()
     >>> print browser.url
-    http://testopenid.launchpad.dev/+echo?...
+    http://testopenid.dev/+echo?...
     >>> info = complete_from_browser(consumer, browser)
     >>> print info.status
     success
     >>> print info.endpoint.claimed_id
-    http://testopenid.launchpad.dev/+id/mark_oid
+    http://testopenid.dev/+id/mark_oid
 
     # Clean up the changes we did to the openid module.
     >>> setDefaultFetcher(None)
