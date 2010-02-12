@@ -205,14 +205,21 @@ class TestDetectIntltoolInBzrTree(TestCase, SetupTestPackageMixin):
         os.system("bzr commit -m Initial")
         return WorkingTree.open(".")
 
-    def test_detect_potfiles_in(self):
+    def test_detect_intltool_structure(self):
         # Find POTFILES.in in a package with multiple dirs when only one has
         # POTFILES.in.
         self.prepare_package("intltool_POTFILES_in_1")
         tree = self.prepare_tree()
         self.assertTrue(is_intltool_structure(tree))
 
-    def test_detect_potfiles_in_module(self):
+    def test_detect_no_intltool_structure(self):
+        # No POTFILES.in detected as not containing intltool_structure
+        self.prepare_package("intltool_POTFILES_in_1")
+        os.remove("./po-intltool/POTFILES.in")
+        tree = self.prepare_tree()
+        self.assertFalse(is_intltool_structure(tree))
+
+    def test_detect_intltool_structure_module(self):
         # Find POTFILES.in in a package with POTFILES.in at different levels.
         self.prepare_package("intltool_POTFILES_in_2")
         tree = self.prepare_tree()
