@@ -189,16 +189,7 @@ If the view's package has no productseries set then has_bugtracker is False.
 
 So let's set the product series so we can do more interesting testing.
 
-    >>> login_person(product.owner)
-    >>> form = {
-    ...     'field.productseries': 'stinky/stinkyseries',
-    ...     'field.actions.change': 'Change',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     package, name='+edit-packaging', form=form,
-    ...     principal=product.owner)
-    >>> view.errors
-    []
+    >>> package.setPackaging(productseries, product.owner)
     >>> print package.productseries.name
     stinkyseries
 
@@ -216,6 +207,7 @@ set then the view property is false.
 
 Having official_malone set results in has_bugtracker being true.
 
+    >>> login_person(product.owner)
     >>> product.official_malone = True
     >>> print view.has_bugtracker
     True
@@ -224,9 +216,8 @@ Having a bug_tracker set also results in has_bugtracker being true (a
 bit of a tautology you'd think).
 
     >>> product.official_malone = False
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> product.bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
+    >>> bugtracker = factory.makeBugTracker()
+    >>> product.bugtracker = bugtracker
     >>> print view.has_bugtracker
     True
 
@@ -245,6 +236,6 @@ If the product's project does have a bug tracker then the product
 inherits it.
 
     >>> login_person(project.owner)
-    >>> project.bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
+    >>> project.bugtracker = bugtracker
     >>> print view.has_bugtracker
     True
