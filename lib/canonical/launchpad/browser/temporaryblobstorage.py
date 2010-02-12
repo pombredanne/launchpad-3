@@ -43,9 +43,10 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
     @action('Continue', name='FORM_SUBMIT')
     def continue_action(self, action, data):
         uuid = self.store_blob(data['blob'])
-        self.request.response.setHeader('X-Launchpad-Blob-Token', uuid)
-        self.request.response.addInfoNotification(
-            'Your ticket is "%s"' % uuid)
+        if uuid is not None:
+            self.request.response.setHeader('X-Launchpad-Blob-Token', uuid)
+            self.request.response.addInfoNotification(
+                'Your ticket is "%s"' % uuid)
 
     def store_blob(self, blob):
         """Store a blob and return its UUID."""
@@ -53,10 +54,13 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
             uuid = getUtility(ITemporaryStorageManager).new(blob)
         except BlobTooLarge:
             self.addError('Uploaded file was too large.')
-        except UploadFailed:
+            return None
+        except UploadFailed, e:
+            import pdb; pdb.set_trace()
             self.addError('File storage unavailable - try again later.')
-
-        # Create ProcessApportBlobJob for the BLOB.
-        blob = getUtility(ITemporaryStorageManager).fetch(uuid)
-        getUtility(IProcessApportBlobJobSource).create(blob)
-        return uuid
+            return None
+        else:
+            # Create ProcessApportBlobJob for the BLOB.
+            blob = getUtility(ITemporaryStorageManager).fetch(uuid)
+            getUtility(IProcessApportBlobJobSource).create(blob)
+            return uuid
