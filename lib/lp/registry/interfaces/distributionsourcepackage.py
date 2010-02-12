@@ -102,7 +102,7 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         """
 
     def get_distroseries_packages(active_only=True):
-        """Return a list of DistroSeriesSourcePackage objects, each 
+        """Return a list of DistroSeriesSourcePackage objects, each
         representing this same source package in the series of this
         distribution.
 

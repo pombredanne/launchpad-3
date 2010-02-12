@@ -391,7 +391,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getDistroArchSeriesByProcessor(processor):
         """Return the distroarchseries for this distroseries with the
         given architecturetag from a `IProcessor`.
-        
+
         :param processor: An `IProcessor`
         :return: An `IDistroArchSeries` or None when none was found.
         """

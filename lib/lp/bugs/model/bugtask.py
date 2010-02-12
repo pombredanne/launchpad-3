@@ -139,11 +139,11 @@ def bugtask_sort_key(bugtask):
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
         distroseries_name, sourcepackage_name)
-    
+
 def get_related_bugtasks_search_params(user, context, **kwargs):
     """Returns a list of `BugTaskSearchParams` which can be used to
     search for all tasks related to a user given by `context`.
-    
+
     Which tasks are related to a user?
       * the user has to be either assignee or owner of this tasks
         OR
