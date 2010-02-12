@@ -236,7 +236,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 ProcessApportBlobJobSource jobs.\n', stderr)
+            'INFO    Ran 1 IProcessApportBlobJobSource jobs.\n', stderr)
 
 
 class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
