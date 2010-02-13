@@ -132,7 +132,7 @@ DistroSourcePackage).
 
     >>> from canonical.encoding import ascii_smash
     >>> print ascii_smash(request_token2.context.title)
-    "cevolution" package in Ubuntu
+    evolution package in Ubuntu
 
 
 Retrieving request tokens
