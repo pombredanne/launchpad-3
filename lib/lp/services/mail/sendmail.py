@@ -27,7 +27,6 @@ __all__ = [
 
 
 import hashlib
-import sets
 
 from binascii import b2a_qp
 from email.Encoders import encode_base64
