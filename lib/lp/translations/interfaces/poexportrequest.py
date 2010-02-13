@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -18,10 +18,15 @@ from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
+
+
 class IPOExportRequestSet(Interface):
     entry_count = Int(
         title=u'Number of entries waiting in the queue.',
         required=True, readonly=True)
+
+    def estimateBacklog():
+        """Return approximate age of oldest request on the export queue."""
 
     def addRequest(person, potemplates=None, pofiles=None,
                    format=TranslationFileFormat.PO):

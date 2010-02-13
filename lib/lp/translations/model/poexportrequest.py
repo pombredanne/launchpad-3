@@ -1,14 +1,18 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
-__all__ = ('POExportRequestSet', 'POExportRequest')
+__all__ = [
+    'POExportRequest',
+    'POExportRequestSet',
+    ]
 
 from sqlobject import ForeignKey
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
@@ -19,6 +23,8 @@ from lp.translations.interfaces.poexportrequest import (
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -28,7 +34,17 @@ class POExportRequestSet:
     @property
     def entry_count(self):
         """See `IPOExportRequestSet`."""
-        return POExportRequest.select().count()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        return store.find(POExportRequest, True).count()
+
+    def estimateBacklog(self):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        row = store.execute(
+            "SELECT now() - min(date_created) FROM POExportRequest").get_one()
+        if row is None:
+            return None
+        else:
+            return row[0]
 
     def addRequest(self, person, potemplates=None, pofiles=None,
             format=TranslationFileFormat.PO):
