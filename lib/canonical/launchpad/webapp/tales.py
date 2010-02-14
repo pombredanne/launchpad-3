@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces import (
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -778,7 +779,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s" />')
+        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
 
     linked_icon_template = (
         '<a href="%s" alt="%s" title="%s" class="%s"></a>')
@@ -828,6 +829,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         """Return whether the bug is linked to a specification."""
         return self._context.bug.specifications.count() > 0
 
+    def _hasPatch(self):
+        """Return whether the bug has a patch."""
+        return self._context.bug.has_patches
+
+
     def badges(self):
 
         badges = []
@@ -854,6 +860,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 milestone_text , "Linked to %s" % milestone_text,
                 "sprite milestone"))
 
+        if self._hasPatch():
+            badges.append(self.icon_template % (
+                "haspatch", "Has a patch", "sprite haspatch-icon"))
+
         # Join with spaces to avoid the icons smashing into each other
         # when multiple ones are presented.
         return " ".join(badges)
@@ -878,6 +888,10 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
     def _hasSpecification(self):
         """See `BugTaskImageDisplayAPI`"""
         return self._context.has_specification
+
+    def _hasPatch(self):
+        """See `BugTaskImageDisplayAPI`"""
+        return self._context.has_patch
 
 
 class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
@@ -1576,6 +1590,13 @@ class PPAFormatterAPI(CustomizableFormatter):
 
     _link_summary_template = '%(display_name)s'
     _link_permission = 'launchpad.View'
+    _reference_template = "ppa:%(owner_name)s/%(ppa_name)s"
+
+    final_traversable_names = {
+        'reference': 'reference',
+        }
+    final_traversable_names.update(
+        CustomizableFormatter.final_traversable_names)
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1604,6 +1625,24 @@ class PPAFormatterAPI(CustomizableFormatter):
                 return '<span class="%s">%s</span>' % (css, summary)
             else:
                 return ''
+
+    def reference(self, view_name=None, rootsite=None):
+        """Return the text PPA reference for a PPA."""
+        # XXX: noodles 2010-02-11 bug=336779: This following check
+        # should be replaced with the normal check_permission once
+        # permissions for archive subscribers has been resolved.
+        if self._context.private:
+            request = get_current_browser_request()
+            person = IPerson(request.principal)
+            subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                person, self._context)
+            if subscriptions.is_empty():
+                return ''
+
+        return self._reference_template % {
+            'owner_name': self._context.owner.name,
+            'ppa_name': self._context.name,
+            }
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
@@ -2998,17 +3037,13 @@ class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
         view/macro:page
-        view/macro:page/onecolumn
-        view/macro:page/applicationhome
-        view/macro:page/pillarindex
-        view/macro:page/freeform
+        view/macro:page/main_side
+        view/macro:page/main_only
+        view/macro:page/searchless
+        view/macro:page/locationless
 
         view/macro:pagehas/applicationtabs
-        view/macro:pagehas/applicationborder
-        view/macro:pagehas/applicationbuttons
         view/macro:pagehas/globalsearch
-        view/macro:pagehas/heading
-        view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
 
         view/macro:pagetype
@@ -3017,7 +3052,6 @@ class PageMacroDispatcher:
 
     implements(ITraversable)
 
-    master = ViewPageTemplateFile('../templates/main-template.pt')
     base = ViewPageTemplateFile('../../../lp/app/templates/base-layout.pt')
 
     def __init__(self, context):
@@ -3054,7 +3088,7 @@ class PageMacroDispatcher:
         if pagetype not in self._pagetypes:
             raise TraversalError('unknown pagetype: %s' % pagetype)
         self.context.__pagetype__ = pagetype
-        return self._template.macros['master']
+        return self.base.macros['master']
 
     def haspage(self, layoutelement):
         pagetype = getattr(self.context, '__pagetype__', None)
@@ -3069,15 +3103,9 @@ class PageMacroDispatcher:
 
         def __init__(self,
             applicationtabs=False,
-            applicationborder=False,
-            applicationbuttons=False,
             globalsearch=False,
-            heading=False,
-            pageheading=True,
             portlets=False,
             pagetypewasset=True,
-            actionsmenu=True,
-            navigationtabs=False
             ):
             self.elements = vars()
 
@@ -3085,107 +3113,24 @@ class PageMacroDispatcher:
             return self.elements[name]
 
     _pagetypes = {
-        'unset':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                pagetypewasset=False),
-        'default':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True),
-        'default2.0':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                navigationtabs=True),
-        'onecolumn':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                navigationtabs=True,
-                portlets=False),
-        'applicationhome':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                applicationtabs=True,
-                globalsearch=True,
-                pageheading=False,
-                heading=True),
-        'pillarindex':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                globalsearch=True,
-                heading=True,
-                pageheading=False,
-                portlets=True),
-        'search':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=False,
-                heading=False,
-                pageheading=False,
-                portlets=False),
-       'freeform':
-            LayoutElements(),
        'main_side':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=True,
-                heading=False,
-                pageheading=False,
                 portlets=True),
        'main_only':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=True,
-                heading=False,
-                pageheading=False,
                 portlets=False),
        'searchless':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=False,
-                heading=False,
-                pageheading=False,
                 portlets=False),
        'locationless':
             LayoutElements(),
         }
-
-    _3_0_pagetypes = [
-        'main_side',
-        'main_only',
-        'searchless',
-        'locationless',
-        ]
-
-    @property
-    def _template(self):
-        """Return the ViewPageTemplateFile used by layout."""
-        if self.context.__pagetype__ in self._3_0_pagetypes:
-            return self.base
-        else:
-            return self.master
 
 
 class TranslationGroupFormatterAPI(ObjectFormatterAPI):
@@ -3193,7 +3138,7 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link',
-        'url': 'url', 
+        'url': 'url',
         'displayname': 'displayname',
     }
 

@@ -394,8 +394,6 @@ launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
-launchpad_forgottenpassword = 'Need a new Launchpad password?'
-
 # launchpad_css is a css file
 
 # launchpad_js is standard javascript
@@ -516,13 +514,6 @@ def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
     return 'Invalid OpenID identity %s' % view.openid_request.identity
 
-openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
-
-openidrpconfig_edit = ContextDisplayName(
-    'Edit Relying Party Configuration for %s')
-
-openidrpconfigset_index = 'OpenID Relying Party Configurations'
-
 def package_bugs(context, view):
     """Return the page title bug in a package."""
     return 'Bugs in %s' % context.name
@@ -534,10 +525,6 @@ def people_list(context, view):
     return view.header
 
 people_mergerequest_sent = 'Merge request sent'
-
-people_requestmerge = 'Merge Launchpad accounts'
-
-people_requestmerge_multiple = 'Merge Launchpad accounts'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')

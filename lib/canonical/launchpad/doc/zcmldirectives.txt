@@ -151,7 +151,7 @@ Next, a functional/integration test of the overridden directive.
     ...     for="canonical.launchpad.ftests.IFoo"
     ...     name="+mandrill"
     ...     permission="zope.Public"
-    ...     template="templates/main-template.pt"
+    ...     template="../../lp/app/templates/base-layout.pt"
     ...     facet="another-mister-lizard"
     ...     layer="canonical.launchpad.ftests.IFooLayer"
     ...     />
@@ -169,7 +169,7 @@ Next, a functional/integration test of the overridden directive.
     ...     (fooobject, request), name='+mandrill')
 
     >>> print mandrill_view.__class__.__name__
-    SimpleViewClass from ...main-template.pt
+    SimpleViewClass from ...base-layout.pt
     >>> print mandrill_view.__launchpad_facetname__
     another-mister-lizard
 

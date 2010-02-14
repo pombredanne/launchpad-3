@@ -184,6 +184,7 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    task_age
                     bug_subscribers
                     is_complete
                     canTransitionToStatus
@@ -502,7 +503,6 @@
 
             <allow
                 attributes="
-                    bugs
                     bug_links"/>
             <require
                 permission="launchpad.AnyPerson"
@@ -570,7 +570,12 @@
                     is_complete
                     who_made_private
                     date_made_private
-                    userCanView"/>
+                    userCanView
+                    personIsDirectSubscriber
+                    personIsAlsoNotifiedSubscriber
+                    personIsSubscribedToDuplicate
+                    heat
+                    has_patches"/>
             <require
                 permission="launchpad.View"
                 attributes="
@@ -626,6 +631,9 @@
                     users_unaffected_count
                     readonly_duplicateof
                     users_affected
+                    users_unaffected
+                    users_affected_count_with_dupes
+                    users_affected_with_dupes
                     bug_messages
                     isUserAffected
                     getHWSubmissions"/>
@@ -666,7 +674,8 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
-                    setCommentVisibility"/>
+                    setCommentVisibility
+                    setHeat"/>
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
@@ -891,4 +900,15 @@
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
+
+    <!-- CalculateBugHeatJobs -->
+    <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
+        <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
+    </class>
+    <securedutility
+        component="lp.bugs.model.bugheat.CalculateBugHeatJob"
+        provides="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource">
+        <allow
+            interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource"/>
+    </securedutility>
 </configure>

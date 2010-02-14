@@ -50,7 +50,7 @@ from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_collection_of,
+    export_destructor_operation, exported, operation_parameters,
     operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
@@ -399,10 +399,11 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             description=_(
                 "Make this branch visible only to its subscribers.")))
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))
     @export_write_operation()
-    def setPrivate(private):
+    def setPrivate(private, user):
         """Set the branch privacy for this branch."""
 
     # People attributes
@@ -680,10 +681,19 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             required=True,
             readonly=False))
 
+    @export_destructor_operation()
+    def destroySelfBreakReferences():
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted as 
+        well as any items with mandatory references.
+        """
+
     def destroySelf(break_references=False):
         """Delete the specified branch.
 
         BranchRevisions associated with this branch will also be deleted.
+
         :param break_references: If supplied, break any references to this
             branch by deleting items with mandatory references and
             NULLing other references.
@@ -808,7 +818,20 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 
-    def revisions_since(timestamp):
+    def getMainlineBranchRevisions(start_date, end_date=None,
+                                   oldest_first=False):
+        """Return the matching mainline branch revision objects.
+
+        :param start_date: Return revisions that were committed after the
+            start_date.
+        :param end_date: Return revisions that were committed before the
+            end_date
+        :param oldest_first: Defines the ordering of the result set.
+        :returns: A resultset of tuples for
+            (BranchRevision, Revision, RevisionAuthor)
+        """
+
+    def getRevisionsSince(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
     code_is_browseable = Attribute(
@@ -851,6 +874,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         :param launchbag: `ILaunchBag`.
         """
 
+    @export_read_operation()
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 
@@ -1044,6 +1068,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         """
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
+    upgrade_pending = Attribute(
+        "Whether a branch has had an upgrade requested.")
 
     def requestUpgrade():
         """Create an IBranchUpgradeJob to upgrade this branch."""

@@ -550,7 +550,7 @@ access it.
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> login_person(registry_member)

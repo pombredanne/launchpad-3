@@ -6,10 +6,11 @@
 __metaclass__ = type
 
 import cgi
-import urllib
-from datetime import datetime, timedelta
-import md5
+import hashlib
 import random
+import urllib
+
+from datetime import datetime, timedelta
 
 from BeautifulSoup import UnicodeDammit
 
@@ -31,6 +32,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
@@ -58,7 +60,7 @@ class UnauthorizedView(SystemErrorView):
         # to render the read-only failure screen so the user knows their
         # request failed for operational reasons rather than a genuine
         # permission problem.
-        if config.launchpad.read_only:
+        if is_read_only():
             # Our context is an Unauthorized exception, which acts like
             # a tuple containing (object, attribute_requested, permission).
             lp_permission = getUtility(ILaunchpadPermission, self.context[2])
@@ -161,7 +163,7 @@ class CaptchaMixin:
         expected = self.request.form.get(self.captcha_hash)
         submitted = self.request.form.get(self.captcha_submission)
         if expected is not None and submitted is not None:
-            return md5.new(submitted).hexdigest() == expected
+            return hashlib.md5(submitted).hexdigest() == expected
         return False
 
     @cachedproperty
@@ -181,7 +183,7 @@ class CaptchaMixin:
 
         The hash is the value we put in the form for later comparison.
         """
-        return md5.new(str(self.captcha_answer)).hexdigest()
+        return hashlib.md5(str(self.captcha_answer)).hexdigest()
 
     @property
     def captcha_problem(self):
@@ -550,6 +552,7 @@ class ForgottenPasswordPage(CaptchaMixin):
     submitted = False
     captcha_submission = 'captcha_submission'
     captcha_hash = 'captcha_hash'
+    page_title = 'Need a new Launchpad password?'
 
     def process_form(self):
         request = self.request

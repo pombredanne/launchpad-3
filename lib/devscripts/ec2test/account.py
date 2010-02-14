@@ -24,6 +24,8 @@ VALID_AMI_OWNERS = (
     255383312499, # gary
     559320013529, # flacoste
     200337130613, # mwhudson
+    889698597288, # henninge
+    366009196755, # salgado
     # ...anyone else want in on the fun?
     )
 

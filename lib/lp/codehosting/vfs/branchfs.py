@@ -50,6 +50,7 @@ __all__ = [
     'AsyncLaunchpadTransport',
     'BadUrl',
     'BadUrlLaunchpad',
+    'BadUrlScheme',
     'BadUrlSsh',
     'branch_id_to_path',
     'BranchPolicy',
@@ -83,7 +84,6 @@ from zope.interface import implements, Interface
 
 from lp.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient, trap_fault)
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
@@ -109,6 +109,7 @@ class BadUrlLaunchpad(BadUrl):
 
 class BadUrlScheme(BadUrl):
     """Found a URL with an untrusted scheme."""
+
     def __init__(self, scheme, url):
         BadUrl.__init__(self, scheme, url)
         self.scheme = scheme
@@ -281,7 +282,7 @@ class BranchTransportDispatch:
         self._checkPath(trailing_path)
         transport = self.base_transport.clone(branch_id_to_path(data['id']))
         try:
-            ensure_base(transport)
+            transport.create_prefix()
         except TransportNotPossible:
             # Silently ignore TransportNotPossible. This is raised when the
             # base transport is read-only.
@@ -339,7 +340,7 @@ class TransportDispatch:
             configured to use the given default stacked-on location.
         """
         memory_server = MemoryServer()
-        memory_server.setUp()
+        memory_server.start_server()
         transport = get_transport(memory_server.get_url())
         if default_stack_on == '':
             return transport
@@ -377,7 +378,7 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         """
         AsyncVirtualServer.__init__(self, scheme)
         self._authserver = BranchFileSystemClient(authserver, user_id)
-        self._is_set_up = False
+        self._is_start_server = False
 
     def translateVirtualPath(self, virtual_url_fragment):
         """See `AsyncVirtualServer.translateVirtualPath`.
@@ -428,8 +429,8 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
             scheme, authserver, LAUNCHPAD_SERVICES)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)
 
-    def setUp(self):
-        super(LaunchpadInternalServer, self).setUp()
+    def start_server(self):
+        super(LaunchpadInternalServer, self).start_server()
         try:
             self._transport_dispatch.base_transport.ensure_base()
         except TransportNotPossible:
@@ -438,16 +439,17 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def destroy(self):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
-        self.tearDown()
+        self.stop_server()
 
 
 class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
+
     def __init__(self, scheme, branch_transport):
         AsyncVirtualServer.__init__(self, scheme)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)
 
-    def setUp(self):
-        super(DirectDatabaseLaunchpadServer, self).setUp()
+    def start_server(self):
+        super(DirectDatabaseLaunchpadServer, self).start_server()
         try:
             self._transport_dispatch.base_transport.ensure_base()
         except TransportNotPossible:
@@ -456,7 +458,7 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
     def destroy(self):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
-        self.tearDown()
+        self.stop_server()
 
     def translateVirtualPath(self, virtual_url_fragment):
         """See `AsyncVirtualServer.translateVirtualPath`.

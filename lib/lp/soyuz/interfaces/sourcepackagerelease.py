@@ -200,6 +200,15 @@ class ISourcePackageRelease(Interface):
         :return: the corresponding `IPackageDiff` record.
         """
 
+    def getPackageSize():
+        """Get the size total (in KB) of files comprising this package.
+
+        Please note: empty packages (i.e. ones with no files or with
+        files that are all empty) have a size of zero.
+
+        :return: total size (in KB) of this package
+        """
+
 
 class PackageDiffAlreadyRequestedError(Exception):
     """Raised when an `IPackageDiff` request already exists."""

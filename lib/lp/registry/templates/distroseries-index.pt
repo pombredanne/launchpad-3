@@ -58,9 +58,7 @@
         </div>
 
         <div class="yui-u">
-          <div
-            tal:condition="context/getLatestUploads"
-            tal:replace="structure context/@@+portlet-latestuploads" />
+          <div tal:replace="structure context/@@+portlet-latestuploads" />
         </div>
       </div>
 

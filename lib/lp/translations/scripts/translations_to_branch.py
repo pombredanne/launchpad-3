@@ -9,7 +9,8 @@ __all__ = ['ExportTranslationsToBranch']
 
 import os.path
 from datetime import datetime, timedelta
-from pytz import UTC
+
+import pytz
 
 from zope.component import getUtility
 
@@ -66,7 +67,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         branch = source.translations_branch
         jobsource = getUtility(IRosettaUploadJobSource)
         unfinished_jobs = jobsource.findUnfinishedJobs(
-            branch, since=datetime.now(UTC) - timedelta(days=1))
+            branch, since=datetime.now(pytz.UTC) - timedelta(days=1))
 
         if unfinished_jobs.any():
             raise ConcurrentUpdateError(
@@ -119,7 +120,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
     def _commit(self, source, committer):
         """Commit changes to branch.  Check for race conditions."""
         self._checkForObjections(source)
-        committer.commit(self.commit_message)
+        committer.commit(self.commit_message, txn=self.txn)
 
     def _isTranslationsCommit(self, revision):
         """Is `revision` an automatic translations commit?"""
@@ -130,11 +131,11 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # The bzr timestamp is a float representing UTC-based seconds
         # since the epoch.  It stores the timezone as well, but we can
         # ignore it here.
-        return datetime.fromtimestamp(revision.timestamp, UTC)
+        return datetime.fromtimestamp(revision.timestamp, pytz.UTC)
 
     def _getLatestTranslationsCommit(self, branch):
         """Get date of last translations commit to `branch`, if any."""
-        cutoff_date = datetime.now(UTC) - self.previous_commit_cutoff_age
+        cutoff_date = datetime.now(pytz.UTC) - self.previous_commit_cutoff_age
 
         revno, current_rev = branch.last_revision_info()
         repository = branch.repository
@@ -159,6 +160,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         self._checkForObjections(source)
 
         committer = self._prepareBranchCommit(source.translations_branch)
+        self.logger.debug("Created DirectBranchCommit.")
+        if self.txn:
+            self.txn.commit()
 
         bzr_branch = committer.bzrbranch
 
@@ -185,15 +189,17 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 base_path = os.path.dirname(template.path)
 
                 for pofile in template.pofiles:
-
                     has_changed = (
                         changed_since is None or
                         pofile.date_changed > changed_since)
                     if not has_changed:
                         continue
 
+                    language_code = pofile.getFullLanguageCode()
+                    self.logger.debug("Exporting %s." % language_code)
+
                     pofile_path = os.path.join(
-                        base_path, pofile.getFullLanguageCode() + '.po')
+                        base_path, language_code + '.po')
                     pofile_contents = pofile.export()
 
                     committer.writeFile(pofile_path, pofile_contents)
@@ -210,6 +216,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     template.clearPOFileCache()
 
             if change_count > 0:
+                self.logger.debug("Writing to branch.")
                 self._commit(source, committer)
         finally:
             committer.unlock()
@@ -231,13 +238,14 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 raise
             except Exception, e:
                 items_failed += 1
-                self.logger.error("Failure: %s" % e)
+                message = unicode(e)
+                if message == u'':
+                    message = e.__class__.__name__
+                self.logger.error("Failure: %s" % message)
                 if self.txn:
                     self.txn.abort()
 
             items_done += 1
-            if self.txn:
-                self.txn.begin()
 
         self.logger.info("Processed %d item(s); %d failure(s)." % (
             items_done, items_failed))
@@ -266,8 +274,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         productseries = productseries.order_by(ProductSeries.id)
 
         bzrserver = get_multi_server(write_hosted=True)
-        bzrserver.setUp()
+        bzrserver.start_server()
         try:
             self._exportToBranches(productseries)
         finally:
-            bzrserver.tearDown()
+            bzrserver.stop_server()

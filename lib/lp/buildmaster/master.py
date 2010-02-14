@@ -267,7 +267,7 @@ class BuilddMaster:
                 self._logger.debug(
                     "Creating buildqueue record for %s (%s) on %s"
                     % (name, version, tag))
-                build.createBuildQueueEntry()
+                build.queueBuild()
 
         self.commit()
 
@@ -280,13 +280,10 @@ class BuilddMaster:
             "scanActiveBuilders() found %d active build(s) to check"
             % queueItems.count())
 
+        build_set = getUtility(IBuildSet)
         for job in queueItems:
-            proc = job.archseries.processorfamily
-            try:
-                builders = notes[proc]["builders"]
-            except KeyError:
-                continue
-            builders.updateBuild(job)
+            job.builder.updateBuild(job)
+            self.commit()
 
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""
@@ -309,7 +306,7 @@ class BuilddMaster:
                           % candidates.count())
 
         for job in candidates:
-            uptodate_build = getUtility(IBuildSet).getByBuildID(job.build.id)
+            uptodate_build = getUtility(IBuildSet).getByQueueEntry(job)
             if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
                 continue
             job.score()

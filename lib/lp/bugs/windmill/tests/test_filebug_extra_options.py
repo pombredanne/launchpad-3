@@ -3,16 +3,15 @@
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestFilebugExtras(TestCaseWithFactory):
+class TestFilebugExtras(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = "File bug extra options test"
 
     def test_filebug_extra_options(self):
         """Test the extra options area on +filebug pages.
@@ -20,7 +19,7 @@ class TestFilebugExtras(TestCaseWithFactory):
         This test ensures that, with Javascript enabled, the extra options
         expander starts closed, and contains several fields when opened.
         """
-        client = WindmillTestClient("File bug extra options test")
+        client = self.client
 
         # Open a +filebug page and wait for it to finish loading.
         client.open(url=u'http://bugs.launchpad.dev:8085/firefox/+filebug')
@@ -29,16 +28,17 @@ class TestFilebugExtras(TestCaseWithFactory):
 
         # Search for a possible duplicate.
         client.waits.forElement(
-            id=u'field.title', timeout=constants.FOR_ELEMENT)
-        client.type(text=u'Broken', id=u'field.title')
+            id=u'field.search', timeout=constants.FOR_ELEMENT)
+        client.type(text=u'Broken', id=u'field.search')
         client.waits.forElement(
             id=u'field.actions.search', timeout=constants.FOR_ELEMENT)
         client.click(id=u'field.actions.search')
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forElement(
+            id=u'filebug-form', timeout=constants.FOR_ELEMENT)
 
         # No duplicates were found.
         client.asserts.assertText(
-            xpath=u"//div[@class='top-portlet']//p",
+            id=u'no-similar-bugs',
             validator=u'No similar bug reports were found.')
 
         # Check out the expander.
@@ -46,35 +46,19 @@ class TestFilebugExtras(TestCaseWithFactory):
 
 
 def _test_expander(client):
-    # The collapsible area is present and collapsed.
-    collapsible_area_xpath = (
-        u"//form[@name='launchpadform']"
-        u"//fieldset[contains(.//legend,'Extra options')]")
-    closed_area_xpath = (
-        collapsible_area_xpath +
-        u"/div[@class='collapseWrapper lazr-closed']")
-    opened_area_xpath = (
-        collapsible_area_xpath +
-        u"/div[@class='collapseWrapper lazr-opened']")
-    client.asserts.assertProperty(
-        xpath=collapsible_area_xpath,
-        validator="className|collapsible")
-    client.asserts.assertNode(xpath=closed_area_xpath)
+    extra_opts_form = u"//fieldset[@id='filebug-extra-options']/div"
+    form_closed = u"%s[@class='collapsed']" % extra_opts_form
+    form_opened = u"%s[@class='expanded']" % extra_opts_form
 
-    # The extra options are not visible.
-    client.asserts.assertProperty(
-        xpath=closed_area_xpath,
-        validator='style.height|0px')
-    # Click on the legend and it expands.
-    client.click(
-        xpath=collapsible_area_xpath + u"/legend/a")
-    client.waits.forElement(
-        xpath=opened_area_xpath, timeout=constants.FOR_ELEMENT)
+    # The collapsible area is collapsed and doesn't display.
+    client.asserts.assertNode(xpath=form_closed)
 
-    # The extra options are visible now.
-    client.asserts.assertElemJS(
-        xpath=opened_area_xpath,
-        js='element.style.height != "0px"')
+    # Click to expand the extra options form.
+    client.click(link=u'Extra options')
+
+    # The collapsible area is expanded and does display.
+    client.asserts.assertNode(xpath=form_opened)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

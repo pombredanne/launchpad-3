@@ -104,9 +104,14 @@
       </tal:buildernok>
     </tal:no_job>
 
+    <tal:comment replace="nothing">
+      In the very near future, 'job' will not just be a Build job.
+      The template needs to cope with that as and when new job types are
+      added.
+    </tal:comment>
     <tal:job condition="job">
       <span class="sortkey" tal:content="job/id" />
-      <tal:build define="build job/build">
+      <tal:build define="build job/specific_job/build">
         <tal:visible condition="build/required:launchpad.View">
           <tal:icon replace="structure build/image:icon" />
           Building
@@ -153,10 +158,12 @@
 
       <tal:job condition="job">
         <p class="sprite">Started
-          <span tal:attributes="title job/buildstart/fmt:datetime"
+          <span tal:attributes="title job/job/date_started/fmt:datetime"
                 tal:content="view/current_build_duration/fmt:exactduration"
             /> ago.</p>
-        <tal:visible condition="job/build/required:launchpad.View">
+        <tal:visible
+           define="build job/specific_job/build"
+           condition="build/required:launchpad.View">
           <tal:logtail condition="job/logtail">
             <h3>Buildlog</h3>
             <div tal:content="structure job/logtail/fmt:text-to-html"

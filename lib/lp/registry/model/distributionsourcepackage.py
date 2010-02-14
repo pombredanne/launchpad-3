@@ -22,7 +22,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
@@ -31,8 +31,9 @@ from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.product import IDistributionSourcePackage
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (

@@ -8,7 +8,7 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.translations.browser.distroserieslanguage import (
+from lp.translations.browser.serieslanguage import (
     DistroSeriesLanguageView)
 from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -48,6 +48,9 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         group = self.factory.makeTranslationGroup(
             self.distroseries.distribution.owner, url=None)
         self.distroseries.distribution.translationgroup = group
+        self.view = DistroSeriesLanguageView(
+            self.dsl, LaunchpadTestRequest())
+        self.view.initialize()
         self.assertEquals(self.view.translation_group, group)
 
     def test_translation_team(self):
@@ -66,6 +69,7 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         # Recreate the view because we are using a cached property.
         self.view = DistroSeriesLanguageView(
             self.dsl, LaunchpadTestRequest())
+        self.view.initialize()
         self.assertEquals(self.view.translation_team, translator)
 
 def test_suite():

@@ -24,18 +24,19 @@ from zope.component import getAdapter, getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 from canonical.launchpad import helpers
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.person import Person
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
 from lp.translations.interfaces.potmsgset import (
@@ -69,7 +70,7 @@ from lp.translations.model.translationtemplateitem import (
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
 
-from storm.expr import And, In, Join, LeftJoin, Or, SQL
+from storm.expr import And, Exists, In, Join, LeftJoin, Not, Or, Select, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 
@@ -145,8 +146,8 @@ def _can_edit_translations(pofile, person):
     translation team for the given `IPOFile`.translationpermission and the
     language associated with this `IPOFile`.
     """
-    # Nothing can be edited in read-only mode.
-    if config.launchpad.read_only:
+    if is_read_only():
+        # Nothing can be edited in read-only mode.
         return False
 
     # If the person is None, then they cannot edit
@@ -190,8 +191,8 @@ def _can_add_suggestions(pofile, person):
     any logged-in user for translations in RESTRICTED mode that have a
     translation team assigned.
     """
-    # No suggestions can be added in read-only mode.
-    if config.launchpad.read_only:
+    if is_read_only():
+        # No suggestions can be added in read-only mode.
         return False
 
     if person is None:
@@ -243,6 +244,19 @@ class POFileMixIn(RosettaStats):
             # language, fallback to the most common case, 2.
             forms = 2
         return forms
+
+    def canEditTranslations(self, person):
+        """See `IPOFile`."""
+        return _can_edit_translations(self, person)
+
+    def canAddSuggestions(self, person):
+        """See `IPOFile`."""
+        return _can_add_suggestions(self, person)
+
+    def setOwnerIfPrivileged(self, person):
+        """See `IPOFile`."""
+        if self.canEditTranslations(person):
+            self.owner = person
 
     def getHeader(self):
         """See `IPOFile`."""
@@ -504,10 +518,15 @@ class POFile(SQLBase, POFileMixIn):
     @property
     def contributors(self):
         """See `IPOFile`."""
-        from lp.registry.model.person import Person
+        # Translation credit messages are "translated" by
+        # rosetta_experts.  Shouldn't show up in contributors lists
+        # though.
+        admin_team = getUtility(ILaunchpadCelebrities).rosetta_experts
+
         contributors = Person.select("""
             POFileTranslator.person = Person.id AND
-            POFileTranslator.pofile = %s""" % quote(self),
+            POFileTranslator.person <> %s AND
+            POFileTranslator.pofile = %s""" % sqlvalues(admin_team, self),
             clauseTables=["POFileTranslator"],
             distinct=True,
             # XXX: kiko 2006-10-19:
@@ -516,6 +535,7 @@ class POFile(SQLBase, POFileMixIn):
             # function to the column results and then ignore it -- just
             # like selectAlso does, ironically.
             orderBy=["Person.displayname", "Person.name"])
+
         return contributors
 
     def prepareTranslationCredits(self, potmsgset):
@@ -585,14 +605,6 @@ class POFile(SQLBase, POFileMixIn):
             raise AssertionError(
                 "Calling prepareTranslationCredits on a message with "
                 "unknown credits type '%s'." % credits_type.title)
-
-    def canEditTranslations(self, person):
-        """See `IPOFile`."""
-        return _can_edit_translations(self, person)
-
-    def canAddSuggestions(self, person):
-        """See `IPOFile`."""
-        return _can_add_suggestions(self, person)
 
     def translated(self):
         """See `IPOFile`."""
@@ -1365,14 +1377,6 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.potemplate.translationpermission
 
-    def canEditTranslations(self, person):
-        """See `IPOFile`."""
-        return _can_edit_translations(self, person)
-
-    def canAddSuggestions(self, person):
-        """See `IPOFile`."""
-        return _can_add_suggestions(self, person)
-
     def emptySelectResults(self):
         return POFile.select("1=2")
 
@@ -1520,9 +1524,12 @@ class POFileSet:
     def getDummy(self, potemplate, language):
         return DummyPOFile(potemplate, language)
 
-    def getPOFileByPathAndOrigin(self, path, productseries=None,
-        distroseries=None, sourcepackagename=None):
+    def getPOFilesByPathAndOrigin(self, path, productseries=None,
+                                  distroseries=None, sourcepackagename=None):
         """See `IPOFileSet`."""
+        # Avoid circular imports.
+        from lp.translations.model.potemplate import POTemplate
+
         assert productseries is not None or distroseries is not None, (
             'Either productseries or sourcepackagename arguments must be'
             ' not None.')
@@ -1534,53 +1541,66 @@ class POFileSet:
                 ), ('sourcepackagename and distroseries must be None or not'
                    ' None at the same time.')
 
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        general_conditions = And(
+            POFile.path == path,
+            POFile.potemplate == POTemplate.id)
+
         if productseries is not None:
-            return POFile.selectOne('''
-                POFile.path = %s AND
-                POFile.potemplate = POTemplate.id AND
-                POTemplate.productseries = %s''' % sqlvalues(
-                    path, productseries.id),
-                clauseTables=['POTemplate'])
+            return store.find(POFile, And(
+                general_conditions,
+                POTemplate.productseries == productseries))
         else:
+            distro_conditions = And(
+                general_conditions,
+                POTemplate.distroseries == distroseries)
+
             # The POFile belongs to a distribution and it could come from
             # another package that its POTemplate is linked to, so we first
             # check to find it at IPOFile.from_sourcepackagename
-            pofile = POFile.selectOne('''
-                POFile.path = %s AND
-                POFile.potemplate = POTemplate.id AND
-                POTemplate.distroseries = %s AND
-                POFile.from_sourcepackagename = %s''' % sqlvalues(
-                    path, distroseries.id, sourcepackagename.id),
-                clauseTables=['POTemplate'])
+            matches = store.find(POFile, And(
+                distro_conditions,
+                POFile.from_sourcepackagename == sourcepackagename))
 
-            if pofile is not None:
-                return pofile
+            if not matches.is_empty():
+                return matches
 
             # There is no pofile in that 'path' and
             # 'IPOFile.from_sourcepackagename' so we do a search using the
             # usual sourcepackagename.
-            return POFile.selectOne('''
-                POFile.path = %s AND
-                POFile.potemplate = POTemplate.id AND
-                POTemplate.distroseries = %s AND
-                POTemplate.sourcepackagename = %s''' % sqlvalues(
-                    path, distroseries.id, sourcepackagename.id),
-                clauseTables=['POTemplate'])
+            return store.find(POFile, And(
+                distro_conditions,
+                POTemplate.sourcepackagename == sourcepackagename))
 
     def getBatch(self, starting_id, batch_size):
         """See `IPOFileSet`."""
         return POFile.select(
             "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
 
-    def getPOFilesWithTranslationCredits(self):
+    def getPOFilesWithTranslationCredits(self, untranslated=False):
         """See `IPOFileSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        result = store.find(
-                (POFile, POTMsgSet),
-                TranslationTemplateItem.potemplateID == POFile.potemplateID,
-                POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
-                POTMsgSet.msgid_singular == POMsgID.id,
-                In(POMsgID.msgid, POTMsgSet.credits_message_ids))
+        clauses = [
+            TranslationTemplateItem.potemplateID == POFile.potemplateID,
+            POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
+            POTMsgSet.msgid_singular == POMsgID.id,
+            In(POMsgID.msgid, POTMsgSet.credits_message_ids)]
+        if untranslated:
+            message_select = Select(
+                True,
+                And(
+                    TranslationMessage.potmsgsetID == POTMsgSet.id,
+                    TranslationMessage.potemplate == None,
+                    POFile.languageID == TranslationMessage.languageID,
+                    Or(And(
+                        POFile.variant == None,
+                        TranslationMessage.variant == None),
+                       POFile.variant == TranslationMessage.variant),
+                    TranslationMessage.is_current == True),
+                (TranslationMessage))
+            clauses.append(Not(Exists(message_select)))
+        result = store.find((POFile, POTMsgSet), clauses)
         return result.order_by('POFile.id')
 
     def getPOFilesTouchedSince(self, date):

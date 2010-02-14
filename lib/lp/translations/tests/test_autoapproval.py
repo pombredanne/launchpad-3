@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for translation import queue auto-approval.
@@ -18,16 +18,15 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
     SourcePackageName,
     SourcePackageNameSet)
-from lp.services.worlddata.model.language import Language
+from lp.services.worlddata.model.language import Language, LanguageSet
 from lp.translations.model.customlanguagecode import CustomLanguageCode
-from lp.translations.model.potemplate import (
-    POTemplateSet,
-    POTemplateSubset)
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import POTemplateSet, POTemplateSubset
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueue, TranslationImportQueueEntry)
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
@@ -152,8 +151,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
     def _makePOFile(self, language_code):
         """Create a translation file."""
-        file = self.template.newPOFile(
-            language_code, requester=self.product.owner)
+        file = self.template.newPOFile(language_code)
         file.syncUpdate()
         return file
 
@@ -756,9 +754,8 @@ class TestCleanup(TestCaseWithFactory):
         entry.syncUpdate()
 
     def test_cleanUpObsoleteEntries_unaffected_statuses(self):
-        # _cleanUpObsoleteEntries leaves entries in non-terminal states
-        # (Needs Review, Approved, Blocked) alone no matter how old they
-        # are.
+        # _cleanUpObsoleteEntries leaves entries in some states (i.e.
+        # Approved and Blocked) alone no matter how old they are.
         one_year_ago = datetime.now(UTC) - timedelta(days=366)
         entry = self._makeProductEntry()
         entry.potemplate = (
@@ -773,16 +770,12 @@ class TestCleanup(TestCaseWithFactory):
         self.queue._cleanUpObsoleteEntries(self.store)
         self.assertTrue(self._exists(entry_id))
 
-        self._setStatus(entry, RosettaImportStatus.NEEDS_REVIEW, one_year_ago)
-        become_the_gardener(self.layer)
-        self.queue._cleanUpObsoleteEntries(self.store)
-        self.assertTrue(self._exists(entry_id))
-
     def test_cleanUpObsoleteEntries_affected_statuses(self):
         # _cleanUpObsoleteEntries deletes entries in terminal states
         # (Imported, Failed, Deleted) after a few days.  The exact
         # period depends on the state.
         entry = self._makeProductEntry()
+        entry.potemplate = self.factory.makePOTemplate()
         self._setStatus(entry, RosettaImportStatus.IMPORTED, None)
         entry_id = entry.id
 
@@ -795,6 +788,25 @@ class TestCleanup(TestCaseWithFactory):
         become_the_gardener(self.layer)
         self.queue._cleanUpObsoleteEntries(self.store)
         self.assertFalse(self._exists(entry_id))
+
+    def test_cleanUpObsoleteEntries_needs_review(self):
+        # _cleanUpObsoleteEntries cleans up entries in Needs Review
+        # state after a very long wait.
+        entry = self._makeProductEntry()
+        entry.potemplate = self.factory.makePOTemplate()
+        self._setStatus(entry, RosettaImportStatus.NEEDS_REVIEW, None)
+        entry_id = entry.id
+
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        entry.date_status_changed -= timedelta(days=200)
+        entry.syncUpdate()
+
+        become_the_gardener(self.layer)
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
+
 
     def test_cleanUpInactiveProductEntries(self):
         # After a product is deactivated, _cleanUpInactiveProductEntries
@@ -821,12 +833,69 @@ class TestCleanup(TestCaseWithFactory):
         self.queue._cleanUpObsoleteDistroEntries(self.store)
         self.assertTrue(self._exists(entry_id))
 
-        entry.distroseries.status = DistroSeriesStatus.OBSOLETE
+        entry.distroseries.status = SeriesStatus.OBSOLETE
         entry.distroseries.syncUpdate()
 
         become_the_gardener(self.layer)
         self.queue._cleanUpObsoleteDistroEntries(self.store)
         self.assertFalse(self._exists(entry_id))
+
+
+class TestAutoApprovalNewPOFile(TestCaseWithFactory):
+    """Test creation of new `POFile`s in approval."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestAutoApprovalNewPOFile, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.queue = TranslationImportQueue()
+        self.language = LanguageSet().getLanguageByCode('nl')
+
+    def _makeTemplate(self, series):
+        """Create a template."""
+        return POTemplateSubset(productseries=series).new(
+            'test', 'test', 'test.pot', self.product.owner)
+
+    def _makeQueueEntry(self, series):
+        """Create translation import queue entry."""
+        return self.queue.addOrUpdateEntry(
+            "%s.po" % self.language.code, 'contents', True,
+            self.product.owner, productseries=series)
+
+    def test_getGuessedPOFile_creates_POFile(self):
+        # Auto-approval may involve creating POFiles.  The queue
+        # gardener has permissions to do this.  The POFile's owner is
+        # the rosetta_experts team.
+        trunk = self.product.getSeries('trunk')
+        template = self._makeTemplate(trunk)
+        entry = self._makeQueueEntry(trunk)
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+
+        become_the_gardener(self.layer)
+
+        pofile = entry.getGuessedPOFile()
+
+        self.assertIsInstance(pofile, POFile)
+        self.assertNotEqual(rosetta_experts, pofile.owner)
+
+    def test_getGuessedPOFile_creates_POFile_with_credits(self):
+        # When the approver creates a POFile for a template that
+        # has a translation credits message, it also includes a
+        # "translation" for the credits message.
+        trunk = self.product.getSeries('trunk')
+        template = self._makeTemplate(trunk)
+        credits = self.factory.makePOTMsgSet(
+            template, singular='translation-credits', sequence=1)
+
+        entry = self._makeQueueEntry(trunk)
+
+        become_the_gardener(self.layer)
+
+        pofile = entry.getGuessedPOFile()
+
+        credits.getCurrentTranslationMessage(template, self.language)
+        self.assertNotEqual(None, credits)
 
 
 def test_suite():

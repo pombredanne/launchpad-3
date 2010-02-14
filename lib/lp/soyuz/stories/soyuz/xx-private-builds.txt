@@ -51,7 +51,7 @@ can use him to see builds from a buildd-admin perspective.
     ...     IPersonSet).getByName("launchpad-buildd-admins")
     >>> from lp.registry.interfaces.person import (
     ...     TeamMembershipStatus)
-    >>> buildd_admins.addMember(
+    >>> ignored = buildd_admins.addMember(
     ...     name12, reviewer=name12, status=TeamMembershipStatus.APPROVED)
 
     >>> flush_database_updates()

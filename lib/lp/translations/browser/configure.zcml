@@ -69,10 +69,11 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="*"
-        name="+translationmessage-macros"
+        name="+translations-macros"
         facet="translations"
         permission="zope.Public"
-        template="../templates/translationmessage-macros.pt"/>
+        template="../templates/translations-macros.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.translations.interfaces.translationgroup.IHasTranslationGroup"
         facet="translations"
@@ -136,6 +137,7 @@
             permission="zope.Public"
             layer="canonical.launchpad.layers.TranslationsLayer"
             name="+portlet-details"
+            class="lp.translations.browser.translationimportqueue.TranslationImportQueueEntryView"
             template="../templates/translationimportqueueentry-portlet-details.pt"/>
         <browser:url
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
@@ -160,9 +162,8 @@
         attribute_to_parent="distroseries"
         rootsite="translations"/>
     <browser:navigation
-        module="lp.translations.browser.distroserieslanguage"
-        classes="
-            DistroSeriesLanguageNavigation"/>
+        module="lp.translations.browser.serieslanguage"
+        classes="DistroSeriesLanguageNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         name="+index"
@@ -181,7 +182,7 @@
         permission="zope.Public"
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
-        class="lp.translations.browser.distroserieslanguage.DistroSeriesLanguageView"
+        class="lp.translations.browser.serieslanguage.DistroSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <facet
@@ -271,7 +272,7 @@
         attribute_to_parent="productseries"
         rootsite="translations"/>
     <browser:navigation
-        module="lp.translations.browser.productserieslanguage"
+        module="lp.translations.browser.serieslanguage"
         classes="
             ProductSeriesLanguageNavigation"/>
     <browser:defaultView
@@ -291,7 +292,7 @@
         permission="zope.Public"
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
-        class="lp.translations.browser.productserieslanguage.ProductSeriesLanguageView"
+        class="lp.translations.browser.serieslanguage.ProductSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <facet
@@ -391,9 +392,9 @@
             <browser:page
                 name="+chart"
                 template="../templates/potemplate-chart.pt"/>
-            
+
             <!-- Potemplate Portlets -->
-            
+
             <browser:page
                 name="+portlet-details"
                 template="../templates/potemplate-portlet-details.pt"/>
@@ -419,7 +420,7 @@
             name="+admin"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateAdminView"
-            permission="launchpad.Admin"
+            permission="launchpad.TranslationsAdmin"
             template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page

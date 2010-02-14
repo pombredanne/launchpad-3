@@ -133,9 +133,10 @@ And the date_status_changed is newer
     True
 
 Let's change now its status to imported and see what happens. To do it,
-we need to be logged in as an admin.
+we need to be logged in as an admin and set an import target.
 
     >>> login('carlos@canonical.com')
+    >>> entry.pofile = factory.makePOFile('sr')
     >>> entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
 
 The status change updates date_status_changed as well.
@@ -202,6 +203,7 @@ to be imported.
 
 But if that entry is imported, the guessing algorithm works.
 
+    >>> pot_entry.potemplate = factory.makePOTemplate()
     >>> pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> guessed_pofile = po_sr_entry.getGuessedPOFile()
     >>> guessed_pofile is None
@@ -971,11 +973,13 @@ We also need to set an import target.
 
     >>> login('carlos@canonical.com')
     >>> entry1.potemplate = factory.makePOTemplate(
+    ...     name=u"evolution",
     ...     distroseries=hoary_distroseries,
     ...     sourcepackagename=evolution_sourcepackagename)
     >>> entry1.pofile = factory.makePOFile('sr', potemplate=entry1.potemplate)
     >>> entry1.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry2.potemplate = factory.makePOTemplate(
+    ...     name=u"firefox",
     ...     productseries=productseries)
     >>> entry2.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
@@ -1107,8 +1111,8 @@ Current entries in the queue are:
 
     >>> queue = getUtility(ITranslationImportQueue)
     >>> print_queue_entries(queue)
-    hoary evolution | generic-string1    | po/sr.po
-    firefox         | generic-string3    | foo/bar.pot
+    hoary evolution | evolution          | po/sr.po
+    firefox         | firefox            | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
     evolution       | evolution-2.2-test | po/pt_BR.po
     firefox         | None               | foo/bar.po
@@ -1128,8 +1132,8 @@ product. There will be three new entries from the tarball.
 And those new entries in the queue appear in the list.
 
     >>> print_queue_entries(queue)
-    hoary evolution | generic-string1    | po/sr.po
-    firefox         | generic-string3    | foo/bar.pot
+    hoary evolution | evolution          | po/sr.po
+    firefox         | firefox            | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
     evolution       | evolution-2.2-test | po/pt_BR.po
     firefox         | None               | foo/bar.po
@@ -1457,6 +1461,7 @@ by name).
     debian/woody        Woody
     BLOCKED:
     ubuntu/grumpy       Grumpy
+    NEEDS_INFORMATION:
 
 You can also select by status.
 
@@ -1467,8 +1472,7 @@ You can also select by status.
 
 == cleanUpQueue ==
 
-The queue is cleaned up regularly.  This removes entries that are either
-DELETED or IMPORTED and get too old.
+The queue is cleaned up regularly.
 
 Here we start out with an empty queue.
 
@@ -1483,49 +1487,26 @@ nothing to purge, it returns zero.
     0
 
 
-=== Deleted Entries ===
+=== State and Age ===
 
-The user requests an upload, then marks the request as DELETED.
+Entries can be cleaned up because they have been in a specific state for
+at least a specified period of time.
 
-    >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/nl.po', 'hoi', True, rosetta_experts,
-    ...      productseries=evolution_productseries)
-    >>> entry.setStatus(RosettaImportStatus.DELETED, rosetta_experts)
-
-The entry stays on the queue long enough to make it a candidate for
-purging.
-
-    >>> now = datetime.datetime.now(UTC)
-    >>> stale = now - datetime.timedelta(4)
-    >>> entry.date_status_changed = stale
-    >>> flush_database_updates()
-    >>> print_queue_entries(translationimportqueue)
-    evolution   | None        | po/nl.po
-
-The entry is deleted as part of the next cleanup.
-
-    >>> translationimportqueue.cleanUpQueue()
-    1
-
-    >>> print_queue_entries(translationimportqueue)
-
-
-=== Imported Entries ===
-
-The user re-uploads the file after fixing some problem.  This time it is
-imported successfully, ending up in the IMPORTED state.
+For instance, successfully imported entries are cleaned up after a few
+days.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/nl.po', 'hoi', True, rosetta_experts,
     ...      productseries=evolution_productseries)
+    >>> entry.pofile = factory.makePOFile('nl')
     >>> entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> print_queue_entries(translationimportqueue)
     evolution   | None        | po/nl.po
 
-This request, too, is deleted when left in this state for longer than a
-few days.
+Such requests are deleted after a few days.
 
-    >>> entry.date_status_changed = stale
+    >>> delta = datetime.timedelta(days=4)
+    >>> entry.date_status_changed = datetime.datetime.now(UTC) - delta
     >>> flush_database_updates()
     >>> translationimportqueue.cleanUpQueue()
     1
@@ -1534,6 +1515,9 @@ few days.
 
 
 === Deactivated Products ===
+
+Another reason for deleting entries is that they belong to products that
+have been deactivated.
 
 A user sets up Jokosher for translation, and uploads a template.
 

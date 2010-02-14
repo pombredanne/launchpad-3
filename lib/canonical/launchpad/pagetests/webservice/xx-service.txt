@@ -56,6 +56,77 @@ web service:
     HTTP/1.1 404 Not Found
     ...
 
+== Anonymous requests ==
+
+A properly signed web service request whose OAuth token key is empty
+is treated as an anonymous request.
+
+    >>> root = 'http://api.launchpad.dev/beta'
+    >>> body = anon_webservice.get(root).jsonBody()
+    >>> print body['projects_collection_link']
+    http://api.launchpad.dev/beta/projects
+    >>> print body['me_link']
+    http://api.launchpad.dev/beta/people/+me
+
+Normally, Launchpad will reject any call made with an unrecognized
+consumer key, because access tokens are registered with specific
+consumer keys.
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     LaunchpadWebServiceCaller)
+    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
+
+    >>> caller = LaunchpadWebServiceCaller('new-consumer', 'access-key')
+    >>> response = caller.get(root)
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    Unknown consumer (new-consumer).
+    ...
+
+But with anonymous access there is no registration step. The first
+time Launchpad sees a consumer key might be during an
+anonymous request, and it can't reject that request just because it
+doesn't recognize the client.
+
+    >>> login(ANONYMOUS)
+    >>> consumer_set = getUtility(IOAuthConsumerSet)
+    >>> print consumer_set.getByKey('another-new-consumer')
+    None
+    >>> logout()
+
+    >>> caller = LaunchpadWebServiceCaller('another-new-consumer', '')
+    >>> response = caller.get(root)
+    >>> print response.getheader('status')
+    200 Ok
+
+Launchpad automatically adds new consumer keys it sees to its database.
+
+    >>> login(ANONYMOUS)
+    >>> print consumer_set.getByKey('another-new-consumer').key
+    another-new-consumer
+    >>> logout()
+
+Anonymous requests can't access certain data.
+
+    >>> response = anon_webservice.get(body['me_link'])
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    You need to be logged in to view this URL.
+    ...
+
+Anonymous requests can't change the dataset.
+
+    >>> import simplejson
+    >>> data = simplejson.dumps({'display_name' : "This won't work"})
+    >>> response = anon_webservice.patch(root + "/~salgado",
+    ...     'application/json', data)
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    (<Person at...>, 'displayname', 'launchpad.Edit')
+    ...
 
 == API Requests to other hosts ==
 
@@ -108,3 +179,4 @@ virtual host:
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 401 Unauthorized
     ...
+    Request is missing an OAuth consumer key.

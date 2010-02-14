@@ -1,6 +1,6 @@
 <tr xmlns:tal="http://xml.zope.org/namespaces/tal">
   <td class="icon left">
-    <img alt="" src="/@@/bug" />
+    <span tal:attributes="class context/default_bugtask/image:sprite_css" />
   </td>
   <td>
     <div>

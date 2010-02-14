@@ -824,6 +824,9 @@
                 set_schema="lp.registry.interfaces.person.IPersonPublic                                                                         lp.registry.interfaces.person.ITeamPublic"
                 set_attributes="name displayname"/>
             <require
+                permission="launchpad.Moderate"
+                interface="lp.registry.interfaces.person.IPersonModerate" />
+            <require
                 permission="launchpad.Commercial"
                 set_schema="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
@@ -897,6 +900,7 @@
             permission="launchpad.Edit"
             attributes="
                 createProductRelease
+                closeBugsAndBlueprints
                 destroySelf"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
@@ -1078,7 +1082,8 @@
                             remote_product screenshotsurl
                             security_contact sourceforgeproject
                             summary title translationgroup
-                            translationpermission wikiurl"/>
+                            translationpermission translation_focus
+                            wikiurl"/>
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
@@ -1370,7 +1375,13 @@
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="displayname title summary description                                                                                         translation_focus translationgroup translationpermission                                                                                         driver members owner security_contact mirror_admin                                                                                         homepage_content icon logo mugshot enable_bug_expiration                                                                                         bug_reporting_guidelines official_blueprints                                                                                         official_malone official_rosetta official_answers                                                                                         official_bug_tags"/>
+            set_attributes="displayname title summary description
+            		    translation_focus translationgroup translationpermission
+                            driver members owner security_contact mirror_admin
+                            homepage_content icon logo mugshot enable_bug_expiration
+                            bug_reporting_guidelines official_blueprints
+                            official_malone official_rosetta official_answers
+                            official_bug_tags"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="language_pack_admin"/>
@@ -1551,6 +1562,11 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
+    <adapter
+        provides="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
+        factory="lp.registry.model.productrelease.productrelease_to_milestone"
+        permission="zope.Public"/>
 
     <!-- This is class ProductReleaseFile -->
 
@@ -1598,15 +1614,18 @@
 
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
-        <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirror" />
+        <allow
+            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorPublic" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name displayname description http_base_url
-                            ftp_base_url rsync_base_url enabled speed
-                            country content official_candidate owner" />
+            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorEditRestricted"
+            set_attributes="name displayname description whiteboard
+                            http_base_url ftp_base_url rsync_base_url enabled
+                            speed country content official_candidate owner" />
         <require
             permission="launchpad.Admin"
-            set_attributes="status whiteboard reviewer date_reviewed"
+            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorAdminRestricted"
+            set_attributes="status reviewer date_reviewed"
             attributes="destroySelf" />
     </class>
 
@@ -1689,4 +1708,15 @@
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
     </securedutility>
+
+    <!-- StructuralSubscription -->
+
+    <class
+        class="lp.registry.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+    </class>
 </configure>

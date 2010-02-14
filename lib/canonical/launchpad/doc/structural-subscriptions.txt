@@ -9,7 +9,7 @@ distribution.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, IProductSet,
     ...     ISourcePackageNameSet)
-    >>> from canonical.launchpad.database.structuralsubscription import (
+    >>> from lp.registry.model.structuralsubscription import (
     ...    StructuralSubscription)
 
     >>> person_set = getUtility(IPersonSet)

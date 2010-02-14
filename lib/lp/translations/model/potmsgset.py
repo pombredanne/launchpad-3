@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -25,6 +25,8 @@ from canonical.launchpad.helpers import shortlist
 from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
@@ -713,14 +715,20 @@ class POTMsgSet(SQLBase):
         is_editor = (force_edition_rights or
                      pofile.canEditTranslations(submitter))
 
-        assert (is_imported or is_editor or
-                pofile.canAddSuggestions(submitter)), (
-                  '%s cannot add translations nor can add suggestions' % (
-                    submitter.displayname))
+        if is_read_only():
+            # This can happen if the request was just in time to slip
+            # past the read-only check before the gate closed.  If it
+            # does, that screws up the privileges checks below since
+            # nobody has translation privileges in read-only mode.
+            raise UnexpectedFormData(
+                "Sorry, Launchpad is in read-only mode right now.")
 
         if is_imported and not is_editor:
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
+
+        assert is_editor or pofile.canAddSuggestions(submitter), (
+            '%s cannot add suggestions here.' % submitter.displayname)
 
         # If not an editor, default to submitting a suggestion only.
         just_a_suggestion = not is_editor
@@ -1053,17 +1061,20 @@ class POTMsgSet(SQLBase):
 
     def setTranslationCreditsToTranslated(self, pofile):
         """See `IPOTMsgSet`."""
-        if self.is_translation_credit:
-            translation = self.getSharedTranslationMessage(pofile.language)
-            if translation is None:
-                translator = pofile.lasttranslator
-                if translator is None:
-                    translator = pofile.owner
-                message = self.updateTranslation(
-                    pofile, translator, [credits_message_str],
-                    is_imported=False, allow_credits=True,
-                    force_shared=True, force_edition_rights=True,
-                    lock_timestamp=datetime.datetime.now(pytz.UTC))
+        if not self.is_translation_credit:
+            return
+
+        if self.getSharedTranslationMessage(pofile.language) is not None:
+            return
+
+        # The credits message has a fixed "translator."
+        translator = getUtility(ILaunchpadCelebrities).rosetta_experts
+
+        message = self.updateTranslation(
+            pofile, translator, [credits_message_str],
+            is_imported=False, allow_credits=True,
+            force_shared=True, force_edition_rights=True,
+            lock_timestamp=datetime.datetime.now(pytz.UTC))
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""

@@ -6,18 +6,23 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
+    'BzrSvnImportWorker',
     'CSCVSImportWorker',
     'CodeImportSourceDetails',
+    'CodeImportWorkerExitCode',
     'ForeignTreeStore',
+    'GitImportWorker',
+    'HgImportWorker',
     'ImportWorker',
-    'get_default_bazaar_branch_store']
+    'get_default_bazaar_branch_store',
+    ]
 
 
 import os
 import shutil
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
+from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 import bzrlib.ui
@@ -25,19 +30,26 @@ from bzrlib.urlutils import join as urljoin
 from bzrlib.upgrade import upgrade
 
 from canonical.cachedproperty import cachedproperty
-from lp.codehosting.bzrutils import ensure_base
+from lp.code.enums import RevisionControlSystems
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
 from lp.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
 from canonical.config import config
-from lp.code.enums import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs
 import CVS
 import SCM
+
+
+class CodeImportWorkerExitCode:
+    """Exit codes used by the code import worker script."""
+
+    SUCCESS = 0
+    FAILURE = 1
+    SUCCESS_NOCHANGE = 2
 
 
 class BazaarBranchStore:
@@ -74,8 +86,12 @@ class BazaarBranchStore:
         return BzrDir.open(target_path).open_workingtree()
 
     def push(self, db_branch_id, bzr_tree, required_format):
-        """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
-        ensure_base(self.transport)
+        """Push up `bzr_tree` as the Bazaar branch for `code_import`.
+
+        :return: A boolean that is true if the push was non-trivial
+            (i.e. actually transferred revisions).
+        """
+        self.transport.create_prefix()
         branch_from = bzr_tree.branch
         target_url = self._getMirrorURL(db_branch_id)
         try:
@@ -83,7 +99,8 @@ class BazaarBranchStore:
         except NotBranchError:
             branch_to = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
-        branch_to.pull(branch_from, overwrite=True)
+        pull_result = branch_to.pull(branch_from, overwrite=True)
+        return pull_result.old_revid != pull_result.new_revid
 
 
 def get_default_bazaar_branch_store():
@@ -105,73 +122,64 @@ class CodeImportSourceDetails:
     :ivar branch_id: The id of the branch associated to this code import, used
         for locating the existing import and the foreign tree.
     :ivar rcstype: 'svn' or 'cvs' as appropriate.
-    :ivar svn_branch_url: The branch URL if rcstype == 'svn', None otherwise.
+    :ivar url: The branch URL if rcstype in ['svn', 'bzr-svn',
+        'git'], None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
     """
 
-    def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
-                 cvs_module=None, git_repo_url=None):
+    def __init__(self, branch_id, rcstype, url=None, cvs_root=None,
+                 cvs_module=None):
         self.branch_id = branch_id
         self.rcstype = rcstype
-        self.svn_branch_url = svn_branch_url
+        self.url = url
         self.cvs_root = cvs_root
         self.cvs_module = cvs_module
-        self.git_repo_url = git_repo_url
 
     @classmethod
     def fromArguments(cls, arguments):
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
-        if rcstype == 'svn':
-            [svn_branch_url] = arguments
-            cvs_root = cvs_module = git_repo_url = None
+        if rcstype in ['svn', 'bzr-svn', 'git', 'hg']:
+            [url] = arguments
+            cvs_root = cvs_module = None
         elif rcstype == 'cvs':
-            svn_branch_url = git_repo_url = None
+            url = None
             [cvs_root, cvs_module] = arguments
-        elif rcstype == 'git':
-            cvs_root = cvs_module = svn_branch_url = None
-            [git_repo_url] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
-        return cls(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            git_repo_url)
+        return cls(branch_id, rcstype, url, cvs_root, cvs_module)
 
     @classmethod
     def fromCodeImport(cls, code_import):
         """Convert a `CodeImport` to an instance."""
+        branch_id = code_import.branch.id
         if code_import.rcs_type == RevisionControlSystems.SVN:
-            rcstype = 'svn'
-            svn_branch_url = str(code_import.svn_branch_url)
-            cvs_root = cvs_module = git_repo_url = None
+            return cls(branch_id, 'svn', str(code_import.url))
+        elif code_import.rcs_type == RevisionControlSystems.BZR_SVN:
+            return cls(branch_id, 'bzr-svn', str(code_import.url))
         elif code_import.rcs_type == RevisionControlSystems.CVS:
-            rcstype = 'cvs'
-            svn_branch_url = git_repo_url = None
-            cvs_root = str(code_import.cvs_root)
-            cvs_module = str(code_import.cvs_module)
+            return cls(
+                branch_id, 'cvs',
+                cvs_root=str(code_import.cvs_root),
+                cvs_module=str(code_import.cvs_module))
         elif code_import.rcs_type == RevisionControlSystems.GIT:
-            rcstype = 'git'
-            svn_branch_url = cvs_root = cvs_module = None
-            git_repo_url = str(code_import.git_repo_url)
+            return cls(branch_id, 'git', str(code_import.url))
+        elif code_import.rcs_type == RevisionControlSystems.HG:
+            return cls(branch_id, 'hg', str(code_import.url))
         else:
-            raise AssertionError("Unknown rcstype %r." % rcstype)
-        return cls(
-            code_import.branch.id, rcstype, svn_branch_url,
-            cvs_root, cvs_module, git_repo_url)
+            raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
 
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
         """
         result = [str(self.branch_id), self.rcstype]
-        if self.rcstype == 'svn':
-            result.append(self.svn_branch_url)
+        if self.rcstype in ['svn', 'bzr-svn', 'git', 'hg']:
+            result.append(self.url)
         elif self.rcstype == 'cvs':
             result.append(self.cvs_root)
             result.append(self.cvs_module)
-        elif self.rcstype == 'git':
-            result.append(self.git_repo_url)
         else:
             raise AssertionError("Unknown rcstype %r." % self.rcstype)
         return result
@@ -209,8 +217,8 @@ class ImportDataStore:
         characters.  For example 'tree.tar.gz' might become '0000a23d.tar.gz'
         or 'git.db' might become '00003e4.db'.
 
-        :param local_name: The local name of the file to be stored.  :return:
-        The name to store the file as on the remote transport.
+        :param local_name: The local name of the file to be stored.
+        :return: The name to store the file as on the remote transport.
         """
         if '/' in local_name:
             raise AssertionError("local_name must be a name, not a path")
@@ -252,7 +260,7 @@ class ImportDataStore:
             source_transport = get_transport('.')
         remote_name = self._getRemoteName(filename)
         local_file = source_transport.get(filename)
-        ensure_base(self._transport)
+        self._transport.create_prefix()
         try:
             self._transport.put_file(remote_name, local_file)
         finally:
@@ -285,7 +293,7 @@ class ForeignTreeStore:
         source_details = self.import_data_store.source_details
         if source_details.rcstype == 'svn':
             return SubversionWorkingTree(
-                source_details.svn_branch_url, str(target_path))
+                source_details.url, str(target_path))
         elif source_details.rcstype == 'cvs':
             return CVSWorkingTree(
                 source_details.cvs_root, source_details.cvs_module,
@@ -362,8 +370,11 @@ class ImportWorker:
             self.required_format)
 
     def pushBazaarWorkingTree(self, bazaar_tree):
-        """Push the updated Bazaar working tree to the server."""
-        self.bazaar_branch_store.push(
+        """Push the updated Bazaar working tree to the server.
+
+        :return: True if revisions were transferred.
+        """
+        return self.bazaar_branch_store.push(
             self.source_details.branch_id, bazaar_tree, self.required_format)
 
     def getWorkingDirectory(self):
@@ -393,13 +404,23 @@ class ImportWorker:
         if os.path.exists(working_directory):
             shutil.rmtree(working_directory)
         os.makedirs(working_directory)
+        saved_pwd = os.getcwd()
         os.chdir(working_directory)
         try:
-            self._doImport()
+            non_trivial = self._doImport()
+            if non_trivial:
+                return CodeImportWorkerExitCode.SUCCESS
+            else:
+                return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
         finally:
             shutil.rmtree(working_directory)
+            os.chdir(saved_pwd)
 
     def _doImport(self):
+        """Perform the import.
+
+        :return: True if the import actually imported some new revisions.
+        """
         raise NotImplementedError()
 
 
@@ -474,25 +495,44 @@ class CSCVSImportWorker(ImportWorker):
         foreign_tree = self.getForeignTree()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
-        self.pushBazaarWorkingTree(bazaar_tree)
+        non_trivial = self.pushBazaarWorkingTree(bazaar_tree)
         self.foreign_tree_store.archive(foreign_tree)
+        return non_trivial
 
 
 class PullingImportWorker(ImportWorker):
-    """An import worker for imports that can be done by a bzr plugin."""
+    """An import worker for imports that can be done by a bzr plugin.
+
+    Subclasses need to implement `format_classes`.
+    """
+
+    @property
+    def format_classes(self):
+        """The format classes that should be tried for this import."""
+        raise NotImplementedError
 
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
+        self.bazaar_branch_store.push(
+            self.source_details.branch_id, bazaar_tree, self.required_format)
         saved_factory = bzrlib.ui.ui_factory
         bzrlib.ui.ui_factory = LoggingUIFactory(
             writer=lambda m: self._logger.info('%s', m))
         try:
-            bazaar_tree.branch.pull(
-                Branch.open(self.source_details.git_repo_url),
-                overwrite=True)
+            transport = get_transport(self.source_details.url)
+            for format_class in self.format_classes:
+                try:
+                    format = format_class.probe_transport(transport)
+                    break
+                except NotBranchError:
+                    pass
+            else:
+                raise NotBranchError(self.source_details.url)
+            foreign_branch = format.open(transport).open_branch()
+            bazaar_tree.branch.pull(foreign_branch, overwrite=True)
         finally:
             bzrlib.ui.ui_factory = saved_factory
-        self.pushBazaarWorkingTree(bazaar_tree)
+        return self.pushBazaarWorkingTree(bazaar_tree)
 
 
 class GitImportWorker(PullingImportWorker):
@@ -500,6 +540,14 @@ class GitImportWorker(PullingImportWorker):
 
     The only behaviour we add is preserving the 'git.db' shamap between runs.
     """
+
+    @property
+    def format_classes(self):
+        """See `PullingImportWorker.opening_format`."""
+        # We only return LocalGitBzrDirFormat for tests.
+        from bzrlib.plugins.git import (
+            LocalGitBzrDirFormat, RemoteGitBzrDirFormat)
+        return [LocalGitBzrDirFormat, RemoteGitBzrDirFormat]
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.
@@ -520,6 +568,59 @@ class GitImportWorker(PullingImportWorker):
         that bzr-git will have created at .bzr/repository/bzr.git into the
         import data store.
         """
-        PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
+        non_trivial = PullingImportWorker.pushBazaarWorkingTree(
+            self, bazaar_tree)
         self.import_data_store.put(
             'git.db', bazaar_tree.branch.repository._transport)
+        return non_trivial
+
+
+class HgImportWorker(PullingImportWorker):
+    """An import worker for Mercurial imports.
+
+    The only behaviour we add is preserving the id-sha map between runs.
+    """
+
+    db_file = 'hg-v2.db'
+
+    @property
+    def format_classes(self):
+        """See `PullingImportWorker.opening_format`."""
+        # We only return HgLocalRepository for tests.
+        from bzrlib.plugins.hg import HgBzrDirFormat
+        return [HgBzrDirFormat]
+
+    def getBazaarWorkingTree(self):
+        """See `ImportWorker.getBazaarWorkingTree`.
+
+        In addition to the superclass' behaviour, we retrieve the 'hg-v2.db'
+        map from the import data store and put it where bzr-hg will find
+        it in the Bazaar tree, that is at '.bzr/repository/hg-v2.db'.
+        """
+        tree = PullingImportWorker.getBazaarWorkingTree(self)
+        self.import_data_store.fetch(
+            self.db_file, tree.branch.repository._transport)
+        return tree
+
+    def pushBazaarWorkingTree(self, bazaar_tree):
+        """See `ImportWorker.pushBazaarWorkingTree`.
+
+        In addition to the superclass' behaviour, we store the 'hg-v2.db' shamap
+        that bzr-hg will have created at .bzr/repository/hg-v2.db into the
+        import data store.
+        """
+        non_trivial = PullingImportWorker.pushBazaarWorkingTree(
+            self, bazaar_tree)
+        self.import_data_store.put(
+            self.db_file, bazaar_tree.branch.repository._transport)
+        return non_trivial
+
+
+class BzrSvnImportWorker(PullingImportWorker):
+    """An import worker for importing Subversion via bzr-svn."""
+
+    @property
+    def format_classes(self):
+        """See `PullingImportWorker.opening_format`."""
+        from bzrlib.plugins.svn.format import SvnRemoteFormat
+        return [SvnRemoteFormat]

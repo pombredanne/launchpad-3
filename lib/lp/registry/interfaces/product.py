@@ -38,7 +38,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
@@ -585,6 +585,14 @@ class IProductPublic(
             title=_("An iterator over the ProductReleases for this product."),
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
+
+    translation_focus = exported(
+        ReferenceChoice(
+            title=_("Translation Focus"), required=False,
+            vocabulary='FilteredProductSeries',
+            schema=IProductSeries,
+            description=_(
+                'The ProductSeries where translations are focused.')))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "

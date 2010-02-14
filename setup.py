@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
@@ -24,9 +24,11 @@ setup(
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
+        'ampoule',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
+        'cssutils',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -37,12 +39,16 @@ setup(
         'lazr.lifecycle',
         'lazr.restful',
         'lazr.smtptest',
+        'lazr.testing',
         'lazr.uri',
         'lazr-js',
         'mechanize',
+        'mercurial',
         'mocker',
         'oauth',
         'paramiko',
+        'python-memcached',
+        'pyasn1',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
@@ -50,7 +56,9 @@ setup(
         'setuptools',
         'sourcecodegen',
         'storm',
+        'testtools',
         'transaction',
+        'Twisted', 
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',

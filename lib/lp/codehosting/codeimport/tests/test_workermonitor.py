@@ -17,18 +17,20 @@ import unittest
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
 
-from twisted.internet import defer, error, protocol, reactor
+from twisted.internet import defer, error, protocol, reactor, task
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
-from lp.code.enums import CodeImportResultStatus, CodeImportReviewStatus
+from lp.code.enums import (
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -36,12 +38,13 @@ from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    CodeImportSourceDetails, get_default_bazaar_branch_store)
+    CodeImportSourceDetails, CodeImportWorkerExitCode,
+    get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, SubversionServer, _make_silent_logger)
+    CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from lp.testing import login, logout
@@ -173,8 +176,7 @@ class TestWorkerMonitorUnit(TrialTestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
         self.worker_monitor._failures = []
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -202,7 +204,7 @@ class TestWorkerMonitorUnit(TrialTestCase):
         def check_source_details(details):
             job = self.worker_monitor.getJob()
             self.assertEqual(
-                details.svn_branch_url, job.code_import.svn_branch_url)
+                details.url, job.code_import.url)
             self.assertEqual(
                 details.cvs_root, job.code_import.cvs_root)
             self.assertEqual(
@@ -291,7 +293,39 @@ class TestWorkerMonitorUnit(TrialTestCase):
 
     def test_callFinishJobCallsFinishJobFailure(self):
         # callFinishJob calls finishJob with CodeImportResultStatus.FAILURE
-        # and swallows the failure if its argument is a Failure.
+        # and swallows the failure if its argument indicates that the
+        # subprocess exited with an exit code of
+        # CodeImportWorkerExitCode.FAILURE.
+        calls = self.patchOutFinishJob()
+        ret = self.worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.FAILURE))
+        self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
+        self.assertOopsesLogged([error.ProcessTerminated])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobSuccessNoChange(self):
+        # If the argument to callFinishJob indicates that the subprocess
+        # exited with a code of CodeImportWorkerExitCode.SUCCESS_NOCHANGE, it
+        # calls finishJob with a status of SUCCESS_NOCHANGE.
+        calls = self.patchOutFinishJob()
+        ret = self.worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.SUCCESS_NOCHANGE))
+        self.assertEqual(calls, [CodeImportResultStatus.SUCCESS_NOCHANGE])
+        self.assertOopsesLogged([])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobArbitraryFailure(self):
+        # If the argument to callFinishJob indicates that there was some other
+        # failure that had nothing to do with the subprocess, it records
+        # failure.
         calls = self.patchOutFinishJob()
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
@@ -324,6 +358,9 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
     """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
     """
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
+
     class WorkerMonitor(CodeImportWorkerMonitor):
         """See `CodeImportWorkerMonitor`.
 
@@ -349,8 +386,7 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
         self.worker_monitor.result_status = None
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -439,6 +475,9 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
+
     def setUp(self):
         BzrTestCase.setUp(self)
         login('no-priv@canonical.com')
@@ -456,8 +495,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
     def makeCVSCodeImport(self):
         """Make a `CodeImport` that points to a real CVS repository."""
         cvs_server = CVSServer(self.repo_path)
-        cvs_server.setUp()
-        self.addCleanup(cvs_server.tearDown)
+        cvs_server.start_server()
+        self.addCleanup(cvs_server.stop_server)
 
         cvs_server.makeModule('trunk', [('README', 'original\n')])
         self.foreign_commit_count = 2
@@ -468,26 +507,50 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
     def makeSVNCodeImport(self):
         """Make a `CodeImport` that points to a real Subversion repository."""
         self.subversion_server = SubversionServer(self.repo_path)
-        self.subversion_server.setUp()
-        self.addCleanup(self.subversion_server.tearDown)
-        svn_branch_url = self.subversion_server.makeBranch(
+        self.subversion_server.start_server()
+        self.addCleanup(self.subversion_server.stop_server)
+        url = self.subversion_server.makeBranch(
+            'trunk', [('README', 'contents')])
+        self.foreign_commit_count = 2
+
+        return self.factory.makeCodeImport(svn_branch_url=url)
+
+    def makeBzrSvnCodeImport(self):
+        """Make a `CodeImport` that points to a real Subversion repository."""
+        self.subversion_server = SubversionServer(
+            self.repo_path, use_svn_serve=True)
+        self.subversion_server.start_server()
+        self.addCleanup(self.subversion_server.stop_server)
+        url = self.subversion_server.makeBranch(
             'trunk', [('README', 'contents')])
         self.foreign_commit_count = 2
 
         return self.factory.makeCodeImport(
-            svn_branch_url=svn_branch_url)
+            svn_branch_url=url, rcs_type=RevisionControlSystems.BZR_SVN)
 
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
         load_optional_plugin('git')
         self.git_server = GitServer(self.repo_path)
-        self.git_server.setUp()
-        self.addCleanup(self.git_server.tearDown)
+        self.git_server.start_server()
+        self.addCleanup(self.git_server.stop_server)
 
         self.git_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImport(git_repo_url=self.repo_path)
+
+    def makeHgCodeImport(self):
+        """Make a `CodeImport` that points to a real Mercurial repository."""
+        load_optional_plugin('hg')
+        self.hg_server = MercurialServer(self.repo_path)
+        self.hg_server.start_server()
+        self.addCleanup(self.hg_server.stop_server)
+
+        self.hg_server.makeRepo([('README', 'contents')])
+        self.foreign_commit_count = 1
+
+        return self.factory.makeCodeImport(hg_repo_url=self.repo_path)
 
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.
@@ -540,7 +603,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         This implementation does it in-process.
         """
         self.layer.switchDbUser('codeimportworker')
-        monitor = CIWorkerMonitorForTesting(job_id, _make_silent_logger())
+        monitor = CIWorkerMonitorForTesting(job_id, QuietFakeLogger())
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
@@ -580,6 +643,24 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
+    def test_import_hg(self):
+        # Create a Mercurial CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeHgCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
+    def test_import_bzrsvn(self):
+        # Create a Subversion-via-bzr-svn CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
 
 class DeferredOnExit(protocol.ProcessProtocol):
 
@@ -592,12 +673,18 @@ class DeferredOnExit(protocol.ProcessProtocol):
         else:
             self._deferred.errback(reason)
 
+
 class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
     """Tests for CodeImportWorkerMonitor that execute a child process."""
 
     def setUp(self):
         TestWorkerMonitorIntegration.setUp(self)
         self._protocol = None
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def performImport(self, job_id):
         """Perform the import job with ID job_id.

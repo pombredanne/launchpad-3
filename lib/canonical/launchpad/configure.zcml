@@ -16,6 +16,8 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="lp.hardwaredb" />
+
   <include package="lp.app" />
   <include package="lp.bugs" />
   <include package="lp.registry" />
@@ -69,12 +71,6 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:url
-    for="canonical.launchpad.interfaces.IMailingListSet"
-    path_expression="string:+mailinglists"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
   <!-- RDF downloadable documents -->
   <browser:page
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
@@ -99,5 +95,4 @@
       name="PlotKit"
       directory="../../contrib/PlotKit"
       />
-
 </configure>

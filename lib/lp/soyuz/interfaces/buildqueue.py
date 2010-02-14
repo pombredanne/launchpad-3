@@ -13,6 +13,16 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, Choice, Datetime, Field, Int, Text, Timedelta
+
+from lazr.restful.fields import Reference
+
+from canonical.launchpad import _
+from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, BuildFarmJobType)
+from lp.services.job.interfaces.job import IJob
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 class IBuildQueue(Interface):
@@ -30,59 +40,43 @@ class IBuildQueue(Interface):
     """
 
     id = Attribute("Job identifier")
-    build = Attribute("The IBuild record that originated this job")
-    builder = Attribute("The IBuilder instance processing this job")
-    created = Attribute("The datetime that the queue entry was created")
-    buildstart = Attribute("The datetime of the last build attempt")
-    logtail = Attribute("The current tail of the log of the build")
-    lastscore = Attribute("Last score to be computed for this job")
-    manual = Attribute("Whether or not the job was manually scored")
+    builder = Reference(
+        IBuilder, title=_("Builder"), required=True, readonly=True,
+        description=_("The IBuilder instance processing this job"))
+    logtail = Text(
+        description=_("The current tail of the log of the job"))
+    lastscore = Int(description=_("This job's score."))
+    manual = Bool(
+        description=_("Whether or not the job was manually scored."))
+    processor = Reference(
+        IProcessor, title=_("Processor"), required=False, readonly=True,
+        description=_("The processor required by this build farm job."))
+    virtualized = Bool(
+        required=False,
+        description=_(
+            "The virtualization setting required by this build farm job."))
 
-    # properties inherited from related Content classes.
-    archseries = Attribute(
-        "DistroArchSeries target of the IBuild releated to this job.")
-    name = Attribute(
-        "Name of the ISourcePackageRelease releated to this job.")
-    version = Attribute(
-        "Version of the ISourcePackageRelease releated to this job.")
-    files = Attribute(
-        "Collection of files related to the ISourcePackageRelease "
-        "releated to this job.")
-    urgency = Attribute(
-        "Urgency of the ISourcePackageRelease releated to this job.")
-    archhintlist = Attribute(
-        "architecturehintlist of the ISourcePackageRelease releated "
-        "to this job.")
-    builddependsindep = Attribute(
-        "builddependsindep of the ISourcePackageRelease releated to "
-        "this job.")
-    buildduration = Attribute(
-        "Duration of the job, calculated on-the-fly based on buildstart.")
-    is_virtualized = Attribute("See IBuild.is_virtualized.")
+    job = Reference(
+        IJob, title=_("Job"), required=True, readonly=True,
+        description=_("Data common to all job types."))
+
+    job_type = Choice(
+        title=_('Job type'), required=True, vocabulary=BuildFarmJobType,
+        description=_("The type of this job."))
+
+    required_build_behavior = Field(
+        title=_('The builder behavior required to run this job.'),
+        required=False, readonly=True)
+
+    estimated_duration = Timedelta(
+        title=_("Estimated Job Duration"), required=True,
+        description=_("Estimated job duration interval."))
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
 
     def score():
-        """Perform scoring based on heuristic values.
-
-        Creates a 'score' (priority) value based on:
-
-         * Component: main component gets higher values
-           (main, 1000, restricted, 750, universe, 250, multiverse, 0)
-
-         * Urgency: EMERGENCY sources gets higher values
-           (EMERGENCY, 20, HIGH, 15, MEDIUM, 10, LOW, 5)
-
-         * Queue time: old records gets a relative higher priority
-           (The rate against component is something like: a 'multiverse'
-           build will be as important as a 'main' after 40 hours in queue)
-
-        This method automatically updates IBuildQueue.lastscore value and
-        skips 'manually-scored' records.
-
-        This method use any logger available in the standard logging system.
-        """
+        """The job score calculated for the job type in question."""
 
     def destroySelf():
         """Delete this entry from the database."""
@@ -96,29 +90,24 @@ class IBuildQueue(Interface):
     def reset():
         """Reset this job, so it can be re-dispatched."""
 
-    def updateBuild_IDLE(build_id, build_status, logtail,
-                         filemap, dependencies, logger):
-        """Somehow the builder forgot about the build job.
+    specific_job = Reference(
+        IBuildFarmJob, title=_("Job"),
+        description=_("Data and operations common to all build farm jobs."))
 
-        Log this and reset the record.
-        """
+    def setDateStarted(timestamp):
+        """Sets the date started property to the given value."""
 
-    def updateBuild_BUILDING(build_id, build_status, logtail, filemap,
-                             dependencies, logger):
-        """Build still building, collect the logtail"""
+    date_started = Datetime(
+        title=_('Start time'),
+        description=_('Time when the job started.'))
 
-    def updateBuild_ABORTING(buildid, build_status, logtail, filemap,
-                             dependencies, logger):
-        """Build was ABORTED.
+    def getEstimatedJobStartTime():
+        """Get the estimated start time for a pending build farm job.
 
-        Master-side should wait until the slave finish the process correctly.
-        """
-
-    def updateBuild_ABORTED(buildid, build_status, logtail, filemap,
-                            dependencies, logger):
-        """ABORTING process has successfully terminated.
-
-        Clean the builder for another jobs.
+        :return: a timestamp upon success or None on failure. None
+            indicates that an estimated start time is not available.
+        :raise: AssertionError when the build job is not in the
+            `JobStatus.WAITING` state.
         """
 
 
@@ -130,14 +119,21 @@ class IBuildQueueSet(Interface):
     def __iter__():
         """Iterate over current build jobs."""
 
-    def __getitem__(job_id):
+    def __getitem__(buildqueue_id):
         """Retrieve a build job by id."""
 
     def count():
         """Return the number of build jobs in the queue."""
 
-    def get(job_id):
-        """Return the IBuildQueue with the given job_id."""
+    def get(buildqueue_id):
+        """Return the `IBuildQueue` with the given id."""
+
+    def getByJob(job):
+        """Find the `IBuildQueue` to which `job` belongs.
+
+        :param job: A `Job`.
+        :return: The matching `IBuildQueue`, or None.
+        """
 
     def getByBuilder(builder):
         """Return an IBuildQueue instance for a builder.
@@ -165,4 +161,3 @@ class IBuildQueueSet(Interface):
         Retrieve the build queue and related builder rows associated with the
         builds in question where they exist.
         """
-

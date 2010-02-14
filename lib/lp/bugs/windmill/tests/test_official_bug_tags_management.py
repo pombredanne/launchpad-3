@@ -8,20 +8,19 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import constants, lpuser
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestOfficialBugTags(TestCaseWithFactory):
+class TestOfficialBugTags(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'Official bug tags management test'
 
     def test_official_bug_tags_management(self):
         """Test the official bug tags management interface."""
-        client = WindmillTestClient('Official bug tags management test')
+        client = self.client
 
     # Firefox is a product - an official bug tags target.
 
@@ -98,6 +97,25 @@ class TestOfficialBugTags(TestCaseWithFactory):
             xpath=(u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]/label' %
                    another_new_tag),
             validator=another_new_tag)
+
+    # Tags with dots in them are OK, but the IDs of the elements representing
+    # them gets mangled.
+
+        tag_with_dot = 'tag-with.dot'
+        client.type(text=tag_with_dot, id=u'new-tag-text')
+        client.keyPress(
+            options='\\13,true,false,false,false,false',
+            id=u'new-tag-text')
+
+    # The tag is added to the list too.
+
+        client.asserts.assertNode(
+            xpath=(u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
+                   tag_with_dot.replace('.', '__46__')))
+        client.asserts.assertText(
+            xpath=(u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]/label' %
+                   tag_with_dot.replace('.', '__46__')),
+            validator=tag_with_dot)
 
     # The arrow button for moving tags out of the official tags list is
     # disabled, because no tags are selected.

@@ -279,7 +279,7 @@ IQuestionTargets that the person is subscribed to indirectly as an answer
 contact through his team membership.
 
     >>> landscape_team = personset.getByName("landscape-developers")
-    >>> landscape_team.addMember(no_priv_raw, foo_bar_raw)
+    >>> ignored = landscape_team.addMember(no_priv_raw, foo_bar_raw)
     >>> no_priv_raw.inTeam(landscape_team)
     True
 
@@ -301,7 +301,7 @@ Person's supported IQuestionTargets:
     >>> translator_team = personset.getByName('ubuntu-translators')
     >>> no_priv_raw.inTeam(translator_team)
     False
-    >>> translator_team.addMember(landscape_team, carlos_raw)
+    >>> ignored = translator_team.addMember(landscape_team, carlos_raw)
 
     # We need to accept the invitation sent by the addMember() call in
     # order to make landscape_team an actual member of translator_team.

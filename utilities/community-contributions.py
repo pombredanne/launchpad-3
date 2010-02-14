@@ -46,7 +46,7 @@ from bzrlib.osutils import format_date
 try:
     from editmoin import editshortcut
 except:
-    sys.stderr.write("""ERROR: Unable to import from 'editmoin'.  How to solve:
+    sys.stderr.write("""ERROR: Unable to import from 'editmoin'. How to solve:
 Get editmoin.py from launchpadlib's "contrib/" directory:
 
   http://bazaar.launchpad.net/~lazr-developers/launchpadlib/trunk/annotate/head%3A/contrib/editmoin.py
@@ -60,13 +60,14 @@ Get editmoin.py from launchpadlib's "contrib/" directory:
 # counted as a Canonical contributor, sometimes Canonical people
 # submit from personal addresses, so we still need a list.
 #
-# XXX: Karl Fogel 2009-09-10: Really, this ought to use launchpadlib
+# XXX: Karl Fogel 2009-09-10 bug=513608: We should use launchpadlib
 # to consult Launchpad itself to find out who's a Canonical developer.
 known_canonical_devs = (
     u'Aaron Bentley',
     u'Abel Deuring',
     u'Adam Conrad',
     u'Andrew Bennetts',
+    u'Anthony Lenton',
     u'Barry Warsaw',
     u'Brad Crittenden',
     u'Carlos Perello Marin',
@@ -92,17 +93,21 @@ known_canonical_devs = (
     u'Henning Eggers',
     u'Herb McNew',
     u'James Henstridge',
+    u'Jelmer Vernooij',
     u'Jeroen Vermeulen',
     u'Jonathan Knowles',
     u'Jonathan Lange',
     u'Julian Edwards',
     u'Karl Fogel',
+    u'Kees Cook',
     u'Launch Pad',
     u'Launchpad Developers',
+    u'LaMont Jones',
     u'Leonard Richardson',
     u'Malcolm Cleaton',
     u'Maris Fogels',
     u'Martin Albisetti',
+    u'Martin Pool',
     u'Matt Zimmerman',
     u'Matthew Revell',
     u'Michael Hudson',
@@ -113,6 +118,7 @@ known_canonical_devs = (
     u'Robert Collins',
     u'Sidnei',
     u'Sidnei da Silva',
+    u'Steve Kowalik',
     u'Steve McInerney',
     u'Stuart Bishop',
     u'Tom Berger',
@@ -121,6 +127,14 @@ known_canonical_devs = (
     u'kiko@beetle',
     )
 
+# Some people have made commits using various names and/or email 
+# addresses, so this map will be used to merge them accordingly.
+merge_names_map = {
+    u'Jamal Fanaian <jfanaian@gmail.com>': 
+        u'Jamal Fanaian <jamal.fanaian@gmail.com>',
+    u'Jamal Fanaian <jamal@jfvm1>': 
+        u'Jamal Fanaian <jamal.fanaian@gmail.com>',
+    }
 
 class ContainerRevision():
     """A wrapper for a top-level LogRevision containing child LogRevisions."""
@@ -162,8 +176,9 @@ class ContainerRevision():
         #
         #   -and-
         #
-        # http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/revision/\
-        # launchpad@pqm.canonical.com-20090821221206-ritpv21q8w61gbpt
+        # http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/\
+        # revision/launchpad@pqm.canonical.com-20090821221206-\
+        # ritpv21q8w61gbpt
         #
         # In our links, even when the link text is a revnum, we still
         # use a rev-id for the target.  This is both so that the URL will
@@ -245,6 +260,11 @@ def get_ex_cons(authors, all_ex_cons):
                 known = True
                 break
         if not known:
+            # Use the merge names map to merge contributions from the same
+            # person using alternate names and/or emails.
+            if a in merge_names_map:
+                a = merge_names_map[a]
+
             ### There's a variant of the Singleton pattern that could be
             ### used for this, whereby instantiating an ExCon object would
             ### just get back an existing object if such has already been

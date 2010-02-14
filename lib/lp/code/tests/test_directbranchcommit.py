@@ -37,7 +37,7 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
 
         self.committer = DirectBranchCommit(self.db_branch)
         if update_last_scanned_id:
-            self.db_branch.last_scanned_id = (
+            self.committer.last_scanned_id = (
                 self.committer.bzrbranch.last_revision())
 
     def _tearDownCommitter(self):

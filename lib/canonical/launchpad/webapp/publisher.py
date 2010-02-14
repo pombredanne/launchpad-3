@@ -38,8 +38,6 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
-from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
@@ -232,7 +230,6 @@ class LaunchpadView(UserAttributeCache):
                        many templates not set via zcml, or you want to do
                        rendering from Python.
     - isBetaUser   <-- whether the logged-in user is a beta tester
-    - striped_class<-- a tr class for an alternating row background
     """
 
     def __init__(self, context, request):
@@ -284,19 +281,6 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
-
-    @cachedproperty
-    def striped_class(self):
-        """Return a generator which yields alternating CSS classes.
-
-        This is to be used for HTML tables in which the row colors should be
-        alternated.
-        """
-        def bg_stripe_generator():
-            while True:
-                yield 'white'
-                yield 'shaded'
-        return bg_stripe_generator()
 
     def _getErrorMessage(self):
         """Property getter for `error_message`."""

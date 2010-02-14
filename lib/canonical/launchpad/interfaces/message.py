@@ -189,15 +189,21 @@ class IIndexedMessage(Interface):
                 description=_("The index of this message in the list "
                               "of messages in its context."))
 
+
 class IndexedMessage:
     """Adds the `inside` and `index` attributes to an IMessage."""
     delegates(IMessage)
     implements(IIndexedMessage)
 
-    def __init__(self, context, inside, index):
+    def __init__(self, context, inside, index, parent=None):
         self.context = context
         self.inside = inside
         self.index = index
+        self._parent = parent
+
+    @property
+    def parent(self):
+        return self._parent
 
 
 class IMessageChunk(Interface):
