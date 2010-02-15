@@ -439,12 +439,14 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     ...     def setLaunchpadBugId(self, bug_id, lp_bug_id):
     ...         print "setLaunchpadBugId() called"
 
-We'll generate a bug watch with which to test this.
+We'll generate a bug watch with which to test this. The bug watch must
+be associated with at least one bug task to enable syncing.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
     >>> bug_tracker = factory.makeBugTracker()
     >>> bug_watch = factory.makeBugWatch(bugtracker=bug_tracker)
+    >>> bug_watch.bug.default_bugtask.bugwatch = bug_watch
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
