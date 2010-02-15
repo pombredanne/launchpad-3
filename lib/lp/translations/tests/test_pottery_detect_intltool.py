@@ -20,21 +20,16 @@ from lp.testing import TestCase
 
 class SetupTestPackageMixin(object):
 
-    def init_working_directory(self):
-        """Create temporary working directory."""
-        self.curdir = os.getcwd()
-        self.testdir = os.path.join(self.curdir, os.path.dirname(__file__))
-        self.workdir = tempfile.mkdtemp()
-        os.chdir(self.workdir)
-
-    def remove_working_directory(self):
-        """Remove temporary directory and all its content."""
-        os.chdir(self.curdir)
-        shutil.rmtree(self.workdir)
-
     def prepare_package(self, packagename):
-        """Unpack the specified package and change into its directory."""
-        packagepath = os.path.join(self.testdir, packagename+".tar.bz2")
+        """Unpack the specified package in a temporary directory.
+
+        Change into the package's directory.
+        """
+        # First build the path for the package.
+        packagepath = os.path.join(
+            os.getcwd(), os.path.dirname(__file__), packagename + ".tar.bz2")
+        # Then change into the temporary directory and unpack it.
+        self.useTempDir()
         tar = tarfile.open(packagepath, "r:bz2")
         tar.extractall()
         tar.close()
@@ -42,14 +37,6 @@ class SetupTestPackageMixin(object):
 
 
 class TestDetectIntltool(TestCase, SetupTestPackageMixin):
-
-    def setUp(self):
-        super(TestDetectIntltool, self).setUp()
-        self.init_working_directory()
-
-    def tearDown(self):
-        self.remove_working_directory()
-        super(TestDetectIntltool, self).tearDown()
 
     def test_detect_potfiles_in(self):
         # Find POTFILES.in in a package with multiple dirs when only one has
@@ -191,33 +178,24 @@ class TestDetectIntltool(TestCase, SetupTestPackageMixin):
 
 class TestDetectIntltoolInBzrTree(TestCase, SetupTestPackageMixin):
 
-    def setUp(self):
-        super(TestDetectIntltoolInBzrTree, self).setUp()
-        self.init_working_directory()
-
-    def tearDown(self):
-        self.remove_working_directory()
-        super(TestDetectIntltoolInBzrTree, self).tearDown()
-
     def prepare_tree(self):
         return BzrDir.create_standalone_workingtree(".")
 
     def test_detect_intltool_structure(self):
-        # Find POTFILES.in in a package with multiple dirs when only one has
-        # POTFILES.in.
+        # Detect a simple intltool structure.
         self.prepare_package("intltool_POTFILES_in_1")
         tree = self.prepare_tree()
         self.assertTrue(is_intltool_structure(tree))
 
     def test_detect_no_intltool_structure(self):
-        # No POTFILES.in detected as not containing intltool_structure
+        # If no POTFILES.in exists, no intltool structure is assumed.
         self.prepare_package("intltool_POTFILES_in_1")
         os.remove("./po-intltool/POTFILES.in")
         tree = self.prepare_tree()
         self.assertFalse(is_intltool_structure(tree))
 
     def test_detect_intltool_structure_module(self):
-        # Find POTFILES.in in a package with POTFILES.in at different levels.
+        # Detect an intltool structure in subdirectories.
         self.prepare_package("intltool_POTFILES_in_2")
         tree = self.prepare_tree()
         self.assertTrue(is_intltool_structure(tree))
