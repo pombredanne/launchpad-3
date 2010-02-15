@@ -144,9 +144,9 @@ base directory named <TIMESTAMP>-XXXXXX, each one as a result of
 each FTP session. Below we ensure that, and also that the content
 of these files match the uploaded ones.
 
-  >>> import md5
+  >>> import hashlib
   >>> def get_md5(filename):
-  ...     return md5.new(open(filename).read()).digest()
+  ...     return hashlib.md5(open(filename).read()).digest()
 
   >>> def get_upload_dir(num, dir=incoming_dir):
   ...     """Return the path to the upload, if found in the dir."""

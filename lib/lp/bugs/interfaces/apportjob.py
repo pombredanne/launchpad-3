@@ -7,6 +7,8 @@ __all__ = [
     'ApportJobType',
     'IApportJob',
     'IApportJobSource',
+    'IProcessApportBlobJob',
+    'IProcessApportBlobJobSource',
     ]
 
 from zope.interface import Attribute, Interface
@@ -56,6 +58,9 @@ class IApportJobSource(IJobSource):
 
     def create(bug):
         """Create a new IApportJob for a bug."""
+
+    def getByBlobUUID(uuid):
+        """For a given BLOB UUID, return any jobs pertaining to that BLOB."""
 
 
 class IProcessApportBlobJob(IRunnableJob):

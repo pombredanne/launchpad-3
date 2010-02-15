@@ -22,10 +22,13 @@ __all__ = [
     'simple_sendmail',
     'simple_sendmail_from_person',
     'raw_sendmail',
-    'validate_message']
+    'validate_message',
+    ]
+
+
+import hashlib
 
 from binascii import b2a_qp
-import sha
 from email.Encoders import encode_base64
 from email.Utils import getaddresses, make_msgid, formatdate, formataddr
 from email.Message import Message
@@ -374,7 +377,7 @@ def sendmail(message, to_addrs=None, bulk=True):
     # helps security, but still exposes us to a replay attack; we consider the
     # risk low.
     del message['X-Launchpad-Hash']
-    hash = sha.new(config.mailman.shared_secret)
+    hash = hashlib.sha1(config.mailman.shared_secret)
     hash.update(str(message['message-id']))
     message['X-Launchpad-Hash'] = hash.hexdigest()
 
