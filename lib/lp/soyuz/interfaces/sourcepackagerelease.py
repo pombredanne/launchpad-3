@@ -136,6 +136,10 @@ class ISourcePackageRelease(Interface):
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
 
+    source_package_recipe_build = Attribute(
+        "The `SourcePackageRecipeBuild` which produced this source package "
+        "release, or None if it was created from a traditional upload.")
+
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
         in this package.
