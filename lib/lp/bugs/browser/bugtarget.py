@@ -40,6 +40,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.browser.feeds import (
@@ -700,6 +701,11 @@ class FileBugViewBase(LaunchpadFormView):
                             "content": content,
                             })
         return guidelines
+
+    def _getApportBlobJobForToken(self, token):
+        """Return the ProcessApportBlobJob for a given BLOB token."""
+        return getUtility(IProcessApportBlobJobSource).getByBlobUUID(
+            token)
 
 
 class FileBugInlineFormView(FileBugViewBase):

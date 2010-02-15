@@ -24,7 +24,7 @@ from lp.bugs.interfaces.apportjob import ApportJobType
 from lp.bugs.model.apportjob import (
     ApportJob, ApportJobDerived, ProcessApportBlobJob)
 from lp.bugs.utilities.filebugdataparser import FileBugDataParser
-from lp.testing import TestCaseWithFactory
+from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
 
@@ -254,9 +254,8 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         self.blob_data = blob_file.read()
         blob_file.close()
 
-    def test_adding_blob_adds_job(self):
-        # Using the TemporaryBlobStorageAddView to upload a new BLOB
-        # will add a new ProcessApportBlobJob for that BLOB.
+    def _create_blob_and_job_using_storeblob(self):
+        """Helper method to create a BLOB and ProcessApportBlobJob."""
         view = create_initialized_view(
             getUtility(ILaunchpadRoot), '+storeblob')
 
@@ -265,8 +264,12 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         blob_uuid = view.store_blob(self.blob_data)
         transaction.commit()
 
-        # A new ProcessApportBlobJob will have been created for the
-        # BLOB.
+        return blob_uuid
+
+    def test_adding_blob_adds_job(self):
+        # Using the TemporaryBlobStorageAddView to upload a new BLOB
+        # will add a new ProcessApportBlobJob for that BLOB.
+        blob_uuid = self._create_blob_and_job_using_storeblob()
         blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
         job = ProcessApportBlobJob.getByBlobUUID(blob_uuid)
 
@@ -274,6 +277,22 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
             blob, job.blob,
             "BLOB attached to Job returned by getByBlobUUID() did not match "
             "expected BLOB.")
+
+    def test_filebug__getApportBlobJobForToken(self):
+        # The +filebug view can retrieve the ProcessApportBlobJob for a
+        # given BLOB UUID. This is available via its
+        # _getApportBlobJobForToken() method.
+        blob_uuid = self._create_blob_and_job_using_storeblob()
+
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=person)
+        login_person(person)
+        view = create_initialized_view(
+            product, '+filebug', path_info='/%s' % blob_uuid)
+
+        job = ProcessApportBlobJob.getByBlobUUID(blob_uuid)
+        job_from_view = view._getApportBlobJobForToken(blob_uuid)
+        self.assertEqual(job, job_from_view, "Jobs didn't match.")
 
 
 def test_suite():
