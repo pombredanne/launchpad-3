@@ -37,7 +37,13 @@ class ReadLockTree(object):
 
 
 def is_intltool_structure(tree):
-    """If the tree may contain an intltool structure."""
+    """Does this source tree look like it's set up for intltool?
+
+    Currently this just checks for the existence of POTFILES.in.
+
+    :param tree: A bzrlib.Tree object to search for the intltool structure.
+    :returns: True if signs of an intltool structure were found.
+    """
     with ReadLockTree(tree):
         for thedir, files in tree.walkdirs():
             for afile in files:
