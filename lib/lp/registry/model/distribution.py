@@ -5,15 +5,18 @@
 """Database classes for implementing distribution items."""
 
 __metaclass__ = type
-__all__ = ['Distribution', 'DistributionSet']
+__all__ = [
+    'Distribution',
+    'DistributionSet',
+    ]
 
-from zope.interface import alsoProvides, implements
-from zope.component import getUtility
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
+from zope.component import getUtility
+from zope.interface import alsoProvides, implements
 
 from lp.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
@@ -176,6 +179,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         default=False)
     active = True # Required by IPillar interface.
 
+    def __repr__(self):
+        return "<%s '%s' (%s)>" % (
+            self.__class__.__name__, self.displayname, self.name)
 
     def _init(self, *args, **kw):
         """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
@@ -1193,10 +1199,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         clauses = ["""
         Archive.purpose = %s AND
         Archive.distribution = %s AND
-        Person.id = Archive.owner
+        Person.id = Archive.owner AND
+        Person.id = ValidPersonOrTeamCache.id
         """ % sqlvalues(ArchivePurpose.PPA, self)]
 
-        clauseTables = ['Person']
+        clauseTables = ['Person', 'ValidPersonOrTeamCache']
         orderBy = ['Person.name']
 
         if not show_inactive:

@@ -1264,6 +1264,7 @@ class BugTaskSet:
         "message_count": "Bug.message_count",
         "users_affected_count": "Bug.users_affected_count",
         "heat": "Bug.heat",
+        "latest_patch_uploaded": "Bug.latest_patch_uploaded",
         }
 
     _open_resolved_upstream = """
@@ -1844,7 +1845,7 @@ class BugTaskSet:
         params.hardware_product_id are all not None.
         """
         # Avoid cyclic imports.
-        from canonical.launchpad.database.hwdb import (
+        from lp.hardwaredb.model.hwdb import (
             HWSubmission, HWSubmissionBug, HWSubmissionDevice,
             _userCanAccessSubmissionStormClause,
             make_submission_device_statistics_clause)

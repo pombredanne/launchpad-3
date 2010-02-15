@@ -42,6 +42,12 @@ ISourcePackageNameSet.queryByName:
     >>> print firefox.name
     mozilla-firefox
 
+Source packages have useful string representations containing their name in
+quotes.
+
+    >>> firefox
+    <SourcePackageName 'mozilla-firefox'>
+
 If the package doesn't exist, queryByName returns None:
 
     >>> biscoito = sourcepackagenameset.queryByName("biscoito")

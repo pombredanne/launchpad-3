@@ -22,11 +22,13 @@ __all__ = [
     'simple_sendmail',
     'simple_sendmail_from_person',
     'raw_sendmail',
-    'validate_message']
+    'validate_message',
+    ]
+
+
+import hashlib
 
 from binascii import b2a_qp
-import sha
-import sets
 from email.Encoders import encode_base64
 from email.Utils import getaddresses, make_msgid, formatdate, formataddr
 from email.Message import Message
@@ -80,7 +82,7 @@ def do_paranoid_envelope_to_validation(to_addrs):
     to header.  The to header and envelope_to addresses may vary
     independently, and the to header cannot break Z3.
     """
-    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
+    assert (zisinstance(to_addrs, (list, tuple, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
@@ -375,7 +377,7 @@ def sendmail(message, to_addrs=None, bulk=True):
     # helps security, but still exposes us to a replay attack; we consider the
     # risk low.
     del message['X-Launchpad-Hash']
-    hash = sha.new(config.mailman.shared_secret)
+    hash = hashlib.sha1(config.mailman.shared_secret)
     hash.update(str(message['message-id']))
     message['X-Launchpad-Hash'] = hash.hexdigest()
 

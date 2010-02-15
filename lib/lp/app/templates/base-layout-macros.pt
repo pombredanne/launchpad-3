@@ -338,10 +338,10 @@
           <a href="https://help.launchpad.net/">Read the guide</a>
           &nbsp;
           <form id="globalsearch" method="get" accept-charset="UTF-8"
-            class="sprite-after search-icon"
             tal:condition="view/macro:pagehas/globalsearch"
             tal:attributes="action string:${rooturl}+search">
             <input type="search" id="search-text" name="field.text" />
+            <input type="submit" value="" class="icon-only sprite search-icon" />
           </form>
         </div>
         <metal:site-message
@@ -408,5 +408,4 @@
     condition="python: count != 1"
     replace="l_plural" />
 </metal:plural-msg>
-
 </macros>

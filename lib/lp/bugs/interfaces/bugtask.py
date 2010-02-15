@@ -36,6 +36,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -286,6 +287,9 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.TRIAGED,
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
+
+UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES = (
+    UNRESOLVED_BUGTASK_STATUSES + (BugTaskStatus.FIXRELEASED,))
 
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
@@ -825,6 +829,11 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
 
 
 class IUpstreamProductBugTaskSearch(IBugTaskSearch):

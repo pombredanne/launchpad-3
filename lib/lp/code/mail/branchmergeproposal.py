@@ -131,7 +131,7 @@ class BMPMailer(BranchMailer):
         if delta is None:
             return None
         return cls(
-            '%(proposal_title)s updated',
+            '%(proposal_title)s',
             'branch-merge-proposal-updated.txt', recipients,
             merge_proposal, from_address, delta, get_msgid())
 
@@ -146,8 +146,8 @@ class BMPMailer(BranchMailer):
              merge_proposal.registrant)):
             comment = merge_proposal.root_comment
         return cls(
-            'Request to review proposed merge of %(source_branch)s into '
-            '%(target_branch)s', 'review-requested.txt', recipients,
+            '%(proposal_title)s',
+            'review-requested.txt', recipients,
             merge_proposal, from_address, message_id=get_msgid(),
             comment=comment, preview_diff=merge_proposal.preview_diff,
             direct_email=True)

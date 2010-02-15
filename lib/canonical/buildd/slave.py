@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
@@ -8,9 +8,9 @@
 
 __metaclass__ = type
 
+import hashlib
 import os
 import re
-import sha
 import urllib2
 import xmlrpclib
 
@@ -301,7 +301,7 @@ class BuildDSlave(object):
                 else:
                     of = open(self.cachePath(sha1sum), "w")
                     # Upped for great justice to 256k
-                    check_sum = sha.sha()
+                    check_sum = hashlib.sha1()
                     for chunk in iter(lambda: f.read(256*1024), ''):
                         of.write(chunk)
                         check_sum.update(chunk)
@@ -316,7 +316,7 @@ class BuildDSlave(object):
 
     def storeFile(self, content):
         """Take the provided content and store it in the file cache."""
-        sha1sum = sha.sha(content).hexdigest()
+        sha1sum = hashlib.sha1(content).hexdigest()
         present, info = self.ensurePresent(sha1sum)
         if present:
             return sha1sum
@@ -324,6 +324,15 @@ class BuildDSlave(object):
         f.write(content)
         f.close()
         return sha1sum
+
+    def addWaitingFile(self, path):
+        """Add a file to the cache and store its details for reporting."""
+        fn = os.path.basename(path)
+        f = open(path)
+        try:
+            self.waitingfiles[fn] = self.storeFile(f.read())
+        finally:
+            f.close()
 
     def fetchFile(self, sha1sum):
         """Fetch the file of the given sha1sum."""
