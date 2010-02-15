@@ -23,5 +23,5 @@ ALTER TABLE BinaryPackagePublishingHistory
 ALTER TABLE BinaryPackagePublishingHistory
     DROP COLUMN embargo;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 31, 0);
 
