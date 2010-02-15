@@ -272,8 +272,6 @@ class TestStoreBuildInfo(TestCaseWithFactory):
     def testDependencies(self):
         """Verify that storeBuildInfo sets any dependencies."""
         self.build.storeBuildInfo(None, {'dependencies': 'somepackage'})
-        # We need to commit before we can get the log back.
-        transaction.commit()
         self.assertIsNot(None, self.build.buildlog)
         self.assertEqual(self.builder, self.build.builder)
         self.assertEqual(u'somepackage', self.build.dependencies)
@@ -287,8 +285,6 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.build.dependencies = u'something'
 
         self.build.storeBuildInfo(None, {})
-        # We need to commit before we can get the log back.
-        transaction.commit()
         self.assertIsNot(None, self.build.buildlog)
         self.assertEqual(self.builder, self.build.builder)
         self.assertIs(None, self.build.dependencies)
