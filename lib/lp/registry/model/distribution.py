@@ -1193,10 +1193,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         clauses = ["""
         Archive.purpose = %s AND
         Archive.distribution = %s AND
-        Person.id = Archive.owner
+        Person.id = Archive.owner AND
+        Person.id = ValidPersonOrTeamCache.id
         """ % sqlvalues(ArchivePurpose.PPA, self)]
 
-        clauseTables = ['Person']
+        clauseTables = ['Person', 'ValidPersonOrTeamCache']
         orderBy = ['Person.name']
 
         if not show_inactive:

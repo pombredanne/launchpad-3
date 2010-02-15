@@ -8,14 +8,11 @@ __metaclass__ = type
 __all__ = ['process_dist_upgrader']
 
 import os
-import tarfile
-import stat
-import shutil
 
 from lp.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)
-from lp.archivepublisher.debversion import (
-    BadUpstreamError, Version as make_version)
+from debian_bundle.changelog import (
+    VersionError, Version as make_version)
 
 
 class DistUpgraderAlreadyExists(CustomUploadError):
@@ -91,7 +88,7 @@ class DistUpgraderUpload(CustomUpload):
         directory_name = filename.split(os.path.sep)[0]
         try:
             version = make_version(directory_name)
-        except BadUpstreamError, exc:
+        except VersionError, exc:
             raise DistUpgraderBadVersion(self.tarfile_path, exc)
         return version and not filename.startswith('current')
 
