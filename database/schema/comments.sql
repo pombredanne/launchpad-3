@@ -2352,3 +2352,7 @@ COMMENT ON TABLE SourcePackageFormatSelection IS 'Allowed source package formats
 COMMENT ON COLUMN SourcePackageFormatSelection.distroseries IS 'Refers to the distroseries in question.';
 COMMENT ON COLUMN SourcePackageFormatSelection.format IS 'The SourcePackageFormat to allow.';
 
+COMMENT ON TABLE DatabaseReplicationLag IS 'A cached snapshot of database replication lag between our master Slony node and its slaves.';
+COMMENT ON COLUMN DatabaseReplicationLag.node IS 'The Slony node number identifying the slave database.';
+COMMENT ON COLUMN DatabaseReplicationLag.lag IS 'lag time.';
+COMMENT ON COLUMN DatabaseReplicationLag.updated IS 'When this value was updated.';

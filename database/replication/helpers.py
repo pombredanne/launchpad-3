@@ -44,6 +44,7 @@ AUTHDB_SEED = frozenset([
 LPMAIN_SEED = frozenset([
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
+    ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
     ('public', 'openidconsumerassociation'),
