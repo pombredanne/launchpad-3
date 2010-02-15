@@ -8,12 +8,15 @@ __all__ = [
     'bugcomment_to_entry',
     ]
 
+from zope.component import getMultiAdapter
 from lazr.restful.interfaces import IEntry
 
-def bugcomment_to_entry(comment):
+
+def bugcomment_to_entry(comment, version):
     """Will adapt to the bugcomment to the real IMessage.
 
     This is needed because navigation to comments doesn't return
     real IMessage instances but IBugComment.
     """
-    return IEntry(comment.bugtask.bug.messages[comment.index])
+    return getMultiAdapter(
+        (comment.bugtask.bug.messages[comment.index], version), IEntry)
