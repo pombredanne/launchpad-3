@@ -278,7 +278,7 @@ class DebCmpStr(unittest.TestCase):
         from lp.archivepublisher.debversion import deb_cmp_str
         self.assertEquals(deb_cmp_str("foo", "foobar"), -1)
 
-    def testTildeEmptyString(self):
+    def testTildeTail(self):
         """deb_cmp_str returns -1 when first string is longer by a tilde."""
         from lp.archivepublisher.debversion import deb_cmp_str
         self.assertEquals(deb_cmp_str("foo~", "foo"), -1)
@@ -364,7 +364,7 @@ class DebCmp(unittest.TestCase):
         self.assertEquals(deb_cmp("foo", "foo1"), -1)
         self.assertEquals(deb_cmp("foo1", "foo"), 1)
 
-    def testEmptyString(self):
+    def testEmptyStringPortion(self):
         """deb_cmp works when string potion is empty."""
         from lp.archivepublisher.debversion import deb_cmp
         self.assertEquals(deb_cmp("100", "foo100"), -1)
