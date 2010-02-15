@@ -81,7 +81,8 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -212,7 +213,7 @@ def validate_person_visibility(person, attr, value):
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
-    HasBranchesMixin, HasMergeProposalsMixin):
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -1047,6 +1048,15 @@ class Person(
             return True
         except SQLObjectNotFound:
             return False
+
+    @property
+    def is_probationary(self):
+        """See `IPerson`.
+
+        Users without karma have not demostrated their intentions may not
+        have the same privileges as users who have made contributions.
+        """
+        return not self.isTeam() and self.karma == 0
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None, datecreated=None):
@@ -2346,7 +2356,7 @@ class Person(
     @property
     def hardware_submissions(self):
         """See `IPerson`."""
-        from canonical.launchpad.database.hwdb import HWSubmissionSet
+        from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
 
 

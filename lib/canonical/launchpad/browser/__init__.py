@@ -37,7 +37,7 @@ from lp.answers.browser.faqcollection import *
 from lp.answers.browser.faqtarget import *
 from lp.registry.browser.featuredproject import *
 from canonical.launchpad.browser.feeds import *
-from canonical.launchpad.browser.hwdb import *
+from lp.hardwaredb.browser.hwdb import *
 from lp.registry.browser.karma import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.launchpadstatistic import *
