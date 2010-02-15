@@ -26,6 +26,8 @@ from pytz import timezone
 from simplejson import dumps
 import urllib
 
+from sqlobject import SQLObjectNotFound
+
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
@@ -78,6 +80,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.job.interfaces.job import JobStatus
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action)
@@ -702,10 +705,28 @@ class FileBugViewBase(LaunchpadFormView):
                             })
         return guidelines
 
-    def _getApportBlobJobForToken(self, token):
+    @property
+    def extra_data_processing_job(self):
         """Return the ProcessApportBlobJob for a given BLOB token."""
-        return getUtility(IProcessApportBlobJobSource).getByBlobUUID(
-            token)
+        if self.extra_data_token is None:
+            # If there's no extra data token, don't bother looking for a
+            # ProcessApportBlobJob.
+            return None
+
+        try:
+            return getUtility(IProcessApportBlobJobSource).getByBlobUUID(
+                self.extra_data_token)
+        except SQLObjectNotFound:
+            return None
+
+    @property
+    def extra_data_processed(self):
+        """Return True if the extra data BLOB has been processed."""
+        apport_processing_job = self.extra_data_processing_job
+        if apport_processing_job.job.status == JobStatus.COMPLETED:
+            return True
+        else:
+            return False
 
 
 class FileBugInlineFormView(FileBugViewBase):

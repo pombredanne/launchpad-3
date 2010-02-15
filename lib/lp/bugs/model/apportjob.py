@@ -25,6 +25,8 @@ from canonical.launchpad.database.temporaryblobstorage import (
     TemporaryBlobStorage)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryStorageManager)
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
@@ -183,8 +185,9 @@ class ProcessApportBlobJob(ApportJobDerived):
     @classmethod
     def getByBlobUUID(cls, uuid):
         """See `IApportJobSource`."""
+        blob = getUtility(ITemporaryStorageManager).fetch(uuid)
+
         store = IStore(ApportJob)
-        blob = store.get(TemporaryBlobStorage, uuid == uuid)
         jobs_for_blob = store.find(
             ApportJob,
             ApportJob.blob == blob,

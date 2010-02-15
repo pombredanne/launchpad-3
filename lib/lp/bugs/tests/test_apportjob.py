@@ -9,6 +9,8 @@ import os
 import transaction
 import unittest
 
+from sqlobject import SQLObjectNotFound
+
 from zope.component import getUtility
 
 from canonical.config import config
@@ -24,6 +26,7 @@ from lp.bugs.interfaces.apportjob import ApportJobType
 from lp.bugs.model.apportjob import (
     ApportJob, ApportJobDerived, ProcessApportBlobJob)
 from lp.bugs.utilities.filebugdataparser import FileBugDataParser
+from lp.services.job.interfaces.job import JobStatus
 from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -178,6 +181,11 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             "BLOB referenced by Job returned by getByBlobUUID() did not "
             "match original BLOB.")
 
+        # If the UUID doesn't exist, getByBlobUUID() will raise a
+        # SQLObjectNotFound error.
+        self.assertRaises(
+            SQLObjectNotFound, ProcessApportBlobJob.getByBlobUUID, 'foobar')
+
     def test_create_job_creates_only_one(self):
         # ProcessApportBlobJob.create() will create only one
         # ProcessApportBlobJob for a given BLOB, no matter how many
@@ -254,6 +262,10 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         self.blob_data = blob_file.read()
         blob_file.close()
 
+        person = self.factory.makePerson()
+        self.product = self.factory.makeProduct()
+        login_person(person)
+
     def _create_blob_and_job_using_storeblob(self):
         """Helper method to create a BLOB and ProcessApportBlobJob."""
         view = create_initialized_view(
@@ -265,6 +277,16 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         transaction.commit()
 
         return blob_uuid
+
+    def _create_and_traverse_filebug_view(self, blob_uuid):
+        """Create a +filebug view for a given blob id and return it."""
+        view = create_initialized_view(
+            self.product, '+filebug', path_info='/%s' % blob_uuid)
+
+        # We need to call publishTraverse() on the view to ensure that
+        # the extra_data_token attribute gets populated.
+        view.publishTraverse(view.request, blob_uuid)
+        return view
 
     def test_adding_blob_adds_job(self):
         # Using the TemporaryBlobStorageAddView to upload a new BLOB
@@ -278,21 +300,64 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
             "BLOB attached to Job returned by getByBlobUUID() did not match "
             "expected BLOB.")
 
-    def test_filebug__getApportBlobJobForToken(self):
+    def test_filebug_extra_data_processing_job(self):
         # The +filebug view can retrieve the ProcessApportBlobJob for a
         # given BLOB UUID. This is available via its
-        # _getApportBlobJobForToken() method.
+        # extra_data_processing_job property.
         blob_uuid = self._create_blob_and_job_using_storeblob()
-
-        person = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=person)
-        login_person(person)
-        view = create_initialized_view(
-            product, '+filebug', path_info='/%s' % blob_uuid)
+        view = self._create_and_traverse_filebug_view(blob_uuid)
 
         job = ProcessApportBlobJob.getByBlobUUID(blob_uuid)
-        job_from_view = view._getApportBlobJobForToken(blob_uuid)
+        job_from_view = view.extra_data_processing_job
         self.assertEqual(job, job_from_view, "Jobs didn't match.")
+
+        # If a non-existent UUID is passed to +filebug, its
+        # extra_data_processing_job property will return None.
+        view = create_initialized_view(
+            self.product, '+filebug', path_info='/nonsense')
+        job_from_view = view.extra_data_processing_job
+        self.assertEqual(
+            None, job_from_view,
+            "Job returned by extra_data_processing_job should be None.")
+
+    def test_filebug_extra_data_processed(self):
+        # The +filebug view has a property, extra_data_processed, which
+        # indicates whether or not an Apport blob has been processed.
+        blob_uuid = self._create_blob_and_job_using_storeblob()
+        view = self._create_and_traverse_filebug_view(blob_uuid)
+
+        job_from_view = view.extra_data_processing_job
+
+        # Because the job hasn't yet been run the view's extra_data_processed
+        # property will return False.
+        self.assertEqual(
+            JobStatus.WAITING, job_from_view.job.status,
+            "Job should be WAITING, is in fact %s" %
+            job_from_view.job.status.title)
+        self.assertFalse(
+            view.extra_data_processed,
+            "view.extra_data_processed should be False while job is WAITING.")
+
+        # If the job is started bug hasn't completed, extra_data_processed
+        # will remain False.
+        job_from_view.job.start()
+        self.assertEqual(
+            JobStatus.RUNNING, job_from_view.job.status,
+            "Job should be RUNNING, is in fact %s" %
+            job_from_view.job.status.title)
+        self.assertFalse(
+            view.extra_data_processed,
+            "view.extra_data_processed should be False while job is RUNNING.")
+
+        # Once the job is complete, extra_data_processed will be True
+        job_from_view.job.complete()
+        self.assertEqual(
+            JobStatus.COMPLETED, job_from_view.job.status,
+            "Job should be COMPLETED, is in fact %s" %
+            job_from_view.job.status.title)
+        self.assertTrue(
+            view.extra_data_processed,
+            "view.extra_data_processed should be True when job is COMPLETED.")
 
 
 def test_suite():
