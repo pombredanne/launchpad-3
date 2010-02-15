@@ -26,7 +26,7 @@ from zope.app.publication.requestpublicationregistry import (
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
@@ -41,7 +41,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces.feed import IFeed
-from lazr.restful.interfaces import IWebServiceConfiguration
+from lazr.restful.interfaces import (
+    IWebServiceConfiguration, IWebServiceVersion)
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
@@ -1265,7 +1266,7 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
     """
     implements(canonical.launchpad.layers.WebServiceLayer)
 
-    def __init__(self, body_instream=None, environ=None, **kw):
+    def __init__(self, body_instream=None, environ=None, version=None, **kw):
         test_environ = {
             'SERVER_URL': 'http://api.launchpad.dev',
             'HTTP_HOST': 'api.launchpad.dev',
@@ -1274,6 +1275,11 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
             test_environ.update(environ)
         super(WebServiceTestRequest, self).__init__(
             body_instream=body_instream, environ=test_environ, **kw)
+        if version is None:
+            version = getUtility(IWebServiceConfiguration).active_versions[-1]
+        self.version = version
+        version_marker = getUtility(IWebServiceVersion, name=version)
+        alsoProvides(self, version_marker)
 
 
 # ---- xmlrpc
