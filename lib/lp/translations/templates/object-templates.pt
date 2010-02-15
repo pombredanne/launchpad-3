@@ -7,8 +7,8 @@
   <body>
     <div metal:fill-slot="head_epilogue">
       <style type="text/css">
-        .inactive_links a img{
-          visibility: hidden;
+        .inactive_links a{
+          background: none;
         }
         .inactive_links a{
           color: lightgray;
@@ -130,22 +130,18 @@
               <td class="actions_column"
                   tal:condition="context/required:launchpad.AnyPerson">
               <div class="template_links">
-                <tal:maintainer condition="template/required:launchpad.Edit">
-                  <a tal:attributes="href string:${template/fmt:url}/+edit;
-                                     title string:Edit ${template/name}'s details">
-                     <img src="/@@/edit" />&nbsp;Edit</a>
-                  <a tal:attributes="href string:${template/fmt:url}/+upload;
-                        title string:Upload translations to ${template/name}">
-                     <img src="/@@/add" />&nbsp;Upload</a>
-                </tal:maintainer>
-                <a tal:attributes="href string:${template/fmt:url}/+export;
-                     title string:Download translations from ${template/name}">
-                  <img src="/@@/download" />&nbsp;Download</a>
-                <tal:admin condition="template/required:launchpad.TranslationsAdmin">
-                  <a tal:attributes="href string:${template/fmt:url}/+admin;
-                                     title string:Administer ${template/name}">
-                     <img src="/@@/edit" />&nbsp;Administer</a>
-                </tal:admin>
+                <a tal:replace="
+                    structure template/menu:translations/edit/fmt:link
+                    " />
+                <a tal:replace="
+                    structure template/menu:translations/upload/fmt:link
+                    " />
+                <a tal:replace="
+                    structure template/menu:translations/download/fmt:link
+                    " />
+                <a tal:replace="
+                    structure template/menu:translations/administer/fmt:link
+                    " />
               </div>
               </td>
             </tr>

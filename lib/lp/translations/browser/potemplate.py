@@ -175,21 +175,21 @@ class POTemplateMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
         text = 'Upload'
-        return Link('+upload', text)
+        return Link('+upload', text, icon='add')
 
     def download(self):
         text = 'Download'
-        return Link('+export', text)
+        return Link('+export', text, icon='download')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Settings'
-        return Link('+edit', text)
+        text = 'Edit'
+        return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def administer(self):
         text = 'Administer'
-        return Link('+admin', text)
+        return Link('+admin', text, icon='edit')
 
 
 class POTemplateSubsetView:
