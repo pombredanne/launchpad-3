@@ -1424,10 +1424,11 @@ class EditBuildRecord(AdminByBuilddAdmin):
         # to upload to the respective component? Allow user to retry build
         # if so.
         archive = self.obj.archive
-        if archive.canUpload(user.person, self.obj.current_component):
+        if archive.checkArchivePermission(user.person, 
+                                          self.obj.current_component):
             return True
         else:
-            return archive.canUpload(
+            return archive.checkArchivePermission(
                 user.person, self.obj.sourcepackagerelease.sourcepackagename)
 
 
@@ -1930,7 +1931,7 @@ class ViewArchive(AuthorizationBase):
             return True
 
         # Uploaders can view private PPAs.
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         return False
@@ -1945,7 +1946,7 @@ class AppendArchive(AuthorizationBase):
 
     No one can upload to disabled archives.
 
-    PPA upload rights are managed via `IArchive.canUpload`;
+    PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
 
@@ -1962,7 +1963,7 @@ class AppendArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         celebrities = getUtility(ILaunchpadCelebrities)

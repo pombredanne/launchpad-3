@@ -896,7 +896,7 @@ class Archive(SQLBase):
             archive=self)
 
     # FROM HERE
-    def canUpload(self, user, component_or_package=None):
+    def checkArchivePermission(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
         # PPA access is immediately granted if the user is in the PPA
@@ -984,7 +984,7 @@ class Archive(SQLBase):
 
         # For PPAs...
         if self.is_ppa:
-            if not self.canUpload(person):
+            if not self.checkArchivePermission(person):
                 return CannotUploadToPPA()
             else:
                 return None
@@ -994,7 +994,8 @@ class Archive(SQLBase):
             #   - the given source package directly
             #   - a package set in the correct distro series that includes the
             #     given source package
-            source_allowed = self.canUpload(person, sourcepackagename)
+            source_allowed = self.checkArchivePermission(person,
+                                                         sourcepackagename)
             set_allowed = self.isSourceUploadAllowed(
                 sourcepackagename, person, distroseries)
             if source_allowed or set_allowed:
@@ -1008,7 +1009,7 @@ class Archive(SQLBase):
 
         if (component is not None
             and strict_component
-            and not self.canUpload(person, component)):
+            and not self.checkArchivePermission(person, component)):
             return NoRightsForComponent(component)
 
         return None

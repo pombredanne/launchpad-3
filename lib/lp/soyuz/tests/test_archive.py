@@ -566,29 +566,30 @@ class TestArchiveCanUpload(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def test_canUpload_by_PPA_owner(self):
+    def test_checkArchivePermission_by_PPA_owner(self):
         # Uploading to a PPA should be allowed for a user that is the owner 
         owner = self.factory.makePerson(name="somebody")
         archive = self.factory.makeArchive(owner=owner)
-        self.assertEquals(True, archive.canUpload(owner))
+        self.assertEquals(True, archive.checkArchivePermission(owner))
         someone_unrelated = self.factory.makePerson(name="somebody-unrelated")
-        self.assertEquals(False, archive.canUpload(someone_unrelated))
+        self.assertEquals(False,
+            archive.checkArchivePermission(someone_unrelated))
 
-    def test_canUpload_distro_archive_regular_user(self):
+    def test_checkArchivePermission_distro_archive_regular_user(self):
         # Regular users can not upload to ubuntu
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY, 
                                            distribution=ubuntu)
         somebody = self.factory.makePerson(name="somebody")
-        self.assertEquals(False, archive.canUpload(somebody))
+        self.assertEquals(False, archive.checkArchivePermission(somebody))
 
-    def test_canUpload_distro_archive_core_dev(self):
+    def test_checkArchivePermission_distro_archive_core_dev(self):
         # Core developers can upload to ubuntu
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY, 
                                            distribution=ubuntu)
         kamion = getUtility(IPersonSet).getByName('kamion')
-        self.assertEquals(True, archive.canUpload(kamion))
+        self.assertEquals(True, archive.checkArchivePermission(kamion))
 
     def test_checkUpload_partner_invalid_pocket(self):
         # Partner archives only have release and proposed pockets

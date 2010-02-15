@@ -144,7 +144,7 @@ class BugNomination(SQLBase):
                     upload_component.component
                     for upload_component in distribution.uploaders)
             for packagename_or_component in bug_packagenames_and_components:
-                if distribution.main_archive.canUpload(
+                if distribution.main_archive.checkArchivePermission(
                     person, packagename_or_component):
                     return True
 

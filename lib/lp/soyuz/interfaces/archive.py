@@ -440,7 +440,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: A list of `IArchivePermission` records.
         """
 
-    def canUpload(person, component_or_package=None):
+    def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
 
         :param person: An `IPerson` whom should be checked for authentication.
