@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import version control metadata from a Bazaar branch into the database."""
@@ -10,12 +10,13 @@ __metaclass__ = type
 __all__ = [
     "BzrSync",
     'schedule_diff_updates',
+    'schedule_translation_templates_build',
     'schedule_translation_upload',
     ]
 
 import logging
-
 import pytz
+import transaction
 
 from zope.component import adapter, getUtility
 from zope.event import notify
@@ -27,7 +28,7 @@ from bzrlib import urlutils
 
 from lazr.uri import URI
 
-import transaction
+from canonical.config import config
 
 from lp.codehosting import iter_list_chunks
 from lp.codehosting.puller.worker import BranchMirrorer
@@ -37,6 +38,8 @@ from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchrevision import IBranchRevisionSet
 from lp.code.interfaces.revision import IRevisionSet
+from lp.translations.interfaces.translationtemplatesbuildjob import (
+    ITranslationTemplatesBuildJobSource)
 
 UTC = pytz.timezone('UTC')
 
@@ -355,6 +358,20 @@ class BzrSync:
 def schedule_translation_upload(tip_changed):
     getUtility(IRosettaUploadJobSource).create(
         tip_changed.db_branch, tip_changed.old_tip_revision_id)
+
+
+@adapter(events.TipChanged)
+def schedule_translation_templates_build(tip_changed):
+    """If appropriate, schedule a `TranslationTemplatesBuildJob`."""
+    if not config.rosetta_generate_templates:
+        # This feature is disabled by default.
+        return
+
+    utility = getUtility(ITranslationTemplatesBuildSource)
+    db_branch = tip_changed.db_branch
+    if utility.generatesTemplates(db_branch):
+        # This branch is used for generating templates.
+        utility.create(tip_changed.db_branch)
 
 
 @adapter(events.TipChanged)

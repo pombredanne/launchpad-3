@@ -18,7 +18,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.code.interfaces.branchjob import IBranchJob
+from lp.code.interfaces.branchjob import IBranchJob, IRosettaUploadJob
 from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.translations.interfaces.translationtemplatesbuildjob import (
@@ -59,6 +59,14 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
     def getTitle(self):
         """See `IBuildFarmJob`."""
         return '%s translation templates build' % self.branch.bzr_identity
+
+    @classmethod
+    def generatesTemplates(cls, branch):
+        """See `ITranslationTemplatesBuildJobSource`."""
+        # XXX JeroenVermeulen 2010-02-12 bug=517080: also ask pottery
+        # whether this branch seems suitable for producing templates.
+        return getUtility(IRosettaUploadJobSource).providesTranslationFiles(
+            branch)
 
     @classmethod
     def create(cls, branch):

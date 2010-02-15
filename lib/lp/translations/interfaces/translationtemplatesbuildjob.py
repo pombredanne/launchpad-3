@@ -15,6 +15,13 @@ from zope.interface import Interface
 class ITranslationTemplatesBuildJobSource(Interface):
     """Container for `TranslationTemplatesBuildJob`s."""
 
+    def generatesTemplates(branch):
+        """Can this branch usefully generate translation templates?
+
+        If yes, then use `create` to schedule a build-farm job to
+        generate the templates based on the source code in the branch.
+        """
+
     def create(branch):
         """Create new `TranslationTemplatesBuildJob`.
 
