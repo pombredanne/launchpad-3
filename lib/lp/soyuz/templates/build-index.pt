@@ -147,7 +147,7 @@
          tal:content="context/dependencies">x, y, z</em>
       </li>
       <tal:pending condition="context/buildstate/enumvalue:NEEDSBUILD">
-        <li tal:define="eta context/getEstimatedBuildStartTime;">
+        <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime;">
           Start <tal:eta
             replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
             (<span tal:replace="view/buildqueue/lastscore"/>)

@@ -234,15 +234,6 @@ class IBuildView(IBuildBase):
         The binarypackagerelease will be attached to this specific build.
         """
 
-    def getEstimatedBuildStartTime():
-        """Get the estimated build start time for a pending build job.
-
-        :return: a timestamp upon success or None on failure. None
-            indicates that an estimated start time is not available.
-        :raise: AssertionError when the build job is not in the
-            `BuildStatus.NEEDSBUILD` state.
-        """
-
     def getFileByName(filename):
         """Return the corresponding `ILibraryFileAlias` in this context.
 
