@@ -11,9 +11,9 @@ import unittest
 from canonical.launchpad.windmill.testing import lpuser, widgets
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
-class TestProductIndexPage(TestCaseWithFactory):
+class TestProductIndexPage(WindmillTestCase):
     """Test product index page."""
 
     layer = RegistryWindmillLayer

@@ -21,7 +21,7 @@ __all__ = [
 
 import apt_pkg
 import commands
-import md5
+import hashlib
 import os
 import stat
 import sys
@@ -36,11 +36,14 @@ from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.archiveuploader.utils import (
+    determine_source_file_type)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -820,27 +823,27 @@ class SyncSource:
     'aptMD5Sum' is provided as a classmethod during the integration time.
     """
 
-    def __init__(self, files, origin, debug, downloader, todistro):
+    def __init__(self, files, origin, logger, downloader, todistro):
         """Store local context.
 
         files: a dictionary where the keys are the filename and the
                value another dictionary with the file informations.
         origin: a dictionary similar to 'files' but where the values
                 contain information for download files to be synchronized
-        debug: a debug function, 'debug(message)'
+        logger: a logger
         downloader: a callable that fetchs URLs, 'downloader(url, destination)'
         todistro: target distribution object
         """
         self.files = files
         self.origin = origin
-        self.debug = debug
+        self.logger = logger
         self.downloader = downloader
         self.todistro = todistro
 
     @classmethod
     def generateMD5Sum(self, filename):
         file_handle = open(filename)
-        md5sum = md5.md5(file_handle.read()).hexdigest()
+        md5sum = hashlib.md5(file_handle.read()).hexdigest()
         file_handle.close()
         return md5sum
 
@@ -857,8 +860,8 @@ class SyncSource:
         except NotFoundError:
             return None
 
-        self.debug(
-            "\t%s: already in distro - downloading from librarian" %
+        self.logger.info(
+            "%s: already in distro - downloading from librarian" %
             filename)
 
         output_file = open(filename, 'w')
@@ -870,23 +873,23 @@ class SyncSource:
         """Try to fetch files from Librarian.
 
         It raises SyncSourceError if anything else then an
-        'orig.tar.gz' was found in Librarian.
-        Return the name of the orig tarball if it was 
-        retrieved from the librarian.
+        orig tarball was found in Librarian.
+        Return the names of the files retrieved from the librarian.
         """
-        orig_filename = None
+        retrieved = []
         for filename in self.files.keys():
             if not self.fetchFileFromLibrarian(filename):
                 continue
+            file_type = determine_source_file_type(filename)
             # set the return code if an orig was, in fact,
             # fetched from Librarian
-            if filename.endswith("orig.tar.gz"):
-                orig_filename = filename
-            else:
+            if not file_type in (SourcePackageFileType.ORIG_TARBALL,
+                                 SourcePackageFileType.COMPONENT_ORIG_TARBALL):
                 raise SyncSourceError(
-                    'Oops, only orig.tar.gz can be retrieved from librarian')
+                    'Oops, only orig tarball can be retrieved from librarian.')
+            retrieved.append(filename)
 
-        return orig_filename
+        return retrieved
 
     def fetchSyncFiles(self):
         """Fetch files from the original sync source.
@@ -895,21 +898,19 @@ class SyncSource:
         """
         dsc_filename = None
         for filename in self.files.keys():
+            file_type = determine_source_file_type(filename)
+            if file_type == SourcePackageFileType.DSC:
+                dsc_filename = filename
             if os.path.exists(filename):
+                self.logger.info("  - <%s: cached>" % (filename))
                 continue
-            self.debug(
+            self.logger.info(
                 "  - <%s: downloading from %s>" %
                 (filename, self.origin["url"]))
             download_f = ("%s%s" % (self.origin["url"],
                                     self.files[filename]["remote filename"]))
             sys.stdout.flush()
             self.downloader(download_f, filename)
-            # only set the dsc_filename if the DSC was really downloaded.
-            # this loop usually includes the other files for the upload,
-            # DIFF and ORIG.
-            if filename.endswith(".dsc"):
-                dsc_filename = filename
-
         return dsc_filename
 
     def checkDownloadedFiles(self):

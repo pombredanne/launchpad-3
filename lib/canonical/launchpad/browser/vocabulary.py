@@ -43,7 +43,7 @@ from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 # This limits the output to one line of text, since the sprite class
 # cannot clip the background image effectively for vocabulary items
 # with more than single line description below the title.
-MAX_DESCRIPTION_LENGTH = 55
+MAX_DESCRIPTION_LENGTH = 120
 
 
 class IPickerEntry(Interface):
