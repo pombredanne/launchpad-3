@@ -1353,15 +1353,6 @@ COMMENT ON COLUMN SourcePackageRecipeBuild.pocket IS 'The pocket the source pack
 COMMENT ON COLUMN SourcePackageRecipeBuild.dependencies IS 'The missing build dependencies, if any.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.upload_log IS 'The output from uploading the source package to the archive.';
 
--- SourcePackageRecipeBuildUpload
-
-COMMENT ON TABLE SourcePackageRecipeBuildUpload IS 'The record of uploading the source package built by a SourcePackageRecipeBuild to an archive.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.registrant IS 'Who requested the upload.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.sourcepackage_recipe_build IS 'Upload the output of this build.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.archive IS 'The archive to upload to.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.upload_log IS 'The output from uploading the source package to the archive.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.state IS 'The state of the upload.';
-
 -- SourcePackageRecipeBuildJob
 
 COMMENT ON TABLE SourcePackageRecipeBuildJob IS 'The link between a SourcePackageRecipeBuild row and a Job row to schedule a build of a source package recipe.';
