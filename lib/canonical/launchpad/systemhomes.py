@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsoverview import (
     ITranslationsOverview)
-from canonical.launchpad.interfaces.hwdb import (
+from lp.hardwaredb.interfaces.hwdb import (
     IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
     IHWVendorIDSet, ParameterError)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -159,7 +159,7 @@ class MaloneApplication:
     def latest_bugs(self):
         user = getUtility(ILaunchBag).user
         return getUtility(IBugSet).searchAsUser(
-            user=user, orderBy=['-datecreated', '-id'], limit=5)
+            user=user, orderBy=['-datecreated'], limit=5)
 
     def default_bug_list(self, user=None):
         return getUtility(IBugSet).searchAsUser(user)

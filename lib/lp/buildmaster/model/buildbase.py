@@ -384,9 +384,14 @@ class BuildBase:
             restricted=restricted)
         self.upload_log = library_file
 
-    def queueBuild(self):
+    def queueBuild(self, suspended=False):
         """See `IBuildBase`"""
         specific_job = self.makeJob()
+
+        # This build queue job is to be created in a suspended state.
+        if suspended:
+            specific_job.job.suspend()
+
         duration_estimate = self.estimateDuration()
         queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
