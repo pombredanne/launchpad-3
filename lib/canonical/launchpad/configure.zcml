@@ -16,6 +16,8 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="lp.hardwaredb" />
+
   <include package="lp.app" />
   <include package="lp.bugs" />
   <include package="lp.registry" />
@@ -93,5 +95,4 @@
       name="PlotKit"
       directory="../../contrib/PlotKit"
       />
-
 </configure>

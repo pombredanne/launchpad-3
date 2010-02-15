@@ -2186,7 +2186,7 @@ permissions are kept. No one has permission to upload or copy sources
 to it.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov_archive.enabled = False
+    >>> cprov_archive.disable()
 
     >>> login("carlos@canonical.com")
     >>> check_permission('launchpad.Append', cprov_archive)
@@ -2222,7 +2222,7 @@ owners or uploaders.
 Re-enable Celso's PPA.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov_archive.enabled = True
+    >>> cprov_archive.enable()
 
 Another important aspect of the upload permission for ubuntu main
 archives (PRIMARY, PARTNER and DEBUG) is that in addition to owners
@@ -2349,13 +2349,17 @@ hoary:
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> discard = test_publisher.getPubSource(
-    ...     sourcename="package1", version="1.0", archive=cprov.archive)
+    ...     sourcename="package1", version="1.0", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED) 
+    >>> discard = test_publisher.getPubSource( 
+    ...     sourcename="package1", version="1.1", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> discard = test_publisher.getPubSource(
-    ...     sourcename="package1", version="1.1", archive=cprov.archive)
+    ...     sourcename="package2", version="1.0", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> discard = test_publisher.getPubSource(
-    ...     sourcename="package2", version="1.0", archive=cprov.archive)
-    >>> discard = test_publisher.getPubSource(
-    ...     sourcename="pack", version="1.0", archive=cprov.archive)
+    ...     sourcename="pack", version="1.0", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
 
 Now we have package1 1.0 and 1.1, and package2 1.0 in cprov's PPA.  We
 can ask syncSources to synchronise these packages into mark's PPA in the

@@ -35,19 +35,22 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
-from canonical.launchpad.interfaces.hwdb import HWBus, IHWSubmission
+from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -62,7 +65,7 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingStatus)
+    ISourcePackagePublishingHistoryPublic, PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
@@ -113,12 +116,11 @@ IBranchMergeProposal['nominateReviewer'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewVoteReference
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
-IHasBranches['getBranches'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
-        IBranch
-IHasMergeProposals['getMergeProposals'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = \
-        IBranchMergeProposal
+patch_collection_return_type(IHasBranches, 'getBranches', IBranch)
+patch_collection_return_type(
+    IHasMergeProposals, 'getMergeProposals', IBranchMergeProposal)
+patch_collection_return_type(
+    IHasRequestedReviews, 'getRequestedReviews', IBranchMergeProposal)
 
 # IBugTask
 
@@ -173,11 +175,12 @@ patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
 # publishing.py
-ISourcePackagePublishingHistory['getBuilds'].queryTaggedValue(
+ISourcePackagePublishingHistoryPublic['getBuilds'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
-ISourcePackagePublishingHistory['getPublishedBinaries'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)[
-    'return_type'].value_type.schema = IBinaryPackagePublishingHistory
+ISourcePackagePublishingHistoryPublic[
+    'getPublishedBinaries'].queryTaggedValue(
+        LAZR_WEBSERVICE_EXPORTED)[
+            'return_type'].value_type.schema = IBinaryPackagePublishingHistory
 patch_reference_property(
     ISecureBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)
@@ -260,6 +263,10 @@ patch_reference_property(
 IDistribution['all_distro_archives'].value_type.schema = IArchive
 
 
+# IDistributionMirror
+IDistributionMirror['distribution'].schema = IDistribution
+
+
 # IDistroSeries
 patch_entry_return_type(
     IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
@@ -306,3 +313,5 @@ patch_reference_property(
 patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
+
+IBuildBase['buildstate'].vocabulary = BuildStatus

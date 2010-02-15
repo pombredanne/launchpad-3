@@ -45,14 +45,10 @@ is formatted HTML.
     <BLANKLINE>
     <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
 
-New users (those without karma) are on probation; the homepage content is
-escaped HTML.
+New users are on probation; the homepage content is escaped HTML.
 
     >>> new_user = factory.makePerson()
     >>> new_user.homepage_content = homepage_content
-    >>> new_user.karma
-    0
-
     >>> view = create_initialized_view(new_user, '+index')
     >>> view.is_probationary_or_invalid_user
     True
@@ -860,7 +856,7 @@ If we disable Cprov's PPA, the section is not presented to anonymous
 users who cannot view the PPA, but is displayed to Celso.
 
     >>> login("admin@canonical.com")
-    >>> cprov.archive.enabled = False
+    >>> cprov.archive.disable()
 
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(cprov, "+index")

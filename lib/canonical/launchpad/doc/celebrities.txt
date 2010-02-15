@@ -8,7 +8,8 @@ there is an ILaunchpadCelebrities utility available that gives access
 to these well-known objects through attributes.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import ILanguageSet, IPersonSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPerson, IPersonSet
     >>> celebs = getUtility(ILaunchpadCelebrities)
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -223,6 +224,36 @@ used for determining who is allowed to create new package sets.
     techboard
     >>> celebs.ubuntu_techboard == ubuntu_techboard
     True
+
+
+== Person celebrities ==
+
+Each person celebrity has a corresponding "in_" attribute in IPersonRoles, to
+check if a person has that role. If the attributes differ, IPersonRoles needs
+to be synced to ILaunchpadCelebrities by adding/removing the appropriate
+"in_" attribute(s).
+
+    >>> from canonical.launchpad.interfaces.launchpad import IPersonRoles
+    >>> def get_person_celebrity_names():
+    ...     for name in ILaunchpadCelebrities.names():
+    ...         if IPerson.providedBy(getattr(celebs, name)):
+    ...             yield "in_" + name
+    >>> def get_person_roles_names():
+    ...     for name in IPersonRoles.names():
+    ...         if name.startswith("in_"):
+    ...             yield name
+
+Treating the lists as sets and determining their difference gives us a clear
+picture of what is missing where.
+
+    >>> person_celebrity_names = set(get_person_celebrity_names())
+    >>> person_roles_names = set(get_person_roles_names())
+    >>> print "Please add to IPersonRoles: " + (
+    ...       ", ".join(list(person_celebrity_names - person_roles_names)))
+    Please add to IPersonRoles:
+    >>> print "Please remove from IPersonRoles: " + (
+    ...       ", ".join(list(person_roles_names - person_celebrity_names)))
+    Please remove from IPersonRoles:
 
 
 == Detecting if a person is a celebrity ==

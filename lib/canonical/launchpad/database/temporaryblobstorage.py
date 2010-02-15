@@ -10,12 +10,13 @@ __all__ = [
     'TemporaryStorageManager',
     ]
 
-from cStringIO import StringIO
-from datetime import timedelta, datetime
+
 import random
-import sha
 import time
 import thread
+
+from cStringIO import StringIO
+from datetime import timedelta, datetime
 
 from pytz import utc
 from sqlobject import StringCol, ForeignKey

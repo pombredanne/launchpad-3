@@ -123,17 +123,20 @@ And finally Copy archives.
     <img ... src="/@@/distribution" />
 
 PPAs have a 'link' formatter, which returns the appropriate HTML used
-for referring to them in other pages.
+for referring to them in other pages and a 'reference' formatter which
+displays the unique ppa reference.
 
     >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
     <a href="/~mark/+archive/ppa"
        class="sprite ppa-icon">PPA for Mark Shuttleworth</a>
+    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
+    ppa:mark/ppa
 
 Disabled PPAs links use a different icon and are only linkified for
 users with launchpad.View on them.
 
     >>> login('foo.bar@canonical.com')
-    >>> mark.archive.enabled = False
+    >>> mark.archive.disable()
 
     >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
     <a href="/~mark/+archive/ppa" class="sprite ppa-icon-inactive">PPA
@@ -148,7 +151,7 @@ Private PPAs links are not rendered for users without launchpad.View on
 them.
 
     >>> login('foo.bar@canonical.com')
-    >>> mark.archive.enabled = True
+    >>> mark.archive.enable()
     >>> mark.archive.buildd_secret = 'x'
     >>> mark.archive.private = True
 
@@ -160,10 +163,22 @@ them.
 
     >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
 
+Similarly, references to private PPAs are not rendered unless the user has
+a subscription to the PPA.
+
+    >>> login('foo.bar@canonical.com')
+    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
+
+    >>> login('mark@example.com')
+    >>> foo = getUtility(IPersonSet).getByName('name16')
+    >>> ignore = mark.archive.newSubscription(foo, mark)
+    >>> login('foo.bar@canonical.com')
+    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
+    ppa:mark/ppa
+
 We also have icons for builds which may have different dimensions.
 
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> login('foo.bar@canonical.com')
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
     >>> source = stp.getPubSource()
@@ -1111,7 +1126,7 @@ Unknown email addresses are not altered in any way:
     >>> test_tales('foo/fmt:linkify-email', foo='nobody@example.com')
     'nobody@example.com'
 
-Users who specifiy that their email adresses must be hidden also do not
+Users who specify that their email addresses must be hidden also do not
 get linkified.  test@canonical.com is hidden:
 
     >>> person_set = getUtility(IPersonSet)
@@ -1583,4 +1598,3 @@ The anonymous user is not allowed to see private team details.
 
     >>> test_tales("team/fmt:unique_displayname", team=myteam)
     u'<hidden>'
-

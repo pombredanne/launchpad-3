@@ -896,8 +896,8 @@ class IArchiveAppend(Interface):
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
 
-        It will copy the most recent versions of the named sources to
-        the destination archive if necessary.
+        It will copy the most recent PUBLISHED versions of the named
+        sources to the destination archive if necessary.
 
         This operation will only succeeds when all requested packages
         are synchronised between the archives. If any of the requested
@@ -1083,6 +1083,12 @@ class IArchiveEdit(Interface):
         :param person: An `IPerson` whose permission should be revoked.
         :param component: An `IComponent` or textual component name.
         """
+
+    def enable():
+        """Enable the archive."""
+
+    def disable():
+        """Disable the archive."""
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):

@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces import (
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -778,7 +779,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s" />')
+        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
 
     linked_icon_template = (
         '<a href="%s" alt="%s" title="%s" class="%s"></a>')
@@ -828,6 +829,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         """Return whether the bug is linked to a specification."""
         return self._context.bug.specifications.count() > 0
 
+    def _hasPatch(self):
+        """Return whether the bug has a patch."""
+        return self._context.bug.has_patches
+
+
     def badges(self):
 
         badges = []
@@ -854,6 +860,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 milestone_text , "Linked to %s" % milestone_text,
                 "sprite milestone"))
 
+        if self._hasPatch():
+            badges.append(self.icon_template % (
+                "haspatch", "Has a patch", "sprite haspatch-icon"))
+
         # Join with spaces to avoid the icons smashing into each other
         # when multiple ones are presented.
         return " ".join(badges)
@@ -878,6 +888,10 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
     def _hasSpecification(self):
         """See `BugTaskImageDisplayAPI`"""
         return self._context.has_specification
+
+    def _hasPatch(self):
+        """See `BugTaskImageDisplayAPI`"""
+        return self._context.has_patch
 
 
 class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
@@ -1576,6 +1590,13 @@ class PPAFormatterAPI(CustomizableFormatter):
 
     _link_summary_template = '%(display_name)s'
     _link_permission = 'launchpad.View'
+    _reference_template = "ppa:%(owner_name)s/%(ppa_name)s"
+
+    final_traversable_names = {
+        'reference': 'reference',
+        }
+    final_traversable_names.update(
+        CustomizableFormatter.final_traversable_names)
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1604,6 +1625,24 @@ class PPAFormatterAPI(CustomizableFormatter):
                 return '<span class="%s">%s</span>' % (css, summary)
             else:
                 return ''
+
+    def reference(self, view_name=None, rootsite=None):
+        """Return the text PPA reference for a PPA."""
+        # XXX: noodles 2010-02-11 bug=336779: This following check
+        # should be replaced with the normal check_permission once
+        # permissions for archive subscribers has been resolved.
+        if self._context.private:
+            request = get_current_browser_request()
+            person = IPerson(request.principal)
+            subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                person, self._context)
+            if subscriptions.is_empty():
+                return ''
+
+        return self._reference_template % {
+            'owner_name': self._context.owner.name,
+            'ppa_name': self._context.name,
+            }
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
@@ -3099,7 +3138,7 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link',
-        'url': 'url', 
+        'url': 'url',
         'displayname': 'displayname',
     }
 

@@ -53,7 +53,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
-    IPublishingEdit, IPublishingSet, ISecureBinaryPackagePublishingHistory,
+    IPublishingSet, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PoolFileOverwriteError)
@@ -471,7 +471,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
        Excluding embargoed stuff
     """
-    implements(ISourcePackagePublishingHistory, IPublishingEdit)
+    implements(ISourcePackagePublishingHistory)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
@@ -656,7 +656,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         build = self.sourcepackagerelease.createBuild(
             distroarchseries=arch, archive=self.archive, pocket=self.pocket)
-        build_queue = build.createBuildQueueEntry()
+        # Create the builds in suspended mode for disabled archives.
+        build_queue = build.queueBuild(suspended=not self.archive.enabled)
         build_queue.score()
         Store.of(build).flush()
 
@@ -865,31 +866,27 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return [
             ProxiedLibraryFileAlias(file, parent).http_url for file in files]
 
-    @property
-    def source_file_urls(self):
+    def sourceFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
         source_urls = self._proxied_urls(
             [file.libraryfile for file in self.sourcepackagerelease.files],
              self.archive)
-
         return source_urls
 
-    @property
-    def binary_file_urls(self):
+    def binaryFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
         binaries = publishing_set.getBinaryFilesForSources(
             self).config(distinct=True)
         binary_urls = self._proxied_urls(
             [binary for _source, binary, _content in binaries], self.archive)
-
         return binary_urls
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
 
-    implements(IBinaryPackagePublishingHistory, IPublishingEdit)
+    implements(IBinaryPackagePublishingHistory)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
