@@ -16,7 +16,6 @@ import operator
 import datetime
 import calendar
 import pytz
-import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from storm.locals import And, Desc, Join, SQL, Store, Unicode
@@ -1090,7 +1089,7 @@ class ProductSet:
         if registrant is None:
             registrant = owner
         if licenses is None:
-            licenses = sets.Set()
+            licenses = set()
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
