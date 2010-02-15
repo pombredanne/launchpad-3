@@ -371,7 +371,7 @@ class BuildBase:
         # `LibrarianFileAlias`.
 
         assert self.upload_log is None, (
-            "Upload log information already exist and cannot be overridden.")
+            "Upload log information already exists and cannot be overridden.")
 
         filename = 'upload_%s_log.txt' % self.id
         contentType = filenameToContentType(filename)
