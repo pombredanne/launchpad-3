@@ -71,7 +71,7 @@ from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.hwdb import IHWDBApplication
+from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,

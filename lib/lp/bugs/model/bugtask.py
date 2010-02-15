@@ -1845,7 +1845,7 @@ class BugTaskSet:
         params.hardware_product_id are all not None.
         """
         # Avoid cyclic imports.
-        from canonical.launchpad.database.hwdb import (
+        from lp.hardwaredb.model.hwdb import (
             HWSubmission, HWSubmissionBug, HWSubmissionDevice,
             _userCanAccessSubmissionStormClause,
             make_submission_device_statistics_clause)

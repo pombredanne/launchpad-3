@@ -32,7 +32,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Max, Not, Select, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -46,7 +46,7 @@ from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -101,7 +101,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person
+from lp.registry.model.person import Person, ValidPersonCache
 from lp.registry.model.pillar import pillar_sort_key
 
 
@@ -228,7 +228,7 @@ class Bug(SQLBase):
                            prejoins=['owner'],
                            orderBy=['datecreated', 'id'])
     bug_messages = SQLMultipleJoin(
-        'BugMessage', joinColumn='bug',orderBy='id')
+        'BugMessage', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
@@ -259,6 +259,31 @@ class Bug(SQLBase):
     users_unaffected_count = IntCol(notNull=True, default=0)
     heat = IntCol(notNull=True, default=0)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def latest_patch(self):
+        """See `IBug`."""
+        # We want to retrieve the most recently added bug attachment
+        # that is of type BugAttachmentType.PATCH. In order to find
+        # this attachment, we should in theory sort by
+        # BugAttachment.message.datecreated. Since we don't have
+        # an index for Message.datecreated, such a query would be
+        # quite slow. We search instead for the BugAttachment with
+        # the largest ID for a given bug. This is "nearly" equivalent
+        # to searching the record with the maximum value of
+        # message.datecreated: The only exception is the rare case when
+        # two BugAttachment records are simultaneuosly added to the same
+        # bug, where bug_attachment_1.id < bug_attachment_2.id, while
+        # the Message record for bug_attachment_2 is created before
+        # the Message record for bug_attachment_1. The difference of
+        # the datecreated values of the Message records is in this case
+        # probably smaller than one second and the selection of the
+        # "most recent" patch anyway somewhat arbitrary.
+        return Store.of(self).find(
+            BugAttachment, BugAttachment.id == Select(
+                Max(BugAttachment.id),
+                And(BugAttachment.bug == self.id,
+                    BugAttachment.type == BugAttachmentType.PATCH))).one()
 
     @property
     def comment_count(self):
@@ -535,7 +560,6 @@ class Bug(SQLBase):
         # the same time as retrieving the bug subscriptions (as a left
         # join). However, this ran slowly (far from optimal query
         # plan), so we're doing it as two queries now.
-        from lp.registry.model.person import Person, ValidPersonCache
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
@@ -558,7 +582,6 @@ class Bug(SQLBase):
         the relevant subscribers and rationales will be registered on
         it.
         """
-        from lp.registry.model.person import Person
         subscribers = list(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -619,7 +642,6 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        from lp.registry.model.person import Person
         dupe_subscribers = set(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -976,7 +998,7 @@ class Bug(SQLBase):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
-    completeness_clause =  """
+    completeness_clause = """
         BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
 
     def canBeAQuestion(self):
@@ -1116,7 +1138,6 @@ class Bug(SQLBase):
         # Since we can't prejoin, cache all people at once so we don't
         # have to do it while rendering, which is a big deal for bugs
         # with a million comments.
-        from lp.registry.model.person import Person
         owner_ids = set()
         for chunk in chunks:
             if chunk.message.ownerID:
@@ -1334,8 +1355,7 @@ class Bug(SQLBase):
         """Get the tags as a sorted list of strings."""
         tags = [
             bugtag.tag
-            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')
-            ]
+            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')]
         return tags
 
     def _setTags(self, tags):
