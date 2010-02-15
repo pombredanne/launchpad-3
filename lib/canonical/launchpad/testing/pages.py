@@ -133,6 +133,8 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         self.handle_errors = handle_errors
         WebServiceCaller.__init__(self, handle_errors, domain, protocol)
 
+    default_api_version = "beta"
+
     def addHeadersTo(self, full_url, full_headers):
         if (self.consumer is not None and self.access_token is not None):
             request = OAuthRequest.from_consumer_and_token(
