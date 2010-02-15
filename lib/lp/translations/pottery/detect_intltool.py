@@ -39,7 +39,7 @@ class ReadLockTree(object):
 def is_intltool_structure(tree):
     """If the tree may contain an intltool structure."""
     with ReadLockTree(tree):
-        for dir, files in tree.walkdirs():
+        for thedir, files in tree.walkdirs():
             for afile in files:
                 file_path, file_name, file_type = afile[:3]
                 if file_type != 'file':

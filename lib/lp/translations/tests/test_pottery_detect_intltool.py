@@ -10,7 +10,7 @@ import unittest
 from StringIO import StringIO
 from textwrap import dedent
 
-from bzrlib.workingtree import WorkingTree
+from bzrlib.bzrdir import BzrDir
 from canonical.launchpad.scripts.tests import run_script
 from lp.translations.pottery.detect_intltool import (
     ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in,
@@ -200,10 +200,7 @@ class TestDetectIntltoolInBzrTree(TestCase, SetupTestPackageMixin):
         super(TestDetectIntltoolInBzrTree, self).tearDown()
 
     def prepare_tree(self):
-        os.system("bzr init")
-        os.system("bzr add")
-        os.system("bzr commit -m Initial")
-        return WorkingTree.open(".")
+        return BzrDir.create_standalone_workingtree(".")
 
     def test_detect_intltool_structure(self):
         # Find POTFILES.in in a package with multiple dirs when only one has
