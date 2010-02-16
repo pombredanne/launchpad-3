@@ -15,7 +15,7 @@ from canonical.launchpad.scripts.tests import run_script
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 from lp.translations.pottery.build_slave import (
     ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in,
-    get_translation_domain)
+    generate_pot, get_translation_domain)
 from lp.testing import TestCase
 
 
@@ -175,6 +175,16 @@ class TestDetectIntltool(TestCase, SetupTestPackageMixin):
             ./po-module1 (packagename-module1)
             ./po-module2 (packagename-module2)
             """), stdout)
+
+
+class TestGenerateTemplates(TestCase, SetupTestPackageMixin):
+
+    def test_generate_2_pots(self):
+        # Complete run: generate 2 PO templates.
+        self.prepare_package("intltool_full_ok")
+        self.assertEqual(
+            ["./po-module1/module1.pot"],
+            generate_pot("./po-module1", "module1"))
 
 
 class TestDetectIntltoolInBzrTree(TestCase, SetupTestPackageMixin):
