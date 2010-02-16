@@ -79,17 +79,15 @@
                     <dt>
                       <a tal:replace="structure product/fmt:link" /> project:
                     </dt>
-                    <dd title="Project bug supervisor"
-                      tal:define="bool product/bug_supervisor">
+                    <dd title="Project bug supervisor">
                       Bug supervisor:
-                      <metal:yes-no
-                        use-macro="context/@@+base-layout-macros/yes-no" />
+                      <tal:yes-no
+                        replace="structure product/bug_supervisor/image:boolean" />
                     </dd>
                     <dd title="Project bug tracker"
                       tal:define="bool product/official_malone|product/bugtracker">
                       Bug tracker:
-                      <metal:yes-no
-                        use-macro="context/@@+base-layout-macros/yes-no"/>
+                      <tal:yes-no replace="structure bool/image:boolean"/>
                     </dd>
                   </dl>
                 </td>
@@ -99,18 +97,15 @@
                     <dt style="margin-bottom: 6px;">
                       <a tal:replace="structure series/fmt:link" />:
                     </dt>
-                    <dd title="Series branch"
-                      tal:define="bool series/branch">
+                    <dd title="Series branch">
                       Branch:
-                      <metal:yes-no
-                        use-macro="context/@@+base-layout-macros/yes-no" />
+                      <tal:yes-no replace="structure series/branch/image:boolean"/>
                     </dd>
                     <dd title="Series translations auto import"
                       tal:condition="translations"
                       tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
                       Translations:
-                      <metal:yes-no
-                        use-macro="context/@@+base-layout-macros/yes-no" />
+                      <tal:yes-no replace="structure bool/image:boolean"/>
                     </dd>
                   </dl>
                 </td>
