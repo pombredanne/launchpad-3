@@ -34,7 +34,7 @@ a link from the distribution series translations page.
     >>> anon_browser.getLink('full list of templates').click()
 
 Full listing of templates shows priority, source package name, template name
-lenght, languages and the date of last update for this distribution series.
+length, languages and the date of last update for this distribution series.
 
     >>> table = find_tag_by_id(anon_browser.contents, 'templates_table')
     >>> print extract_text(table)
