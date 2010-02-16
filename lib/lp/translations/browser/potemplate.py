@@ -538,11 +538,23 @@ class POTemplateEditView(LaunchpadEditFormView):
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return self.next_url
 
     @property
     def next_url(self):
-        return canonical_url(self.context)
+        """See `LaunchpadEditFormView`."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('next_url')
+        if referrer is None:
+            referrer = self.request.getHeader('referer')
+
+        if (referrer is not None
+            and referrer.startswith(self.request.getApplicationURL())
+            and referrer != self.request.getHeader('location')):
+            return referrer
+        else:
+            return canonical_url(self.context)
 
 
 class POTemplateAdminView(POTemplateEditView):
