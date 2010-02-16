@@ -1127,7 +1127,7 @@ class AdminDistributionTranslations(AuthorizationBase):
         else:
             return (user.in_rosetta_experts or
                     EditDistributionByDistroOwnersOrAdmins(
-                        self).checkAuthenticated(user))
+                        self.obj).checkAuthenticated(user))
 
 
 # Please keep AdminPOTemplateSubset in sync with this, unless you

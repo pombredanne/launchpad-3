@@ -52,7 +52,7 @@ class ProjectView(LaunchpadView):
         return list(all_products - translatables)
 
 
-class ProjectSetTranslationPolicyView(TranslationsMixin, ProjectEditView):
+class ProjectSetTranslationsPolicyView(TranslationsMixin, ProjectEditView):
     label = "Set permissions and policies"
     page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]
