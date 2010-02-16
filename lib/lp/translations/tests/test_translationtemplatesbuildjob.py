@@ -97,7 +97,6 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.assertEqual(1000, self.specific_job.score())
 
 
-<<<<<<< TREE
 class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
     """Test `TranslationTemplatesBuildJobSource`."""
 
