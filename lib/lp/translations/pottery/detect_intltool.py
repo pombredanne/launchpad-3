@@ -1,6 +1,6 @@
 #! /usr/bin/python2.5
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions to detect if intltool can be used to generate a POT file for the
@@ -14,6 +14,7 @@ __all__ = [
     'get_translation_domain',
     'find_intltool_dirs',
     'find_potfiles_in',
+    'is_intltool_structure',
     ]
 
 import errno

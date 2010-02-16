@@ -18,11 +18,12 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.code.interfaces.branchjob import IBranchJob, IRosettaUploadJob
+from lp.code.interfaces.branchjob import IBranchJob, IRosettaUploadJobSource
 from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
+from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
 class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
@@ -63,10 +64,15 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
     @classmethod
     def generatesTemplates(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
-        # XXX JeroenVermeulen 2010-02-12 bug=517080: also ask pottery
-        # whether this branch seems suitable for producing templates.
-        return getUtility(IRosettaUploadJobSource).providesTranslationFiles(
-            branch)
+        utility = getUtility(IRosettaUploadJobSource)
+        if not utility.providesTranslationFiles(branch):
+            return False
+
+        if not is_intltool_structure(branch.repository.tree):
+            return False
+
+        # Yay!  We made it.
+        return True
 
     @classmethod
     def create(cls, branch):
