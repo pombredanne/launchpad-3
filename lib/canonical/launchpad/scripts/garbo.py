@@ -21,7 +21,7 @@ from canonical.database import postgresql
 from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.hwdb import HWSubmission
+from lp.hardwaredb.model.hwdb import HWSubmission
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -768,7 +768,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     def __init__(self, test_args=None):
         super(BaseDatabaseGarbageCollector, self).__init__(
             self.script_name,
-            dbuser=self.script_name.replace('-','_'),
+            dbuser=self.script_name.replace('-', '_'),
             test_args=test_args)
 
     def add_my_options(self):

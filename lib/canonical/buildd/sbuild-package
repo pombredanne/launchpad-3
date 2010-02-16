@@ -15,17 +15,20 @@
 
 exec 2>&1
 
+export LANG=C LC_ALL=C 
+
 SBUILD=/usr/bin/sbuild
 BUILDID=$1
+SUITE=$2
 
-shift
+shift; shift
 
 export NR_PROCESSORS=$(grep ^processor /proc/cpuinfo | wc -l)
 
 echo "Initiating build $BUILDID with $NR_PROCESSORS processor cores."
 
 if [ $NR_PROCESSORS -lt 2 ]; then
-	unset NR_PROCESSORS
+        unset NR_PROCESSORS
 fi
 
 cd "$HOME/build-$BUILDID"
@@ -37,18 +40,33 @@ if [ -f /etc/launchpad-buildd/default ]; then
   eval `grep architecturetag /etc/launchpad-buildd/default | sed 's/ //g'`
 fi
 
+WARN=""
 case $hostarch in
   hppa|powerpc|sparc)
     SBUILD="linux32 $SBUILD"
+    WARN="--warnonly"
+    ;;
+  i386|lpia|armel)
+    # SBUILD is already correct
+    WARN="--warnonly"
     ;;
   amd64)
     if [ "$hostarch" != "$architecturetag" ]; then
       SBUILD="linux32 $SBUILD"
+      WARN="--warnonly"
     fi
+    ;;
+  ia64)
     ;;
 esac
 
-LANG=C LC_ALL=C $SBUILD "$@" | /usr/bin/check-implicit-pointer-functions --inline
+case $SUITE in
+    warty*|hoary*|breezy*|dapper*|edgy*|feisty*|gutsy*|hardy*|karmic*)
+        WARN="--warnonly"
+        ;;
+esac
+
+$SBUILD "$@" | /usr/bin/check-implicit-pointer-functions --inline $WARN
 RET=$?
 
 # really successful returns

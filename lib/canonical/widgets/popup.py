@@ -127,7 +127,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     def chooseLink(self):
         js_file = os.path.join(os.path.dirname(__file__),
-                               'templates/vocabulary-picker.js')
+                               'templates/vocabulary-picker.js.template')
         js_template = open(js_file).read()
 
         if self.header is None:

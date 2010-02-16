@@ -36,15 +36,15 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
-    )
-from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -67,7 +67,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.hwdb import (
+from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat, IHWDeviceDriverLinkSet, IHWSubmissionDeviceSet,
     IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -101,6 +101,7 @@ from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.diff import Diff, PreviewDiff
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
 from lp.registry.model.milestone import Milestone
@@ -136,6 +137,23 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 
 
 SPACE = ' '
+
+DIFF = """\
+=== zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'
+--- yvo/yc/pbqr/vagresnprf/qvss.cl	2009-10-01 13:25:12 +0000
++++ yvo/yc/pbqr/vagresnprf/qvss.cl	2010-02-02 15:48:56 +0000
+@@ -121,6 +121,10 @@
+                 'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
+              ernqbayl=Gehr))
+ 
++    unf_pbasyvpgf = Obby(
++        gvgyr=_('Unf pbasyvpgf'), ernqbayl=Gehr,
++        qrfpevcgvba=_('Gur cerivrjrq zretr cebqhprf pbasyvpgf.'))
++
+     # Gur fpurzn sbe gur Ersrerapr trgf cngpurq va _fpurzn_pvephyne_vzcbegf.
+     oenapu_zretr_cebcbfny = rkcbegrq(
+         Ersrerapr(
+"""
 
 
 def default_master_store(func):
@@ -218,6 +236,9 @@ class ObjectFactory:
             prefix = "generic-string"
         string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
+
+    def getUniqueUnicode(self):
+        return self.getUniqueString().decode('latin-1')
 
     def getUniqueURL(self, scheme=None, host=None):
         """Return a URL unique to this run of the test case."""
@@ -919,6 +940,20 @@ class LaunchpadObjectFactory(ObjectFactory):
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
+
+    def makeDiff(self, diff_text=DIFF):
+        return Diff.fromFile(StringIO(diff_text), len(diff_text))
+
+    def makePreviewDiff(self, conflicts=u''):
+        diff = self.makeDiff()
+        bmp = self.makeBranchMergeProposal()
+        preview_diff = PreviewDiff()
+        preview_diff.branch_merge_proposal = bmp
+        preview_diff.conflicts = conflicts
+        preview_diff.diff = diff
+        preview_diff.source_revision_id = self.getUniqueUnicode()
+        preview_diff.target_revision_id = self.getUniqueUnicode()
+        return preview_diff
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):

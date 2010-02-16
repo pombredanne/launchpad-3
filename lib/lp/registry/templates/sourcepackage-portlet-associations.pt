@@ -67,13 +67,6 @@
             </b>
           </tal:message>
 
-          <div tal:condition="python: len(view.product_suggestions) > 1">
-            <b>Is one of these projects the upstream for this source
-            package?</b>
-          </div>
-          <div tal:condition="python: len(view.product_suggestions) == 1">
-            <b>Is the following project the upstream for this source package?</b>
-          </div>
           <div metal:use-macro="context/@@launchpad_form/form">
             <div class="actions" metal:fill-slot="buttons">
               <input tal:replace="structure view/link/render"/>

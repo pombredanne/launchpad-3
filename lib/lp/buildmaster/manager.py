@@ -247,7 +247,8 @@ class BuilddManager(service.Service):
     def scanFailed(self, error):
         """Deal with scanning failures."""
         self.logger.info(
-            'Scanning failed with: %s' % error.getErrorMessage())
+            'Scanning failed with: %s\n%s' %
+            (error.getErrorMessage(), error.getTraceback()))
         self.finishCycle()
 
     def nextCycle(self):
