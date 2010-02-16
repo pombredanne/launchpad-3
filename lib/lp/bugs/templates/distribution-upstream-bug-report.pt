@@ -239,8 +239,15 @@
                    tal:content="item/watched_bugs_delta"></a>
               </td>
               <td tal:attributes="class string:amount ${item/watched_bugs_class}">
-                <a tal:attributes="href item/bugs_with_upstream_patches_url"
-                    tal:content="item/bugs_with_upstream_patches"></a>
+                <tal:has-bugs-with-upstream-patches
+                    condition="item/bugs_with_upstream_patches">
+                  <a tal:attributes="href item/bugs_with_upstream_patches_url"
+                      tal:content="item/bugs_with_upstream_patches"></a>
+                </tal:has-bugs-with-upstream-patches>
+                <tal:has-no-bugs-with-upstream-patches
+                    condition="not: item/bugs_with_upstream_patches">
+                   -
+                </tal:has-no-bugs-with-upstream-patches>
               </td>
             </tal:upstream-not-in-launchpad>
           </tr>
