@@ -1858,7 +1858,8 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 
 def get_buglisting_search_filter_url(
-        assignee=None, importance=None, status=None, status_upstream=None):
+        assignee=None, importance=None, status=None, status_upstream=None,
+        has_patches=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -1870,6 +1871,8 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.status', status))
     if status_upstream is not None:
         search_params.append(('field.status_upstream', status_upstream))
+    if has_patches is not None:
+        search_params.append(('field.has_patch', 'on'))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
@@ -2206,9 +2209,15 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             distrosourcepackage_context or sourcepackage_context):
             return ["id", "summary", "importance", "status", "heat"]
         elif distribution_context or distroseries_context:
-            return ["id", "summary", "packagename", "importance", "status", "heat"]
+            return [
+                "id", "summary", "packagename", "importance", "status",
+                "heat",
+                ]
         elif project_context:
-            return ["id", "summary", "productname", "importance", "status", "heat"]
+            return [
+                "id", "summary", "productname", "importance", "status",
+                "heat",
+                ]
         else:
             raise AssertionError(
                 "Unrecognized context; don't know which report "
@@ -3592,7 +3601,9 @@ class BugTaskExpirableListingView(LaunchpadView):
         """Show the columns that summarise expirable bugs."""
         if (IDistribution.providedBy(self.context)
             or IDistroSeries.providedBy(self.context)):
-            return ['id', 'summary', 'packagename', 'date_last_updated', 'heat']
+            return [
+                'id', 'summary', 'packagename', 'date_last_updated', 'heat',
+                ]
         else:
             return ['id', 'summary', 'date_last_updated', 'heat']
 

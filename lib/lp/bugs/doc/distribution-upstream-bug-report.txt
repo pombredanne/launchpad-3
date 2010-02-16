@@ -524,6 +524,7 @@ key, since this is at the moment reverse-sorted.
 
     >>> print_sort_order_links(view)
     bug_supervisor_name http://...?sort_by=bug_supervisor_name
+    bugs_with_upstream_patches http:...?sort_by=bugs_with_upstream_patches
     bugtracker_name http://...?sort_by=bugtracker_name
     dsp http://...?sort_by=dsp
     open_bugs http://...?sort_by=open_bugs
@@ -553,6 +554,7 @@ unaffected.
 
     >>> print_sort_order_links(view)
     bug_supervisor_name http://...?sort_by=-bug_supervisor_name
+    bugs_with_upstream_patches http:...?sort_by=bugs_with_upstream_patches
     bugtracker_name http://...?sort_by=bugtracker_name...
 
 Each sort_order_links dict has an 'arrow' key. This is the URL of the
@@ -560,6 +562,7 @@ arrow icon to be displayed next to the link in the table header.
 
     >>> print_sort_order_links(view, 'arrow')
     bug_supervisor_name /@@/arrowUp
+    bugs_with_upstream_patches /@@/arrowBlank
     bugtracker_name /@@/arrowBlank
     dsp /@@/arrowBlank
     open_bugs /@@/arrowBlank
@@ -588,6 +591,7 @@ accordingly.
 
     >>> print_sort_order_links(view, 'arrow')
     bug_supervisor_name /@@/arrowDown
+    bugs_with_upstream_patches /@@/arrowBlank
     bugtracker_name /@@/arrowBlank...
 
     >>> form = {'sort_by': '-bugtracker_name'}
@@ -598,6 +602,7 @@ accordingly.
 
     >>> print_sort_order_links(view, 'arrow')
     bug_supervisor_name /@@/arrowBlank
+    bugs_with_upstream_patches /@@/arrowBlank
     bugtracker_name /@@/arrowDown...
 
 PS: This page is actually browser-tested in pagetests.distribution-

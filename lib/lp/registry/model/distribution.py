@@ -1377,7 +1377,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                   Bug.latest_patch_uploaded IS NOT NULL
                   THEN
                   RelatedBugTask.bug END)
-                  AS bugs_without_upstream_bugwatch_with_patch
+                  AS bugs_with_upstream_patches
             FROM
                 SourcePackageName AS SPN
                 JOIN Bugtask ON SPN.id = Bugtask.sourcepackagename
@@ -1457,7 +1457,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         results = []
         for (spn_id, spn_name, open_bugs, bugs_triaged,
              bugs_affecting_upstream, bugs_with_upstream_bugwatch,
-             bugs_without_upstream_bugwatch_with_patch) in counts:
+             bugs_with_upstream_patches) in counts:
             sourcepackagename = SourcePackageName.get(spn_id)
             dsp = self.getSourcePackage(sourcepackagename)
             if spn_id in sources_to_products:
@@ -1468,7 +1468,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             results.append(
                 (dsp, product, open_bugs, bugs_triaged,
                  bugs_affecting_upstream, bugs_with_upstream_bugwatch,
-                 bugs_without_upstream_bugwatch_with_patch))
+                 bugs_with_upstream_patches))
         return results
 
     def setBugSupervisor(self, bug_supervisor, user):
