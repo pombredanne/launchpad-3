@@ -363,11 +363,11 @@ def schedule_translation_upload(tip_changed):
 @adapter(events.TipChanged)
 def schedule_translation_templates_build(tip_changed):
     """If appropriate, schedule a `TranslationTemplatesBuildJob`."""
-    if not config.rosetta_generate_templates:
+    if not config.rosetta.generate_templates:
         # This feature is disabled by default.
         return
 
-    utility = getUtility(ITranslationTemplatesBuildSource)
+    utility = getUtility(ITranslationTemplatesBuildJobSource)
     db_branch = tip_changed.db_branch
     if utility.generatesTemplates(db_branch):
         # This branch is used for generating templates.
