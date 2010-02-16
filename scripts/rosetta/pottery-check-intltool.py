@@ -8,7 +8,7 @@
 import _pythonpath
 
 
-from lp.translations.pottery.detect_intltool import (
+from lp.translations.pottery.build_slave import (
     find_intltool_dirs, get_translation_domain)
 
 

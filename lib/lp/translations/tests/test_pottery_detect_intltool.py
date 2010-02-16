@@ -12,9 +12,10 @@ from textwrap import dedent
 
 from bzrlib.bzrdir import BzrDir
 from canonical.launchpad.scripts.tests import run_script
-from lp.translations.pottery.detect_intltool import (
+from lp.translations.pottery.detect_intltool import is_intltool_structure
+from lp.translations.pottery.build_slave import (
     ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in,
-    get_translation_domain, is_intltool_structure)
+    get_translation_domain)
 from lp.testing import TestCase
 
 
