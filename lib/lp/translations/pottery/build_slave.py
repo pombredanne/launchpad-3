@@ -3,6 +3,8 @@
 
 """Functions to build PO templates on the build slave."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 __all__ = [
     'check_potfiles_in',
@@ -142,9 +144,19 @@ def generate_pot(podir, domain):
     :param podir: The PO directory in which to build template.
     :param domain: The translation domain to use as the name of the template.
       If it is None, 'messages.pot' will be used.
-    :return: A list of paths of the generate PO templates.
+    :return: True if generation succeeded.
     """
-    return []
+    os.chdir(podir)
+    potpath = os.path.join(podir, domain+".pot")
+    import pdb
+    pdb.set_trace()
+    with open("/dev/null", "w") as devnull:
+        returncode = call(
+            ["/usr/bin/intltool-update", "-p", "-g", domain],
+            stdout=devnull, stderr=devnull)
+    if returncode == 0 and os.access(potpath, os.F_OK):
+        return potpath
+    return None
 
 
 class ConfigFile(object):

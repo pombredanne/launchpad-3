@@ -179,12 +179,16 @@ class TestDetectIntltool(TestCase, SetupTestPackageMixin):
 
 class TestGenerateTemplates(TestCase, SetupTestPackageMixin):
 
-    def test_generate_2_pots(self):
+    def test_generate_pot(self):
         # Complete run: generate 2 PO templates.
         self.prepare_package("intltool_full_ok")
-        self.assertEqual(
-            ["./po-module1/module1.pot"],
-            generate_pot("./po-module1", "module1"))
+        self.assertTrue(
+            generate_pot("./po-module1", "module1"),
+            "PO template generation failed.")
+        expected_path = "./po-module1/module1.pot"
+        self.assertTrue(
+            os.access(expected_path, os.F_OK),
+            "Generated PO template '%s' not found." % expected_path)
 
 
 class TestDetectIntltoolInBzrTree(TestCase, SetupTestPackageMixin):
