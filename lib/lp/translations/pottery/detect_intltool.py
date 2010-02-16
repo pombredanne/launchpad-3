@@ -6,23 +6,20 @@ package in the current directory."""
 
 from __future__ import with_statement
 
+from contextlib import contextmanager
+
 __metaclass__ = type
 __all__ = [
     'is_intltool_structure',
     ]
 
-class ReadLockTree(object):
+
+@contextmanager
+def read_lock_tree(tree):
     """Context manager to claim a read lock on a bzr tree."""
-
-    def __init__(self, tree):
-        self.tree = tree
-
-    def __enter__(self):
-        self.tree.lock_read()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.tree.unlock()
-        return False
+    tree.lock_read()
+    yield
+    tree.unlock()
 
 
 def is_intltool_structure(tree):
@@ -33,7 +30,7 @@ def is_intltool_structure(tree):
     :param tree: A bzrlib.Tree object to search for the intltool structure.
     :returns: True if signs of an intltool structure were found.
     """
-    with ReadLockTree(tree):
+    with read_lock_tree(tree):
         for thedir, files in tree.walkdirs():
             for afile in files:
                 file_path, file_name, file_type = afile[:3]
