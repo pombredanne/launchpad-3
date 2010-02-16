@@ -190,6 +190,27 @@ class TestGenerateTemplates(TestCase, SetupTestPackageMixin):
             os.access(expected_path, os.F_OK),
             "Generated PO template '%s' not found." % expected_path)
 
+    def test_generate_pot_no_domain(self):
+        # Generate a generic PO template.
+        self.prepare_package("intltool_full_ok")
+        self.assertTrue(
+            generate_pot("./po-module1", None),
+            "PO template generation failed.")
+        expected_path = "./po-module1/messages.pot"
+        self.assertTrue(
+            os.access(expected_path, os.F_OK),
+            "Generated PO template '%s' not found." % expected_path)
+
+    def test_generate_pot_empty_domain(self):
+        # Generate a generic PO template.
+        self.prepare_package("intltool_full_ok")
+        self.assertTrue(
+            generate_pot("./po-module1", ""),
+            "PO template generation failed.")
+        expected_path = "./po-module1/messages.pot"
+        self.assertTrue(
+            os.access(expected_path, os.F_OK),
+            "Generated PO template '%s' not found." % expected_path)
 
     def test_generate_pot_not_intltool(self):
         # Fail when not an intltool setup.
