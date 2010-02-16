@@ -17,10 +17,13 @@ from BeautifulSoup import UnicodeDammit
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
 from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
 
-from zope.component import getUtility
+from zope.component import getUtility, getSiteManager
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.event import notify
+from zope.interface import Interface
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.publisher.browser import BrowserPage
+from zope.publisher.interfaces.http import IHTTPApplicationRequest
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -40,8 +43,8 @@ from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility,
-    IPlacelessLoginSource, LoggedOutEvent)
+    CookieAuthLoggedInEvent, ILaunchpadApplication, ILaunchpadPrincipal,
+    IPlacelessAuthUtility, IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
@@ -125,14 +128,14 @@ class UnauthorizedView(SystemErrorView):
         return urlappend(current_url, '+login' + query_string)
 
 
-class BasicLoginPage:
+class BasicLoginPage(BrowserPage):
 
     def isSameHost(self, url):
         """Returns True if the url appears to be from the same host as we are.
         """
         return url.startswith(self.request.getApplicationURL())
 
-    def login(self):
+    def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             self.request.principal.__parent__.unauthorized(
                 self.request.principal.id, self.request)
@@ -143,6 +146,18 @@ class BasicLoginPage:
         else:
             self.request.response.redirect(self.request.getURL(1))
         return ''
+
+
+# The +basiclogin page should only be enabled for development and tests, but
+# we can't rely on config.devmode because it's turned off for AppServerLayer
+# tests, so we (ab)use the config switch for the test OpenID provider, which
+# has similar requirements.
+if config.launchpad.enable_test_openid_provider:
+    getSiteManager().registerAdapter(
+        BasicLoginPage,
+        required=(ILaunchpadApplication, IHTTPApplicationRequest),
+        provided=Interface,
+        name='+basiclogin')
 
 
 class RestrictedLoginInfo:

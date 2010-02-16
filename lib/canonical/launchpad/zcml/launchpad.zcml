@@ -175,16 +175,10 @@
       permission="zope.Public"
       />
 
-  <!-- Login and logout pages, and login status. -->
-  <!-- XXX: Need to register this page in Python so that we can skip the
-       registration when in production. -->
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      class="canonical.launchpad.webapp.login.BasicLoginPage"
-      name="+basiclogin"
-      permission="zope.Public"
-      attribute="login"
-      />
+  <class class="canonical.launchpad.webapp.login.BasicLoginPage">
+    <allow attributes="__call__" />
+    <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+  </class>
 
   <!-- OpenID RP views -->
   <browser:page
