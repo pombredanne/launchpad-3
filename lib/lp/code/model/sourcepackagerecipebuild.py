@@ -35,6 +35,7 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
@@ -106,6 +107,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             SourcePackageRecipeBuildJob.job == BuildQueue.jobID,
             SourcePackageRecipeBuildJob.build == self.id)
         return results.one()
+
+    @property
+    def source_package_release(self):
+        """See `ISourcePackageRecipeBuild`."""
+        return Store.of(self).find(
+            SourcePackageRelease, source_package_recipe_build=self).one()
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
                  archive, pocket, date_created=None, date_first_dispatched=None,

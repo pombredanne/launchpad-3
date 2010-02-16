@@ -48,6 +48,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
 
     def testSetsBuildAndState(self):
         """Upload the recipe-built source."""
+        self.assertIs(None, self.build.source_package_release)
         self.queueUpload('bar_1.0-1', '%d/ubuntu' % self.build.archive.id)
         self.uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", 'bar_1.0-1'),
@@ -62,6 +63,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         self.assertEqual(PackageUploadStatus.DONE, queue_item.status)
         spr = queue_item.sources[0].sourcepackagerelease
         self.assertEqual(self.build, spr.source_package_recipe_build)
+        self.assertEqual(spr, self.build.source_package_release)
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.buildstate)
 
 
