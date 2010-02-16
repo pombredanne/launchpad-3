@@ -14,6 +14,7 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import ZopelessDatabaseLayer
 
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, ISpecificBuildFarmJobClass)
@@ -51,9 +52,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         verifyObject(IBranchJob, self.specific_job)
         verifyObject(IBuildFarmJob, self.specific_job)
 
-        # The class also implements a utility and
-        # ISpecificBuildFarmJobClass.
-        verifyObject(ITranslationTemplatesBuildJobSource, self.jobset)
+        # The class also implements ISpecificBuildFarmJobClass.
         verifyObject(ISpecificBuildFarmJobClass, TranslationTemplatesBuildJob)
 
         # Each of these jobs knows the branch it will operate on.
@@ -100,6 +99,57 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # For now, these jobs always score themselves at 1,000.  In the
         # future however the scoring system is to be revisited.
         self.assertEqual(1000, self.specific_job.score())
+
+
+class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
+    """Test `TranslationTemplatesBuildJobSource`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestTranslationTemplatesBuildJobSource, self).setUp()
+        self.jobsource = getUtility(ITranslationTemplatesBuildJobSource)
+
+    def _makeTranslationBranch(self):
+        """Create a branch that provides translations for a productseries."""
+        branch = self.factory.makeAnyBranch()
+        product = removeSecurityProxy(branch.product)
+        product.official_rosetta = True
+        trunk = product.getSeries('trunk')
+        trunk.translations_branch = branch
+        trunk.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+
+        return branch
+
+    def test_baseline(self):
+        verifyObject(ITranslationTemplatesBuildJobSource, self.jobsource)
+
+    def test_generatesTemplates(self):
+        # A branch "generates templates" if it is a translation branch
+        # for a productseries that imports templates from it; is not
+        # private; and has a pottery compatible setup.
+        # For convenience we fake the pottery compatibility here.
+        branch = self._makeTranslationBranch()
+        self.jobsource._hasPotteryCompatibleSetup = FakeMethod(result=True)
+
+        self.assertTrue(self.jobset.generatesTemplates(branch))
+
+    def test_not_pottery_compatible(self):
+        # If pottery does not see any files it can work with in the
+        # branch, generatesTemplates returns False.
+        branch = self._makeTranslationBranch()
+
+        self.assertFalse(self.jobset.generatesTemplates(branch))
+    
+    def test_not_importing_templates(self):
+        pass
+
+    def test_not_translations_branch(self):
+        pass
+
+    def test_private_branch(self):
+        pass
 
 
 class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
