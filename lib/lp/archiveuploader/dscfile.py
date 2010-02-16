@@ -576,8 +576,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         build.upload_log = None
 
         # Sanity check; raise an error if the build we've been
-        # told to link to makes no sense (ie. is not for the right
-        # source package).
+        # told to link to makes no sense.
         if (build.pocket != self.policy.pocket or
             build.distroseries != self.policy.distroseries or
             build.archive != self.policy.archive):
