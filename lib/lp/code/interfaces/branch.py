@@ -356,6 +356,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
                 "This is the external location where the Bazaar "
                 "branch is hosted.")))
 
+    @operation_parameters(scheme=TextLine(title=_("URL scheme")))
+    @export_read_operation()
     def composePublicURL(scheme='http'):
         """Return a public URL for the branch using the given protocol.
 

@@ -496,15 +496,9 @@ class Branch(SQLBase):
             "Private branch %s has no public URL." % self.unique_name)
 
         host = URI(config.codehosting.supermirror_root).host
-        lp_prefix = config.codehosting.bzr_lp_prefix
+        path = '/' + self.unique_name
 
-        bzr_identity = self.bzr_identity
-        assert bzr_identity.startswith(lp_prefix), (
-            "Unexpected branch URL format or protocol.")
-
-        branch_path = bzr_identity[len(lp_prefix):]
-
-        return "%s://%s/%s" % (scheme, host, branch_path)
+        return str(URI(scheme=scheme, host=host, path=path))
 
     @property
     def warehouse_url(self):

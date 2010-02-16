@@ -379,6 +379,7 @@ class TestComposePublicURL(TestCaseWithFactory):
         self.assertEqual(prefix, public_url[:len(prefix)])
 
     def test_composePublicURL_unknown_scheme(self):
+        # Schemes that aren't known to be supported are not accepted.
         branch = self.factory.makeAnyBranch()
         self.assertRaises(AssertionError, branch.composePublicURL, 'irc')
 
