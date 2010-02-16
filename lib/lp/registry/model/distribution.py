@@ -1408,7 +1408,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                'distro': self.id,
                'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES),
                'excluded_packages': quote(exclude_packages),
-               'patchtype': quote(BugAttachmentType.PATCH),
                 })
         counts = cur.fetchall()
         cur.close()
