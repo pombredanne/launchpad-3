@@ -155,6 +155,8 @@ def generate_pot(podir, domain):
       If it is None, 'messages.pot' will be used.
     :return: True if generation succeeded.
     """
+    if domain is None or domain.strip() == "":
+        domain = "messages"
     with chdir(podir):
         with open("/dev/null", "w") as devnull:
             returncode = call(
