@@ -1802,6 +1802,14 @@ class ArchiveAdminView(BaseArchiveEditView):
         """
         form.getWidgetsData(self.widgets, 'field', data)
 
+        if data.get('private') != self.context.private:
+            # The privacy is being switched.
+            if self.context.getPublishedSources().count() > 0:
+                self.setFieldError(
+                    'private',
+                    'This archive already has published sources. It is '
+                    'not possible to switch the privacy.')
+
         if data.get('buildd_secret') is None and data['private']:
             self.setFieldError(
                 'buildd_secret',
