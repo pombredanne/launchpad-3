@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import urllib
+
 from datetime import datetime, timedelta
 
 from BeautifulSoup import UnicodeDammit

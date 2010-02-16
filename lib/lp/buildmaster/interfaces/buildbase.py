@@ -129,8 +129,12 @@ class IBuildBase(Interface):
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
-    def queueBuild():
-        """Create a BuildQueue entry for this build."""
+    def queueBuild(suspended=False):
+        """Create a BuildQueue entry for this build.
+
+        :param suspended: Whether the associated `Job` instance should be
+            created in a suspended state.
+        """
 
     def estimateDuration():
         """Estimate the build duration."""
