@@ -23,23 +23,21 @@ from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
 
 from ampoule import child, pool, main
+import transaction
 from twisted.internet import defer, reactor
 from twisted.protocols import amp
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+from lazr.delegates import delegates
 
 from canonical.config import config
+from canonical.launchpad import scripts
+from canonical.launchpad.webapp import errorlog
 from canonical.twistedsupport.task import (
     ParallelLimitedTaskConsumer, PollingTaskSource)
-from lazr.delegates import delegates
-import transaction
-
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
-from canonical.launchpad import scripts
-from canonical.launchpad.webapp import errorlog
 
 
 class BaseRunnableJob:
