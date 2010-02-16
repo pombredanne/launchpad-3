@@ -634,7 +634,7 @@ def expireSessionCookie(request, client_id_manager=None,
                         delta=timedelta(minutes=10)):
     if client_id_manager is None:
         client_id_manager = getUtility(IClientIdManager)
-    session_cookiename = client_id_manager.getNamespace(request)
+    session_cookiename = client_id_manager.namespace
     value = request.response.getCookie(session_cookiename)['value']
     expiration = (datetime.utcnow() + delta).strftime(
         '%a, %d %b %Y %H:%M:%S GMT')
@@ -655,8 +655,7 @@ def allowUnauthenticatedSession(request, duration=timedelta(minutes=10)):
     if not IUnauthenticatedPrincipal.providedBy(request.principal):
         return
     client_id_manager = getUtility(IClientIdManager)
-    cookie_name = client_id_manager.getNamespace(request)
-    if request.response.getCookie(cookie_name) is None:
+    if request.response.getCookie(client_id_manager.namespace) is None:
         client_id_manager.setRequestId(
             request, client_id_manager.getClientId(request))
         expireSessionCookie(request, client_id_manager, duration)

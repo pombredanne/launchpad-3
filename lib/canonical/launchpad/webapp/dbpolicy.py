@@ -184,7 +184,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
     def _hasSession(self):
         "Is there is already a session cookie hanging around?"
-        cookie_name = getUtility(IClientIdManager).getNamespace(self.request)
+        cookie_name = getUtility(IClientIdManager).namespace
         return (
             cookie_name in self.request.cookies or
             self.request.response.getCookie(cookie_name) is not None)
@@ -325,7 +325,7 @@ def WebServiceDatabasePolicyFactory(request):
         # standard Launchpad database policy for load balancing to
         # the slave databases. The javascript web service libraries
         # send the session cookie for authenticated users.
-        cookie_name = getUtility(IClientIdManager).getNamespace(request)
+        cookie_name = getUtility(IClientIdManager).namespace
         if cookie_name in request.cookies:
             return LaunchpadDatabasePolicy(request)
         # Otherwise, use the master only web service database policy.
