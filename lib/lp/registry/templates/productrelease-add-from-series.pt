@@ -14,7 +14,7 @@
   <tal:script
     replace="structure
     string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
-    LPS.use('node', 'lp.milestoneoverlay', function (Y) {
+    LPS.use('node', 'registry.milestoneoverlay', function (Y) {
 
         // This is a value for the SELECT OPTION which is passed with
         // the SELECT's "change" event. It includes some symbols that are not
@@ -57,7 +57,7 @@
                 activate_node: create_milestone_link
                 };
             if (!Y.UA.ie) {
-                Y.lp.milestoneoverlay.attach_widget(config);
+                Y.registry.milestoneoverlay.attach_widget(config);
             }
         });
     });
