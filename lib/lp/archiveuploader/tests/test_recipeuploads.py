@@ -8,6 +8,7 @@ __metaclass__ = type
 import os
 import unittest
 
+from storm.store import Store
 from zope.component import getUtility
 
 from lp.archiveuploader.tests.test_uploadprocessor import (
@@ -37,8 +38,9 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
                 distribution=self.ubuntu, owner=self.recipe.owner),
             requester=self.recipe.owner)
 
+        Store.of(self.build).flush()
         self.options.context = 'recipe'
-        self.options.buildid = 1
+        self.options.buildid = self.build.id
 
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
