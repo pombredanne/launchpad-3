@@ -28,9 +28,6 @@ from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 
-from lazr.restful.interface import copy_field
-
-from canonical.cachedproperty import cachedproperty
 from canonical.widgets import LaunchpadRadioWidget
 
 from canonical.launchpad import helpers
@@ -51,8 +48,7 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, custom_widget, GetitemNavigation,
-    LaunchpadEditFormView, LaunchpadFormView, Link, redirection,
-    StandardLaunchpadFacets, stepto)
+    LaunchpadFormView, Link, redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
