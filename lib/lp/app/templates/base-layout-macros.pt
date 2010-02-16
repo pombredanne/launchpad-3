@@ -176,6 +176,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/milestonetable.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
