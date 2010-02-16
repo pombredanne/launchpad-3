@@ -15,7 +15,7 @@ from canonical.launchpad.scripts.tests import run_script
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 from lp.translations.pottery.build_slave import (
     ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in,
-    generate_pot, get_translation_domain)
+    generate_pot, generate_pots, get_translation_domain)
 from lp.testing import TestCase
 
 
@@ -224,6 +224,20 @@ class TestGenerateTemplates(TestCase, SetupTestPackageMixin):
         self.assertFalse(
             os.access(not_expected_path, os.F_OK),
             "Not expected PO template '%s' generated." % not_expected_path)
+
+    def test_generate_pots(self):
+        # Generate all PO templates in the package.
+        self.prepare_package("intltool_full_ok")
+        expected_paths = [
+            './po-module1/packagename-module1.pot',
+            './po-module2/packagename-module2.pot',
+            ]
+        pots_list = generate_pots()
+        self.assertEqual(expected_paths, pots_list)
+        for expected_path in expected_paths:
+            self.assertTrue(
+                os.access(expected_path, os.F_OK),
+                "Generated PO template '%s' not found." % expected_path)
 
 
 class TestDetectIntltoolInBzrTree(TestCase, SetupTestPackageMixin):

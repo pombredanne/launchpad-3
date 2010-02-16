@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'check_potfiles_in',
     'generate_pot',
+    'generate_pots',
     'get_translation_domain',
     'find_intltool_dirs',
     'find_potfiles_in',
@@ -163,6 +164,11 @@ def generate_pot(podir, domain):
                 ["/usr/bin/intltool-update", "-p", "-g", domain],
                 stdout=devnull, stderr=devnull)
     return returncode == 0
+
+
+def generate_pots():
+    """Top-level function to generate all PO templates in a pacakage."""
+    return []
 
 
 class ConfigFile(object):
