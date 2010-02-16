@@ -3,10 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
-from zope.component import getUtility
-
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
