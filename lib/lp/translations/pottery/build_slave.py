@@ -142,10 +142,10 @@ def get_translation_domain(dirname):
 
 @contextmanager
 def chdir(directory):
-   cwd = os.getcwd()
-   os.chdir(directory)
-   yield
-   os.chdir(cwd)
+    cwd = os.getcwd()
+    os.chdir(directory)
+    yield
+    os.chdir(cwd)
 
 
 def generate_pot(podir, domain):

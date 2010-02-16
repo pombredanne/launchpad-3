@@ -2,9 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-import shutil
 import tarfile
-import tempfile
 import unittest
 
 from StringIO import StringIO
