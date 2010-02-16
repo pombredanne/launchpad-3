@@ -135,8 +135,25 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertIn(
-            'Requested reviews:\n    Review-person (review-person)\n\n-- \n',
+            '\nRequested reviews:\n  Review-person (review-person)\n\n-- \n',
             ctrl.body)
+
+    def test_forCreation_with_review_request_and_bug(self):
+        """Correctly format list of reviewers and bug info."""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        bug = self.factory.makeBug(title='I am a bug')
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        reviewer = self.factory.makePerson(name='review-person')
+        vote_reference = bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        expected = (
+            '\nRequested reviews:'
+            '\n  Review-person (review-person)'
+            '\nRelated bugs:'
+            '\n  #%d I am a bug'
+            '\n  %s\n\n--' % (bug.id, canonical_url(bug)))
+        self.assertIn(expected, ctrl.body)
 
     def test_forCreation_with_prerequisite_branch(self):
         """Correctly format list of reviewers."""

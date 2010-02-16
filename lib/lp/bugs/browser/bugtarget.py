@@ -40,6 +40,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
@@ -55,6 +56,7 @@ from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
@@ -1265,6 +1267,28 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
             return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
         else:
             return 'None specified'
+
+    @cachedproperty
+    def hot_bugs_info(self):
+        """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
+        has_more_bugs = False
+        params = BugTaskSearchParams(
+            orderby='-heat', omit_dupes=True,
+            user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        # Use 4x as many tasks as bugs that are needed to improve performance.
+        bugtasks = self.context.searchTasks(params)[:40]
+        hot_bugtasks = []
+        hot_bugs = []
+        for task in bugtasks:
+            # Use hot_bugs list to ensure a bug is only listed once.
+            if task.bug not in hot_bugs:
+                if len(hot_bugtasks) < 10:
+                    hot_bugtasks.append(task)
+                    hot_bugs.append(task.bug)
+                else:
+                    has_more_bugs = True
+                    break
+        return {'has_more_bugs': has_more_bugs, 'bugtasks': hot_bugtasks}
 
 
 class BugTargetBugTagsView(LaunchpadView):
