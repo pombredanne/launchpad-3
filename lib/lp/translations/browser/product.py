@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductSetTranslationsPolicyView',
+    'ProductSettingsView',
     'ProductTranslationsMenu',
     'ProductView',
     ]
@@ -29,7 +29,7 @@ class ProductTranslationsMenu(NavigationMenu):
     facet = 'translations'
     links = (
         'overview',
-        'translations_policy',
+        'settings',
         'translationdownload',
         'imports',
         )
@@ -38,10 +38,10 @@ class ProductTranslationsMenu(NavigationMenu):
         text = 'Import queue'
         return Link('+imports', text)
 
-    @enabled_with_permission('launchpad.Edit')
-    def translations_policy(self):
-        text = 'Translations policy'
-        return Link('+translations-policy', text, icon='edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def settings(self):
+        text = 'Change permissions'
+        return Link('+settings', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
@@ -62,14 +62,13 @@ class ProductTranslationsMenu(NavigationMenu):
         return Link(link, text, icon='translation')
 
 
-class ProductSetTranslationsPolicyView(TranslationsMixin, ProductEditView):
+class ProductSettingsView(TranslationsMixin, ProductEditView):
     label = "Set permissions and policies"
     page_title = "Permissions and policies"
     field_names = [
             "translationgroup",
             "translationpermission",
-            "translation_focus"
-            ]
+            "translation_focus"]
 
     @property
     def cancel_url(self):

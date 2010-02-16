@@ -29,8 +29,7 @@ from canonical.launchpad.browser.objectreassignment import (
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView
-    )
+    LaunchpadFormView)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 
@@ -77,10 +76,10 @@ class TranslationGroupView:
             result.append({'lang': item.language.englishname,
                            'person': item.translator,
                            'code': item.language.code,
-                           'language' : item.language,
+                           'language': item.language,
                            'datecreated': item.datecreated,
                            'style_guide_url': item.style_guide_url,
-                           'context' : item,
+                           'context': item,
                            })
         result.sort(key=operator.itemgetter('lang'))
         return result

@@ -503,7 +503,7 @@ class AdminProjectTranslations(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Is the user able to manage `IProject` translations settings?
 
-        Any Launchpad/Launchpad Translations administrator or owners are
+        Any Launchpad/Launchpad Translations administrator or owner is
         able to change translation settings for a project.
         """
         return (user.isOwner(self.obj) or
@@ -1130,7 +1130,7 @@ class AdminDistributionTranslations(AuthorizationBase):
         """Is the user able to manage `IDistribution` translations settings?
 
         Any Launchpad/Launchpad Translations administrator, translation group
-        owner or people allowed to edit distribution details are able to
+        owner or a person allowed to edit distribution details is able to
         change translations settings for a distribution.
         """
         # Translation group owner for a distribution is also a
@@ -1331,6 +1331,7 @@ class EditTranslationImportQueueEntry(AuthorizationBase):
         product or distribution, can edit it.
         """
         return self.obj.canEdit(user)
+
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'

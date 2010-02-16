@@ -53,6 +53,7 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
     sending both Basic Auth and cookie credentials raises an exception
     (Bug 39881).
     """
+
     def __init__(self, *args, **kw):
         if kw.get('debug'):
             self._debug = True
@@ -205,7 +206,9 @@ def extract_all_script_and_style_links(content):
 
 def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
+
     match_classes = set(class_.split())
+
     def class_matcher(value):
         if value is None:
             return False
@@ -265,6 +268,7 @@ def print_feedback_messages(content):
     for message in get_feedback_messages(content):
         print message
 
+
 def print_table(content, columns=None, skip_rows=None, sep="\t"):
     """Given a <table> print the content of each row.
 
@@ -284,6 +288,7 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
                 row_content.append(extract_text(item))
         if len(row_content) > 0:
             print sep.join(row_content)
+
 
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
@@ -459,7 +464,7 @@ def print_action_links(content):
 
 def print_navigation_links(content):
     """Print navigation menu urls."""
-    navigation_links  = find_tag_by_id(content, 'navigation-tabs')
+    navigation_links = find_tag_by_id(content, 'navigation-tabs')
     if navigation_links is None:
         print "No navigation links"
         return
@@ -529,7 +534,7 @@ def print_comments(page):
 
 def print_batch_header(soup):
     """Print the batch navigator header."""
-    navigation = soup.find('td', {'class' : 'batch-navigation-index'})
+    navigation = soup.find('td', {'class': 'batch-navigation-index'})
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 

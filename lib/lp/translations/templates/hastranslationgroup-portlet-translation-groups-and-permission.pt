@@ -13,9 +13,8 @@
     permissions.
   </p>
   <div tal:condition="context/required:launchpad.TranslationsAdmin">
-    <a class="edit sprite"
-       tal:define="link context/menu:navigation/translations_policy"
-       tal:attributes="href link/url"
-       >Change permissions</a>
+    <a tal:replace="structure context/menu:translations/settings/fmt:link">
+      Change permissions
+    </a>
   </div>
 </div>
