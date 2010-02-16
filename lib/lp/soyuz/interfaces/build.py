@@ -149,18 +149,6 @@ class IBuildView(IBuildBase):
         required=True, readonly=True,
         description=_("The DistroArchSeries context for this build."))
 
-    upload_log = Object(
-        schema=ILibraryFileAlias, required=False,
-        title=_("The LibraryFileAlias containing the upload log for "
-                "build resulting in binaries that could not be processed "
-                "successfully. Otherwise it will be None."))
-
-    upload_log_url = exported(
-        TextLine(
-            title=_("Upload Log URL"), required=False,
-            description=_("A URL for failed upload logs."
-                          "Will be None if there was no failure.")))
-
     # Properties
     current_source_publication = exported(
         Reference(
