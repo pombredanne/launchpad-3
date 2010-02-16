@@ -1614,14 +1614,17 @@
 
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
-        <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirror" />
+        <allow
+            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorPublic" />
         <require
             permission="launchpad.Edit"
+            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorEditRestricted"
             set_attributes="name displayname description whiteboard
                             http_base_url ftp_base_url rsync_base_url enabled
                             speed country content official_candidate owner" />
         <require
             permission="launchpad.Admin"
+            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorAdminRestricted"
             set_attributes="status reviewer date_reviewed"
             attributes="destroySelf" />
     </class>

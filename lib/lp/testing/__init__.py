@@ -368,6 +368,14 @@ class TestCase(testtools.TestCase):
                 % (expected_count, len(statements), "\n".join(statements)))
         return ret
 
+    def useTempDir(self):
+        """Use a temporary directory for this test."""
+        tempdir = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tempdir))
+        cwd = os.getcwd()
+        os.chdir(tempdir)
+        self.addCleanup(lambda: os.chdir(cwd))
+
 
 class TestCaseWithFactory(TestCase):
 
@@ -378,14 +386,6 @@ class TestCaseWithFactory(TestCase):
         from lp.testing.factory import LaunchpadObjectFactory
         self.factory = LaunchpadObjectFactory()
         self.real_bzr_server = False
-
-    def useTempDir(self):
-        """Use a temporary directory for this test."""
-        tempdir = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(tempdir))
-        cwd = os.getcwd()
-        os.chdir(tempdir)
-        self.addCleanup(lambda: os.chdir(cwd))
 
     def getUserBrowser(self, url=None):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
