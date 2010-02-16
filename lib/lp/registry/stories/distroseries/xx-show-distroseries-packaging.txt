@@ -24,8 +24,8 @@ The page lists the upstream packaging links.
         Evolution ... project: Bug supervisor: no   Bug tracker: yes
         Evolution trunk series: Branch: yes   Translations: no
 
-Any use can see that this page is related to the needs packaging report. It is
-linked, but the link to this page is not enabled.
+Any use can see that this page is related to the needs packaging report. It
+is linked, but the link to this page is not enabled.
 
     >>> print extract_text(find_tag_by_id(content, 'related-pages'))
     Needs upstream links     All upstream links

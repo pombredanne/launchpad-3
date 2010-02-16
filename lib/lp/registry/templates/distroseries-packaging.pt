@@ -16,10 +16,9 @@
         </p>
 
         <p>
-          The packages are listed by priority. Packages that greatest need to
-          forward bugs, sync translations, or need the latest development
-          branch are listed first. Can you help provide the missing
-          information for these registered Launchpad projects?
+          The packages are listed by priority based on the greatest need to
+          forward bugs, sync translations, or specify the latest
+          development branch. 
         </p>
 
         <ul id="related-pages" class="horizontal">
@@ -85,7 +84,7 @@
                         replace="structure product/bug_supervisor/image:boolean" />
                     </dd>
                     <dd title="Project bug tracker"
-                      tal:define="bool product/official_malone|product/bugtracker">
+                      tal:define="bool product/project|bugtracker|product/bugtracker|product/official_malone">
                       Bug tracker:
                       <tal:yes-no replace="structure bool/image:boolean"/>
                     </dd>
