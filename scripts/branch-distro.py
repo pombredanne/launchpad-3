@@ -26,7 +26,7 @@ class BranchDistroScript(LaunchpadScript):
         brancher = DistroBrancher.fromNames(self.logger, *self.args)
         server = get_multi_server(
             write_mirrored=True, write_hosted=True, direct_database=True)
-        server.setUp()
+        server.start_server()
         try:
             if self.options.check:
                 if not brancher.checkNewBranches():
@@ -34,7 +34,7 @@ class BranchDistroScript(LaunchpadScript):
             else:
                 brancher.makeNewBranches()
         finally:
-            server.tearDown()
+            server.stop_server()
 
 if __name__ == '__main__':
     BranchDistroScript("branch-distro", dbuser='branch-distro').run()

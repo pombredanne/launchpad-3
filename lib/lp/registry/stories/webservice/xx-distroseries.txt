@@ -18,6 +18,17 @@ Via all the available series:
     http://.../ubuntu/hoary
     http://.../ubuntu/warty
 
+The series are available to the anonymous API user too:
+
+    >>> all_series = anon_webservice.get(
+    ...     ubuntu['series_collection_link']).jsonBody()
+    >>> for entry in all_series['entries']:
+    ...     print entry['self_link']
+    http://.../ubuntu/breezy-autotest
+    http://.../ubuntu/grumpy
+    http://.../ubuntu/hoary
+    http://.../ubuntu/warty
+
 Via the current series:
 
     >>> current_series = webservice.get(
@@ -84,4 +95,3 @@ Creating a milestone on the distroseries
     ...
     Location: http://.../ubuntu/+milestone/alpha1
     ...
-
