@@ -8,8 +8,6 @@ from unittest import TestLoader
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet)
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import ZopelessDatabaseLayer
 
@@ -18,8 +16,6 @@ from lp.testing.fakemethod import FakeMethod
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, ISpecificBuildFarmJobClass)
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
 from lp.code.interfaces.branchjob import IBranchJob
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
@@ -101,6 +97,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.assertEqual(1000, self.specific_job.score())
 
 
+<<<<<<< TREE
 class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
     """Test `TranslationTemplatesBuildJobSource`."""
 
