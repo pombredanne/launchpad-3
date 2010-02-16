@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'check_potfiles_in',
+    'generate_pot',
     'get_translation_domain',
     'find_intltool_dirs',
     'find_potfiles_in',
@@ -133,6 +134,17 @@ def get_translation_domain(dirname):
         # Substitution failed.
         return None
     return value
+
+
+def generate_pot(podir, domain):
+    """Generate one PO template using intltool.
+
+    :param podir: The PO directory in which to build template.
+    :param domain: The translation domain to use as the name of the template.
+      If it is None, 'messages.pot' will be used.
+    :return: A list of paths of the generate PO templates.
+    """
+    return []
 
 
 class ConfigFile(object):
