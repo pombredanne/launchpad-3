@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -26,6 +26,8 @@ from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
+
+from lazr.uri import URI
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -75,7 +77,6 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
@@ -477,6 +478,33 @@ class Branch(SQLBase):
         else:
             is_dev_focus = False
         return bazaar_identity(self, is_dev_focus)
+
+    def composePublicURL(self, scheme='http'):
+        """See `IBranch`."""
+        # Avoid circular imports.
+        from lp.code.xmlrpc.branch import PublicCodehostingAPI
+
+        # Accept sftp as a legacy protocol.
+        accepted_schemes = list(PublicCodehostingAPI.supported_schemes) + [
+            'sftp']
+
+        # Not all protocols work for private branches.
+        public_schemes = ['http']
+
+        assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
+        assert not (self.private and scheme in public_schemes), (
+            "Private branch %s has no public URL." % self.unique_name)
+
+        host = URI(config.codehosting.supermirror_root).host
+        lp_prefix = config.codehosting.bzr_lp_prefix
+
+        bzr_identity = self.bzr_identity
+        assert bzr_identity.startswith(lp_prefix), (
+            "Unexpected branch URL format or protocol.")
+
+        branch_path = bzr_identity[len(lp_prefix):]
+
+        return "%s://%s/%s" % (scheme, host, branch_path)
 
     @property
     def warehouse_url(self):
