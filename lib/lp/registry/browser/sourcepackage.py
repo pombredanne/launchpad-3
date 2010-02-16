@@ -203,8 +203,7 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
         self.product = getUtility(IProductSet)[product_name]
         series_list = [
             series for series in self.product.series
-            if series.status in (
-                SeriesStatus.DEVELOPMENT, SeriesStatus.CURRENT)
+            if series.status != SeriesStatus.OBSOLETE
             ]
         dev_focus = self.product.development_focus
         if dev_focus in series_list:

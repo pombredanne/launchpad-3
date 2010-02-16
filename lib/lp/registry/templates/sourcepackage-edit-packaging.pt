@@ -22,6 +22,11 @@
         translations efficiently.
       </p>
     </div>
+
+    <div metal:fill-slot="extra_bottom" tal:condition="view/product">
+      If you need a new series created, contact the owner of
+      <a tal:content="structure view/product/fmt:link"/>.
+    </div>
   </div>
 
 </div>
