@@ -224,7 +224,8 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
         # If the product is not being changed, then the current
         # productseries can be the default choice. Otherwise,
         # it will not exist in the vocabulary.
-        if self.context.productseries.product == self.product:
+        if (self.context.productseries is not None
+            and self.context.productseries.product == self.product):
             series_default = self.context.productseries
         else:
             series_default = None
