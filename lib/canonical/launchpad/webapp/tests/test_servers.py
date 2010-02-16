@@ -286,7 +286,7 @@ class TestWebServiceRequest(TestCase):
         # Simulate a request to bugs.launchpad.net/api
         server_url = 'http://bugs.launchpad.dev'
         env = {
-            'PATH_INFO': '/api/beta',
+            'PATH_INFO': '/api/devel',
             'SERVER_URL': server_url,
             'HTTP_HOST': 'bugs.launchpad.dev',
             }
