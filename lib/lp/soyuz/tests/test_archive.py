@@ -18,7 +18,8 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -599,10 +600,10 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
         publisher.getPubSource(archive=self.private_ppa)
 
         self.assertRaises(
-            AssertionError, self.make_ppa_private, self.public_ppa)
+            CannotSwitchPrivacy, self.make_ppa_private, self.public_ppa)
 
         self.assertRaises(
-            AssertionError, self.make_ppa_public, self.private_ppa)
+            CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

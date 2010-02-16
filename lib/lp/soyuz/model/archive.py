@@ -55,9 +55,10 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, CannotCopy, DistroSeriesNotFound, IArchive, IArchiveSet,
-    IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
+    DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
+    InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
+    PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -119,9 +120,11 @@ class Archive(SQLBase):
 
         # If the privacy is being changed ensure there are no sources
         # published.
-        assert self.getPublishedSources().count() == 0, (
-            "The privacy of an archive cannot be switched once it has "
-            "had sources published.")
+        sources_count = self.getPublishedSources().count()
+        if sources_count > 0:
+            raise CannotSwitchPrivacy(
+                "This archive has had %d sources published and therefore "
+                "cannot have its privacy switched." % sources_count)
 
         return value
 
