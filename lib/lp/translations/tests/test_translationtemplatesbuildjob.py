@@ -9,17 +9,19 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, ISpecificBuildFarmJobClass)
-from lp.code.interfaces.branchjob import IBranchJob
+from lp.code.interfaces.branchjob import IBranchJob, IRosettaUploadJobSource
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.model.buildqueue import BuildQueue
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
 from lp.translations.model.translationtemplatesbuildjob import (
@@ -97,55 +99,110 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.assertEqual(1000, self.specific_job.score())
 
 
+class FakeTranslationTemplatesJobSource(TranslationTemplatesBuildJob):
+    """Ugly, ugly hack.
+    """
+
+    fake_pottery_compatibility = None
+
+    @classmethod
+    def _hasPotteryCompatibleSetup(cls, branch):
+        if cls.fake_pottery_compatibility is None:
+            return TranslationTemplatesBuildJob._hasPotteryCompatibleSetup(
+                branch)
+        else:
+            return cls.fake_pottery_compatibility 
+
+
 class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
     """Test `TranslationTemplatesBuildJobSource`."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestTranslationTemplatesBuildJobSource, self).setUp()
-        self.jobsource = getUtility(ITranslationTemplatesBuildJobSource)
+        self.jobsource = FakeTranslationTemplatesJobSource
+        self.jobsource.fake_pottery_compabitility = None
 
-    def _makeTranslationBranch(self):
+    def tearDown(self):
+        self._fakePotteryCompatibleSetup(compatible=None)
+        super(TestTranslationTemplatesBuildJobSource, self).tearDown()
+
+    def _makeTranslationBranch(self, fake_pottery_compatible=None):
         """Create a branch that provides translations for a productseries."""
-        branch = self.factory.makeAnyBranch()
+        if fake_pottery_compatible is None:
+            self.useBzrBranches()
+            branch, tree = self.create_branch_and_tree()
+        else:
+            branch = self.factory.makeAnyBranch()
         product = removeSecurityProxy(branch.product)
-        product.official_rosetta = True
         trunk = product.getSeries('trunk')
         trunk.translations_branch = branch
         trunk.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
 
+        self._fakePotteryCompatibleSetup(fake_pottery_compatible)
+
+        # Validate that this produces a translations branch.
+        uploadjobsource = getUtility(IRosettaUploadJobSource)
+        self.assertFalse(uploadjobsource.findProductSeries(branch).is_empty())
+        self.assertTrue(
+            uploadjobsource.providesTranslationFiles(branch),
+            "Test setup failure: did not set up a translations branch.")
+
         return branch
 
+    def _fakePotteryCompatibleSetup(self, compatible=True):
+        """Mock up branch compatibility check.
+
+        :param compatible: Whether the mock check should say that
+            branches have a pottery-compatible setup, or that they
+            don't.
+        """
+        self.jobsource.fake_pottery_compatibility = compatible
+
     def test_baseline(self):
-        verifyObject(ITranslationTemplatesBuildJobSource, self.jobsource)
+        utility = getUtility(ITranslationTemplatesBuildJobSource)
+        verifyObject(ITranslationTemplatesBuildJobSource, utility)
 
     def test_generatesTemplates(self):
         # A branch "generates templates" if it is a translation branch
         # for a productseries that imports templates from it; is not
         # private; and has a pottery compatible setup.
         # For convenience we fake the pottery compatibility here.
-        branch = self._makeTranslationBranch()
-        self.jobsource._hasPotteryCompatibleSetup = FakeMethod(result=True)
-
-        self.assertTrue(self.jobset.generatesTemplates(branch))
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+        self.assertTrue(self.jobsource.generatesTemplates(branch))
 
     def test_not_pottery_compatible(self):
         # If pottery does not see any files it can work with in the
         # branch, generatesTemplates returns False.
         branch = self._makeTranslationBranch()
-
-        self.assertFalse(self.jobset.generatesTemplates(branch))
+        self.assertFalse(self.jobsource.generatesTemplates(branch))
     
-    def test_not_importing_templates(self):
-        pass
-
     def test_not_translations_branch(self):
-        pass
+        # We don't generate templates for non-translations branches.
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+
+        trunk = branch.product.getSeries('trunk')
+        removeSecurityProxy(trunk).translations_branch = None
+
+        self.assertFalse(self.jobsource.generatesTemplates(branch))
+
+    def test_not_importing_templates(self):
+        # We don't generate templates when imports are disabled.
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+
+        trunk = branch.product.getSeries('trunk')
+        removeSecurityProxy(trunk).translations_autoimport_mode = (
+            TranslationsBranchImportMode.NO_IMPORT)
+
+        self.assertFalse(self.jobsource.generatesTemplates(branch))
 
     def test_private_branch(self):
-        pass
+        # We don't generate templates for private branches.
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+        removeSecurityProxy(branch).private = True
+        self.assertFalse(self.jobsource.generatesTemplates(branch))
 
 
 class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):

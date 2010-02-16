@@ -11,6 +11,7 @@ from datetime import timedelta
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
@@ -62,12 +63,13 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         return '%s translation templates build' % self.branch.bzr_identity
 
     @classmethod
-    def _hasPotteryCompatibleSetup(self, branch):
+    def _hasPotteryCompatibleSetup(cls, branch):
         """Does `branch` look as if pottery can generate templates for it?
 
         :param branch: A `Branch` object.
         """
-        return is_intltool_structure(branch.repository.tree)
+        bzr_branch = removeSecurityProxy(branch).getBzrBranch()
+        return is_intltool_structure(bzr_branch.basis_tree())
 
     @classmethod
     def generatesTemplates(cls, branch):
