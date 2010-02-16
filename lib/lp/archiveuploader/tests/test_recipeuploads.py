@@ -20,9 +20,6 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 
 
 class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
-    name = 'baz'
-    version = '1.0-1'
-
     def setUp(self):
         super(TestSourcePackageRecipeBuildUploads, self).setUp()
 
@@ -47,7 +44,8 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
             self.options, self.layer.txn, self.log)
 
     def testSetsBuildAndState(self):
-        """Upload the recipe-built source."""
+        # Ensure that the upload processor correctly links the SPR to
+        # the SPRB, and that the status is set properly.
         self.assertIs(None, self.build.source_package_release)
         self.assertEqual(False, self.build.verifySuccessfulUpload())
         self.queueUpload('bar_1.0-1', '%d/ubuntu' % self.build.archive.id)
