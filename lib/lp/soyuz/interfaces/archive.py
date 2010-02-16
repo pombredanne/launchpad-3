@@ -155,7 +155,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         Bool(
             title=_("Private"), required=False,
             description=_(
-                "Whether the archive is private to the owner or not.")))
+                "Whether the archive is private to the owner or not. "
+                "This can only be changed if the archive has not had "
+                "any sources published.")))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,

@@ -112,10 +112,17 @@ class Archive(SQLBase):
         If the owner of the archive is private, then the archive cannot be
         made public.
         """
-        if not value:
+        if value is False:
             # The archive is transitioning from public to private.
             assert self.owner.visibility != PersonVisibility.PRIVATE, (
                 "Private teams may not have public PPAs.")
+
+        # If the privacy is being changed ensure there are no sources
+        # published.
+        assert self.getPublishedSources().count() == 0, (
+            "The privacy of an archive cannot be switched once it has "
+            "had sources published.")
+
         return value
 
     name = StringCol(
@@ -1113,7 +1120,7 @@ class Archive(SQLBase):
         self._copySources([source], to_pocket, to_series, include_binaries)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
-        """Private helper to collect the latest published sources for an 
+        """Private helper to collect the latest published sources for an
         archive.
 
         :raises NoSuchSourcePackageName: If any of the source_names do not
@@ -1245,7 +1252,7 @@ class Archive(SQLBase):
             extra_exprs.append(Build.buildstate == build_status)
 
         result_set = store.find(
-            SourcePackageRelease, 
+            SourcePackageRelease,
             Build.sourcepackagereleaseID == SourcePackageRelease.id,
             Build.archive == self,
             *extra_exprs)
