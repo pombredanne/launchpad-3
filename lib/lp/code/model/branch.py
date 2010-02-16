@@ -485,8 +485,8 @@ class Branch(SQLBase):
         from lp.code.xmlrpc.branch import PublicCodehostingAPI
 
         # Accept sftp as a legacy protocol.
-        accepted_schemes = list(PublicCodehostingAPI.supported_schemes) + [
-            'sftp']
+        accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
+        accepted_schemes.add('sftp')
 
         # Not all protocols work for private branches.
         public_schemes = ['http']
