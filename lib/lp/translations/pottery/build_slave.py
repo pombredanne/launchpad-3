@@ -14,6 +14,7 @@ __all__ = [
     'find_potfiles_in',
     ]
 
+from contextlib import contextmanager
 import errno
 import os.path
 import re
@@ -138,6 +139,14 @@ def get_translation_domain(dirname):
     return value
 
 
+@contextmanager
+def chdir(directory):
+   cwd = os.getcwd()
+   os.chdir(directory)
+   yield
+   os.chdir(cwd)
+
+
 def generate_pot(podir, domain):
     """Generate one PO template using intltool.
 
@@ -146,17 +155,12 @@ def generate_pot(podir, domain):
       If it is None, 'messages.pot' will be used.
     :return: True if generation succeeded.
     """
-    os.chdir(podir)
-    potpath = os.path.join(podir, domain+".pot")
-    import pdb
-    pdb.set_trace()
-    with open("/dev/null", "w") as devnull:
-        returncode = call(
-            ["/usr/bin/intltool-update", "-p", "-g", domain],
-            stdout=devnull, stderr=devnull)
-    if returncode == 0 and os.access(potpath, os.F_OK):
-        return potpath
-    return None
+    with chdir(podir):
+        with open("/dev/null", "w") as devnull:
+            returncode = call(
+                ["/usr/bin/intltool-update", "-p", "-g", domain],
+                stdout=devnull, stderr=devnull)
+    return returncode == 0
 
 
 class ConfigFile(object):
