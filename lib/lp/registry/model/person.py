@@ -2239,7 +2239,7 @@ class Person(
                                     upload_archive)
                     sourcepackagerelease.id
                 FROM sourcepackagerelease, archive,
-                    securesourcepackagepublishinghistory sspph
+                    sourcepackagepublishinghistory sspph
                 WHERE
                     sspph.sourcepackagerelease = sourcepackagerelease.id AND
                     sspph.archive = archive.id AND

@@ -44,6 +44,7 @@ AUTHDB_SEED = frozenset([
 LPMAIN_SEED = frozenset([
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
+    ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
     ('public', 'openidconsumerassociation'),
@@ -57,6 +58,7 @@ LPMAIN_SEED = frozenset([
     ('public', 'parsedapachelog'),
     ('public', 'shipitsurvey'),
     ('public', 'openidassociations'), # Remove this in April 2009 or later.
+    ('public', 'databasereplicationlag'),
     ])
 
 # Explicitly list tables that should not be replicated. This includes the

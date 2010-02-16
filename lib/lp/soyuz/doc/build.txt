@@ -8,6 +8,7 @@ at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
     # Create a 'mozilla-firefox' build in ubuntutest/breezy-autotest/i386.
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> login('foo.bar@canonical.com')
     >>> test_publisher = SoyuzTestPublisher()
@@ -17,6 +18,9 @@ launchpad build daemon.
     >>> binaries = test_publisher.getPubBinaries(
     ...     binaryname='firefox', pub_source=source)
     >>> [firefox_build] = source.getBuilds()
+    >>> job = firefox_build.buildqueue_record.job
+    >>> removeSecurityProxy(job).start()
+    >>> removeSecurityProxy(job).complete()
     >>> login(ANONYMOUS)
 
 A build has a title which describes the context source version and in
@@ -89,10 +93,10 @@ about its process such as the time it was started and finished and its
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
 
-    >>> firefox_build.getEstimatedBuildStartTime()
+    >>> firefox_build.buildqueue_record.getEstimatedJobStartTime()
     Traceback (most recent call last):
     ...
-    AssertionError: The start time is only estimated for pending builds.
+    AssertionError: The start time is only estimated for pending jobs.
 
 On a build job in state `NEEDSBUILD` we can ask for its estimated
 build start time.
@@ -103,7 +107,7 @@ build start time.
     >>> [pending_build] = source.createMissingBuilds()
     >>> login(ANONYMOUS)
 
-    >>> pending_build.getEstimatedBuildStartTime()
+    >>> pending_build.buildqueue_record.getEstimatedJobStartTime()
     datetime.datetime(...)
 
 The currently published component is provided via the 'current_component'
@@ -277,7 +281,6 @@ Before we actually retry the build on hand let's set its start time.
 This will allow us to observe the fact that a build retry does not
 change the start time if it was set already.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -1045,7 +1048,7 @@ list.
     >>> login('foo.bar@canonical.com')
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
-    >>> pmount_pub.secure_record.component = main_component
+    >>> pmount_pub.component = main_component
     >>> depwait_build.dependencies = 'mozilla-firefox, pmount'
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
@@ -1069,7 +1072,7 @@ depend on all components of its distribution PRIMARY archive.
     >>> login('foo.bar@canonical.com')
     >>> depwait_build.dependencies = 'biscuit, pmount'
     >>> universe_component = getUtility(IComponentSet)['universe']
-    >>> pmount_pub.secure_record.component = universe_component
+    >>> pmount_pub.component = universe_component
     >>> removeSecurityProxy(depwait_build).archive = cprov.archive
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
@@ -1087,7 +1090,7 @@ depend on all components of its distribution PRIMARY archive.
 Restore depwait_build previous state.
 
     >>> login('foo.bar@canonical.com')
-    >>> pmount_pub.secure_record.component = main_component
+    >>> pmount_pub.component = main_component
     >>> removeSecurityProxy(depwait_build).archive = ubuntu.main_archive
     >>> flush_database_caches()
     >>> login(ANONYMOUS)

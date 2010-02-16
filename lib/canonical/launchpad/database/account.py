@@ -47,6 +47,10 @@ class Account(SQLBase):
     openid_identifier = StringCol(
         dbName='openid_identifier', notNull=True, default=DEFAULT)
 
+    def __repr__(self):
+        return "<%s '%s' (%s)>" % (
+            self.__class__.__name__, self.displayname, self.status)
+
     def _getEmails(self, status):
         """Get related `EmailAddress` objects with the given status."""
         result = IStore(EmailAddress).find(

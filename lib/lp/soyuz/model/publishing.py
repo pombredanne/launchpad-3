@@ -11,8 +11,6 @@ __all__ = [
     'BinaryPackagePublishingHistory',
     'IndexStanzaFields',
     'PublishingSet',
-    'SecureBinaryPackagePublishingHistory',
-    'SecureSourcePackagePublishingHistory',
     'SourcePackageFilePublishing',
     'SourcePackagePublishingHistory',
     ]
@@ -24,12 +22,11 @@ import operator
 import os
 import pytz
 import re
-from warnings import warn
 
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol
 
 from storm.expr import Desc, In, LeftJoin
 from storm.store import Store
@@ -53,8 +50,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
-    IPublishingSet, ISecureBinaryPackagePublishingHistory,
-    ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
+    IPublishingEdit, IPublishingSet, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PoolFileOverwriteError)
 from lp.soyuz.interfaces.build import BuildSetStatus, BuildStatus, IBuildSet
@@ -168,7 +164,7 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
     @property
     def publishing_record(self):
         """See `IFilePublishing`."""
-        return self.sourcepackagepublishing.secure_record
+        return self.sourcepackagepublishing
 
     @property
     def file_type_name(self):
@@ -237,11 +233,11 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
     @property
     def publishing_record(self):
         """See `ArchiveFilePublisherBase`."""
-        return self.binarypackagepublishing.secure_record
+        return self.binarypackagepublishing
 
 
-class ArchiveSafePublisherBase:
-    """Base class to grant ability to publish a record in a safe manner."""
+class ArchivePublisherBase:
+    """Base class for `IArchivePublisher`."""
 
     def setPublished(self):
         """see IArchiveSafePublisher."""
@@ -255,107 +251,6 @@ class ArchiveSafePublisherBase:
             self.status = PackagePublishingStatus.PUBLISHED
             self.datepublished = UTC_NOW
 
-
-class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
-    """A source package release publishing record."""
-
-    implements(ISecureSourcePackagePublishingHistory, IArchiveSafePublisher)
-
-    sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
-                                      dbName='sourcepackagerelease')
-    distroseries = ForeignKey(foreignKey='DistroSeries',
-                               dbName='distroseries')
-    component = ForeignKey(foreignKey='Component', dbName='component')
-    section = ForeignKey(foreignKey='Section', dbName='section')
-    status = EnumCol(schema=PackagePublishingStatus)
-    scheduleddeletiondate = UtcDateTimeCol(default=None)
-    datepublished = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(default=UTC_NOW)
-    datesuperseded = UtcDateTimeCol(default=None)
-    supersededby = ForeignKey(foreignKey='SourcePackageRelease',
-                              dbName='supersededby', default=None)
-    datemadepending = UtcDateTimeCol(default=None)
-    dateremoved = UtcDateTimeCol(default=None)
-    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
-                     default=PackagePublishingPocket.RELEASE,
-                     notNull=True)
-    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
-    embargolifted = UtcDateTimeCol(default=None)
-    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-    removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person",
-        storm_validator=validate_public_person, default=None)
-    removal_comment = StringCol(dbName="removal_comment", default=None)
-
-    @classmethod
-    def selectBy(cls, **kwargs):
-        """Prevent selecting embargo packages by default"""
-        if 'embargo' in kwargs:
-            if kwargs['embargo']:
-                warn("SecureSourcePackagePublishingHistory.selectBy called "
-                     "with embargo argument set to True",
-                     stacklevel=2)
-        kwargs['embargo'] = False
-        return super(SecureSourcePackagePublishingHistory,
-                     cls).selectBy(**kwargs)
-
-    @classmethod
-    def selectByWithEmbargoedEntries(cls, *args, **kwargs):
-        return super(SecureSourcePackagePublishingHistory,
-                     cls).selectBy(*args, **kwargs)
-
-
-class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
-    """A binary package publishing record."""
-
-    implements(ISecureBinaryPackagePublishingHistory, IArchiveSafePublisher)
-
-    binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
-                                      dbName='binarypackagerelease')
-    distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchseries')
-    component = ForeignKey(foreignKey='Component', dbName='component')
-    section = ForeignKey(foreignKey='Section', dbName='section')
-    priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
-    status = EnumCol(dbName='status', schema=PackagePublishingStatus)
-    scheduleddeletiondate = UtcDateTimeCol(default=None)
-    datepublished = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(default=UTC_NOW)
-    datesuperseded = UtcDateTimeCol(default=None)
-    supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
-                              default=None)
-    datemadepending = UtcDateTimeCol(default=None)
-    dateremoved = UtcDateTimeCol(default=None)
-    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
-    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
-    embargolifted = UtcDateTimeCol(default=None)
-    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-    removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person",
-        storm_validator=validate_public_person, default=None)
-    removal_comment = StringCol(dbName="removal_comment", default=None)
-
-    @classmethod
-    def selectBy(cls, **kwargs):
-        """Prevent selecting embargo packages by default"""
-        if 'embargo' in kwargs:
-            if kwargs['embargo']:
-                warn("SecureBinaryPackagePublishingHistory.selectBy called "
-                     "with embargo argument set to True",
-                     stacklevel=2)
-        kwargs['embargo'] = False
-        return super(SecureBinaryPackagePublishingHistory,
-                     cls).selectBy(**kwargs)
-
-    @classmethod
-    def selectByWithEmbargoedEntries(cls, *args, **kwargs):
-        return super(SecureBinaryPackagePublishingHistory,
-                     cls).selectBy(*args, **kwargs)
-
-
-class ArchivePublisherBase:
-    """Base class for `IArchivePublisher`."""
-
     def publish(self, diskpool, log):
         """See `IPublishing`"""
         try:
@@ -364,7 +259,7 @@ class ArchivePublisherBase:
         except PoolFileOverwriteError:
             pass
         else:
-            self.secure_record.setPublished()
+            self.setPublished()
 
     def getIndexStanza(self):
         """See `IPublishing`."""
@@ -373,18 +268,16 @@ class ArchivePublisherBase:
 
     def supersede(self):
         """See `IPublishing`."""
-        current = self.secure_record
-        current.status = PackagePublishingStatus.SUPERSEDED
-        current.datesuperseded = UTC_NOW
-        return current
+        self.status = PackagePublishingStatus.SUPERSEDED
+        self.datesuperseded = UTC_NOW
+        return self
 
     def requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishing`."""
-        current = self.secure_record
-        current.status = PackagePublishingStatus.DELETED
-        current.datesuperseded = UTC_NOW
-        current.removed_by = removed_by
-        current.removal_comment = removal_comment
+        self.status = PackagePublishingStatus.DELETED
+        self.datesuperseded = UTC_NOW
+        self.removed_by = removed_by
+        self.removal_comment = removal_comment
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -394,15 +287,14 @@ class ArchivePublisherBase:
         # we're most likely to be obsoleting.
         #
         # Setting scheduleddeletiondate achieves that aim.
-        current = self.secure_record
-        current.status = PackagePublishingStatus.OBSOLETE
-        current.scheduleddeletiondate = UTC_NOW
-        return current
+        self.status = PackagePublishingStatus.OBSOLETE
+        self.scheduleddeletiondate = UTC_NOW
+        return self
 
     @property
     def age(self):
         """See `IArchivePublisher`."""
-        return datetime.now(pytz.timezone('UTC')) - self.datecreated
+        return datetime.now(pytz.UTC) - self.datecreated
 
     @property
     def component_name(self):
@@ -467,10 +359,7 @@ class IndexStanzaFields:
 
 
 class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
-    """A source package release publishing record.
-
-       Excluding embargoed stuff
-    """
+    """A source package release publishing record."""
     implements(ISourcePackagePublishingHistory)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
@@ -482,16 +371,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     status = EnumCol(schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='SourcePackageRelease',
                               dbName='supersededby', default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
-    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
+                     default=PackagePublishingPocket.RELEASE,
+                     notNull=True)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
-    embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
         storm_validator=validate_public_person, default=None)
@@ -656,7 +545,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         build = self.sourcepackagerelease.createBuild(
             distroarchseries=arch, archive=self.archive, pocket=self.pocket)
-        build_queue = build.queueBuild()
+        # Create the builds in suspended mode for disabled archives.
+        build_queue = build.queueBuild(suspended=not self.archive.enabled)
         build_queue.score()
         Store.of(build).flush()
 
@@ -667,11 +557,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                    build_queue.lastscore))
 
         return build
-
-    @property
-    def secure_record(self):
-        """See `IPublishing`."""
-        return SecureSourcePackagePublishingHistory.get(self.id)
 
     @property
     def files(self):
@@ -777,7 +662,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                  " new component or new section")
 
         # Retrieve current publishing info
-        current = self.secure_record
+        current = self
 
         # Check there is a change to make
         if new_component is None:
@@ -799,12 +684,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
-        return SecureSourcePackagePublishingHistory(
+        return SourcePackagePublishingHistory(
             distroseries=current.distroseries,
             sourcepackagerelease=current.sourcepackagerelease,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            embargo=False,
             pocket=current.pocket,
             component=new_component,
             section=new_section,
@@ -812,13 +696,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def copyTo(self, distroseries, pocket, archive):
         """See `ISourcePackagePublishingHistory`."""
-        current = self.secure_record
         return getUtility(IPublishingSet).newSourcePublication(
             archive,
-            current.sourcepackagerelease,
+            self.sourcepackagerelease,
             distroseries,
-            current.component,
-            current.section,
+            self.component,
+            self.section,
             pocket
             )
 
@@ -855,8 +738,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         else:
             component = self.sourcepackagerelease.component
 
-        self.secure_record.component = component
-        Store.of(self).invalidate(self)
+        self.component = component
 
     def _proxied_urls(self, files, parent):
         """Run the files passed through `ProxiedLibraryFileAlias`."""
@@ -883,7 +765,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
-    """A binary package publishing record. (excluding embargoed packages)"""
+    """A binary package publishing record."""
 
     implements(IBinaryPackagePublishingHistory)
 
@@ -897,7 +779,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
                               default=None)
@@ -905,8 +787,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
-    embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
         storm_validator=validate_public_person, default=None)
@@ -922,11 +802,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return DistroArchSeriesBinaryPackageRelease(
             self.distroarchseries,
             self.binarypackagerelease)
-
-    @property
-    def secure_record(self):
-        """`See IPublishing`."""
-        return SecureBinaryPackagePublishingHistory.get(self.id)
 
     @property
     def files(self):
@@ -1039,7 +914,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                  "component, section and/or priority.")
 
         # Retrieve current publishing info
-        current = self.secure_record
+        current = self
 
         # Check there is a change to make
         if new_component is None:
@@ -1064,12 +939,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "require a new archive." % new_component.name)
 
         # Append the modified package publishing entry
-        return SecureBinaryPackagePublishingHistory(
+        return BinaryPackagePublishingHistory(
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            embargo=False,
             pocket=current.pocket,
             component=new_component,
             section=new_section,
@@ -1078,7 +952,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
-
         return getUtility(IPublishingSet).copyBinariesTo(
             [self], distroseries, pocket, archive)
 
@@ -1110,8 +983,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         else:
             component = self.binarypackagerelease.component
 
-        self.secure_record.component = component
-        Store.of(self).invalidate(self)
+        self.component = component
 
 
 class PublishingSet:
@@ -1164,7 +1036,7 @@ class PublishingSet:
                     distroarchseries=distroarchseries)
 
                 if binary_in_destination.count() == 0:
-                    pub = SecureBinaryPackagePublishingHistory(
+                    pub = BinaryPackagePublishingHistory(
                         archive=archive,
                         binarypackagerelease=binarypackagerelease,
                         distroarchseries=distroarchseries,
@@ -1173,17 +1045,10 @@ class PublishingSet:
                         priority=binary.priority,
                         status=PackagePublishingStatus.PENDING,
                         datecreated=UTC_NOW,
-                        pocket=pocket,
-                        embargo=False)
+                        pocket=pocket)
                     secure_copies.append(pub)
 
-        # One day, this will not be necessary when we have time to kill
-        # the Secure* records.
-        copy_ids = [secure_copy.id for secure_copy in secure_copies]
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(BinaryPackagePublishingHistory,
-            BinaryPackagePublishingHistory.id.is_in(copy_ids))
+        return secure_copies
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
@@ -1193,7 +1058,7 @@ class PublishingSet:
             # PPA component must always be 'main', so we override it
             # here.
             component = getUtility(IComponentSet)['main']
-        pub = SecureBinaryPackagePublishingHistory(
+        pub = BinaryPackagePublishingHistory(
             archive=archive,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
@@ -1202,12 +1067,9 @@ class PublishingSet:
             priority=priority,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            pocket=pocket,
-            embargo=False)
+            pocket=pocket)
 
-        # One day, this will not be necessary when we have time to kill
-        # the Secure* records.
-        return BinaryPackagePublishingHistory.get(pub.id)
+        return pub
 
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket):
@@ -1216,7 +1078,7 @@ class PublishingSet:
             # PPA component must always be 'main', so we override it
             # here.
             component = getUtility(IComponentSet)['main']
-        pub = SecureSourcePackagePublishingHistory(
+        pub = SourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
             archive=archive,
@@ -1224,12 +1086,9 @@ class PublishingSet:
             component=component,
             section=section,
             status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            embargo=False)
+            datecreated=UTC_NOW)
 
-        # One day, this will not be necessary when we have time to kill
-        # the Secure* records.
-        return SourcePackagePublishingHistory.get(pub.id)
+        return pub
 
     def getBuildsForSourceIds(
         self, source_publication_ids, archive=None, build_states=None):
@@ -1535,7 +1394,7 @@ class PublishingSet:
         """See `IPublishingSet`."""
         # Import PackageUpload and PackageUploadSource locally
         # to avoid circular imports, since PackageUpload uses
-        # {Secure}SourcePackagePublishingHistory.
+        # SourcePackagePublishingHistory.
         from lp.soyuz.model.sourcepackagerelease import (
             SourcePackageRelease)
         from lp.soyuz.model.queue import (
@@ -1673,7 +1532,7 @@ class PublishingSet:
         # First update the source package publishing history table.
         source_ids = [source.id for source in sources]
         if len(source_ids) > 0:
-            query = 'UPDATE SecureSourcePackagePublishingHistory '
+            query = 'UPDATE SourcePackagePublishingHistory '
             query += query_boilerplate
             query += ' %s' % sqlvalues(source_ids)
             store.execute(query)
@@ -1690,7 +1549,7 @@ class PublishingSet:
         # Now run the query that marks the binary packages as deleted
         # as well.
         if len(binary_packages) > 0:
-            query = 'UPDATE SecureBinaryPackagePublishingHistory '
+            query = 'UPDATE BinaryPackagePublishingHistory '
             query += query_boilerplate
             query += ' %s' % sqlvalues(
                 [binary.id for binary in binary_packages])
