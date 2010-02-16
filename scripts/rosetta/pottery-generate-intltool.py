@@ -8,11 +8,8 @@
 import _pythonpath
 
 
-from lp.translations.pottery.build_slave import (
-    find_intltool_dirs, get_translation_domain)
+from lp.translations.pottery.build_slave import generate_pots
 
 
 if __name__ == "__main__":
-    for dirname in find_intltool_dirs():
-        translation_domain = get_translation_domain(dirname) or "<unknown>"
-        print "%s (%s)" % (dirname, translation_domain)
+    print "\n".join(generate_pots())
