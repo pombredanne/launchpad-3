@@ -7,9 +7,11 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'compose_public_url',
     ]
 
 from datetime import datetime
+import os.path
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
@@ -481,24 +483,11 @@ class Branch(SQLBase):
 
     def composePublicURL(self, scheme='http'):
         """See `IBranch`."""
-        # Avoid circular imports.
-        from lp.code.xmlrpc.branch import PublicCodehostingAPI
-
-        # Accept sftp as a legacy protocol.
-        accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
-        accepted_schemes.add('sftp')
-
         # Not all protocols work for private branches.
         public_schemes = ['http']
-
-        assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
         assert not (self.private and scheme in public_schemes), (
             "Private branch %s has no public URL." % self.unique_name)
-
-        host = URI(config.codehosting.supermirror_root).host
-        path = '/' + self.unique_name
-
-        return str(URI(scheme=scheme, host=host, path=path))
+        return compose_public_url(scheme, self.unique_name)
 
     @property
     def warehouse_url(self):
@@ -1309,3 +1298,18 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def compose_public_url(scheme, unique_name, suffix=None):
+    # Avoid circular imports.
+    from lp.code.xmlrpc.branch import PublicCodehostingAPI
+
+    # Accept sftp as a legacy protocol.
+    accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
+    accepted_schemes.add('sftp')
+    assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
+    host = URI(config.codehosting.supermirror_root).host
+    path = '/' + unique_name
+    if suffix is not None:
+        path = os.path.join(path, suffix)
+    return str(URI(scheme=scheme, host=host, path=path))
