@@ -62,6 +62,14 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         return '%s translation templates build' % self.branch.bzr_identity
 
     @classmethod
+    def _hasPotteryCompatibleSetup(self, branch):
+        """Does `branch` look as if pottery can generate templates for it?
+
+        :param branch: A `Branch` object.
+        """
+        return is_intltool_structure(branch.repository.tree)
+
+    @classmethod
     def generatesTemplates(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
         if branch.private:
@@ -74,9 +82,8 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
             # Nobody asked for templates generated from this branch.
             return False
 
-        if not is_intltool_structure(branch.repository.tree):
-            # This branch doesn't look like something we know how to
-            # generate templates from.
+        if not cls._hasPotteryCompatibleSetup(branch):
+            # Nothing we could do with this branch if we wanted to.
             return False
 
         # Yay!  We made it.
