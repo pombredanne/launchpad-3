@@ -179,8 +179,7 @@ to a different host.
 
     >>> webservice.domain = 'bugs.launchpad.dev'
     >>> root = webservice.get(
-    ...     'http://bugs.launchpad.dev/api/beta/',
-    ...     api_version='devel').jsonBody()
+    ...     'http://bugs.launchpad.dev/api/devel/').jsonBody()
     >>> print root['people_collection_link']
     http://bugs.launchpad.dev/api/devel/people
 
