@@ -41,10 +41,8 @@ time.tzset()
 # Enable Storm's C extensions.
 os.environ['STORM_CEXTENSIONS'] = '1'
 
-# Set PYTHONPATH environment variable for spawned processes.
-# This is the kind of use case for the site.py fork we have in lib (see the
-# comment in that file). :-(
-os.environ['PYTHONPATH'] = ':'.join(sys.path)
+# Make sure our site.py is the one that subprocesses use.
+os.environ['PYTHONPATH'] = "${scripts:parts-directory}"
 
 # Set a flag if this is the main testrunner process
 if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
