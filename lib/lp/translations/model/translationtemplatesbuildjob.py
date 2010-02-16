@@ -64,11 +64,19 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
     @classmethod
     def generatesTemplates(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
+        if branch.private:
+            # We don't support generating template from private branches
+            # at the moment.
+            return False
+
         utility = getUtility(IRosettaUploadJobSource)
         if not utility.providesTranslationFiles(branch):
+            # Nobody asked for templates generated from this branch.
             return False
 
         if not is_intltool_structure(branch.repository.tree):
+            # This branch doesn't look like something we know how to
+            # generate templates from.
             return False
 
         # Yay!  We made it.
