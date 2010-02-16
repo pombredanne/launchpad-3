@@ -91,17 +91,19 @@ The estimated start time for the pending job is either now or lies
 in the future.
 
     >>> now = datetime.utcnow()
-    >>> estimate = alsa_build.getEstimatedBuildStartTime()
+    >>> def job_start_estimate(build):
+    ...     return build.buildqueue_record.getEstimatedJobStartTime()
+    >>> estimate = job_start_estimate(alsa_build)
     >>> estimate > now
     True
 
 The estimated build start time may only be requested for jobs that are
 pending.
 
-    >>> cur_build.getEstimatedBuildStartTime()
+    >>> job_start_estimate(cur_build)
     Traceback (most recent call last):
     ...
-    AssertionError: The start time is only estimated for pending builds.
+    AssertionError: The start time is only estimated for pending jobs.
 
 Now let's add two PPA packages to the mix in order to show how builds
 associated with disabled archives get ignored when it comes to the calculation
@@ -147,17 +149,17 @@ Since the 'iceweasel' build has a higher score (666) than the 'pmount'
 build (66) its estimated dispatch time is essentially "now".
 
     >>> now = datetime.utcnow()
-    >>> estimate = iceweasel_build.getEstimatedBuildStartTime()
+    >>> estimate = job_start_estimate(iceweasel_build)
     >>> estimate > now
     True
     >>> estimate - now
-    datetime.timedelta(0, 0, ...)
+    datetime.timedelta(0, 5, ...)
 
 The 'pmount' build comes next in the queue and its estimated dispatch
 time is the estimated build time of the 'iceweasel' package i.e. 2880
 seconds (48 minutes * 60).
 
-    >>> estimate = pmount_build.getEstimatedBuildStartTime()
+    >>> estimate = job_start_estimate(pmount_build)
     >>> estimate > now
     True
     >>> estimate - now
@@ -170,8 +172,8 @@ calculating the estimated dispatch time and the latter becomes effectively
 
     >>> mark.archive.disable()
     >>> syncUpdate(mark.archive)
-    >>> estimate = pmount_build.getEstimatedBuildStartTime()
+    >>> estimate = job_start_estimate(pmount_build)
     >>> estimate > now
     True
     >>> estimate - now
-    datetime.timedelta(0, 0, ...)
+    datetime.timedelta(0, 5, ...)

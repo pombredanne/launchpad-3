@@ -867,10 +867,12 @@ class BugWatchUpdater(object):
                     if new_malone_importance is not None:
                         bug_watch.updateImportance(new_remote_importance,
                             new_malone_importance)
-                    if bug_watch.bug.duplicateof is None:
+                    if (bug_watch.bug.duplicateof is None and
+                        len(bug_watch.bugtasks) > 0):
                         # Only sync comments and backlink if the local
-                        # bug isn't a duplicate. This helps us to avoid
-                        # spamming upstream.
+                        # bug isn't a duplicate, *and* if the bug
+                        # watch is associated with a bug task. This
+                        # helps us to avoid spamming upstream.
                         if can_import_comments:
                             self.importBugComments(remotesystem, bug_watch)
                         if can_push_comments:
