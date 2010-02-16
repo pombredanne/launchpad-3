@@ -948,6 +948,7 @@
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild">
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
+    <require permission="launchpad.Edit" set_attributes="buildstate upload_log" />
   </class>
 
   <securedutility
