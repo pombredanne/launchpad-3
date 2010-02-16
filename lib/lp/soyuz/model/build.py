@@ -508,6 +508,9 @@ class Build(BuildBase, SQLBase):
 
         return estimated_duration
 
+    def verifySuccessfulUpload(self):
+        return self.binarypackages.count() > 0
+
     def notify(self, extra_info=None):
         """See `IBuildBase`.
 

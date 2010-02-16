@@ -174,6 +174,9 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         # XXX: wgrant 2010-01-19 bug=507764: Need proper implementation.
         return datetime.timedelta(minutes=2)
 
+    def verifySuccessfulUpload(self):
+        return self.source_package_release is not None
+
     def notify(self, extra_info=None):
         """See `IBuildBase`."""
         # XXX: wgrant 2010-01-20 bug=509893: Implement this.

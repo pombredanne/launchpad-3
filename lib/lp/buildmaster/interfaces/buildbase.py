@@ -158,6 +158,9 @@ class IBuildBase(Interface):
         handlers, but it should not be called externally.
         """
 
+    def verifySuccessfulUpload(self):
+        """Verify that the upload of this build completed succesfully."""
+
     def storeUploadLog(content):
         """Store the given content as the build upload_log.
 
