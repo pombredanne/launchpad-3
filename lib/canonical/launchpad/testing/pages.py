@@ -43,8 +43,7 @@ from lazr.restful.testing.webservice import WebServiceCaller
 from lp.testing import ANONYMOUS, login, login_person, logout
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.person import NameAlreadyTaken
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressAlreadyTaken)
+
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
