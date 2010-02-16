@@ -19,11 +19,12 @@ __all__ = [
 from apt_pkg import ParseSrcDepends
 from cgi import escape
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.component import getUtility, getMultiAdapter
+from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
+from zope.component import getUtility, getMultiAdapter
 from zope.formlib.form import Fields
 from zope.interface import Interface
-from zope.schema import Choice
+from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 
@@ -157,6 +158,12 @@ class SourcePackageChangeUpstreamStepOne(StepView):
     step_description = 'Choose project'
     product = None
 
+    def setUpFields(self):
+        super(SourcePackageChangeUpstreamStepOne, self).setUpFields()
+        series = self.context.productseries
+        if series is not None:
+            self.form_fields['product'].field.default = series.product
+
     @property
     def cancel_url(self):
         return canonical_url(self.context)
@@ -180,9 +187,11 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
     step_description = 'Choose project series'
     product = None
 
+    # The DropdownWidget is used, since the VocabularyPickerWidget
+    # does not support visible=False to turn it into a hidden input
+    # to continue passing the variable in the form.
+    custom_widget('product', DropdownWidget, visible=False)
     custom_widget('productseries', LaunchpadRadioWidget)
-    #custom_widget(
-    #    'upstream', LaunchpadRadioWidget, orientation='vertical')
 
     @property
     def cancel_url(self):
@@ -190,7 +199,10 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
 
     def setUpFields(self):
         super(SourcePackageChangeUpstreamStepTwo, self).setUpFields()
-        # Vocabulary for the productseries field.
+
+        # The vocabulary for the product series is overridden to just
+        # include active series from the product selected in the
+        # previous step.
         product_name = self.request.form['field.product']
         self.product = getUtility(IProductSet)[product_name]
         series_list = [
@@ -205,80 +217,59 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
             SimpleTerm(series, series.name, series.name)
             for series in series_list
             ]
-        vocab_terms.insert(
-            0,
-            SimpleTerm(
-                dev_focus, dev_focus, "%s (Recommended)" % dev_focus.name))
+        dev_focus_term = SimpleTerm(
+            dev_focus, dev_focus.name, "%s (Recommended)" % dev_focus.name)
+        vocab_terms.insert(0, dev_focus_term)
 
-        choice = Choice(
+        # If the product is not being changed, then the current
+        # productseries can be the default choice. Otherwise,
+        # it will not exist in the vocabulary.
+        if self.context.productseries.product == self.product:
+            series_default = self.context.productseries
+        else:
+            series_default = None
+
+        productseries_choice = Choice(
             __name__='productseries',
             title=_("Series"),
             description=_("The series in this project."),
             vocabulary=SimpleVocabulary(vocab_terms),
+            default=series_default,
             required=True)
-        field = Fields(choice, render_context=self.render_context)
-        self.form_fields = self.form_fields + field
 
+        # The product selected in the previous step should be displayed,
+        # but a widget can't be readonly and pass its value with the
+        # form, so the real product field passes the value, and this fake
+        # product field displays it.
+        display_product_field = TextLine(
+            __name__='fake_product',
+            title=_("Project"),
+            default=self.product.displayname,
+            readonly=True)
 
-    @action(_("Change"), name="change")
-    def change(self, action, data):
+        self.form_fields = (
+            Fields(display_product_field, productseries_choice)
+            + self.form_fields)
+
+    main_action_label = u'Change'
+    def main_action(self, data):
         productseries = data['productseries']
+        # Because it is part of a multistep view, the next_url can't
+        # be set until the action is called, or it will skip the step.
+        self.next_url = canonical_url(self.context)
         if self.context.productseries == productseries:
             # There is nothing to do.
             return
         self.context.setPackaging(productseries, self.user)
         self.request.response.addNotification('Upstream link updated.')
-        self.next_url = canonical_url(self.context)
 
 
 class SourcePackageChangeUpstreamView(MultiStepView):
     """A view to set the `IProductSeries` of a sourcepackage."""
     page_title = SourcePackageChangeUpstreamStepOne.page_title
+    label = SourcePackageChangeUpstreamStepOne.label
     total_steps = 2
     first_step = SourcePackageChangeUpstreamStepOne
-
-
-class Foo:
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-    def setUpFields(self):
-        """ See `LaunchpadFormView`.
-
-        The productseries field is required by the view.
-        """
-        super(SourcePackageChangeUpstreamView, self).setUpFields()
-        field = copy_field(ISourcePackage['productseries'], required=True)
-        self.form_fields = self.form_fields.omit('productseries')
-        self.form_fields = self.form_fields + Fields(field)
-
-    def setUpWidgets(self):
-        """See `LaunchpadFormView`.
-
-        Set the current `IProductSeries` as the default value.
-        """
-        super(SourcePackageChangeUpstreamView, self).setUpWidgets()
-        if self.context.productseries is not None:
-            widget = self.widgets.get('productseries')
-            widget.setRenderedValue(self.context.productseries)
-
-    def validate(self, data):
-        productseries = data.get('productseries', None)
-        if productseries is None:
-            message = "You must choose a project series."
-            self.setFieldError('productseries', message)
-
-    @action(_("Change"), name="change")
-    def change(self, action, data):
-        productseries = data['productseries']
-        if self.context.productseries == productseries:
-            # There is nothing to do.
-            return
-        self.context.setPackaging(productseries, self.user)
-        self.request.response.addNotification('Upstream link updated.')
-        self.next_url = canonical_url(self.context)
 
 
 class SourcePackageView:

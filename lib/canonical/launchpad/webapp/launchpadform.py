@@ -362,6 +362,11 @@ class LaunchpadFormView(LaunchpadView):
         # widgets.
         if not IInputWidget.providedBy(widget):
             return False
+
+        # Do not show for readonly fields.
+        if widget.context.readonly:
+            return False
+
         # Do not show the marker for required widgets or always submitted
         # widgets.  Everything else gets the marker.
         return not (widget.required or

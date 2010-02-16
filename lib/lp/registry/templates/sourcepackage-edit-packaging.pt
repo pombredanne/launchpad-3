@@ -22,13 +22,6 @@
         translations efficiently.
       </p>
     </div>
-
-    <div metal:fill-slot="extra_bottom"
-         tal:condition="view/product">
-        <a tal:replace="structure link/fmt:link"
-          tal:define="link view/product/menu:overview/series_add"
-          tal:condition="link/enabled"/>
-    </div>
   </div>
 
 </div>
