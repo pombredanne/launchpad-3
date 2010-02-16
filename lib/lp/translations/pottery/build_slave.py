@@ -152,7 +152,7 @@ def generate_pot(podir, domain):
 
     :param podir: The PO directory in which to build template.
     :param domain: The translation domain to use as the name of the template.
-      If it is None, 'messages.pot' will be used.
+      If it is None or empty, 'messages.pot' will be used.
     :return: True if generation succeeded.
     """
     if domain is None or domain.strip() == "":
