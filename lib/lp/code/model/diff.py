@@ -27,9 +27,10 @@ from canonical.config import config
 from canonical.database.sqlbase import SQLBase
 from canonical.uuid import generate_uuid
 
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 
 class Diff(SQLBase):
@@ -383,3 +384,10 @@ class PreviewDiff(Storm):
             return True
         else:
             return False
+
+    def getFileByName(self, filename):
+        """See `IPreviewDiff`."""
+        if filename == 'preview.diff' and self.diff_text is not None:
+            return self.diff_text
+        else:
+            raise NotFoundError(filename)

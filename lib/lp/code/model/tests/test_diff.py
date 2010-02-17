@@ -15,6 +15,7 @@ from bzrlib.branch import Branch
 from bzrlib import trace
 import transaction
 
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
@@ -478,6 +479,17 @@ class TestPreviewDiff(DiffTestCase):
             self.assertNotEqual(handler.records, [])
         finally:
             logger.removeHandler(handler)
+
+    def test_getFileByName(self):
+        diff = self._createProposalWithPreviewDiff().preview_diff
+        self.assertEqual(diff.diff_text, diff.getFileByName('preview.diff'))
+        self.assertRaises(
+            NotFoundError, diff.getFileByName, 'different.name')
+
+    def test_getFileByName_with_no_diff(self):
+        diff = self._createProposalWithPreviewDiff(content='').preview_diff
+        self.assertRaises(
+            NotFoundError, diff.getFileByName, 'preview.diff')
 
 
 def test_suite():
