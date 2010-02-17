@@ -18,8 +18,14 @@
     #code-review-votes {
       margin: 1em 0;
     }
-    #commit-message, #edit-commit-message {
+    #description, #edit-description {
       margin: 1em 0 0 0;
+    }
+    #edit-description {
+      font-size: 110%;
+    }
+    #commit-message, #edit-commit_message {
+      margin: 0.5em 0 0 0;
     }
     #add-comment-form {
       max-width: 60em;
@@ -40,7 +46,8 @@
       display: inline;
     }
     /* A page-specific fix for inline text are editing to line up box. */
-    #edit-commit-message .yui-ieditor-input { top: 0; }
+    #edit-description .yui-ieditor-input { top: 0; }
+    #edit-commit_message .yui-ieditor-input { top: 0; }
   </style>
 </metal:block>
 
@@ -66,6 +73,27 @@
     <tal:summary replace="structure context/@@+pagelet-summary" />
   </div>
 
+  <div id="description" class="yui-g">
+  <tal:no-description condition="not: context/description">
+    <div tal:define="link menu/set_description"
+         tal:condition="link/enabled"
+         tal:content="structure link/render">
+      Set description
+    </div>
+    <div id="edit-description" class="lazr-multiline-edit unseen"
+         tal:content="structure view/description_html"/>
+  </tal:no-description>
+  <tal:has-description condition="context/description">
+    <div tal:define="link menu/set_description"
+         tal:condition="link/enabled"
+         tal:content="structure link/render" class="unseen">
+      Set description
+    </div>
+    <div id="edit-description" class="lazr-multiline-edit"
+         tal:content="structure view/description_html"/>
+  </tal:has-description>
+  </div>
+
   <div id="commit-message" class="yui-g">
   <tal:no-commit-message condition="not: context/commit_message">
     <div tal:define="link menu/set_commit_message"
@@ -73,7 +101,7 @@
          tal:content="structure link/render">
       Set commit message
     </div>
-    <div id="edit-commit-message" class="lazr-multiline-edit unseen"
+    <div id="edit-commit_message" class="lazr-multiline-edit unseen"
          tal:content="structure view/commit_message_html"/>
   </tal:no-commit-message>
   <tal:has-commit-message condition="context/commit_message">
@@ -82,7 +110,7 @@
          tal:content="structure link/render" class="unseen">
       Set commit message
     </div>
-    <div id="edit-commit-message" class="lazr-multiline-edit"
+    <div id="edit-commit_message" class="lazr-multiline-edit"
          tal:content="structure view/commit_message_html"/>
   </tal:has-commit-message>
   </div>

@@ -230,7 +230,6 @@
                     next_preview_diff_job
                     preview_diff
                     votes
-                    root_comment
                     all_comments
                     related_bugs
                     isMergable
@@ -269,6 +268,9 @@
   <adapter
       factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
       name="commit_message"/>
+  <adapter
+      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
+      name="description"/>
 
 
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">

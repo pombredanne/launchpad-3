@@ -16,6 +16,7 @@ from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 from bzrlib.workingtree import WorkingTree
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
 from zope.security.management import setSecurityPolicy
@@ -554,7 +555,7 @@ class TestCodeHandler(TestCaseWithFactory):
         JobRunner.fromReady(CreateMergeProposalJob).runAll()
         self.assertEqual(target, source.landing_targets[0].target_branch)
         # Ensure the DB operations violate no constraints.
-        transaction.commit()
+        Store.of(source).flush()
 
     def test_processWithUnicodeMergeDirectiveEmail(self):
         """process creates a comment from a unicode message body."""
@@ -568,11 +569,10 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler.process(message, 'merge@code.launchpad.net', file_alias)
         self.switchDbUser(config.create_merge_proposals.dbuser)
         JobRunner.fromReady(CreateMergeProposalJob).runAll()
-        comment = source.landing_targets[0].root_comment
-        self.assertIsNot(None, comment)
-        self.assertEqual(u'\u1234', comment.message.text_contents)
+        proposal = source.landing_targets[0]
+        self.assertEqual(u'\u1234', proposal.description)
         # Ensure the DB operations violate no constraints.
-        transaction.commit()
+        Store.of(proposal).flush()
 
     def test_processMergeProposalReviewerRequested(self):
         # The commands in the merge proposal are parsed.
@@ -594,7 +594,7 @@ class TestCodeHandler(TestCaseWithFactory):
         messages = pop_notifications()
         self.assertEqual(0, len(messages))
         # Ensure the DB operations violate no constraints.
-        transaction.commit()
+        Store.of(bmp).flush()
 
     def test_reviewer_with_diff(self):
         """Requesting a review with a diff works."""
@@ -637,7 +637,7 @@ class TestCodeHandler(TestCaseWithFactory):
         messages = pop_notifications()
         self.assertEqual(0, len(messages))
         # Ensure the DB operations violate no constraints.
-        transaction.commit()
+        Store.of(target_branch).flush()
 
     def test_processMergeProposalExists(self):
         """processMergeProposal raises BranchMergeProposalExists

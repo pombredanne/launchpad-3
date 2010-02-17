@@ -224,6 +224,13 @@
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
+        name="+edit-description"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
+        class="lp.code.browser.branchmergeproposal.BranchMergeProposalDescriptionEditView"
+        facet="branches"
+        permission="launchpad.Edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+delete"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalDeleteView"

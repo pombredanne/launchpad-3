@@ -366,11 +366,8 @@ class Branch(SQLBase):
             date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status, review_diff=review_diff,
-            commit_message=commit_message)
-
-        if initial_comment is not None:
-            bmp.createComment(
-                registrant, None, initial_comment, _notify_listeners=False)
+            commit_message=commit_message,
+            description=initial_comment)
 
         for reviewer, review_type in review_requests:
             bmp.nominateReviewer(
