@@ -176,6 +176,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/milestonetable.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
@@ -338,10 +340,10 @@
           <a href="https://help.launchpad.net/">Read the guide</a>
           &nbsp;
           <form id="globalsearch" method="get" accept-charset="UTF-8"
-            class="sprite-after search-icon"
             tal:condition="view/macro:pagehas/globalsearch"
             tal:attributes="action string:${rooturl}+search">
             <input type="search" id="search-text" name="field.text" />
+            <input type="submit" value="" class="icon-only sprite search-icon" />
           </form>
         </div>
         <metal:site-message
@@ -391,4 +393,28 @@
   </div>
 </metal:site-message>
 
+<metal:plural-msg define-macro="plural-message">
+  <tal:comment condition="nothing">
+    Expected variables to be defined in a containing tag or global:
+    count - value to check to determine plural form
+    singluar - string to use when count == 1
+    plural - string to use when count > 1.  If no plural is given it defaults
+    to the singular value + 's'.
+  </tal:comment>
+  <tal:singular
+    condition="python: count == 1"
+    replace="singular" />
+  <tal:plural
+     define="l_default string:s;
+             l_plural plural | string:$singular$l_default;"
+    condition="python: count != 1"
+    replace="l_plural" />
+</metal:plural-msg>
+
+<metal:yes-no define-macro="yes-no">
+  <span tal:condition="bool"
+    class="sprite yes">&nbsp;<span class="invisible-link">yes</span></span>
+  <span tal:condition="not: bool"
+    class="sprite no">&nbsp;<span class="invisible-link">no</span></span>
+</metal:yes-no>
 </macros>

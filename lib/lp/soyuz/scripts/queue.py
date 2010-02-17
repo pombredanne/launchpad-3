@@ -9,7 +9,6 @@
 # as Launchpad contains lots of queues.
 
 __metaclass__ = type
-
 __all__ = [
     'CommandRunner',
     'CommandRunnerError',
@@ -17,11 +16,12 @@ __all__ = [
     'name_queue_map'
     ]
 
+
 import errno
+import hashlib
 import pytz
 
 from datetime import datetime
-from sha import sha
 
 from zope.component import getUtility
 
@@ -420,7 +420,7 @@ class QueueActionFetch(QueueAction):
                     libfile.close()
                 else:
                     # Check sha against existing file (bug #67014)
-                    existing_sha = sha()
+                    existing_sha = hashlib.sha1()
                     for chunk in filechunks(existing_file):
                         existing_sha.update(chunk)
                     existing_file.close()

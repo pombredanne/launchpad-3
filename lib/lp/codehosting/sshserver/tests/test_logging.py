@@ -24,7 +24,6 @@ from lp.codehosting.sshserver.accesslog import (
 from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
 from lp.testing import TestCase
-from canonical.testing import reset_logging
 
 
 class TestLoggingBazaarInteraction(BzrTestCase):
@@ -35,16 +34,6 @@ class TestLoggingBazaarInteraction(BzrTestCase):
         # Trap stderr.
         self._real_stderr = sys.stderr
         sys.stderr = codecs.getwriter('utf8')(StringIO())
-
-        # We want to use Bazaar's default logging -- not its test logging --
-        # so here we disable the testing logging system (which restores
-        # default logging).
-        self._finishLogFile()
-
-        # We don't use BaseLayer because we want to keep the amount of
-        # pre-configured logging systems to an absolute minimum, in order to
-        # make it easier to test this particular logging system.
-        self.addCleanup(reset_logging)
 
     def tearDown(self):
         sys.stderr = self._real_stderr
@@ -76,13 +65,6 @@ class TestLoggingBazaarInteraction(BzrTestCase):
 
 
 class TestLoggingManager(TestCase):
-
-    def setUp(self):
-        TestCase.setUp(self)
-        # We don't use BaseLayer because we want to keep the amount of
-        # pre-configured logging systems to an absolute minimum, in order to
-        # make it easier to test this particular logging system.
-        self.addCleanup(reset_logging)
 
     def test_returns_codehosting_logger(self):
         # get_codehosting_logger returns the 'codehosting' logger.

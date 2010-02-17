@@ -1,6 +1,8 @@
 SourcePackage views
 ===================
 
+Edit packaging view
+-------------------
 
     >>> product = factory.makeProduct(name='bonkers', displayname='Bonkers')
     >>> productseries = factory.makeProductSeries(
@@ -96,3 +98,144 @@ but there is no notification message that the upstream link was updated.
 
     >>> print view.request.response.notifications
     []
+
+Upstream associations portlet
+-----------------------------
+
+The upstreams associations portlet either displays the upstream
+information if it is already set or gives the user the opportunity to
+suggest the association.  The suggestion is based on a
+ProductVocabulary query using the source package name.
+
+Since the bonkers source project was associated previously with the
+bonkers project, the portlet will display that information.
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> for product in view.product_suggestions:
+    ...     print product.name
+    bonkers
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     extract_text, find_tag_by_id)
+    >>> content = extract_text(find_tag_by_id(view.render(), 'upstreams'))
+    >>> print content
+    Bonkers project
+    Bug supervisor: no
+    Bug tracker: no
+    Bonkers crazy series
+    Branch: no
+
+A new source project that is not linked to an upstream will result in
+the portlet showing the suggested project.
+
+    >>> product = factory.makeProduct(name='lernid', displayname='Lernid')
+    >>> sourcepackagename = factory.makeSourcePackageName(name='lernid')
+    >>> package = factory.makeSourcePackage(
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> for product in view.product_suggestions:
+    ...     print product.name
+    lernid
+
+    >>> content = extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
+    >>> print content
+    Launchpad doesn&#8217;t know which project and series this
+    package belongs to. ...
+    Is the following project the upstream for this source package?
+    Registered upstream project:
+    Lernid...
+
+If there are multiple potential matches they are all shown.
+
+    >>> product = factory.makeProduct(name='lernid-dev', displayname='Lernid Dev')
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> for product in view.product_suggestions:
+    ...     print product.name
+    lernid
+    lernid-dev
+
+    >>> content = extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
+    >>> print content
+    Launchpad doesn&#8217;t know which project and series this
+    package belongs to. ...
+    Is one of these projects the upstream for this source package?
+    Registered upstream project:
+    Lernid...
+    Lernid Dev...
+
+
+The view includes a property for determining if the project has a bug
+tracker, though the rules are somewhat complicated.
+
+If the view's package has no productseries set then has_bugtracker is False.
+
+
+    >>> product = factory.makeProduct(name='stinky', displayname='Stinky')
+    >>> productseries = factory.makeProductSeries(
+    ...     name='stinkyseries', product=product)
+    >>> distroseries = factory.makeDistroRelease(name='wonky',
+    ...     distribution=distribution)
+    >>> sourcepackagename = factory.makeSourcePackageName(name='stinkypackage')
+    >>> package = factory.makeSourcePackage(
+    ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+
+    >>> print package.productseries
+    None
+    >>> print view.has_bugtracker
+    False
+
+So let's set the product series so we can do more interesting testing.
+
+    >>> package.setPackaging(productseries, product.owner)
+    >>> print package.productseries.name
+    stinkyseries
+
+If a product is not part of a project group and its bug tracker is not
+set then the view property is false.
+
+    >>> view = create_initialized_view(package, name='+portlet-associations')
+
+    >>> print product.official_malone
+    False
+    >>> print product.bugtracker
+    None
+    >>> print view.has_bugtracker
+    False
+
+Having official_malone set results in has_bugtracker being true.
+
+    >>> login_person(product.owner)
+    >>> product.official_malone = True
+    >>> print view.has_bugtracker
+    True
+
+Having a bug_tracker set also results in has_bugtracker being true (a
+bit of a tautology you'd think).
+
+    >>> product.official_malone = False
+    >>> bugtracker = factory.makeBugTracker()
+    >>> product.bugtracker = bugtracker
+    >>> print view.has_bugtracker
+    True
+
+If the product has no bug tracker and is in a project group with no
+bug tracker then the property is false.
+
+    >>> product.bugtracker = None
+    >>> project = factory.makeProject()
+    >>> print project.bugtracker
+    None
+    >>> product.project = project
+    >>> print view.has_bugtracker
+    False
+
+If the product's project does have a bug tracker then the product
+inherits it.
+
+    >>> login_person(project.owner)
+    >>> project.bugtracker = bugtracker
+    >>> print view.has_bugtracker
+    True

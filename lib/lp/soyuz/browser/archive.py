@@ -561,17 +561,6 @@ class ArchiveViewBase(LaunchpadView):
         can_edit = check_permission('launchpad.Edit', self.context)
         return can_edit and len(disabled_dependencies) > 0
 
-    @property
-    def ppa_reference(self):
-        """PPA reference as supported by `dput` and `software-properties`.
-
-        :raises AssertionError: if the context `IArchive` is not a PPA.
-        :return: a `str` as 'ppa:%(ppa.owner.name)/%(ppa.name)'
-        """
-        assert self.context.is_ppa, (
-            'PPA reference should not be used for non-PPA archives.')
-        return 'ppa:%s/%s' % (self.context.owner.name, self.context.name)
-
     @cachedproperty
     def package_copy_requests(self):
         """Return any package copy requests associated with this archive."""
@@ -763,7 +752,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             id="displayname", title="Edit the displayname")
         return widget
 
-
     @property
     def sources_list_entries(self):
         """Setup and return the source list entries widget."""
@@ -796,10 +784,12 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
         description = self.context.description
         if description is not None:
-            hide_email = formatter(self.context.description).obfuscate_email()
-            description = formatter(hide_email).text_to_html()
+            description = formatter(description).obfuscate_email()
         else:
             description = ''
+
+        if not (self.context.owner.is_probationary and self.context.is_ppa):
+            description = formatter(description).text_to_html()
 
         return TextAreaEditorWidget(
             self.context,
