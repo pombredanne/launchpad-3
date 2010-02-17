@@ -25,7 +25,7 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.project import IProjectGroupSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer

@@ -14,7 +14,7 @@ __all__ = [
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, Link, LaunchpadView)
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.browser.project import ProjectEditView
 from lp.translations.browser.translations import TranslationsMixin
 

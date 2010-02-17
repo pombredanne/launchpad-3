@@ -582,7 +582,7 @@ An admin can access 'forReview'.
 Members of the registry experts celebrity have permission to review
 IProduct and IProjectGroup objects and access an IProjectGroupSet.
 
-    >>> from lp.registry.interfaces.project import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
 
     >>> project_set = getUtility(IProjectGroupSet)
     >>> product = factory.makeProduct(name='dog')

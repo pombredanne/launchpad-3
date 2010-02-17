@@ -44,7 +44,7 @@ from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)

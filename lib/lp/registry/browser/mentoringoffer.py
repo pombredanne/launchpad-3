@@ -23,7 +23,7 @@ from lp.registry.interfaces.mentoringoffer import (
     IMentoringOffer, IMentoringOfferSet)
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from canonical.launchpad.webapp import (
     ApplicationMenu, LaunchpadFormView, LaunchpadView, Link,
     StandardLaunchpadFacets, action, canonical_url)

@@ -28,7 +28,7 @@ from lp.code.interfaces.branchvisibilitypolicy import (
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class BranchVisibilityTeamPolicy(SQLBase):

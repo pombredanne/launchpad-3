@@ -47,7 +47,7 @@ from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.project import (
+from lp.registry.interfaces.projectgroup import (
     IProjectGroup, IProjectGroupSeries, IProjectGroupSet)
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (

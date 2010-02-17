@@ -100,7 +100,7 @@ Distribution or DistributionSourcePackage).  If that is used, then the
 access level specified will be valid only for things in that scope.
 
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.project import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> login('foo.bar@canonical.com')
     >>> principal = getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
     ...     'foo.bar@canonical.com')

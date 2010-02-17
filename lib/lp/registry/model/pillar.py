@@ -29,7 +29,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution, IDistributionSet
 from lp.registry.interfaces.pillar import IPillarName, IPillarNameSet
 from lp.registry.interfaces.product import IProduct, IProductSet, License
-from lp.registry.interfaces.project import IProjectGroupSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 

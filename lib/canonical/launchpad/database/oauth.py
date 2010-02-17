@@ -29,7 +29,7 @@ from canonical.launchpad.components.tokens import (
 
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (

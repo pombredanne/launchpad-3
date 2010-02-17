@@ -10,7 +10,7 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import login
 from canonical.testing import LaunchpadFunctionalLayer
 
-from lp.registry.interfaces.project import IProjectGroupSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import TestCaseWithFactory
 
 

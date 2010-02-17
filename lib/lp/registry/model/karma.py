@@ -34,7 +34,7 @@ from lp.registry.interfaces.karma import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCacheManager,
     IKarmaCategory, IKarmaContext, IKarmaTotalCache)
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class KarmaAssignedEvent:

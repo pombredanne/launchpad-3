@@ -74,7 +74,7 @@ from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (

@@ -268,14 +268,14 @@
     <class
         class="lp.registry.model.project.Project">
         <allow
-            interface="lp.registry.interfaces.project.IProjectGroupPublic"/>
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow
             interface="canonical.launchpad.interfaces.IFAQCollection"/>
         <allow
             interface="canonical.launchpad.interfaces.IQuestionCollection"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.registry.interfaces.project.IProjectGroupPublic"/>
+            set_schema="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
@@ -309,17 +309,17 @@
                 setAliases"/>
     </class>
     <adapter
-        for="lp.registry.interfaces.project.IProjectGroup"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.project.IProjectGroup"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.project.IProjectGroupSet"
+        for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
 
@@ -331,13 +331,13 @@
     <class
         class="lp.registry.model.project.ProjectSet">
         <allow
-            interface="lp.registry.interfaces.project.IProjectGroupSet"/>
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </class>
     <securedutility
         class="lp.registry.model.project.ProjectSet"
-        provides="lp.registry.interfaces.project.IProjectGroupSet">
+        provides="lp.registry.interfaces.projectgroup.IProjectGroupSet">
         <allow
-            interface="lp.registry.interfaces.project.IProjectGroupSet"/>
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </securedutility>
 
     <!-- ProjectSeries -->
@@ -345,7 +345,7 @@
     <class
         class="lp.registry.model.project.ProjectSeries">
         <allow
-            interface="lp.registry.interfaces.project.IProjectGroupSeries"/>
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupSeries"/>
     </class>
 
     <!-- DistributionSourcePackage -->

@@ -41,7 +41,7 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, NoSuchProduct)
 from lp.registry.interfaces.sourcepackagename import (

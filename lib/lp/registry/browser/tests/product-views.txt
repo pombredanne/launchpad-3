@@ -21,7 +21,7 @@ for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.project import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import ANONYMOUS
     >>> login('foo.bar@canonical.com')

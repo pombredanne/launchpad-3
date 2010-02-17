@@ -23,7 +23,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.structuralsubscription import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
     IStructuralSubscription, IStructuralSubscriptionTarget,

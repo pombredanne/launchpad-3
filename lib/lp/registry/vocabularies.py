@@ -107,7 +107,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pillar import IPillarName
 from lp.registry.interfaces.product import IProduct, IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.distribution import Distribution

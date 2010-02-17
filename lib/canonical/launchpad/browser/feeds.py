@@ -45,7 +45,7 @@ from canonical.launchpad.webapp.url import urlappend
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class FeedsRootUrlData:

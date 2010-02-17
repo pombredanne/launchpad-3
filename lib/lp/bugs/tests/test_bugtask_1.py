@@ -19,7 +19,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.project import IProjectGroupSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import DatabaseFunctionalLayer
 

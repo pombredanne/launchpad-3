@@ -37,7 +37,7 @@ from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import (
+from lp.registry.interfaces.projectgroup import (
     IProjectGroup, IProjectGroupSeries, IProjectGroupSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.code.model.branchvisibilitypolicy import (
@@ -428,7 +428,7 @@ class ProjectSet:
         return project
 
     def get(self, projectid):
-        """See `lp.registry.interfaces.project.IProjectGroupSet`.
+        """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`.
 
         >>> getUtility(IProjectGroupSet).get(1).name
         u'apache'
@@ -453,7 +453,7 @@ class ProjectSet:
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None,
             registrant=None):
-        """See `lp.registry.interfaces.project.IProjectGroupSet`."""
+        """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`."""
         if registrant is None:
             registrant = owner
         return Project(

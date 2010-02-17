@@ -20,7 +20,7 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus, SpecificationPriority)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.project import IProjectGroupSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from canonical.launchpad.ftests import login, syncUpdate
 from canonical.testing import LaunchpadFunctionalLayer
 

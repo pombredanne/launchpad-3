@@ -112,7 +112,7 @@ from lp.registry.interfaces.personnotification import (
     IPersonNotificationSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from lp.blueprints.interfaces.specification import (

@@ -482,7 +482,7 @@ class PillarAliases(TextLine):
         """
         context = self.context
         from lp.registry.interfaces.product import IProduct
-        from lp.registry.interfaces.project import IProjectGroup
+        from lp.registry.interfaces.projectgroup import IProjectGroup
         from lp.registry.interfaces.distribution import IDistribution
         if IProduct.providedBy(context):
             name_field = IProduct['name']

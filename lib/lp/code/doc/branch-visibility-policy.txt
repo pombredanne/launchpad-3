@@ -43,7 +43,7 @@ products can set branch visibility policies.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.registry.interfaces.project import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.code.interfaces.branchvisibilitypolicy import (
     ...     IHasBranchVisibilityPolicy)
     >>> project_set = getUtility(IProjectGroupSet)

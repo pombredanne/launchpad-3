@@ -85,7 +85,7 @@ from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProjectGroup, IProjectGroupSet
+from lp.registry.interfaces.projectgroup import IProjectGroup, IProjectGroupSet
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage

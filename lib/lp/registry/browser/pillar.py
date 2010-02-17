@@ -25,7 +25,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProjectGroup
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class IInvolved(Interface):
