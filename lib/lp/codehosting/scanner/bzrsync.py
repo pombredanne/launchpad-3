@@ -28,8 +28,6 @@ from bzrlib import urlutils
 
 from lazr.uri import URI
 
-from canonical.config import config
-
 from lp.codehosting import iter_list_chunks
 from lp.codehosting.puller.worker import BranchMirrorer
 from lp.codehosting.scanner import events
