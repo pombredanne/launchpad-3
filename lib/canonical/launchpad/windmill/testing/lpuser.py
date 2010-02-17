@@ -44,8 +44,6 @@ class LaunchpadUser:
 class AnonymousUser:
     """Object representing the anonymous user."""
 
-    # XXX: It's ridiculous to have to call ensure_login() when you actually
-    # want to ensure the user is logged *out*.
     def ensure_login(self, client):
         """Ensure that the user is surfing anonymously."""
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)

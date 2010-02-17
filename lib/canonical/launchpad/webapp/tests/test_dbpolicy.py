@@ -191,7 +191,7 @@ class LayerDatabasePolicyTestCase(TestCase):
         newInteraction(request)
         try:
             # First, generate a valid session cookie.
-            cookie_name = getUtility(IClientIdManager).getNamespace(request)
+            cookie_name = getUtility(IClientIdManager).namespace
             ISession(request)['whatever']['whatever'] = 'whatever'
             # Then stuff it into the request where we expect to
             # find it. The database policy is only interested if
