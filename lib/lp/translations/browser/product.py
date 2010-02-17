@@ -68,7 +68,8 @@ class ProductSettingsView(TranslationsMixin, ProductEditView):
     field_names = [
             "translationgroup",
             "translationpermission",
-            "translation_focus"]
+            "translation_focus",
+            ]
 
     @property
     def cancel_url(self):
