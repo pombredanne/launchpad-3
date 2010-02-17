@@ -2,12 +2,10 @@ The feeds vhost should not set the cookie. Since it is running
 on http instead of https, it cannot read the secure cookie on https,
 so it cannot tell that it will end up overwriting the existing cookie.
 
-    >>> from canonical.launchpad.testing.cookie import Cookies
-    >>> cookies = Cookies(browser)
     >>> browser.open('http://feeds.launchpad.dev:8085/announcements.atom')
     >>> browser.url
     'http://feeds.launchpad.dev:8085/announcements.atom'
-    >>> len(cookies)
+    >>> len(browser.cookies)
     0
 
 Our cookies need to have their domain attribute set to ensure that they
@@ -28,14 +26,15 @@ are sent to other vhosts in the same domain.
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
 
-    # We see two cookies because there's one for the OpenID provider we used
-    # when logging in (testopenid) and other for Launchpad itself.
-    >>> len(cookies)
-    2
-    >>> sorted(cookies.keys())
-    ['launchpad_tests', 'testopenid']
-    >>> session_cookie_name = cookies.keys()[0]
-    >>> cookies.getInfo(session_cookie_name)['domain']
+    # Open a page again so that we see the cookie for a launchpad.dev request
+    # and not a testopenid.dev request (as above).
+    >>> browser.open('http://blueprints.launchpad.dev:8085')
+    >>> len(browser.cookies)
+    1
+    >>> browser.cookies.keys()
+    ['launchpad_tests']
+    >>> session_cookie_name = browser.cookies.keys()[0]
+    >>> browser.cookies.getinfo(session_cookie_name)['domain']
     '.launchpad.dev'
 
 If we visit another vhost in the domain, we remain logged in.
@@ -45,7 +44,7 @@ If we visit another vhost in the domain, we remain logged in.
     'http://launchpad.dev:8085/'
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
-    >>> cookies.getInfo(session_cookie_name)['domain']
+    >>> browser.cookies.getinfo(session_cookie_name)['domain']
     '.launchpad.dev'
 
 Even if the browser passes in a cookie, the feeds vhost should not set one.
