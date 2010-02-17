@@ -10,7 +10,7 @@ __all__ = [
 
 from zope.interface import classProvides, implements
 
-from canonical.launchpad.interfaces.personproduct import (
+from lp.registry.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
 
 

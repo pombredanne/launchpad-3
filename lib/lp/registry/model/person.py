@@ -108,7 +108,7 @@ from lp.registry.interfaces.person import (
     JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
     PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy)
-from canonical.launchpad.interfaces.personnotification import (
+from lp.registry.interfaces.personnotification import (
     IPersonNotificationSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
