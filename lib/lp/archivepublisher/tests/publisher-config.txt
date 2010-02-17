@@ -112,9 +112,12 @@ archive is marked as private:
     ...  config.personalpackagearchive.root)
     True
 
-    >>> cprov_archive.private = True
-    >>> cprov_archive.buildd_secret = "secret"
-    >>> p3a_config = getPubConfig(cprov_archive)
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, name='myprivateppa',
+    ...     distribution=cprov_archive.distribution)
+    >>> cprov_private_ppa.private = True
+    >>> cprov_private_ppa.buildd_secret = "secret"
+    >>> p3a_config = getPubConfig(cprov_private_ppa)
 
     >>> (p3a_config.distroroot ==
     ...  config.personalpackagearchive.private_root)
@@ -123,9 +126,9 @@ archive is marked as private:
     >>> dump_config(p3a_config)
     stayofexecution: 5.0
     distroroot:      /var/tmp/ppa
-    archiveroot:     /var/tmp/ppa/cprov/ppa/ubuntutest
-    poolroot:        /var/tmp/ppa/cprov/ppa/ubuntutest/pool
-    distsroot:       /var/tmp/ppa/cprov/ppa/ubuntutest/dists
+    archiveroot:     /var/tmp/ppa/cprov/myprivateppa/ubuntutest
+    poolroot:        /var/tmp/ppa/cprov/myprivateppa/ubuntutest/pool
+    distsroot:       /var/tmp/ppa/cprov/myprivateppa/ubuntutest/dists
     overrideroot:    None
     cacheroot:       None
     miscroot:        None
@@ -136,11 +139,6 @@ archive is marked as private:
     hoary-test:
       Architectures: amd64, i386
       Components: main, multiverse, restricted, universe
-
-Make Celso's PPA public again.
-
-    >>> cprov_archive.private = False
-    >>> cprov_archive.buildd_secret = None
 
 
 == Partner ==
