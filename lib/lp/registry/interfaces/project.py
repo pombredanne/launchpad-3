@@ -280,7 +280,7 @@ class IProjectPublic(
 
 
 class IProject(IProjectPublic, IStructuralSubscriptionTarget,
-    ITranslationPolicy):
+               ITranslationPolicy):
     """A Project."""
 
     export_as_webservice_entry('project_group')
