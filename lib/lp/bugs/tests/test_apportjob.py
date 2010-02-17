@@ -311,53 +311,64 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         job_from_view = view.extra_data_processing_job
         self.assertEqual(job, job_from_view, "Jobs didn't match.")
 
-        # If a non-existent UUID is passed to +filebug, its
+        # If a no UUID is passed to +filebug, its
         # extra_data_processing_job property will return None.
-        view = create_initialized_view(
-            self.product, '+filebug', path_info='/nonsense')
+        view = create_initialized_view(self.product, '+filebug')
         job_from_view = view.extra_data_processing_job
         self.assertEqual(
             None, job_from_view,
             "Job returned by extra_data_processing_job should be None.")
 
-    def test_filebug_extra_data_processed(self):
-        # The +filebug view has a property, extra_data_processed, which
+    def test_filebug_extra_data_to_process(self):
+        # The +filebug view has a property, extra_data_to_process, which
         # indicates whether or not an Apport blob has been processed.
         blob_uuid = self._create_blob_and_job_using_storeblob()
         view = self._create_and_traverse_filebug_view(blob_uuid)
 
         job_from_view = view.extra_data_processing_job
 
-        # Because the job hasn't yet been run the view's extra_data_processed
-        # property will return False.
+        # Because the job hasn't yet been run the view's extra_data_to_process
+        # property will return True.
         self.assertEqual(
             JobStatus.WAITING, job_from_view.job.status,
             "Job should be WAITING, is in fact %s" %
             job_from_view.job.status.title)
-        self.assertFalse(
-            view.extra_data_processed,
-            "view.extra_data_processed should be False while job is WAITING.")
+        self.assertTrue(
+            view.extra_data_to_process,
+            "view.extra_data_to_process should be True while job is WAITING.")
 
-        # If the job is started bug hasn't completed, extra_data_processed
-        # will remain False.
+        # If the job is started bug hasn't completed, extra_data_to_process
+        # will remain True.
         job_from_view.job.start()
         self.assertEqual(
             JobStatus.RUNNING, job_from_view.job.status,
             "Job should be RUNNING, is in fact %s" %
             job_from_view.job.status.title)
-        self.assertFalse(
-            view.extra_data_processed,
-            "view.extra_data_processed should be False while job is RUNNING.")
+        self.assertTrue(
+            view.extra_data_to_process,
+            "view.extra_data_to_process should be True while job is RUNNING.")
 
-        # Once the job is complete, extra_data_processed will be True
+        # Once the job is complete, extra_data_to_process will be False
         job_from_view.job.complete()
         self.assertEqual(
             JobStatus.COMPLETED, job_from_view.job.status,
             "Job should be COMPLETED, is in fact %s" %
             job_from_view.job.status.title)
-        self.assertTrue(
-            view.extra_data_processed,
-            "view.extra_data_processed should be True when job is COMPLETED.")
+        self.assertFalse(
+            view.extra_data_to_process,
+            "view.extra_data_to_process should be False when job is COMPLETED.")
+
+        # If there's no job - for example if someone visits the +filebug
+        # page normally, example - extra_data_to_process will always be
+        # False.
+        view = create_initialized_view(self.product, '+filebug')
+        self.assertEqual(
+            None, view.extra_data_processing_job,
+            "extra_data_processing_job should be None when there's no job "
+            "for a view.")
+        self.assertFalse(
+            view.extra_data_to_process,
+            "view.extra_data_to_process should be False when there is no job.")
 
 
 def test_suite():

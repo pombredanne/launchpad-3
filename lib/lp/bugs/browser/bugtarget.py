@@ -720,13 +720,15 @@ class FileBugViewBase(LaunchpadFormView):
             return None
 
     @property
-    def extra_data_processed(self):
-        """Return True if the extra data BLOB has been processed."""
+    def extra_data_to_process(self):
+        """Return True if there is extra data to process."""
         apport_processing_job = self.extra_data_processing_job
-        if apport_processing_job.job.status == JobStatus.COMPLETED:
-            return True
-        else:
+        if apport_processing_job is None:
             return False
+        elif apport_processing_job.job.status == JobStatus.COMPLETED:
+            return False
+        else:
+            return True
 
 
 class FileBugInlineFormView(FileBugViewBase):
