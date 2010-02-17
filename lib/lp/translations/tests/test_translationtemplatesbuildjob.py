@@ -111,7 +111,7 @@ class FakeTranslationTemplatesJobSource(TranslationTemplatesBuildJob):
             return TranslationTemplatesBuildJob._hasPotteryCompatibleSetup(
                 branch)
         else:
-            return cls.fake_pottery_compatibility 
+            return cls.fake_pottery_compatibility
 
 
 class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
@@ -137,7 +137,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
             branch = self.factory.makeAnyBranch()
         product = removeSecurityProxy(branch.product)
         trunk = product.getSeries('trunk')
-        trunk.translations_branch = branch
+        trunk.branch = branch
         trunk.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
 
@@ -179,12 +179,12 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         branch = self._makeTranslationBranch()
         self.assertFalse(self.jobsource.generatesTemplates(branch))
     
-    def test_not_translations_branch(self):
-        # We don't generate templates for non-translations branches.
+    def test_branch_not_used(self):
+        # We don't generate templates branches not attached to series.
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
 
         trunk = branch.product.getSeries('trunk')
-        removeSecurityProxy(trunk).translations_branch = None
+        removeSecurityProxy(trunk).branch = None
 
         self.assertFalse(self.jobsource.generatesTemplates(branch))
 

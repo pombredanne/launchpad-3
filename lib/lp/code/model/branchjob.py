@@ -726,7 +726,7 @@ class RosettaUploadJob(BranchJobDerived):
         """See `IRosettaUploadJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
-        conditions = [ProductSeries.translations_branch == branch]
+        conditions = [ProductSeries.branch == branch]
         if not force_translations_upload:
             import_mode = ProductSeries.translations_autoimport_mode
             conditions.append(
