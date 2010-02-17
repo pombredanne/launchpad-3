@@ -12,6 +12,7 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
@@ -192,18 +193,6 @@ class IHasBugs(Interface):
         hardware_is_linked_to_bug to True.
         """
 
-    def getUsedBugTags():
-        """Return the tags used by the context as a sorted list of strings."""
-
-    def getUsedBugTagsWithOpenCounts(user):
-        """Return name and bug count of tags having open bugs.
-
-        It returns a list of tuples contining the tag name, and the
-        number of open bugs having that tag. Only the bugs that the user
-        has permission to see are counted, and only tags having open
-        bugs will be returned.
-        """
-
     def getBugCounts(user, statuses=None):
         """Return a dict with the number of bugs in each possible status.
 
@@ -280,6 +269,18 @@ class IHasOfficialBugTags(Interface):
         description=_("The list of bug tags defined as official."),
         value_type=Tag(),
         readonly=True))
+
+    def getUsedBugTags():
+        """Return the tags used by the context as a sorted list of strings."""
+
+    def getUsedBugTagsWithOpenCounts(user):
+        """Return name and bug count of tags having open bugs.
+
+        It returns a list of tuples contining the tag name, and the
+        number of open bugs having that tag. Only the bugs that the user
+        has permission to see are counted, and only tags having open
+        bugs will be returned.
+        """
 
 
 class IOfficialBugTagTargetPublic(IHasOfficialBugTags):
