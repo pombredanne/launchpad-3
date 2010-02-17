@@ -5,7 +5,8 @@ example see all bugs in the Project's Product, or make them share a
 common external bug tracker.
 
     # Some basic imports
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet, IProjectGroup
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProjectGroupSet, IProjectGroup)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> projectset = getUtility(IProjectGroupSet)
 
@@ -29,10 +30,10 @@ While some of them (homepageurl, icon, logo and mugshot) are optional, others
 
 == Looking up existing projects ==
 
-To fetch a project we use IProjectGroupSet.getByName() or IProjectGroupSet.__getitem__.
-The former will, by default, reeturn active and inactive projects, while the
-latter returns only active ones. Both can be used to look up projects by their
-aliases, though.
+To fetch a project we use IProjectGroupSet.getByName() or
+IProjectGroupSet.__getitem__. The former will, by default, reeturn active and
+inactive projects, while the latter returns only active ones. Both can be
+used to look up projects by their aliases, though.
 
     >>> gnome = projectset['gnome']
     >>> gnome.name
@@ -93,7 +94,8 @@ IProjectGroupSet.getByName(), though.
 
 getByName() also accepts an argument to ignore inactive projects.
 
-    >>> print getUtility(IProjectGroupSet).getByName('gnome', ignore_inactive=True)
+    >>> projectgroups = getUtility(IProjectGroupSet)
+    >>> print projectgroups.getByName('gnome', ignore_inactive=True)
     None
 
 == Products which are part of a project ==

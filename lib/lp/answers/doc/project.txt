@@ -44,7 +44,8 @@ possible questions.
 Questions can be searched by all the standard searchQuestions() parameters
 (consult questiontarget.txt for the full details.)
 
-    >>> from canonical.launchpad.interfaces import QuestionStatus, QuestionSort
+    >>> from canonical.launchpad.interfaces import (
+    ...     QuestionStatus, QuestionSort)
     >>> for question in mozilla_project.searchQuestions(
     ...     owner=sample_person, status=QuestionStatus.OPEN,
     ...     sort=QuestionSort.OLDEST_FIRST):

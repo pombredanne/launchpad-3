@@ -1115,8 +1115,8 @@ project groups and projects.
 
     >>> login(ANONYMOUS)
 
-    >>> from canonical.launchpad.interfaces import (IDistribution, IProjectGroup,
-    ...     IProduct)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistribution, IProjectGroup, IProduct)
 
     >>> def print_pillar(pillarname):
     ...     pillar = pillarname.pillar

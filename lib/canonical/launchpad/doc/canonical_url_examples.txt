@@ -132,7 +132,8 @@ An IDistributionSourcePackage.
 
 == Projects and products ==
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet, IProductSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProjectGroupSet, IProductSet)
 
 The IProjectGroupSet.
 
