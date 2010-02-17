@@ -21,7 +21,7 @@ __all__ = [
 import os
 import shutil
 
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, InterBranch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
@@ -529,14 +529,11 @@ class PullingImportWorker(ImportWorker):
             else:
                 raise NotBranchError(self.source_details.url)
             foreign_branch = format.open(transport).open_branch()
-            local_revno = bazaar_tree.branch.revno()
-            foreign_revno = foreign_branch.revno()
-            target_revno = min(local_revno + 2, foreign_revno)
-            target_revid = foreign_branch.get_rev_id(target_revno)
-            pull_result = bazaar_tree.branch.pull(
-                foreign_branch, overwrite=True, stop_revision=target_revid)
+            inter_branch = InterBranch.get(foreign_branch, bazaar_tree.branch)
+            pull_result = inter_branch.pull(overwrite=True)
             self.pushBazaarWorkingTree(bazaar_tree)
-            if target_revno == foreign_revno:
+            if bazaar_tree.branch.last_revision() \
+                   == foreign_branch.last_revision():
                 if pull_result.old_revid != pull_result.new_revid:
                     return CodeImportWorkerExitCode.SUCCESS
                 else:
