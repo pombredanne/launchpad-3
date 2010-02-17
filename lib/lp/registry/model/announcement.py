@@ -15,7 +15,8 @@ import pytz, datetime
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from zope.interface import implements
 
-from lp.registry.interfaces.announcement import IAnnouncement, IAnnouncementSet
+from lp.registry.interfaces.announcement import (
+    IAnnouncement, IAnnouncementSet)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
