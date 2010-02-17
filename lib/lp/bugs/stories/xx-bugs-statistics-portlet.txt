@@ -40,6 +40,7 @@ general stats.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+subscribe
 
@@ -49,6 +50,7 @@ general stats.
     0 Bugs fixed elsewhere
     1 New bugs
     2 Open CVE bugs - CVE reports
+    0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
@@ -60,6 +62,7 @@ bugs is also shown.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+subscribe
 
@@ -70,6 +73,7 @@ bugs is also shown.
     0 Bugs fixed elsewhere
     1 New bugs
     2 Open CVE bugs - CVE reports
+    0 Bugs with patches
 
 The content includes a link to the distribution CVE report.
 
@@ -90,6 +94,7 @@ link to review nominations.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/woody/+subscribe
     Review nominations
@@ -101,6 +106,7 @@ link to review nominations.
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bugs - CVE reports
+    0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
@@ -112,6 +118,7 @@ bugs is also shown.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/woody/+subscribe
     Review nominations
@@ -124,6 +131,7 @@ bugs is also shown.
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bugs - CVE reports
+    0 Bugs with patches
 
 The content includes a link to the distribution CVE report.
 
@@ -143,6 +151,7 @@ If the user is not logged-in general stats are shown.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
 
@@ -152,6 +161,7 @@ If the user is not logged-in general stats are shown.
     0 Bugs fixed elsewhere
     1 New bugs
     2 Open CVE bugs
+    0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
@@ -163,6 +173,7 @@ bugs is also shown.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
 
@@ -173,6 +184,7 @@ bugs is also shown.
     0 Bugs fixed elsewhere
     1 New bugs
     2 Open CVE bugs
+    0 Bugs with patches
 
 Note that the "CVE reports" link is not shown above; distribution
 source packages do not have a CVE reports page.
@@ -196,6 +208,7 @@ option to subscribe to bug mail.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
+    Bugs with patches
 
     >>> print_portlet_contents(anon_browser, path)
     2 Open bugs
@@ -203,6 +216,7 @@ option to subscribe to bug mail.
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bugs
+    0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
@@ -214,7 +228,8 @@ bugs is also shown.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
-
+    Bugs with patches
+    
     >>> print_portlet_contents(user_browser, path)
     2 Open bugs
     0 Bugs assigned to me
@@ -222,6 +237,7 @@ bugs is also shown.
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bugs
+    0 Bugs with patches
 
 Note that the "CVE reports" link is not shown above; source packages
 do not have a CVE reports page.
@@ -244,6 +260,7 @@ If the user is not logged-in general stats are shown.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/mozilla/+subscribe
 
@@ -253,6 +270,7 @@ If the user is not logged-in general stats are shown.
     0 Bugs fixed elsewhere
     4 New bugs
     1 Open CVE bugs
+    0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
@@ -264,6 +282,7 @@ bugs is also shown.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/mozilla/+subscribe
 
@@ -274,6 +293,7 @@ bugs is also shown.
     0 Bugs fixed elsewhere
     4 New bugs
     1 Open CVE bugs
+    0 Bugs with patches
 
 Note that the "CVE reports" link is not shown above; project groups do
 not have a CVE reports page.
@@ -296,6 +316,7 @@ If the user is not logged-in general stats are shown.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/firefox/+subscribe
 
@@ -305,6 +326,7 @@ If the user is not logged-in general stats are shown.
     0 Bugs fixed elsewhere
     3 New bugs
     1 Open CVE bugs - CVE reports
+    0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
@@ -316,6 +338,7 @@ bugs is also shown.
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
+    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/firefox/+subscribe
 
@@ -326,6 +349,7 @@ bugs is also shown.
     0 Bugs fixed elsewhere
     3 New bugs
     1 Open CVE bugs - CVE reports
+    0 Bugs with patches
 
 
 The content includes a link to the distribution CVE report.
