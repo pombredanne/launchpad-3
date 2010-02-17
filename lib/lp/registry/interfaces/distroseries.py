@@ -17,44 +17,42 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.schema import Bool, Datetime, Choice, Object, TextLine
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, Datetime, Choice, Object, TextLine
 
 from lazr.enum import DBEnumeratedType
+from lazr.restful.declarations import (
+    LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
+    export_factory_operation, export_read_operation, exported,
+    operation_parameters, operation_returns_collection_of,
+    operation_returns_entry, rename_parameters_as, webservice_error)
+from lazr.restful.fields import Reference
 
+from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description, PublicPersonChoice, Summary, Title,
     UniqueField)
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IHasBugs, IHasOfficialBugTags)
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers)
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationGoal)
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
-from canonical.launchpad import _
+from lp.blueprints.interfaces.specificationtarget import (
+    ISpecificationGoal)
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget, IHasBugs, IHasOfficialBugTags)
+from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
+from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.languagepack import ILanguagePack
 
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
-    export_factory_operation,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_collection_of, operation_returns_entry,
-    rename_parameters_as, webservice_error)
 
 class DistroSeriesNameField(ContentNameField):
     """A class to ensure `IDistroSeries` has unique names."""

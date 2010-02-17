@@ -29,6 +29,8 @@ from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
+from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -72,9 +74,6 @@ from lp.soyuz.interfaces.queue import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.message import (
     IIndexedMessage, IMessage, IUserToUserEmail)
-
-from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.bugs.interfaces.bugwatch import IBugWatch
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
