@@ -809,7 +809,7 @@ product ID. If we search for bugs related to the PCI device (0x10de,
 0x0455), which appears in a HWDB submission from Sample Person, bugs
 reported by him will be returned.
 
-    >>> from canonical.launchpad.interfaces.hwdb import HWBus
+    >>> from lp.hardwaredb.interfaces.hwdb import HWBus
     >>> search_params = BugTaskSearchParams(
     ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
@@ -913,7 +913,7 @@ Finally, we can search for who bugs which are directly linked to
 a HWDB submission, where the submission contains the given device or
 driver.
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> hw_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
     >>> bug_19 = getUtility(IBugSet).get(19)
