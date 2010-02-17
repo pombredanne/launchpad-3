@@ -142,8 +142,8 @@ class KarmaCacheManager:
     """See IKarmaCacheManager."""
     implements(IKarmaCacheManager)
 
-    def new(self, value, person_id, category_id, product_id=None, distribution_id=None,
-            sourcepackagename_id=None, project_id=None):
+    def new(self, value, person_id, category_id, product_id=None,
+            distribution_id=None, sourcepackagename_id=None, project_id=None):
         """See IKarmaCacheManager."""
         return KarmaCache(
             karmavalue=value, person=person_id, category=category_id,
@@ -155,17 +155,18 @@ class KarmaCacheManager:
                          project_id=None):
         """See IKarmaCacheManager."""
         entry = self._getEntry(
-            person_id=person_id, category_id=category_id, product_id=product_id,
-            distribution_id=distribution_id, project_id=project_id,
-            sourcepackagename_id=sourcepackagename_id)
+            person_id=person_id, category_id=category_id,
+            product_id=product_id, distribution_id=distribution_id,
+            project_id=project_id, sourcepackagename_id=sourcepackagename_id)
         if entry is None:
             raise NotFoundError("KarmaCache not found: %s" % vars())
         else:
             entry.karmavalue = value
             entry.syncUpdate()
 
-    def _getEntry(self, person_id, category_id, product_id=None, distribution_id=None,
-                  sourcepackagename_id=None, project_id=None):
+    def _getEntry(self, person_id, category_id, product_id=None,
+                  distribution_id=None, sourcepackagename_id=None,
+                  project_id=None):
         """Return the KarmaCache entry with the given arguments.
 
         Return None if it's not found.

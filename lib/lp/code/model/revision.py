@@ -459,7 +459,7 @@ class RevisionSet:
             conditions = And(conditions, Product.project == obj)
         else:
             raise AssertionError(
-                "obj parameter must be an IProduct or IProjectGroup: %r" % obj)
+                "Not an IProduct or IProjectGroup: %r" % obj)
 
         result_set = Store.of(obj).using(*origin).find(
             Revision, conditions)

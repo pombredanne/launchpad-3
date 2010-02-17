@@ -585,7 +585,7 @@ class ProjectRdfView(object):
 
 
 class ProjectAddQuestionView(QuestionAddView):
-    """View that handles creation of a question from an IProjectGroup context."""
+    """View used to create a question from an IProjectGroup context."""
 
     search_field_names = ['product'] + QuestionAddView.search_field_names
 

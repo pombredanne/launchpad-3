@@ -101,7 +101,8 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from lp.registry.interfaces.milestone import IMilestoneSet, IProjectGroupMilestone
+from lp.registry.interfaces.milestone import (
+    IMilestoneSet, IProjectGroupMilestone)
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillarName
@@ -1444,7 +1445,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
 
 
 class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
-    """Active `IProduct`, `IProjectGroup` or `IDistribution` objects vocabulary."""
+    """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
     displayname = 'Select a project'
     _filter = PillarName.q.active == True
 

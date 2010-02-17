@@ -60,7 +60,8 @@ def project_filebug(project, summary, status=None):
 def projectSetUp(test):
     """Setup the `IProjectGroup` test."""
     setUp(test)
-    test.globs['bugtarget'] = getUtility(IProjectGroupSet).getByName('mozilla')
+    projectgroups = getUtility(IProjectGroupSet)
+    test.globs['bugtarget'] = projectgroups.getByName('mozilla')
     test.globs['filebug'] = project_filebug
 
 

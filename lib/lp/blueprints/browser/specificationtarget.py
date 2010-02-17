@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.projectgroup import IProjectGroup, IProjectGroupSeries
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup, IProjectGroupSeries)
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationSort)
 from lp.blueprints.interfaces.specificationtarget import (

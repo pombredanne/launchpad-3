@@ -664,7 +664,8 @@ class QuestionEditView(LaunchpadEditFormView):
     schema = IQuestion
     label = 'Edit question'
     field_names = [
-        "language", "title", "description", "target", "assignee", "whiteboard"]
+        "language", "title", "description", "target", "assignee",
+        "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)

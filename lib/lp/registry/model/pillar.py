@@ -26,7 +26,8 @@ from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.productlicense import ProductLicense
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.distribution import IDistribution, IDistributionSet
+from lp.registry.interfaces.distribution import (
+    IDistribution, IDistributionSet)
 from lp.registry.interfaces.pillar import IPillarName, IPillarNameSet
 from lp.registry.interfaces.product import IProduct, IProductSet, License
 from lp.registry.interfaces.projectgroup import IProjectGroupSet

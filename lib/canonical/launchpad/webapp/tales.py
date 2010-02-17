@@ -40,8 +40,8 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
-    IProduct, IProjectGroup, IDistributionSourcePackage, ISprint, LicenseStatus,
-    NotFoundError)
+    IProduct, IProjectGroup, IDistributionSourcePackage, ISprint,
+    LicenseStatus, NotFoundError)
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA

@@ -213,7 +213,8 @@ class ProjectMilestoneTest(unittest.TestCase):
         self.createSpecification('1.1', 'gnomebaker')
         self.createSpecification('1.1', 'firefox')
 
-        gnome_milestone = getUtility(IProjectGroupSet)['gnome'].getMilestone('1.1')
+        gnome_project_group = getUtility(IProjectGroupSet)['gnome']
+        gnome_milestone = gnome_project_group.getMilestone('1.1')
         # The spec for firefox (not a gnome product) is not included
         # in the specifications, while the other two specs are included.
         self.assertEqual(
