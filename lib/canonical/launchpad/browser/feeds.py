@@ -45,7 +45,7 @@ from canonical.launchpad.webapp.url import urlappend
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.project import IProjectGroup
 
 
 class FeedsRootUrlData:
@@ -241,7 +241,7 @@ class BranchesFeedLinkBase(FeedLinkBase):
 
 class ProjectBranchesFeedLink(BranchesFeedLinkBase):
     """Feed links for branches on a project."""
-    usedfor = IProject
+    usedfor = IProjectGroup
 
 
 class ProductBranchesFeedLink(BranchesFeedLinkBase):
@@ -273,7 +273,7 @@ class RevisionsFeedLinkBase(FeedLinkBase):
 
 class ProjectRevisionsFeedLink(RevisionsFeedLinkBase):
     """Feed links for revisions on a project."""
-    usedfor = IProject
+    usedfor = IProjectGroup
 
 
 class ProductRevisionsFeedLink(RevisionsFeedLinkBase):

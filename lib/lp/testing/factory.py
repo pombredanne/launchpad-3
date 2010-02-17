@@ -119,7 +119,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
 from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.project import IProjectGroupSet
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, SourcePackageUrgency)
 from lp.registry.interfaces.sourcepackagename import (
@@ -675,7 +675,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             description = self.getUniqueString('description')
         if title is None:
             title = self.getUniqueString('title')
-        return getUtility(IProjectSet).new(
+        return getUtility(IProjectGroupSet).new(
             name=name,
             displayname=displayname,
             title=title,

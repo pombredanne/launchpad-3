@@ -21,11 +21,11 @@ for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.project import IProjectGroupSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import ANONYMOUS
     >>> login('foo.bar@canonical.com')
-    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> mark = getUtility(IPersonSet).getByName('mark')

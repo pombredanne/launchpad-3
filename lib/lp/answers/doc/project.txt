@@ -1,14 +1,14 @@
 = Project and the Answer Tracker =
 
-Although question cannot be filed directly against projects, IProject in
+Although question cannot be filed directly against projects, IProjectGroup in
 Launchpad also provides the IQuestionCollection and
 ISearchableByQuestionOwner interfaces.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IProjectSet, ISearchableByQuestionOwner, IQuestionCollection)
+    ...     IProjectGroupSet, ISearchableByQuestionOwner, IQuestionCollection)
 
-    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> verifyObject(IQuestionCollection, mozilla_project)
     True
     >>> verifyObject(ISearchableByQuestionOwner, mozilla_project)
@@ -37,7 +37,7 @@ products in a project using the project searchQuestions() method.
 In the case were a Project has no Products, then we can expect no 
 possible questions.
 
-    >>> aaa_project = getUtility(IProjectSet).getByName('aaa')
+    >>> aaa_project = getUtility(IProjectGroupSet).getByName('aaa')
     >>> [q for question in aaa_project.searchQuestions()]
     []
 

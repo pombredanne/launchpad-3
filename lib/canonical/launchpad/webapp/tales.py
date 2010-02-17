@@ -40,7 +40,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
-    IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus,
+    IProduct, IProjectGroup, IDistributionSourcePackage, ISprint, LicenseStatus,
     NotFoundError)
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
@@ -624,7 +624,7 @@ class ObjectImageDisplayAPI:
         context = self._context
         if IProduct.providedBy(context):
             return 'sprite product'
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             return 'sprite project'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -657,7 +657,7 @@ class ObjectImageDisplayAPI:
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
-        if IProject.providedBy(context):
+        if IProjectGroup.providedBy(context):
             return '/@@/project-logo'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -679,7 +679,7 @@ class ObjectImageDisplayAPI:
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
-        if IProject.providedBy(context):
+        if IProjectGroup.providedBy(context):
             return '/@@/project-mugshot'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -1253,7 +1253,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
 
 
 class PillarFormatterAPI(CustomizableFormatter):
-    """Adapter for IProduct, IDistribution and IProject objects to a
+    """Adapter for IProduct, IDistribution and IProjectGroup objects to a
     formatted string."""
 
     _link_summary_template = '%(displayname)s'

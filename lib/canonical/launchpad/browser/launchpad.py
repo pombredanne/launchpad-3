@@ -87,7 +87,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProductSet)
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.project import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -557,7 +557,7 @@ class LaunchpadRootNavigation(Navigation):
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         'projects': IProductSet,
-        'projectgroups': IProjectSet,
+        'projectgroups': IProjectGroupSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,

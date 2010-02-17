@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject, IProjectSeries
+from lp.registry.interfaces.project import IProjectGroup, IProjectGroupSeries
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationSort)
 from lp.blueprints.interfaces.specificationtarget import (
@@ -134,12 +134,12 @@ class HasSpecificationsView(LaunchpadView):
             self.is_target = True
             self.is_pillar = True
             self.show_series = True
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
             self.show_target = True
             self.show_series = True
-        elif IProjectSeries.providedBy(self.context):
+        elif IProjectGroupSeries.providedBy(self.context):
             self.show_milestone = True
             self.show_target = True
             self.show_series = True

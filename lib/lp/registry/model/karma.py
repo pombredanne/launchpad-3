@@ -34,7 +34,7 @@ from lp.registry.interfaces.karma import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCacheManager,
     IKarmaCategory, IKarmaContext, IKarmaTotalCache)
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.project import IProjectGroup
 
 
 class KarmaAssignedEvent:
@@ -232,7 +232,7 @@ class KarmaContextMixin:
             where_clause = "product = %d" % self.id
         elif IDistribution.providedBy(self):
             where_clause = "distribution = %d" % self.id
-        elif IProject.providedBy(self):
+        elif IProjectGroup.providedBy(self):
             where_clause = "project = %d" % self.id
         else:
             raise AssertionError(

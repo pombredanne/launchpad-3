@@ -828,7 +828,7 @@
 <!-- Project views -->
 
     <browser:defaultView
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.project.IProjectGroup"
         name="+translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:menus
@@ -837,11 +837,11 @@
         module="lp.translations.browser.project"/>
     <browser:page
         name="+translations"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.project.IProjectGroup"
         class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
     <browser:page
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.project.IProjectGroup"
         permission="zope.Public"
         name="+translations"
         class="lp.translations.browser.project.ProjectView"
@@ -849,12 +849,12 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         name="+help-translate-button"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.project.IProjectGroup"
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
         name="+changetranslators"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.project.IProjectGroup"
         class="lp.translations.browser.project.ProjectChangeTranslatorsView"
         permission="launchpad.Edit"
         template="../templates/set-translators.pt"

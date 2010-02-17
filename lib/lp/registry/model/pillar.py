@@ -29,7 +29,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution, IDistributionSet
 from lp.registry.interfaces.pillar import IPillarName, IPillarNameSet
 from lp.registry.interfaces.product import IProduct, IProductSet, License
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.project import IProjectGroupSet
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -122,7 +122,7 @@ class PillarNameSet:
         if product is not None:
             return getUtility(IProductSet).get(product)
         elif project is not None:
-            return getUtility(IProjectSet).get(project)
+            return getUtility(IProjectGroupSet).get(project)
         else:
             return getUtility(IDistributionSet).get(distribution)
 
