@@ -760,6 +760,17 @@ class ObjectImageDisplayAPI:
         raise NotImplementedError(
             "Badge display not implemented for this item")
 
+    def boolean(self):
+        """Return an icon representing the context as a boolean value."""
+        if bool(self._context):
+            icon = 'yes'
+        else:
+            icon = 'no'
+        markup = (
+            '<span class="sprite %(icon)s">&nbsp;'
+            '<span class="invisible-link">%(icon)s</span></span>')
+        return markup % dict(icon=icon)
+
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBugTask objects to a formatted string. This inherits
