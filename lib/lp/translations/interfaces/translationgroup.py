@@ -8,7 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'IHasTranslationGroup',
+    'ITranslationPolicy',
     'ITranslationGroup',
     'ITranslationGroupSet',
     'TranslationPermission',
@@ -74,7 +74,7 @@ class TranslationPermission(DBEnumeratedType):
         to add suggestions.""")
 
 
-class IHasTranslationGroup(Interface):
+class ITranslationPolicy(Interface):
     translationgroup = Choice(
         title = _("Translation group"),
         description = _("The translation group that helps review "
