@@ -67,7 +67,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.hwdb import (
+from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat, IHWDeviceDriverLinkSet, IHWSubmissionDeviceSet,
     IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -132,6 +132,9 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.testing import run_with_login, time_counter
+from lp.translations.interfaces.translationtemplatesbuildjob import (
+    ITranslationTemplatesBuildJobSource)
+
 
 SPACE = ' '
 
@@ -1680,6 +1683,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             virtualized=virtualized)
         store.add(bq)
         return bq
+
+    def makeTranslationTemplatesBuildJob(self, branch=None):
+        """Make a new `TranslationTemplatesBuildJob`.
+
+        :param branch: The branch that the job should be for.  If none
+            is given, one will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch()
+
+        jobset = getUtility(ITranslationTemplatesBuildJobSource)
+        return jobset.create(branch)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,

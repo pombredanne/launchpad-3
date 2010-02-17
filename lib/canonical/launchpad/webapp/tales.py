@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces import (
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -758,6 +759,17 @@ class ObjectImageDisplayAPI:
     def badges(self):
         raise NotImplementedError(
             "Badge display not implemented for this item")
+
+    def boolean(self):
+        """Return an icon representing the context as a boolean value."""
+        if bool(self._context):
+            icon = 'yes'
+        else:
+            icon = 'no'
+        markup = (
+            '<span class="sprite %(icon)s">&nbsp;'
+            '<span class="invisible-link">%(icon)s</span></span>')
+        return markup % dict(icon=icon)
 
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
@@ -1589,6 +1601,13 @@ class PPAFormatterAPI(CustomizableFormatter):
 
     _link_summary_template = '%(display_name)s'
     _link_permission = 'launchpad.View'
+    _reference_template = "ppa:%(owner_name)s/%(ppa_name)s"
+
+    final_traversable_names = {
+        'reference': 'reference',
+        }
+    final_traversable_names.update(
+        CustomizableFormatter.final_traversable_names)
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1617,6 +1636,24 @@ class PPAFormatterAPI(CustomizableFormatter):
                 return '<span class="%s">%s</span>' % (css, summary)
             else:
                 return ''
+
+    def reference(self, view_name=None, rootsite=None):
+        """Return the text PPA reference for a PPA."""
+        # XXX: noodles 2010-02-11 bug=336779: This following check
+        # should be replaced with the normal check_permission once
+        # permissions for archive subscribers has been resolved.
+        if self._context.private:
+            request = get_current_browser_request()
+            person = IPerson(request.principal)
+            subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                person, self._context)
+            if subscriptions.is_empty():
+                return ''
+
+        return self._reference_template % {
+            'owner_name': self._context.owner.name,
+            'ppa_name': self._context.name,
+            }
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
@@ -3112,7 +3149,7 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link',
-        'url': 'url', 
+        'url': 'url',
         'displayname': 'displayname',
     }
 

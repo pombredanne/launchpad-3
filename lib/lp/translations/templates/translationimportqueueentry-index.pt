@@ -106,6 +106,19 @@
                tal:attributes="value view/referrer_url" />
       </div>
     </div>
+
+    <tal:details replace="structure context/@@+portlet-details" />
+
+    <div tal:condition="context/error_output"
+         class="portlet"
+         id="error-output">
+      Error output for this entry:
+      <br />
+      <tt tal:content="context/error_output">
+        Horrible syntax error near line 192.
+      </tt>
+    </div>
+
   </div>
 
   </body>

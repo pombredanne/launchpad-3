@@ -3,11 +3,11 @@
 No Privileges Person visit the distroseries upstream linkes page for Hoary
 and sees that pmount is not linked.
 
-    >>> user_browser.open('http://launchpad.dev/ubuntu/hoary/+packaging')
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'unlinked-translatables'))
-    Unlinked translatable packages
-    pmount
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/ubuntu/hoary/+needs-packaging')
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'packages'))
+    Source Package	Bugs	Translations
+    pmount          No bugs	64 strings ...
 
 He looks at the pmount source package page in Hoary and reads that the
 upstream project is not set.
@@ -28,11 +28,15 @@ project. He sets the upstream packaging link and sees that it is set.
     >>> user_browser.getControl("Change").click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'upstreams'))
+    Mozilla Thunderbird ... project
     Project Group: the Mozilla Project
-    Project: Mozilla Thunderbird  ...
-    Series: trunk ...
+    Bug supervisor: no
+    Bug tracker: no
+    Mozilla Thunderbird trunk series
+    Branch: no
+    Translations: no
 
-He see the "Show upstream links" link and takes a look at the project's
+He sees the "Show upstream links" link and takes a look at the project's
 packaging in distributions.
 
     >>> user_browser.getLink('Show upstream links').click()

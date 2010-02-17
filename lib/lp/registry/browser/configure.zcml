@@ -1606,7 +1606,7 @@
         template="../templates/productseries-ubuntupkg.pt"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
-        permission="launchpad.View"/>
+        permission="launchpad.AnyPerson"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
@@ -2142,4 +2142,17 @@
         for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
         path_expression="string:+subscription/${subscriber/name}"
         attribute_to_parent="target"/>
+
+    <browser:url
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
+        path_expression="product/name"
+        attribute_to_parent="person"/>
+    <browser:navigation
+        module="lp.registry.browser.personproduct"
+        classes="
+            PersonProductNavigation"/>
+    <browser:menus
+        classes="
+            PersonProductFacets"
+        module="lp.registry.browser.personproduct"/>
 </configure>

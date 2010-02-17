@@ -29,6 +29,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.soyuz.interfaces.build import IBuild
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
@@ -50,7 +51,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
 from lp.registry.interfaces.entitlement import IEntitlement
-from canonical.launchpad.interfaces.hwdb import (
+from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
     IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
@@ -63,6 +64,7 @@ from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
     IMilestone, IProjectMilestone)
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
@@ -167,6 +169,19 @@ class ViewByLoggedInUser(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
+        return True
+
+
+class AnonymousAuthorization(AuthorizationBase):
+    """Allow any authenticated and unauthenticated user access."""
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """Any unauthorized user can see this object."""
+        return True
+
+    def checkAuthenticated(self, user):
+        """Any authorized user can see this object."""
         return True
 
 
@@ -479,6 +494,21 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Allow Launchpad's admins and Rosetta experts edit all fields."""
         return user.in_admin or user.in_rosetta_experts
+
+
+class AdminProjectTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProject
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProject` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or owner is
+        able to change translation settings for a project.
+        """
+        return (user.isOwner(self.obj) or
+                user.in_rosetta_experts or
+                user.in_admin)
 
 
 class AdminProductTranslations(AuthorizationBase):
@@ -798,6 +828,11 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.in_admin)
 
 
+class ViewDistroSeries(AnonymousAuthorization):
+    """Anyone can view a DistroSeries."""
+    usedfor = IDistroSeries
+
+
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
 
@@ -813,24 +848,9 @@ class SeriesDrivers(AuthorizationBase):
                 user.in_admin)
 
 
-class ViewProductSeries(AuthorizationBase):
+class ViewProductSeries(AnonymousAuthorization):
 
     usedfor = IProductSeries
-    permision = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return True
-
-    def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
-
-        :return: True or False.
-        """
-        return True
 
 
 class EditProductSeries(EditByOwnersOrAdmins):
@@ -978,6 +998,16 @@ class EditBugAttachment(
             self, bugattachment.bug)
 
 
+class ViewBugSubscription(AnonymousAuthorization):
+
+    usedfor = IBugSubscription
+
+
+class ViewBugMessage(AnonymousAuthorization):
+
+    usedfor = IMessage
+
+
 class ViewAnnouncement(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IAnnouncement
@@ -1085,8 +1115,7 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
-                                    EditDistributionByDistroOwnersOrAdmins):
+class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
     This class is used for `launchpad.TranslationsAdmin` privilege on
@@ -1100,9 +1129,9 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
     def checkAuthenticated(self, user):
         """Is the user able to manage `IDistribution` translations settings?
 
-        Any Launchpad/Launchpad Translations administrator or people allowed
-        to edit distribution details are able to change translation settings
-        for a distribution.
+        Any Launchpad/Launchpad Translations administrator, translation group
+        owner or a person allowed to edit distribution details is able to
+        change translations settings for a distribution.
         """
         # Translation group owner for a distribution is also a
         # translations administrator for it.
@@ -1110,10 +1139,9 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
         if translation_group and user.inTeam(translation_group.owner):
             return True
         else:
-            return (
-                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-                EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
-                    self, user))
+            return (user.in_rosetta_experts or
+                    EditDistributionByDistroOwnersOrAdmins(
+                        self.obj).checkAuthenticated(user))
 
 
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
@@ -1281,6 +1309,11 @@ class EditProductRelease(EditByOwnersOrAdmins):
             self, user)
 
 
+class ViewProductRelease(AnonymousAuthorization):
+
+    usedfor = IProductRelease
+
+
 class AdminTranslationImportQueueEntry(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueueEntry
@@ -1298,6 +1331,7 @@ class EditTranslationImportQueueEntry(AuthorizationBase):
         product or distribution, can edit it.
         """
         return self.obj.canEdit(user)
+
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
