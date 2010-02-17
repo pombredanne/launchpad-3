@@ -13,6 +13,8 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
+
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -111,6 +113,17 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         store.add(build_queue_entry)
 
         return specific_job
+
+    @classmethod
+    def scheduleTranslationTemplatesBuild(cls, branch):
+        """See `ITranslationTemplatesBuildJobSource`."""
+        if not config.rosetta.generate_templates:
+            # This feature is disabled by default.
+            return
+
+        if cls.generatesTemplates(branch):
+            # This branch is used for generating templates.
+            cls.create(branch)
 
     @classmethod
     def getByJob(cls, job):

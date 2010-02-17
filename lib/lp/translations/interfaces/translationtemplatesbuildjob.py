@@ -31,3 +31,6 @@ class ITranslationTemplatesBuildJobSource(Interface):
             generate templates for.
         :return: A new `TranslationTemplatesBuildJob`.
         """
+
+    def scheduleTranslationTemplatesBuild(branch):
+        """Schedule a translation templates build job, if appropriate."""

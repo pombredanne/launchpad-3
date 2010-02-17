@@ -11,6 +11,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.testing import verifyObject
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 
 from lp.testing import TestCaseWithFactory
@@ -20,6 +22,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.code.interfaces.branchjob import IBranchJob, IRosettaUploadJobSource
+from lp.code.model.branchjob import BranchJob
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.model.buildqueue import BuildQueue
@@ -199,6 +202,19 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
         removeSecurityProxy(branch).private = True
         self.assertFalse(self.jobsource.generatesTemplates(branch))
+
+    def test_scheduleTranslationTemplatesBuild(self):
+        # If the feature is enabled, scheduleTranslationTemplatesBuild
+        # will schedule a templates build whenever a change is pushed to
+        # a branch that generates templates.
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+
+        self.jobsource.scheduleTranslationTemplatesBuild(branch)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        branchjobs = list(store.find(BranchJob, BranchJob.branch == branch))
+        self.assertEqual(1, len(branchjobs))
+        self.assertEqual(branch, branchjobs[0].branch)
 
 
 class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
