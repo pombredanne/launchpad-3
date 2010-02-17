@@ -511,6 +511,9 @@ class PullingImportWorker(ImportWorker):
         """The format classes that should be tried for this import."""
         raise NotImplementedError
 
+    def get_extra_pull_args(self):
+        return {}
+
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
         self.bazaar_branch_store.push(
@@ -530,7 +533,8 @@ class PullingImportWorker(ImportWorker):
                 raise NotBranchError(self.source_details.url)
             foreign_branch = format.open(transport).open_branch()
             inter_branch = InterBranch.get(foreign_branch, bazaar_tree.branch)
-            pull_result = inter_branch.pull(overwrite=True)
+            pull_result = inter_branch.pull(
+                overwrite=True, **self.get_extra_pull_args())
             self.pushBazaarWorkingTree(bazaar_tree)
             if bazaar_tree.branch.last_revision() \
                    == foreign_branch.last_revision():
@@ -557,6 +561,9 @@ class GitImportWorker(PullingImportWorker):
         from bzrlib.plugins.git import (
             LocalGitBzrDirFormat, RemoteGitBzrDirFormat)
         return [LocalGitBzrDirFormat, RemoteGitBzrDirFormat]
+
+    def get_extra_pull_args(self):
+        return {'limit': config.codeimport.revisions_import_limit}
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.

@@ -23,7 +23,6 @@ from bzrlib.urlutils import join as urljoin
 
 from CVS import Repository, tree as CVSTree
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import BaseLayer
@@ -37,7 +36,7 @@ from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.tests.helpers import (
     create_branch_with_one_revision)
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCase
 
 import pysvn
 
@@ -45,7 +44,7 @@ import pysvn
 default_format = BzrDirFormat.get_default_format()
 
 
-class WorkerTest(TestCaseWithTransport):
+class WorkerTest(TestCaseWithTransport, TestCase):
     """Base test case for things that test the code import worker.
 
     Provides Bazaar testing features, access to Launchpad objects and
@@ -69,10 +68,6 @@ class WorkerTest(TestCaseWithTransport):
                 yield path[len(directory):]
         self.assertEqual(
             sorted(list_files(directory1)), sorted(list_files(directory2)))
-
-    @cachedproperty
-    def factory(self):
-        return LaunchpadObjectFactory()
 
     def makeTemporaryDirectory(self):
         directory = tempfile.mkdtemp()
@@ -905,6 +900,17 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='git', url=repository_path)
+
+    def test_partial(self):
+        # XXX
+        worker = self.makeImportWorker(self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')]))
+        self.makeForeignCommit(worker.source_details)
+        self.pushConfig('codeimport', revisions_import_limit=1)
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
 
 
 class TestMercurialImport(WorkerTest, TestActualImportMixin,
