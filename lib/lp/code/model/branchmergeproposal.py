@@ -114,6 +114,8 @@ class BranchMergeProposal(SQLBase):
     prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
+    description = StringCol(default=None)
+
     whiteboard = StringCol(default=None)
 
     queue_status = EnumCol(

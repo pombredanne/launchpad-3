@@ -206,6 +206,7 @@
                     source_branch
                     target_branch
                     prerequisite_branch
+                    description
                     whiteboard
                     queue_status
                     private
@@ -243,7 +244,8 @@
     <allow interface="lp.code.interfaces.branchtarget.IHasBranchTarget"/>
     <require
         permission="launchpad.Edit"
-        set_attributes="whiteboard merged_revno commit_message                                                                                                 root_message_id review_diff"
+        set_attributes="description whiteboard merged_revno commit_message
+                        root_message_id review_diff"
         attributes="
                     deleteProposal
                     setStatus
