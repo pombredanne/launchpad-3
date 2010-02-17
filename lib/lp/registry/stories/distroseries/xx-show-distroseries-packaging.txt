@@ -17,7 +17,7 @@ The page lists the upstream packaging links.
     Source Package   Upstream Project   Upstream Contributor Connections
     netapplet
       NetApplet ... The Novell Network Applet
-        NetApplet ... project:  Bug supervisor: no   Bug tracker: no
+        NetApplet ... project:  Bug supervisor: no   Bug tracker: yes
         NetApplet trunk series:  Branch: no
     evolution
       Evolution ... Evolution is an email client, addressbook ...
