@@ -106,17 +106,28 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
 
 class FakeTranslationTemplatesJobSource(TranslationTemplatesBuildJob):
-    """Ugly, ugly hack.
-    """
+    """Fake utility class.
 
+    Allows overriding of _hasPotteryCompatibleSetup.
+
+    How do you fake a utility that is implemented as a class, not a
+    factory?  By inheriting from `TranslationTemplatesJob`, this class
+    "copies" the utility.  But you can make it fake the utility's
+    behavior by setting an attribute of the class (not an object!) at
+    the beginning of every test.
+    """
+    # Fake _hasPotteryCompatibleSetup, and if so, make it give what
+    # answer?
     fake_pottery_compatibility = None
 
     @classmethod
     def _hasPotteryCompatibleSetup(cls, branch):
         if cls.fake_pottery_compatibility is None:
+            # No fake compatibility setting call the real method.
             return TranslationTemplatesBuildJob._hasPotteryCompatibleSetup(
                 branch)
         else:
+            # Fake pottery compatibility.
             return cls.fake_pottery_compatibility
 
 
