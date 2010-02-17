@@ -297,8 +297,9 @@ class BranchScanJob(BranchJobDerived):
             schedule_diff_updates,
             schedule_translation_upload,
             ]
-        fixture = Fixtures(
-            [ServerFixture(cls.server), make_zope_event_fixture(*event_handlers)])
+        fixture = Fixtures([
+            ServerFixture(cls.server),
+            make_zope_event_fixture(*event_handlers)])
         fixture.setUp()
         yield
         fixture.tearDown()

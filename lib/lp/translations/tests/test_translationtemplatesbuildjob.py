@@ -14,7 +14,6 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakemethod import FakeMethod
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, ISpecificBuildFarmJobClass)
