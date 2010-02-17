@@ -176,6 +176,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/milestonetable.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
@@ -408,4 +410,11 @@
     condition="python: count != 1"
     replace="l_plural" />
 </metal:plural-msg>
+
+<metal:yes-no define-macro="yes-no">
+  <span tal:condition="bool"
+    class="sprite yes">&nbsp;<span class="invisible-link">yes</span></span>
+  <span tal:condition="not: bool"
+    class="sprite no">&nbsp;<span class="invisible-link">no</span></span>
+</metal:yes-no>
 </macros>
