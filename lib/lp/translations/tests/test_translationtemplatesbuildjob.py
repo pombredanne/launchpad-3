@@ -227,6 +227,20 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         self.assertEqual(1, len(branchjobs))
         self.assertEqual(branch, branchjobs[0].branch)
 
+    def test_create(self):
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+
+        specific_job = self.jobsource.create(branch)
+
+        # A job is created with the branch URL in its metadata.
+        metadata = specific_job.metadata
+        self.assertIn('branch_url', metadata)
+        url = metadata['branch_url']
+        head = 'http://'
+        self.assertEqual(head, url[:len(head)])
+        tail = branch.name
+        self.assertEqual(tail, url[-len(tail):])
+
 
 class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
     """Test `TranslationTemplatesBuildBehavior`."""
