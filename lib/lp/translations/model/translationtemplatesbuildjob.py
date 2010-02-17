@@ -11,6 +11,9 @@ from datetime import timedelta
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.config import config
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
@@ -62,13 +65,29 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         return '%s translation templates build' % self.branch.bzr_identity
 
     @classmethod
+    def _hasPotteryCompatibleSetup(cls, branch):
+        """Does `branch` look as if pottery can generate templates for it?
+
+        :param branch: A `Branch` object.
+        """
+        bzr_branch = removeSecurityProxy(branch).getBzrBranch()
+        return is_intltool_structure(bzr_branch.basis_tree())
+
+    @classmethod
     def generatesTemplates(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
-        utility = getUtility(IRosettaUploadJobSource)
-        if not utility.providesTranslationFiles(branch):
+        if branch.private:
+            # We don't support generating template from private branches
+            # at the moment.
             return False
 
-        if not is_intltool_structure(branch.repository.tree):
+        utility = getUtility(IRosettaUploadJobSource)
+        if not utility.providesTranslationFiles(branch):
+            # Nobody asked for templates generated from this branch.
+            return False
+
+        if not cls._hasPotteryCompatibleSetup(branch):
+            # Nothing we could do with this branch if we wanted to.
             return False
 
         # Yay!  We made it.
@@ -94,6 +113,17 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         store.add(build_queue_entry)
 
         return specific_job
+
+    @classmethod
+    def scheduleTranslationTemplatesBuild(cls, branch):
+        """See `ITranslationTemplatesBuildJobSource`."""
+        if not config.rosetta.generate_templates:
+            # This feature is disabled by default.
+            return
+
+        if cls.generatesTemplates(branch):
+            # This branch is used for generating templates.
+            cls.create(branch)
 
     @classmethod
     def getByJob(cls, job):
