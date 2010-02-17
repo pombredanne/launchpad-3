@@ -206,6 +206,11 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
 
+run_codehosting: inplace stop hosted_branches
+	$(RM) thread*.request
+	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
+
+
 start_librarian: build
 	bin/start_librarian
 
