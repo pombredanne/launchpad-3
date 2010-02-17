@@ -33,10 +33,8 @@ class SendPersonNotifications(LaunchpadCronScript):
 
     def main(self):
         manager = PersonNotificationManager(self.txn, self.logger)
-        notifications_sent = manager.sendNotifications()
-        if not notifications_sent:
-            self.logger.debug("No notifications were sent.")
-        manager.purgeNotifications()
+        unsent_notifications = manager.sendNotifications()
+        manager.purgeNotifications(unsent_notifications)
 
 
 if __name__ == '__main__':
