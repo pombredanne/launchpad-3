@@ -23,6 +23,8 @@ file stored with the result.
     >>> browser.open(branch_url)
     >>> import_results = find_tag_by_id(browser.contents, 'import-results')
     >>> print extract_text(import_results).replace('&mdash;', '--')
+    Import started on 2007-12-11 on odin and finished on 2007-12-11
+      taking 11 hours -- see the log
     Import started on 2007-12-10 on odin and finished on 2007-12-10
       taking ten hours -- see the log
     Import started on 2007-12-09 on odin and finished on 2007-12-09
@@ -41,8 +43,6 @@ file stored with the result.
       taking three hours -- see the log
     Import started on 2007-12-02 on odin and finished on 2007-12-02
       taking two hours -- see the log
-    Import started on 2007-12-01 on odin and finished on 2007-12-01
-      taking an hour -- see the log
 
 Each of the lines is prefixed with a tick if the result status was
 success, or a cross if the status was a failure.  The title of the image
@@ -60,5 +60,7 @@ is the text of the failure type.
     <img src="/@@/no" title="Source Checkout Failed" />
     <img src="/@@/no" title="Internal Failure" />
     <img src="/@@/no" title="Failure" />
+    <img src="/@@/yes-hollow" title="Partial Success" />
     <img src="/@@/yes" title="Success with no changes" />
-    <img src="/@@/yes" title="Success" />
+
+XXX doesn't show the success case.
