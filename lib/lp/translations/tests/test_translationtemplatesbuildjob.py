@@ -8,6 +8,8 @@ from unittest import TestLoader
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 
@@ -16,6 +18,8 @@ from lp.testing.fakemethod import FakeMethod
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, ISpecificBuildFarmJobClass)
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior)
 from lp.code.interfaces.branchjob import IBranchJob, IRosettaUploadJobSource
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
