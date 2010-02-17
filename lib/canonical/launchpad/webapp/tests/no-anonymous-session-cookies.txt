@@ -45,7 +45,7 @@ Now let's log in and show that the session cookie is set.
     >>> year_from_now <= expires < year_plus_from_now
     True
     >>> browser.cookies.getinfo('launchpad_tests')['domain']
-    'launchpad.dev'
+    '.launchpad.dev'
 
 The cookie will be set to expire in ten minutes when you log out.  The ten
 minute time interval (set in canonical.launchpad.webapp.login and enforced
