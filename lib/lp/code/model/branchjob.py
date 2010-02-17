@@ -615,8 +615,6 @@ class RevisionsAddedJob(BranchJobDerived):
             superseded in the results.
         """
         store = Store.of(self.branch)
-        conditions = [
-            ]
         result = store.find(
             (BranchMergeProposal, Branch),
             BranchMergeProposal.target_branch == self.branch.id,

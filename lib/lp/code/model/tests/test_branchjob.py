@@ -551,7 +551,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             [desired_proposal], job.findRelatedBMP(['rev2a-id']))
 
     def test_findRelatedBMP_one_per_source(self):
-        """Assert that only the lastest for any particular source is returned.
+        """findRelatedBMP only returns the most recent proposal for any
+        particular source branch.
         """
         self.useBzrBranches()
         target_branch, tree = self.create_branch_and_tree('tree')
@@ -565,8 +566,8 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             source_branch.owner, target_branch)
         job = RevisionsAddedJob.create(
             target_branch, 'rev2b-id', 'rev2b-id', '')
-        self.assertEqual([desired_proposal],
-                         list(job.findRelatedBMP(['rev2a-id'])))
+        self.assertEqual(
+            [desired_proposal], job.findRelatedBMP(['rev2a-id']))
 
     def test_getAuthors(self):
         """Ensure getAuthors returns the authors for the revisions."""
