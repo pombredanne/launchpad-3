@@ -148,16 +148,17 @@ class BasicLoginPage(BrowserPage):
         return ''
 
 
-# The +basiclogin page should only be enabled for development and tests, but
-# we can't rely on config.devmode because it's turned off for AppServerLayer
-# tests, so we (ab)use the config switch for the test OpenID provider, which
-# has similar requirements.
-if config.launchpad.enable_test_openid_provider:
-    getSiteManager().registerAdapter(
-        BasicLoginPage,
-        required=(ILaunchpadApplication, IHTTPApplicationRequest),
-        provided=Interface,
-        name='+basiclogin')
+def register_basiclogin(event):
+    # The +basiclogin page should only be enabled for development and tests,
+    # but we can't rely on config.devmode because it's turned off for
+    # AppServerLayer tests, so we (ab)use the config switch for the test
+    # OpenID provider, which has similar requirements.
+    if config.launchpad.enable_test_openid_provider:
+        getSiteManager().registerAdapter(
+            BasicLoginPage,
+            required=(ILaunchpadApplication, IHTTPApplicationRequest),
+            provided=Interface,
+            name='+basiclogin')
 
 
 class RestrictedLoginInfo:
