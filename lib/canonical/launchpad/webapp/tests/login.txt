@@ -25,9 +25,9 @@ The OpenID Provider will ask us to authenticate.
 
     >>> print browser.title
     Login
-    >>> browser.getControl(name='field.email').value = 'test@canonical.com'
-    >>> browser.getControl(name='field.password').value = 'test'
-    >>> browser.getControl('Continue').click()
+    >>> from canonical.launchpad.webapp.tests.test_new_login import (
+    ...     fill_login_form_and_submit)
+    >>> fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
 
 Once authenticated, we're redirected back to the page where we started, with
 the query args preserved.

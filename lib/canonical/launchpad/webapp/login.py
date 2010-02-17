@@ -17,13 +17,16 @@ from BeautifulSoup import UnicodeDammit
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
 from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
 
+import transaction
+
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, getSiteManager
-from zope.session.interfaces import ISession, IClientIdManager
 from zope.event import notify
 from zope.interface import Interface
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.publisher.browser import BrowserPage
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
+from zope.security.proxy import removeSecurityProxy
+from zope.session.interfaces import ISession, IClientIdManager
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -248,7 +251,7 @@ class OpenIDLogin(LaunchpadView):
             "Our fixed OpenID server should not need us to redirect.")
         # Once the user authenticates with the OpenID provider they will be
         # sent to the /+openid-callback page, where we log them in, but
-        # once that's done they must be sent back to the URL they where when
+        # once that's done they must be sent back to the URL they were when
         # they started the login process (i.e. the current URL without the
         # '+login' bit). To do that we encode that URL as a query arg in the
         # return_to URL passed to the OpenID Provider
@@ -258,9 +261,10 @@ class OpenIDLogin(LaunchpadView):
         return_to = "%s?%s" % (return_to, starting_url)
         form_html = self.openid_request.htmlMarkup(trust_root, return_to)
 
-        # Need to commit here because the consumer.begin() call above will
-        # insert rows into the OpenIDAssociations table.
-        import transaction
+        # The consumer.begin() call above will insert rows into the 
+        # OpenIDAssociations table, but since this will be a GET request, the
+        # transaction would be rolled back, so we need an explicit commit
+        # here.
         transaction.commit()
 
         return form_html
@@ -304,22 +308,19 @@ class OpenIDCallbackView(OpenIDLogin):
     suspended_account_template = ViewPageTemplateFile(
         '../templates/login-suspended-account.pt')
 
-    @cachedproperty
-    def openid_response(self):
-        consumer = self._getConsumer()
-        return consumer.complete(self.request.form, self.request.getURL())
+    def initialize(self):
+        self.openid_response = self._getConsumer().complete(
+            self.request.form, self.request.getURL())
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
         # We don't have a logged in principal, so we must remove the security
         # proxy of the account's preferred email.
-        from zope.security.proxy import removeSecurityProxy
         email = removeSecurityProxy(account.preferredemail).email
         logInPrincipal(
             self.request, loginsource.getPrincipalByLogin(email), email)
 
     def render(self):
-        from zope.security.proxy import removeSecurityProxy
         if self.openid_response.status == SUCCESS:
             account = getUtility(IAccountSet).getByOpenIDIdentifier(
                 self.openid_response.identity_url.split('/')[-1])
@@ -339,9 +340,10 @@ class OpenIDCallbackView(OpenIDLogin):
             retval = OpenIDLoginErrorView(
                 self.context, self.request, self.openid_response)()
 
-        # Commit because the consumer.complete() call above (will create
-        # entries in OpenIDConsumerNonce to prevent replay attacks.
-        import transaction
+        # The consumer.complete() call above will create entries in
+        # OpenIDConsumerNonce to prevent replay attacks, but since this will
+        # be a GET request, the transaction would be rolled back, so we need
+        # an explicit commit here.
         transaction.commit()
 
         return retval
