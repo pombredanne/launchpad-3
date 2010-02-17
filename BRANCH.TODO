@@ -3,11 +3,10 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-1. New config for enabling/disabling the testopenid vhost
-2. Register the +basiclogin page using python so that we can have it enabled
-   for Windmill tests.
-3. Email Matt describing what I, as a LP user, would need to know about the
+1. Email Matt describing what I, as a LP user, would need to know about the
 change to use OpenID.
+2. Ping Tom when the config change to make the login servers use a different
+cookie is ready to land.
 
 * Need a migration plan, for existing NEWACCOUNT/RESETPASSWORD login
 tokens that end up used only after we roll out.
@@ -19,13 +18,6 @@ tokens that end up used only after we roll out.
 * The LoginToken pages for creating new accounts and reset passwords can be
 removed.
 
-* Can we clear out just the edge sessions but not the lpnet ones?
-
-* Do we want to change c-i-p to use a separate cookie so that logging into
-login.lp.net doesn't cause you to end up logged into lp.net or should we just
-wait for ISD to roll a rebranded version of login.u.c on login.lp.net, which
-will probably use separate cookies?
-
 * We still rely heavily on the Account table and expect all users to have an
 Account. We need to fix that if we're going to copy the Account table into the
 main replication set and stop using the one from the auth set.  If we fix
@@ -33,6 +25,3 @@ that, though, the Account table won't be necessary so there'll be no point in
 copying it.  *I'm not sure this is feasible.*
 
 * We will need to copy the status from Account back to Person.
-
-* As discussed with Francis, it's not worth porting the team-restricted login
-stuff to the new system, so we'll drop it.

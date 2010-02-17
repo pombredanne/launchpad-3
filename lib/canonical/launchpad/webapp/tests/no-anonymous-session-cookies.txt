@@ -1,20 +1,14 @@
 We will verify that we do not put session cookies in anonymous requests. This
 is important for cacheing anonymous requests in front of Zope, such as with
-Squid.
+Squid.  We want to check whether the browser has a session cookie set, not
+whether the server has sent a "set-cookie" header, so we have to dig into the
+underlying mechanize browser (which is done transparently by browser.cookies,
+though).
 
-Because testbrowser does not have easy access to cookies, we'll start with a
-helper class. We want to check whether the browser has a session cookie set,
-not whether the server has sent a "set-cookie" header, so we have to dig into
-the underlying mechanize browser.
-
-    >>> from canonical.launchpad.testing.cookie import Cookies
-    >>> cookies = Cookies(browser)
-
-Now we'll actually begin the demonstration. When we go to launchpad as an
-anonymous user, the browser has no cookies.
+When we go to launchpad as an anonymous user, the browser has no cookies.
 
     >>> browser.open('http://launchpad.dev:8085')
-    >>> len(cookies)
+    >>> len(browser.cookies)
     0
 
 Now let's log in and show that the session cookie is set.
@@ -39,16 +33,18 @@ Now let's log in and show that the session cookie is set.
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
 
-    # We have one cookie for the OpenID provider (testopenid) and one for
-    # Launchpad itself (launchpad_tests).
-    >>> len(cookies)
-    2
-    >>> sorted(cookies.keys())
-    ['launchpad_tests', 'testopenid']
-    >>> expires = cookies.getInfo('launchpad_tests')['expires']
+    # Open a page again so that we see the cookie for a launchpad.dev request
+    # and not a testopenid.dev request (as above).
+    >>> browser.open('http://launchpad.dev:8085')
+
+    >>> len(browser.cookies)
+    1
+    >>> browser.cookies.keys()
+    ['launchpad_tests']
+    >>> expires = browser.cookies.getinfo('launchpad_tests')['expires']
     >>> year_from_now <= expires < year_plus_from_now
     True
-    >>> cookies.getInfo('launchpad_tests')['domain']
+    >>> browser.cookies.getinfo('launchpad_tests')['domain']
     '.launchpad.dev'
 
 The cookie will be set to expire in ten minutes when you log out.  The ten
@@ -57,9 +53,9 @@ with an assert in canonical.launchpad.webapp.session) is intended to be fudge
 time for browsers with bad system clocks.
 
     >>> browser.getControl('Log Out').click()
-    >>> len(cookies)
-    2
-    >>> expires = cookies.getInfo('launchpad_tests')['expires']
+    >>> len(browser.cookies)
+    1
+    >>> expires = browser.cookies.getinfo('launchpad_tests')['expires']
     >>> ten_minutes_from_now = now + datetime.timedelta(minutes=10)
     >>> eleven_minutes_from_now = now + datetime.timedelta(minutes=11)
     >>> ten_minutes_from_now <= expires < eleven_minutes_from_now
