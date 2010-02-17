@@ -37,6 +37,8 @@ from lp.soyuz.browser.queue import QueueItemsView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.translations.browser.browser_helpers import (
+    check_distroseries_translations_viewable)
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -48,7 +50,6 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
@@ -91,9 +92,9 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
             distroserieslang = distroserieslangset.getDummy(
                 self.context, lang)
 
-        if not check_permission(
-            'launchpad.TranslationsAdmin', distroserieslang):
-            self.context.checkTranslationsViewable()
+        # Check if user is able to view the translations for
+        # this distribution series
+        check_distroseries_translations_viewable(self.context)
 
         return distroserieslang
 
@@ -133,6 +134,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
 
 class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
+
     @property
     def text(self):
         return self.context.named_version
@@ -454,7 +456,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             description = data['description'],
             version = data['version'],
             parent_series = data['parent_series'],
-            owner = owner
+            owner = owner,
             )
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)

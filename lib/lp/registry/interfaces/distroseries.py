@@ -55,6 +55,7 @@ from lazr.restful.declarations import (
     operation_returns_collection_of, operation_returns_entry,
     rename_parameters_as, webservice_error)
 
+
 class DistroSeriesNameField(ContentNameField):
     """A class to ensure `IDistroSeries` has unique names."""
     errormessage = _("%s is already in use by another series.")
@@ -133,6 +134,7 @@ class DistroSeriesVersionField(UniqueField):
 
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
+
     @rename_parameters_as(dateexpected='date_targeted')
     @export_factory_operation(
         IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
@@ -198,7 +200,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
-    named_version =  Attribute('The combined display name and version.')
+    named_version = Attribute('The combined display name and version.')
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
     upload_components = Attribute("The series components that can be "
@@ -240,7 +242,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         title=_("Defer translation imports"),
         description=_("Suspends any translation imports for this series"),
         default=True,
-        required=True
+        required=True,
         )
     binarycount = Attribute("Binary Packages Counter")
 
@@ -389,7 +391,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getDistroArchSeriesByProcessor(processor):
         """Return the distroarchseries for this distroseries with the
         given architecturetag from a `IProcessor`.
-        
+
         :param processor: An `IProcessor`
         :return: An `IDistroArchSeries` or None when none was found.
         """
@@ -488,17 +490,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
         :return: A result set containing `IPackageUpload`
-        """
-
-    def checkTranslationsViewable():
-        """Raise `TranslationUnavailable` if translations are hidden.
-
-        Checks the `hide_all_translations` flag.  If it is set, these
-        translations are not to be shown to the public.  In that case an
-        appropriate message is composed based on the series' `status`,
-        and a `TranslationUnavailable` exception is raised.
-
-        Simply returns if translations are not hidden.
         """
 
     def getUnlinkedTranslatableSourcePackages():

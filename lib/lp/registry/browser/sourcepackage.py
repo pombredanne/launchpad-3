@@ -40,6 +40,8 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.translations.browser.browser_helpers import (
+    check_distroseries_translations_viewable)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
@@ -47,7 +49,6 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Link, redirection,
     StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 
@@ -65,9 +66,10 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroseries=self.context.distroseries,
             sourcepackagename=self.context.sourcepackagename)
 
-        if not check_permission(
-            'launchpad.TranslationsAdmin', sourcepackage_pots):
-            self.context.distroseries.checkTranslationsViewable()
+        # If we are able to view the translations for distribution series
+        # we should also be allowed to see them for a distribution
+        # source package
+        check_distroseries_translations_viewable(self.context.distroseries)
 
         return sourcepackage_pots
 
@@ -87,6 +89,7 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
+
     @property
     def text(self):
         return smartquote('"%s" source package') % (self.context.name)
