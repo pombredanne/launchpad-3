@@ -146,13 +146,6 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
 
         self._fakePotteryCompatibleSetup(fake_pottery_compatible)
 
-        # Validate that this produces a translations branch.
-        uploadjobsource = getUtility(IRosettaUploadJobSource)
-        self.assertFalse(uploadjobsource.findProductSeries(branch).is_empty())
-        self.assertTrue(
-            uploadjobsource.providesTranslationFiles(branch),
-            "Test setup failure: did not set up a translations branch.")
-
         return branch
 
     def _fakePotteryCompatibleSetup(self, compatible=True):
