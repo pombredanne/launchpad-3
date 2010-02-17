@@ -61,7 +61,7 @@ from lp.registry.browser.structuralsubscription import (
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
-from canonical.launchpad.browser.objectreassignment import (
+from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.webapp import (

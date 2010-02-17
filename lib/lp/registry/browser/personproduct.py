@@ -16,7 +16,7 @@ from zope.traversing.interfaces import IPathAdapter
 
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
-from canonical.launchpad.interfaces.personproduct import IPersonProduct
+from lp.registry.interfaces.personproduct import IPersonProduct
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp import (
     Link, Navigation, StandardLaunchpadFacets)

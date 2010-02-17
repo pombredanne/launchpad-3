@@ -21,7 +21,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.personnotification import (
+from lp.registry.interfaces.personnotification import (
     IPersonNotification, IPersonNotificationSet)
 from lp.services.mail.sendmail import format_address, simple_sendmail
 

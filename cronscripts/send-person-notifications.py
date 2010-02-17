@@ -20,8 +20,6 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.personnotification import (
-    IPersonNotificationSet)
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -36,6 +34,8 @@ class SendPersonNotifications(LaunchpadCronScript):
     """
 
     def main(self):
+        from lp.registry.interfaces.personnotification import (
+            IPersonNotificationSet)
         notifications_sent = False
         notification_set = getUtility(IPersonNotificationSet)
         pending_notifications = notification_set.getNotificationsToSend()
