@@ -20,10 +20,11 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url, urlappend
-from lp.registry.interfaces.announcement import IAnnouncementSet, IHasAnnouncements
+from lp.registry.interfaces.announcement import (
+    IAnnouncementSet, IHasAnnouncements)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from canonical.launchpad.interfaces.launchpad import IFeedsApplication
 from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.lazr.feed import (
@@ -187,7 +188,7 @@ class TargetAnnouncementsFeed(AnnouncementsFeedBase):
         # The logo is different depending upon the context we are displaying.
         if self.context.logo is not None:
             return self.context.logo.getURL()
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             url = '/@@/project-logo'
         elif IProduct.providedBy(self.context):
             url = '/@@/product-logo'
@@ -205,7 +206,7 @@ class TargetAnnouncementsFeed(AnnouncementsFeedBase):
         # The icon is customized based upon the context.
         if self.context.icon is not None:
             return self.context.icon.getURL()
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             url = '/@@/project'
         elif IProduct.providedBy(self.context):
             url = '/@@/product'

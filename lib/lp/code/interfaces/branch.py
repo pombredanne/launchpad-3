@@ -460,7 +460,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
                           "that is responsible for reviewing proposals and "
                           "merging into this branch.")))
 
-    # XXX: JonathanLange 2008-11-24: Export these.
+    # Distroseries and sourcepackagename are exported together as
+    # the sourcepackage.
     distroseries = Choice(
         title=_("Distribution Series"), required=False,
         vocabulary='DistroSeries',
@@ -480,9 +481,12 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         "The IDistribution that this branch belongs to. None if not a "
         "package branch.")
 
-    sourcepackage = Attribute(
-        "The ISourcePackage that this branch belongs to. None if not a "
-        "package branch.")
+    # Really an ISourcePackage.
+    sourcepackage = exported(
+        Reference(
+            title=_("The ISourcePackage that this branch belongs to. "
+                    "None if not a package branch."),
+            schema=Interface, required=False, readonly=True))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
