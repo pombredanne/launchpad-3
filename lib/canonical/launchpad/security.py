@@ -497,6 +497,21 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         return user.in_admin or user.in_rosetta_experts
 
 
+class AdminProjectTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProjectGroup
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProjectGroup` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or owner is
+        able to change translation settings for a project group.
+        """
+        return (user.isOwner(self.obj) or
+                user.in_rosetta_experts or
+                user.in_admin)
+
+
 class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProduct
@@ -1101,8 +1116,7 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
-                                    EditDistributionByDistroOwnersOrAdmins):
+class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
     This class is used for `launchpad.TranslationsAdmin` privilege on
@@ -1116,9 +1130,9 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
     def checkAuthenticated(self, user):
         """Is the user able to manage `IDistribution` translations settings?
 
-        Any Launchpad/Launchpad Translations administrator or people allowed
-        to edit distribution details are able to change translation settings
-        for a distribution.
+        Any Launchpad/Launchpad Translations administrator, translation group
+        owner or a person allowed to edit distribution details is able to
+        change translations settings for a distribution.
         """
         # Translation group owner for a distribution is also a
         # translations administrator for it.
@@ -1126,10 +1140,9 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
         if translation_group and user.inTeam(translation_group.owner):
             return True
         else:
-            return (
-                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-                EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
-                    self, user))
+            return (user.in_rosetta_experts or
+                    EditDistributionByDistroOwnersOrAdmins(
+                        self.obj).checkAuthenticated(user))
 
 
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
@@ -1319,6 +1332,7 @@ class EditTranslationImportQueueEntry(AuthorizationBase):
         product or distribution, can edit it.
         """
         return self.obj.canEdit(user)
+
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
