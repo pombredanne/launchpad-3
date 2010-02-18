@@ -165,7 +165,11 @@
       <p id="no-malone"><strong><tal:project_title replace="context/title" /> does not use Launchpad for
         bug tracking.</strong></p>
 
-      <p id="no-malone-edit"><a href="+edit">Enable bug tracking.</a></p>
+        <p tal:condition="view/can_change_bugtracker"
+           id="no-malone-edit">
+           <a tal:attributes="href string:${context/fmt:url/+edit}">Enable
+             bug tracking.</a>
+        </p>
     </tal:not_uses_malone>
 
     </div><!-- main -->
