@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
+    'BugBranchSearch',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
@@ -270,6 +271,20 @@ class BugTaskStatusSearchDisplay(DBEnumeratedType):
     bug search forms.
     """
     use_template(BugTaskStatusSearch, exclude=('INCOMPLETE'))
+
+
+class BugBranchSearch(EnumeratedType):
+    """Bug branch search option.
+
+    The possible values to search for bugs having branches attached
+    or not having branches attched.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BRANCHES = Item("Show only Bugs with linked Branches")
+
+    BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
 
 
 # XXX: Brad Bollenbach 2005-12-02 bugs=5320:
@@ -793,6 +808,9 @@ class IBugTaskSearchBase(Interface):
         required=False)
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
+    linked_branches = Choice(
+        title=_('Linked branches'), vocabulary=BugBranchSearch,
+        default=BugBranchSearch.ALL, required=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -983,7 +1001,8 @@ class BugTaskSearchParams:
                  hardware_owner_is_bug_reporter=None,
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
-                 hardware_is_linked_to_bug=False
+                 hardware_is_linked_to_bug=False,
+                 linked_branches=None
                  ):
 
         self.bug = bug
@@ -1027,6 +1046,7 @@ class BugTaskSearchParams:
         self.hardware_owner_is_subscribed_to_bug = (
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
+        self.linked_branches = linked_branches
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""

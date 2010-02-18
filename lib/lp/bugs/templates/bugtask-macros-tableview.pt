@@ -538,6 +538,15 @@
               </td>
             </tr>
             <tr>
+              <td>
+              </td>
+              <td>
+                <label>Branches:</label>
+                <tal:branch-filter
+                   replace="structure view/widgets/linked_branches" />
+              </td>
+            </tr>
+            <tr>
 	      <td>
 	      </td>
               <td style="white-space: nowrap">

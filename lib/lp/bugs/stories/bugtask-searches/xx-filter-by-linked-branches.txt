@@ -1,0 +1,50 @@
+= Searching for bugs with linked branches =
+
+Using the "advanced search" form, we can limit a bug task search
+to bugs that are linked to branches. Normally, this filter is
+turned off.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
+    >>> anon_browser.getControl('Show all bugs').selected
+    True
+    >>> anon_browser.getControl(
+    ...     'Show only Bugs with linked Branches').selected
+    False
+    >>> anon_browser.getControl(
+    ...     'Show only Bugs without linked Branches').selected
+    False
+
+When we search for bugs using the default setting, the result contains
+bugs with and without linked branches.
+
+    >>> from lp.bugs.tests.bug import print_bugtasks
+    >>> anon_browser.getControl('Search', index=1).click()
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete    Critical New
+    4 Reflow problems with complex page layouts          Medium   New
+    1 Firefox does not support SVG                       Low      New
+
+When we select 'Show only Bugs with linked Branches', the expected
+result is returned.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
+    >>> with_branches = anon_browser.getControl(
+    ...     'Show only Bugs with linked Branches')
+    >>> with_branches.selected = True
+    >>> anon_browser.getControl('Search', index=1).click()
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete    Critical New
+    4 Reflow problems with complex page layouts          Medium   New
+
+Similary, we can search for branches that don't have linked branches.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
+    >>> without_branches = anon_browser.getControl(
+    ...     'Show only Bugs without linked Branches')
+    >>> without_branches.selected = True
+    >>> anon_browser.getControl('Search', index=1).click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG                       Low      New
