@@ -461,7 +461,7 @@ And from a portlet on the distro bugs page:
     6 New bugs
     2 Open CVE bugs - CVE reports
     0 Incomplete bugs (can expire)
-    4 Bugs with patches
+    5 Bugs with patches
 
 The number of bugs with patches shown in the bugfilter stats portlet
 might be lower than the number of bugs (bugtasks) listed on the

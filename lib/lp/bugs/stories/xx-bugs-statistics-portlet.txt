@@ -13,6 +13,9 @@ inserted into the page later.
 If the user is not logged-in a subscribe link is shown along with some
 general stats.
 
+    >>> from lp.bugs.tests.bug import (
+    ...     print_bugfilters_portlet_unfilled,
+    ...     print_bugfilters_portlet_filled)
     >>> print_bugfilters_portlet_unfilled(anon_browser, path)
     Open bugs
     Critical bugs
