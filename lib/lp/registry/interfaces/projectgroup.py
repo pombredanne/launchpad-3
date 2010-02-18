@@ -279,7 +279,7 @@ class IProjectGroupPublic(
         """Return a ProjectSeries object with name `series_name`."""
 
 
-class IProjectGroup(IProjectPublic, IStructuralSubscriptionTarget,
+class IProjectGroup(IProjectGroupPublic, IStructuralSubscriptionTarget,
                ITranslationPolicy):
     """A Project."""
 
