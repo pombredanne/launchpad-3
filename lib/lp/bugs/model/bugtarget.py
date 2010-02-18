@@ -156,6 +156,11 @@ class HasBugsBase:
 
         return self.searchTasks(all_tasks_query)
 
+    @property
+    def max_heat(self):
+        """See `IHasBugs`."""
+        return 0
+
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""
         if statuses is None:

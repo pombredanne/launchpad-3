@@ -61,6 +61,8 @@ class IHasBugs(Interface):
         description=_("The list of bug tags defined as official."),
         value_type=Tag(),
         readonly=True))
+    max_heat = Attribute(
+        "The current highest bug heat value for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(
