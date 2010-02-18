@@ -25,6 +25,8 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.product import IProduct
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
@@ -156,10 +158,15 @@ class HasBugsBase:
 
         return self.searchTasks(all_tasks_query)
 
-    @property
-    def max_heat(self):
+    def setMaxHeat(self, heat):
         """See `IHasBugs`."""
-        return 0
+        if (IDistribution.providedBy(self)
+            or IProduct.providedBy(self)
+            or IDistributionSourcePackage.providedBy(self)):
+            self.max_heat = heat
+        else:
+            raise AssertionError(
+                '%s does not have a max_heat value' % self)
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""
