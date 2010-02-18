@@ -1356,7 +1356,6 @@ default_name_by_purpose = {
     ArchivePurpose.PPA: 'ppa',
     ArchivePurpose.PARTNER: 'partner',
     ArchivePurpose.DEBUG: 'debug',
-    ArchivePurpose.COPY: 'copy',
     }
 
 

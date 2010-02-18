@@ -1342,8 +1342,8 @@ The IArchive interface includes a convenience method for creating a
 package copy request:
 
     >>> requestor = factory.makePerson(name='me-copy')
-    >>> copy_target = factory.makeCopyArchiveLocation(distribution=ubuntu,
-    ...     name='my-copy-archive')
+    >>> copy_target = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu, name='my-copy-archive')
     >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
     >>> print pcr
     Package copy request
@@ -1469,7 +1469,7 @@ use to retrieve files from it.
     >>> print copy_target.archive.is_copy
     True
     >>> print copy_target.archive.archive_url
-    http://rebuild-test.internal/ubuntu-copy
+    http://rebuild-test.internal/ubuntu-my-copy-archive
 
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
