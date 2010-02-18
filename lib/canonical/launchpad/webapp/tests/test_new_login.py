@@ -36,7 +36,6 @@ class FakeOpenIDResponse:
 
 
 class StubbedOpenIDCallbackView(OpenIDCallbackView):
-    openid_response = None
     login_called = False
 
     def login(self, account):
@@ -51,6 +50,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             form={'starting_url': 'http://launchpad.dev/after-login'},
             environ={'PATH_INFO': '/'})
         view = StubbedOpenIDCallbackView(object(), request)
+        view.initialize()
         view.openid_response = FakeOpenIDResponse(
             ITestOpenIDPersistentIdentity(account).openid_identity_url,
             status=response_status, message=response_msg)
@@ -61,7 +61,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # in the 'starting_url' query arg.
         person = self.factory.makePerson()
         view = self._createView(person.account)
-        view()
+        view.render()
         self.assertTrue(view.login_called)
         response = view.request.response
         self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
@@ -74,7 +74,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount('Test account')
         self.assertIs(None, IPerson(account, None))
         view = self._createView(account)
-        view()
+        view.render()
         self.assertIsNot(None, IPerson(account, None))
         self.assertTrue(view.login_called)
         response = view.request.response
@@ -89,7 +89,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             'Test account', status=AccountStatus.DEACTIVATED)
         self.assertIs(None, IPerson(account, None))
         view = self._createView(account)
-        view()
+        view.render()
         self.assertIsNot(None, IPerson(account, None))
         self.assertTrue(view.login_called)
         response = view.request.response
@@ -103,7 +103,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount(
             'Test account', status=AccountStatus.SUSPENDED)
         view = self._createView(account)
-        html = view()
+        html = view.render()
         self.assertFalse(view.login_called)
         main_content = extract_text(find_main_content(html))
         self.assertIn('This account has been suspended', main_content)
@@ -115,7 +115,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         view = self._createView(
             account, response_status=FAILURE,
             response_msg='Server denied check_authentication')
-        html = view()
+        html = view.render()
         self.assertFalse(view.login_called)
         main_content = extract_text(find_main_content(html))
         self.assertIn('Your login was unsuccessful', main_content)
@@ -151,9 +151,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         browser.getControl('Continue').click()
 
         self.assertEquals('Login', browser.title)
-        browser.getControl(name='field.email').value = 'test@canonical.com'
-        browser.getControl(name='field.password').value = 'test'
-        browser.getControl('Continue').click()
+        fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
         self.assertIn('Sample Person', login_status)
@@ -172,6 +170,14 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         error_msg = find_tags_by_class(replay_browser.contents, 'error')[0]
         self.assertEquals('Nonce already used or out of range',
                           extract_text(error_msg))
+
+
+def fill_login_form_and_submit(browser, email_address, password):
+    assert browser.getControl(name='field.email') is not None, (
+        "We don't seem to be looking at a login form.")
+    browser.getControl(name='field.email').value = email_address
+    browser.getControl(name='field.password').value = password
+    browser.getControl('Continue').click()
 
 
 def test_suite():

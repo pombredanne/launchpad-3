@@ -175,10 +175,27 @@
       permission="zope.Public"
       />
 
+
+  <!-- The +basiclogin view is registered using Python code so that we can do
+       it only for development and tests. Below is what its declaration would
+       look like, and it's here so that someone grepping zcml files for its
+       name will find it.
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      class="canonical.launchpad.webapp.login.BasicLoginPage"
+      name="+basiclogin"
+      permission="zope.Public" />
+  -->
+
   <class class="canonical.launchpad.webapp.login.BasicLoginPage">
     <allow attributes="__call__" />
     <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
   </class>
+
+  <subscriber
+      for="zope.processlifetime.ProcessStarting"
+      handler="canonical.launchpad.webapp.login.register_basiclogin"
+      />
 
   <!-- OpenID RP views -->
   <browser:page

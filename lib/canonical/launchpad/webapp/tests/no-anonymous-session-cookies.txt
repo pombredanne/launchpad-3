@@ -1,9 +1,7 @@
 We will verify that we do not put session cookies in anonymous requests. This
 is important for cacheing anonymous requests in front of Zope, such as with
-Squid.  We want to check whether the browser has a session cookie set, not
-whether the server has sent a "set-cookie" header, so we have to dig into the
-underlying mechanize browser (which is done transparently by browser.cookies,
-though).
+Squid.  Note that we are checking whether the browser has a session cookie
+set, not whether the server has sent a "set-cookie" header.
 
 When we go to launchpad as an anonymous user, the browser has no cookies.
 
@@ -27,9 +25,9 @@ Now let's log in and show that the session cookie is set.
     <html>...<body onload="document.forms[0].submit();"...
     >>> browser.getControl('Continue').click()
 
-    >>> browser.getControl(name='field.email').value = 'foo.bar@canonical.com'
-    >>> browser.getControl(name='field.password').value = 'test'
-    >>> browser.getControl('Continue').click()
+    >>> from canonical.launchpad.webapp.tests.test_new_login import (
+    ...     fill_login_form_and_submit)
+    >>> fill_login_form_and_submit(browser, 'foo.bar@canonical.com', 'test')
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar...
 

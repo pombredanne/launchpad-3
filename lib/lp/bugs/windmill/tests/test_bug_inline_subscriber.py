@@ -26,11 +26,11 @@ class TestInlineSubscribing(WindmillTestCase):
         from a bug works inline on a bug page.
         """
         client = self.client
-        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Open a bug page and wait for it to finish loading.
         client.open(url=BUG_URL % 11)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
+        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Ensure the subscriber's portlet has finished loading.
         client.waits.forElement(

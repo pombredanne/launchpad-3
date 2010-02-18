@@ -30,11 +30,12 @@ class TestNewProjectStep2(WindmillTestCase):
         there's a href that toggles between revealing the search results
         and hiding them.
         """
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
 
         # Perform step 1 of the project registration, using information
         # that will yield search results.
         self.client.open(url=u'http://launchpad.dev:8085/projects/+new')
+
+        lpuser.SAMPLE_PERSON.ensure_login(self.client)
 
         self.client.waits.forElement(id='field.displayname', timeout=u'20000')
         self.client.type(text=u'Badgers', id='field.displayname')

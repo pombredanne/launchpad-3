@@ -24,7 +24,6 @@ class TestBugTagsEntry(WindmillTestCase):
     def test_bug_tags_entry(self):
         """Test bug tags inline, auto-completing UI."""
         client = self.client
-        lpuser.FOO_BAR.ensure_login(client)
 
         # First, we add some official tags to test with
 
@@ -41,6 +40,7 @@ class TestBugTagsEntry(WindmillTestCase):
 
         client.open(url=bug_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        lpuser.FOO_BAR.ensure_login(client)
         client.waits.sleep(milliseconds=constants.SLEEP)
 
         # XXX intellectronica 2009-05-26:

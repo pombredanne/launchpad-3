@@ -23,10 +23,10 @@ class TestTeamIndex(WindmillTestCase):
     suite_name = __name__
 
     def test_addmember(self):
-        lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
-
         self.client.open(
             url=u'http://launchpad.dev:8085/~testing-spanish-team')
+
+        lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
 
         addmember_xpath = (
             '//*[@id="membership"]' +
