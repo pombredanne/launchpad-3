@@ -67,6 +67,8 @@ class DistributionSourcePackage(BugTargetBase,
     implements(
         IDistributionSourcePackage, IHasCustomLanguageCodes, IQuestionTarget)
 
+    max_heat = Int(allow_none=False, default=0)
+
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename

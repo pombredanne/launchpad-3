@@ -13,7 +13,7 @@ __all__ = [
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Desc, In, Join, SQL
+from storm.locals import Desc, In, Int, Join, SQL
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
@@ -179,6 +179,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
     active = True # Required by IPillar interface.
+    max_heat = Int(allow_none=False, default=0)
 
     def __repr__(self):
         return "<%s '%s' (%s)>" % (
