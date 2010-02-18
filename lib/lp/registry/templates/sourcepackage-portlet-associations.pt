@@ -24,36 +24,29 @@
               </dd>
             </tal:has_pg>
 
-            <dd title="Bug supervisor"
-                tal:define="bool series/product/bug_supervisor">
+            <dd title="Bug supervisor">
               Bug supervisor:
-              <metal:yes-no
-                 use-macro="context/@@+base-layout-macros/yes-no" />
+              <tal:yes-no replace="structure series/product/bug_supervisor/image:boolean"/>
             </dd>
 
-            <dd title="Bug tracker"
-                tal:define="bool view/has_bugtracker">
+            <dd title="Bug tracker">
               Bug tracker:
-              <metal:yes-no
-                 use-macro="context/@@+base-layout-macros/yes-no" />
+              <tal:yes-no replace="structure view/has_bugtracker/image:boolean"/>
             </dd>
           </dl>
           <dl>
             <dt>
               <a tal:replace="structure series/fmt:link" />
             </dt>
-            <dd title="Series branch"
-                tal:define="bool series/branch">
+            <dd title="Series branch">
               Branch:
-              <metal:yes-no
-                 use-macro="context/@@+base-layout-macros/yes-no" />
+              <tal:yes-no replace="structure series/branch/image:boolean"/>
             </dd>
             <dd title="Series translations auto import"
                 tal:condition="context/getTranslationTemplates"
                 tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
               Translations:
-              <metal:yes-no
-                 use-macro="context/@@+base-layout-macros/yes-no" />
+              <tal:yes-no replace="structure bool/image:boolean"/>
             </dd>
           </dl>
 
