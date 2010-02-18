@@ -28,7 +28,7 @@ class PersonNotificationManager:
     def sendNotifications(self):
         """Send notifications to users."""
         notifications_sent = False
-        unsendible_notifications = []
+        unsent_notifications = []
         notification_set = getUtility(IPersonNotificationSet)
         pending_notifications = notification_set.getNotificationsToSend()
         self.logger.info(
@@ -36,7 +36,7 @@ class PersonNotificationManager:
         for notification in pending_notifications:
             person = notification.person
             if person.preferredemail is None:
-                unsendible_notifications.append(notification)
+                unsent_notifications.append(notification)
                 self.logger.info(
                     "%s has no email address." % person.name)
                 continue
@@ -50,14 +50,15 @@ class PersonNotificationManager:
             self.txn.commit()
         if not notifications_sent:
             self.logger.debug("No notifications were sent.")
-        if len(unsendible_notifications) == 0:
-            unsendible_notifications = None
-        return unsendible_notifications
+        if len(unsent_notifications) == 0:
+            unsent_notifications = None
+        return unsent_notifications
 
     def purgeNotifications(self, extra_notifications=None):
         """Delete PersonNotifications that are older than the retention limit.
 
-        The limit set in the configuration.
+        The limit is set in the configuration:
+        person_notification.retained_days
 
         :param extra_messages: a list of additional notifications to
             purge. These may be messages to users without email addresses.
