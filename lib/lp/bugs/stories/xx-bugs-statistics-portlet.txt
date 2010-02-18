@@ -6,27 +6,6 @@ link to filter the listing to show just those bugs. This portlet is
 served in a separate request; the request is issued via Javascript and
 inserted into the page later.
 
-    >>> from BeautifulSoup import BeautifulSoup
-
-    >>> def print_portlet(browser, path):
-    ...     browser.open(
-    ...         'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % path)
-    ...     table = BeautifulSoup(browser.contents).find('table', 'bug-links')
-    ...     tbody_info, tbody_links = table('tbody')
-    ...     print_table(tbody_info)
-    ...     for link in tbody_links('a'):
-    ...         text = extract_text(link)
-    ...         if len(text) > 0:
-    ...             print "%s\n  --> %s" % (text, link['href'])
-
-    >>> def print_portlet_contents(browser, path):
-    ...     browser.open(
-    ...         'http://bugs.launchpad.dev'
-    ...         '/%s/+bugtarget-portlet-bugfilters-stats' % path)
-    ...     table = BeautifulSoup('<table>%s</table>' % browser.contents)
-    ...     print_table(table)
-
-
 == Distribution ==
 
     >>> path = 'debian'
@@ -34,7 +13,7 @@ inserted into the page later.
 If the user is not logged-in a subscribe link is shown along with some
 general stats.
 
-    >>> print_portlet(anon_browser, path)
+    >>> print_bugfilters_portlet_unfilled(anon_browser, path)
     Open bugs
     Critical bugs
     Bugs fixed elsewhere
@@ -44,7 +23,7 @@ general stats.
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+subscribe
 
-    >>> print_portlet_contents(anon_browser, path)
+    >>> print_bugfilters_portlet_filled(anon_browser, path)
     3 Open bugs
     0 Critical bugs
     0 Bugs fixed elsewhere
@@ -55,7 +34,7 @@ general stats.
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
-    >>> print_portlet(user_browser, path)
+    >>> print_bugfilters_portlet_unfilled(user_browser, path)
     Open bugs
     Bugs assigned to me
     Critical bugs
@@ -66,7 +45,7 @@ bugs is also shown.
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+subscribe
 
-    >>> print_portlet_contents(user_browser, path)
+    >>> print_bugfilters_portlet_filled(user_browser, path)
     3 Open bugs
     0 Bugs assigned to me
     0 Critical bugs
@@ -88,7 +67,7 @@ The content includes a link to the distribution CVE report.
 If the user is not logged-in general stats are shown. There is also a
 link to review nominations.
 
-    >>> print_portlet(anon_browser, path)
+    >>> print_bugfilters_portlet_unfilled(anon_browser, path)
     Open bugs
     Critical bugs
     Bugs fixed elsewhere
@@ -100,7 +79,7 @@ link to review nominations.
     Review nominations
       --> http://bugs.launchpad.dev/debian/woody/+nominations
 
-    >>> print_portlet_contents(anon_browser, path)
+    >>> print_bugfilters_portlet_filled(anon_browser, path)
     2 Open bugs
     0 Critical bugs
     0 Bugs fixed elsewhere
@@ -111,7 +90,7 @@ link to review nominations.
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
-    >>> print_portlet(user_browser, path)
+    >>> print_bugfilters_portlet_unfilled(user_browser, path)
     Open bugs
     Bugs assigned to me
     Critical bugs
@@ -124,7 +103,7 @@ bugs is also shown.
     Review nominations
       --> http://bugs.launchpad.dev/debian/woody/+nominations
 
-    >>> print_portlet_contents(user_browser, path)
+    >>> print_bugfilters_portlet_filled(user_browser, path)
     2 Open bugs
     0 Bugs assigned to me
     0 Critical bugs
@@ -145,7 +124,7 @@ The content includes a link to the distribution CVE report.
 
 If the user is not logged-in general stats are shown.
 
-    >>> print_portlet(anon_browser, path)
+    >>> print_bugfilters_portlet_unfilled(anon_browser, path)
     Open bugs
     Critical bugs
     Bugs fixed elsewhere
@@ -155,7 +134,7 @@ If the user is not logged-in general stats are shown.
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
 
-    >>> print_portlet_contents(anon_browser, path)
+    >>> print_bugfilters_portlet_filled(anon_browser, path)
     3 Open bugs
     0 Critical bugs
     0 Bugs fixed elsewhere
@@ -166,7 +145,7 @@ If the user is not logged-in general stats are shown.
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
-    >>> print_portlet(user_browser, path)
+    >>> print_bugfilters_portlet_unfilled(user_browser, path)
     Open bugs
     Bugs assigned to me
     Critical bugs
@@ -177,7 +156,7 @@ bugs is also shown.
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
 
-    >>> print_portlet_contents(user_browser, path)
+    >>> print_bugfilters_portlet_filled(user_browser, path)
     3 Open bugs
     0 Bugs assigned to me
     0 Critical bugs
@@ -202,7 +181,7 @@ source packages do not have a CVE reports page.
 If the user is not logged-in general stats are shown. There is no
 option to subscribe to bug mail.
 
-    >>> print_portlet(anon_browser, path)
+    >>> print_bugfilters_portlet_unfilled(anon_browser, path)
     Open bugs
     Critical bugs
     Bugs fixed elsewhere
@@ -210,7 +189,7 @@ option to subscribe to bug mail.
     Open CVE bugs
     Bugs with patches
 
-    >>> print_portlet_contents(anon_browser, path)
+    >>> print_bugfilters_portlet_filled(anon_browser, path)
     2 Open bugs
     0 Critical bugs
     0 Bugs fixed elsewhere
@@ -221,7 +200,7 @@ option to subscribe to bug mail.
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
-    >>> print_portlet(user_browser, path)
+    >>> print_bugfilters_portlet_unfilled(user_browser, path)
     Open bugs
     Bugs assigned to me
     Critical bugs
@@ -230,7 +209,7 @@ bugs is also shown.
     Open CVE bugs
     Bugs with patches
     
-    >>> print_portlet_contents(user_browser, path)
+    >>> print_bugfilters_portlet_filled(user_browser, path)
     2 Open bugs
     0 Bugs assigned to me
     0 Critical bugs
@@ -254,7 +233,7 @@ do not have a CVE reports page.
 
 If the user is not logged-in general stats are shown.
 
-    >>> print_portlet(anon_browser, path)
+    >>> print_bugfilters_portlet_unfilled(anon_browser, path)
     Open bugs
     Critical bugs
     Bugs fixed elsewhere
@@ -264,7 +243,7 @@ If the user is not logged-in general stats are shown.
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/mozilla/+subscribe
 
-    >>> print_portlet_contents(anon_browser, path)
+    >>> print_bugfilters_portlet_filled(anon_browser, path)
     4 Open bugs
     1 Critical bugs
     0 Bugs fixed elsewhere
@@ -275,7 +254,7 @@ If the user is not logged-in general stats are shown.
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
-    >>> print_portlet(user_browser, path)
+    >>> print_bugfilters_portlet_unfilled(user_browser, path)
     Open bugs
     Bugs assigned to me
     Critical bugs
@@ -286,7 +265,7 @@ bugs is also shown.
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/mozilla/+subscribe
 
-    >>> print_portlet_contents(user_browser, path)
+    >>> print_bugfilters_portlet_filled(user_browser, path)
     4 Open bugs
     0 Bugs assigned to me
     1 Critical bugs
@@ -310,7 +289,7 @@ not have a CVE reports page.
 
 If the user is not logged-in general stats are shown.
 
-    >>> print_portlet(anon_browser, path)
+    >>> print_bugfilters_portlet_unfilled(anon_browser, path)
     Open bugs
     Critical bugs
     Bugs fixed elsewhere
@@ -320,7 +299,7 @@ If the user is not logged-in general stats are shown.
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/firefox/+subscribe
 
-    >>> print_portlet_contents(anon_browser, path)
+    >>> print_bugfilters_portlet_filled(anon_browser, path)
     3 Open bugs
     1 Critical bugs
     0 Bugs fixed elsewhere
@@ -331,7 +310,7 @@ If the user is not logged-in general stats are shown.
 Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
-    >>> print_portlet(user_browser, path)
+    >>> print_bugfilters_portlet_unfilled(user_browser, path)
     Open bugs
     Bugs assigned to me
     Critical bugs
@@ -342,7 +321,7 @@ bugs is also shown.
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/firefox/+subscribe
 
-    >>> print_portlet_contents(user_browser, path)
+    >>> print_bugfilters_portlet_filled(user_browser, path)
     3 Open bugs
     0 Bugs assigned to me
     1 Critical bugs
