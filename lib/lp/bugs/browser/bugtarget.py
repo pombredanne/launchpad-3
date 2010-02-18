@@ -582,14 +582,8 @@ class FileBugViewBase(LaunchpadFormView):
             # expected.
             raise NotFound(self, name, request=request)
 
-        extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
-        if extra_bug_data is not None:
-            self.extra_data_token = name
-            extra_bug_data.file_alias.open()
-            self.data_parser = FileBugDataParser(extra_bug_data.file_alias)
-            self.extra_data = self.data_parser.parse()
-            extra_bug_data.file_alias.close()
-        else:
+        self.extra_data_token = name
+        if self.extra_data_processing_job is None:
             # The URL might be mistyped, or the blob has expired.
             # XXX: Bjorn Tillenius 2006-01-15:
             #      We should handle this case better, since a user might
@@ -597,6 +591,9 @@ class FileBugViewBase(LaunchpadFormView):
             #      registration. In that case we should inform the user
             #      that the blob has expired.
             raise NotFound(self, name, request=request)
+        else:
+            self.extra_data = self.extra_data_processing_job.getFileBugData()
+
         return self
 
     def browserDefault(self, request):
@@ -705,7 +702,7 @@ class FileBugViewBase(LaunchpadFormView):
                             })
         return guidelines
 
-    @property
+    @cachedproperty
     def extra_data_processing_job(self):
         """Return the ProcessApportBlobJob for a given BLOB token."""
         if self.extra_data_token is None:

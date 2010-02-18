@@ -258,4 +258,4 @@ class ProcessApportBlobJob(ApportJobDerived):
                 hwdb_submission_keys=processed_data['hwdb_submission_keys'],
                 attachment_file_aliases=attachment_file_aliases)
         else:
-            return FileBugData
+            return FileBugData()

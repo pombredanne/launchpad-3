@@ -1021,6 +1021,21 @@ class IBugSet(Interface):
         #     permissions system for scripts.
 
 
+class IFileBugData(Interface):
+    """A class containing extra data to be used when filing a bug."""
+
+    initial_summary = Attribute("The initial summary for the bug.")
+    private = Attribute("Whether the bug should be private.")
+    extra_description = Attribute("A longer description of the bug.")
+    initial_tags = Attribute("The initial tags for the bug.")
+    subscribers = Attribute("The initial subscribers for the bug.")
+    comments = Attribute("Comments to add to the bug.")
+    attachments = Attribute("Attachments to add to the bug.")
+    attachment_file_aliases = Attribute(
+        "The LibraryFileAliases for attachments to add to the bug.")
+    hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
+
+
 class InvalidBugTargetType(Exception):
     """Bug target's type is not valid."""
     webservice_error(400)

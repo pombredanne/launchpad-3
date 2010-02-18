@@ -12,6 +12,7 @@ import unittest
 from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -22,7 +23,8 @@ from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import (
     LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
-from lp.bugs.interfaces.apportjob import ApportJobType
+from lp.bugs.interfaces.apportjob import (
+    ApportJobType, IProcessApportBlobJobSource)
 from lp.bugs.model.apportjob import (
     ApportJob, ApportJobDerived, ProcessApportBlobJob)
 from lp.bugs.utilities.filebugdataparser import (
@@ -170,9 +172,9 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
 
 
     def test_run(self):
-        # ProcessApportBlobJob.run() extracts salient data from an
+        # IProcessApportBlobJobSource.run() extracts salient data from an
         # Apport BLOB and stores it in the job's metadata attribute.
-        job = ProcessApportBlobJob.create(self.blob)
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
         job.run()
         transaction.commit()
 
@@ -194,12 +196,13 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         self._assertFileBugDataMatchesDict(filebug_data, processed_data)
 
     def test_getByBlobUUID(self):
-        # ProcessApportBlobJob.getByBlobUUID takes a BLOB UUID as a
+        # IProcessApportBlobJobSource.getByBlobUUID takes a BLOB UUID as a
         # parameter and returns any jobs for that BLOB.
         uuid = self.blob.uuid
 
-        job = ProcessApportBlobJob.create(self.blob)
-        job_from_uuid = ProcessApportBlobJob.getByBlobUUID(uuid)
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
+        job_from_uuid = getUtility(
+            IProcessApportBlobJobSource).getByBlobUUID(uuid)
         self.assertEqual(
             job, job_from_uuid,
             "Job returend by getByBlobUUID() did not match original job.")
@@ -211,46 +214,53 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # If the UUID doesn't exist, getByBlobUUID() will raise a
         # SQLObjectNotFound error.
         self.assertRaises(
-            SQLObjectNotFound, ProcessApportBlobJob.getByBlobUUID, 'foobar')
+            SQLObjectNotFound,
+            getUtility(IProcessApportBlobJobSource).getByBlobUUID, 'foobar')
 
     def test_create_job_creates_only_one(self):
-        # ProcessApportBlobJob.create() will create only one
+        # IProcessApportBlobJobSource.create() will create only one
         # ProcessApportBlobJob for a given BLOB, no matter how many
         # times it is called.
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        job = ProcessApportBlobJob.create(self.blob)
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             1, len(current_jobs),
-            "There should be only one ProcessApportBlobJob. Found %s" %
+            "There should be only one getUtility(IProcessApportBlobJobSource). Found %s" %
             len(current_jobs))
 
-        another_job = ProcessApportBlobJob.create(self.blob)
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        another_job = getUtility(IProcessApportBlobJobSource).create(self.blob)
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             1, len(current_jobs),
-            "There should be only one ProcessApportBlobJob. Found %s" %
+            "There should be only one getUtility(IProcessApportBlobJobSource). Found %s" %
             len(current_jobs))
 
         # If the job is complete, it will no longer show up in the list
         # of ready jobs. However, it won't be possible to create a new
         # job to process the BLOB because each BLOB can only have one
-        # ProcessApportBlobJob.
+        # IProcessApportBlobJobSource.
         job.job.start()
         job.job.complete()
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ready ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        yet_another_job = ProcessApportBlobJob.create(self.blob)
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        yet_another_job = getUtility(
+            IProcessApportBlobJobSource).create(self.blob)
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no new ProcessApportBlobJobs. Found %s" %
@@ -263,7 +273,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
     def test_cronscript_succeeds(self):
         # The process-apport-blobs cronscript will run all pending
         # ProcessApportBlobJobs.
-        ProcessApportBlobJob.create(self.blob)
+        getUtility(IProcessApportBlobJobSource).create(self.blob)
         transaction.commit()
 
         retcode, stdout, stderr = run_script(
@@ -274,15 +284,19 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             'INFO    Ran 1 IProcessApportBlobJobSource jobs.\n', stderr)
 
     def test_getFileBugData(self):
-        # The ProcessApportBlobJob.getFileBugData() method returns the
-        # +filebug data parsed from the blob as a FileBugData object.
-        job = ProcessApportBlobJob.create(self.blob)
+        # The IProcessApportBlobJobSource.getFileBugData() method
+        # returns the +filebug data parsed from the blob as a
+        # FileBugData object.
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
         job.run()
         transaction.commit()
 
+        # Rather irritatingly, the filebug_data object is wrapped in a
+        # security proxy, so we remove it for the purposes of this
+        # comparison.
         filebug_data = job.getFileBugData()
         self.assertTrue(
-            isinstance(filebug_data, FileBugData),
+            isinstance(removeSecurityProxy(filebug_data), FileBugData),
             "job.getFileBugData() should return a FileBugData instance.")
 
         # The attributes of the FileBugData match the data stored in the
@@ -337,7 +351,7 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         # will add a new ProcessApportBlobJob for that BLOB.
         blob_uuid = self._create_blob_and_job_using_storeblob()
         blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
-        job = ProcessApportBlobJob.getByBlobUUID(blob_uuid)
+        job = getUtility(IProcessApportBlobJobSource).getByBlobUUID(blob_uuid)
 
         self.assertEqual(
             blob, job.blob,
@@ -351,7 +365,7 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         blob_uuid = self._create_blob_and_job_using_storeblob()
         view = self._create_and_traverse_filebug_view(blob_uuid)
 
-        job = ProcessApportBlobJob.getByBlobUUID(blob_uuid)
+        job = getUtility(IProcessApportBlobJobSource).getByBlobUUID(blob_uuid)
         job_from_view = view.extra_data_processing_job
         self.assertEqual(job, job_from_view, "Jobs didn't match.")
 

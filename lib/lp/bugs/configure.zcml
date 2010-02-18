@@ -926,4 +926,9 @@
         <allow
             interface="lp.bugs.interfaces.apportjob.IProcessApportBlobJobSource"/>
     </securedutility>
+
+    <!-- FileBugData -->
+    <class class="lp.bugs.model.bug.FileBugData">
+        <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
+    </class>
 </configure>
