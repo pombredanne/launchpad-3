@@ -32,7 +32,8 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         if librarian_alias is None:
             return None
         else:
-            return canonical_url(self._context) + '/+files/preview.diff'
+            return canonical_url(
+                self._context, view_name='+files') + '/preview.diff'
 
     def link(self, view_name):
         """The link to the diff should show the line count.
