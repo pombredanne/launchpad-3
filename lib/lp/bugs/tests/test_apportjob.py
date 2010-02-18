@@ -25,7 +25,8 @@ from canonical.testing import (
 from lp.bugs.interfaces.apportjob import ApportJobType
 from lp.bugs.model.apportjob import (
     ApportJob, ApportJobDerived, ProcessApportBlobJob)
-from lp.bugs.utilities.filebugdataparser import FileBugDataParser
+from lp.bugs.utilities.filebugdataparser import (
+    FileBugData, FileBugDataParser)
 from lp.services.job.interfaces.job import JobStatus
 from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
@@ -84,6 +85,90 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
 
         self.blob = self.factory.makeBlob(blob_data)
 
+    def _assertFileBugDataMatchesDict(self, filebug_data, data_dict):
+        """Asser that the data in a FileBugData object matches a dict."""
+        self.assertEqual(
+            filebug_data.initial_summary, data_dict['initial_summary'],
+            "Initial summaries do not match")
+        self.assertEqual(
+            filebug_data.initial_tags, data_dict['initial_tags'],
+            "Values for initial_tags do not match")
+        self.assertEqual(
+            filebug_data.private, data_dict['private'],
+            "Values for private do not match")
+        self.assertEqual(
+            filebug_data.subscribers, data_dict['subscribers'],
+            "Values for subscribers do not match")
+        self.assertEqual(
+            filebug_data.extra_description,
+            data_dict['extra_description'],
+            "Values for extra_description do not match")
+        self.assertEqual(
+            filebug_data.comments, data_dict['comments'],
+            "Values for comments do not match")
+        self.assertEqual(
+            filebug_data.hwdb_submission_keys,
+            data_dict['hwdb_submission_keys'],
+            "Values for hwdb_submission_keys do not match")
+
+        if len(filebug_data.attachment_file_aliases) == 0:
+            # If the attachment_file_aliases attribute of filebug_data is
+            # empty, the attachments property will contain references to
+            # the LibrarianFileAlias ids for attachments.
+
+            # The attachments list of of the data_dict dict will be of
+            # the same length as the attachments list in the filebug_data
+            # object.
+            self.assertEqual(
+                len(filebug_data.attachments),
+                len(data_dict['attachments']),
+                "Lengths of attachment lists do not match.")
+
+            # The attachments list of the data_dict dict contains the
+            # IDs of LibrarianFileAliases that contain the attachments
+            # themselves. The contents, filenames and filetypes of the files
+            # in the librarian will match the contents of the attachments.
+            for file_alias_id in data_dict['attachments']:
+                file_alias = getUtility(ILibraryFileAliasSet)[file_alias_id]
+                attachment = filebug_data.attachments[
+                    data_dict['attachments'].index(file_alias_id)]
+
+                file_content = attachment['content'].read()
+                librarian_file_content = file_alias.read()
+                self.assertEqual(
+                    file_content, librarian_file_content,
+                    "File content values do not match for attachment %s and "
+                    "LibrarianFileAlias %s" % (
+                        attachment['filename'], file_alias.filename))
+                self.assertEqual(
+                    attachment['filename'], file_alias.filename,
+                    "Filenames do not match for attachment %s and "
+                    "LibrarianFileAlias %s" % (
+                        attachment['filename'], file_alias.id))
+                self.assertEqual(
+                    attachment['content_type'], file_alias.mimetype,
+                    "Content types do not match for attachment %s and "
+                    "LibrarianFileAlias %s" % (
+                        attachment['filename'], file_alias.id))
+        else:
+            # If the attachment_file_aliases attribute of filebug_data
+            # is not empty, it will contain the actual file_aliases for
+            # the attachments.
+            self.assertEqual(
+                len(data_dict['attachments']),
+                len(filebug_data.attachment_file_aliases),
+                "Number of attachments and number of attachment file "
+                "aliases do not match.")
+
+            file_alias_ids = sorted(
+                file_alias.id for file_alias
+                in filebug_data.attachment_file_aliases)
+            attachment_ids = sorted(data_dict['attachments'])
+            self.assertEqual(
+                attachment_ids, file_alias_ids,
+                "Attachment IDs and file alias IDs do not match.")
+
+
     def test_run(self):
         # ProcessApportBlobJob.run() extracts salient data from an
         # Apport BLOB and stores it in the job's metadata attribute.
@@ -106,65 +191,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         self.blob.file_alias.open()
         data_parser = FileBugDataParser(self.blob.file_alias)
         filebug_data = data_parser.parse()
-
-        self.assertEqual(
-            filebug_data.initial_summary, processed_data['initial_summary'],
-            "Initial summaries do not match")
-        self.assertEqual(
-            filebug_data.initial_tags, processed_data['initial_tags'],
-            "Values for initial_tags do not match")
-        self.assertEqual(
-            filebug_data.private, processed_data['private'],
-            "Values for private do not match")
-        self.assertEqual(
-            filebug_data.subscribers, processed_data['subscribers'],
-            "Values for subscribers do not match")
-        self.assertEqual(
-            filebug_data.extra_description,
-            processed_data['extra_description'],
-            "Values for extra_description do not match")
-        self.assertEqual(
-            filebug_data.comments, processed_data['comments'],
-            "Values for comments do not match")
-        self.assertEqual(
-            filebug_data.hwdb_submission_keys,
-            processed_data['hwdb_submission_keys'],
-            "Values for hwdb_submission_keys do not match")
-
-        # The attachments list of of the processed_data dict will be of
-        # the same length as the attachments list in the filebug_data
-        # object.
-        self.assertEqual(
-            len(filebug_data.attachments),
-            len(processed_data['attachments']),
-            "Lengths of attachment lists do not match.")
-
-        # The attachments list of the processed_data dict contains the
-        # IDs of LibrarianFileAliases that contain the attachments
-        # themselves. The contents, filenames and filetypes of the files
-        # in the librarian will match the contents of the attachments.
-        for file_alias_id in processed_data['attachments']:
-            file_alias = getUtility(ILibraryFileAliasSet)[file_alias_id]
-            attachment = filebug_data.attachments[
-                processed_data['attachments'].index(file_alias_id)]
-
-            file_content = attachment['content'].read()
-            librarian_file_content = file_alias.read()
-            self.assertEqual(
-                file_content, librarian_file_content,
-                "File content values do not match for attachment %s and "
-                "LibrarianFileAlias %s" % (
-                    attachment['filename'], file_alias.filename))
-            self.assertEqual(
-                attachment['filename'], file_alias.filename,
-                "Filenames do not match for attachment %s and "
-                "LibrarianFileAlias %s" % (
-                    attachment['filename'], file_alias.id))
-            self.assertEqual(
-                attachment['content_type'], file_alias.mimetype,
-                "Content types do not match for attachment %s and "
-                "LibrarianFileAlias %s" % (
-                    attachment['filename'], file_alias.id))
+        self._assertFileBugDataMatchesDict(filebug_data, processed_data)
 
     def test_getByBlobUUID(self):
         # ProcessApportBlobJob.getByBlobUUID takes a BLOB UUID as a
@@ -245,6 +272,23 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertIn(
             'INFO    Ran 1 IProcessApportBlobJobSource jobs.\n', stderr)
+
+    def test_getFileBugData(self):
+        # The ProcessApportBlobJob.getFileBugData() method returns the
+        # +filebug data parsed from the blob as a FileBugData object.
+        job = ProcessApportBlobJob.create(self.blob)
+        job.run()
+        transaction.commit()
+
+        filebug_data = job.getFileBugData()
+        self.assertTrue(
+            isinstance(filebug_data, FileBugData),
+            "job.getFileBugData() should return a FileBugData instance.")
+
+        # The attributes of the FileBugData match the data stored in the
+        # processed_data dict.
+        processed_data = job.metadata.get('processed_data', None)
+        self._assertFileBugDataMatchesDict(filebug_data, processed_data)
 
 
 class TestTemporaryBlobStorageAddView(TestCaseWithFactory):

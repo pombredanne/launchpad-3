@@ -169,16 +169,33 @@ class FileBugDataParser:
 class FileBugData:
     """Extra data to be added to the bug."""
 
-    def __init__(self):
-        self.initial_summary = None
-        self.initial_summary = None
-        self.initial_tags = []
-        self.private = None
-        self.subscribers = []
-        self.extra_description = None
-        self.comments = []
-        self.attachments = []
-        self.hwdb_submission_keys = []
+    def __init__(self, initial_summary=None, initial_tags=None,
+                 private=None, subscribers=None, extra_description=None,
+                 comments=None, attachments=None,
+                 attachment_file_aliases=None,
+                 hwdb_submission_keys=None):
+        if initial_tags is None:
+            initial_tags = []
+        if subscribers is None:
+            subscribers = []
+        if comments is None:
+            comments = []
+        if attachments is None:
+            attachments = []
+        if attachment_file_aliases is None:
+            attachment_file_aliases = []
+        if hwdb_submission_keys is None:
+            hwdb_submission_keys = []
+
+        self.initial_summary = initial_summary
+        self.private = private
+        self.extra_description = extra_description
+        self.initial_tags = initial_tags
+        self.subscribers = subscribers
+        self.comments = comments
+        self.attachments = attachments
+        self.attachment_file_aliases = attachment_file_aliases
+        self.hwdb_submission_keys = hwdb_submission_keys
 
     def asDict(self):
         """Return the FileBugData instance as a dict."""

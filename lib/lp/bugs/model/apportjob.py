@@ -35,7 +35,8 @@ from lazr.delegates import delegates
 from lp.bugs.interfaces.apportjob import (
     ApportJobType, IApportJob, IApportJobSource, IProcessApportBlobJob,
     IProcessApportBlobJobSource)
-from lp.bugs.utilities.filebugdataparser import FileBugDataParser
+from lp.bugs.utilities.filebugdataparser import (
+    FileBugData, FileBugDataParser)
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
@@ -238,3 +239,23 @@ class ProcessApportBlobJob(ApportJobDerived):
         metadata = self.metadata
         metadata.update({'processed_data': parsed_data_dict})
         self.metadata = metadata
+
+    def getFileBugData(self):
+        """Return the parsed data as a FileBugData object."""
+        processed_data = self.metadata.get('processed_data', None)
+        if processed_data is not None:
+            attachment_file_aliases = [
+                getUtility(ILibraryFileAliasSet)[file_alias_id]
+                for file_alias_id in processed_data.get('attachments', [])]
+
+            return FileBugData(
+                initial_summary=processed_data['initial_summary'],
+                initial_tags=processed_data['initial_tags'],
+                private=processed_data['private'],
+                subscribers=processed_data['subscribers'],
+                extra_description=processed_data['extra_description'],
+                comments=processed_data['comments'],
+                hwdb_submission_keys=processed_data['hwdb_submission_keys'],
+                attachment_file_aliases=attachment_file_aliases)
+        else:
+            return FileBugData
