@@ -25,6 +25,11 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from lp.registry.interfaces.role import IHasOwner
+from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.restful.declarations import (
+    call_with, export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, operation_parameters,
+    operation_returns_entry, REQUEST_USER)
 
 
 def valid_fingerprint(fingerprint):
@@ -93,10 +98,10 @@ class IGPGKey(IHasOwner):
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
             vocabulary='GpgAlgorithm')
-    keyid = TextLine(title=_("OpenPGP key ID"), required=True,
-            constraint=valid_keyid)
-    fingerprint = TextLine(title=_("User Fingerprint"), required=True,
-            constraint=valid_fingerprint)
+    keyid = exported(TextLine(title=_("OpenPGP key ID"), required=True,
+            constraint=valid_keyid))
+    fingerprint = exported(TextLine(title=_("User Fingerprint"), required=True,
+            constraint=valid_fingerprint))
     active = Bool(title=_("Active"), required=True)
     displayname = Attribute("Key Display Name")
     keyserverURL = Attribute(
@@ -110,27 +115,50 @@ class IGPGKey(IHasOwner):
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
 
+    export_as_webservice_entry()
+
+    @call_with(ownerID=REQUEST_USER)
+    @operation_parameters(
+      keyid=TextLine(title=_("KeyID"), required=True),
+      fingerprint=TextLine(title=_("fingerprint"), required=True),
+      keysize=Int(title=_("KeySize"), required=True),
+      algorithm=Choice(
+            title=_("GPGKeyAlgorithm"), required=True,
+            vocabulary=DBEnumeratedType))
+    @export_write_operation()
     def new(ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=True):
         """Create a new GPGKey pointing to the given Person."""
 
+    @operation_parameters(
+      key_id=TextLine(title=_("KeyID"), required=True))
+    @export_read_operation()
     def get(key_id, default=None):
         """Return the GPGKey object for the given id.
 
         Return the given default if there's no object with the given id.
         """
-
+    @operation_parameters(
+      fingerprint=TextLine(title=_("fingerprint"), required=True))
+    @export_read_operation()
     def getByFingerprint(fingerprint, default=None):
         """Return UNIQUE result for a given Key fingerprint including
         inactive ones.
         """
 
+    @call_with(ownerid=REQUEST_USER)
+    @operation_parameters()
+    @export_read_operation()
     def getGPGKeys(ownerid=None, active=True):
         """Return OpenPGP keys ordered by id.
 
         Optionally for a given owner and or a given status.
         """
 
+    @call_with(people=REQUEST_USER)
+    @export_read_operation(
+      #self=??? how to get the instance?
+    )
     def getGPGKeysForPeople(self, people):
         """Return OpenPGP keys for a set of people."""
 
