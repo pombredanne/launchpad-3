@@ -40,11 +40,11 @@ class TestSecurityOverlay(WindmillTestCase):
         flags "private" and "security vulnerability".
          """
         client = self.client
-        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Open a bug page and wait for it to finish loading.
         client.open(url=BUG_URL)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)

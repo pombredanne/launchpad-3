@@ -22,11 +22,11 @@ class TestProjectLicenses(WindmillTestCase):
 
     def test_project_licenses(self):
         """Test the dynamic aspects of the project license picker."""
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
-
         # The firefox project is as good as any.
         self.client.open(url=u'http://launchpad.dev:8085/firefox/+edit')
         self.client.waits.forPageLoad(timeout=u'20000')
+
+        lpuser.SAMPLE_PERSON.ensure_login(self.client)
 
         # The Recommended table is visible.
         self.client.waits.forElementProperty(
