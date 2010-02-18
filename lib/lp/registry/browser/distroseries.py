@@ -475,7 +475,7 @@ class DistroSeriesPackagesView(DistroSeriesView):
     def cached_packagings(self):
         """The batched upstream packaging links."""
         packagings = self.context.getPriorizedlPackagings()
-        navigator = BatchNavigator(packagings, self.request, size=100)
+        navigator = BatchNavigator(packagings, self.request, size=20)
         navigator.setHeadings('packaging', 'packagings')
         return navigator
 
@@ -490,6 +490,6 @@ class DistroSeriesNeedsPackagesView(DistroSeriesView):
     def cached_unlinked_packages(self):
         """The batched `ISourcePackage`s that needs packaging links."""
         packages = self.context.getPriorizedUnlinkedSourcePackages()
-        navigator = BatchNavigator(packages, self.request, size=100)
+        navigator = BatchNavigator(packages, self.request, size=20)
         navigator.setHeadings('package', 'packages')
         return navigator
