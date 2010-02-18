@@ -55,7 +55,7 @@ from lp.services.worlddata.model.spokenin import *
 from lp.coop.answersbugs.model import *
 
 from canonical.launchpad.database.account import *
-from canonical.launchpad.database.personnotification import *
+from lp.registry.model.personnotification import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.message import *

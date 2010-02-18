@@ -11,7 +11,7 @@ Set up test fixtures
 
 Set up an event listener to show when karma gets assigned.
 
-    >>> from canonical.launchpad.ftests.karma import (
+    >>> from lp.registry.tests.karma import (
     ...     KarmaAssignedEventListener)
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
