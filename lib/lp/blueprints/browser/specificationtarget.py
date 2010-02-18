@@ -348,7 +348,7 @@ class HasSpecificationsView(LaunchpadView):
         """
         categories = {}
         for spec in self.specs:
-            if categories.has_key(spec.definition_status):
+            if spec.definition_status in categories:
                 category = categories[spec.definition_status]
             else:
                 category = {}
@@ -360,8 +360,10 @@ class HasSpecificationsView(LaunchpadView):
         return sorted(categories, key=itemgetter('definition_status'))
 
     def getLatestSpecifications(self, quantity=5):
-        """Return <quantity> latest specs created for this target. This
-        is used by the +portlet-latestspecs view.
+        """Return <quantity> latest specs created for this target.
+
+        Only ACCEPTED specifications are returned.  This list is used by the
+        +portlet-latestspecs view.
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
             quantity=quantity, prejoin_people=False)
@@ -424,4 +426,3 @@ class RegisterABlueprintButtonView:
 class BlueprintsVHostBreadcrumb(Breadcrumb):
     rootsite = 'blueprints'
     text = 'Blueprints'
-

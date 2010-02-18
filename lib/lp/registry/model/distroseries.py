@@ -315,9 +315,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result += self.distribution.name + self.name
         return result
 
-    @property
-    def packagings(self):
-        """See `IDistroSeries`."""
+    @cachedproperty
+    def _all_packagings(self):
+        """Get an unordered list of all packagings."""
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implicitly needed to work with a
         # Packaging object.
@@ -338,6 +338,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ProductSeries.product == Product.id)]
         condition = [Packaging.distroseries == self.id]
         results = IStore(self).using(*origin).find(find_spec, *condition)
+        return results
+
+    @property
+    def packagings(self):
+        """See `IDistroSeries`."""
+        results = self._all_packagings
         results = results.order_by(SourcePackageName.name)
         return [
             packaging
@@ -467,11 +473,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 primary=ArchivePurpose.PRIMARY))
         return (joins, conditions)
 
+    def getMostRecentlyLinkedPackagings(self):
+        """See `IDistroSeries`."""
+        """See `IDistroSeries`."""
+        results = self._all_packagings
+        results = results.order_by(Desc(Packaging.datecreated),
+                                   SourcePackageName.name)[:5]
+        return [
+            packaging
+            for (packaging, spn, product_series, product) in results]
+
     @property
     def supported(self):
         return self.status in [
             SeriesStatus.CURRENT,
-            SeriesStatus.SUPPORTED
+            SeriesStatus.SUPPORTED,
             ]
 
     @property

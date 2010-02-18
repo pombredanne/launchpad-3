@@ -389,7 +389,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getDistroArchSeriesByProcessor(processor):
         """Return the distroarchseries for this distroseries with the
         given architecturetag from a `IProcessor`.
-        
+
         :param processor: An `IProcessor`
         :return: An `IDistroArchSeries` or None when none was found.
         """
@@ -438,6 +438,13 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     def getPriorizedlPackagings():
         """Return a list of packagings that need more upstream information."""
+
+    def getMostRecentlyLinkedPackagings():
+        """Return a list of packagings that are the most recently linked.
+
+        At most five packages are returned of those most recently linked to an
+    upstream.
+    """
 
     @operation_parameters(
         created_since_date=Datetime(
