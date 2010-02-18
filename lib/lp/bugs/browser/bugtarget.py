@@ -61,7 +61,7 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugAddForm, IProjectBugAddForm)
+    CreateBugParams, IBugAddForm, IProjectGroupBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -69,7 +69,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
@@ -326,7 +326,7 @@ class FileBugViewBase(LaunchpadFormView):
             field_names.append('packagename')
         elif IMaloneApplication.providedBy(context):
             field_names.append('bugtarget')
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             field_names.append('product')
         elif not IProduct.providedBy(context):
             raise AssertionError('Unknown context: %r' % context)
@@ -354,7 +354,7 @@ class FileBugViewBase(LaunchpadFormView):
         return IProduct.providedBy(self.context)
 
     def contextIsProject(self):
-        return IProject.providedBy(self.context)
+        return IProjectGroup.providedBy(self.context)
 
     def targetIsUbuntu(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -461,7 +461,7 @@ class FileBugViewBase(LaunchpadFormView):
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
-        if IProject.providedBy(self.context):
+        if IProjectGroup.providedBy(self.context):
             products_using_malone = [
                 product for product in self.context.products
                 if product.official_malone]
@@ -509,7 +509,7 @@ class FileBugViewBase(LaunchpadFormView):
             # We're being called from the generic bug filing form, so
             # manually set the chosen distribution as the context.
             context = distribution
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             context = data['product']
         elif IMaloneApplication.providedBy(context):
             context = data['bugtarget']
@@ -804,7 +804,7 @@ class FileBugViewBase(LaunchpadFormView):
         """
         context = self.context
 
-        if IProject.providedBy(context):
+        if IProjectGroup.providedBy(context):
             contexts = set(context.products)
         else:
             contexts = [context]
@@ -831,7 +831,7 @@ class FileBugViewBase(LaunchpadFormView):
         """
 
         def target_name(target):
-            # IProject can be considered the target of a bug during
+            # IProjectGroup can be considered the target of a bug during
             # the bug filing process, but does not extend IBugTarget
             # and ultimately cannot actually be the target of a
             # bug. Hence this function to determine a suitable
@@ -1009,7 +1009,7 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             return self.context
 
         search_context = self.getMainContext()
-        if IProject.providedBy(search_context):
+        if IProjectGroup.providedBy(search_context):
             assert self.widgets['product'].hasValidInput(), (
                 "This method should be called only when we know which"
                 " product the user selected.")
@@ -1056,11 +1056,11 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
 
 
 class ProjectFileBugGuidedView(FileBugGuidedView):
-    """Guided filebug pages for IProject."""
+    """Guided filebug pages for IProjectGroup."""
 
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
-    schema = IProjectBugAddForm
+    schema = IProjectGroupBugAddForm
 
     @cachedproperty
     def products_using_malone(self):

@@ -102,7 +102,7 @@ from lp.registry.interfaces.product import *
 from lp.registry.interfaces.productlicense import *
 from lp.registry.interfaces.productrelease import *
 from lp.registry.interfaces.productseries import *
-from lp.registry.interfaces.project import *
+from lp.registry.interfaces.projectgroup import *
 from lp.soyuz.interfaces.publishedpackage import *
 from lp.soyuz.interfaces.publishing import *
 from lp.soyuz.interfaces.queue import *
