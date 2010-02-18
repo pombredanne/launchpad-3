@@ -623,7 +623,7 @@ There is also a link to the diff URL, which is the preview diff URL plus
 
     >>> link = get_review_diff().find('a')
     >>> print link['href']
-    http://code.launchpad.dev/~person-name.../product-name.../branch.../+merge/.../+preview-diff/+files/preview.diff
+    http.../+preview-diff/+files/preview.diff
     >>> nopriv_browser.open(str(link['href']))
     >>> print nopriv_browser.contents
     ---

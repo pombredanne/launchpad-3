@@ -22,6 +22,7 @@ class PreviewDiffNavigation(Navigation, FileNavigationMixin):
 
     usedfor = IPreviewDiff
 
+
 class PreviewDiffFormatterAPI(ObjectFormatterAPI):
     """Formatter for preview diffs."""
 
