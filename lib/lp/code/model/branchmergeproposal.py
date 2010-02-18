@@ -508,7 +508,7 @@ class BranchMergeProposal(SQLBase):
             registrant=registrant,
             target_branch=self.target_branch,
             prerequisite_branch=self.prerequisite_branch,
-            whiteboard=self.whiteboard,
+            description=self.description,
             needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
