@@ -221,6 +221,9 @@ class IHasBugs(Interface):
                        None, all statuses will be included.
         """
 
+    def setMaxHeat(self, heat):
+        """Set the max_heat for this context."""
+
 
 class IBugTarget(IHasBugs):
     """An entity on which a bug can be reported.
