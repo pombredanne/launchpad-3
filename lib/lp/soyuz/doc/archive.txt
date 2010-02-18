@@ -1466,6 +1466,8 @@ use to retrieve files from it.
     ...     ubuntu, ArchivePurpose.DEBUG).archive_url
     http://ftpmaster.internal/ubuntu-debug
 
+COPY archives use a URL format of <distro-name>-<archive-name>:
+
     >>> print copy_target.archive.is_copy
     True
     >>> print copy_target.archive.archive_url
