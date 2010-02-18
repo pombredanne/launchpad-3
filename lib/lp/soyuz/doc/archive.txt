@@ -1342,9 +1342,9 @@ The IArchive interface includes a convenience method for creating a
 package copy request:
 
     >>> requestor = factory.makePerson(name='me-copy')
-    >>> target = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    >>> copy_target = factory.makeCopyArchiveLocation(distribution=ubuntu,
     ...     name='my-copy-archive')
-    >>> pcr = ubuntu.main_archive.requestPackageCopy(target, requestor)
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
     >>> print pcr
     Package copy request
     source = primary/hoary/-/RELEASE
@@ -1357,7 +1357,7 @@ package copy request:
 The requestPackageCopy method can also take an optional suite name:
 
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     target, requestor, suite="hoary-updates");
+    ...     copy_target, requestor, suite="hoary-updates");
     >>> print package_copy_request
     Package copy request
     source = primary/hoary/-/UPDATES
@@ -1465,6 +1465,11 @@ use to retrieve files from it.
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntu, ArchivePurpose.DEBUG).archive_url
     http://ftpmaster.internal/ubuntu-debug
+
+    >>> print copy_target.archive.is_copy
+    True
+    >>> print copy_target.archive.archive_url
+    http://rebuild-test.internal/ubuntu-copy
 
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
