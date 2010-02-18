@@ -24,7 +24,7 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from lp.translations.interfaces.translator import (
     ITranslator, ITranslatorSet)
-from canonical.launchpad.browser.objectreassignment import (
+from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (

@@ -203,6 +203,24 @@ But the 'failed to build' build is 16x14:
     >>> print test_tales("build/image:icon", build=build)
     <img width="16" height="14"...src="/@@/build-failed" />
 
+All objects can be represented as a boolean icon.
+
+    >>> print test_tales("context/image:boolean", context=None)
+    <span class="sprite no">&nbsp;<span
+      class="invisible-link">no</span></span>
+
+    >>> print test_tales("context/image:boolean", context=False)
+    <span class="sprite no">&nbsp;<span
+      class="invisible-link">no</span></span>
+
+    >>> print test_tales("context/image:boolean", context=object())
+    <span class="sprite yes">&nbsp;<span
+      class="invisible-link">yes</span></span>
+
+    >>> print test_tales("context/image:boolean", context=True)
+    <span class="sprite yes">&nbsp;<span
+      class="invisible-link">yes</span></span>
+
 
 The fmt: namespace to get strings
 ---------------------------------
