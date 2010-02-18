@@ -1268,15 +1268,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         else:
             return 'None specified'
 
-    @property
-    def can_change_bugtracker(self):
-        """Return True if the user can change this target's bug tracker."""
-        if self.user is None:
-            return False
-        elif (self.user == self.context.owner or
-              self.user.inTeam(self.context.owner)):
-            return True
-
     @cachedproperty
     def hot_bugs_info(self):
         """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
