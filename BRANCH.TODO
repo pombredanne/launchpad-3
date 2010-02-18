@@ -2,26 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-1. Email Matt describing what I, as a LP user, would need to know about the
-change to use OpenID.
-2. Ping Tom when the config change to make the login servers use a different
-cookie is ready to land.
-
-* Need a migration plan, for existing NEWACCOUNT/RESETPASSWORD login
-tokens that end up used only after we roll out.
-   * This is specially important if we take into account that we plan to
-     roll this out together with the main/auth DBs split, meaning it won't
-     be possible for people to create new accounts and/or reset passwords in
-     Launchpad itself.
-
-* The LoginToken pages for creating new accounts and reset passwords can be
-removed.
-
-* We still rely heavily on the Account table and expect all users to have an
-Account. We need to fix that if we're going to copy the Account table into the
-main replication set and stop using the one from the auth set.  If we fix
-that, though, the Account table won't be necessary so there'll be no point in
-copying it.  *I'm not sure this is feasible.*
-
-* We will need to copy the status from Account back to Person.
