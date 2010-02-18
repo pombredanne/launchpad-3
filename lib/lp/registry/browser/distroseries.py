@@ -55,7 +55,7 @@ from canonical.launchpad.webapp.launchpadform import (
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, stepthrough, stepto)
+    canonical_url, LaunchpadView, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.registry.browser import MilestoneOverlayMixin
@@ -133,6 +133,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
 
 class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
+
     @property
     def text(self):
         return self.context.named_version
@@ -447,15 +448,14 @@ class DistroSeriesAddView(LaunchpadFormView):
 
         assert owner is not None
         distroseries = self.context.newSeries(
-            name = data['name'],
-            displayname = data['displayname'],
-            title = data['title'],
-            summary = data['summary'],
-            description = data['description'],
-            version = data['version'],
-            parent_series = data['parent_series'],
-            owner = owner
-            )
+            name=data['name'],
+            displayname=data['displayname'],
+            title=data['title'],
+            summary=data['summary'],
+            description=data['description'],
+            version=data['version'],
+            parent_series=data['parent_series'],
+            owner=owner)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries
@@ -465,7 +465,7 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class DistroSeriesPackagesView(DistroSeriesView):
+class DistroSeriesPackagesView(LaunchpadView):
     """A View to show series package to upstream package relationships."""
 
     label = 'All series packages linked to upstream project series'
@@ -480,7 +480,7 @@ class DistroSeriesPackagesView(DistroSeriesView):
         return navigator
 
 
-class DistroSeriesNeedsPackagesView(DistroSeriesView):
+class DistroSeriesNeedsPackagesView(LaunchpadView):
     """A View to show series package to upstream package relationships."""
 
     label = 'Packages that need upstream packaging links'
