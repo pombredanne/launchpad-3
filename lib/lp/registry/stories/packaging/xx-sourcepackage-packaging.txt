@@ -23,8 +23,9 @@ No Privileges Person knows that the pmount package comes from the thunderbird
 project. He sets the upstream packaging link and sees that it is set.
 
     >>> user_browser.getLink('Set upstream link').click()
-    >>> user_browser.getControl(
-    ...     name="field.productseries").value = 'thunderbird/trunk'
+    >>> user_browser.getControl(name='field.product').value = 'thunderbird'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl(name='field.productseries').value = ['trunk']
     >>> user_browser.getControl("Change").click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'upstreams'))

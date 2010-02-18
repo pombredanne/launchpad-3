@@ -28,6 +28,8 @@ from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 
+from lazr.restful.interface import copy_field
+
 from canonical.widgets import LaunchpadRadioWidget
 
 from canonical.launchpad import helpers
@@ -143,8 +145,8 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
 class SourcePackageChangeUpstreamStepOne(StepView):
     """A view to set the `IProductSeries` of a sourcepackage."""
-    schema = IProductSeries
-    _field_names = ['product']
+    schema = Interface
+    _field_names = []
 
     step_name = 'sourcepackage_change_upstream_step1'
     template = ViewPageTemplateFile(
@@ -158,7 +160,12 @@ class SourcePackageChangeUpstreamStepOne(StepView):
         super(SourcePackageChangeUpstreamStepOne, self).setUpFields()
         series = self.context.productseries
         if series is not None:
-            self.form_fields['product'].field.default = series.product
+            default = series.product
+        else:
+            default = None
+        product_field = copy_field(
+            IProductSeries['product'], default=default)
+        self.form_fields += Fields(product_field)
 
     @property
     def cancel_url(self):
