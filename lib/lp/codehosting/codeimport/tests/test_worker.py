@@ -902,7 +902,9 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
             rcstype='git', url=repository_path)
 
     def test_partial(self):
-        # XXX
+        # Only config.codeimport.revisions_import_limit will be imported in a
+        # given run.  When bzr-svn and bzr-hg support revision import limits,
+        # this test case can be moved up to PullingImportWorkerTests.
         worker = self.makeImportWorker(self.makeSourceDetails(
             'trunk', [('README', 'Original contents')]))
         self.makeForeignCommit(worker.source_details)

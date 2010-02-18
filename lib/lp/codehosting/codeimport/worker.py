@@ -511,7 +511,13 @@ class PullingImportWorker(ImportWorker):
         """The format classes that should be tried for this import."""
         raise NotImplementedError
 
-    def get_extra_pull_args(self):
+    def getExtraPullArgs(self):
+        """Return extra arguments to `InterBranch.pull`.
+
+        This method only really exists because only bzr-git supports the
+        'limit' argument to this method.  When bzr-svn and bzr-hg plugin do
+        too, this method can go away.
+        """
         return {}
 
     def _doImport(self):
@@ -534,7 +540,7 @@ class PullingImportWorker(ImportWorker):
             foreign_branch = format.open(transport).open_branch()
             inter_branch = InterBranch.get(foreign_branch, bazaar_tree.branch)
             pull_result = inter_branch.pull(
-                overwrite=True, **self.get_extra_pull_args())
+                overwrite=True, **self.getExtraPullArgs())
             self.pushBazaarWorkingTree(bazaar_tree)
             if bazaar_tree.branch.last_revision() \
                    == foreign_branch.last_revision():
@@ -562,7 +568,8 @@ class GitImportWorker(PullingImportWorker):
             LocalGitBzrDirFormat, RemoteGitBzrDirFormat)
         return [LocalGitBzrDirFormat, RemoteGitBzrDirFormat]
 
-    def get_extra_pull_args(self):
+    def getExtraPullArgs(self):
+        """See `PullingImportWorker.getExtraPullArgs`."""
         return {'limit': config.codeimport.revisions_import_limit}
 
     def getBazaarWorkingTree(self):
