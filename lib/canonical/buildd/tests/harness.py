@@ -79,8 +79,18 @@ class BuilddSlaveTestSetup(TacTestSetup):
     >>> s.echo('Hello World')
     ['Hello World']
 
-    >>> s.info()
-    ['1.0', 'i386', ['sourcepackagerecipe', 'binarypackage', 'debian']]
+    >>> info = s.info()
+    >>> len(info)
+    3
+    >>> print info[:2]
+    ['1.0', 'i386']
+
+    >>> for buildtype in sorted(info[2]):
+    ...     print buildtype
+    binarypackage
+    debian
+    sourcepackagerecipe
+    translation-templates
 
     >>> s.status()
     ['BuilderStatus.IDLE', '']
