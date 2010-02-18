@@ -3,7 +3,7 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-       <tal:message replace="structure view/body_text/fmt:obfuscate-email/fmt:nice_pre" />
+  <tal:message replace="structure view/body_text/fmt:obfuscate-email/fmt:nice_pre" />
 
   <tal:good-attachments repeat="attachment view/display_attachments">
     <div class="boardComment attachment">

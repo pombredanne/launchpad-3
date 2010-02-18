@@ -2,7 +2,7 @@
    xmlns:tal="http://xml.zope.org/namespaces/tal"
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
-  <div tal:condition="context/vote">
+
   <strong>review:</strong>
   <span tal:attributes="class string:vote${context/vote/name}"
                 tal:content="context/vote/title">
@@ -11,7 +11,5 @@
   <tal:vote-tags condition="context/vote_tag">
     (<tal:tag replace="context/vote_tag"/>)
   </tal:vote-tags>
-  </div>
-  <tal:from-superseded condition="context/from_superseded">From a <a
-      tal:attributes="href context/branch_merge_proposal/fmt:url">previous version</a> of this proposal</tal:from-superseded>
+
 </tal:root>

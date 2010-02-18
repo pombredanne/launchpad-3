@@ -108,7 +108,7 @@ are also displayed in the new proposal.
     wrap the line properly.
     >>> print_comments('boardCommentDetails', anon_browser, index=0)
     Eric the Viking wrote ... ago
-    on a previous version of this proposal
+    Posted in a previous version of this proposal
     >>> details = find_tags_by_class(
     ...     anon_browser.contents, 'boardCommentDetails')[0]
     >>> links = details.findAll('a')
