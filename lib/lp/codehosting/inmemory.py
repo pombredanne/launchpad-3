@@ -555,7 +555,7 @@ class FakeBranchFilesystem:
     def createBranch(self, requester_id, branch_path):
         if not branch_path.startswith('/'):
             return faults.InvalidPath(branch_path)
-        escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
+        escaped_path = unescape(branch_path.strip('/'))
         try:
             namespace_path, branch_name = escaped_path.rsplit('/', 1)
         except ValueError:
@@ -612,7 +612,10 @@ class FakeBranchFilesystem:
                 sourcepackage=sourcepackage, registrant=registrant,
                 branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
-            return faults.PermissionDenied(str(e))
+            msg = e.args[0]
+            if isinstance(msg, unicode):
+                msg = msg.encode('utf-8')
+            return faults.PermissionDenied(msg)
 
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
