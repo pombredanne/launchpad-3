@@ -8,10 +8,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'IProject',
-    'IProjectPublic',
-    'IProjectSeries',
-    'IProjectSet',
+    'IProjectGroup',
+    'IProjectGroupPublic',
+    'IProjectGroupSeries',
+    'IProjectGroupSet',
     ]
 
 from zope.interface import Interface, Attribute
@@ -56,16 +56,16 @@ class ProjectNameField(PillarNameField):
 
     @property
     def _content_iface(self):
-        return IProject
+        return IProjectGroup
 
 
-class IProjectPublic(
+class IProjectGroupPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
     IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
     IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
     IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
     IKarmaContext, IPillar, IRootContext):
-    """Public IProject properties."""
+    """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)
 
@@ -279,7 +279,7 @@ class IProjectPublic(
         """Return a ProjectSeries object with name `series_name`."""
 
 
-class IProject(IProjectPublic, IStructuralSubscriptionTarget,
+class IProjectGroup(IProjectPublic, IStructuralSubscriptionTarget,
                ITranslationPolicy):
     """A Project."""
 
@@ -288,10 +288,10 @@ class IProject(IProjectPublic, IStructuralSubscriptionTarget,
 
 # Interfaces for set
 
-class IProjectSet(Interface):
+class IProjectGroupSet(Interface):
     """The collection of projects."""
 
-    export_as_webservice_collection(IProject)
+    export_as_webservice_collection(IProjectGroup)
 
     title = Attribute('Title')
 
@@ -318,7 +318,7 @@ class IProjectSet(Interface):
             owner, mugshot=None, logo=None, icon=None, registrant=None):
         """Create and return a project with the given arguments.
 
-        For a description of the parameters see `IProject`.
+        For a description of the parameters see `IProjectGroup`.
         """
 
     def count_all():
@@ -326,7 +326,7 @@ class IProjectSet(Interface):
 
     @collection_default_content()
     @operation_parameters(text=TextLine(title=_("Search text")))
-    @operation_returns_collection_of(IProject)
+    @operation_returns_collection_of(IProjectGroup)
     @export_read_operation()
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
@@ -344,7 +344,7 @@ class IProjectSet(Interface):
         products that needs review."""
 
 
-class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
+class IProjectGroupSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
                      IHasOwner):
     """Interface for ProjectSeries.
 
@@ -363,6 +363,6 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     title = TextLine(title=u'The title for this project series.',
                      required=True, readonly=True)
 
-    project = Object(schema=IProject,
+    project = Object(schema=IProjectGroup,
                      title=u"The project this series belongs to",
                      required=True, readonly=True)
