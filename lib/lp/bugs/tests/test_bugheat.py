@@ -214,5 +214,43 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
         self.assertEqual(bug_job.bug, new_bug)
 
 
+class MaxHeatPerTargetTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_project_max_heat(self):
+        # A project has a max_heat attribute.
+        proj = self.factory.makeProduct()
+        self.assertEqual(proj.max_heat, 0)
+
+    def test_set_project_max_heat(self):
+        # A project has a method for setting max_heat.
+        proj = self.factory.makeProduct()
+        proj.setMaxHeat(1000)
+        self.assertEqual(proj.max_heat, 1000)
+
+    def test_distro_max_heat(self):
+        # A distribution has a max_heat attribute.
+        distro = self.factory.makeDistribution()
+        self.assertEqual(distro.max_heat, 0)
+
+    def test_set_distro_max_heat(self):
+        # A distribution has a method for setting max_heat.
+        distro = self.factory.makeDistribution()
+        distro.setMaxHeat(1000)
+        self.assertEqual(distro.max_heat, 1000)
+
+    def test_source_package_max_heat(self):
+        # A source package has a max_heat value.
+        package = self.factory.makeDistributionSourcePackage()
+        self.assertEqual(package.max_heat, 0)
+
+    def test_set_source_package_max_heat(self):
+        # A source package has a method for setting max_heat.
+        package = self.factory.makeDistributionSourcePackage()
+        package.setMaxHeat(1000)
+        self.assertEqual(package.max_heat, 1000)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
