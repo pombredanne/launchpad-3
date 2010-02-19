@@ -20,7 +20,8 @@ from lazr.restful.fields import CollectionField, Reference
 class IComment(Interface):
     """A comment which may have a body or footer."""
 
-    css_class = TextLine()
+    extra_css_class = TextLine(
+        description=_("A css class to apply to the comment's outer div."))
 
     has_body = Bool(
         description=_("Does the comment have body text?"),

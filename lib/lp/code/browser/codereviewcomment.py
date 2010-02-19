@@ -53,10 +53,9 @@ class CodeReviewDisplayComment:
         self.from_superseded = from_superseded
 
     @property
-    def css_class(self):
-        classes = ['boardComment']
+    def extra_css_class(self):
         if self.from_superseded:
-            return ' from-superseded'
+            return 'from-superseded'
         else:
             return ''
 
