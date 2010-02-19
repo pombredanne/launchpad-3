@@ -19,7 +19,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -279,7 +279,7 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
 
         Passing an unknown bugtarget type will raise an AssertionError.
         """
-        project = getUtility(IProjectSet).getByName('mozilla')
+        project = getUtility(IProjectGroupSet).getByName('mozilla')
         distributionsourcepackage = self.distribution.getSourcePackage(
             'mozilla-firefox')
         sourcepackage = self.distroseries.getSourcePackage(

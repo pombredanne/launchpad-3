@@ -256,8 +256,8 @@ are shown, no matter if they are used in open bugs or closed ones.
     >>> firefox.getUsedBugTags()
     [u'doc', u'layout-test', u'sco', u'svg']
 
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> mozilla.getUsedBugTags()
     [u'crash', u'doc', u'layout-test', u'sco', u'svg']
 
@@ -322,7 +322,7 @@ Only bugs that the supplied user has access to will be counted:
 
 When context doesn't have any tags getUsedBugTags() returns a empty list.
 
-    >>> gimp = getUtility(IProjectSet).getByName('gimp')
+    >>> gimp = getUtility(IProjectGroupSet).getByName('gimp')
     >>> gimp.getUsedBugTags()
     []
 

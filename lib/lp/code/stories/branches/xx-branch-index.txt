@@ -368,7 +368,8 @@ The data that we specified is shown on the web page.
     Branch format: Branch format 5
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'repository-format'))
-    Repository format: Packs containing knits without subtree support
+    Repository format:
+    Bazaar pack repository format 1 (needs bzr 0.92)
 
 
 === Stacking ===
