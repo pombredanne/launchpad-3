@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+#!/usr/bin/env python2.5
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Script to check the size of the generated javascript.
@@ -11,7 +12,7 @@ find out why Windmill has such issues.
 import os
 
 FILE_NAME = 'lib/canonical/launchpad/icing/build/launchpad.js'
-MAX_FILE_SIZE = 512000
+MAX_FILE_SIZE = 512 * 1024
 
 def main():
     size = os.path.getsize(FILE_NAME)
