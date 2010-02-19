@@ -41,9 +41,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         super(TestPPAHtaccessTokenGeneration, self).setUp()
         self.owner = self.factory.makePerson(
             name="joe", displayname="Joe Smith")
-        self.ppa = self.factory.makeArchive(owner=self.owner, name="myppa")
-        self.ppa.private = True
-        self.ppa.buildd_secret = "secret"
+        self.ppa = self.factory.makeArchive(
+            owner=self.owner, name="myppa", private=True)
 
         # "Ubuntu" doesn't have a proper publisher config but Ubuntutest
         # does, so override the PPA's distro here.
