@@ -27,17 +27,9 @@ transaction, since it doesn't need DB access.
     ...         print "initializeRemoteBugDB() called: %r" % (
     ...             remote_bug_ids, )
 
-    >>> class FakeTransaction:
-    ...     """Transaction class to track transaction boundaries."""
-    ...     def commit(self):
-    ...         print "COMMIT"
-    ...     def abort(self):
-    ...         print "ABORT"
-    ...     def begin(self):
-    ...         print "BEGIN"
-
+    >>> from lp.testing.faketransaction import FakeTransaction
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(FakeTransaction())
+    >>> bug_watch_updater = BugWatchUpdater(FakeTransaction(log_calls=True))
     >>> bug_watch_updater.updateBugWatches(
     ...     InitializingExternalBugTracker(), [])
     COMMIT
@@ -305,7 +297,7 @@ If there are no syncable GNOME products, only one batch is returned,
 and the remote system is never asked about product information.
 
     >>> bug_watch_updater = BugWatchUpdater(
-    ...     FakeTransaction(), syncable_gnome_products=[])
+    ...     FakeTransaction(log_calls=True), syncable_gnome_products=[])
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)

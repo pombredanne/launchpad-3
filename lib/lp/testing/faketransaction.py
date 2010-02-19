@@ -7,10 +7,34 @@ __metaclass__ = type
 __all__ = ['FakeTransaction']
 
 
+from lp.testing.fakemethod import FakeMethod
+
+
 class FakeTransaction:
+    """Fake transaction manager.
+
+    Use this instead of `transaction` (or the old Zopeless transaction
+    manager) in tests if you don't really want to commit anything.
+
+    Set `log_calls` to True to enable printing of the calls.
+    """
+    log_calls = False
+
+    def __init__(self, log_calls=False):
+        self.log_calls = log_calls
+
+    def _log(self, call):
+        """Print calls that are being made, if desired."""
+        if self.log_calls:
+            print call
+
     def begin(self):
-        pass
+        """Pretend to begin a transaction.  Does not log."""
+
     def commit(self):
-        pass
+        """Pretend to commit."""
+        self._log("COMMIT")
+
     def abort(self):
-        pass
+        """Pretend to roll back."""
+        self._log("ABORT")
