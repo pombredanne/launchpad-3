@@ -498,16 +498,12 @@ to the ExternalBugTracker's initializeRemoteBugDB() method.
     ...     external_bugtracker, bug_watches)
     COMMIT
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'2'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'3'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
     COMMIT
 
@@ -541,14 +537,10 @@ will then be passed on to initializeRemoteBugDB().
     last_checked: 2007-03-17 15:...:...
     getModifiedRemoteBugs() called: [u'1', u'2', u'3', u'4']
     initializeRemoteBugDB() called: [u'1', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
     COMMIT
-    BEGIN
-    BEGIN
 
 The bug watches that are deemed as not being modified are still marked
 as being checked.
@@ -596,16 +588,12 @@ initializeRemoteBugDB() since we do need to update them.
     last_checked: 2007-03-16 15:...:...
     getModifiedRemoteBugs() called: [u'1', u'4']
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'2'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'3'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
     COMMIT
 
@@ -623,16 +611,12 @@ always update all the bug watches.
     ...     TimeUnknownExternalBugTracker(), bug_watches)
     COMMIT
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'2'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'3'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
     COMMIT
 
