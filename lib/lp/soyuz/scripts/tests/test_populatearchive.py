@@ -690,7 +690,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         The copying of packages from private archives to public ones
         thus constitutes a security breach.
         """
-        # We will make cprov's PPA private and then attempt to copy from it.
+        # We will make a private PPA and then attempt to copy from it.
         joe = self.factory.makePerson(name='joe')
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         joes_private_ppa = self.factory.makeArchive(
