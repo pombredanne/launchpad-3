@@ -119,13 +119,21 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
                 build.builder = self.builders[count]
             count += 1
 
+    def createPPAs(self):
+        """Helper to create the PPAs for this test.
+
+        This is here only so that it can be overridden for a subsequent
+        private PPA test, privatising the PPA before any packages
+        are published."""
+        # Create two PPAs and add some builds to each.
+        self.ppa_joe = self.factory.makeArchive(name="joesppa")
+        self.ppa_jim = self.factory.makeArchive(name="jimsppa")
+
     def setUp(self):
         """Publish some builds for the test archive."""
         super(TestFindBuildCandidatePPA, self).setUp()
 
-        # Create two PPAs and add some builds to each.
-        self.ppa_joe = self.factory.makeArchive(name="joesppa")
-        self.ppa_jim = self.factory.makeArchive(name="jimsppa")
+        self.createPPAs()
 
         self.joe_builds = []
         self.joe_builds.extend(
@@ -183,11 +191,19 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
 
+
+class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPA):
+
+    def createPPAs(self):
+        """Overridden to ensure that joe's ppa is privatised before any
+        packages are published."""
+        super(TestFindBuildCandidatePrivatePPA, self).createPPAs()
+        self.ppa_joe.private = True
+        self.ppa_joe.buildd_secret = 'sekrit'
+
     def test_findBuildCandidate_for_private_ppa(self):
         # If a ppa is private it will be able to have parallel builds
         # for the one architecture.
-        self.ppa_joe.private = True
-        self.ppa_joe.buildd_secret = 'sekrit'
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
