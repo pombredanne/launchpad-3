@@ -147,7 +147,7 @@ def _format_revision_name(revision, tip=False):
         return 'tip'
 
 def get_branches(sourcecode_directory, new_branches,
-                 possible_transports=None, tip=False):
+                 possible_transports=None, tip=False, quiet=False):
     """Get the new branches into sourcecode."""
     for project, (branch_url, revision, optional) in new_branches.iteritems():
         destination = os.path.join(sourcecode_directory, project)
@@ -162,8 +162,9 @@ def get_branches(sourcecode_directory, new_branches,
                 raise
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
-        print 'Getting %s from %s at %s' % (
-                project, branch_url, _format_revision_name(revision, tip))
+        if not quiet:
+            print 'Getting %s from %s at %s' % (
+                    project, branch_url, _format_revision_name(revision, tip))
         # If the 'optional' flag is set, then it's a branch that shares
         # history with Launchpad, so we should share repositories. Otherwise,
         # we should avoid sharing repositories to avoid format
@@ -177,7 +178,7 @@ def get_branches(sourcecode_directory, new_branches,
 
 
 def update_branches(sourcecode_directory, update_branches,
-                    possible_transports=None, tip=False):
+                    possible_transports=None, tip=False, quiet=False):
     """Update the existing branches in sourcecode."""
     if possible_transports is None:
         possible_transports = []
@@ -187,8 +188,9 @@ def update_branches(sourcecode_directory, update_branches,
         update_branches.iteritems()):
         # Update project from branch_url.
         destination = os.path.join(sourcecode_directory, project)
-        print 'Updating %s to %s' % (
-                project, _format_revision_name(revision, tip))
+        if not quiet:
+            print 'Updating %s to %s' % (
+                    project, _format_revision_name(revision, tip))
         local_tree = WorkingTree.open(destination)
         try:
             remote_branch = Branch.open(
@@ -203,7 +205,8 @@ def update_branches(sourcecode_directory, update_branches,
             remote_branch.bzrdir.root_transport)
         revision_id = get_revision_id(revision, remote_branch, tip)
         if revision_id == local_tree.last_revision():
-            print '  (No change)'
+            if not quiet:
+                print '  (No change)'
         else:
             result = local_tree.pull(
                 remote_branch, stop_revision=revision_id, overwrite=True,
@@ -212,15 +215,17 @@ def update_branches(sourcecode_directory, update_branches,
                 change = 'Updated'
             else:
                 change = 'Reverted'
-            print '  (%s from %s to %s)' % (
-                change, result.old_revno, result.new_revno)
+            if not quiet:
+                print '  (%s from %s to %s)' % (
+                    change, result.old_revno, result.new_revno)
 
 
-def remove_branches(sourcecode_directory, removed_branches):
+def remove_branches(sourcecode_directory, removed_branches, quiet=False):
     """Remove sourcecode that's no longer there."""
     for project in removed_branches:
         destination = os.path.join(sourcecode_directory, project)
-        print 'Removing %s' % project
+        if not quiet:
+            print 'Removing %s' % project
         try:
             shutil.rmtree(destination)
         except OSError:
@@ -228,7 +233,7 @@ def remove_branches(sourcecode_directory, removed_branches):
 
 
 def update_sourcecode(sourcecode_directory, config_filename, public_only,
-                      tip, dry_run):
+                      tip, dry_run, quiet=False):
     """Update the sourcecode."""
     config_file = open(config_filename)
     config = interpret_config(parse_config_file(config_file), public_only)
@@ -241,9 +246,11 @@ def update_sourcecode(sourcecode_directory, config_filename, public_only,
         print 'Branches to update:', updated.keys()
         print 'Branches to remove:', list(removed)
     else:
-        get_branches(sourcecode_directory, new, possible_transports, tip)
-        update_branches(sourcecode_directory, updated, possible_transports, tip)
-        remove_branches(sourcecode_directory, removed)
+        get_branches(
+            sourcecode_directory, new, possible_transports, tip, quiet)
+        update_branches(
+            sourcecode_directory, updated, possible_transports, tip, quiet)
+        remove_branches(sourcecode_directory, removed, quiet)
 
 
 # XXX: JonathanLange 2009-09-11: By default, the script will operate on the
@@ -268,6 +275,9 @@ def main(args):
     parser.add_option(
         '--dry-run', action='store_true',
         help='Do nothing, but report what would have been done.')
+    parser.add_option(
+        '--quiet', action='store_true',
+        help="Don't print informational messages.")
     options, args = parser.parse_args(args)
     root = get_launchpad_root()
     if len(args) > 1:
@@ -280,8 +290,9 @@ def main(args):
         config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
     if len(args) > 3:
         parser.error("Too many arguments.")
-    print 'Sourcecode: %s' % (sourcecode_directory,)
-    print 'Config: %s' % (config_filename,)
+    if not options.quiet:
+        print 'Sourcecode: %s' % (sourcecode_directory,)
+        print 'Config: %s' % (config_filename,)
     enable_default_logging()
     # Tell bzr to use the terminal (if any) to show progress bars
     ui.ui_factory = ui.make_ui_for_terminal(
@@ -289,5 +300,5 @@ def main(args):
     load_plugins()
     update_sourcecode(
         sourcecode_directory, config_filename,
-        options.public_only, options.tip, options.dry_run)
+        options.public_only, options.tip, options.dry_run, options.quiet)
     return 0
