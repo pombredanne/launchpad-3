@@ -115,10 +115,14 @@ class EC2TestRunner:
                  pqm_submit_location=None,
                  open_browser=False, pqm_email=None,
                  include_download_cache_changes=None, instance=None,
-                 launchpad_login=None):
+                 launchpad_login=None,
+                 timeout=None):
         """Create a new EC2TestRunner.
 
-        This sets the following attributes:
+        :param timeout: Number of minutes before we force a shutdown. This is
+            useful because sometimes the normal instance termination might
+            fail.
+
           - original_branch
           - test_options
           - headless
@@ -129,6 +133,7 @@ class EC2TestRunner:
           - email (after validating email capabilities)
           - image (after connecting to ec2)
           - file
+          - timeout
         """
         self.original_branch = branch
         self.test_options = test_options
@@ -137,6 +142,7 @@ class EC2TestRunner:
         self.open_browser = open_browser
         self.file = file
         self._launchpad_login = launchpad_login
+        self.timeout = timeout
 
         trunk_specified = False
         trunk_branch = TRUNK_BRANCH
@@ -314,6 +320,10 @@ class EC2TestRunner:
 
     def configure_system(self):
         user_connection = self._instance.connect()
+        if self.timeout is not None:
+            user_connection.perform(
+                "echo sudo shutdown -h now | at today + %d minutes"
+                % self.timeout)
         as_user = user_connection.perform
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:

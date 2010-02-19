@@ -184,7 +184,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
+from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
@@ -196,7 +196,7 @@ from lp.soyuz.interfaces.sourcepackagerelease import (
 
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.objectreassignment import (
+from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
@@ -2708,11 +2708,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         must not be indexed by search engines and their narrative linkified.
         """
         user = self.context
-        if user.isTeam():
-            # Teams are always valid and do not have probationary rules.
-            return False
-        else:
-            return user.karma == 0 or not user.is_valid_person
+        return user.is_probationary or not user.is_valid_person_or_team
 
     @cachedproperty
     def homepage_content(self):

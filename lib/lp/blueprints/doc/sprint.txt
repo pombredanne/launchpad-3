@@ -14,9 +14,9 @@ The major pillars, product, distribution and project, have some properties
 which give us the sprints relevant to them.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProjectSet, IDistributionSet)
+    ...     IProductSet, IProjectGroupSet, IDistributionSet)
     >>> productset = getUtility(IProductSet)
-    >>> projectset = getUtility(IProjectSet)
+    >>> projectset = getUtility(IProjectGroupSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> firefox = productset.getByName('firefox')
     >>> ubuntu = distroset.getByName('ubuntu')

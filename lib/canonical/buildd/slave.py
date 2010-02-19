@@ -8,9 +8,9 @@
 
 __metaclass__ = type
 
+import hashlib
 import os
 import re
-import sha
 import urllib2
 import xmlrpclib
 
@@ -96,6 +96,11 @@ class BuildManager(object):
     """Build Daemon slave build manager abstract parent"""
 
     def __init__(self, slave, buildid):
+        """Create a BuildManager.
+
+        :param slave: A `BuildDSlave`.
+        :param buildid: Identifying string for this build.
+        """
         object.__init__(self)
         self._buildid = buildid
         self._slave = slave
@@ -104,6 +109,7 @@ class BuildManager(object):
         self._mountpath = slave._config.get("allmanagers", "mountpath")
         self._umountpath = slave._config.get("allmanagers", "umountpath")
         self.is_archive_private = False
+        self.home = os.environ['HOME']
 
     def runSubProcess(self, command, args):
         """Run a sub process capturing the results in the log."""
@@ -112,7 +118,7 @@ class BuildManager(object):
         childfds = {0: devnull.fileno(), 1: "r", 2: "r"}
         reactor.spawnProcess(
             self._subprocess, command, args, env=os.environ,
-            path=os.environ["HOME"], childFDs=childfds)
+            path=self.home, childFDs=childfds)
 
     def doUnpack(self):
         """Unpack the build chroot."""
@@ -146,10 +152,10 @@ class BuildManager(object):
         value keyed under the 'archive_private' string. If that value
         evaluates to True the build at hand is for a private archive.
         """
-        os.mkdir("%s/build-%s" % (os.environ["HOME"], self._buildid))
+        os.mkdir("%s/build-%s" % (self.home, self._buildid))
         for f in files:
             os.symlink( self._slave.cachePath(files[f]),
-                        "%s/build-%s/%s" % (os.environ["HOME"],
+                        "%s/build-%s/%s" % (self.home,
                                             self._buildid, f))
         self._chroottarfile = self._slave.cachePath(chroot)
 
@@ -301,7 +307,7 @@ class BuildDSlave(object):
                 else:
                     of = open(self.cachePath(sha1sum), "w")
                     # Upped for great justice to 256k
-                    check_sum = sha.sha()
+                    check_sum = hashlib.sha1()
                     for chunk in iter(lambda: f.read(256*1024), ''):
                         of.write(chunk)
                         check_sum.update(chunk)
@@ -316,7 +322,7 @@ class BuildDSlave(object):
 
     def storeFile(self, content):
         """Take the provided content and store it in the file cache."""
-        sha1sum = sha.sha(content).hexdigest()
+        sha1sum = hashlib.sha1(content).hexdigest()
         present, info = self.ensurePresent(sha1sum)
         if present:
             return sha1sum

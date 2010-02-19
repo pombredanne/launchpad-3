@@ -36,15 +36,15 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
-    )
-from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -67,7 +67,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.hwdb import (
+from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat, IHWDeviceDriverLinkSet, IHWSubmissionDeviceSet,
     IHWSubmissionSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -119,7 +119,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
 from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, SourcePackageUrgency)
 from lp.registry.interfaces.sourcepackagename import (
@@ -132,6 +132,9 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.testing import run_with_login, time_counter
+from lp.translations.interfaces.translationtemplatesbuildjob import (
+    ITranslationTemplatesBuildJobSource)
+
 
 SPACE = ' '
 
@@ -672,7 +675,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             description = self.getUniqueString('description')
         if title is None:
             title = self.getUniqueString('title')
-        return getUtility(IProjectSet).new(
+        return getUtility(IProjectGroupSet).new(
             name=name,
             displayname=displayname,
             title=title,
@@ -1680,6 +1683,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             virtualized=virtualized)
         store.add(bq)
         return bq
+
+    def makeTranslationTemplatesBuildJob(self, branch=None):
+        """Make a new `TranslationTemplatesBuildJob`.
+
+        :param branch: The branch that the job should be for.  If none
+            is given, one will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch()
+
+        jobset = getUtility(ITranslationTemplatesBuildJobSource)
+        return jobset.create(branch)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
