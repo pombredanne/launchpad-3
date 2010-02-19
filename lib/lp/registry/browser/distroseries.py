@@ -178,12 +178,12 @@ class DistroSeriesOverviewMenu(
 
     def packaging(self):
         text = 'All upstream links'
-        summary = 'A listing of source pakages and their upstream projects'
+        summary = 'A listing of source packages and their upstream projects'
         return Link('+packaging', text, summary=summary, icon='info')
 
     def needs_packaging(self):
         text = 'Needs upstream links'
-        summary = 'A listing of source pakages without upstream projects'
+        summary = 'A listing of source packages without upstream projects'
         return Link('+needs-packaging', text, summary=summary, icon='info')
 
     # A search link isn't needed because the distro series overview

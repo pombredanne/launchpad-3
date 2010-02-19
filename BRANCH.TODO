@@ -9,4 +9,4 @@
 
 * Can distroseries.packagings be a cachedproperty in the model?
 
-* s/pakages/packages/
+* s/packages/packages/
