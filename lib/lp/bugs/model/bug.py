@@ -474,13 +474,7 @@ class Bug(SQLBase):
     @property
     def has_patches(self):
         """See `IBug`."""
-        store = IStore(BugAttachment)
-        results = store.find(
-            BugAttachment,
-            BugAttachment.bug == self,
-            BugAttachment.type == BugAttachmentType.PATCH)
-
-        return not results.is_empty()
+        return self.latest_patch_uploaded is not None
 
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
@@ -910,10 +904,8 @@ class Bug(SQLBase):
             filecontent = data.read()
 
         if is_patch:
-            attach_type = BugAttachmentType.PATCH
             content_type = 'text/plain'
         else:
-            attach_type = BugAttachmentType.UNSPECIFIED
             if content_type is None:
                 content_type, encoding = guess_content_type(
                     name=filename, body=filecontent)
@@ -922,10 +914,20 @@ class Bug(SQLBase):
             name=filename, size=len(filecontent),
             file=StringIO(filecontent), contentType=content_type)
 
+        return self.linkAttachment(
+            owner, filealias, comment, is_patch, description)
+
+    def linkAttachment(self, owner, file_alias, comment, is_patch=False,
+                       description=None):
+        if is_patch:
+            attach_type = BugAttachmentType.PATCH
+        else:
+            attach_type = BugAttachmentType.UNSPECIFIED
+
         if description:
             title = description
         else:
-            title = filename
+            title = file_alias.filename
 
         if IMessage.providedBy(comment):
             message = comment
@@ -934,7 +936,7 @@ class Bug(SQLBase):
                 owner=owner, subject=description, content=comment)
 
         return getUtility(IBugAttachmentSet).create(
-            bug=self, filealias=filealias, attach_type=attach_type,
+            bug=self, filealias=file_alias, attach_type=attach_type,
             title=title, message=message, send_notifications=True)
 
     def hasBranch(self, branch):

@@ -14,7 +14,8 @@ import transaction
 from canonical.database.sqlbase import flush_database_caches
 from lp.registry.model.karma import KarmaCache
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.interfaces import IPersonSet, IProductSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from canonical.testing import LaunchpadFunctionalLayer
 
 

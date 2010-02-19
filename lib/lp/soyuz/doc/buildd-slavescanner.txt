@@ -856,11 +856,10 @@ permissive database user.
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = build.sourcepackagerelease
-    >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication.secure_record
+    >>> pub = removeSecurityProxy(build).current_source_publication
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
+    >>> pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
@@ -884,7 +883,7 @@ to demonstrate this, and also make the archive private:
     >>> build = getUtility(IBuildSet).getByQueueEntry(new_candidate)
     >>> source = build.sourcepackagerelease
     >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication.secure_record
+    ...     build).current_source_publication
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.PENDING
@@ -919,16 +918,12 @@ If we publish the source, the build candidate will be found again:
 
 If the source is subsequently deleted or superseded before the build
 starts it is also returned as a candidate so that the build can be
-superseded.  The current candidate's source is published twice, so
-we can supersede one and delete the other. This will have the effect of
+superseded.  We can supersede this publication which will have the effect of
 making the build be superseded and no candidate is returned.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication.secure_record
-    >>> secure_pub.status = PackagePublishingStatus.DELETED
-    >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication.secure_record
+    ...     build).current_source_publication
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)

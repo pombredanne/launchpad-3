@@ -130,10 +130,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 from lp.testing import run_with_login, time_counter, login, logout
 
@@ -142,6 +139,9 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translator import ITranslatorSet
+from lp.translations.interfaces.translationtemplatesbuildjob import (
+    ITranslationTemplatesBuildJobSource)
+
 
 SPACE = ' '
 
@@ -1714,6 +1714,18 @@ class LaunchpadObjectFactory(ObjectFactory):
         store.add(bq)
         return bq
 
+    def makeTranslationTemplatesBuildJob(self, branch=None):
+        """Make a new `TranslationTemplatesBuildJob`.
+
+        :param branch: The branch that the job should be for.  If none
+            is given, one will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch()
+
+        jobset = getUtility(ITranslationTemplatesBuildJobSource)
+        return jobset.create(branch)
+
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None):
@@ -2021,7 +2033,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             dsc_binaries=dsc_binaries,
             archive=archive, dateuploaded=date_uploaded)
 
-        sspph = SecureSourcePackagePublishingHistory(
+        sspph = SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
@@ -2031,7 +2043,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            embargo=False,
             archive=archive)
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW

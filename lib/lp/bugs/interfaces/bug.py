@@ -513,6 +513,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         :is_patch: A boolean.
         """
 
+    def linkAttachment(owner, file_alias, comment, is_patch=False,
+                       description=None):
+        """Link an `ILibraryFileAlias` to this bug.
+
+        :owner: An IPerson.
+        :file_alias: The `ILibraryFileAlias` to link to this bug.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
     def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
