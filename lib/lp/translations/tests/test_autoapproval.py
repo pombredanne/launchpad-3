@@ -34,7 +34,7 @@ from lp.translations.model.translationimportqueue import (
     TranslationImportQueue, TranslationImportQueueEntry)
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus, TranslationImportQueueEntryAge)
+    RosettaImportStatus, translation_import_queue_entry_age)
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
@@ -42,20 +42,26 @@ from canonical.testing import LaunchpadZopelessLayer
 
 
 class GardenerDbUserMixin(object):
-    """Switch to the translations import queue gardener database role."""
+    """Switch to the translations import queue gardener database role.
 
-    def become_the_gardener(self):
-        """Switch the user once."""
+    Admittedly, this might be a little over-engineered but it looks good. ;)
+    """
+
+    def _become(self, dbuser):
+        """Switch to a different db user."""
         transaction.commit()
-        self.layer.switchDbUser('translations_import_queue_gardener')
+        self.layer.switchDbUser(dbuser)
+
+    def becomeTheGardener(self):
+        """One-way method to avoid unnecessary switch back."""
+        self._become('translations_import_queue_gardener')
 
     @contextmanager
-    def being_the_gardener(self):
+    def beingTheGardener(self):
         """Context manager to restore the launchpad user."""
-        self.become_the_gardener()
+        self._become('translations_import_queue_gardener')
         yield
-        transaction.commit()
-        self.layer.switchDbUser('launchpad')
+        self._become('launchpad')
 
 
 class TestCustomLanguageCode(unittest.TestCase):
@@ -191,7 +197,7 @@ class TestGuessPOFileCustomLanguageCode(
         # Of course matching will work without custom language codes.
         tr_file = self._makePOFile('tr')
         entry = self._makeQueueEntry('tr')
-        self.become_the_gardener()
+        self.becomeTheGardener()
         self.assertEqual(entry.getGuessedPOFile(), tr_file)
 
     def test_CustomLanguageCodeEnablesMatch(self):
@@ -203,7 +209,7 @@ class TestGuessPOFileCustomLanguageCode(
 
         self._setCustomLanguageCode('fy_NL', 'fy')
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         self.assertEqual(entry.getGuessedPOFile(), fy_file)
 
     def test_CustomLanguageCodeParsesBogusLanguage(self):
@@ -214,7 +220,7 @@ class TestGuessPOFileCustomLanguageCode(
 
         self._setCustomLanguageCode('flemish', 'nl')
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         nl_file = entry.getGuessedPOFile()
         self.assertEqual(nl_file.language.code, 'nl')
 
@@ -227,7 +233,7 @@ class TestGuessPOFileCustomLanguageCode(
 
         self._setCustomLanguageCode('sv', None)
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         self.assertEqual(entry.getGuessedPOFile(), None)
         self.assertEqual(entry.status, RosettaImportStatus.DELETED)
 
@@ -240,7 +246,7 @@ class TestGuessPOFileCustomLanguageCode(
 
         self._setCustomLanguageCode('elx', 'el')
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         el_file = entry.getGuessedPOFile()
         self.failIfEqual(el_file, elx_file)
         self.assertEqual(el_file.language.code, 'el')
@@ -255,7 +261,7 @@ class TestGuessPOFileCustomLanguageCode(
 
         self._setCustomLanguageCode('nb', 'nn')
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         self.assertEqual(entry.getGuessedPOFile(), nn_file)
 
     def test_CustomLanguageCodeReplacesMatch(self):
@@ -268,7 +274,7 @@ class TestGuessPOFileCustomLanguageCode(
         self._setCustomLanguageCode('pt', None)
         self._setCustomLanguageCode('pt_PT', 'pt')
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         self.assertEqual(pt_entry.getGuessedPOFile(), None)
         self.assertEqual(pt_PT_entry.getGuessedPOFile(), pt_file)
 
@@ -282,7 +288,7 @@ class TestGuessPOFileCustomLanguageCode(
         self._setCustomLanguageCode('zh_CN', 'zh_TW')
         self._setCustomLanguageCode('zh_TW', 'zh_CN')
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         self.assertEqual(zh_CN_entry.getGuessedPOFile(), zh_TW_file)
         self.assertEqual(zh_TW_entry.getGuessedPOFile(), zh_CN_file)
 
@@ -327,7 +333,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         # When multiple templates match for a product series,
         # getPOTemplateByPathAndOrigin returns none.
         self._setUpProduct()
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', productseries=self.productseries)
         self.assertEqual(None, guessed_template)
@@ -336,7 +342,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         # When multiple templates match on sourcepackagename,
         # getPOTemplateByPathAndOrigin returns none.
         self._setUpDistro()
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', sourcepackagename=self.packagename)
         self.assertEqual(None, guessed_template)
@@ -345,7 +351,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         # When multiple templates match on from_sourcepackagename,
         # getPOTemplateByPathAndOrigin returns none.
         self._setUpDistro()
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', sourcepackagename=self.from_packagename)
         self.assertEqual(None, guessed_template)
@@ -379,7 +385,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self.distrotemplate1.sourcepackagename = match_package
         self.distrotemplate2.from_sourcepackagename = match_package
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', sourcepackagename=match_package)
         self.assertEqual(self.distrotemplate2, guessed_template)
@@ -390,7 +396,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self._setUpProduct()
         self.producttemplate1.iscurrent = False
         self.producttemplate2.iscurrent = True
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', productseries=self.productseries)
         self.assertEqual(guessed_template, self.producttemplate2)
@@ -400,7 +406,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self._setUpProduct()
         self.producttemplate1.iscurrent = False
         self.producttemplate2.iscurrent = False
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', productseries=self.productseries)
         self.assertEqual(guessed_template, None)
@@ -414,7 +420,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = None
         self.distrotemplate2.from_sourcepackagename = None
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.packagename)
@@ -427,7 +433,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self.distrotemplate2.iscurrent = False
         self.distrotemplate1.from_sourcepackagename = None
         self.distrotemplate2.from_sourcepackagename = None
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.packagename)
@@ -442,7 +448,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = self.from_packagename
         self.distrotemplate2.from_sourcepackagename = self.from_packagename
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.from_packagename)
@@ -456,7 +462,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         self.distrotemplate2.iscurrent = False
         self.distrotemplate1.from_sourcepackagename = self.from_packagename
         self.distrotemplate2.from_sourcepackagename = self.from_packagename
-        self.become_the_gardener()
+        self.becomeTheGardener()
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.from_packagename)
@@ -467,7 +473,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         # translation domain.
         self._setUpDistro()
         subset = POTemplateSubset(distroseries=self.distroseries)
-        self.become_the_gardener()
+        self.becomeTheGardener()
         potemplate = subset.getPOTemplateByTranslationDomain('test1')
         self.assertEqual(potemplate, self.distrotemplate1)
 
@@ -475,7 +481,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         # Test getPOTemplateByTranslationDomain for the zero-match case.
         self._setUpDistro()
         subset = POTemplateSubset(distroseries=self.distroseries)
-        self.become_the_gardener()
+        self.becomeTheGardener()
         potemplate = subset.getPOTemplateByTranslationDomain('notesthere')
         self.assertEqual(potemplate, None)
 
@@ -490,7 +496,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
         clashing_template = other_subset.new(
             'test3', 'test1', 'test3.pot', self.distro.owner)
         distro_subset = POTemplateSubset(distroseries=self.distroseries)
-        self.become_the_gardener()
+        self.becomeTheGardener()
         potemplate = distro_subset.getPOTemplateByTranslationDomain('test1')
         self.assertEqual(potemplate, None)
 
@@ -520,7 +526,7 @@ class TestTemplateGuess(unittest.TestCase, GardenerDbUserMixin):
             'program/nl.po', 'other contents', False, template.owner,
             productseries=template.productseries, potemplate=template)
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         entry1.getGuessedPOFile()
 
         self.assertEqual(entry1.potemplate, None)
@@ -642,7 +648,7 @@ class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
             poname, self.pocontents, False, self.distroseries.owner,
             sourcepackagename=self.kde_i18n_ca,
             distroseries=self.distroseries)
-        self.become_the_gardener()
+        self.becomeTheGardener()
         pofile = entry.getGuessedPOFile()
         self.assertEqual(pofile, self.pofile_ca)
 
@@ -654,7 +660,7 @@ class TestKdePOFileGuess(unittest.TestCase, GardenerDbUserMixin):
             poname, self.pocontents, False, self.distroseries.owner,
             sourcepackagename=self.kde_l10n_nl,
             distroseries=self.distroseries)
-        self.become_the_gardener()
+        self.becomeTheGardener()
         pofile = entry.getGuessedPOFile()
         self.assertEqual(pofile, self.pofile_nl)
 
@@ -682,7 +688,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertNotEqual(None, pofile)
 
@@ -700,7 +706,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertEqual(None, pofile)
 
@@ -720,7 +726,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertNotEqual(None, pofile)
 
@@ -778,10 +784,14 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
         entry_id = entry.id
 
         self._setStatus(entry, RosettaImportStatus.APPROVED, one_year_ago)
+        # No write or delete action expected, so no reason to switch the
+        # database user. If it writes or deletes, the test has failed anyway.
         self.queue._cleanUpObsoleteEntries(self.store)
         self.assertTrue(self._exists(entry_id))
 
         self._setStatus(entry, RosettaImportStatus.BLOCKED, one_year_ago)
+        # No write or delete action expected, so no reason to switch the
+        # database user. If it writes or deletes, the test has failed anyway.
         self.queue._cleanUpObsoleteEntries(self.store)
         self.assertTrue(self._exists(entry_id))
 
@@ -799,7 +809,7 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
         for status in affected_statuses:
             entry = self._makeProductEntry()
             entry.potemplate = self.factory.makePOTemplate()
-            maximum_age = TranslationImportQueueEntryAge[status]
+            maximum_age = translation_import_queue_entry_age[status]
             # Avoid the exact date here by a day because that could introduce
             # spurious test failures.
             almost_oldest_possible_date = (
@@ -807,14 +817,17 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
             self._setStatus(entry, status, almost_oldest_possible_date)
             entry_id = entry.id
 
+            # No write or delete action expected, so no reason to switch the
+            # database user. If it writes or deletes, the test has failed
+            # anyway.
             self.queue._cleanUpObsoleteEntries(self.store)
             self.assertTrue(self._exists(entry_id))
 
-            # Now cross the border, again cushoning it by a day.
+            # Now cross the border, again cushioning it by a day.
             entry.date_status_changed -= timedelta(days=2)
             entry.syncUpdate()
 
-            with self.being_the_gardener():
+            with self.beingTheGardener():
                 self.queue._cleanUpObsoleteEntries(self.store)
                 self.assertFalse(
                     self._exists(entry_id),
@@ -833,7 +846,7 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
         entry.productseries.product.active = False
         entry.productseries.product.syncUpdate()
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         self.queue._cleanUpInactiveProductEntries(self.store)
         self.assertFalse(self._exists(entry_id))
 
@@ -849,7 +862,7 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
         entry.distroseries.status = SeriesStatus.OBSOLETE
         entry.distroseries.syncUpdate()
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
         self.queue._cleanUpObsoleteDistroEntries(self.store)
         self.assertFalse(self._exists(entry_id))
 
@@ -885,7 +898,7 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
         entry = self._makeQueueEntry(trunk)
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
 
         pofile = entry.getGuessedPOFile()
 
@@ -903,7 +916,7 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
 
         entry = self._makeQueueEntry(trunk)
 
-        self.become_the_gardener()
+        self.becomeTheGardener()
 
         pofile = entry.getGuessedPOFile()
 

@@ -58,7 +58,7 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationImportQueueConflictError,
-    TranslationImportQueueEntryAge,
+    translation_import_queue_entry_age,
     UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
@@ -1244,7 +1244,7 @@ class TranslationImportQueue:
         """
         now = datetime.datetime.now(pytz.UTC)
         deletion_clauses = []
-        for status, max_age in TranslationImportQueueEntryAge.iteritems():
+        for status, max_age in translation_import_queue_entry_age.iteritems():
             cutoff = now - max_age
             deletion_clauses.append(And(
                 TranslationImportQueueEntry.status == status,

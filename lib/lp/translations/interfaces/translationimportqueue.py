@@ -41,7 +41,7 @@ __all__ = [
     'RosettaImportStatus',
     'SpecialTranslationImportTargetFilter',
     'TranslationFileType',
-    'TranslationImportQueueEntryAge',
+    'translation_import_queue_entry_age',
     'UserCannotSetTranslationImportStatus',
     ]
 
@@ -115,18 +115,18 @@ class RosettaImportStatus(DBEnumeratedType):
 
 
 # Some time spans in days.
-_month = 30
-_half_year = 366 / 2
+DAYS_IN_MONTH = 30
+DAYS_IN_HALF_YEAR = 366 / 2
 
 
 # Period after which entries with certain statuses are culled from the
 # queue.
-TranslationImportQueueEntryAge = {
+translation_import_queue_entry_age = {
     RosettaImportStatus.DELETED: timedelta(days=3),
-    RosettaImportStatus.FAILED: timedelta(days=_month),
+    RosettaImportStatus.FAILED: timedelta(days=DAYS_IN_MONTH),
     RosettaImportStatus.IMPORTED: timedelta(days=3),
-    RosettaImportStatus.NEEDS_INFORMATION: timedelta(days=_half_year),
-    RosettaImportStatus.NEEDS_REVIEW: timedelta(days=_half_year),
+    RosettaImportStatus.NEEDS_INFORMATION: timedelta(days=DAYS_IN_HALF_YEAR),
+    RosettaImportStatus.NEEDS_REVIEW: timedelta(days=DAYS_IN_HALF_YEAR),
 }
 
 
