@@ -136,8 +136,10 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         (mainly so we can test the loom support).
         """
         return self.run_bzr_subprocess(
-            args, env_changes={'BZR_SSH': 'paramiko',
-                'BZR_PLUGIN_PATH': get_BZR_PLUGIN_PATH_for_subprocess()},
+            args, env_changes={
+                'BZR_SSH': 'paramiko',
+                'BZR_PLUGIN_PATH': get_BZR_PLUGIN_PATH_for_subprocess()
+            },
             allow_plugins=True, retcode=retcode)
 
     def _run_bzr_error(self, args):

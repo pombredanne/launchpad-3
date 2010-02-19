@@ -10,7 +10,6 @@ all plugins in the bzrplugins/ directory underneath the rocketfuel checkout.
 __metaclass__ = type
 __all__ = [
     'get_bzr_path',
-    'get_bzr_plugins_path',
     'get_BZR_PLUGIN_PATH_for_subprocess',
     'iter_list_chunks',
     'load_optional_plugin',
@@ -48,22 +47,28 @@ def get_bzr_path():
             'bzr')
 
 
-def get_bzr_plugins_path():
+def _get_bzr_plugins_path():
     """Find the path to the Bazaar plugins for this rocketfuel instance"""
     return os.path.join(config.root, 'bzrplugins')
 
 
 def get_BZR_PLUGIN_PATH_for_subprocess():
     """Calculate the appropriate value for the BZR_PLUGIN_PATH environment
-    variable for launching a Launchpad Bazaar subprocess."""
-    return ":".join((get_bzr_plugins_path(), "-site"))
+    variable for launching a Launchpad Bazaar subprocess.
+    
+    The '-site' token tells bzrlib not to include the 'site specific plugins
+    directory' (which is usually something like
+    /usr/lib/pythonX.Y/dist-packages/bzrlib/plugins/) in the plugin search
+    path, which would be inappropriate for Launchpad, which may be using a bzr
+    egg of an incompatible version."""
+    return ":".join((_get_bzr_plugins_path(), "-site"))
 
 
 os.environ['BZR_PLUGIN_PATH'] = get_BZR_PLUGIN_PATH_for_subprocess()
 
 # We want to have full access to Launchpad's Bazaar plugins throughout the
 # codehosting package.
-load_plugins([get_bzr_plugins_path()])
+load_plugins([_get_bzr_plugins_path()])
 
 
 def load_optional_plugin(plugin_name):
