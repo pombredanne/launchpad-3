@@ -542,8 +542,8 @@ class PullingImportWorker(ImportWorker):
             pull_result = inter_branch.pull(
                 overwrite=True, **self.getExtraPullArgs())
             self.pushBazaarWorkingTree(bazaar_tree)
-            if bazaar_tree.branch.last_revision() \
-                   == foreign_branch.last_revision():
+            last_imported_revison = bazaar_tree.branch.last_revision()
+            if last_imported_revison == foreign_branch.last_revision():
                 if pull_result.old_revid != pull_result.new_revid:
                     return CodeImportWorkerExitCode.SUCCESS
                 else:
