@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=E0211,E0213
 
+import datetime
+
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, Object, Text, TextLine)
@@ -39,6 +41,7 @@ __all__ = [
     'RosettaImportStatus',
     'SpecialTranslationImportTargetFilter',
     'TranslationFileType',
+    'TranslationImportQueueEntryAge',
     'UserCannotSetTranslationImportStatus',
     ]
 
@@ -109,6 +112,21 @@ class RosettaImportStatus(DBEnumeratedType):
 
         The reviewer needs more information before this entry can be approved.
         """)
+
+
+# Some time spans in days.
+_month = 30
+_half_year = 366 / 2
+
+
+# Period after which entries with certain statuses are culled from the
+# queue.
+TranslationImportQueueEntryAge = {
+    RosettaImportStatus.DELETED: datetime.timedelta(days=3),
+    RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
+    RosettaImportStatus.FAILED: datetime.timedelta(days=_month),
+    RosettaImportStatus.NEEDS_REVIEW: datetime.timedelta(days=_half_year),
+}
 
 
 class SpecialTranslationImportTargetFilter(DBEnumeratedType):
