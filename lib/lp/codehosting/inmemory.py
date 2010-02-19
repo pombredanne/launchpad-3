@@ -565,7 +565,7 @@ class FakeBranchFilesystem:
         owner = self._person_set.getByName(data['person'])
         if owner is None:
             return faults.NotFound(
-                "User/team %r does not exist." % (data['person'],))
+                "User/team '%s' does not exist." % (data['person'],))
         registrant = self._person_set.get(requester_id)
         # The real code consults the branch creation policy of the product. We
         # don't need to do so here, since the tests above this layer never
@@ -583,7 +583,7 @@ class FakeBranchFilesystem:
             product = self._product_set.getByName(data['product'])
             if product is None:
                 return faults.NotFound(
-                    "Project %r does not exist." % (data['product'],))
+                    "Project '%s' does not exist." % (data['product'],))
         elif data['distribution'] is not None:
             distro = self._distribution_set.getByName(data['distribution'])
             if distro is None:
