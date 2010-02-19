@@ -503,7 +503,7 @@ netapplet are translatable in Hoary.
 Packages that need linking and packagings that need upstream information
 -----------------------------------------------------------------------
 
-The distroseries getPriorizedUnlinkedSourcePackages() method that returns
+The distroseries getPriorizedUnlinkedSourcePackages() method returns
 a prioritized list of `ISourcePackage` objects that need a packaging link to
 an `IProductSeries` to provide the the upstream information to share bugs,
 translations, and code. Each item in the list is a dict with the 'package',
@@ -528,6 +528,37 @@ share bugs, translations, and code.
     netapplet
     evolution
 
+
+Most recently linked packagings
+-------------------------------
+
+The distroseries getMostRecentlyLinkedPackagings() method returns a
+list of up to five packages that are the most recently linked to an
+upstream.
+
+    >>> distribution = factory.makeDistribution()
+    >>> distroseries = factory.makeDistroRelease(distribution=distribution)
+    >>> pkgs = distroseries.getMostRecentlyLinkedPackagings()
+    >>> print len(pkgs)
+    0
+
+    >>> for name in ['aaron', 'bjorn', 'chex', 'deryck', 'edwin', 'francis']:
+    ...     product = factory.makeProduct(name=name)
+    ...     productseries = factory.makeProductSeries(product=product)
+    ...     spn = factory.makeSourcePackageName(name=name)
+    ...     package = factory.makeSourcePackage(sourcepackagename=spn,
+    ...                                         distroseries=distroseries)
+    ...     package.setPackaging(productseries, product.owner)
+
+
+    >>> pkgs = distroseries.getMostRecentlyLinkedPackagings()
+    >>> for packaging in pkgs:
+    ...     print packaging.sourcepackagename.name
+    francis
+    edwin
+    deryck
+    chex
+    bjorn
 
 DistroSeries can build meta objects for packages
 ------------------------------------------------

@@ -331,6 +331,31 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
         See `BuildRecordsView` for further details."""
         return True
 
+    @cachedproperty
+    def num_linked_packages(self):
+        """The number of linked packagings for this distroseries."""
+        return len(self.context.packagings)
+
+    @cachedproperty
+    def _unlinked_packages(self):
+        """Get a prioritized list of unlinked source packages."""
+        return self.context.getPriorizedUnlinkedSourcePackages()
+
+    @property
+    def num_unlinked_packages(self):
+        """The number of unlinked packagings for this distroseries."""
+        return len(self._unlinked_packages)
+
+    @cachedproperty
+    def recently_linked(self):
+        """Return the packages that were most recently linked upstream."""
+        return self.context.getMostRecentlyLinkedPackagings()
+
+    @property
+    def needs_linking(self):
+        """Return a list of 10 packages most in need of upstream linking."""
+        return self._unlinked_packages[:10]
+
     milestone_can_release = False
 
 
