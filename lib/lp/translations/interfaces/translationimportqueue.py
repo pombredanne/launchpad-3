@@ -3,7 +3,7 @@
 
 # pylint: disable-msg=E0211,E0213
 
-import datetime
+from datetime import timedelta
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
@@ -122,10 +122,11 @@ _half_year = 366 / 2
 # Period after which entries with certain statuses are culled from the
 # queue.
 TranslationImportQueueEntryAge = {
-    RosettaImportStatus.DELETED: datetime.timedelta(days=3),
-    RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
-    RosettaImportStatus.FAILED: datetime.timedelta(days=_month),
-    RosettaImportStatus.NEEDS_REVIEW: datetime.timedelta(days=_half_year),
+    RosettaImportStatus.DELETED: timedelta(days=3),
+    RosettaImportStatus.FAILED: timedelta(days=_month),
+    RosettaImportStatus.IMPORTED: timedelta(days=3),
+    RosettaImportStatus.NEEDS_INFORMATION: timedelta(days=_half_year),
+    RosettaImportStatus.NEEDS_REVIEW: timedelta(days=_half_year),
 }
 
 
