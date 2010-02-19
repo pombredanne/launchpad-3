@@ -7,16 +7,13 @@ __metaclass__ = type
 __all__ = ['FakeTransaction']
 
 
-from lp.testing.fakemethod import FakeMethod
-
-
 class FakeTransaction:
     """Fake transaction manager.
 
     Use this instead of `transaction` (or the old Zopeless transaction
     manager) in tests if you don't really want to commit anything.
 
-    Set `log_calls` to True to enable printing of the calls.
+    Set `log_calls` to True to enable printing of commits and aborts.
     """
     log_calls = False
 
