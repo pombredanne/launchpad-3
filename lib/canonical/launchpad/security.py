@@ -63,7 +63,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
-    IMilestone, IProjectMilestone)
+    IMilestone, IProjectGroupMilestone)
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
@@ -85,7 +85,8 @@ from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject, IProjectSet
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup, IProjectGroupSet)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -226,11 +227,11 @@ class ReviewProductSet(ReviewByRegistryExpertsOrAdmins):
 
 
 class ReviewProject(ReviewByRegistryExpertsOrAdmins):
-    usedfor = IProject
+    usedfor = IProjectGroup
 
 
 class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
-    usedfor = IProjectSet
+    usedfor = IProjectGroupSet
 
 
 class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
@@ -498,13 +499,13 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
 
 class AdminProjectTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
-    usedfor = IProject
+    usedfor = IProjectGroup
 
     def checkAuthenticated(self, user):
-        """Is the user able to manage `IProject` translations settings?
+        """Is the user able to manage `IProjectGroup` translations settings?
 
         Any Launchpad/Launchpad Translations administrator or owner is
-        able to change translation settings for a project.
+        able to change translation settings for a project group.
         """
         return (user.isOwner(self.obj) or
                 user.in_rosetta_experts or
@@ -536,10 +537,10 @@ class AdminSeriesByVCSImports(AuthorizationBase):
 
 class EditProjectMilestoneNever(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = IProjectMilestone
+    usedfor = IProjectGroupMilestone
 
     def checkAuthenticated(self, user):
-        """IProjectMilestone is a fake content object."""
+        """IProjectGroupMilestone is a fake content object."""
         return False
 
 
