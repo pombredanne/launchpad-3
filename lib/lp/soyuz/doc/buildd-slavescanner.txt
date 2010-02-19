@@ -1301,7 +1301,9 @@ Mark's PPA:
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
 
-    >>> cprov_archive.private = False
+    # Switch the build's archive back to Celso's PPA and set it back
+    # to virtualized.
+    >>> removeSecurityProxy(build).archive = cprov_archive
     >>> cprov_archive.require_virtualized = True
     >>> for build_file in a_build.sourcepackagerelease.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
