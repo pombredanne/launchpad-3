@@ -955,7 +955,7 @@ capable of dealing with multiple remote products.
 
 == Prioritisation of watches ==
 
-_getRemoteIdsToCheck() prioritises the IDs it returns. Bug watches which have
+_getRemoteIdsToCheck() prioritizes the IDs it returns. Bug watches which have
 comments to push or which have never been checked will always be returned in
 the remote_ids_to_check list, limited only by the batch_size of the bug
 tracker (see "Batched BugWatch Updating" in doc/checkwatches.txt).

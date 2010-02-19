@@ -349,7 +349,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             packaging
             for (packaging, spn, product_series, product) in results]
 
-    def getPriorizedUnlinkedSourcePackages(self):
+    def getPrioritizedUnlinkedSourcePackages(self):
         """See `IDistroSeries`.
 
         The prioritization is a heuristic rule using bug heat,
@@ -374,7 +374,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                  'total_messages': total_messages}
                 for (spn, score, total_bugs, total_messages) in results]
 
-    def getPriorizedlPackagings(self):
+    def getPrioritizedlPackagings(self):
         """See `IDistroSeries`.
 
         The prioritization is a heuristic rule using the branch, bug heat,
@@ -411,7 +411,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
-        """The SQL joins and conditions to prioritise source packages."""
+        """The SQL joins and conditions to prioritize source packages."""
         heat_score = ("""
             LEFT JOIN (
                 SELECT
