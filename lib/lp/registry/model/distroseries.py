@@ -336,8 +336,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(
                 Product,
                 ProductSeries.product == Product.id)]
-        condition = [Packaging.distroseries == self.id]
-        results = IStore(self).using(*origin).find(find_spec, *condition)
+        condition = Packaging.distroseries == self.id
+        results = IStore(self).using(*origin).find(find_spec, condition)
         return results
 
     @property
