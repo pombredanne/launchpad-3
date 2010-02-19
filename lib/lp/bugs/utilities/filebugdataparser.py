@@ -90,7 +90,7 @@ class FileBugDataParser:
             data.subscribers = subscribers_string.lower().split()
         if 'HWDB-Submission' in headers:
             submission_string = unicode(headers['HWDB-Submission'])
-            data.hwdb_submission_keys = (
+            data.hwdb_submission_keys = sorted(
                 part.strip() for part in submission_string.split(','))
 
     def parse(self):

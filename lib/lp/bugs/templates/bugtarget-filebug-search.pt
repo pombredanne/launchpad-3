@@ -43,19 +43,10 @@
 
       <tal:uses-malone tal:condition="view/contextUsesMalone">
         <div class="informational message"
-            tal:condition="view/extra_data_to_process">
-          <table>
-            <tr>
-              <td style="vertical-align: middle; padding: 0.5em;">
-                <img src="/@@/spinner" />
-              </td>
-              <td>
-                Please wait. Launchpad is processing the extra bug data
-                you uploaded. This page will refresh every 10 seconds
-                until processing is complete.
-              </td>
-            </tr>
-        </div>
+            tal:condition="view/extra_data_to_process"
+          >Please wait. Launchpad is processing the extra bug data
+          you uploaded. This page will refresh every 10 seconds
+          until processing is complete.</div>
 
         <div class="top-portlet"
             tal:define="launchpad_form_id string:filebug-search-form"
