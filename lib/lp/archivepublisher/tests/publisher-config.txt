@@ -221,9 +221,9 @@ is of the form distroroot/distroname-archivename
     archiveroot:     /var/tmp/archive/ubuntutest-rebuildtest99
     poolroot:        /var/tmp/archive/ubuntutest-rebuildtest99/pool
     distsroot:       /var/tmp/archive/ubuntutest-rebuildtest99/dists
-    overrideroot:    None
-    cacheroot:       None
-    miscroot:        None
+    overrideroot:    /var/tmp/archive/ubuntutest-rebuildtest99-overrides
+    cacheroot:       /var/tmp/archive/ubuntutest-rebuildtest99-cache
+    miscroot:        /var/tmp/archive/ubuntutest-rebuildtest99-misc
     temproot:        /var/tmp/archive/ubuntutest-rebuildtest99-temp
     breezy-autotest:
       Architectures:

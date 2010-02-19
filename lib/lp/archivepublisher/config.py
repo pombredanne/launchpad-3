@@ -73,9 +73,11 @@ def getPubConfig(archive):
             archive.distribution.name + '-' + archive.name)
         # Multiple copy archives can exist on the same machine so the
         # temp areas need to be unique also.
-        pubconf.temproot = (
-            pubconf.archiveroot + '-temp')
+        pubconf.temproot = pubconf.archiveroot + '-temp'
         update_pub_config(pubconf)
+        pubconf.overrideroot = pubconf.archiveroot + '-overrides'
+        pubconf.cacheroot = pubconf.archiveroot + '-cache'
+        pubconf.miscroot = pubconf.archiveroot + '-misc'
     else:
         raise AssertionError(
             "Unknown archive purpose %s when getting publisher config.",
