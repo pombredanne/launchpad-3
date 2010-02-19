@@ -9,21 +9,35 @@ series +index page.
     >>> print anon_browser.title
     All upstream links : ...
 
-The page lists the the source packages that have translations, but are
-not linked to an upstream project to sync them to.
-
-    >>> content = find_main_content(anon_browser.contents)
-    >>> print extract_text(find_tag_by_id(content, 'unlinked-translatables'))
-    Unlinked translatable packages
-    pmount
-
 The page lists the upstream packaging links.
 
-    >>> print extract_text(find_tag_by_id(content, 'packagings'))
-    Source Package   Upstream Project Series
-    evolution        Evolution trunk series
-    mozilla-firefox  Mozilla Firefox 1.0 series
-    netapplet        NetApplet trunk series
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'packagings'))
+    Source Package   Upstream Project   Upstream Contributor Connections
+    netapplet
+      NetApplet ... The Novell Network Applet
+        NetApplet ... project:  Bug supervisor: no   Bug tracker: yes
+        NetApplet trunk series:  Branch: no
+    evolution
+      Evolution ... Evolution is an email client, addressbook ...
+        Evolution ... project: Bug supervisor: no   Bug tracker: yes
+        Evolution trunk series: Branch: yes   Translations: no
+
+Any use can see that this page is related to the needs packaging report. It
+is linked, but the link to this page is not enabled.
+
+    >>> print extract_text(find_tag_by_id(content, 'related-pages'))
+    Needs upstream links     All upstream links
+
+    >>> anon_browser.getLink('Needs upstream links')
+    <Link text='Needs upstream links'
+      url='http://launchpad.dev/ubuntu/hoary/+needs-packaging'>
+
+    >>> anon_browser.getLink('All upstream links')
+    Traceback (most recent call last):
+     ...
+    LinkNotFoundError
 
 The packaging links are batched so that users can view the thousands of
 links packages. Users can also hack the URL to set their own batch size.
@@ -32,20 +46,14 @@ links packages. Users can also hack the URL to set their own batch size.
     ...     'http://launchpad.dev/ubuntu/hoary/+packaging?start=0&batch=1')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'packagings'))
-    Source Package   Upstream Project Series
-    evolution        Evolution trunk series
+    Source Package   Upstream Project   Upstream Contributor Connections
+    netapplet ...
 
     >>> anon_browser.getLink('Next', index=0).click()
-    >>> content = find_main_content(anon_browser.contents)
-    >>> print extract_text(find_tag_by_id(content, 'packagings'))
-    Source Package   Upstream Project Series
-    mozilla-firefox  Mozilla Firefox 1.0 series
-
-The unlinked translatable source packages is not displayed on pages after
-the first page.
-
-    >>> print find_tag_by_id(content, 'unlinked_translatables')
-    None
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'packagings'))
+    Source Package   Upstream Project   Upstream Contributor Connections
+    evolution ...
 
 
 Source packages that need packaging links

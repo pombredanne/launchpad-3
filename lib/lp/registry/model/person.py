@@ -112,7 +112,7 @@ from lp.registry.interfaces.personnotification import (
     IPersonNotificationSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from lp.blueprints.interfaces.specification import (
@@ -2311,7 +2311,7 @@ class Person(
     def isBugContributorInTarget(self, user=None, target=None):
         """See `IPerson`."""
         assert (IBugTarget.providedBy(target) or
-                IProject.providedBy(target)), (
+                IProjectGroup.providedBy(target)), (
             "%s isn't a valid bug target." % target)
         search_params = BugTaskSearchParams(user=user, assignee=self)
         bugtask_count = target.searchTasks(search_params).count()

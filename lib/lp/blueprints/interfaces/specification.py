@@ -44,7 +44,7 @@ from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -513,7 +513,7 @@ class SpecNameField(ContentNameField):
             # set corresponds to multiple specification namespaces, we
             # return None.
             return None
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             # The context is a project group. Since a project group
             # corresponds to multiple specification namespaces, we
             # return None.
