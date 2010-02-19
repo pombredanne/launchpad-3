@@ -515,7 +515,7 @@ class BranchView(LaunchpadView, FeedsMixin):
         if status in CodeImportResultStatus.successes:
             return "/@@/yes"
         elif status == CodeImportResultStatus.SUCCESS_PARTIAL:
-            return "/@@/yes-hollow"
+            return "/@@/yes-gray"
         else:
             return "/@@/no"
 

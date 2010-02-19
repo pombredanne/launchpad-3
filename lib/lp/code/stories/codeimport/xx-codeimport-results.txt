@@ -45,7 +45,7 @@ file stored with the result.
 
 Each of the lines is prefixed with a tick if the result status was
 success, or a cross if the status was a failure.  The title of the image
-is the text of the failure type.
+is the text of the failure or success type.
 
     >>> # The ordering here is dependant on the order the status values
     >>> # are declared in the enumeration.
@@ -55,7 +55,7 @@ is the text of the failure type.
     <img src="/@@/no" title="Source Checkout Failed" />
     <img src="/@@/no" title="Internal Failure" />
     <img src="/@@/no" title="Failure" />
-    <img src="/@@/yes-hollow" title="Partial Success" />
+    <img src="/@@/yes-gray" title="Partial Success" />
     <img src="/@@/yes" title="Success with no changes" />
     <img src="/@@/yes" title="Success" />
 
