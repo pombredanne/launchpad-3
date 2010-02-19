@@ -30,7 +30,12 @@ class CodeImportDispatcherScript(LaunchpadScript):
     def main(self):
         globalErrorUtility.configure('codeimportdispatcher')
 
-        CodeImportDispatcher(self.logger).findAndDispatchJob(
+        if len(self.args) > 0:
+            worker_limit = int(self.args[0])
+        else:
+            worker_limit = None
+
+        CodeImportDispatcher(self.logger, worker_limit).findAndDispatchJob(
             ServerProxy(config.codeimportdispatcher.codeimportscheduler_url))
 
 
