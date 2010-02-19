@@ -908,7 +908,9 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         worker = self.makeImportWorker(self.makeSourceDetails(
             'trunk', [('README', 'Original contents')]))
         self.makeForeignCommit(worker.source_details)
-        self.pushConfig('codeimport', revisions_import_limit=1)
+        self.assertTrue(self.foreign_commit_count > 1)
+        self.pushConfig(
+            'codeimport', revisions_import_limit=self.foreign_commit_count-1)
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
         self.assertEqual(
