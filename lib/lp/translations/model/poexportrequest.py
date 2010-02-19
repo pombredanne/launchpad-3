@@ -24,7 +24,7 @@ from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -34,11 +34,11 @@ class POExportRequestSet:
     @property
     def entry_count(self):
         """See `IPOExportRequestSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(POExportRequest, True).count()
 
     def estimateBacklog(self):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         row = store.execute(
             "SELECT now() - min(date_created) FROM POExportRequest").get_one()
         if row is None:
@@ -74,13 +74,13 @@ class POExportRequestSet:
             'pofiles': pofile_ids,
             }
 
-        cur = cursor()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
         if potemplates:
             # Create requests for all these templates, insofar as the same
             # user doesn't already have requests pending for them in the same
             # format.
-            cur.execute("""
+            store.execute("""
                 INSERT INTO POExportRequest(person, potemplate, format)
                 SELECT %(person)s, template.id, %(format)s
                 FROM POTemplate AS template
@@ -97,7 +97,7 @@ class POExportRequestSet:
         if pofiles:
             # Create requests for all these translations, insofar as the same
             # user doesn't already have identical requests pending.
-            cur.execute("""
+            store.execute("""
                 INSERT INTO POExportRequest(
                     person, potemplate, pofile, format)
                 SELECT %(person)s, template.id, pofile.id, %(format)s

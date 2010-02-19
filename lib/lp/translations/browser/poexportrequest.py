@@ -63,7 +63,6 @@ class BaseExportView(LaunchpadView):
         time_string = formatter.approximateduration()
         return "The backlog is approximately %s." % time_string
 
-
     def getDefaultFormat(self):
         """Overridable: return default file format to use for the export."""
         if not IHasTranslationTemplates.providedBy(self.context):
