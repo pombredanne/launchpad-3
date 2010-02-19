@@ -411,7 +411,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
-        """The SQL joins and conditions to prioritise source packages."""
+        """The SQL joins and conditions to prioritize source packages."""
         heat_score = ("""
             LEFT JOIN (
                 SELECT
