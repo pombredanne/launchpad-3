@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -100,6 +100,11 @@ class BuilddSlaveTestSetup(TacTestSetup):
         # * install sbuild package
         # * to copy the scripts for sbuild
 
+    def tearDown(self):
+        """Tear down the system normally and additionaly remove the root."""
+        TacTestSetup.tearDown(self)
+        remove_tree(self.root)
+
     @property
     def root(self):
         return '/var/tmp/buildd'
@@ -117,5 +122,4 @@ class BuilddSlaveTestSetup(TacTestSetup):
 
     @property
     def logfile(self):
-        return os.path.join(self.root, 'build-slave.log')
-
+        return '/var/tmp/build-slave.log'
