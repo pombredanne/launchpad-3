@@ -739,8 +739,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         target_branch=Reference(schema=Interface),
         prerequisite_branch=Reference(schema=Interface),
         needs_review=Bool(title=_('Needs review'),
-            description=_('If True, set queue_status to NEEDS_REVIEW.'
-            'Otherwise, it will be WORK_IN_PROGRESS.')),
+            description=_('If True the proposal needs review.'
+            'Otherwise, it will be work in progress.')),
         initial_comment=Text(
             title=_('Initial comment'),
             description=_("Registrant's initial description of proposal.")),
@@ -759,38 +759,35 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         registrant, target_branch, prerequisite_branch=None,
         needs_review=True, initial_comment=None, commit_message=None,
         reviewers=None, review_types=None):
-        """API-oriented version of addLandingTarget.
-
-        The parameters are the same as addLandingTarget, except that
-        review_requests is split into a list of reviewers and a list of
-        review types.
-        """
-
-    def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
-                         whiteboard=None, date_created=None,
-                         needs_review=False, initial_comment=None,
-                         review_requests=None, review_diff=None,
-                         commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the prerequisite_branch, if it is there,
-        must be branches of the same project as the source branch.
+        must be branches with the same target as the source branch.
 
-        Branches without associated projects, junk branches, cannot
-        specify landing targets.
+        Personal branches (a.k.a. junk branches) cannot specify landing targets.
+        """
+
+    def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
+                         date_created=None, needs_review=False,
+                         description=None, review_requests=None,
+                         review_diff=None, commit_message=None):
+        """Create a new BranchMergeProposal with this branch as the source.
+
+        Both the target_branch and the prerequisite_branch, if it is there,
+        must be branches with the same target as the source branch.
+
+        Personal branches (a.k.a. junk branches) cannot specify landing targets.
 
         :param registrant: The person who is adding the landing target.
         :param target_branch: Must be another branch, and different to self.
         :param prerequisite_branch: Optional but if it is not None, it must be
             another branch.
-        :param whiteboard: Optional.  Just text, notes or instructions
-            pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
         :param needs_review: Used to specify the proposal is ready for
             review right now.
-        :param initial_comment: An optional initial comment can be added
-            when adding the new target.
+        :param description: A description of the bugs fixed, features added,
+            or refactorings.
         :param review_requests: An optional list of (`Person`, review_type).
         """
 

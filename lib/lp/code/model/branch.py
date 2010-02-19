@@ -312,7 +312,7 @@ class Branch(SQLBase):
     def addLandingTarget(self, registrant, target_branch,
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
-                         initial_comment=None, review_requests=None,
+                         description=None, review_requests=None,
                          review_diff=None, commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
@@ -367,7 +367,7 @@ class Branch(SQLBase):
             date_review_requested=date_review_requested,
             queue_status=queue_status, review_diff=review_diff,
             commit_message=commit_message,
-            description=initial_comment)
+            description=description)
 
         for reviewer, review_type in review_requests:
             bmp.nominateReviewer(
@@ -391,7 +391,7 @@ class Branch(SQLBase):
         review_requests = zip(reviewers, review_types)
         return self.addLandingTarget(
             registrant, target_branch, prerequisite_branch,
-            needs_review=needs_review, initial_comment=initial_comment,
+            needs_review=needs_review, description=initial_comment,
             commit_message=commit_message, review_requests=review_requests)
 
     def scheduleDiffUpdates(self):

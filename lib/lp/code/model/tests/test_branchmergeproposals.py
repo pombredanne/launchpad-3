@@ -1725,7 +1725,7 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
                 signing_context=signing_context))
         job = CreateMergeProposalJob.create(file_alias)
         transaction.commit()
-        proposal, comment = job.run()
+        proposal = job.run()
         self.assertEqual(proposal.source_branch, source)
         self.assertEqual(proposal.target_branch, target)
 
