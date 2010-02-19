@@ -666,7 +666,8 @@
                     addChange
                     markAsDuplicate
                     linkHWSubmission
-                    unlinkHWSubmission"
+                    unlinkHWSubmission
+                    linkAttachment"
                 set_attributes="datecreated date_last_updated name title description                                                                                                                 ownerID owner duplicateof communityscore                                                                                                                 communitytimestamp hits hitstimestamp activityscore                                                                                                                 activitytimestamp activity initial_message                                                                                                                 security_related tags who_made_private date_made_private"/>
             <require
                 permission="launchpad.AnyPerson"
