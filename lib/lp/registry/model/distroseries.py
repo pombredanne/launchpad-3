@@ -475,8 +475,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getMostRecentlyLinkedPackagings(self):
         """See `IDistroSeries`."""
-        """See `IDistroSeries`."""
         results = self._all_packagings
+        # Order by creation date with a secondary ordering by sourcepackage
+        # name to ensure the ordering for test data where many packagings have
+        # identical creation dates.
         results = results.order_by(Desc(Packaging.datecreated),
                                    SourcePackageName.name)[:5]
         return [

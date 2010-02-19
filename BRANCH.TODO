@@ -3,10 +3,3 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-* s/Priorized/Prioritized/
-
-* s/prioritise/prioritize/
-
-* Can distroseries.packagings be a cachedproperty in the model?
-
-* s/pakages/packages/
