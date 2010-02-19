@@ -66,7 +66,9 @@ class CodeImportDispatcher:
     def findAndDispatchJob(self, scheduler_client):
         """Check for and dispatch a job if necessary."""
 
-        job_id = scheduler_client.getJobForMachine(self.getHostname())
+        job_id = scheduler_client.getJobForMachine(
+            self.getHostname(),
+            config.codeimportdispatcher.max_jobs_per_machine)
 
         if job_id == 0:
             self.logger.info("No jobs pending.")
