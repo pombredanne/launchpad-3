@@ -339,7 +339,7 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
     @cachedproperty
     def _unlinked_packages(self):
         """Get a prioritized list of unlinked source packages."""
-        return self.context.getPriorizedUnlinkedSourcePackages()
+        return self.context.getPrioritizedUnlinkedSourcePackages()
 
     @property
     def num_unlinked_packages(self):
@@ -499,7 +499,7 @@ class DistroSeriesPackagesView(DistroSeriesView):
     @cachedproperty
     def cached_packagings(self):
         """The batched upstream packaging links."""
-        packagings = self.context.getPriorizedlPackagings()
+        packagings = self.context.getPrioritizedlPackagings()
         navigator = BatchNavigator(packagings, self.request, size=100)
         navigator.setHeadings('packaging', 'packagings')
         return navigator
@@ -514,7 +514,7 @@ class DistroSeriesNeedsPackagesView(DistroSeriesView):
     @cachedproperty
     def cached_unlinked_packages(self):
         """The batched `ISourcePackage`s that needs packaging links."""
-        packages = self.context.getPriorizedUnlinkedSourcePackages()
+        packages = self.context.getPrioritizedUnlinkedSourcePackages()
         navigator = BatchNavigator(packages, self.request, size=100)
         navigator.setHeadings('package', 'packages')
         return navigator
