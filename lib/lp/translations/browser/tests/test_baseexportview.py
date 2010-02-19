@@ -7,15 +7,12 @@ from datetime import timedelta
 import transaction
 import unittest
 
-from zope.component import getUtility
-
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import ZopelessDatabaseLayer
 from lp.translations.browser.sourcepackage import (
     SourcePackageTranslationsExportView)
 from lp.translations.browser.productseries import (
     ProductSeriesTranslationsExportView)
-from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.testing import TestCaseWithFactory
@@ -25,6 +22,7 @@ def wipe_queue(queue):
     """Erase all export queue entries."""
     while queue.entry_count > 0:
         queue.popRequest()
+
 
 class BaseExportViewMixin(TestCaseWithFactory):
     """Test behaviour of objects subclassing BaseExportView."""

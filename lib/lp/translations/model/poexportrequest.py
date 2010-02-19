@@ -15,7 +15,7 @@ from sqlobject import ForeignKey
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from lp.translations.interfaces.poexportrequest import (
