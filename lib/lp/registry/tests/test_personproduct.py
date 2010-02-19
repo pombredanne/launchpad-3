@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.database.personproduct import PersonProduct
+from lp.registry.model.personproduct import PersonProduct
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend

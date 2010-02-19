@@ -8,8 +8,6 @@ from unittest import TestLoader
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet)
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import ZopelessDatabaseLayer
 
@@ -17,8 +15,6 @@ from lp.testing import TestCaseWithFactory
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, ISpecificBuildFarmJobClass)
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
 from lp.code.interfaces.branchjob import IBranchJob
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
@@ -100,36 +96,6 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # For now, these jobs always score themselves at 1,000.  In the
         # future however the scoring system is to be revisited.
         self.assertEqual(1000, self.specific_job.score())
-
-
-class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
-    """Test `TranslationTemplatesBuildBehavior`."""
-
-    layer = ZopelessDatabaseLayer
-
-    def setUp(self):
-        super(TestTranslationTemplatesBuildBehavior, self).setUp()
-        self.jobset = getUtility(ITranslationTemplatesBuildJobSource)
-        self.branch = self.factory.makeBranch()
-        self.specific_job = self.jobset.create(self.branch)
-        self.behavior = IBuildFarmJobBehavior(self.specific_job)
-
-    def test_getChroot(self):
-        # _getChroot produces the current chroot for the current Ubuntu
-        # release, on the nominated architecture for
-        # architecture-independent builds.
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        current_ubuntu = ubuntu.currentseries
-        distroarchseries = current_ubuntu.nominatedarchindep
-
-        # Set an arbitrary chroot file.
-        fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
-        distroarchseries.addOrUpdateChroot(fake_chroot_file)
-
-        chroot = self.behavior._getChroot()
-
-        self.assertNotEqual(None, chroot)
-        self.assertEqual(fake_chroot_file, chroot)
 
 
 def test_suite():
