@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import os
-import shutil
 import tempfile
 import unittest
 from ConfigParser import SafeConfigParser
@@ -17,6 +16,8 @@ import canonical
 
 from canonical.buildd.slave import BuildDSlave
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+
+from lp.services.osutils import remove_tree
 
 
 test_conffile = os.path.join(
@@ -48,8 +49,7 @@ class BuilddTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Remove the 'filecache' directory used for the tests."""
-        if os.path.isdir(self.slave._cachepath):
-            shutil.rmtree(self.slave._cachepath)
+        remove_tree(self.slave._cachepath)
 
     def makeLog(self, size):
         """Inject data into the default buildlog file."""
@@ -89,8 +89,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
     """
     def setUpRoot(self):
         """Recreate empty root directory to avoid problems."""
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
+        remove_tree(self.root)
         os.mkdir(self.root)
         filecache = os.path.join(self.root, 'filecache')
         os.mkdir(filecache)
@@ -100,12 +99,6 @@ class BuilddSlaveTestSetup(TacTestSetup):
         # When we are about running it seriously we need :
         # * install sbuild package
         # * to copy the scripts for sbuild
-
-    def tearDown(self):
-        """Tear down the system normally and additionaly remove the root."""
-        TacTestSetup.tearDown(self)
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
 
     @property
     def root(self):
