@@ -1348,8 +1348,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    quote(text), quote_like(text))
             ).config(distinct=True)
 
-        ranked_package_caches = package_caches.order_by('rank DESC')
-
         # Create a function that will decorate the results, converting
         # them from the find_spec above into a DSBP:
         def result_to_dsbp((cache, binary_package_name, rank)):

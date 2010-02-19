@@ -801,10 +801,6 @@ class NascentUpload:
             self.do_reject(notify)
             return False
         try:
-            maintainerfrom = None
-            if self.changes.signer:
-                maintainerfrom = self.changes.changed_by['rfc2047']
-
             self.storeObjectsInDatabase()
 
             # Send the email.

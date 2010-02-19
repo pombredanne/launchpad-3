@@ -18,13 +18,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import (
-    Bool, Int, Object, TextLine, Text)
+from zope.schema import Bool, Int, Object, Text
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from lp.buildmaster.interfaces.buildbase import IBuildBase
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory)

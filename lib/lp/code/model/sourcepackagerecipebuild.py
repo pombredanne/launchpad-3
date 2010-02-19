@@ -115,8 +115,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             SourcePackageRelease, source_package_recipe_build=self).one()
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
-                 archive, pocket, date_created=None, date_first_dispatched=None,
-                 date_built=None, builder=None,
+                 archive, pocket, date_created=None,
+                 date_first_dispatched=None, date_built=None, builder=None,
                  build_state=BuildStatus.NEEDSBUILD, build_log=None,
                  build_duration=None):
         """Construct a SourcePackageRecipeBuild."""
