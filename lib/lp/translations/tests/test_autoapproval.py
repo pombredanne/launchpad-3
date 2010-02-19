@@ -789,13 +789,14 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
         # _cleanUpObsoleteEntries deletes entries in terminal states
         # (Imported, Failed, Deleted) after a few days.  The exact
         # period depends on the state.
-        affected_statusses = [
+        affected_statuses = [
             RosettaImportStatus.DELETED,
-            RosettaImportStatus.IMPORTED,
             RosettaImportStatus.FAILED,
+            RosettaImportStatus.IMPORTED,
+            RosettaImportStatus.NEEDS_INFORMATION,
             RosettaImportStatus.NEEDS_REVIEW,
             ]
-        for status in affected_statusses:
+        for status in affected_statuses:
             entry = self._makeProductEntry()
             entry.potemplate = self.factory.makePOTemplate()
             maximum_age = TranslationImportQueueEntryAge[status]
@@ -817,25 +818,7 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
                 self.queue._cleanUpObsoleteEntries(self.store)
                 self.assertFalse(
                     self._exists(entry_id),
-                    "Queue entry in state %s was not removed." % status)
-
-    def test_cleanUpObsoleteEntries_needs_review(self):
-        # _cleanUpObsoleteEntries cleans up entries in Needs Review
-        # state after a very long wait.
-        entry = self._makeProductEntry()
-        entry.potemplate = self.factory.makePOTemplate()
-        self._setStatus(entry, RosettaImportStatus.NEEDS_REVIEW, None)
-        entry_id = entry.id
-
-        self.queue._cleanUpObsoleteEntries(self.store)
-        self.assertTrue(self._exists(entry_id))
-
-        entry.date_status_changed -= timedelta(days=200)
-        entry.syncUpdate()
-
-        self.become_the_gardener()
-        self.queue._cleanUpObsoleteEntries(self.store)
-        self.assertFalse(self._exists(entry_id))
+                    "Queue entry in state '%s' was not removed." % status)
 
 
     def test_cleanUpInactiveProductEntries(self):
