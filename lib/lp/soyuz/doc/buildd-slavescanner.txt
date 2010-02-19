@@ -881,16 +881,19 @@ published yet, it will be temporarily skipped until the source is
 published.  We need to tweak the status of the publishing record again
 to demonstrate this, and also make the archive private:
 
-    >>> build = getUtility(IBuildSet).getByQueueEntry(new_candidate)
-    >>> source = build.sourcepackagerelease
-    >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication.secure_record
+XXX Michael Nelson 2010-02-19 bug=394276 Please let's put some time
+aside to convert these to unit-tests.
+
+    >>> naked_build = removeSecurityProxy(
+    ...     getUtility(IBuildSet).getByQueueEntry(new_candidate))
+    >>> original_archive = naked_build.archive
+    >>> secure_pub = naked_build.current_source_publication.secure_record
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> private_ppa = factory.makeArchive(private=True)
+    >>> naked_build.archive = private_ppa
+    >>> secure_pub.archive = private_ppa
     >>> secure_pub.status = PackagePublishingStatus.PENDING
-    >>> test_archive = secure_pub.archive
-    >>> test_archive.private = True
-    >>> test_archive.buildd_secret = "secret"
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
@@ -924,11 +927,9 @@ we can supersede one and delete the other. This will have the effect of
 making the build be superseded and no candidate is returned.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication.secure_record
+    >>> secure_pub = naked_build.current_source_publication.secure_record
     >>> secure_pub.status = PackagePublishingStatus.DELETED
-    >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication.secure_record
+    >>> secure_pub = naked_build.current_source_publication.secure_record
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
@@ -936,6 +937,7 @@ making the build be superseded and no candidate is returned.
     >>> build = getUtility(IBuildSet).getByQueueEntry(current_job)
     >>> print build.buildstate.name
     NEEDSBUILD
+    >>> import pdb;pdb.set_trace()
 
     >>> another_candidate = removeSecurityProxy(
     ...     a_builder)._findBuildCandidate()
@@ -949,7 +951,8 @@ We'll reset the archive back to non-private for further tests:
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> test_archive.private = False
+    >>> naked_build.archive = original_archive
+    >>> secure_pub.archive = original_archive
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
