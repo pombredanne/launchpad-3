@@ -108,7 +108,7 @@ already been published.
 
     >>> cprov_private_ppa = factory.makeArchive(
     ...     owner=cprov, name='myprivateppa',
-    ...	    distribution=cprov_archive.distribution)
+    ...     distribution=cprov_archive.distribution)
     >>> login(ANONYMOUS)
     >>> cprov_private_ppa.buildd_secret = 'boing'
     Traceback (most recent call last):
@@ -1751,12 +1751,12 @@ last publication (Celso's deleted iceweasel) will be excluded.
 
 Private source publications are excluded from this list, the fact that
 they exist should never leak. If we copy the package to Celso's private
-PPA the list is not updated.  The same happens for uploaded sources, since they
-are essentially another source publication in this context.
+PPA the list is not updated.  The same happens for uploaded sources, since
+they are essentially another source publication in this context.
 
     >>> copy = cprov_cdrkit.copyTo(
-    ...      ubuntu['hoary'], PackagePublishingPocket.RELEASE,
-    ...	     cprov_private_ppa)
+    ...     ubuntu['hoary'], PackagePublishingPocket.RELEASE,
+    ...     cprov_private_ppa)
 
     >>> print_latest_uploads()
     cdrkit 1.0 in hoary PENDING mark
@@ -1811,7 +1811,8 @@ We will create a new PPA and some activity.
     >>> create_activity(no_priv.archive, 4)
     >>> create_activity(lp_buildd_team.archive, 8)
 
-Celso's private PPA is not listed despite having the highest number of uploads.
+Celso's private PPA is not listed despite having the highest number of
+uploads.
 
     >>> print_most_active_ppas()
     PPA for Foo Bar 10
@@ -1821,7 +1822,7 @@ Celso's private PPA is not listed despite having the highest number of uploads.
     PPA for Mark Shuttleworth 2
 
 If we give lots of activity to Celso's public PPA the previous
-las titem (Mark's PPA) will now be excluded as the results are
+last item (Mark's PPA) will now be excluded as the results are
 limited to 5 items.
 
     >>> create_activity(cprov_archive, 20)
