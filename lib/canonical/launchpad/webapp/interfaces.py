@@ -297,7 +297,7 @@ class NoCanonicalUrl(TypeError):
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
-    project = Attribute('IProject, or None')
+    project = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')
     distribution = Attribute('IDistribution, or None')
     distroseries = Attribute('IDistroSeries, or None')
