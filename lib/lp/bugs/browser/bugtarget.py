@@ -118,7 +118,8 @@ class FileBugViewBase(LaunchpadFormView):
     def initialize(self):
         LaunchpadFormView.initialize(self)
         if (not self.redirect_ubuntu_filebug and
-            self.extra_data_token is not None):
+            self.extra_data_token is not None and
+            not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
@@ -460,15 +461,13 @@ class FileBugViewBase(LaunchpadFormView):
                         cgi.escape(filename))
 
             for attachment in extra_data.attachments:
-                bug.addAttachment(
-                    owner=self.user, data=attachment['content'],
+                bug.linkAttachment(
+                    owner=self.user, file_alias=attachment['file_alias'],
                     description=attachment['description'],
-                    comment=attachment_comment,
-                    filename=attachment['filename'],
-                    content_type=attachment['content_type'])
+                    comment=attachment_comment)
                 notifications.append(
                     'The file "%s" was attached to the bug report.' %
-                        cgi.escape(attachment['filename']))
+                        cgi.escape(attachment['file_alias'].filename))
 
         if extra_data.subscribers:
             # Subscribe additional subscribers to this bug

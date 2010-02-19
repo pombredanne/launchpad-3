@@ -1798,7 +1798,6 @@ class FileBugData:
     def __init__(self, initial_summary=None, initial_tags=None,
                  private=None, subscribers=None, extra_description=None,
                  comments=None, attachments=None,
-                 attachment_file_aliases=None,
                  hwdb_submission_keys=None):
         if initial_tags is None:
             initial_tags = []
@@ -1808,8 +1807,6 @@ class FileBugData:
             comments = []
         if attachments is None:
             attachments = []
-        if attachment_file_aliases is None:
-            attachment_file_aliases = []
         if hwdb_submission_keys is None:
             hwdb_submission_keys = []
 
@@ -1820,7 +1817,6 @@ class FileBugData:
         self.subscribers = subscribers
         self.comments = comments
         self.attachments = attachments
-        self.attachment_file_aliases = attachment_file_aliases
         self.hwdb_submission_keys = hwdb_submission_keys
 
     def asDict(self):

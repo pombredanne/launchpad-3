@@ -221,7 +221,7 @@ class ProcessApportBlobJob(ApportJobDerived):
         # data to the ApportJob table.
         if len(parsed_data_dict.get('attachments')) > 0:
             attachments = parsed_data_dict['attachments']
-            attachment_file_alias_ids = []
+            attachments_to_store = []
 
             for attachment in attachments:
                 file_content = attachment['content'].read()
@@ -229,12 +229,14 @@ class ProcessApportBlobJob(ApportJobDerived):
                     name=attachment['filename'], size=len(file_content),
                     file=StringIO(file_content),
                     contentType=attachment['content_type'])
-                attachment_file_alias_ids.append(file_alias.id)
+                attachments_to_store.append({
+                    'file_alias_id': file_alias.id,
+                    'description': attachment['description']})
 
             # We cheekily overwrite the 'attachments' value in the
             # parsed_data_dict so as to avoid trying to serialize file
             # objects to JSON.
-            parsed_data_dict['attachments'] = attachment_file_alias_ids
+            parsed_data_dict['attachments'] = attachments_to_store
 
         metadata = self.metadata
         metadata.update({'processed_data': parsed_data_dict})
@@ -244,9 +246,12 @@ class ProcessApportBlobJob(ApportJobDerived):
         """Return the parsed data as a FileBugData object."""
         processed_data = self.metadata.get('processed_data', None)
         if processed_data is not None:
-            attachment_file_aliases = [
-                getUtility(ILibraryFileAliasSet)[file_alias_id]
-                for file_alias_id in processed_data.get('attachments', [])]
+            attachment_data = []
+            for attachment in processed_data.get('attachments', []):
+                file_alias_id = attachment['file_alias_id']
+                file_alias = getUtility(ILibraryFileAliasSet)[file_alias_id]
+                attachment_data.append(
+                    dict(attachment, file_alias=file_alias))
 
             return FileBugData(
                 initial_summary=processed_data['initial_summary'],
@@ -256,6 +261,6 @@ class ProcessApportBlobJob(ApportJobDerived):
                 extra_description=processed_data['extra_description'],
                 comments=processed_data['comments'],
                 hwdb_submission_keys=processed_data['hwdb_submission_keys'],
-                attachment_file_aliases=attachment_file_aliases)
+                attachments=attachment_data)
         else:
             return FileBugData()

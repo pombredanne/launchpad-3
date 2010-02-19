@@ -113,28 +113,28 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             data_dict['hwdb_submission_keys'],
             "Values for hwdb_submission_keys do not match")
 
-        if len(filebug_data.attachment_file_aliases) == 0:
-            # If the attachment_file_aliases attribute of filebug_data is
-            # empty, the attachments property will contain references to
-            # the LibrarianFileAlias ids for attachments.
+        # The attachments list of of the data_dict dict will be of
+        # the same length as the attachments list in the filebug_data
+        # object.
+        self.assertEqual(
+            len(filebug_data.attachments),
+            len(data_dict['attachments']),
+            "Lengths of attachment lists do not match.")
 
-            # The attachments list of of the data_dict dict will be of
-            # the same length as the attachments list in the filebug_data
-            # object.
-            self.assertEqual(
-                len(filebug_data.attachments),
-                len(data_dict['attachments']),
-                "Lengths of attachment lists do not match.")
+        # The attachments list of the data_dict dict is a list of dicts
+        # containing data about the attachments to add to the bug once
+        # it has been filed.
+        for attachment_dict in data_dict['attachments']:
+            file_alias_id = attachment_dict['file_alias_id']
+            file_alias = getUtility(ILibraryFileAliasSet)[file_alias_id]
+            attachment = filebug_data.attachments[
+                data_dict['attachments'].index(attachment_dict)]
 
-            # The attachments list of the data_dict dict contains the
-            # IDs of LibrarianFileAliases that contain the attachments
-            # themselves. The contents, filenames and filetypes of the files
-            # in the librarian will match the contents of the attachments.
-            for file_alias_id in data_dict['attachments']:
-                file_alias = getUtility(ILibraryFileAliasSet)[file_alias_id]
-                attachment = filebug_data.attachments[
-                    data_dict['attachments'].index(file_alias_id)]
-
+            if attachment.get('content', None) is not None:
+                # If the FileBugData is coming from the parser directly,
+                # the attachments won't have been processed, so we check
+                # the unprocessed data against what the
+                # ProcessApportBlobJob has stored in the librarian.
                 file_content = attachment['content'].read()
                 librarian_file_content = file_alias.read()
                 self.assertEqual(
@@ -152,24 +152,16 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
                     "Content types do not match for attachment %s and "
                     "LibrarianFileAlias %s" % (
                         attachment['filename'], file_alias.id))
-        else:
-            # If the attachment_file_aliases attribute of filebug_data
-            # is not empty, it will contain the actual file_aliases for
-            # the attachments.
-            self.assertEqual(
-                len(data_dict['attachments']),
-                len(filebug_data.attachment_file_aliases),
-                "Number of attachments and number of attachment file "
-                "aliases do not match.")
 
-            file_alias_ids = sorted(
-                file_alias.id for file_alias
-                in filebug_data.attachment_file_aliases)
-            attachment_ids = sorted(data_dict['attachments'])
-            self.assertEqual(
-                attachment_ids, file_alias_ids,
-                "Attachment IDs and file alias IDs do not match.")
-
+            if attachment.get('file_alias', None) is not None:
+                # If the attachment has a file_alias item, it will contain
+                # the LibrarianFileAlias referenced by the attachment's
+                # file_alias_id.
+                self.assertEqual(
+                    file_alias,
+                    attachment['file_alias'],
+                    "The attachment's file alias doesn't match it's "
+                    "file_alias_id")
 
     def test_run(self):
         # IProcessApportBlobJobSource.run() extracts salient data from an
