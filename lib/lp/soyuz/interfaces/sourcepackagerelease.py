@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 
+from lazr.restful.fields import Reference
 from zope.schema import TextLine
 from zope.interface import Interface, Attribute
 
@@ -136,9 +137,14 @@ class ISourcePackageRelease(Interface):
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
 
-    source_package_recipe_build = Attribute(
-        "The `SourcePackageRecipeBuild` which produced this source package "
-        "release, or None if it was created from a traditional upload.")
+    # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
+    source_package_recipe_build = Reference(
+        schema=Interface,
+        description=_("The `SourcePackageRecipeBuild` which produced this "
+            "source package release, or None if it was created from a "
+            "traditional upload."),
+        title=_("Source package recipe build"),
+        required=False, readonly=True)
 
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
