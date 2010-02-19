@@ -112,7 +112,8 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
 
         slave_status = behavior._builder.slaveStatus()
         self.assertTrue(slave_status['test_build_started'])
-        self.assertEqual('templates-build', slave_status['test_build_type'])
+        self.assertEqual(
+            'translation-templates', slave_status['test_build_type'])
         self.assertIn('branch_url', slave_status['test_build_args'])
 
     def test_getChroot(self):
