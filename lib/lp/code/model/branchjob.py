@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -53,8 +53,8 @@ from lp.codehosting.scanner import buglinks, email, mergedetection
 from lp.codehosting.scanner.fixture import (
     Fixtures, ServerFixture, make_zope_event_fixture)
 from lp.codehosting.scanner.bzrsync import (
-    BzrSync, schedule_diff_updates, schedule_translation_upload
-)
+    BzrSync, schedule_diff_updates, schedule_translation_templates_build,
+    schedule_translation_upload)
 from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
     get_scanner_server)
 from lp.services.job.model.job import Job
@@ -296,6 +296,7 @@ class BranchScanJob(BranchJobDerived):
             mergedetection.auto_merge_branches,
             mergedetection.auto_merge_proposals,
             schedule_diff_updates,
+            schedule_translation_templates_build,
             schedule_translation_upload,
             ]
         fixture = Fixtures([
