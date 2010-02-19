@@ -28,4 +28,9 @@
     There are no recent source package uploads.
   </p>
 
+  <ul class="horizontal">
+    <li>
+      <a tal:replace="structure context/menu:overview/queue/fmt:link" />
+    </li>
+  </ul>
 </div>

@@ -100,4 +100,4 @@ upstream packaging.
     netapplet linked...
     Needs more information or linking to upstream:
     linux-source-2.6.15 cdrkit iceweasel
-    Show uploads All upstream links
+    Needs upstream links All upstream links

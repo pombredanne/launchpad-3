@@ -68,7 +68,7 @@
 
   <ul class="horizontal">
     <li>
-      <a tal:replace="structure context/menu:overview/queue/fmt:link" />
+      <a tal:replace="structure context/menu:overview/needs_packaging/fmt:link" />
     </li>
     <li>
       <a tal:replace="structure context/menu:overview/packaging/fmt:icon-link" />
