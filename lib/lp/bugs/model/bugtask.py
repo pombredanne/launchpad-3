@@ -1331,12 +1331,7 @@ class BugTaskSet:
                       WHERE BugBranch.bug = BugTask.bug
                         AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
         bugs_with_patches = list(Bug.select(
-            """id IN (SELECT BugAttachment.bug
-                      FROM BugAttachment, BugTask
-                      WHERE BugAttachment.bug = BugTask.bug
-                      AND BugAttachment.type = %s
-                        AND BugTask.id IN %s)""" % sqlvalues(
-            BugAttachmentType.PATCH, bugtask_ids)))
+            """latest_patch_uploaded IS NOT NULL"""))
         badge_properties = {}
         for bugtask in bugtasks:
             badge_properties[bugtask] = {
@@ -1517,15 +1512,18 @@ class BugTaskSet:
                                  "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
-            attachment_clause = (
-                "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
-            if isinstance(params.attachmenttype, any):
-                where_cond = "BugAttachment.type IN (%s)" % ", ".join(
-                    sqlvalues(*params.attachmenttype.query_values))
+            if params.attachmenttype == BugAttachmentType.PATCH:
+                extra_clauses.append("Bug.latest_patch_uploaded IS NOT NULL")
             else:
-                where_cond = "BugAttachment.type = %s" % sqlvalues(
-                    params.attachmenttype)
-            extra_clauses.append(attachment_clause % where_cond)
+                attachment_clause = (
+                    "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
+                if isinstance(params.attachmenttype, any):
+                    where_cond = "BugAttachment.type IN (%s)" % ", ".join(
+                        sqlvalues(*params.attachmenttype.query_values))
+                else:
+                    where_cond = "BugAttachment.type = %s" % sqlvalues(
+                        params.attachmenttype)
+                extra_clauses.append(attachment_clause % where_cond)
 
         if params.searchtext:
             extra_clauses.append(self._buildSearchTextClause(params))

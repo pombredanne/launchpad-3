@@ -468,31 +468,14 @@ class DistroSeriesAddView(LaunchpadFormView):
 class DistroSeriesPackagesView(DistroSeriesView):
     """A View to show series package to upstream package relationships."""
 
-    label = 'Mapping series packages to upstream project series'
+    label = 'All series packages linked to upstream project series'
     page_title = 'All upstream links'
-
-    @cachedproperty
-    def unlinked_translatables(self):
-        """The sourcepackages that lack a link to a productseries."""
-        packages = self.context.getUnlinkedTranslatableSourcePackages()
-        if self.context.distribution.full_functionality:
-            # Launchpad knows exactly what is published in the series.
-            packages = [package for package in packages
-                        if package.currentrelease is not None]
-        return packages
-
-    @cachedproperty
-    def show_unlinked_translatables(self):
-        """Are there unlinked translatables and should they be shown."""
-        return (
-            len(self.unlinked_translatables) > 0
-            and self.cached_packagings.start == 0)
 
     @cachedproperty
     def cached_packagings(self):
         """The batched upstream packaging links."""
-        packagings = self.context.packagings
-        navigator = BatchNavigator(packagings, self.request, size=200)
+        packagings = self.context.getPriorizedlPackagings()
+        navigator = BatchNavigator(packagings, self.request, size=100)
         navigator.setHeadings('packaging', 'packagings')
         return navigator
 

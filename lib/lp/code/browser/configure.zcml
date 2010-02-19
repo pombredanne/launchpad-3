@@ -965,12 +965,12 @@
         classes="PersonProductBranchesMenu"/>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
         layer="canonical.launchpad.layers.CodeLayer"
         name="+branches" />
 
     <browser:page
-        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.branchlisting.PersonProductOwnedBranchesView"
         permission="zope.Public"
         facet="branches"
@@ -978,7 +978,7 @@
         template="../templates/personproduct-branches.pt"
         />
     <browser:page
-        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.branchlisting.PersonProductSubscribedBranchesView"
         permission="zope.Public"
         facet="branches"
@@ -986,7 +986,7 @@
         template="../templates/personproduct-branches.pt"
         />
     <browser:page
-        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.branchlisting.PersonProductRegisteredBranchesView"
         permission="zope.Public"
         facet="branches"
@@ -994,7 +994,7 @@
         template="../templates/personproduct-branches.pt"
         />
     <browser:page
-        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.branchmergeproposallisting.PersonProductActiveReviewsView"
         permission="zope.Public"
         facet="branches"
@@ -1002,7 +1002,7 @@
         template="../templates/active-reviews.pt"/>
 
     <browser:page
-        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.branchlisting.PersonProductTeamBranchesView"
         facet="branches"
         name="+portlet-teambranches"
@@ -1011,7 +1011,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.personproduct.IPersonProduct"
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
         class="lp.code.browser.branchlisting.PersonProductCodeSummaryView"
         facet="branches"
         name="+codesummary"

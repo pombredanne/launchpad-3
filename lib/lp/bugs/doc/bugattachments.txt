@@ -508,6 +508,8 @@ property returning True.
     ...     is_patch=True)
     >>> bug_two.attachments.count()
     2
+    >>> transaction.commit()
+    >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_two.has_patches
     True
 

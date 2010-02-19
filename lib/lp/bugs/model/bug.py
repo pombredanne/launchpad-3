@@ -474,13 +474,7 @@ class Bug(SQLBase):
     @property
     def has_patches(self):
         """See `IBug`."""
-        store = IStore(BugAttachment)
-        results = store.find(
-            BugAttachment,
-            BugAttachment.bug == self,
-            BugAttachment.type == BugAttachmentType.PATCH)
-
-        return not results.is_empty()
+        return self.latest_patch_uploaded is not None
 
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
