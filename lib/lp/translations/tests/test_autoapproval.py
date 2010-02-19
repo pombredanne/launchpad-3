@@ -801,7 +801,7 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
             entry.potemplate = self.factory.makePOTemplate()
             maximum_age = TranslationImportQueueEntryAge[status]
             # Avoid the exact date here by a day because that could introduce
-            #  spurious test failures.
+            # spurious test failures.
             almost_oldest_possible_date = (
                 datetime.now(UTC) - maximum_age + timedelta(days=1))
             self._setStatus(entry, status, almost_oldest_possible_date)
@@ -810,7 +810,7 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
             self.queue._cleanUpObsoleteEntries(self.store)
             self.assertTrue(self._exists(entry_id))
 
-            # Now cross the border, again cushoning it by a day
+            # Now cross the border, again cushoning it by a day.
             entry.date_status_changed -= timedelta(days=2)
             entry.syncUpdate()
 
