@@ -10,12 +10,13 @@ __all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
+from storm.locals import Date, Int, Reference, Storm
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease,
-    IBinaryPackageReleaseSet)
+    IBinaryPackageReleaseDownloadCount, IBinaryPackageReleaseSet)
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingStatus)
 from canonical.database.enumcol import EnumCol
@@ -199,3 +200,21 @@ class BinaryPackageReleaseSet:
 
         return query, clauseTables
 
+
+class BinaryPackageReleaseDownloadCount(Storm):
+    """See `IBinaryPackageReleaseDownloadCount`."""
+
+    implements(IBinaryPackageReleaseDownloadCount)
+    __storm_table__ = 'BinaryPackageReleaseDownloadCount'
+
+    id = Int(primary=True)
+    archive_id = Int(name='archive', allow_none=False)
+    archive = Reference(archive_id, 'Archive.id')
+    binary_package_release_id = Int(
+        name='binary_package_release', allow_none=False)
+    binary_package_release = Reference(
+        binary_package_release_id, 'BinaryPackageRelease.id')
+    day = Date(allow_none=False)
+    count = Int(allow_none=False)
+    country_id = Int(name='country', allow_none=True)
+    country = Reference(country_id, 'Country.id')

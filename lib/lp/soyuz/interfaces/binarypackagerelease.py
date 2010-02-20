@@ -14,15 +14,15 @@ __all__ = [
     'IBinaryPackageReleaseSet',
     ]
 
-from zope.schema import Bool, Int, Text, TextLine, Datetime
+from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.fields import Reference
+from zope.schema import Bool, Choice, Date, Int, Text, TextLine, Datetime
 from zope.interface import Interface, Attribute
 
+
 from canonical.launchpad import _
-
 from canonical.launchpad.validators.version import valid_debian_version
-
-from lazr.enum import DBEnumeratedType, DBItem
-
+from lp.soyuz.interfaces.archive import IArchive
 
 class IBinaryPackageRelease(Interface):
     id = Int(title=_('ID'), required=True)
@@ -89,6 +89,23 @@ class IBinaryPackageReleaseSet(Interface):
 
     def getByNameInDistroSeries(distroseries, name):
         """Get an BinaryPackageRelease in a DistroSeries by its name"""
+
+
+class IBinaryPackageReleaseDownloadCount(Interface):
+    """Daily download count of a binary package release in an archive."""
+
+    archive = Reference(
+        title=_('The archive'), schema=IArchive, required=True,
+        readonly=True)
+    binary_package_release = Reference(
+        title=_('The binary package release'), schema=IBinaryPackageRelease,
+        required=True, readonly=True)
+    day = Date(
+        title=_('The day of the downloads'), required=True, readonly=True)
+    count = Int(
+        title=_('The number of downloads'), required=True, readonly=False)
+    country = Choice(
+        title=_('Country'), required=False, vocabulary='CountryName')
 
 
 class BinaryPackageFileType(DBEnumeratedType):
