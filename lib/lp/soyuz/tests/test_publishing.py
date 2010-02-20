@@ -244,7 +244,7 @@ class SoyuzTestPublisher:
                        distroseries=None,
                        archive=None,
                        pub_source=None,
-                       version=None,
+                       version='666',
                        architecturespecific=False):
         """Return a list of binary publishing records."""
         if distroseries is None:
