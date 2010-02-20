@@ -404,6 +404,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
+    def getBinaryPackageReleaseByFileName(self, filename):
+        """Return the corresponding `IBinaryPackageRelease` in this context.
+
+        :param filename: The filename to look up.
+        :return: The `IBinaryPackageRelease` with the specified filename,
+            or None if it was not found.
+        """
+
     def requestPackageCopy(target_location, requestor, suite=None,
                            copy_binaries=False, reason=None):
         """Return a new `PackageCopyRequest` for this archive.
