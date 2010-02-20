@@ -1,4 +1,5 @@
-= Person notifications =
+Person notifications
+====================
 
 The PersonNotification table stores notifications that should be sent
 (or already sent) to a given person.  It stores the person who should
@@ -66,8 +67,6 @@ notifications.
     >>> [n.subject for n in notification_set.getNotificationsToSend()]
     [u'subject2']
 
-    # Commit the transaction so that the subprocess sees the new notification.
-    >>> import transaction
     >>> transaction.commit()
 
     >>> import subprocess

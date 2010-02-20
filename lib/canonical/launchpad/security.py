@@ -42,6 +42,7 @@ from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
+from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
@@ -63,7 +64,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
-    IMilestone, IProjectMilestone)
+    IMilestone, IProjectGroupMilestone)
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
@@ -85,7 +86,8 @@ from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject, IProjectSet
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup, IProjectGroupSet)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -226,11 +228,11 @@ class ReviewProductSet(ReviewByRegistryExpertsOrAdmins):
 
 
 class ReviewProject(ReviewByRegistryExpertsOrAdmins):
-    usedfor = IProject
+    usedfor = IProjectGroup
 
 
 class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
-    usedfor = IProjectSet
+    usedfor = IProjectGroupSet
 
 
 class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
@@ -496,6 +498,21 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         return user.in_admin or user.in_rosetta_experts
 
 
+class AdminProjectTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProjectGroup
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProjectGroup` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or owner is
+        able to change translation settings for a project group.
+        """
+        return (user.isOwner(self.obj) or
+                user.in_rosetta_experts or
+                user.in_admin)
+
+
 class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProduct
@@ -521,10 +538,10 @@ class AdminSeriesByVCSImports(AuthorizationBase):
 
 class EditProjectMilestoneNever(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = IProjectMilestone
+    usedfor = IProjectGroupMilestone
 
     def checkAuthenticated(self, user):
-        """IProjectMilestone is a fake content object."""
+        """IProjectGroupMilestone is a fake content object."""
         return False
 
 
@@ -1100,8 +1117,7 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
-                                    EditDistributionByDistroOwnersOrAdmins):
+class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
     This class is used for `launchpad.TranslationsAdmin` privilege on
@@ -1115,9 +1131,9 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
     def checkAuthenticated(self, user):
         """Is the user able to manage `IDistribution` translations settings?
 
-        Any Launchpad/Launchpad Translations administrator or people allowed
-        to edit distribution details are able to change translation settings
-        for a distribution.
+        Any Launchpad/Launchpad Translations administrator, translation group
+        owner or a person allowed to edit distribution details is able to
+        change translations settings for a distribution.
         """
         # Translation group owner for a distribution is also a
         # translations administrator for it.
@@ -1125,10 +1141,9 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
         if translation_group and user.inTeam(translation_group.owner):
             return True
         else:
-            return (
-                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-                EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
-                    self, user))
+            return (user.in_rosetta_experts or
+                    EditDistributionByDistroOwnersOrAdmins(
+                        self.obj).checkAuthenticated(user))
 
 
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
@@ -1318,6 +1333,7 @@ class EditTranslationImportQueueEntry(AuthorizationBase):
         product or distribution, can edit it.
         """
         return self.obj.canEdit(user)
+
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
@@ -1691,6 +1707,29 @@ class BranchMergeProposalView(AuthorizationBase):
         return (AccessBranch(self.obj.source_branch).checkUnauthenticated()
                 and
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
+
+
+class PreviewDiffView(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IPreviewDiff
+
+    @property
+    def bmp_view(self):
+        return BranchMergeProposalView(self.obj.branch_merge_proposal)
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the preview diff?
+
+        The user can see a preview diff if they can see the merge proposal.
+        """
+        return self.bmp_view.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        """Is anyone able to view the branch merge proposal?
+
+        The user can see a preview diff if they can see the merge proposal.
+        """
+        return self.bmp_view.checkUnauthenticated()
 
 
 class CodeReviewVoteReferenceEdit(AuthorizationBase):

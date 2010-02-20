@@ -413,13 +413,13 @@
         template="../templates/bugtask-portlet-milestonebugs.pt"/>
     <browser:page
         name="+filebug"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
         name="+filebug-advanced"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>

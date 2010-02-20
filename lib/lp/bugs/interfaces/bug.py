@@ -16,7 +16,7 @@ __all__ = [
     'IBugDelta',
     'IBugSet',
     'IFrontPageBugAddForm',
-    'IProjectBugAddForm',
+    'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
     'UserCannotUnsubscribePerson',
@@ -903,8 +903,8 @@ class IBugAddForm(IBug):
         required=True, default=False)
 
 
-class IProjectBugAddForm(IBugAddForm):
-    """Create a bug for an IProject."""
+class IProjectGroupBugAddForm(IBugAddForm):
+    """Create a bug for an IProjectGroup."""
     product = Choice(
         title=_("Project"), required=True,
         vocabulary="ProjectProductsUsingMalone")
