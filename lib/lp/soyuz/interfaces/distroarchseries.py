@@ -113,7 +113,8 @@ class IDistroArchSeries(IHasOwner):
             title=_("Build chroot URL"),
             description=_(
                 "The URL to the current build chroot for this "
-                "distroarchseries.")))
+                "distroarchseries."),
+            readonly=True))
 
     def updatePackageCount():
         """Update the cached binary package count for this distro arch
