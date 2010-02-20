@@ -835,6 +835,10 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Priority Name"),
             required=False, readonly=True))
+    download_count = exported(
+        Int(
+            title=_("Download Count"),
+            required=False, readonly=True))
 
     def changeOverride(new_component=None, new_section=None,
                        new_priority=None):

@@ -947,6 +947,19 @@ Generating respective "Packages" stanzas:
     >>> [pub_file.archive_url for pub_file in bpph.files]
     [u'http://ftpmaster.internal/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 
+Binary publishing records also have a download count, which contains
+the number of downloads of this binary package release in this archive.
+
+    >>> print bpph.download_count
+    0
+
+    >>> from datetime import date
+    >>> bpph.archive.updatePackageDownloadCount(
+    ...     bpph.binarypackagerelease, date(2010, 2, 21), None, 10)
+
+    >>> print bpph.download_count
+    10
+
 
 IPublishingSet
 ==============
