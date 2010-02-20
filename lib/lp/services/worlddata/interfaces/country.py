@@ -20,26 +20,31 @@ from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad import _
 
+from lazr.restful.declarations import (
+    export_as_webservice_collection, collection_default_content,
+    export_as_webservice_entry,exported)
+
 class ICountry(Interface):
     """The country description."""
+    export_as_webservice_entry(plural_name='countries')
 
     id = Int(
             title=_('Country ID'), required=True, readonly=True,
             )
-    iso3166code2 = TextLine( title=_('iso3166code2'), required=True,
-                             readonly=True)
-    iso3166code3 = TextLine( title=_('iso3166code3'), required=True,
-                             readonly=True)
-    name = TextLine(
+    iso3166code2 = exported(TextLine( title=_('iso3166code2'), required=True,
+                             readonly=True))
+    iso3166code3 = exported(TextLine( title=_('iso3166code3'), required=True,
+                             readonly=True))
+    name = exported(TextLine(
             title=_('Country name'), required=True,
             constraint=valid_name,
-            )
-    title = Title(
+            ))
+    title = exported(Title(
             title=_('Country title'), required=True,
-            )
-    description = Description(
+            ))
+    description = exported(Description(
             title=_('Description'), required=True,
-            )
+            ))
 
     continent = Attribute("The Continent where this country is located.")
     languages = Attribute("An iterator over languages that are spoken in "
@@ -48,12 +53,17 @@ class ICountry(Interface):
 
 class ICountrySet(Interface):
     """A container for countries."""
+    export_as_webservice_collection(ICountry)
 
     def __getitem__(key):
         """Get a country."""
 
     def __iter__():
         """Iterate through the countries in this set."""
+
+    @collection_default_content()
+    def getCountries(limit=50):
+        """Return a collection of countries."""
 
 
 class IContinent(Interface):

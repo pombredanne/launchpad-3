@@ -13,6 +13,7 @@ from sqlobject import StringCol, SQLRelatedJoin, ForeignKey
 from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.services.worlddata.interfaces.country import (
     ICountry, ICountrySet, IContinent)
 
@@ -57,6 +58,11 @@ class CountrySet:
         for row in Country.select():
             yield row
 
+    def getCountries(self, limit=50):
+        """See `ICountrySet`."""
+        store = IStore(Country)
+        result_set = store.find(Country)
+        return result_set.order_by('iso3166code2')
 
 class Continent(SQLBase):
     """See IContinent."""
