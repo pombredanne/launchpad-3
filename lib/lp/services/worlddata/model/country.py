@@ -58,6 +58,14 @@ class CountrySet:
         for row in Country.select():
             yield row
 
+    def getByName(self, name):
+        """See `ICountrySet`."""
+        return IStore(Country).find(Country, name=name).one()
+
+    def getByCode(self, code):
+        """See `ICountrySet`."""
+        return IStore(Country).find(Country, iso3166code2=code).one()
+
     def getCountries(self, limit=50):
         """See `ICountrySet`."""
         store = IStore(Country)

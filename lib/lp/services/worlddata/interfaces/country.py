@@ -22,7 +22,8 @@ from canonical.launchpad import _
 
 from lazr.restful.declarations import (
     export_as_webservice_collection, collection_default_content,
-    export_as_webservice_entry,exported)
+    export_read_operation, export_as_webservice_entry, exported,
+    operation_parameters, operation_returns_entry)
 
 class ICountry(Interface):
     """The country description."""
@@ -60,6 +61,20 @@ class ICountrySet(Interface):
 
     def __iter__():
         """Iterate through the countries in this set."""
+
+    @operation_parameters(
+        name=TextLine(title=_("Name"), required=True))
+    @operation_returns_entry(ICountry)
+    @export_read_operation()
+    def getByName(name):
+        """Return a country by its name."""
+
+    @operation_parameters(
+        code=TextLine(title=_("Code"), required=True))
+    @operation_returns_entry(ICountry)
+    @export_read_operation()
+    def getByCode(code):
+        """Return a country by its code."""
 
     @collection_default_content()
     def getCountries(limit=50):
