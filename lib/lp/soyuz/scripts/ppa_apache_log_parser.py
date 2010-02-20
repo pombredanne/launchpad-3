@@ -19,4 +19,4 @@ def get_ppa_file_key(path):
     if re_isadeb.match(split_path[8]) is None:
         return None
 
-    return split_path[1:4] + [split_path[8]]
+    return tuple(split_path[1:4]) + (split_path[8],)
