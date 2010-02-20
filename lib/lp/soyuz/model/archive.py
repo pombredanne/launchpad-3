@@ -77,6 +77,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus, IPublishingSet)
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.interfaces import (
@@ -1078,6 +1079,21 @@ class Archive(SQLBase):
             raise NotFoundError(filename)
 
         return archive_file
+
+    def getBinaryPackageReleaseByFileName(self, filename):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        results = store.find(
+            BinaryPackageRelease,
+            BinaryPackageFile.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
+            LibraryFileAlias.filename == filename,
+            BinaryPackagePublishingHistory.archive == self,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id).config(distinct=True)
+        if results.count() > 1:
+            return None
+        return results.one()
 
     def requestPackageCopy(self, target_location, requestor, suite=None,
         copy_binaries=False, reason=None):
