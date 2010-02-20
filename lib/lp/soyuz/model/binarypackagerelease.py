@@ -220,6 +220,7 @@ class BinaryPackageReleaseDownloadCount(Storm):
     count = Int(allow_none=False)
 
     def __init__(self, archive, binary_package_release, day, country, count):
+        super(BinaryPackageReleaseDownloadCount, self).__init__()
         self.archive = archive
         self.binary_package_release = binary_package_release
         self.day = day
