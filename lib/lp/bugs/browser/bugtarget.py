@@ -1290,7 +1290,7 @@ class BugsPatchesView(LaunchpadView):
         if (IDistribution.providedBy(self.context) or
             IDistroSeries.providedBy(self.context)):
             return "Package"
-        elif (IProject.providedBy(self.context) or
+        elif (IProjectGroup.providedBy(self.context) or
               IPerson.providedBy(self.context)):
             # In the case of an IPerson, the target column can vary
             # row-by-row, showing both packages and products.  We
