@@ -3,7 +3,7 @@
 
 """Test Archive features."""
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import pytz
 import unittest
 
@@ -18,11 +18,14 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageReleaseDownloadCount)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -557,6 +560,95 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             self.archive, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+
+
+class TestUpdatePackageDownloadCount(TestCaseWithFactory):
+    """Ensure that updatePackageDownloadCount works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestUpdatePackageDownloadCount, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.store = getUtility(IStoreSelector).get(
+            MAIN_STORE, DEFAULT_FLAVOR)
+
+        self.archive = self.factory.makeArchive()
+        self.bpr_1 = self.publisher.getPubBinaries(
+                archive=self.archive)[0].binarypackagerelease
+        self.bpr_2 = self.publisher.getPubBinaries(
+                archive=self.archive)[0].binarypackagerelease
+
+        country_set = getUtility(ICountrySet)
+        self.australia = country_set['AU']
+        self.new_zealand = country_set['NZ']
+
+    def assertCount(self, count, archive, bpr, day, country):
+        self.assertEqual(count, self.store.find(
+            BinaryPackageReleaseDownloadCount,
+            archive=archive, binary_package_release=bpr,
+            day=day, country=country).one().count)
+
+    def test_creates_new_entry(self):
+        # The first update for a particular archive, package, day and
+        # country will create a new BinaryPackageReleaseDownloadCount
+        # entry.
+        day = date(2010, 2, 20)
+        self.assertIs(None, self.store.find(
+            BinaryPackageReleaseDownloadCount,
+            archive=self.archive, binary_package_release=self.bpr_1,
+            day=day, country=self.australia).one())
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+
+    def test_reuses_existing_entry(self):
+        # A second update will simply add to the count on the existing
+        # BPRDC.
+        day = date(2010, 2, 20)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 3)
+        self.assertCount(13, self.archive, self.bpr_1, day, self.australia)
+
+    def test_differentiates_between_countries(self):
+        # A different country will cause a new entry to be created.
+        day = date(2010, 2, 20)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.new_zealand, 3)
+
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertCount(3, self.archive, self.bpr_1, day, self.new_zealand)
+
+    def test_differentiates_between_days(self):
+        # A different date will also cause a new entry to be created.
+        day = date(2010, 2, 20)
+        another_day = date(2010, 2, 21)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, another_day, self.australia, 3)
+
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertCount(
+            3, self.archive, self.bpr_1, another_day, self.australia)
+
+    def test_differentiates_between_bprs(self):
+        # And even a different package will create a new entry.
+        day = date(2010, 2, 20)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_2, day, self.australia, 3)
+
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertCount(3, self.archive, self.bpr_2, day, self.australia)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
