@@ -359,11 +359,11 @@ The view provides a property to get prioritized list of series packagings.
 The packages that most need more information to send bugs upstream, build
 packages, and sync translations are listed first. A distro series can have
 thousands of upstream packaging links. The view provides a batch navigator
-to access the packagings. The default batch size is 100.
+to access the packagings. The default batch size is 20.
 
     >>> batch_navigator = view.cached_packagings
     >>> batch_navigator.default_size
-    100
+    20
 
     >>> print batch_navigator.heading
     packagings
@@ -392,7 +392,7 @@ The view provides the cached_unlinked_packages property to access a
 
     >>> batch_navigator = view.cached_unlinked_packages
     >>> batch_navigator.default_size
-    100
+    20
 
     >>> print batch_navigator.heading
     packages
