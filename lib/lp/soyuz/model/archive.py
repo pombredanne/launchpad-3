@@ -288,6 +288,11 @@ class Archive(SQLBase):
                 url, "/".join(
                     (self.owner.name, self.name, self.distribution.name)))
 
+        if self.is_copy:
+            return urlappend(
+                config.archivepublisher.copy_base_url,
+                self.distribution.name + '-' + self.name)
+
         try:
             postfix = archive_postfixes[self.purpose]
         except KeyError:
