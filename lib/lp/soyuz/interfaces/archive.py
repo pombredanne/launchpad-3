@@ -404,7 +404,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
-    def getBinaryPackageReleaseByFileName(self, filename):
+    def getBinaryPackageReleaseByFileName(filename):
         """Return the corresponding `IBinaryPackageRelease` in this context.
 
         :param filename: The filename to look up.
