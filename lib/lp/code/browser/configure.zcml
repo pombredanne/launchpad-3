@@ -946,6 +946,11 @@
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
 
+    <browser:navigation
+        module="lp.code.browser.diff"
+        classes="
+            PreviewDiffNavigation"/>
+
     <browser:page
         name="+diff"
         for="lp.code.interfaces.diff.IPreviewDiff"

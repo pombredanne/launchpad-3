@@ -395,6 +395,7 @@
                     branch_type
                     name
                     url
+                    composePublicURL
                     whiteboard
                     target
                     mirror_status_message
@@ -928,7 +929,9 @@
     <allow interface="lp.code.interfaces.diff.IStaticDiff" />
   </class>
   <class class="lp.code.model.diff.PreviewDiff">
-    <allow interface="lp.code.interfaces.diff.IPreviewDiff" />
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.diff.IPreviewDiff"/>
   </class>
   <securedutility
       component="lp.code.model.diff.StaticDiff"
