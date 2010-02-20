@@ -395,6 +395,7 @@
                     branch_type
                     name
                     url
+                    composePublicURL
                     whiteboard
                     target
                     mirror_status_message

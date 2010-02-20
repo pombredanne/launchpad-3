@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401,W0611
@@ -355,6 +355,17 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             description=_(
                 "This is the external location where the Bazaar "
                 "branch is hosted.")))
+
+    @operation_parameters(
+        scheme=TextLine(title=_("URL scheme"), default=u'http'))
+    @export_read_operation()
+    def composePublicURL(scheme='http'):
+        """Return a public URL for the branch using the given protocol.
+
+        :param scheme: a protocol name accepted by the public
+            code-hosting API.  (As a legacy issue, 'sftp' is also
+            accepted).
+        """
 
     description = exported(
         Text(
