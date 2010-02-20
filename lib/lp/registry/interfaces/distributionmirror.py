@@ -353,9 +353,9 @@ class IDistributionMirrorPublic(Interface):
     speed = exported(Choice(
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary=MirrorSpeed))
-    country = Choice(
+    country = exported(Choice(
         title=_('Location'), required=True, readonly=False,
-        vocabulary='CountryName')
+        vocabulary='CountryName'))
     content = exported(Choice(
         title=_('Content'), required=True, readonly=False,
         description=_(

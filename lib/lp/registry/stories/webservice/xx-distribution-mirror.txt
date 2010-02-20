@@ -12,6 +12,7 @@ mirrors:
     >>> canonical_archive_json = webservice.get(canonical_archive['self_link']).jsonBody()
     >>> pprint_entry(canonical_archive_json)
     content: u'Archive'
+    country_link: u'http://.../+countries/GB'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
     date_reviewed: None
     description: None
@@ -38,6 +39,7 @@ And CD image mirrors:
     >>> canonical_releases_json = webservice.get(canonical_releases['self_link']).jsonBody()
     >>> pprint_entry(canonical_releases_json)
     content: u'CD Image'
+    country_link: u'http://.../+countries/GB'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
     date_reviewed: None
     description: None
@@ -116,6 +118,7 @@ Mirror listing admins may see all:
     ...     archive_404_mirror['self_link']).jsonBody()
     >>> pprint_entry(response)
     content: u'Archive'
+    country_link: u'http://.../+countries/FR'
     date_created: u'2006-10-16T18:31:43.438573+00:00'
     date_reviewed: None
     description: None
