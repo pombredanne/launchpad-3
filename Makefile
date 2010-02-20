@@ -110,7 +110,7 @@ pagetests: build
 
 inplace: build
 
-build: $(BZR_VERSION_INFO) compile apidoc jsbuild css_combine
+build: compile apidoc jsbuild css_combine
 
 css_combine: sprite_css
 	${SHHH} bin/combine-css
@@ -170,7 +170,7 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
-compile: $(PY)
+compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
@@ -214,6 +214,11 @@ start_codebrowse: build
 
 stop_codebrowse:
 	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
+
+run_codehosting: inplace stop hosted_branches
+	$(RM) thread*.request
+	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
+
 
 start_librarian: build
 	bin/start_librarian
