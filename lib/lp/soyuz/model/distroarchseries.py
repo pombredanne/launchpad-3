@@ -136,6 +136,13 @@ class DistroArchSeries(SQLBase):
 
         return pocket_chroot.chroot
 
+    @property
+    def chroot_url(self):
+        chroot = self.getChroot()
+        if chroot is None:
+            return None
+        return chroot.http_url
+
     def addOrUpdateChroot(self, chroot):
         """See `IDistroArchSeries`."""
         pocket_chroot = self.getPocketChroot()

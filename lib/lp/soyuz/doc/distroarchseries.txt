@@ -344,6 +344,14 @@ returned.
     >>> print_architectures(hoary.enabled_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
 
+The architecture also has a 'chroot_url' attribute directly referencing
+the file.
+
+    >>> print hoary.getDistroArchSeries('hppa').chroot_url
+    http://localhost:58000/.../filename...
+    >>> print hoary.getDistroArchSeries('i386').chroot_url
+    None
+
 `DistroSeries.enabled_architectures` results are ordered
 alphabetically by 'architecturetag'.
 
