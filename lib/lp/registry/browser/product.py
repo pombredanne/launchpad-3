@@ -174,6 +174,7 @@ class ProductLicenseMixin:
     Requires the "product" attribute be set in the child
     classes' action handler.
     """
+
     def validate(self, data):
         """Validate 'licenses' and 'license_info'.
 
@@ -221,6 +222,7 @@ class ProductLicenseMixin:
                 "Launchpad", config.canonical.noreply_from_address)
             license_titles = '\n'.join(
                 license.title for license in self.product.licenses)
+
             def indent(text):
                 text = '\n    '.join(line for line in text.split('\n'))
                 text = '    ' + text
@@ -523,7 +525,6 @@ class SortSeriesMixin:
                                              key=attrgetter('name'))
         series_list.insert(0, self.product.development_focus)
         return series_list
-
 
     @property
     def sorted_series_list(self):
@@ -986,6 +987,7 @@ class SeriesReleasePair:
     Replaces the use of a (series, release) tuple so that it can be more
     clearly addressed in the view class.
     """
+
     def __init__(self, series, release):
         self.series = series
         self.release = release
@@ -1196,6 +1198,7 @@ class EditPrivateBugsMixin:
                     'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
+
 
 class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
     label = "Administer project details"
@@ -1693,7 +1696,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     # StepView requires that its validate() method not be overridden, so make
     # sure this calls the right method.  validateStep() will call the license
     # validation code.
-
     def validate(self, data):
         """See `MultiStepView`."""
         StepView.validate(self, data)

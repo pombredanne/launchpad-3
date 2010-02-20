@@ -2,16 +2,16 @@
 Projects and the answer tracker
 ===============================
 
-Although questions cannot be filed directly against project groups (nee
-'Project'), IProject provides the IQuestionCollection and
+Although question cannot be filed directly against project groups,
+IProjectGroup in Launchpad also provides the IQuestionCollection and
 ISearchableByQuestionOwner interfaces.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.answers.interfaces.questioncollection import (
     ...     ISearchableByQuestionOwner, IQuestionCollection)
 
-    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> verifyObject(IQuestionCollection, mozilla_project)
     True
     >>> verifyObject(ISearchableByQuestionOwner, mozilla_project)
@@ -43,7 +43,7 @@ project group's searchQuestions() method.
 
 In the case where a project group has no projects, there are no results.
 
-    >>> aaa_project = getUtility(IProjectSet).getByName('aaa')
+    >>> aaa_project = getUtility(IProjectGroupSet).getByName('aaa')
     >>> list(aaa_project.searchQuestions())
     []
 
