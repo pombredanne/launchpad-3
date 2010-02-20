@@ -215,6 +215,13 @@ class BinaryPackageReleaseDownloadCount(Storm):
     binary_package_release = Reference(
         binary_package_release_id, 'BinaryPackageRelease.id')
     day = Date(allow_none=False)
-    count = Int(allow_none=False)
     country_id = Int(name='country', allow_none=True)
     country = Reference(country_id, 'Country.id')
+    count = Int(allow_none=False)
+
+    def __init__(self, archive, binary_package_release, day, country, count):
+        self.archive = archive
+        self.binary_package_release = binary_package_release
+        self.day = day
+        self.country = country
+        self.count = count
