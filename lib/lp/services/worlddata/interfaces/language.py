@@ -17,7 +17,10 @@ from zope.schema import TextLine, Int, Choice, Bool, Field, Set
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
-from lazr.restful.declarations import export_as_webservice_entry
+from lazr.restful.declarations import (
+    export_as_webservice_entry, export_as_webservice_collection,
+    collection_default_content, export_read_operation, exported,
+    operation_parameters)
 
 
 class TextDirection(DBEnumeratedType):
@@ -42,29 +45,35 @@ class ILanguage(Interface):
 
     id = Attribute("This Language ID.")
 
-    code = TextLine(
+    code = exported(TextLine(
         title=u'The ISO 639 code',
-        required=True)
+        required=True))
 
-    englishname = TextLine(
-        title=u'The English name',
-        required=True)
+    englishname = exported(
+        TextLine(
+            title=u'The English name',
+            required=True),
+        exported_as='english_name')
 
     nativename = TextLine(
         title=u'Native name',
         description=u'The name of this language in the language itself.',
         required=False)
 
-    pluralforms = Int(
-        title=u'Number of plural forms',
-        description=u'The number of plural forms this language has.',
-        required=False)
+    pluralforms = exported(
+        Int(
+            title=u'Number of plural forms',
+            description=u'The number of plural forms this language has.',
+            required=False),
+        exported_as='plural_forms')
 
-    pluralexpression = TextLine(
-        title=u'Plural form expression',
-        description=(u'The expression that relates a number of items to the'
-                     u' appropriate plural form.'),
-        required=False)
+    pluralexpression = exported(
+        TextLine(
+            title=u'Plural form expression',
+            description=(u'The expression that relates a number of items'
+                         u' to the appropriate plural form.'),
+            required=False),
+        exported_as='plural_expression')
 
     translators = Field(
         title=u'List of Person/Team that translate into this language.',
@@ -92,11 +101,12 @@ class ILanguage(Interface):
         Provided by SQLObject.
         """
 
-    visible = Bool(
-        title=u'Visible',
-        description=(
-            u'Whether this language should ususally be visible or not.'),
-        required=True)
+    visible = exported(
+        Bool(
+            title=u'Visible',
+            description=(
+                u'Whether this language should ususally be visible or not.'),
+            required=True))
 
     direction = Choice(
         title=u'Text direction',
@@ -119,11 +129,13 @@ class ILanguage(Interface):
         required=True,
         readonly=True)
 
-    abbreviated_text_dir = TextLine(
-        title=(u'The abbreviated form of the text direction, suitable for use'
-               u' in HTML files.'),
-        required=True,
-        readonly=True)
+    abbreviated_text_dir = exported(
+        TextLine(
+            title=(u'The abbreviated form of the text direction, suitable for use'
+                   u' in HTML files.'),
+            required=True,
+            readonly=True),
+        exported_as='abbreviated_text_direction')
 
     def getFullCode(variant=None):
         """Compose full language code for this language."""
@@ -134,6 +146,12 @@ class ILanguage(Interface):
 
 class ILanguageSet(Interface):
     """The collection of languages."""
+
+    export_as_webservice_collection(ILanguage)
+
+    @collection_default_content()
+    def getAll():
+        """Return a result set of all ILanguages from Launchpad."""
 
     common_languages = Attribute("An iterator over languages that are "
         "not hidden.")
@@ -187,5 +205,7 @@ class ILanguageSet(Interface):
             left'.
         """
 
+    @export_read_operation()
+    @operation_parameters(text=TextLine(required=True))
     def search(text):
         """Return a result set of ILanguage that match the search."""

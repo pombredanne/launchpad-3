@@ -250,3 +250,8 @@ class LanguageSet:
             results = None
 
         return results
+    
+    def getAll(self):
+        """See `ILanguageSet`."""
+        return ISlaveStore(Language).find(Language).order_by(Language.englishname)
+
