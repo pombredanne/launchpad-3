@@ -32,7 +32,7 @@ from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
     export_as_webservice_entry, export_read_operation, exported)
-from lazr.restful.fields import Reference
+from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -40,7 +40,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.menu import structured
-
+from lp.services.worlddata.interfaces.country import ICountry
 
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
@@ -353,9 +353,11 @@ class IDistributionMirrorPublic(Interface):
     speed = exported(Choice(
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary=MirrorSpeed))
-    country = Choice(
-        title=_('Location'), required=True, readonly=False,
-        vocabulary='CountryName')
+    country = exported(ReferenceChoice(
+        title=_('Location'), description=_(
+            "The country in which this mirror is based."),
+        required=True, readonly=False,
+        vocabulary='CountryName', schema=ICountry))
     content = exported(Choice(
         title=_('Content'), required=True, readonly=False,
         description=_(
