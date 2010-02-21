@@ -46,6 +46,15 @@ Make sure that invalid countries return 404s and not OOPSes.
     >>> print uk['self_link']
     http://.../+countries/GB
 
+Ensure that unknown/non-existent countries return a None and not an OOPS:
+
+    >>> bogus_country_by_name = webservice.named_get(
+    ...     '/+countries', 'getByName',
+    ...     name='Klingon Land').jsonBody()
+    >>> print bogus_country_by_name
+    None
+
+
 "getByCode" returns a country for the given code.
 
     >>> au = webservice.named_get(
@@ -53,3 +62,11 @@ Make sure that invalid countries return 404s and not OOPSes.
     ...     code='AU').jsonBody()
     >>> print au['self_link']
     http://.../+countries/AU
+
+Ensure that unknown/non-existent country codes return a None and not an OOPS:
+
+    >>> bogus_country_by_code = webservice.named_get(
+    ...     '/+countries', 'getByCode',
+    ...     code='TEST').jsonBody()
+    >>> print bogus_country_by_code
+    None
