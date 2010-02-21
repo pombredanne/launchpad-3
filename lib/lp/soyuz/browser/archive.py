@@ -218,6 +218,15 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
         return None
 
+    @stepthrough('+binaryhits')
+    def traverse_binaryhits(self, name):
+        try:
+            bprdc_id = int(name)
+        except ValueError:
+            return None
+
+        return self.context.getPackageDownloadCountById(bprdc_id)
+
     @stepthrough('+subscriptions')
     def traverse_subscription(self, person_name):
         try:

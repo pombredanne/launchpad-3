@@ -898,6 +898,9 @@ class IArchiveView(IHasBuildRecords):
         :return: A list of `IArchivePermission` records.
         """
 
+    def getPackageDownloadCountById(bprdc_id):
+        """Get the `IBinaryPackageDownloadCount` with the given ID."""
+
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""

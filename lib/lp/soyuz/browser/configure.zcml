@@ -796,4 +796,9 @@
         path_expression="string:+dependency/${dependency/id}"
         attribute_to_parent="archive"
         />
+    <browser:url
+        for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"
+        path_expression="string:+binaryhits/${id}"
+        attribute_to_parent="archive"
+        />
 </configure>
