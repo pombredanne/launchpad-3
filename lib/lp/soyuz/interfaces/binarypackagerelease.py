@@ -18,7 +18,7 @@ __all__ = [
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import exported, export_as_webservice_entry
 from lazr.restful.fields import Reference, ReferenceChoice
-from zope.schema import Bool, Choice, Date, Int, Text, TextLine, Datetime
+from zope.schema import Bool, Date, Int, Text, TextLine, Datetime
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
