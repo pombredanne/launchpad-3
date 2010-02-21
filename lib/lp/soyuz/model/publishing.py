@@ -1008,7 +1008,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return Store.of(self).find(
             BinaryPackageReleaseDownloadCount, *clauses).order_by(
-                BinaryPackageReleaseDownloadCount.id)
+                Desc(BinaryPackageReleaseDownloadCount.id))
 
 
 class PublishingSet:

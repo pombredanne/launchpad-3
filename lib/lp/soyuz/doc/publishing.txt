@@ -954,11 +954,32 @@ the number of downloads of this binary package release in this archive.
     0
 
     >>> from datetime import date
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> australia = getUtility(ICountrySet)['AU']
+
     >>> bpph.archive.updatePackageDownloadCount(
-    ...     bpph.binarypackagerelease, date(2010, 2, 21), None, 10)
+    ...     bpph.binarypackagerelease, date(2010, 2, 19), None, 2)
+    >>> bpph.archive.updatePackageDownloadCount(
+    ...     bpph.binarypackagerelease, date(2010, 2, 21), australia, 10)
 
     >>> print bpph.download_count
-    10
+    12
+
+We can also use getDownloadCounts to find the raw download counts per
+day and country.
+
+    >>> [b.day for b in bpph.getDownloadCounts()]
+    [datetime.date(2010, 2, 21), datetime.date(2010, 2, 19)]
+
+getDownloadCounts lets us filter by date.
+
+    >>> [b.day for b in bpph.getDownloadCounts(start_date=date(2010, 2, 21))]
+    [datetime.date(2010, 2, 21)]
+    >>> [b.day for b in bpph.getDownloadCounts(end_date=date(2010, 2, 20))]
+    [datetime.date(2010, 2, 19)]
+    >>> [b.day for b in bpph.getDownloadCounts(
+    ...     start_date=date(2010, 2, 20), end_date=date(2010, 2, 20))]
+    []
 
 
 IPublishingSet
