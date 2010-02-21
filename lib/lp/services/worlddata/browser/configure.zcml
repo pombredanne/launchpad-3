@@ -9,20 +9,20 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
 
-<browser:url
-    for="lp.services.worlddata.interfaces.country.ICountry"
-    path_expression="iso3166code2"
-    parent_utility="lp.services.worlddata.interfaces.country.ICountrySet"
-    rootsite="mainsite" />
+    <browser:url
+        for="lp.services.worlddata.interfaces.country.ICountry"
+        path_expression="iso3166code2"
+        parent_utility="lp.services.worlddata.interfaces.country.ICountrySet"
+        rootsite="mainsite" />
 
-<browser:url
-    for="lp.services.worlddata.interfaces.country.ICountrySet"
-    path_expression="string:+countries"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    rootsite="mainsite" />
+    <browser:url
+        for="lp.services.worlddata.interfaces.country.ICountrySet"
+        path_expression="string:+countries"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        rootsite="mainsite" />
 
-<browser:navigation
-    module="lp.services.worlddata.browser.country"
-    classes="CountrySetNavigation" />
+    <browser:navigation
+        module="lp.services.worlddata.browser.country"
+        classes="CountrySetNavigation" />
 
 </configure>
