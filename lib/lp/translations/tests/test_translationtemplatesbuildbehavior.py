@@ -37,9 +37,9 @@ class FakeChroot:
 class FakeSlave:
     """Pretend build slave."""
     def __init__(self, builderstatus):
-        self.build_started = False
         self.status = {
             'build_status': 'BuildStatus.%s' % builderstatus.name,
+            'test_build_started': False,
         }
 
         self.cacheFile = FakeMethod()
@@ -49,7 +49,12 @@ class FakeSlave:
         """Pretend to start a build."""
         self.status['build_id'] = buildid
         self.status['filemap'] = filemap
-        self.build_started = True
+
+        # Chuck in some information that a real slave wouldn't store,
+        # but which will allow tests to check up on the build call.
+        self.status['test_build_type'] = build_type
+        self.status['test_build_args'] = args
+        self.status['test_build_started'] = True
 
 
 class FakeBuilder:
@@ -96,13 +101,20 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         return getUtility(IBuildQueueSet).getByJob(job.id)
 
     def test_dispatchBuildToSlave(self):
+        # dispatchBuildToSlave ultimately causes the slave's build
+        # method to be invoked.  The slave receives the URL of the
+        # branch it should build from.
         behavior = self._makeBehavior()
         behavior._getChroot = FakeChroot
         buildqueue_item = self._getBuildQueueItem(behavior)
 
         behavior.dispatchBuildToSlave(buildqueue_item, logging)
 
-        self.assertTrue(behavior._builder.slave.build_started)
+        slave_status = behavior._builder.slaveStatus()
+        self.assertTrue(slave_status['test_build_started'])
+        self.assertEqual(
+            'translation-templates', slave_status['test_build_type'])
+        self.assertIn('branch_url', slave_status['test_build_args'])
 
     def test_getChroot(self):
         # _getChroot produces the current chroot for the current Ubuntu

@@ -7,6 +7,8 @@ Set up required objects
     >>> login('foo.bar@canonical.com')
     >>> merge_proposal = factory.makeBranchMergeProposal()
     >>> merge_proposal_url = canonical_url(merge_proposal)
+    >>> merge_proposal_path = canonical_url(
+    ...     merge_proposal, force_local_path=True)
     >>> eric = factory.makePerson(
     ...     name="eric", email="eric@example.com", password="test",
     ...     displayname="Eric the Viking")
@@ -91,6 +93,28 @@ Email addresses in code review comments are hidden for users not logged in.
     This is a longer message with several lines
     Email me at &lt;email address hidden&gt; for more details
     Reply
+
+If a merge proposal is resubmitted, the comments on the superseded proposal
+are also displayed in the new proposal.
+
+    >>> login('foo.bar@canonical.com')
+    >>> new_merge_proposal = merge_proposal.resubmit(merge_proposal.registrant)
+    >>> new_merge_proposal_url = canonical_url(new_merge_proposal)
+    >>> logout()
+    >>> anon_browser.open(new_merge_proposal_url)
+    >>> print_comments('boardCommentBody', anon_browser, index=0)
+    This is a very long comment about what things should be done to the
+    source branch to land it. When this comment is replied to, it should
+    wrap the line properly.
+    >>> print_comments('boardCommentDetails', anon_browser, index=0)
+    Eric the Viking wrote ... ago
+    Posted in a previous version of this proposal
+    >>> details = find_tags_by_class(
+    ...     anon_browser.contents, 'boardCommentDetails')[0]
+    >>> links = details.findAll('a')
+    >>> print links[1]['href'] == merge_proposal_path
+    True
+
 
 Reviewing
 ---------
