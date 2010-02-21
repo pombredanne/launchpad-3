@@ -48,19 +48,19 @@ def get_bzr_path():
 
 
 def _get_bzr_plugins_path():
-    """Find the path to the Bazaar plugins for this rocketfuel instance"""
+    """Find the path to the Bazaar plugins for this rocketfuel instance."""
     return os.path.join(config.root, 'bzrplugins')
 
 
 def get_BZR_PLUGIN_PATH_for_subprocess():
-    """Calculate the appropriate value for the BZR_PLUGIN_PATH environment
-    variable for launching a Launchpad Bazaar subprocess.
-    
+    """Calculate the appropriate value for the BZR_PLUGIN_PATH environment.
+
     The '-site' token tells bzrlib not to include the 'site specific plugins
     directory' (which is usually something like
     /usr/lib/pythonX.Y/dist-packages/bzrlib/plugins/) in the plugin search
     path, which would be inappropriate for Launchpad, which may be using a bzr
-    egg of an incompatible version."""
+    egg of an incompatible version.
+    """
     return ":".join((_get_bzr_plugins_path(), "-site"))
 
 
