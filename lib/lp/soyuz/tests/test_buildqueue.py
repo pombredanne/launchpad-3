@@ -673,7 +673,9 @@ class MultiArchBuildsBase(TestBuildQueueBase):
 
 class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     """Test estimated time-to-builder with builds and multiple processors."""
-    def test_min_time_to_next_builder(self):
+    # XXX sinzui 2010-02-21 bug=525329: disabled because of a spurious failure
+    # in https://lpbuildbot.canonical.com/builders/db_lp/builds/527.
+    def disabled_test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
         # One of four builders for the 'apg' build is immediately available.
