@@ -38,7 +38,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
@@ -989,6 +990,25 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component = self.binarypackagerelease.component
 
         self.component = component
+
+    def getDownloadCounts(self, start_date=None, end_date=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        clauses = [
+            BinaryPackageReleaseDownloadCount.archive == self.archive,
+            BinaryPackageReleaseDownloadCount.binary_package_release ==
+                self.binarypackagerelease,
+            ]
+
+        if start_date is not None:
+            clauses.append(
+                BinaryPackageReleaseDownloadCount.day >= start_date)
+        if end_date is not None:
+            clauses.append(
+                BinaryPackageReleaseDownloadCount.day <= end_date)
+
+        return Store.of(self).find(
+            BinaryPackageReleaseDownloadCount, *clauses).order_by(
+                BinaryPackageReleaseDownloadCount.id)
 
 
 class PublishingSet:
