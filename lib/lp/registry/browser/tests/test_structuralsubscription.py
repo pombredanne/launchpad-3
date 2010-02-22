@@ -108,7 +108,7 @@ class TestMilestoneStructuralSubscriptionTraversal(
 
 class TestProjectStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
-    """Test IStructuralSubscription traversal from IProject."""
+    """Test IStructuralSubscription traversal from IProjectGroup."""
     def setUpTarget(self):
         self.target = self.factory.makeProject(name='fooix-project')
         self.navigation = ProjectNavigation

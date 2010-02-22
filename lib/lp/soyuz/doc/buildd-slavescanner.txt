@@ -84,7 +84,7 @@ A insane WAITING slave, with wrong BuildQueue/Build relation:
     >>> insanewaiting_builder = MockBuilder(
     ...     'Insane Waiting Slave', InsaneWaitingSlave())
     >>> buildergroup.rescueBuilderIfLost(insanewaiting_builder)
-    WARNING:root:Builder 'Insane Waiting Slave' rescued from '7-1: Job build entry mismatch'
+    WARNING:root:Builder 'Insane Waiting Slave' rescued from '7-1': 'Job build entry mismatch'
 
 It was rescued because the BuildQueue.id == 1 isn't related to
 Build.id == 7, so this pair relation is wrong.
@@ -96,16 +96,32 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
     WARNING:root:Builder 'Lost Building Slave' rescued from
-    '1000-10000: 'Object not found''
+    '1000-10000': 'Object not found'
 
 Then a lost slave in status 'WAITING':
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
-    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: 'Object not found''
+    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'Object not found'
 
 Both got rescued, as expected.
+
+A BUILDING or WAITING slave without a build assigned in the DB will also be rescued.
+
+    >>> from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
+
+    >>> lostbuilding_builder = MockBuilder(
+    ...     'Lost Building Slave', LostBuildingSlave())
+    >>> lostbuilding_builder.current_build_behavior = IdleBuildBehavior()
+    >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
+    WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000': 'No job assigned to builder'
+
+    >>> lostwaiting_builder = MockBuilder(
+    ...     'Lost Waiting Slave', LostWaitingSlave())
+    >>> lostwaiting_builder.current_build_behavior = IdleBuildBehavior()
+    >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
+    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'No job assigned to builder'
 
 Slave-scanner will deactivate a 'lost-building' builder that could not
 be aborted appropriately.
@@ -176,7 +192,8 @@ hence certain package dependencies.
 The slavescanner system also perform build-notification for the
 following states: FAILEDTOBUILD and CHROOTWAIT
 
-    >>> from canonical.launchpad.interfaces import IBuildSet, IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> from lp.soyuz.interfaces.build import IBuildSet
     >>> import datetime, pytz
 
     >>> UTC = pytz.timezone('UTC')
@@ -254,7 +271,7 @@ Do the test execution:
 WAITING - DEPWAIT -> a required dependency is missing, again notice
 from builder, but Build.buildstate has the right state:
 
-    >>> bqItem4 = a_build.createBuildQueueEntry()
+    >>> bqItem4 = a_build.queueBuild()
     >>> setupBuildQueue(bqItem4, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -287,7 +304,7 @@ Do the test execution:
 WAITING - CHROOTFAIL -> the Chroot for this distroseries is damage, nor
 builder, but right state stored in Build entry:
 
-    >>> bqItem5 = a_build.createBuildQueueEntry()
+    >>> bqItem5 = a_build.queueBuild()
     >>> setupBuildQueue(bqItem5, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -313,7 +330,7 @@ builder, but right state stored in Build entry:
 
 WAITING - BUILDERFAIL -> builder has failed by internal error, job is available for next build round:
 
-    >>> bqItem6 = a_build.createBuildQueueEntry()
+    >>> bqItem6 = a_build.queueBuild()
     >>> bqItem6.markAsBuilding(a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -349,7 +366,7 @@ Cleanup in preparation for the next test:
 
 BUILDING -> builder still processing the job, simply collect the logtail:
 
-    >>> bqItem7 = a_build.createBuildQueueEntry()
+    >>> bqItem7 = a_build.queueBuild()
     >>> setupBuildQueue(bqItem7, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -375,7 +392,7 @@ Cleanup in preparation for the next test:
 ABORTED -> builder was aborted, release builder and reset job for the
 next build round:
 
-    >>> bqItem8 = a_build.createBuildQueueEntry()
+    >>> bqItem8 = a_build.queueBuild()
     >>> setupBuildQueue(bqItem8, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -396,7 +413,7 @@ ABORTING -> builder is trying to terminate its children process, the
 only action master can perform is polling the slave status until it
 gets ABORTED.
 
-    >>> bqItem9 = a_build.createBuildQueueEntry()
+    >>> bqItem9 = a_build.queueBuild()
     >>> setupBuildQueue(bqItem9, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -428,7 +445,7 @@ The build record in question can end up in the following states:
 
 === Failed to Upload (FAILEDTOUPLOAD) ===
 
-    >>> bqItem10 = a_build.createBuildQueueEntry()
+    >>> bqItem10 = a_build.queueBuild()
     >>> setupBuildQueue(bqItem10, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -507,7 +524,7 @@ this case cleanly. We need to set the pocket to updates for this test as its
 uploading to warty.
 
     >>> bqItem10 = getUtility(IBuildSet).getByBuildID(
-    ...     6).createBuildQueueEntry()
+    ...     6).queueBuild()
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem10)
 
 XXX: The pocket attribute is not intended to be changed in regular code, but
@@ -557,7 +574,7 @@ processing succeeded.
 
 WAITING -> GIVENBACK - slave requested build record to be rescheduled.
 
-    >>> bqItem11 = a_build.createBuildQueueEntry()
+    >>> bqItem11 = a_build.queueBuild()
     >>> bqItem11.markAsBuilding(a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -598,7 +615,7 @@ investigate why this build end up built. (should never happen in real
 cases, and even so should be refused when we try to upload it.)
 
     >>> bqItem12 = getUtility(IBuildSet).getByBuildID(
-    ...     2).createBuildQueueEntry()
+    ...     2).queueBuild()
     >>> setupBuildQueue(bqItem12, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -619,7 +636,7 @@ The buildlog is collected and compressed locally using gzip algorithm,
 let's see how this method works:
 
     >>> bqItem10 = getUtility(IBuildSet).getByBuildID(
-    ...     6).createBuildQueueEntry()
+    ...     6).queueBuild()
     >>> setupBuildQueue(bqItem10, a_builder)
     >>> bqItem10.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
@@ -953,7 +970,7 @@ builder.  It is True for private archives and False otherwise.
     >>> a_builder.setSlaveForTesting(OkSlave())
     >>> a_builder.is_available
     True
-    >>> candidate = a_build.createBuildQueueEntry()
+    >>> candidate = a_build.queueBuild()
     >>> removeSecurityProxy(a_builder)._dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
@@ -981,7 +998,7 @@ API/UI method to request the dispatch in advance.
     >>> a_builder.setSlaveForTesting(OkSlave())
     >>> a_builder.is_available
     True
-    >>> candidate = a_build.createBuildQueueEntry()
+    >>> candidate = a_build.queueBuild()
     >>> removeSecurityProxy(a_builder)._dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
@@ -1008,7 +1025,7 @@ addition to a reference to the release pocket in the partner archive itself.
     >>> a_builder.is_available
     True
 
-    >>> candidate = a_build.createBuildQueueEntry()
+    >>> candidate = a_build.queueBuild()
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -1055,7 +1072,7 @@ Let's try it again.
     >>> a_builder.is_available
     True
 
-    >>> candidate = a_build.createBuildQueueEntry()
+    >>> candidate = a_build.queueBuild()
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -1116,7 +1133,7 @@ Similarly, PPA builds pass the 'archives' arguments:
     >>> a_builder.is_available
     True
 
-    >>> candidate = a_build.createBuildQueueEntry()
+    >>> candidate = a_build.queueBuild()
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -1235,7 +1252,7 @@ component and this time the dispatching will follow that component.
 Since this is a build in a private archive, the buildlog was uploaded to
 the restricted librarian.
 
-    >>> candidate = a_build.createBuildQueueEntry()
+    >>> candidate = a_build.queueBuild()
     >>> setupBuildQueue(candidate, a_builder)
     >>> build.upload_log = None
     >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
@@ -1300,7 +1317,7 @@ published in hoary/i386, which is not the case.
     >>> a_builder.is_available
     True
 
-    >>> candidate = a_build.createBuildQueueEntry()
+    >>> candidate = a_build.queueBuild()
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -1326,7 +1343,7 @@ We will create the required publication in Mark's PPA and try again.
     >>> a_builder.is_available
     True
 
-    >>> candidate = a_build.createBuildQueueEntry()
+    >>> candidate = a_build.queueBuild()
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -1360,7 +1377,7 @@ Builddmaster stops before starting to build a denied build.
 Since hoary is in development, we are not able to dispatch
 builds for post-release pockets:
 
-    >>> candidate = a_build.createBuildQueueEntry()
+    >>> candidate = a_build.queueBuild()
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -1374,7 +1391,7 @@ Make a build in the updates pocket:
     ...     pocket=PackagePublishingPocket.UPDATES,
     ...     processor=hoary_i386.default_processor,
     ...     archive=hoary_i386.main_archive)
-    >>> updates_bqItem = updates_build.createBuildQueueEntry()
+    >>> updates_bqItem = updates_build.queueBuild()
 
     >>> hoary_i386.distroseries.status.name
     'DEVELOPMENT'
@@ -1388,8 +1405,8 @@ Make a build in the updates pocket:
 Change the distroseries status for testing. FROZEN allows building in
 all pockets:
 
-    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
-    >>> hoary_i386.distroseries.status = DistroSeriesStatus.FROZEN
+    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> hoary_i386.distroseries.status = SeriesStatus.FROZEN
 
 Now we can start a build in other pockets, and see what archives are
 passed to the slave.
@@ -1398,7 +1415,7 @@ A build in the updates pocket:
 
     >>> a_builder.currentjob.destroySelf()
 
-    >>> bqItem3 = a_build.createBuildQueueEntry()
+    >>> bqItem3 = a_build.queueBuild()
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem3)
     >>> removeSecurityProxy(build).pocket = (
     ...     PackagePublishingPocket.UPDATES)
@@ -1421,7 +1438,7 @@ A build in the proposed pocket:
 
     >>> a_builder.currentjob.destroySelf()
 
-    >>> bqItem3 = a_build.createBuildQueueEntry()
+    >>> bqItem3 = a_build.queueBuild()
     >>> removeSecurityProxy(build).pocket = (
     ...     PackagePublishingPocket.PROPOSED)
     >>> last_stub_mail_count = len(stub.test_emails)
@@ -1444,7 +1461,7 @@ A build in the backports pocket:
 
     >>> a_builder.currentjob.destroySelf()
 
-    >>> bqItem3 = a_build.createBuildQueueEntry()
+    >>> bqItem3 = a_build.queueBuild()
     >>> removeSecurityProxy(build).pocket = (
     ...     PackagePublishingPocket.BACKPORTS)
     >>> last_stub_mail_count = len(stub.test_emails)
@@ -1467,7 +1484,7 @@ A build in the security pocket:
 
     >>> a_builder.currentjob.destroySelf()
 
-    >>> bqItem3 = a_build.createBuildQueueEntry()
+    >>> bqItem3 = a_build.queueBuild()
     >>> removeSecurityProxy(build).buildstate = (
     ...     BuildStatus.NEEDSBUILD)
     >>> removeSecurityProxy(build).pocket = (

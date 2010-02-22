@@ -92,12 +92,12 @@ from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries    
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 class ComponentVocabulary(SQLObjectVocabularyBase):
 
@@ -313,7 +313,7 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
 
 def project_products_using_malone_vocabulary_factory(context):
     """Return a vocabulary containing a project's products using Malone."""
-    project = IProject(context)
+    project = IProjectGroup(context)
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
         for product in project.products
@@ -782,7 +782,7 @@ class BugNominatableDistroSeriesVocabulary(
         """Return all non-obsolete distribution series"""
         return [
             series for series in shortlist(self.distribution.series)
-            if series.status != DistroSeriesStatus.OBSOLETE]
+            if series.status != SeriesStatus.OBSOLETE]
 
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""

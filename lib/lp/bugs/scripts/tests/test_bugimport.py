@@ -770,6 +770,7 @@ class TestBugWatch:
         self.id = id
         self.remotebug = str(self.id)
         self.bug = bug
+        self.bugtasks = [self.bug.default_bugtask]
         self.failing = failing
         self.url = 'http://bugs.example.com/issues/%d' % id
 

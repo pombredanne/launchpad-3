@@ -4,14 +4,17 @@
 """queue tool base class tests."""
 
 __metaclass__ = type
+__all__ = [
+    'upload_bar_source',
+    ]
 
-__all__ = ['upload_bar_source']
 
+import hashlib
 import os
 import shutil
 import tempfile
+
 from unittest import TestCase, TestLoader
-from sha import sha
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -28,7 +31,7 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
@@ -474,7 +477,7 @@ class TestQueueTool(TestQueueBase):
         # to BACKPORTS.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-        breezy_autotest.status = DistroSeriesStatus.CURRENT
+        breezy_autotest.status = SeriesStatus.CURRENT
 
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(self.dbuser)
@@ -522,7 +525,7 @@ class TestQueueTool(TestQueueBase):
         # to PROPOSED.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-        breezy_autotest.status = DistroSeriesStatus.CURRENT
+        breezy_autotest.status = SeriesStatus.CURRENT
 
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(self.dbuser)
@@ -929,7 +932,7 @@ class TestQueueToolInJail(TestQueueBase):
 
     def _getsha1(self, filename):
         """Return a sha1 hex digest of a file"""
-        file_sha = sha()
+        file_sha = hashlib.sha1()
         opened_file = open(filename,"r")
         for chunk in filechunks(opened_file):
             file_sha.update(chunk)

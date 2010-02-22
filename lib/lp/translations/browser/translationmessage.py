@@ -829,7 +829,6 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
         self._redirectToNextPage()
         return True
 
-
     def _messages_html_id(self):
         order = []
         message = self.translationmessage_view

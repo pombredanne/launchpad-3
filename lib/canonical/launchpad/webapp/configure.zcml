@@ -349,7 +349,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IProject"
+        for="canonical.launchpad.interfaces.IProjectGroup"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
@@ -815,7 +815,6 @@
 
     <class class="canonical.launchpad.webapp.vocabulary.CountableIterator">
       <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
-      <allow attributes="__getslice__"/>
     </class>
 
     <class class="canonical.launchpad.webapp.vocabulary.BatchedCountableIterator">

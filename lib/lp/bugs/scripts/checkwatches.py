@@ -423,7 +423,8 @@ class BugWatchUpdater(object):
         # We special-case the Gnome Bugzilla.
         gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
         if (bug_tracker == gnome_bugzilla and
-            isinstance(remotesystem_to_use, BugzillaAPI)):
+            isinstance(remotesystem_to_use, BugzillaAPI) and
+            len(self._syncable_gnome_products) > 0):
 
             syncable_watches = []
             other_watches = []
@@ -471,6 +472,10 @@ class BugWatchUpdater(object):
             bug_tracker.getBugWatchesNeedingUpdate(23))
 
         if bug_watches_to_update.count() > 0:
+            # XXX: GavinPanella 2010-01-18 bug=509223 : Ask remote
+            # tracker which remote bugs have been modified, and use
+            # this to fill up a batch, rather than figuring out
+            # batching later in _getRemoteIdsToCheck().
             try:
                 trackers_and_watches = self._getExternalBugTrackersAndWatches(
                     bug_tracker, bug_watches_to_update)
@@ -862,10 +867,12 @@ class BugWatchUpdater(object):
                     if new_malone_importance is not None:
                         bug_watch.updateImportance(new_remote_importance,
                             new_malone_importance)
-                    if bug_watch.bug.duplicateof is None:
+                    if (bug_watch.bug.duplicateof is None and
+                        len(bug_watch.bugtasks) > 0):
                         # Only sync comments and backlink if the local
-                        # bug isn't a duplicate. This helps us to avoid
-                        # spamming upstream.
+                        # bug isn't a duplicate, *and* if the bug
+                        # watch is associated with a bug task. This
+                        # helps us to avoid spamming upstream.
                         if can_import_comments:
                             self.importBugComments(remotesystem, bug_watch)
                         if can_push_comments:

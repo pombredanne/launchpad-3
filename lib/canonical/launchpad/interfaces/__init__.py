@@ -57,6 +57,7 @@ from lp.registry.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
 from lp.soyuz.interfaces.distributionsourcepackagecache import *
 from lp.soyuz.interfaces.distributionsourcepackagerelease import *
+from lp.registry.interfaces.series import *
 from lp.soyuz.interfaces.distroarchseries import *
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import *
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease\
@@ -73,7 +74,7 @@ from lp.soyuz.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from lp.registry.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
-from canonical.launchpad.interfaces.hwdb import *
+from lp.hardwaredb.interfaces.hwdb import *
 from lp.registry.interfaces.irc import *
 from lp.registry.interfaces.jabber import *
 from lp.registry.interfaces.karma import *
@@ -101,7 +102,7 @@ from lp.registry.interfaces.product import *
 from lp.registry.interfaces.productlicense import *
 from lp.registry.interfaces.productrelease import *
 from lp.registry.interfaces.productseries import *
-from lp.registry.interfaces.project import *
+from lp.registry.interfaces.projectgroup import *
 from lp.soyuz.interfaces.publishedpackage import *
 from lp.soyuz.interfaces.publishing import *
 from lp.soyuz.interfaces.queue import *

@@ -792,6 +792,7 @@ a.bg-image {
   padding: 0.5em 12px;
   border-top: 1px solid #ddd;
 }
+.from-superseded {background-color: #ffffcc;}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
 .adminHiddenComment {background-color:yellow;}
@@ -1232,6 +1233,11 @@ div#sub-unsub-spinner {
   font-size: 120%;
 }
 
+div.watermark-apps-portlet span img {
+    float: none;
+    margin: 0;
+}
+
 /* --- Blueprints --- */
 
 body.tab-specifications #actions, body.tab-specifications .results {
@@ -1494,19 +1500,18 @@ div.popupTitle {
   max-width: 55em;
 }
 
-#search-results div.upper-batch-nav {
+#search-results .upper-batch-nav, .freeform-batch .upper-batch-nav {
   border-top: 1px solid #d2d2d2;
   margin-top: 2.5em;
-  margin-bottom: 0.5em;
-}
-#search-results .search-batch {
-  background: #e7effc;
   margin-bottom: 10px;
+  background: #e7effc;
 }
 
-#search-results div.lower-batch-nav {
+#search-results .lower-batch-nav, .freeform-batch .lower-batch-nav  {
   margin-top: 1.5em;
   border-top: 1px solid #d2d2d2;
+  margin-bottom: 10px;
+  background: #e7effc;
 }
 
 #search-results .search-result-link {

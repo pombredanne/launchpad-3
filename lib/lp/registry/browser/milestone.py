@@ -33,7 +33,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
-    IMilestone, IMilestoneSet, IProjectMilestone)
+    IMilestone, IMilestoneSet, IProjectGroupMilestone)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
@@ -84,7 +84,7 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
         text = 'Change details'
         # ProjectMilestones are virtual milestones and do not have
         # any properties which can be edited.
-        enabled = not IProjectMilestone.providedBy(self.context)
+        enabled = not IProjectGroupMilestone.providedBy(self.context)
         summary = "Edit this milestone"
         return Link(
             '+edit', text, icon='edit', summary=summary, enabled=enabled)
@@ -106,7 +106,7 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
         """The link to delete this milestone."""
         text = 'Delete milestone'
         # ProjectMilestones are virtual.
-        enabled = not IProjectMilestone.providedBy(self.context)
+        enabled = not IProjectGroupMilestone.providedBy(self.context)
         summary = "Delete milestone"
         return Link(
             '+delete', text, icon='trash-icon',
@@ -244,7 +244,8 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             bugtask,
             badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
-            badge_property['has_specification'])
+            badge_property['has_specification'],
+            badge_property['has_patch'])
 
     @cachedproperty
     def bugtasks(self):
@@ -330,7 +331,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
         Return true, if the current milestone is a project milestone,
         else return False."""
-        return IProjectMilestone.providedBy(self.context)
+        return IProjectGroupMilestone.providedBy(self.context)
 
     @property
     def has_bugs_or_specs(self):

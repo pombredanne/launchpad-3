@@ -9,22 +9,25 @@ __metaclass__ = type
 
 __all__ = [
     'BuildFarmJobBehaviorBase',
-    'IdleBuildBehavior'
+    'IdleBuildBehavior',
     ]
 
 import logging
 import socket
 import xmlrpclib
 
+from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
+from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
 
 class BuildFarmJobBehaviorBase:
@@ -55,6 +58,24 @@ class BuildFarmJobBehaviorBase:
 
         The default behavior is that we don't add any extra values."""
         return {}
+
+    def verifySlaveBuildID(self, slave_build_id):
+        """See `IBuildFarmJobBehavior`."""
+        # Extract information from the identifier.
+        try:
+            build_id, queue_item_id = slave_build_id.split('-')
+            build_id = int(build_id)
+            queue_item_id = int(queue_item_id)
+        except ValueError:
+            raise CorruptBuildID('Malformed build ID')
+
+        try:
+            queue_item = getUtility(IBuildQueueSet).get(queue_item_id)
+            # Check whether build and buildqueue are properly related.
+        except SQLObjectNotFound, reason:
+            raise CorruptBuildID(str(reason))
+        if queue_item.specific_job.build.id != build_id:
+            raise CorruptBuildID('Job build entry mismatch')
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
@@ -143,6 +164,20 @@ class BuildFarmJobBehaviorBase:
             queueItem.job.fail()
         queueItem.specific_job.jobAborted()
 
+    def extractBuildStatus(self, slave_status):
+        """Read build status name.
+
+        :param slave_status: build status dict as passed to the
+            updateBuild_* methods.
+        :return: the unqualified status name, e.g. "OK".
+        """
+        status_string = slave_status['build_status']
+        lead_string = 'BuildStatus.'
+        assert status_string.startswith(lead_string), (
+            "Malformed status string: '%s'" % status_string)
+
+        return status_string[len(lead_string):]
+
     def updateBuild_WAITING(self, queueItem, slave_status, logtail, logger):
         """Perform the actions needed for a slave in a WAITING state
 
@@ -157,13 +192,10 @@ class BuildFarmJobBehaviorBase:
           the uploader for processing.
         """
         librarian = getUtility(ILibrarianClient)
-        build_status = slave_status['build_status']
+        build_status = self.extractBuildStatus(slave_status)
 
         # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
-        assert build_status.startswith('BuildStatus.'), (
-            'Malformed status string: %s' % build_status)
 
-        build_status = build_status[len('BuildStatus.'):]
         queueItem.specific_job.build.handleStatus(
             build_status, librarian, slave_status)
 
@@ -193,3 +225,7 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
     def status(self):
         """See `IBuildFarmJobBehavior`."""
         return "Idle"
+
+    def verifySlaveBuildID(self, slave_build_id):
+        """See `IBuildFarmJobBehavior`."""
+        raise CorruptBuildID('No job assigned to builder')

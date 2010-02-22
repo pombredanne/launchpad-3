@@ -31,7 +31,8 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
-from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
+from storm.expr import (
+    And, Count, Func, In, LeftJoin, Not, Select, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -45,7 +46,7 @@ from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -77,6 +78,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
@@ -90,15 +92,15 @@ from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person
+from lp.registry.model.person import Person, ValidPersonCache
 from lp.registry.model.pillar import pillar_sort_key
 
 
@@ -225,7 +227,7 @@ class Bug(SQLBase):
                            prejoins=['owner'],
                            orderBy=['datecreated', 'id'])
     bug_messages = SQLMultipleJoin(
-        'BugMessage', joinColumn='bug',orderBy='id')
+        'BugMessage', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
@@ -254,6 +256,7 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
+    heat = IntCol(notNull=True, default=0)
 
     @property
     def comment_count(self):
@@ -265,7 +268,46 @@ class Bug(SQLBase):
         """See `IBug`."""
         return Store.of(self).find(
             Person, BugAffectsPerson.person == Person.id,
+            BugAffectsPerson.affected,
             BugAffectsPerson.bug == self)
+
+    @property
+    def users_unaffected(self):
+        """See `IBug`."""
+        return Store.of(self).find(
+            Person, BugAffectsPerson.person == Person.id,
+            Not(BugAffectsPerson.affected),
+            BugAffectsPerson.bug == self)
+
+    @property
+    def user_ids_affected_with_dupes(self):
+        """Return all IDs of Persons affected by this bug and its dupes.
+        The return value is a Storm expression.  Running a query with
+        this expression returns a result that may contain the same ID
+        multiple times, for example if that person is affected via
+        more than one duplicate."""
+        return Union(
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.affected,
+                       BugAffectsPerson.bug == self)),
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.bug == Bug.id,
+                       BugAffectsPerson.affected,
+                       Bug.duplicateof == self.id)))
+
+    @property
+    def users_affected_with_dupes(self):
+        """See `IBug`."""
+        return Store.of(self).find(
+            Person,
+            In(Person.id, self.user_ids_affected_with_dupes))
+
+    @property
+    def users_affected_count_with_dupes(self):
+        """See `IBug`."""
+        return self.users_affected_with_dupes.count()
 
     @property
     def indexed_messages(self):
@@ -402,6 +444,17 @@ class Bug(SQLBase):
         """See `IBug`."""
         return 'Re: '+ self.title
 
+    @property
+    def has_patches(self):
+        """See `IBug`."""
+        store = IStore(BugAttachment)
+        results = store.find(
+            BugAttachment,
+            BugAttachment.bug == self,
+            BugAttachment.type == BugAttachmentType.PATCH)
+
+        return not results.is_empty()
+
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
         # first look for an existing subscription
@@ -477,7 +530,6 @@ class Bug(SQLBase):
         # the same time as retrieving the bug subscriptions (as a left
         # join). However, this ran slowly (far from optimal query
         # plan), so we're doing it as two queries now.
-        from lp.registry.model.person import Person, ValidPersonCache
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
@@ -500,7 +552,6 @@ class Bug(SQLBase):
         the relevant subscribers and rationales will be registered on
         it.
         """
-        from lp.registry.model.person import Person
         subscribers = list(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -561,7 +612,6 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        from lp.registry.model.person import Person
         dupe_subscribers = set(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -916,7 +966,7 @@ class Bug(SQLBase):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
-    completeness_clause =  """
+    completeness_clause = """
         BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
 
     def canBeAQuestion(self):
@@ -1056,7 +1106,6 @@ class Bug(SQLBase):
         # Since we can't prejoin, cache all people at once so we don't
         # have to do it while rendering, which is a big deal for bugs
         # with a million comments.
-        from lp.registry.model.person import Person
         owner_ids = set()
         for chunk in chunks:
             if chunk.message.ownerID:
@@ -1086,7 +1135,7 @@ class Bug(SQLBase):
         productseries = None
         if IDistroSeries.providedBy(target):
             distroseries = target
-            if target.status == DistroSeriesStatus.OBSOLETE:
+            if target.status == SeriesStatus.OBSOLETE:
                 raise NominationSeriesObsoleteError(
                     "%s is an obsolete series." % target.bugtargetdisplayname)
         else:
@@ -1274,8 +1323,7 @@ class Bug(SQLBase):
         """Get the tags as a sorted list of strings."""
         tags = [
             bugtag.tag
-            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')
-            ]
+            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')]
         return tags
 
     def _setTags(self, tags):
@@ -1340,6 +1388,10 @@ class Bug(SQLBase):
             if bap.affected != affected:
                 bap.affected = affected
                 self._flushAndInvalidate()
+        # Loop over dupes.
+        for dupe in self.duplicates:
+            if dupe._getAffectedUser(user) is not None:
+                dupe.markUserAffected(user, affected)
 
     @property
     def readonly_duplicateof(self):
@@ -1424,6 +1476,10 @@ class Bug(SQLBase):
             BugSubscription.person == person)
 
         return not subscriptions_from_dupes.is_empty()
+
+    def setHeat(self, heat):
+        """See `IBug`."""
+        self.heat = heat
 
 
 class BugSet:
@@ -1665,11 +1721,17 @@ class BugSet:
         return bugs
 
     def getByNumbers(self, bug_numbers):
-        """see `IBugSet`."""
+        """See `IBugSet`."""
         if bug_numbers is None or len(bug_numbers) < 1:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set.order_by('id')
+
+    def dangerousGetAllBugs(self):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        result_set = store.find(Bug)
         return result_set.order_by('id')
 
 

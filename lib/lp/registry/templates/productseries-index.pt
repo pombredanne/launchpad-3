@@ -11,9 +11,6 @@
   <metal:block fill-slot="head_epilogue">
     <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
-    <script type="text/javascript"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/registry/milestone_table.js"></script>
     <script id="milestone-script" type="text/javascript"
       tal:condition="context/menu:overview/create_milestone/enabled"
       tal:content="view/register_milestone_script"></script>

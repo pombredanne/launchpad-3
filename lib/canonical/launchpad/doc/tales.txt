@@ -123,11 +123,14 @@ And finally Copy archives.
     <img ... src="/@@/distribution" />
 
 PPAs have a 'link' formatter, which returns the appropriate HTML used
-for referring to them in other pages.
+for referring to them in other pages and a 'reference' formatter which
+displays the unique ppa reference.
 
     >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
     <a href="/~mark/+archive/ppa"
        class="sprite ppa-icon">PPA for Mark Shuttleworth</a>
+    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
+    ppa:mark/ppa
 
 Disabled PPAs links use a different icon and are only linkified for
 users with launchpad.View on them.
@@ -160,10 +163,22 @@ them.
 
     >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
 
+Similarly, references to private PPAs are not rendered unless the user has
+a subscription to the PPA.
+
+    >>> login('foo.bar@canonical.com')
+    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
+
+    >>> login('mark@example.com')
+    >>> foo = getUtility(IPersonSet).getByName('name16')
+    >>> ignore = mark.archive.newSubscription(foo, mark)
+    >>> login('foo.bar@canonical.com')
+    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
+    ppa:mark/ppa
+
 We also have icons for builds which may have different dimensions.
 
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> login('foo.bar@canonical.com')
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
     >>> source = stp.getPubSource()
@@ -187,6 +202,24 @@ But the 'failed to build' build is 16x14:
     >>> build.buildstate = BuildStatus.FAILEDTOBUILD
     >>> print test_tales("build/image:icon", build=build)
     <img width="16" height="14"...src="/@@/build-failed" />
+
+All objects can be represented as a boolean icon.
+
+    >>> print test_tales("context/image:boolean", context=None)
+    <span class="sprite no">&nbsp;<span
+      class="invisible-link">no</span></span>
+
+    >>> print test_tales("context/image:boolean", context=False)
+    <span class="sprite no">&nbsp;<span
+      class="invisible-link">no</span></span>
+
+    >>> print test_tales("context/image:boolean", context=object())
+    <span class="sprite yes">&nbsp;<span
+      class="invisible-link">yes</span></span>
+
+    >>> print test_tales("context/image:boolean", context=True)
+    <span class="sprite yes">&nbsp;<span
+      class="invisible-link">yes</span></span>
 
 
 The fmt: namespace to get strings

@@ -160,10 +160,14 @@
                       No import target selected yet.
                     </span>
                     <tal:block condition="entry/required:launchpad.Admin">
+                      <tal:comment condition="nothing">
+                        Our CSS requires the span to abut the "a" tag, with no
+                        intervening whitespace.  If the two are separated, the
+                        edit links stop showing up in Webkit.
+                      </tal:comment>
                       <a class="sprite edit"
-                         tal:attributes="href entry/fmt:url">
-                        <span class="invisible-link">Change this entry</span>
-                      </a>
+                         tal:attributes="href entry/fmt:url"
+                         ><span class="invisible-link">Change this entry</span></a>
                     </tal:block>
                   </td>
                 </tr>
