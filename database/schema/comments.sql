@@ -461,7 +461,7 @@ COMMENT ON COLUMN Diff.removed_lines_count IS 'The number of lines removed in th
 
 COMMENT ON TABLE DistributionSourcePackage IS 'Representing a sourcepackage in a distribution across all distribution series.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on a particular a source package in a distribution.';
-
+COMMENT ON COLUMN DistributionSourcePackage.max_heat IS 'The highest heat value across bugs for this source package.';
 
 -- DistributionSourcePackageCache
 
@@ -474,8 +474,6 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgsummaries IS 'The aggrega
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggregated description of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
-COMMENT ON COLUMN DistributionSourcePackage.max_heat IS 'The highest heat value across bugs for this source package.';
-
 
 -- DistroSeriesPackageCache
 
