@@ -1554,7 +1554,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
-                    virtualized=True):
+                    virtualized=True, description=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1566,6 +1566,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param enabled: Whether the archive is enabled.
         :param private: Whether the archive is created private.
         :param virtualized: Whether the archive is virtualized.
+        :param description: A description of the archive.
         """
         if distribution is None:
             distribution = self.makeDistribution()
@@ -1587,7 +1588,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         archive = getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
             distribution=distribution, name=name, enabled=enabled,
-            require_virtualized=virtualized)
+            require_virtualized=virtualized, description=description)
 
         if private:
             archive.private = True
