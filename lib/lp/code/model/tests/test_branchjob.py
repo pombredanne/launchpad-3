@@ -9,7 +9,6 @@ import datetime
 import os
 import pytz
 import shutil
-from storm.locals import Store
 import tempfile
 from unittest import TestLoader
 
