@@ -15,7 +15,10 @@ CREATE INDEX sourcepackagerecipebuild__upload_log__idx
 -- with correctly.
 -- Drop the constraint right now so the person privacy checker doesn't
 -- look at this table at all.
+ALTER TABLE SourcePackageRecipeBuildUpload DROP CONSTRAINT sourcepackagerecipebuildupload_archive_fkey;
 ALTER TABLE SourcePackageRecipeBuildUpload DROP CONSTRAINT sourcepackagerecipebuildupload_registrant_fkey;
+ALTER TABLE SourcePackageRecipeBuildUpload DROP CONSTRAINT sourcepackagerecipebuildupload_sourcepackage_recipe_build_fkey;
+ALTER TABLE SourcePackageRecipeBuildUpload DROP CONSTRAINT sourcepackagerecipebuildupload_upload_log_fkey;
 ALTER TABLE SourcePackageRecipeBuildUpload SET SCHEMA todrop; 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 32, 0);
