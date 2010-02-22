@@ -37,6 +37,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
     BinaryPackageReleaseDownloadCount)
@@ -1006,9 +1007,14 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             clauses.append(
                 BinaryPackageReleaseDownloadCount.day <= end_date)
 
-        return Store.of(self).find(
+        return Store.of(self).using(
+            BinaryPackageReleaseDownloadCount,
+            LeftJoin(
+                Country,
+                BinaryPackageReleaseDownloadCount.country_id ==
+                    Country.id)).find(
             BinaryPackageReleaseDownloadCount, *clauses).order_by(
-                Desc(BinaryPackageReleaseDownloadCount.id))
+                Desc(BinaryPackageReleaseDownloadCount.day), Country.name)
 
 
 class PublishingSet:
