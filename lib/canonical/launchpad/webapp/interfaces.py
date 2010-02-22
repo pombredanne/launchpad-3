@@ -756,14 +756,14 @@ class IDatabasePolicy(Interface):
     The publisher adapts the request to `IDatabasePolicy` to
     instantiate the policy for the current request.
     """
-    def __enter__(self):
+    def __enter__():
         """Standard Python context manager interface.
 
         The IDatabasePolicy will install itself using the IStoreSelector
         utility.
         """
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(exc_type, exc_value, traceback):
         """Standard Python context manager interface.
 
         The IDatabasePolicy will uninstall itself using the IStoreSelector
