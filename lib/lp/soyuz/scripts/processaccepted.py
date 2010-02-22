@@ -190,6 +190,7 @@ class ProcessAccepted(LaunchpadScript):
             dest="copy_archives", metavar="COPY_ARCHIVES",
             default=False, help="Run only over COPY archives.")
 
+    @property
     def lockfilename(self):
         """Override LaunchpadScript's lock file name."""
         return "/var/lock/launchpad-upload-queue.lock"
@@ -263,7 +264,7 @@ class ProcessAccepted(LaunchpadScript):
                 self.txn.commit()
 
         finally:
-            self.log.debug("Rolling back any remaining transactions.")
+            self.logger.debug("Rolling back any remaining transactions.")
             self.txn.abort()
 
         return 0
