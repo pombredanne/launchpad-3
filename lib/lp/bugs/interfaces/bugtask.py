@@ -17,6 +17,7 @@ __all__ = [
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
+    'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
@@ -319,6 +320,11 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
     BugTaskStatusSearch.TRIAGED,
     BugTaskStatusSearch.INPROGRESS,
     BugTaskStatusSearch.FIXCOMMITTED)
+
+DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
+    BugTaskStatusSearchDisplay.items.mapping[item.value]
+    for item in DEFAULT_SEARCH_BUGTASK_STATUSES
+    ]
 
 class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
@@ -808,9 +814,12 @@ class IBugTaskSearchBase(Interface):
         required=False)
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
-    linked_branches = Choice(
-        title=_('Linked branches'), vocabulary=BugBranchSearch,
-        default=BugBranchSearch.ALL, required=True)
+    has_branches = Bool(
+        title=_('Show only bugs with linked branches'), required=False,
+        default=True)
+    has_no_branches = Bool(
+        title=_('Show only bugs without linked branches'), required=False,
+        default=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
