@@ -48,6 +48,8 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
     def testSetsBuildAndState(self):
         # Ensure that the upload processor correctly links the SPR to
         # the SPRB, and that the status is set properly.
+        # This test depends on write access being granted to anybody
+        # (it does not matter who) on SPRB.{buildstate,upload_log}.
         self.assertIs(None, self.build.source_package_release)
         self.assertEqual(False, self.build.verifySuccessfulUpload())
         self.queueUpload('bar_1.0-1', '%d/ubuntu' % self.build.archive.id)
