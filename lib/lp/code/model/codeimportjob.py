@@ -102,7 +102,7 @@ class CodeImportJobSet(object):
         except SQLObjectNotFound:
             return None
 
-    def getJobForMachine(self, hostname):
+    def getJobForMachine(self, hostname, worker_limit):
         """See `ICodeImportJobSet`."""
         job_workflow = getUtility(ICodeImportJobWorkflow)
         for job in self.getReclaimableJobs():
@@ -111,7 +111,7 @@ class CodeImportJobSet(object):
         if machine is None:
             machine = getUtility(ICodeImportMachineSet).new(
                 hostname, CodeImportMachineState.ONLINE)
-        elif not machine.shouldLookForJob():
+        elif not machine.shouldLookForJob(worker_limit):
             return None
         job = CodeImportJob.selectOne(
             """id IN (SELECT id FROM CodeImportJob
