@@ -247,11 +247,42 @@ class DistributionMaxHeatByTargetTest(MaxHeatByTargetBase, unittest.TestCase):
 
 class DistributionSourcePackageMaxHeatByTargetTest(
     MaxHeatByTargetBase, unittest.TestCase):
-    """Ensure a source package has a max_heat value that can be set."""
+    """Ensure a distro source package has a max_heat value that can be set."""
 
     def setUp(self):
         self.target = self.factory.makeDistributionSourcePackage()
 
+
+class SourcePackageMaxHeatByTargetTest(
+    MaxHeatByTargetBase, unittest.TestCase):
+    """Ensure a source package has a max_heat value that can be set."""
+
+    def setUp(self):
+        self.target = self.factory.makeSourcePackage()
+
+
+class ProductSeriesMaxHeatByTargetTest(
+    MaxHeatByTargetBase, unittest.TestCase):
+    """Ensure a product series has a max_heat value that can be set."""
+
+    def setUp(self):
+        self.target = self.factory.makeProductSeries()
+
+
+class DistroSeriesMaxHeatByTargetTest(
+    MaxHeatByTargetBase, unittest.TestCase):
+    """Ensure a distro series has a max_heat value that can be set."""
+
+    def setUp(self):
+        self.target = self.factory.makeDistroSeries()
+
+
+class ProjectGroupMaxHeatByTargetTest(
+    MaxHeatByTargetBase, unittest.TestCase):
+    """Ensure a project group has a max_heat value that can be set."""
+
+    def setUp(self):
+        self.target = self.factory.makeProject()
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
