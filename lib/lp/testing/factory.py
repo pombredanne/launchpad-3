@@ -1563,7 +1563,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             makePerson().
         :param name: Name of the archive, defaults to a random string.
         :param purpose: Supply ArchivePurpose, defaults to PPA.
-        :param enabled: Whether the archive should be enabled.
+        :param enabled: Whether the archive is enabled.
+        :param private: Whether the archive is created private.
+        :param virtualized: Whether the archive is virtualized.
         """
         if distribution is None:
             distribution = self.makeDistribution()
