@@ -284,8 +284,18 @@ As can be seen, the packaging is not linked yet.  We can do that now using the
     >>> print user_browser.url
     http://launchpad.dev/ubuntu/warty/+source/iceweasel/+edit-packaging
 
+In step one the project is specified.
+
     >>> user_browser.getControl(
-    ...     name='field.productseries').value = "firefox/trunk"
+    ...     name='field.product').value = "firefox"
+    >>> user_browser.getControl('Continue').click()
+
+In step two, one of the series for that project can be selected.
+
+    >>> series_control = user_browser.getControl(name='field.productseries')
+    >>> print series_control.options
+    ['trunk', '1.0']
+    >>> series_control.value = ['trunk']
     >>> user_browser.getControl('Change').click()
 
 Go back to the source page, and now the upstream's description is shown and
@@ -360,7 +370,7 @@ A link to further PPA searches is also included.
     ...     url='http://launchpad.dev/ubuntutest/+ppas?'
     ...         'name_filter=netapplet')
     >>> link.text
-    "...more untrusted versions of..."
+    "...other untrusted versions of..."
 
 
 Source package change logs

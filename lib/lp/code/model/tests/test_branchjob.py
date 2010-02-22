@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import datetime
 import os
+import pytz
 import shutil
 from storm.locals import Store
 import tempfile
@@ -40,8 +41,8 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IBranchScanJob, IBranchUpgradeJob,
     IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionMailJob,
@@ -546,8 +547,27 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         wrong_target_proposal.source_branch.last_scanned_id = 'rev2a-id'
         job = RevisionsAddedJob.create(target_branch, 'rev2b-id', 'rev2b-id',
                                        '')
-        self.assertEqual([desired_proposal],
-                         list(job.findRelatedBMP(['rev2a-id'])))
+        self.assertEqual(
+            [desired_proposal], job.findRelatedBMP(['rev2a-id']))
+
+    def test_findRelatedBMP_one_per_source(self):
+        """findRelatedBMP only returns the most recent proposal for any
+        particular source branch.
+        """
+        self.useBzrBranches()
+        target_branch, tree = self.create_branch_and_tree('tree')
+        the_past = datetime.datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        old_proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch, date_created=the_past,
+            set_state=BranchMergeProposalStatus.MERGED)
+        source_branch = old_proposal.source_branch
+        source_branch.last_scanned_id = 'rev2a-id'
+        desired_proposal = source_branch.addLandingTarget(
+            source_branch.owner, target_branch)
+        job = RevisionsAddedJob.create(
+            target_branch, 'rev2b-id', 'rev2b-id', '')
+        self.assertEqual(
+            [desired_proposal], job.findRelatedBMP(['rev2a-id']))
 
     def test_getAuthors(self):
         """Ensure getAuthors returns the authors for the revisions."""

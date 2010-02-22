@@ -81,7 +81,8 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -107,11 +108,11 @@ from lp.registry.interfaces.person import (
     JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
     PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy)
-from canonical.launchpad.interfaces.personnotification import (
+from lp.registry.interfaces.personnotification import (
     IPersonNotificationSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from lp.blueprints.interfaces.specification import (
@@ -212,7 +213,7 @@ def validate_person_visibility(person, attr, value):
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
-    HasBranchesMixin, HasMergeProposalsMixin):
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -2310,7 +2311,7 @@ class Person(
     def isBugContributorInTarget(self, user=None, target=None):
         """See `IPerson`."""
         assert (IBugTarget.providedBy(target) or
-                IProject.providedBy(target)), (
+                IProjectGroup.providedBy(target)), (
             "%s isn't a valid bug target." % target)
         search_params = BugTaskSearchParams(user=user, assignee=self)
         bugtask_count = target.searchTasks(search_params).count()
@@ -2355,7 +2356,7 @@ class Person(
     @property
     def hardware_submissions(self):
         """See `IPerson`."""
-        from canonical.launchpad.database.hwdb import HWSubmissionSet
+        from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
 
 

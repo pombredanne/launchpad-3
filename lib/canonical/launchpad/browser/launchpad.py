@@ -71,7 +71,7 @@ from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.hwdb import IHWDBApplication
+from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
@@ -87,7 +87,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProductSet)
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -557,7 +557,7 @@ class LaunchpadRootNavigation(Navigation):
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         'projects': IProductSet,
-        'projectgroups': IProjectSet,
+        'projectgroups': IProjectGroupSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,

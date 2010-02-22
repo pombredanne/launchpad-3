@@ -37,6 +37,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
 from lp.code.enums import BranchType, CodeReviewVote
 from lp.code.errors import BranchMergeProposalExists, UserNotBranchReviewer
+from lp.code.interfaces.branch import BranchCreationException
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter, ICreateMergeProposalJobSource)
@@ -581,8 +582,13 @@ class CodeHandler:
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
             return
-
-
+        except BranchCreationException, e:
+            body = get_error_message(
+                    'branch-creation-exception.txt', reason=e)
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+            return
         try:
             bmp = source.addLandingTarget(submitter, target,
                                           needs_review=True)

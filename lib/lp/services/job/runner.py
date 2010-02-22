@@ -23,23 +23,21 @@ from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
 
 from ampoule import child, pool, main
+import transaction
 from twisted.internet import defer, reactor
 from twisted.protocols import amp
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+from lazr.delegates import delegates
 
 from canonical.config import config
+from canonical.launchpad import scripts
+from canonical.launchpad.webapp import errorlog
 from canonical.twistedsupport.task import (
     ParallelLimitedTaskConsumer, PollingTaskSource)
-from lazr.delegates import delegates
-import transaction
-
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
-from canonical.launchpad import scripts
-from canonical.launchpad.webapp import errorlog
 
 
 class BaseRunnableJob:
@@ -287,11 +285,13 @@ class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
 
     def __init__(self, job_source, logger=None, error_utility=None):
+        env = {'PYTHONPATH': os.environ['PYTHONPATH'],
+               'PATH': os.environ['PATH']}
+        lp_config = os.environ.get('LPCONFIG')
+        if lp_config is not None:
+            env['LPCONFIG'] = lp_config
         starter = main.ProcessStarter(
-            packages=('twisted', 'ampoule'),
-            env={'PYTHONPATH': os.environ['PYTHONPATH'],
-            'PATH': os.environ['PATH'],
-            'LPCONFIG': os.environ['LPCONFIG']})
+            packages=('twisted', 'ampoule'), env=env)
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
         import_name = '%s.%s' % (
@@ -386,6 +386,7 @@ class JobCronScript(LaunchpadCronScript):
         self.runner_class = runner_class
 
     def main(self):
+        errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         runner = self.runner_class.runFromSource(job_source, self.logger)
         self.logger.info(

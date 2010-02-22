@@ -72,7 +72,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.app.interfaces.headings import IRootContext
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.services.worlddata.interfaces.language import ILanguage
@@ -476,7 +477,8 @@ class IHasStanding(Interface):
 
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation, IPrivacy):
+                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
+                    IPrivacy):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -620,9 +622,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         exported_as='is_valid')
     is_probationary = exported(
         Bool(title=_("Is this a probationary user?"), readonly=True))
-    is_ubuntu_coc_signer = Bool(
-        title=_("Signed Ubuntu Code of Conduct"),
-        readonly=True)
+    is_ubuntu_coc_signer = exported(
+	Bool(title=_("Signed Ubuntu Code of Conduct"),
+        readonly=True))
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")

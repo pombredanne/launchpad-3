@@ -109,7 +109,7 @@ class IBuildBase(Interface):
             title=_("Distribution"), required=True,
             description=_("Shortcut for its distribution.")))
 
-    def getUploaderCommand(upload_leaf):
+    def getUploaderCommand(upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
 
         :return: A list of command line arguments, beginning with the
@@ -129,8 +129,12 @@ class IBuildBase(Interface):
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
-    def queueBuild():
-        """Create a BuildQueue entry for this build."""
+    def queueBuild(suspended=False):
+        """Create a BuildQueue entry for this build.
+
+        :param suspended: Whether the associated `Job` instance should be
+            created in a suspended state.
+        """
 
     def estimateDuration():
         """Estimate the build duration."""
