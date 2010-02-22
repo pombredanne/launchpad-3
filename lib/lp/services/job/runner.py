@@ -53,6 +53,17 @@ class BaseRunnableJob:
 
     user_error_types = ()
 
+    # We redefine __eq__ and __ne__ here to prevent the security proxy
+    # from mucking up our comparisons in tests and elsewhere.
+
+    def __eq__(self, job):
+        return (
+            self.__class__ is removeSecurityProxy(job.__class__)
+            and self.job == job.job)
+
+    def __ne__(self, job):
+        return not (self == job)
+
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""
         return self.getErrorRecipients()

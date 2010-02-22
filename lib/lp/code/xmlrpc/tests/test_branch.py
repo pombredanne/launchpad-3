@@ -73,6 +73,7 @@ class TestExpandURL(TestCaseWithFactory):
             % (lp_url_path, fault))
         self.assertEqual(expected_fault.__class__, fault.__class__)
         self.assertEqual(expected_fault.faultString, fault.faultString)
+        return fault
 
     def test_resultDict(self):
         # A given lp url path maps to a single branch available from a number
@@ -121,8 +122,9 @@ class TestExpandURL(TestCaseWithFactory):
         # Resolving lp:///project_group_name' should explain that project
         # groups don't have default branches.
         project_group = self.factory.makeProject()
-        self.assertFault(
+        fault = self.assertFault(
             project_group.name, faults.CannotHaveLinkedBranch(project_group))
+        self.assertIn('project group', fault.faultString)
 
     def test_distro_name(self):
         # Resolving lp:///distro_name' should explain that distributions don't

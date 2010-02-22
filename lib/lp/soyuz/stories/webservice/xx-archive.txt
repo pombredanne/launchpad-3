@@ -745,7 +745,7 @@ Make Celso's PPA private and create a private source publication.
 
     >>> private_publication = test_publisher.createSource(
     ...     cprov.archive, 'foocomm', '1.0-1')
-    >>> private_publication.secure_record.status = (
+    >>> private_publication.status = (
     ...     PackagePublishingStatus.PUBLISHED)
 
     >>> logout()
@@ -915,7 +915,7 @@ version.
     >>> login('foo.bar@canonical.com')
     >>> subsequent_version = test_publisher.createSource(
     ...     cprov.archive, 'foocomm', '1.0-2')
-    >>> subsequent_version.secure_record.status = (
+    >>> subsequent_version.status = (
     ...     PackagePublishingStatus.PUBLISHED)
     >>> logout()
 

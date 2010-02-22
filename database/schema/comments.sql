@@ -22,6 +22,13 @@ COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that
 COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
 COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
 
+-- ApportJob
+
+COMMENT ON TABLE ApportJob IS 'Contains references to jobs to be run against Apport BLOBs.';
+COMMENT ON COLUMN ApportJob.blob IS 'The TemporaryBlobStorage entry on which the job is to be run.';
+COMMENT ON COLUMN ApportJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of ApportJobs.';
+COMMENT ON COLUMN ApportJob.json_data IS 'A JSON struct containing data for the job.';
+
 -- Branch
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
@@ -155,6 +162,7 @@ COMMENT ON COLUMN Bug.message_count IS 'The number of messages (currently just c
 COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by this bug, maintained by the set_bug_users_affected_count_t trigger.';
 COMMENT ON COLUMN Bug.heat IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
 COMMENT ON COLUMN Bug.heat_last_updated IS 'The time this bug''s heat was last updated, or NULL if the heat has never yet been updated.';
+COMMENT ON COLUMN Bug.latest_patch_uploaded IS 'The time when the most recent patch has been attached to this bug or NULL if no patches are attached';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -1032,31 +1040,27 @@ COMMENT ON COLUMN SourcePackageName.name IS
 COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 
--- SecureBinaryPackagePublishingHistory
-COMMENT ON TABLE SecureBinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.distroarchseries IS 'The distroarchseries into which the binarypackage is being published.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.status IS 'The current status of the publishing.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.component IS 'The component into which the publishing takes place.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.section IS 'The section into which the publishing takes place.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.priority IS 'The priority at which the publishing takes place.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.supersededby IS 'The build which superseded this package. This seems odd but it is important because a new build may not actually build a given binarypackage and we need to supersede it appropriately';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+-- BinaryPackagePublishingHistory
+COMMENT ON TABLE BinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.distroarchseries IS 'The distroarchseries into which the binarypackage is being published.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.status IS 'The current status of the publishing.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.component IS 'The component into which the publishing takes place.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.section IS 'The section into which the publishing takes place.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.priority IS 'The priority at which the publishing takes place.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.supersededby IS 'The build which superseded this package. This seems odd but it is important because a new build may not actually build a given binarypackage and we need to supersede it appropriately';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 
--- BinaryPackagePublishingHistory and PublishedPackage Views
-
-COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
+-- PublishedPackage View
 
 COMMENT ON VIEW PublishedPackage IS
     'A very large view that brings together all the information about
@@ -1628,31 +1632,25 @@ COMMENT ON TABLE MirrorSourceContent IS 'Stores which distroseries and component
 COMMENT ON COLUMN MirrorSourceContent.distroseries IS 'A distroseries that this mirror contains.';
 COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distroseries that this sourcepackage mirror contains.';
 
--- SecureSourcePackagePublishingHistory
+-- SourcePackagePublishingHistory
 
-COMMENT ON TABLE SecureSourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.distroseries IS 'The distroseries into which the sourcepackagerelease is being published.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.status IS 'The current status of the publishing.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.component IS 'The component into which the publishing takes place.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.section IS 'The section into which the publishing takes place.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.supersededby IS 'The source which superseded this one.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
-
--- SourcePackagePublishingHistory View
-
-COMMENT ON VIEW SourcePackagePublishingHistory IS 'A view on SecureSourcePackagePublishingHistory that restricts access to embargoed entries';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
+COMMENT ON TABLE SourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.distroseries IS 'The distroseries into which the sourcepackagerelease is being published.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.status IS 'The current status of the publishing.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.component IS 'The component into which the publishing takes place.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.section IS 'The section into which the publishing takes place.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.supersededby IS 'The source which superseded this one.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
+COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -2344,3 +2342,7 @@ COMMENT ON TABLE SourcePackageFormatSelection IS 'Allowed source package formats
 COMMENT ON COLUMN SourcePackageFormatSelection.distroseries IS 'Refers to the distroseries in question.';
 COMMENT ON COLUMN SourcePackageFormatSelection.format IS 'The SourcePackageFormat to allow.';
 
+COMMENT ON TABLE DatabaseReplicationLag IS 'A cached snapshot of database replication lag between our master Slony node and its slaves.';
+COMMENT ON COLUMN DatabaseReplicationLag.node IS 'The Slony node number identifying the slave database.';
+COMMENT ON COLUMN DatabaseReplicationLag.lag IS 'lag time.';
+COMMENT ON COLUMN DatabaseReplicationLag.updated IS 'When this value was updated.';

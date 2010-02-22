@@ -21,7 +21,7 @@ __all__ = [
 import os
 import shutil
 
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, InterBranch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
@@ -50,6 +50,7 @@ class CodeImportWorkerExitCode:
     SUCCESS = 0
     FAILURE = 1
     SUCCESS_NOCHANGE = 2
+    SUCCESS_PARTIAL = 3
 
 
 class BazaarBranchStore:
@@ -407,11 +408,7 @@ class ImportWorker:
         saved_pwd = os.getcwd()
         os.chdir(working_directory)
         try:
-            non_trivial = self._doImport()
-            if non_trivial:
-                return CodeImportWorkerExitCode.SUCCESS
-            else:
-                return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
+            return self._doImport()
         finally:
             shutil.rmtree(working_directory)
             os.chdir(saved_pwd)
@@ -497,7 +494,10 @@ class CSCVSImportWorker(ImportWorker):
         self.importToBazaar(foreign_tree, bazaar_tree)
         non_trivial = self.pushBazaarWorkingTree(bazaar_tree)
         self.foreign_tree_store.archive(foreign_tree)
-        return non_trivial
+        if non_trivial:
+            return CodeImportWorkerExitCode.SUCCESS
+        else:
+            return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
 
 
 class PullingImportWorker(ImportWorker):
@@ -510,6 +510,15 @@ class PullingImportWorker(ImportWorker):
     def format_classes(self):
         """The format classes that should be tried for this import."""
         raise NotImplementedError
+
+    def getExtraPullArgs(self):
+        """Return extra arguments to `InterBranch.pull`.
+
+        This method only really exists because only bzr-git supports the
+        'limit' argument to this method.  When bzr-svn and bzr-hg plugin do
+        too, this method can go away.
+        """
+        return {}
 
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
@@ -529,10 +538,20 @@ class PullingImportWorker(ImportWorker):
             else:
                 raise NotBranchError(self.source_details.url)
             foreign_branch = format.open(transport).open_branch()
-            bazaar_tree.branch.pull(foreign_branch, overwrite=True)
+            inter_branch = InterBranch.get(foreign_branch, bazaar_tree.branch)
+            pull_result = inter_branch.pull(
+                overwrite=True, **self.getExtraPullArgs())
+            self.pushBazaarWorkingTree(bazaar_tree)
+            last_imported_revison = bazaar_tree.branch.last_revision()
+            if last_imported_revison == foreign_branch.last_revision():
+                if pull_result.old_revid != pull_result.new_revid:
+                    return CodeImportWorkerExitCode.SUCCESS
+                else:
+                    return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
+            else:
+                return CodeImportWorkerExitCode.SUCCESS_PARTIAL
         finally:
             bzrlib.ui.ui_factory = saved_factory
-        return self.pushBazaarWorkingTree(bazaar_tree)
 
 
 class GitImportWorker(PullingImportWorker):
@@ -548,6 +567,10 @@ class GitImportWorker(PullingImportWorker):
         from bzrlib.plugins.git import (
             LocalGitBzrDirFormat, RemoteGitBzrDirFormat)
         return [LocalGitBzrDirFormat, RemoteGitBzrDirFormat]
+
+    def getExtraPullArgs(self):
+        """See `PullingImportWorker.getExtraPullArgs`."""
+        return {'limit': config.codeimport.revisions_import_limit}
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.

@@ -103,7 +103,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
 
     def testReturnsOnlyPublishedPublications(self):
         # Publications that are not published will not be returned.
-        secure_src_hist = self.gedit_beta_src_hist.secure_record
+        secure_src_hist = self.gedit_beta_src_hist
         secure_src_hist.status = PackagePublishingStatus.PENDING
 
         results = self.archive_set.getPublicationsInArchives(
@@ -262,7 +262,7 @@ class TestSeriesWithSources(TestCaseWithFactory):
     def test_series_with_sources_ignore_non_published_records(self):
         # If all publishings in a series are deleted or superseded
         # the series will not be returned.
-        self.sources[0].secure_record.status = (
+        self.sources[0].status = (
             PackagePublishingStatus.DELETED)
 
         series = self.archive.series_with_sources
@@ -529,7 +529,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
         # the private method which is not defined on the interface.
         self.archive = self.factory.makeArchive()
         self.naked_archive = removeSecurityProxy(self.archive)
-        
+
         self.pub_1 = self.publisher.getPubSource(
             version='0.5.11~ppa1', archive=self.archive, sourcename="foo",
             status=PackagePublishingStatus.PUBLISHED)
@@ -551,7 +551,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
     def test_collectLatestPublishedSources_returns_published_only(self):
         # Set the status of the latest pub to DELETED and ensure that it
         # is not returned.
-        self.pub_2.secure_record.status = PackagePublishingStatus.DELETED
+        self.pub_2.status = PackagePublishingStatus.DELETED
 
         pubs = self.naked_archive._collectLatestPublishedSources(
             self.archive, ["foo"])

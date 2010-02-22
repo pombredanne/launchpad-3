@@ -514,6 +514,8 @@ class BranchView(LaunchpadView, FeedsMixin):
         """The icon to represent the `CodeImportResultStatus` `status`."""
         if status in CodeImportResultStatus.successes:
             return "/@@/yes"
+        elif status == CodeImportResultStatus.SUCCESS_PARTIAL:
+            return "/@@/yes-gray"
         else:
             return "/@@/no"
 

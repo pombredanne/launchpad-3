@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -7,9 +7,11 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'compose_public_url',
     ]
 
 from datetime import datetime
+import os.path
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
@@ -26,6 +28,8 @@ from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
+
+from lazr.uri import URI
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -75,7 +79,6 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
@@ -477,6 +480,14 @@ class Branch(SQLBase):
         else:
             is_dev_focus = False
         return bazaar_identity(self, is_dev_focus)
+
+    def composePublicURL(self, scheme='http'):
+        """See `IBranch`."""
+        # Not all protocols work for private branches.
+        public_schemes = ['http']
+        assert not (self.private and scheme in public_schemes), (
+            "Private branch %s has no public URL." % self.unique_name)
+        return compose_public_url(scheme, self.unique_name)
 
     @property
     def warehouse_url(self):
@@ -1287,3 +1298,18 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def compose_public_url(scheme, unique_name, suffix=None):
+    # Avoid circular imports.
+    from lp.code.xmlrpc.branch import PublicCodehostingAPI
+
+    # Accept sftp as a legacy protocol.
+    accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
+    accepted_schemes.add('sftp')
+    assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
+    host = URI(config.codehosting.supermirror_root).host
+    path = '/' + unique_name
+    if suffix is not None:
+        path = os.path.join(path, suffix)
+    return str(URI(scheme=scheme, host=host, path=path))

@@ -575,7 +575,9 @@
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
                     heat
-                    has_patches"/>
+                    has_patches
+                    latest_patch
+                    latest_patch_uploaded"/>
             <require
                 permission="launchpad.View"
                 attributes="
@@ -664,8 +666,27 @@
                     addChange
                     markAsDuplicate
                     linkHWSubmission
-                    unlinkHWSubmission"
-                set_attributes="datecreated date_last_updated name title description                                                                                                                 ownerID owner duplicateof communityscore                                                                                                                 communitytimestamp hits hitstimestamp activityscore                                                                                                                 activitytimestamp activity initial_message                                                                                                                 security_related tags who_made_private date_made_private"/>
+                    unlinkHWSubmission
+                    linkAttachment"
+                set_attributes="
+                    activity initial_message
+                    activityscore
+                    activitytimestamp
+                    communityscore
+                    communitytimestamp
+                    date_last_updated
+                    date_made_private
+                    datecreated
+                    duplicateof
+                    hits
+                    hitstimestamp
+                    name
+                    owner
+                    ownerID
+                    security_related
+                    tags
+                    title description
+                    who_made_private"/>
             <require
                 permission="launchpad.AnyPerson"
                 attributes="
@@ -903,6 +924,7 @@
 
     <!-- CalculateBugHeatJobs -->
     <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
+        <allow interface="lp.bugs.interfaces.bugjob.IBugJob" />
         <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
     </class>
     <securedutility
@@ -910,5 +932,17 @@
         provides="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource">
         <allow
             interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource"/>
+    </securedutility>
+
+    <!-- ProcessApportBlobJobs -->
+    <class class="lp.bugs.model.apportjob.ProcessApportBlobJob">
+        <allow interface="lp.bugs.interfaces.apportjob.IApportJob" />
+        <allow interface="lp.bugs.interfaces.apportjob.IProcessApportBlobJob"/>
+    </class>
+    <securedutility
+        component="lp.bugs.model.apportjob.ProcessApportBlobJob"
+        provides="lp.bugs.interfaces.apportjob.IProcessApportBlobJobSource">
+        <allow
+            interface="lp.bugs.interfaces.apportjob.IProcessApportBlobJobSource"/>
     </securedutility>
 </configure>

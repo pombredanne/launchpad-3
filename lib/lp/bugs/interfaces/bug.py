@@ -346,6 +346,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     has_patches = Attribute("Does this bug have any patches?")
 
+    latest_patch_uploaded = exported(
+        Datetime(
+            title=_('Date when the most recent patch was uploaded.'),
+            required=False, readonly=True))
+
+    latest_patch = Attribute("The most recent patch of this bug.")
+
     @operation_parameters(
         subject=optional_message_subject_field(),
         content=copy_field(IMessage['content']))
@@ -500,6 +507,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
         :owner: An IPerson.
         :data: A file-like object, or a `str`.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
+    def linkAttachment(owner, file_alias, comment, is_patch=False,
+                       description=None):
+        """Link an `ILibraryFileAlias` to this bug.
+
+        :owner: An IPerson.
+        :file_alias: The `ILibraryFileAlias` to link to this bug.
         :description: A brief description of the attachment.
         :comment: An IMessage or string.
         :filename: A string.
