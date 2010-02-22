@@ -2,7 +2,7 @@
 
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectSet)
+    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectGroupSet)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
@@ -498,7 +498,7 @@ The vocabulary contains only active milestones.
 
 All the products in a project.
 
-    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> mozilla_products_vocabulary = get_naked_vocab(
     ...     mozilla_project,'ProjectProducts')
 
@@ -524,8 +524,8 @@ The list of selectable projects. The results are ordered by displayname.
 
   The ProjectVocabulary does not list inactive projects.
 
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> moz_project = getUtility(IProjectSet)['mozilla']
+    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> moz_project = getUtility(IProjectGroupSet)['mozilla']
     >>> moz_project in project_vocabulary
     True
 
@@ -1248,7 +1248,7 @@ Inactive projects and project groups are not available.
 
 Project groups are not contained in this vocabulary:
 
-    >>> apache = getUtility(IProjectSet).getByName('apache')
+    >>> apache = getUtility(IProjectGroupSet).getByName('apache')
     >>> apache in vocab
     False
 
@@ -1290,7 +1290,7 @@ Inactive projects and project groups are not available.
     >>> tomcat in vocab
     False
 
-    >>> apache = getUtility(IProjectSet).getByName('apache')
+    >>> apache = getUtility(IProjectGroupSet).getByName('apache')
     >>> apache in vocab
     True
     >>> apache.active = False
@@ -1306,7 +1306,7 @@ Inactive projects and project groups are not available.
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
     >>> product_set.getByName('tomcat').active = True
-    >>> getUtility(IProjectSet).getByName('apache').active = True
+    >>> getUtility(IProjectGroupSet).getByName('apache').active = True
     >>> flush_database_updates()
     >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
     >>> for term in vocab:
