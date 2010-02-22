@@ -59,8 +59,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -69,8 +67,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IProjectBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.utilities.filebugdataparser import (
-    FileBugData, FileBugDataParser)
+from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)

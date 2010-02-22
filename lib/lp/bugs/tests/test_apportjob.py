@@ -25,8 +25,7 @@ from canonical.testing import (
 
 from lp.bugs.interfaces.apportjob import (
     ApportJobType, IProcessApportBlobJobSource)
-from lp.bugs.model.apportjob import (
-    ApportJob, ApportJobDerived, ProcessApportBlobJob)
+from lp.bugs.model.apportjob import ApportJob, ApportJobDerived
 from lp.bugs.utilities.filebugdataparser import (
     FileBugData, FileBugDataParser)
 from lp.services.job.interfaces.job import JobStatus
@@ -225,7 +224,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             1, len(current_jobs),
-            "There should be only one getUtility(IProcessApportBlobJobSource). Found %s" %
+            "There should be only one ProcessApportBlobJob. Found %s" %
             len(current_jobs))
 
         another_job = getUtility(IProcessApportBlobJobSource).create(self.blob)
@@ -233,7 +232,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             1, len(current_jobs),
-            "There should be only one getUtility(IProcessApportBlobJobSource). Found %s" %
+            "There should be only one ProcessApportBlobJob. Found %s" %
             len(current_jobs))
 
         # If the job is complete, it will no longer show up in the list
@@ -406,7 +405,8 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
             job_from_view.job.status.title)
         self.assertFalse(
             view.extra_data_to_process,
-            "view.extra_data_to_process should be False when job is COMPLETED.")
+            "view.extra_data_to_process should be False when job is "
+            "COMPLETED.")
 
         # If there's no job - for example if someone visits the +filebug
         # page normally, example - extra_data_to_process will always be
@@ -418,7 +418,8 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
             "for a view.")
         self.assertFalse(
             view.extra_data_to_process,
-            "view.extra_data_to_process should be False when there is no job.")
+            "view.extra_data_to_process should be False when there is no "
+            "job.")
 
 
 def test_suite():
