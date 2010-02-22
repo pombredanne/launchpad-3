@@ -43,8 +43,9 @@ class ICountry(Interface):
         TextLine(
             title=_('Country name'), required=True,
             constraint=valid_name))
-    title = exported(Title(
-        title=_('Country title'), required=True))
+    title = exported(
+        Title(
+            title=_('Country title'), required=True))
     description = exported(
         Description(
             title=_('Description'), required=True))
