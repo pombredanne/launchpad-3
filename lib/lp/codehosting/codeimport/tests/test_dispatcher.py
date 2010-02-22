@@ -39,7 +39,7 @@ class TestCodeImportDispatcherUnit(TestCase):
     def setUp(self):
         self.pushConfig('codeimportdispatcher', forced_hostname='none')
 
-    def makeDispatcher(self, worker_limit=None):
+    def makeDispatcher(self, worker_limit=10):
         """Make a `CodeImportDispatcher`."""
         return CodeImportDispatcher(QuietFakeLogger(), worker_limit)
 

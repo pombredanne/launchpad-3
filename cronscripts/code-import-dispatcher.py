@@ -18,6 +18,12 @@ from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 class CodeImportDispatcherScript(LaunchpadScript):
 
+    def add_my_options(self):
+        self.parser.add_option(
+            "--max-jobs", dest="max_jobs", type=int,
+            default=config.codeimportdispatcher.max_jobs_per_machine,
+            help="The maximum number of jobs to run on this machine.")
+
     def run(self, use_web_security=False, implicit_begin=True,
             isolation=None):
         """See `LaunchpadScript.run`.
@@ -30,12 +36,8 @@ class CodeImportDispatcherScript(LaunchpadScript):
     def main(self):
         globalErrorUtility.configure('codeimportdispatcher')
 
-        if len(self.args) > 0:
-            worker_limit = int(self.args[0])
-        else:
-            worker_limit = None
-
-        CodeImportDispatcher(self.logger, worker_limit).findAndDispatchJob(
+        dispatcher = CodeImportDispatcher(self.logger, self.options.max_jobs)
+        dispatcher.findAndDispatchJob(
             ServerProxy(config.codeimportdispatcher.codeimportscheduler_url))
 
 

@@ -38,9 +38,7 @@ class CodeImportDispatcher:
         :param logger: A `Logger` object.
         """
         self.logger = logger
-        if worker_limit is None:
-            self.worker_limit = \
-                config.codeimportdispatcher.max_jobs_per_machine
+        self.worker_limit = worker_limit
 
     def getHostname(self):
         """Return the hostname of this machine.
