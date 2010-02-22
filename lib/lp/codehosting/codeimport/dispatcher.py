@@ -65,15 +65,27 @@ class CodeImportDispatcher:
 
 
     def findAndDispatchJob(self, scheduler_client):
-        """Check for and dispatch a job if necessary."""
+        """Check for and dispatch a job if necessary.
+
+        :return: A boolean, true if a job was found and dispatched.
+        """
 
         job_id = scheduler_client.getJobForMachine(
             self.getHostname(), self.worker_limit)
 
         if job_id == 0:
             self.logger.info("No jobs pending.")
-            return
+            return False
 
         self.logger.info("Dispatching job %d." % job_id)
 
         self.dispatchJob(job_id)
+        return True
+
+
+    def findAndDispatchJobs(self, scheduler_client):
+        """XXX."""
+        while True:
+            found = self.findAndDispatchJob(scheduler_client)
+            if not found:
+                break

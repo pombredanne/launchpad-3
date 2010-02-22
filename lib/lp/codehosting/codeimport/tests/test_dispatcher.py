@@ -24,11 +24,11 @@ from lp.testing import TestCase
 class StubSchedulerClient:
     """A scheduler client that returns a pre-arranged answer."""
 
-    def __init__(self, id_to_return):
-        self.id_to_return = id_to_return
+    def __init__(self, ids_to_return):
+        self.ids_to_return = ids_to_return
 
     def getJobForMachine(self, machine, limit):
-        return self.id_to_return
+        return self.ids_to_return.pop(0)
 
 
 class MockSchedulerClient:
@@ -111,16 +111,16 @@ class TestCodeImportDispatcherUnit(TestCase):
         calls = []
         dispatcher = self.makeDispatcher()
         dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
-        dispatcher.findAndDispatchJob(StubSchedulerClient(10))
-        self.assertEqual([10], calls)
+        found = dispatcher.findAndDispatchJob(StubSchedulerClient([10]))
+        self.assertEqual(([10], True), (calls, found))
 
     def test_findAndDispatchJob_noJobWaiting(self):
         # If there is no job to dispatch, then we just exit quietly.
         calls = []
         dispatcher = self.makeDispatcher()
         dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
-        dispatcher.findAndDispatchJob(StubSchedulerClient(0))
-        self.assertEqual([], calls)
+        found = dispatcher.findAndDispatchJob(StubSchedulerClient([0]))
+        self.assertEqual(([], False), (calls, found))
 
     def test_findAndDispatchJob_calls_getJobForMachine_with_limit(self):
         # findAndDispatchJob calls getJobForMachine on the scheduler client
@@ -132,6 +132,17 @@ class TestCodeImportDispatcherUnit(TestCase):
         self.assertEqual(
             [(dispatcher.getHostname(), worker_limit)],
             scheduler_client.calls)
+
+    def test_findAndDispatchJobs(self):
+        # findAndDispatchJobs calls getJobForMachine on the scheduler_client,
+        # dispatching jobs, until it indicates that there are no more jobs to
+        # dispatch.
+        calls = []
+        dispatcher = self.makeDispatcher()
+        dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
+        dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 9, 0]))
+        self.assertEqual([10, 9], calls)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
