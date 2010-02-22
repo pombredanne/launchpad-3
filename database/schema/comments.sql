@@ -659,6 +659,7 @@ COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'Level of
 translations imports from codehosting branch: None, templates only, templates
 and translations. See TranslationsBranchImportMode.';
 COMMENT ON COLUMN ProductSeries.translations_branch IS 'Branch to push translations updates to.';
+COMMENT ON COLUMN ProductSeries.max_heat IS 'The highest heat value across bugs for this product series.';
 
 -- ProductSeriesCodeImport
 
@@ -703,6 +704,7 @@ COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image 
 COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version of this product''s mugshot.';
 COMMENT ON COLUMN Project.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on products in this project.';
 COMMENT ON COLUMN Project.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
+COMMENT ON COLUMN Project.max_heat IS 'The highest heat value across bugs for products in this project.';
 
 -- ProjectRelationship
 COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the ''label'' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
@@ -985,6 +987,7 @@ COMMENT ON COLUMN DistroSeries.language_pack_base IS 'Current full export langua
 COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
+COMMENT ON COLUMN DistroSeries.max_heat IS 'The highest heat value across bugs for this distro series.';
 
 
 -- PackageDiff
