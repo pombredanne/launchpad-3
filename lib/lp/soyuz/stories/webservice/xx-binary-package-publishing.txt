@@ -149,7 +149,7 @@ Detailed download counts are available from the getDownloadCounts method.
     >>> firefox_db.archive.updatePackageDownloadCount(
     ...     firefox_db.binarypackagerelease, date(2010, 2, 21), australia, 10)
     >>> firefox_db.archive.updatePackageDownloadCount(
-    ...     firefox_db.binarypackagerelease, date(2010, 2, 23), None, 10)
+    ...     firefox_db.binarypackagerelease, date(2010, 2, 23), None, 8)
 
     >>> logout()
 
@@ -182,8 +182,14 @@ We can also filter by date.
     archive_link: u'http://.../~cprov/+archive/ppa'
     binary_package_name: u'mozilla-firefox'
     binary_package_version: u'1.0'
-    count: 10
+    count: 8
     country_link: None
     day: u'2010-02-23'
     resource_type_link: u'http://.../#binary_package_release_download_count'
     self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/...'
+
+getDailyDownloadTotals returns a dict mapping dates to total counts.
+
+    >>> webservice.named_get(
+    ...     firefox['self_link'], 'getDailyDownloadTotals').jsonBody()
+    {u'2010-02-21': 10, u'2010-02-23': 8}

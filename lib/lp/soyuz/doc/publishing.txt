@@ -987,6 +987,14 @@ getDownloadCounts lets us filter by date.
     ...     start_date=date(2010, 2, 20), end_date=date(2010, 2, 20))]
     []
 
+We can also get a dict of totals for each day. The keys are strings to
+work around lazr.restful's dict limitations. This too has a date filter.
+
+    >>> bpph.getDailyDownloadTotals()
+    {'2010-02-21': 14L, '2010-02-19': 2L}
+    >>> bpph.getDailyDownloadTotals(start_date=date(2010, 2, 20))
+    {'2010-02-21': 14L}
+
 
 IPublishingSet
 ==============

@@ -28,7 +28,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
-from storm.expr import Desc, In, LeftJoin
+from storm.expr import Desc, In, LeftJoin, Sum
 from storm.store import Store
 
 from lp.buildmaster.master import determineArchitecturesToBuild
@@ -992,8 +992,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         self.component = component
 
-    def getDownloadCounts(self, start_date=None, end_date=None):
-        """See `IBinaryPackagePublishingHistory`."""
+    def _getDownloadCountClauses(self, start_date=None, end_date=None):
         clauses = [
             BinaryPackageReleaseDownloadCount.archive == self.archive,
             BinaryPackageReleaseDownloadCount.binary_package_release ==
@@ -1007,6 +1006,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             clauses.append(
                 BinaryPackageReleaseDownloadCount.day <= end_date)
 
+        return clauses
+
+    def getDownloadCounts(self, start_date=None, end_date=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        clauses = self._getDownloadCountClauses(start_date, end_date)
+
         return Store.of(self).using(
             BinaryPackageReleaseDownloadCount,
             LeftJoin(
@@ -1015,6 +1020,21 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                     Country.id)).find(
             BinaryPackageReleaseDownloadCount, *clauses).order_by(
                 Desc(BinaryPackageReleaseDownloadCount.day), Country.name)
+
+    def getDailyDownloadTotals(self, start_date=None, end_date=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        clauses = self._getDownloadCountClauses(start_date, end_date)
+
+        results = Store.of(self).find(
+            (BinaryPackageReleaseDownloadCount.day,
+             Sum(BinaryPackageReleaseDownloadCount.count)),
+            *clauses).group_by(
+                BinaryPackageReleaseDownloadCount.day)
+
+        def date_to_string(result):
+            return (result[0].strftime('%Y-%m-%d'), result[1])
+
+        return dict(date_to_string(result) for result in results)
 
 
 class PublishingSet:

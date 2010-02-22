@@ -871,6 +871,17 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         :param end_date: The optional last date to return.
         """
 
+    @operation_parameters(
+        start_date=Date(title=_("Start date"), required=False),
+        end_date=Date(title=_("End date"), required=False))
+    @export_read_operation()
+    def getDailyDownloadTotals(start_date=None, end_date=None):
+        """Get the daily download counts for this binary.
+
+        :param start_date: The optional first date to return.
+        :param end_date: The optional last date to return.
+        """
+
 
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
                                       IPublishingEdit):
