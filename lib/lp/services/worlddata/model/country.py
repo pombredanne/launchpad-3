@@ -66,9 +66,9 @@ class CountrySet:
         """See `ICountrySet`."""
         return IStore(Country).find(Country, iso3166code2=code).one()
 
-    def getCountries(self, limit=50):
+    def getCountries(self):
         """See `ICountrySet`."""
-        return IStore(Country).find(Country).order_by(Country.iso3166code2)[:limit]
+        return IStore(Country).find(Country).order_by(Country.iso3166code2)
 
 class Continent(SQLBase):
     """See IContinent."""
