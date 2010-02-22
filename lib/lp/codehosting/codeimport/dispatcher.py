@@ -16,6 +16,7 @@ __all__ = [
 import os
 import socket
 import subprocess
+import time
 
 from canonical.config import config
 
@@ -32,13 +33,14 @@ class CodeImportDispatcher:
     worker_script = os.path.join(
         config.root, 'scripts', 'code-import-worker-db.py')
 
-    def __init__(self, logger, worker_limit):
+    def __init__(self, logger, worker_limit, _sleep=time.sleep):
         """Initialize an instance.
 
         :param logger: A `Logger` object.
         """
         self.logger = logger
         self.worker_limit = worker_limit
+        self._sleep = _sleep
 
     def getHostname(self):
         """Return the hostname of this machine.
@@ -82,10 +84,19 @@ class CodeImportDispatcher:
         self.dispatchJob(job_id)
         return True
 
+    def _getSleepInterval(self):
+        """XXX.
+
+        The idea here is that worker_limit will be roughly the number of CPUs
+        in the machine, so load/worker_limit is roughly how loaded the machine
+        is.
+        """
+        return 5*os.getloadavg()[0]/self.worker_limit
 
     def findAndDispatchJobs(self, scheduler_client):
-        """XXX."""
+        """Call findAndDispatchJob until no job is found."""
         while True:
             found = self.findAndDispatchJob(scheduler_client)
             if not found:
                 break
+            self._sleep(self._getSleepInterval())

@@ -51,9 +51,10 @@ class TestCodeImportDispatcherUnit(TestCase):
         TestCase.setUp(self)
         self.pushConfig('codeimportdispatcher', forced_hostname='none')
 
-    def makeDispatcher(self, worker_limit=10):
+    def makeDispatcher(self, worker_limit=10, _sleep=lambda delay: None):
         """Make a `CodeImportDispatcher`."""
-        return CodeImportDispatcher(QuietFakeLogger(), worker_limit)
+        return CodeImportDispatcher(
+            QuietFakeLogger(), worker_limit, _sleep=_sleep)
 
     def test_getHostname(self):
         # By default, getHostname return the same as socket.gethostname()
@@ -142,6 +143,18 @@ class TestCodeImportDispatcherUnit(TestCase):
         dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
         dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 9, 0]))
         self.assertEqual([10, 9], calls)
+
+    def test_findAndDispatchJobs_sleeps(self):
+        # findAndDispatchJobs XXX
+        sleep_calls = []
+        interval = self.factory.getUniqueInteger()
+        def _sleep(delay):
+            sleep_calls.append(delay)
+        dispatcher = self.makeDispatcher(_sleep=_sleep)
+        dispatcher.dispatchJob = lambda job_id: None
+        dispatcher._getSleepInterval = lambda : interval
+        dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 0]))
+        self.assertEqual([interval], sleep_calls)
 
 
 def test_suite():
