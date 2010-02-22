@@ -868,13 +868,29 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertFalse(job.generateDiffs())
 
 
+def all_dirs(directory):
+    """Generate all parent directories and the directory itself.
+
+    Passing 'a/b/c/d' produces ['a', 'a/b', 'a/b/c', 'a/b/c/d'].
+    """
+    if directory == '':
+        return []
+    dirs = [directory]
+    while(1):
+        head, tail = os.path.split(directory)
+        if head == '':
+            return reversed(dirs)
+        directory = head
+        dirs.append(directory)
+
+
 class TestRosettaUploadJob(TestCaseWithFactory):
     """Tests for RosettaUploadJob."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestRosettaUploadJob, self).setUp()
         self.series = None
 
     def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
@@ -923,10 +939,12 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         for file_pair in files:
             file_name = file_pair[0]
             dname, fname = os.path.split(file_name)
-            if dname != '' and dname not in seen_dirs:
-                self.tree.bzrdir.root_transport.mkdir(dname)
-                self.tree.add(dname)
-                seen_dirs.add(dname)
+            for adir in all_dirs(dname):
+                if adir in seen_dirs:
+                    continue
+                self.tree.bzrdir.root_transport.mkdir(adir)
+                self.tree.add(adir)
+                seen_dirs.add(adir)
             try:
                 file_content = file_pair[1]
                 if file_content is None:
@@ -1035,6 +1053,35 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # configured for template import.
         entries = self._runJobWithFile(
             TranslationsBranchImportMode.IMPORT_TEMPLATES, 'empty.pot', '')
+        self.assertEqual(entries, [])
+
+    def test_upload_hidden_pot(self):
+        # A POT cannot be uploaded if its name starts with a dot.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, '.hidden.pot')
+        self.assertEqual(entries, [])
+
+    def test_upload_hidden_directory_pot(self):
+        # A POT cannot be uploaded if the containting directory starts
+        # with a dot.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, '.hidden/foo.pot')
+        self.assertEqual(entries, [])
+
+    def test_upload_hidden_subdirectory_pot(self):
+        # A POT cannot be uploaded if the containting directory starts
+        # with a dot, even if it is a subdirectory.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            'bar/.hidden/foo.pot')
+        self.assertEqual(entries, [])
+
+    def test_upload_hidden_subdirectory_anywhere_pot(self):
+        # In fact, if any parent directory is hidden, the file will not be
+        # imported.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            'bar/.hidden/bla/foo.pot')
         self.assertEqual(entries, [])
 
     def test_upload_pot_uploader(self):
