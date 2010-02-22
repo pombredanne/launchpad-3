@@ -25,27 +25,29 @@ from lazr.restful.declarations import (
     export_read_operation, export_as_webservice_entry, exported,
     operation_parameters, operation_returns_entry)
 
+
 class ICountry(Interface):
     """The country description."""
     export_as_webservice_entry(plural_name='countries')
 
     id = Int(
-            title=_('Country ID'), required=True, readonly=True,
-            )
-    iso3166code2 = exported(TextLine( title=_('iso3166code2'), required=True,
-                             readonly=True))
-    iso3166code3 = exported(TextLine( title=_('iso3166code3'), required=True,
-                             readonly=True))
-    name = exported(TextLine(
+        title=_('Country ID'), required=True, readonly=True,
+        )
+    iso3166code2 = exported(
+        TextLine(title=_('iso3166code2'), required=True,
+            readonly=True))
+    iso3166code3 = exported(
+        TextLine(title=_('iso3166code3'), required=True,
+            readonly=True))
+    name = exported(
+        TextLine(
             title=_('Country name'), required=True,
-            constraint=valid_name,
-            ))
+            constraint=valid_name))
     title = exported(Title(
-            title=_('Country title'), required=True,
-            ))
-    description = exported(Description(
-            title=_('Description'), required=True,
-            ))
+        title=_('Country title'), required=True))
+    description = exported(
+        Description(
+            title=_('Description'), required=True))
 
     continent = Attribute("The Continent where this country is located.")
     languages = Attribute("An iterator over languages that are spoken in "
@@ -77,7 +79,7 @@ class ICountrySet(Interface):
         """Return a country by its code."""
 
     @collection_default_content()
-    def getCountries(limit=50):
+    def getCountries():
         """Return a collection of countries."""
 
 
