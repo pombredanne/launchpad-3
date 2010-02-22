@@ -137,6 +137,7 @@ jsbuild: jsbuild_lazr
 		-b $(LP_BUILT_JS_ROOT) \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
+	${SHHH} bin/jssize
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
