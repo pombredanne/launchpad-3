@@ -425,11 +425,13 @@ class BranchView(LaunchpadView, FeedsMixin):
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
+    @property
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
-        return (self.user is not None and
-                self.user.inTeam(self.context.owner) and
-                self.context.branch_type == BranchType.HOSTED)
+        branch = self.context
+        if branch.branch_type != BranchType.HOSTED:
+            return False
+        return check_permission('launchpad.Edit', branch)
 
     def user_can_download(self):
         """Whether the user can download this branch."""
