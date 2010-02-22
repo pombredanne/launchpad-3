@@ -37,7 +37,7 @@ class CodeImportDispatcherScript(LaunchpadScript):
         globalErrorUtility.configure('codeimportdispatcher')
 
         dispatcher = CodeImportDispatcher(self.logger, self.options.max_jobs)
-        dispatcher.findAndDispatchJob(
+        dispatcher.findAndDispatchJobs(
             ServerProxy(config.codeimportdispatcher.codeimportscheduler_url))
 
 

@@ -145,7 +145,8 @@ class TestCodeImportDispatcherUnit(TestCase):
         self.assertEqual([10, 9], calls)
 
     def test_findAndDispatchJobs_sleeps(self):
-        # findAndDispatchJobs XXX
+        # After finding a job, findAndDispatchJobs sleeps for an interval as
+        # returned by _getSleepInterval.
         sleep_calls = []
         interval = self.factory.getUniqueInteger()
         def _sleep(delay):

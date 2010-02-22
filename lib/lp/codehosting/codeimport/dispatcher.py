@@ -85,11 +85,13 @@ class CodeImportDispatcher:
         return True
 
     def _getSleepInterval(self):
-        """XXX.
+        """How long to sleep for until asking for a new job.
 
-        The idea here is that worker_limit will be roughly the number of CPUs
-        in the machine, so load/worker_limit is roughly how loaded the machine
-        is.
+        The basic idea is to wait longer if the machine is more heavily
+        loaded, so that less loaded slaves get a chance to grab some jobs.
+
+        We assume worker_limit will be roughly the number of CPUs in the
+        machine, so load/worker_limit is roughly how loaded the machine is.
         """
         return 5*os.getloadavg()[0]/self.worker_limit
 
