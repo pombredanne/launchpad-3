@@ -12,10 +12,10 @@ import datetime
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
+from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from storm.locals import Int, Reference, Storm, TimeDelta
+from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
 from storm.store import Store
 
 from zope.component import getUtility
@@ -62,8 +62,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     buildlog_id = Int(name='build_log', allow_none=True)
     buildlog = Reference(buildlog_id, 'LibraryFileAlias.id')
 
-    buildstate = EnumCol(
-        dbName='build_state', notNull=True, schema=BuildStatus)
+    buildstate = DBEnum(enum=BuildStatus, name='build_state')
+
+    dependencies = Unicode(allow_none=True)
+
+    upload_log_id = Int(name='upload_log', allow_none=True)
+    upload_log = Reference(upload_log_id, 'LibraryFileAlias.id')
 
     @property
     def current_component(self):
@@ -76,9 +80,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
-    # XXX wgrant 2010-01-15 bug=507751: Need a DB field for this.
-    dependencies = None
-
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(
         sourcepackagename_id, 'SourcePackageName.id')
@@ -88,12 +89,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """See `IBuildBase`."""
         return self.distroseries.distribution
 
-    @property
-    def pocket(self):
-        # XXX: JRV 2010-01-15 bug=507307: The database table really should
-        # have a pocket column, although this is not a big problem at the
-        # moment as recipe builds only happen for PPA's (so far).
-        return PackagePublishingPocket.RELEASE
+    pocket = DBEnum(enum=PackagePublishingPocket)
 
     recipe_id = Int(name='recipe', allow_none=False)
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
@@ -112,13 +108,14 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return results.one()
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
-                 archive, date_created=None, date_first_dispatched=None,
+                 archive, pocket, date_created=None, date_first_dispatched=None,
                  date_built=None, builder=None,
                  build_state=BuildStatus.NEEDSBUILD, build_log=None,
                  build_duration=None):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
         self.archive = archive
+        self.pocket = pocket
         self.buildduration = build_duration
         self.buildlog = build_log
         self.builder = builder
@@ -133,6 +130,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     @classmethod
     def new(cls, sourcepackage, recipe, requester, archive,
+            pocket=PackagePublishingPocket.RELEASE,
             date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
@@ -144,6 +142,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             recipe,
             requester,
             archive,
+            pocket,
             date_created=date_created)
         store.add(spbuild)
         return spbuild
@@ -167,11 +166,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """See `IBuildBase`."""
         # XXX: wgrant 2010-01-19 bug=507764: Need proper implementation.
         return datetime.timedelta(minutes=2)
-
-    def storeUploadLog(self, content):
-        """See `IBuildBase`."""
-        # XXX: wgrant 2010-01-20 bug=509892: Store in the DB.
-        return
 
     def notify(self, extra_info=None):
         """See `IBuildBase`."""
