@@ -52,7 +52,8 @@ class ForeignBranchPluginLayer(BaseLayer):
     @classmethod
     def tearDown(cls):
         # Raise NotImplementedError to signal that this layer cannot be torn
-        # down.
+        # down.  This means that the test runner will run subsequent tests in
+        # a different process.
         raise NotImplementedError
 
     @classmethod
