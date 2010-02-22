@@ -24,12 +24,15 @@
 
   <tal:deletelist condition="view/branch_deletion_actions/delete">
     The following items must be <em>deleted</em>:
-    <ul>
+    <ul id="deleted-items">
       <tal:actions repeat="row view/branch_deletion_actions/delete">
         <li>
           <img src="/@@/no" title="Insufficient privileges"
                tal:condition="not:row/allowed"/>
-              <tal:item tal:content="structure row/item/fmt:link" />
+               <tal:bug-item condition="row/item/default_bugtask|nothing"
+                             content="structure row/item/default_bugtask/fmt:link" />
+               <tal:item condition="not: row/item/default_bugtask"
+                         content="structure row/item/fmt:link" />
               (<tal:reason tal:content="row/reason" />)
         </li>
       </tal:actions>
