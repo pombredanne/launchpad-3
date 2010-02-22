@@ -1060,22 +1060,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             TranslationsBranchImportMode.IMPORT_TEMPLATES, '.hidden.pot')
         self.assertEqual(entries, [])
 
-    def test_upload_hidden_directory_pot(self):
-        # A POT cannot be uploaded if the containting directory starts
-        # with a dot.
-        entries = self._runJobWithFile(
-            TranslationsBranchImportMode.IMPORT_TEMPLATES, '.hidden/foo.pot')
-        self.assertEqual(entries, [])
-
-    def test_upload_hidden_subdirectory_pot(self):
-        # A POT cannot be uploaded if the containting directory starts
-        # with a dot, even if it is a subdirectory.
-        entries = self._runJobWithFile(
-            TranslationsBranchImportMode.IMPORT_TEMPLATES,
-            'bar/.hidden/foo.pot')
-        self.assertEqual(entries, [])
-
-    def test_upload_hidden_subdirectory_anywhere_pot(self):
+    def test_upload_pot_hidden_in_subdirectory(self):
         # In fact, if any parent directory is hidden, the file will not be
         # imported.
         entries = self._runJobWithFile(
