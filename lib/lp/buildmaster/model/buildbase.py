@@ -96,6 +96,13 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.buildlog)
 
+    @property
+    def upload_log_url(self):
+        """See `IBuildBase`."""
+        if self.upload_log is None:
+            return None
+        return self._getProxiedFileURL(self.upload_log)
+
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
         logger = logging.getLogger()
@@ -229,7 +236,7 @@ class BuildBase:
         # also contain the information required to manually reprocess the
         # binary upload when it was the case.
         if (self.buildstate != BuildStatus.FULLYBUILT or
-            self.binarypackages.count() == 0):
+            not self.verifySuccessfulUpload()):
             logger.debug("Build %s upload failed." % self.id)
             self.buildstate = BuildStatus.FAILEDTOUPLOAD
             # Retrieve log file content.
@@ -256,8 +263,8 @@ class BuildBase:
             self.notify(extra_info=uploader_log_content)
         else:
             logger.debug(
-                "Gathered build %s completely" %
-                self.sourcepackagerelease.name)
+                "Gathered %s %d completely" % (
+                self.__class__.__name__, self.id))
 
         # Release the builder for another job.
         self.buildqueue_record.builder.cleanSlave()

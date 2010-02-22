@@ -35,6 +35,7 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
@@ -107,9 +108,15 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             SourcePackageRecipeBuildJob.build == self.id)
         return results.one()
 
+    @property
+    def source_package_release(self):
+        """See `ISourcePackageRecipeBuild`."""
+        return Store.of(self).find(
+            SourcePackageRelease, source_package_recipe_build=self).one()
+
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
-                 archive, pocket, date_created=None, date_first_dispatched=None,
-                 date_built=None, builder=None,
+                 archive, pocket, date_created=None,
+                 date_first_dispatched=None, date_built=None, builder=None,
                  build_state=BuildStatus.NEEDSBUILD, build_log=None,
                  build_duration=None):
         """Construct a SourcePackageRecipeBuild."""
@@ -166,6 +173,9 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """See `IBuildBase`."""
         # XXX: wgrant 2010-01-19 bug=507764: Need proper implementation.
         return datetime.timedelta(minutes=2)
+
+    def verifySuccessfulUpload(self):
+        return self.source_package_release is not None
 
     def notify(self, extra_info=None):
         """See `IBuildBase`."""

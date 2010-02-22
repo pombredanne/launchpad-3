@@ -103,13 +103,6 @@ class Build(BuildBase, SQLBase):
             BuildPackageJob.build == self.id)
         return results.one()
 
-    @property
-    def upload_log_url(self):
-        """See `IBuild`."""
-        if self.upload_log is None:
-            return None
-        return self._getProxiedFileURL(self.upload_log)
-
     def _getLatestPublication(self):
         store = Store.of(self)
         results = store.find(
@@ -514,6 +507,9 @@ class Build(BuildBase, SQLBase):
             estimated_duration = datetime.timedelta(minutes=estimate)
 
         return estimated_duration
+
+    def verifySuccessfulUpload(self):
+        return self.binarypackages.count() > 0
 
     def notify(self, extra_info=None):
         """See `IBuildBase`.

@@ -600,7 +600,8 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
         dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
-        build_conflicts, build_conflicts_indep, dateuploaded=None):
+        build_conflicts, build_conflicts_indep, dateuploaded=None,
+        source_package_recipe_build=None):
         """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -633,6 +634,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
          :param dsc_binaries:  string, DSC binaries field
          :param archive: IArchive to where the upload was targeted
          :param dateuploaded: optional datetime, if omitted assumed nowUTC
+         :param source_package_recipe_build: optional SourcePackageRecipeBuild
          :return: the just creates `SourcePackageRelease`
         """
 
