@@ -247,7 +247,8 @@ class TestBuildQueueBase(TestCaseWithFactory):
         self.builders[(self.amd_proc.id, True)] = [self.a1, self.a2, self.a3]
 
         # hppa native
-        self.builders[(self.hppa_proc.id, False)] = [self.h5, self.h6, self.h7]
+        self.builders[(self.hppa_proc.id, False)] = [
+            self.h5, self.h6, self.h7]
         # hppa virtual
         self.builders[(self.hppa_proc.id, True)] = [
             self.h1, self.h2, self.h3, self.h4]
