@@ -41,6 +41,29 @@ from lp.testing import TestCase
 import pysvn
 
 
+class ForeignBranchPluginLayer(BaseLayer):
+    """Ensure only specific tests are run with foreign branch plugins loaded.
+    """
+
+    @classmethod
+    def setUp(cls):
+        pass
+
+    @classmethod
+    def tearDown(cls):
+        # Raise NotImplementedError to signal that this layer cannot be torn
+        # down.
+        raise NotImplementedError
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
+
+
 default_format = BzrDirFormat.get_default_format()
 
 
@@ -51,7 +74,7 @@ class WorkerTest(TestCaseWithTransport, TestCase):
     factories for some code import objects.
     """
 
-    layer = BaseLayer
+    layer = ForeignBranchPluginLayer
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
