@@ -255,6 +255,31 @@ class ObjectFactory:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
+    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
+                                    url=None, cvs_root=None, cvs_module=None):
+        if branch_id is None:
+            branch_id = self.getUniqueInteger()
+        if rcstype is None:
+            rcstype = 'svn'
+        if rcstype in ['svn', 'bzr-svn', 'hg']:
+            assert cvs_root is cvs_module is None
+            if url is None:
+                url = self.getUniqueURL()
+        elif rcstype == 'cvs':
+            assert url is None
+            if cvs_root is None:
+                cvs_root = self.getUniqueString()
+            if cvs_module is None:
+                cvs_module = self.getUniqueString()
+        elif rcstype == 'git':
+            assert cvs_root is cvs_module is None
+            if url is None:
+                url = self.getUniqueURL(scheme='git')
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return CodeImportSourceDetails(
+            branch_id, rcstype, url, cvs_root, cvs_module)
+
 
 class LaunchpadObjectFactory(ObjectFactory):
     """Factory methods for creating Launchpad objects.
@@ -1408,31 +1433,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ICodeImportResultSet).new(
             code_import, machine, requesting_user, log_excerpt, log_alias,
             result_status, date_started, date_finished)
-
-    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
-                                    url=None, cvs_root=None, cvs_module=None):
-        if branch_id is None:
-            branch_id = self.getUniqueInteger()
-        if rcstype is None:
-            rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'hg']:
-            assert cvs_root is cvs_module is None
-            if url is None:
-                url = self.getUniqueURL()
-        elif rcstype == 'cvs':
-            assert url is None
-            if cvs_root is None:
-                cvs_root = self.getUniqueString()
-            if cvs_module is None:
-                cvs_module = self.getUniqueString()
-        elif rcstype == 'git':
-            assert cvs_root is cvs_module is None
-            if url is None:
-                url = self.getUniqueURL(scheme='git')
-        else:
-            raise AssertionError("Unknown rcstype %r." % rcstype)
-        return CodeImportSourceDetails(
-            branch_id, rcstype, url, cvs_root, cvs_module)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
