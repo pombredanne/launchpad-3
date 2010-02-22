@@ -18,9 +18,17 @@ CREATE TRIGGER bug_latest_patch_uploaded_on_delete_t
 AFTER DELETE ON bugattachment
 FOR EACH ROW EXECUTE PROCEDURE bug_update_latest_patch_uploaded_on_delete();
 
-SELECT bug_update_latest_patch_uploaded(bug.id)
-    FROM bug WHERE EXISTS (
-        SELECT bugattachment.id FROM bugattachment, bug
-            WHERE bugattachment.bug=bug.id AND bugattachment.type=1);
+CREATE INDEX bugattachment__bug__idx ON BugAttachment(bug);
+
+UPDATE Bug
+SET latest_patch_uploaded = LatestPatch.datecreated
+FROM (
+    SELECT BugAttachment.bug, max(Message.datecreated) AS datecreated
+    FROM BugAttachment, Message
+    WHERE BugAttachment.message = Message.id
+        AND BugAttachment.type = 1
+    GROUP BY BugAttachment.bug
+    ) AS LatestPatch
+WHERE LatestPatch.bug = Bug.id;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 29, 0);

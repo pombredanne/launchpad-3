@@ -11,12 +11,9 @@ __all__ = [
     'BranchSetAPI', 'IBranchSetAPI', 'IPublicCodehostingAPI',
     'PublicCodehostingAPI']
 
-import os
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
-
-from lazr.uri import URI
 
 from canonical.config import config
 from lp.bugs.interfaces.bug import IBugSet
@@ -185,10 +182,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     supported_schemes = 'bzr+ssh', 'http'
 
-    def _getBazaarHost(self):
-        """Return the hostname for the codehosting server."""
-        return URI(config.codehosting.supermirror_root).host
-
     def _getResultDict(self, branch, suffix=None, supported_schemes=None):
         """Return a result dict with a list of URLs for the given branch.
 
@@ -207,16 +200,13 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     def _getUniqueNameResultDict(self, unique_name, suffix=None,
                                  supported_schemes=None):
+        from lp.code.model.branch import compose_public_url
         if supported_schemes is None:
             supported_schemes = self.supported_schemes
         result = dict(urls=[])
-        host = self._getBazaarHost()
-        path = '/' + unique_name
-        if suffix is not None:
-            path = os.path.join(path, suffix)
         for scheme in supported_schemes:
             result['urls'].append(
-                str(URI(host=host, scheme=scheme, path=path)))
+                compose_public_url(scheme, unique_name, suffix))
         return result
 
     @return_fault

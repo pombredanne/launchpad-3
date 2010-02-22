@@ -65,8 +65,7 @@ from lp.soyuz.interfaces.archivedependency import (
     IArchiveDependency)
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
-    ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     ISourcePackagePublishingHistoryPublic, PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
@@ -87,11 +86,13 @@ IBranch['linkBug'].queryTaggedValue(
 IBranch['linkSpecification'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
 IBranch['product'].schema = IProduct
-IBranch['setTarget'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['project'].schema= IProduct
-IBranch['setTarget'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['source_package'].schema= \
-        ISourcePackage
+
+patch_plain_parameter_type(
+    IBranch, 'setTarget', 'project', IProduct)
+patch_plain_parameter_type(
+    IBranch, 'setTarget', 'source_package', ISourcePackage)
+patch_reference_property(IBranch, 'sourcepackage', ISourcePackage)
+
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
@@ -185,12 +186,12 @@ ISourcePackagePublishingHistoryPublic[
         LAZR_WEBSERVICE_EXPORTED)[
             'return_type'].value_type.schema = IBinaryPackagePublishingHistory
 patch_reference_property(
-    ISecureBinaryPackagePublishingHistory, 'distroarchseries',
+    IBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)
 patch_reference_property(
-    ISecureBinaryPackagePublishingHistory, 'archive', IArchive)
+    IBinaryPackagePublishingHistory, 'archive', IArchive)
 patch_reference_property(
-    ISecureSourcePackagePublishingHistory, 'archive', IArchive)
+    ISourcePackagePublishingHistory, 'archive', IArchive)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)

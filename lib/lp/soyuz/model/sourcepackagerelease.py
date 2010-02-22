@@ -269,7 +269,7 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def published_archives(self):
-        """See `ISourcePacakgeRelease`."""
+        """See `ISourcePackageRelease`."""
         archives = set(
             pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))

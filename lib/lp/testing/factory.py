@@ -104,7 +104,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
 from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage, SourcePackageUrgency)
@@ -130,10 +130,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 from lp.testing import run_with_login, time_counter, login, logout
 
@@ -142,6 +139,9 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translator import ITranslatorSet
+from lp.translations.interfaces.translationtemplatesbuildjob import (
+    ITranslationTemplatesBuildJobSource)
+
 
 SPACE = ' '
 
@@ -254,6 +254,31 @@ class ObjectFactory:
         if host is None:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
+
+    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
+                                    url=None, cvs_root=None, cvs_module=None):
+        if branch_id is None:
+            branch_id = self.getUniqueInteger()
+        if rcstype is None:
+            rcstype = 'svn'
+        if rcstype in ['svn', 'bzr-svn', 'hg']:
+            assert cvs_root is cvs_module is None
+            if url is None:
+                url = self.getUniqueURL()
+        elif rcstype == 'cvs':
+            assert url is None
+            if cvs_root is None:
+                cvs_root = self.getUniqueString()
+            if cvs_module is None:
+                cvs_module = self.getUniqueString()
+        elif rcstype == 'git':
+            assert cvs_root is cvs_module is None
+            if url is None:
+                url = self.getUniqueURL(scheme='git')
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return CodeImportSourceDetails(
+            branch_id, rcstype, url, cvs_root, cvs_module)
 
 
 class LaunchpadObjectFactory(ObjectFactory):
@@ -697,7 +722,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             description = self.getUniqueString('description')
         if title is None:
             title = self.getUniqueString('title')
-        return getUtility(IProjectSet).new(
+        return getUtility(IProjectGroupSet).new(
             name=name,
             displayname=displayname,
             title=title,
@@ -1409,31 +1434,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             code_import, machine, requesting_user, log_excerpt, log_alias,
             result_status, date_started, date_finished)
 
-    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
-                                    url=None, cvs_root=None, cvs_module=None):
-        if branch_id is None:
-            branch_id = self.getUniqueInteger()
-        if rcstype is None:
-            rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'hg']:
-            assert cvs_root is cvs_module is None
-            if url is None:
-                url = self.getUniqueURL()
-        elif rcstype == 'cvs':
-            assert url is None
-            if cvs_root is None:
-                cvs_root = self.getUniqueString()
-            if cvs_module is None:
-                cvs_module = self.getUniqueString()
-        elif rcstype == 'git':
-            assert cvs_root is cvs_module is None
-            if url is None:
-                url = self.getUniqueURL(scheme='git')
-        else:
-            raise AssertionError("Unknown rcstype %r." % rcstype)
-        return CodeImportSourceDetails(
-            branch_id, rcstype, url, cvs_root, cvs_module)
-
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
                               merge_proposal=None):
@@ -1713,6 +1713,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             virtualized=virtualized)
         store.add(bq)
         return bq
+
+    def makeTranslationTemplatesBuildJob(self, branch=None):
+        """Make a new `TranslationTemplatesBuildJob`.
+
+        :param branch: The branch that the job should be for.  If none
+            is given, one will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch()
+
+        jobset = getUtility(ITranslationTemplatesBuildJobSource)
+        return jobset.create(branch)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
@@ -2021,7 +2033,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             dsc_binaries=dsc_binaries,
             archive=archive, dateuploaded=date_uploaded)
 
-        sspph = SecureSourcePackagePublishingHistory(
+        sspph = SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
@@ -2031,7 +2043,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            embargo=False,
             archive=archive)
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW

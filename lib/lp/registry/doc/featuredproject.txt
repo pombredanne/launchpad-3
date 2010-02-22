@@ -7,7 +7,7 @@ projects is stored in the FeaturedProject table, and managed through the
 PillarNameSet.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPillarNameSet, IProductSet, IProjectSet
+    ...     IDistributionSet, IPillarNameSet, IProductSet, IProjectGroupSet
     ...     )
     >>> pillar_set = getUtility(IPillarNameSet)
     >>> def isFeatured(project):
@@ -31,7 +31,7 @@ We'll make sure our isFeatured() test is working:
 
     >>> isFeatured(getUtility(IProductSet).getByName('bazaar'))
     True
-    >>> isFeatured(getUtility(IProjectSet).getByName('gnome'))
+    >>> isFeatured(getUtility(IProjectGroupSet).getByName('gnome'))
     True
     >>> isFeatured(getUtility(IDistributionSet).getByName('ubuntu'))
     True
@@ -55,7 +55,7 @@ projects:
     >>> isFeatured(evolution)
     True
 
-    >>> apache = getUtility(IProjectSet).getByName('apache')
+    >>> apache = getUtility(IProjectGroupSet).getByName('apache')
     >>> isFeatured(apache)
     False
     >>> added = pillar_set.add_featured_project(apache)

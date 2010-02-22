@@ -291,7 +291,7 @@ class TestPublishDistro(TestNativePublishingBase):
         self.prepareBreezyAutotest()
         pub_binaries = self.getPubBinaries(format=BinaryPackageFormat.DDEB)
         for binary in pub_binaries:
-            binary.secure_record.archive = debug_archive
+            binary.archive = debug_archive
 
         # Commit setup changes, so the script can operate on them.
         self.layer.txn.commit()

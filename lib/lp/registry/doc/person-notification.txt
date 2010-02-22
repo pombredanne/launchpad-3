@@ -1,4 +1,5 @@
-= Person notifications =
+Person notifications
+====================
 
 The PersonNotification table stores notifications that should be sent
 (or already sent) to a given person.  It stores the person who should
@@ -6,7 +7,7 @@ receive the notification as well as the email message's body and
 subject.  A cronscript is then responsible for picking up these
 notifications and sending them.
 
-    >>> from canonical.launchpad.interfaces.personnotification import (
+    >>> from lp.registry.interfaces.personnotification import (
     ...     IPersonNotification, IPersonNotificationSet)
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -66,8 +67,6 @@ notifications.
     >>> [n.subject for n in notification_set.getNotificationsToSend()]
     [u'subject2']
 
-    # Commit the transaction so that the subprocess sees the new notification.
-    >>> import transaction
     >>> transaction.commit()
 
     >>> import subprocess
