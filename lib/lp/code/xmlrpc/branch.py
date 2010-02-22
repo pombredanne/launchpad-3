@@ -12,6 +12,8 @@ __all__ = [
     'PublicCodehostingAPI']
 
 
+from bzrlib import urlutils
+
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
@@ -100,7 +102,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
         try:
             unicode_branch_url = branch_url.decode('utf-8')
-            url = IBranch['url'].validate(unicode_branch_url)
+            IBranch['url'].validate(unicode_branch_url)
         except LaunchpadValidationError, exc:
             return faults.InvalidBranchUrl(branch_url, exc)
 
@@ -238,23 +240,24 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         # the model code(blech) or some automated way of reraising as faults
         # or using a narrower range of faults (e.g. only one "NoSuch" fault).
         except InvalidProductName, e:
-            raise faults.InvalidProductIdentifier(e.name)
+            raise faults.InvalidProductIdentifier(urlutils.escape(e.name))
         except NoSuchProductSeries, e:
-            raise faults.NoSuchProductSeries(e.name, e.product)
+            raise faults.NoSuchProductSeries(
+                urlutils.escape(e.name), e.product)
         except NoSuchPerson, e:
-            raise faults.NoSuchPersonWithName(e.name)
+            raise faults.NoSuchPersonWithName(urlutils.escape(e.name))
         except NoSuchProduct, e:
-            raise faults.NoSuchProduct(e.name)
+            raise faults.NoSuchProduct(urlutils.escape(e.name))
         except NoSuchDistroSeries, e:
-            raise faults.NoSuchDistroSeries(e.name)
+            raise faults.NoSuchDistroSeries(urlutils.escape(e.name))
         except NoSuchSourcePackageName, e:
-            raise faults.NoSuchSourcePackageName(e.name)
+            raise faults.NoSuchSourcePackageName(urlutils.escape(e.name))
         except NoLinkedBranch, e:
             raise faults.NoLinkedBranch(e.component)
         except CannotHaveLinkedBranch, e:
             raise faults.CannotHaveLinkedBranch(e.component)
         except InvalidNamespace, e:
-            raise faults.InvalidBranchUniqueName(e.name)
+            raise faults.InvalidBranchUniqueName(urlutils.escape(e.name))
         return self._getResultDict(branch, suffix, supported_schemes)
 
     def resolve_lp_path(self, path):
