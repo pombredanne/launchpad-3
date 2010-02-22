@@ -1284,13 +1284,8 @@ class BugsPatchesView(LaunchpadView):
 
     def batchedPatchTasks(self):
         """Return a BatchNavigator for bug tasks with patch attachments."""
-        # XXX: Karl Fogel 2010-02-01 bug=515584: we should be using a
-        # Zope form instead of validating the values by hand in the
-        # code.  Doing it the Zope form way would specify rendering
-        # and validation from the same enum, and thus observe DRY.
         orderby = self.request.get("orderby", "-latest_patch_uploaded")
-        if orderby not in ["-latest_patch_uploaded", "-importance", "status",
-                           "targetname", "datecreated", "-datecreated"]:
+        if orderby not in [x[1] for x in self.patchTaskOrderings]:
             raise UnexpectedFormData(
                 "Unexpected value for field 'orderby': '%s'" % orderby)
         return BatchNavigator(
