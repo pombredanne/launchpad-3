@@ -1261,6 +1261,27 @@ class BugsPatchesView(LaunchpadView):
         else:
             return 'Patch attachments in %s' % self.context.displayname
 
+    @property
+    def patchTaskOrderings(self):
+        """The list of possible sort orderings for the patches view.
+
+        The orderings are a list of tuples of the form:
+          [(DisplayName, InternalOrderingName), ...]
+        For example:
+          [("Patch age", "-latest_patch_uploaded"),
+           ("Importance", "-importance"),
+           ...]
+        """
+        orderings = [("Patch age", "-latest_patch_uploaded"),
+                     ("Importance", "-importance"),
+                     ("Status", "status"),
+                     ("Oldest first", "datecreated"),
+                     ("Newest first", "-datecreated")]
+        if self.targetName() is not None:
+            orderings.append(("Target", "targetname"))
+        return orderings
+
+
     def batchedPatchTasks(self):
         """Return a BatchNavigator for bug tasks with patch attachments."""
         # XXX: Karl Fogel 2010-02-01 bug=515584: we should be using a

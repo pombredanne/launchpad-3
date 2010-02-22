@@ -31,34 +31,12 @@
     </script>
 
     Order&nbsp;by:&nbsp;<select
-                    name="orderby" id="orderby" size="1"
-                    tal:define="orderby request/orderby|string:-latest_patch_uploaded">
-      <option
-        value="-latest_patch_uploaded"
-        tal:attributes="selected python:orderby == '-latest_patch_uploaded'"
-      >patch age</option>
-      <option
-        value="-importance"
-        tal:attributes="selected python:orderby == '-importance'"
-      >importance</option>
-      <option
-        value="status"
-        tal:attributes="selected python:orderby == 'status'"
-      >status</option>
-      <option
-        tal:condition="view/targetName"
-        tal:content="view/targetName"
-        tal:attributes="selected python:orderby == 'targetname'"
-        value="targetname"
-      ></option>
-      <option
-        value="datecreated"
-        tal:attributes="selected python:orderby == 'datecreated'"
-      >oldest first</option>
-      <option
-        value="-datecreated"
-        tal:attributes="selected python:orderby == '-datecreated'"
-      >newest first</option>
+          name="orderby" id="orderby" size="1"
+          tal:define="orderby request/orderby|string:-latest_patch_uploaded">
+      <option tal:repeat="ordering view/patchTaskOrderings"
+              tal:attributes="value python: ordering[1];
+                              selected python:orderby == ordering[1]"
+              tal:content="python: ordering[0]"></option>
     </select>
     <input type="submit" value="sort" id="sort-button"/>
   </form>
