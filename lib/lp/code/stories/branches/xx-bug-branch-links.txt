@@ -213,7 +213,7 @@ Deleting a branch with linked bugs
     >>> admin_browser.open(grub_url)
     >>> admin_browser.getLink('Delete branch').click()
 
-    >>> print find_tag_by_id(admin_browser.contents, 'deleted-items')
+    >>> print find_tag_by_id(admin_browser.contents, 'deletion-items')
     <ul ...
     <a href="http://bugs.launchpad.dev/product-name.../+bug/..."
     class="sprite bug-undecided">Bug #...: generic-string...</a>...
