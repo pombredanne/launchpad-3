@@ -349,6 +349,12 @@ the file.
 
     >>> print hoary.getDistroArchSeries('hppa').chroot_url
     http://localhost:58000/.../filename...
+    >>> hoary.getDistroArchSeries('hppa').chroot_url == \
+    ...     chroot.http_url
+    True
+
+If there is no chroot, chroot_url will be None.
+
     >>> print hoary.getDistroArchSeries('i386').chroot_url
     None
 
