@@ -55,7 +55,7 @@ from canonical.launchpad.webapp.launchpadform import (
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, stepthrough, stepto)
+    canonical_url, LaunchpadView, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.registry.browser import MilestoneOverlayMixin
@@ -133,6 +133,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
 
 class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
+
     @property
     def text(self):
         return self.context.named_version
@@ -178,12 +179,12 @@ class DistroSeriesOverviewMenu(
 
     def packaging(self):
         text = 'All upstream links'
-        summary = 'A listing of source pakages and their upstream projects'
+        summary = 'A listing of source packages and their upstream projects'
         return Link('+packaging', text, summary=summary, icon='info')
 
     def needs_packaging(self):
         text = 'Needs upstream links'
-        summary = 'A listing of source pakages without upstream projects'
+        summary = 'A listing of source packages without upstream projects'
         return Link('+needs-packaging', text, summary=summary, icon='info')
 
     # A search link isn't needed because the distro series overview
@@ -331,6 +332,31 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
         See `BuildRecordsView` for further details."""
         return True
 
+    @cachedproperty
+    def num_linked_packages(self):
+        """The number of linked packagings for this distroseries."""
+        return len(self.context.packagings)
+
+    @cachedproperty
+    def _unlinked_packages(self):
+        """Get a prioritized list of unlinked source packages."""
+        return self.context.getPrioritizedUnlinkedSourcePackages()
+
+    @property
+    def num_unlinked_packages(self):
+        """The number of unlinked packagings for this distroseries."""
+        return len(self._unlinked_packages)
+
+    @cachedproperty
+    def recently_linked(self):
+        """Return the packages that were most recently linked upstream."""
+        return self.context.getMostRecentlyLinkedPackagings()
+
+    @property
+    def needs_linking(self):
+        """Return a list of 10 packages most in need of upstream linking."""
+        return self._unlinked_packages[:10]
+
     milestone_can_release = False
 
 
@@ -447,15 +473,14 @@ class DistroSeriesAddView(LaunchpadFormView):
 
         assert owner is not None
         distroseries = self.context.newSeries(
-            name = data['name'],
-            displayname = data['displayname'],
-            title = data['title'],
-            summary = data['summary'],
-            description = data['description'],
-            version = data['version'],
-            parent_series = data['parent_series'],
-            owner = owner
-            )
+            name=data['name'],
+            displayname=data['displayname'],
+            title=data['title'],
+            summary=data['summary'],
+            description=data['description'],
+            version=data['version'],
+            parent_series=data['parent_series'],
+            owner=owner)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries
@@ -465,39 +490,22 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class DistroSeriesPackagesView(DistroSeriesView):
+class DistroSeriesPackagesView(LaunchpadView):
     """A View to show series package to upstream package relationships."""
 
-    label = 'Mapping series packages to upstream project series'
+    label = 'All series packages linked to upstream project series'
     page_title = 'All upstream links'
-
-    @cachedproperty
-    def unlinked_translatables(self):
-        """The sourcepackages that lack a link to a productseries."""
-        packages = self.context.getUnlinkedTranslatableSourcePackages()
-        if self.context.distribution.full_functionality:
-            # Launchpad knows exactly what is published in the series.
-            packages = [package for package in packages
-                        if package.currentrelease is not None]
-        return packages
-
-    @cachedproperty
-    def show_unlinked_translatables(self):
-        """Are there unlinked translatables and should they be shown."""
-        return (
-            len(self.unlinked_translatables) > 0
-            and self.cached_packagings.start == 0)
 
     @cachedproperty
     def cached_packagings(self):
         """The batched upstream packaging links."""
-        packagings = self.context.packagings
-        navigator = BatchNavigator(packagings, self.request, size=200)
+        packagings = self.context.getPrioritizedlPackagings()
+        navigator = BatchNavigator(packagings, self.request, size=20)
         navigator.setHeadings('packaging', 'packagings')
         return navigator
 
 
-class DistroSeriesNeedsPackagesView(DistroSeriesView):
+class DistroSeriesNeedsPackagesView(LaunchpadView):
     """A View to show series package to upstream package relationships."""
 
     label = 'Packages that need upstream packaging links'
@@ -506,7 +514,7 @@ class DistroSeriesNeedsPackagesView(DistroSeriesView):
     @cachedproperty
     def cached_unlinked_packages(self):
         """The batched `ISourcePackage`s that needs packaging links."""
-        packages = self.context.getPriorizedUnlinkedSourcePackages()
-        navigator = BatchNavigator(packages, self.request, size=100)
+        packages = self.context.getPrioritizedUnlinkedSourcePackages()
+        navigator = BatchNavigator(packages, self.request, size=20)
         navigator.setHeadings('package', 'packages')
         return navigator

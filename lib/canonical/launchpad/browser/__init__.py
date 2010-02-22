@@ -46,7 +46,7 @@ from canonical.launchpad.browser.logintoken import *
 from lp.registry.browser.mailinglists import *
 from lp.registry.browser.mentoringoffer import *
 from canonical.launchpad.browser.oauth import *
-from canonical.launchpad.browser.objectreassignment import *
+from lp.registry.browser.objectreassignment import *
 from canonical.launchpad.browser.packagerelationship import *
 from lp.registry.browser.peoplemerge import *
 from lp.registry.browser.poll import *

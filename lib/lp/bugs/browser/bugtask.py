@@ -121,7 +121,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
@@ -2095,7 +2095,7 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 'nominations',
                 'subscribe',
                 )
-        elif IProject.providedBy(bug_target):
+        elif IProjectGroup.providedBy(bug_target):
             return ()
         else:
             return ()
@@ -2206,9 +2206,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             distrosourcepackage_context or sourcepackage_context):
             return ["id", "summary", "importance", "status", "heat"]
         elif distribution_context or distroseries_context:
-            return ["id", "summary", "packagename", "importance", "status", "heat"]
+            return [
+                "id", "summary", "packagename", "importance", "status",
+                "heat"]
         elif project_context:
-            return ["id", "summary", "productname", "importance", "status", "heat"]
+            return [
+                "id", "summary", "productname", "importance", "status",
+                "heat"]
         else:
             raise AssertionError(
                 "Unrecognized context; don't know which report "
@@ -2568,7 +2572,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Should the upstream status filtering widgets be shown?"""
         return self.isUpstreamProduct or not (
             IProduct.providedBy(self.context) or
-            IProject.providedBy(self.context))
+            IProjectGroup.providedBy(self.context))
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
@@ -2699,9 +2703,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def _projectContext(self):
         """Is this page being viewed in a project context?
 
-        Return the IProject if yes, otherwise return None.
+        Return the IProjectGroup if yes, otherwise return None.
         """
-        return IProject(self.context, None)
+        return IProjectGroup(self.context, None)
 
     def _personContext(self):
         """Is this page being viewed in a person context?
@@ -2737,15 +2741,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         Return the IDistributionSourcePackage if yes, otherwise return None.
         """
         return IDistributionSourcePackage(self.context, None)
-
-    @property
-    def hot_bugtasks(self):
-        """Return the 10 most recently updated bugtasks for this target."""
-        params = BugTaskSearchParams(
-            orderby="-date_last_updated", omit_dupes=True, user=self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        search = self.context.searchTasks(params)
-        return list(search[:10])
 
     @property
     def addquestion_url(self):
@@ -2803,8 +2798,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
             if bug_listing_item.review_action_widget is not None]
         self.widgets = formlib.form.Widgets(widgets_list, len(self.prefix)+1)
 
-    @action('Save changes', name='submit',
-            condition=canApproveNominations)
+    @action('Save changes', name='submit', condition=canApproveNominations)
     def submit_action(self, action, data):
         """Accept/Decline bug nominations."""
         accepted = declined = 0
@@ -2882,7 +2876,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
             search_params.setProductSeries(self.context)
         elif IProduct.providedBy(self.context):
             search_params.setProduct(self.context)
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             search_params.setProject(self.context)
         elif (ISourcePackage.providedBy(self.context) or
               IDistributionSourcePackage.providedBy(self.context)):
@@ -3592,7 +3586,8 @@ class BugTaskExpirableListingView(LaunchpadView):
         """Show the columns that summarise expirable bugs."""
         if (IDistribution.providedBy(self.context)
             or IDistroSeries.providedBy(self.context)):
-            return ['id', 'summary', 'packagename', 'date_last_updated', 'heat']
+            return [
+                'id', 'summary', 'packagename', 'date_last_updated', 'heat']
         else:
             return ['id', 'summary', 'date_last_updated', 'heat']
 
