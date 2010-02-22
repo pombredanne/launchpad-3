@@ -314,6 +314,10 @@ class TranslationImporter:
                 return True
         return False
 
+    def isHidden(self, path):
+        """See `ITranslationImporter`."""
+        return path.startswith('.') or '/.' in path
+
     def isTranslationName(self, path):
         """See `ITranslationImporter`."""
         base_name, suffix = os.path.splitext(path)
