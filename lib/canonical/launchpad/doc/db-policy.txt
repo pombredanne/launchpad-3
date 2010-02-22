@@ -45,8 +45,8 @@ a single master.
 
     >>> transaction.abort()
 
-Much of our code does not know if the objects being retrieved are need
-to be changed to or have to be absolutely up to date. In this case, we
+Much of our code does not know if the objects being retrieved need to be
+updatable to or have to be absolutely up to date. In this case, we
 retrieve objects from the default store. What object being returned
 depends on the currently installed database policy.
 
@@ -71,9 +71,10 @@ To alter this behavior, you can install a different database policy.
 
 The database policy can also affect what happens when objects are
 explicitly retrieved from a slave or master database. For example,
-if we have code that needs to run during database maintenance or we
-want to prove only accesses slave database resources, we can raise
-an exception if an attempt is made to access master database resources.
+if we have code that needs to run during database maintenance or
+code we want to prove only accesses slave database resources, we can
+raise an exception if an attempt is made to access master database
+resources.
 
     >>> from canonical.launchpad.webapp.dbpolicy import (
     ...     SlaveOnlyDatabasePolicy)
