@@ -765,6 +765,12 @@ class RosettaUploadJob(BranchJobDerived):
                    TranslationsBranchImportMode.NO_IMPORT)
         return productseries
 
+
+    @staticmethod
+    def is_hidden_file(file_path):
+        """Does this path contain a hidden file or directory?"""
+        return file_path.startswith('.') or file_path.find('/.') != -1
+
     @classmethod
     def create(cls, branch, from_revision_id,
                force_translations_upload=False):
@@ -859,6 +865,8 @@ class RosettaUploadJob(BranchJobDerived):
                 for afile in files:
                     file_path, file_name, file_type = afile[:3]
                     if file_type != 'file':
+                        continue
+                    if self.is_hidden_file(file_path):
                         continue
                     if importer.isTemplateName(file_name):
                         append_to = self.template_file_names
