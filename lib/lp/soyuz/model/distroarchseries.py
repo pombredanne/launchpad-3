@@ -138,6 +138,7 @@ class DistroArchSeries(SQLBase):
 
     @property
     def chroot_url(self):
+        """See `IDistroArchSeries`."""
         chroot = self.getChroot()
         if chroot is None:
             return None
