@@ -29,10 +29,7 @@
         <li>
           <img src="/@@/no" title="Insufficient privileges"
                tal:condition="not:row/allowed"/>
-               <tal:bug-item condition="row/item/default_bugtask|nothing"
-                             content="structure row/item/default_bugtask/fmt:link" />
-               <tal:item condition="not: row/item/default_bugtask"
-                         content="structure row/item/fmt:link" />
+              <tal:item tal:content="structure row/item/fmt:link" />
               (<tal:reason tal:content="row/reason" />)
         </li>
       </tal:actions>
