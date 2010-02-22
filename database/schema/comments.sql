@@ -1245,7 +1245,7 @@ foo-1.2-1 package in Hoary that is different from foo-1.2-1 in Warty.';
 COMMENT ON COLUMN SourcePackageRelease.dateuploaded IS 'The date/time that
 this sourcepackagerelease was first uploaded to the Launchpad.';
 COMMENT ON COLUMN SourcePackageRelease.urgency IS 'The urgency of the
-upload. This is generally used to prioritize buildd activity but may also be
+upload. This is generally used to prioritise buildd activity but may also be
 used for "testing" systems or security work in the future. The "urgency" is
 set by the uploader, in the DSC file.';
 COMMENT ON COLUMN SourcePackageRelease.dscsigningkey IS 'The GPG key used to
