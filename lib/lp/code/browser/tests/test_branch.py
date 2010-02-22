@@ -240,6 +240,13 @@ class TestBranchView(TestCaseWithFactory):
         login_person(branch.owner)
         self.assertTrue(view.user_can_upload)
 
+    def test_user_can_upload_admins_can(self):
+        # Admins can upload to any hosted branch.
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login('admin@canonical.com')
+        self.assertTrue(view.user_can_upload)
+
     def test_user_can_upload_non_owner(self):
         # Someone not associated with the branch cannot upload
         branch = self.factory.makeAnyBranch()
