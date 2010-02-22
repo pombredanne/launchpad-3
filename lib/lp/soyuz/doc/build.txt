@@ -966,7 +966,7 @@ storeUploadLog() refuses to override any previously stored
     >>> failedtoupload_build.storeUploadLog('something')
     Traceback (most recent call last):
     ...
-    AssertionError: Upload log information already exist and cannot be
+    AssertionError: Upload log information already exists and cannot be
     overridden.
 
 It's only possible to store another 'upload_log' content once the
