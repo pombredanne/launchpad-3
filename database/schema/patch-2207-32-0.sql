@@ -13,6 +13,9 @@ CREATE INDEX sourcepackagerecipebuild__upload_log__idx
 -- We can't drop tables in DB patches due to Slony-I limitations, so
 -- we give them a magic name for database/schema/upgrade.py to deal
 -- with correctly.
+-- Drop the constraint right now so the person privacy checker doesn't
+-- look at this table at all.
+ALTER TABLE SourcePackageRecipeBuildUpload DROP CONSTRAINT sourcepackagerecipebuildupload_registrant_fkey;
 ALTER TABLE SourcePackageRecipeBuildUpload SET SCHEMA todrop; 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 32, 0);
