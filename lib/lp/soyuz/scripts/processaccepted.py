@@ -8,6 +8,7 @@ __all__ = [
     'close_bugs',
     'close_bugs_for_queue_item',
     'close_bugs_for_sourcepublication',
+    'ProcessAccepted',
     ]
 
 from zope.component import getUtility
