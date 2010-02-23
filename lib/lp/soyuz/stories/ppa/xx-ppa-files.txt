@@ -75,6 +75,8 @@ Create a subsequent source publication so a package diff can be provided.
     ...     version='1.1')
     >>> another_dsc_file = (
     ...     another_test_source.sourcepackagerelease.files[0].libraryfile)
+    >>> other_binary_pubs = test_publisher.getPubBinaries(
+    ...     binaryname='test-bin', pub_source=another_test_source)
 
     >>> package_diff  = test_source.sourcepackagerelease.requestDiffTo(
     ...     no_priv, another_test_source.sourcepackagerelease)
@@ -325,14 +327,19 @@ The same happens for package diffs.
     gzip
 
 If the associated PPA and the `LibraryFileAlias` are public, the +files/
-proxy redirects to the public http url.
+proxy redirects to the public http url. We'll copy the test sources and
+binaries across to no-priv's public ppa.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login_person(no_priv)
+    >>> from lp.soyuz.scripts.packagecopier import do_copy
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> copies = do_copy(
+    ...     no_priv_private_ppa.getPublishedSources(name='test-pkg'),
+    ...     no_priv.archive, series=ubuntu['warty'],
+    ...     pocket=PackagePublishingPocket.RELEASE,
+    ...     include_binaries=True, allow_delayed_copies=False)
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> test_source.secure_record.archive = no_priv.archive
-    >>> another_test_source.secure_record.archive = no_priv.archive
-    >>> binary_pubs[0].secure_record.archive = no_priv.archive
     >>> removeSecurityProxy(dsc_file).restricted = False
     >>> file_librarian_url = dsc_file.http_url
     >>> file_lp_url = str(
