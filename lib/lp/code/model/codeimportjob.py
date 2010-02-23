@@ -286,7 +286,10 @@ class CodeImportJobWorkflow:
                 dict(review_status=CodeImportReviewStatus.FAILING), None)
         # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
-            self.newJob(code_import)
+            extra = {}
+            if status == CodeImportResultStatus.SUCCESS_PARTIAL:
+                extra['date_due'] = UTC_NOW
+            self.newJob(code_import, **extra)
         # If the status was successful, update date_last_successful.
         if status in [CodeImportResultStatus.SUCCESS,
                       CodeImportResultStatus.SUCCESS_NOCHANGE]:

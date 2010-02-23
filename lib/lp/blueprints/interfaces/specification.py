@@ -199,7 +199,7 @@ class SpecificationLifecycleStatus(DBEnumeratedType):
 class SpecificationPriority(DBEnumeratedType):
     """The Priority with a Specification must be implemented.
 
-    This enum is used to prioritise work.
+    This enum is used to prioritize work.
     """
 
     NOTFORUS = DBItem(0, """
@@ -218,7 +218,7 @@ class SpecificationPriority(DBEnumeratedType):
         Undefined
 
         This feature has recently been proposed and has not yet been
-        evaluated and prioritised by the project leaders.
+        evaluated and prioritized by the project leaders.
         """)
 
     LOW = DBItem(10, """
