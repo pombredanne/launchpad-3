@@ -160,13 +160,7 @@ class HasBugsBase:
 
     def setMaxHeat(self, heat):
         """See `IHasBugs`."""
-        if (IDistribution.providedBy(self)
-            or IProduct.providedBy(self)
-            or IDistributionSourcePackage.providedBy(self)):
-            self.max_heat = heat
-        else:
-            raise AssertionError(
-                '%s does not have a max_heat value' % self)
+        self.max_heat = heat
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""
