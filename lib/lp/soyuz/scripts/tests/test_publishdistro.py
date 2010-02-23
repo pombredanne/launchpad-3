@@ -1,4 +1,3 @@
-import pdb
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -317,9 +316,19 @@ class TestPublishDistro(TestNativePublishingBase):
         ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         cprov = getUtility(IPersonSet).getByName('cprov')
         copy_archive_name = 'test-copy-publish'
+
+        # The COPY repository path is not created yet.
+        repo_path = os.path.join(
+            config.archivepublisher.root,
+            ubuntutest.name + '-' + copy_archive_name)
+        self.assertNotExists(repo_path)
+
         copy_archive = getUtility(IArchiveSet).new(
             distribution=ubuntutest, owner=cprov, name=copy_archive_name,
             purpose=ArchivePurpose.COPY, enabled=True)
+        # Save some test CPU cycles by avoiding logging in as the user
+        # necessary to alter the publish flag.
+        removeSecurityProxy(copy_archive).publish = True
 
         # Publish something.
         pub_source =  self.getPubSource(
@@ -332,13 +341,16 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
 
-        # Now publish the private PPAs and make sure they are really
+        # Now publish the copy archives and make sure they are really
         # published.
-        pdb.set_trace() ############################## Breakpoint ##############################
-        self.runPublishDistro(['--copy-archive', copy_archive_name])
+        self.runPublishDistro(['--copy-archive'])
 
         pub_source.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+
+        # Make sure that the files were published in the right place.
+        pool_path = os.path.join(repo_path, 'pool/main/b/baz/baz_666.dsc')
+        self.assertExists(pool_path)
 
     def testRunWithEmptySuites(self):
         """Try a publish-distro run on empty suites in careful_apt mode
