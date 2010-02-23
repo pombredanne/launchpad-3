@@ -346,19 +346,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return self.sourcepackagename.name
 
     @property
-    def product(self):
-        # we have moved to focusing on productseries as the linker
-        warn('SourcePackage.product is deprecated, use .productseries',
-             DeprecationWarning, stacklevel=2)
-        ps = self.productseries
-        if ps is not None:
-            return ps.product
-        return None
-
-    @property
     def productseries(self):
         # See if we can find a relevant packaging record
-        packaging = self.packaging
+        packaging = self.direct_packaging
         if packaging is None:
             return None
         return packaging.productseries
@@ -366,16 +356,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def direct_packaging(self):
         """See `ISourcePackage`."""
-        # XXX flacoste 2008-02-28 For some crack reasons, it is possible
-        # for multiple productseries (of the same product) to state that they
-        # are packaged in the same source package. This creates all sort of
-        # weirdness documented in bug #196774. But in order to work around bug
-        # #181770, use a sort order that will be stable. I guess it makes the
-        # most sense to return the latest one.
-        return Packaging.selectFirstBy(
+        return Packaging.selectOneBy(
             sourcepackagename=self.sourcepackagename,
-            distroseries=self.distroseries,
-            orderBy=['packaging', '-datecreated'])
+            distroseries=self.distroseries)
 
     @property
     def packaging(self):
