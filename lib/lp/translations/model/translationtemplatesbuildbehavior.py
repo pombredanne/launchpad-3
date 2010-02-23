@@ -1,0 +1,100 @@
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
+
+Dispatches translation template build jobs to build-farm slaves.
+"""
+
+__metaclass__ = type
+__all__ = [
+    'TranslationTemplatesBuildBehavior',
+    ]
+
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior)
+from lp.buildmaster.model.buildfarmjobbehavior import (
+    BuildFarmJobBehaviorBase)
+
+
+class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
+    """Dispatches `TranslationTemplateBuildJob`s to slaves."""
+    implements(IBuildFarmJobBehavior)
+
+    # Identify the type of job to the slave.
+    build_type = 'translation-templates'
+
+    # Filename for the tarball of templates that the slave builds.
+    templates_tarball_path = 'translation-templates.tar.gz'
+
+    def dispatchBuildToSlave(self, build_queue_item, logger):
+        """See `IBuildFarmJobBehavior`."""
+        chroot = self._getChroot()
+        chroot_sha1 = chroot.content.sha1
+        self._builder.slave.cacheFile(logger, chroot)
+        buildid = self.buildfarmjob.getName()
+
+        args = { 'branch_url': self.buildfarmjob.branch.url }
+        filemap = {}
+
+        self._builder.slave.build(
+            buildid, self.build_type, chroot_sha1, filemap, args)
+
+    def _getChroot(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return ubuntu.currentseries.nominatedarchindep.getChroot()
+
+    def logStartBuild(self, logger):
+        """See `IBuildFarmJobBehavior`."""
+        logger.info("Starting templates build.")
+
+    def _readTarball(self, buildqueue, filemap, logger):
+        """Read tarball with generated translation templates from slave."""
+        slave_filename = filemap.get(self.templates_tarball_path)
+        if slave_filename is None:
+            logger.error("Did not find templates tarball in slave output.")
+            return None
+
+        slave = removeSecurityProxy(buildqueue.builder.slave)
+        return slave.getFile(slave_filename).read()
+
+    def _uploadTarball(self, branch, tarball, logger):
+        """Upload tarball to productseries that want it."""
+        # XXX JeroenVermeulen 2010-01-28 bug=507680: Find productseries
+        # that want these templates, and upload to there.
+
+    def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
+        """Deal with a finished ("WAITING" state, perversely) build job.
+
+        Retrieves tarball and logs from the slave, then cleans up the
+        slave so it's ready for a next job and destroys the queue item.
+
+        If this fails for whatever unforeseen reason, a future run will
+        retry it.
+        """
+        build_status = self.extractBuildStatus(slave_status)
+        build_id = slave_status['build_id']
+        filemap = slave_status['filemap']
+
+        logger.debug("Templates generation job %s finished with status %s" % (
+            build_id, build_status))
+
+        if build_status == 'OK':
+            logger.debug("Processing templates build %s" % build_id)
+            tarball = self._readTarball(queue_item, filemap, logger)
+            if tarball is None:
+                logger.error("Successful build %s produced no tarball." % (
+                    build_id))
+            else:
+                logger.debug("Uploading translation templates tarball.")
+                self._uploadTarball(tarball, logger)
+                logger.debug("Upload complete.")
+
+        queue_item.builder.cleanSlave()
+        queue_item.destroySelf()

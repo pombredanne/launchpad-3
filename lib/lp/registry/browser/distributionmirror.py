@@ -24,7 +24,7 @@ from zope.interface import implements
 
 from lp.archivepublisher.debversion import Version
 from canonical.launchpad import _
-from canonical.launchpad.browser.objectreassignment import (
+from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
@@ -174,7 +174,8 @@ class DistributionMirrorDeleteView(LaunchpadFormView):
             self.next_url = canonical_url(self.context)
             return
 
-        self.next_url = canonical_url(self.context.distribution)
+        self.next_url = canonical_url(self.context.distribution,
+            view_name='+pendingreviewmirrors')
         self.request.response.addInfoNotification(
             "Mirror %s has been deleted." % self.context.title)
         self.context.destroySelf()

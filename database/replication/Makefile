@@ -96,11 +96,11 @@ stagingsetup:
 	# Create the DB with the desired default tablespace.
 	createdb --encoding UTF8 --tablespace ${STAGING_TABLESPACE} \
 	    lpmain_staging_new
-	# Restore the DB schema. Don't restore permissions - it will blow
-	# up when roles don't exist in this cluster, and we rebuild it later
-	# with security.py anyway.
+	# Restore the DB schema. We need to restore permissions, despite
+	# later running security.py, to pull in permissions granted on
+	# production to users not maintained by security.py.
 	pg_restore --dbname=lpmain_staging_new \
-	    --no-acl --no-owner --exit-on-error ${STAGING_DUMP}
+	    --no-owner --exit-on-error ${STAGING_DUMP}
 	psql -q -d lpmain_staging_new -f authdb_drop.sql
 	psql -q -d lpmain_staging_new -f authdb_create.sql \
 	    2>&1 | grep -v _sl || true
@@ -110,6 +110,7 @@ stagingsetup:
 		--no-acl --no-owner --disable-triggers --data-only \
 		--table=$$table ${STAGING_DUMP}; \
 	done
+	psql -q -d lpmain_staging_new -f authdb_sequences.sql
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
@@ -182,12 +183,14 @@ _replicate:
 	# Setup the slave
 	./new-slave.py 2 "dbname=${_SLAVE}"
 	# Upgrade all databases in the cluster and reset security.
-	@echo Running upgrade.py
+	@echo Running upgrade.py `date`
 	${SHHH} ../schema/upgrade.py
-	@echo Running fti.py
+	@echo Running fti.py `date`
 	${SHHH} ../schema/fti.py
-	@echo Running security.py
+	@echo Running security.py `date`
+	./slon_ctl.py stop # security.py can deadlock with slony
 	${SHHH} ../schema/security.py --cluster -U slony
+	./slon_ctl.py --lag="0 seconds" start
 	# Migrate tables to the authdb replication set, creating the set
 	# and subscribing nodes to it as necessary.
 	./populate_auth_replication_set.py -U slony

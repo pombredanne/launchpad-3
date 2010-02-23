@@ -237,8 +237,35 @@ class BMPMailer(BranchMailer):
             params['diff_cutoff_warning'] = (
                 "The attached diff has been truncated due to its size.")
 
+        params['reviews'] = self._getRequestedReviews()
         params['related_bugs'] = self._getRelatedBugs()
         return params
+
+    def _formatExtraInformation(self, heading, chunks):
+        """Consistently indent the chunks with the heading.
+
+        Used to provide consistent indentation for requested reviews and
+        related bugs.
+        """
+        if len(chunks) == 0:
+            return ''
+        else:
+            info = ''.join('  %s\n' % value for value in chunks)
+            return '%s\n%s' % (heading, info)
+
+    def _getRequestedReviews(self):
+        """Return a string describing the requested reviews, if any."""
+        requested_reviews = []
+        for review in self.requested_reviews:
+            reviewer = review.reviewer
+            if review.review_type is None:
+                requested_reviews.append(reviewer.unique_displayname)
+            else:
+                requested_reviews.append(
+                    "%s: %s" % (reviewer.unique_displayname,
+                                review.review_type))
+        return self._formatExtraInformation(
+            'Requested reviews:', requested_reviews)
 
     def _getRelatedBugs(self):
         """Return a string describing related bugs, if any.
@@ -247,12 +274,9 @@ class BMPMailer(BranchMailer):
         """
         bug_chunks = []
         for bug in self.merge_proposal.related_bugs:
-            bug_chunks.append('  #%d %s\n' % (bug.id, bug.title))
-            bug_chunks.append('  %s\n' % canonical_url(bug))
-        if len(bug_chunks) == 0:
-            return ''
-        else:
-            return 'Related bugs:\n' + ''.join(bug_chunks)
+            bug_chunks.append('#%d %s' % (bug.id, bug.title))
+            bug_chunks.append(canonical_url(bug))
+        return self._formatExtraInformation('Related bugs:', bug_chunks)
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""

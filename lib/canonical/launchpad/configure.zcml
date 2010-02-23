@@ -16,6 +16,8 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="lp.hardwaredb" />
+
   <include package="lp.app" />
   <include package="lp.bugs" />
   <include package="lp.registry" />
@@ -58,7 +60,7 @@
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IProjectSet"
+    for="canonical.launchpad.interfaces.IProjectGroupSet"
     path_expression="string:projectgroups"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
@@ -93,5 +95,4 @@
       name="PlotKit"
       directory="../../contrib/PlotKit"
       />
-
 </configure>

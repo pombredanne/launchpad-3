@@ -52,6 +52,7 @@ from canonical.database.enumcol import EnumCol
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
@@ -69,11 +70,11 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.milestone import IProjectMilestone
+from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
@@ -526,6 +527,11 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return now - self.datecreated
 
+    @property
+    def task_age(self):
+        """See `IBugTask`."""
+        return self.age.seconds
+
     # Several other classes need to generate lists of bug tasks, and
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
@@ -950,7 +956,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getPackageComponent(self):
         """See `IBugTask`."""
-        sourcepackage = None
         if ISourcePackage.providedBy(self.target):
             return self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
@@ -1258,6 +1263,7 @@ class BugTaskSet:
         "number_of_duplicates": "Bug.number_of_duplicates",
         "message_count": "Bug.message_count",
         "users_affected_count": "Bug.users_affected_count",
+        "heat": "Bug.heat",
         }
 
     _open_resolved_upstream = """
@@ -1323,6 +1329,13 @@ class BugTaskSet:
                       FROM BugBranch, BugTask
                       WHERE BugBranch.bug = BugTask.bug
                         AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        bugs_with_patches = list(Bug.select(
+            """id IN (SELECT BugAttachment.bug
+                      FROM BugAttachment, BugTask
+                      WHERE BugAttachment.bug = BugTask.bug
+                      AND BugAttachment.type = %s
+                        AND BugTask.id IN %s)""" % sqlvalues(
+            BugAttachmentType.PATCH, bugtask_ids)))
         badge_properties = {}
         for bugtask in bugtasks:
             badge_properties[bugtask] = {
@@ -1330,6 +1343,7 @@ class BugTaskSet:
                     bugtask.bug in bugs_with_mentoring_offers,
                 'has_specification': bugtask.bug in bugs_with_specifications,
                 'has_branch': bugtask.bug in bugs_with_branches,
+                'has_patch': bugtask.bug in bugs_with_patches,
                 }
         return badge_properties
 
@@ -1465,7 +1479,7 @@ class BugTaskSet:
             extra_clauses.append(self._buildStatusClause(params.status))
 
         if params.milestone:
-            if IProjectMilestone.providedBy(params.milestone):
+            if IProjectGroupMilestone.providedBy(params.milestone):
                 where_cond = """
                     IN (SELECT Milestone.id
                         FROM Milestone, Product
@@ -1618,6 +1632,8 @@ class BugTaskSet:
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
 
+        if params.affects_me:
+            params.affected_user = params.user
         if params.affected_user:
             affected_user_clause = """
             BugTask.id IN (
@@ -1828,7 +1844,7 @@ class BugTaskSet:
         params.hardware_product_id are all not None.
         """
         # Avoid cyclic imports.
-        from canonical.launchpad.database.hwdb import (
+        from lp.hardwaredb.model.hwdb import (
             HWSubmission, HWSubmissionBug, HWSubmissionDevice,
             _userCanAccessSubmissionStormClause,
             make_submission_device_statistics_clause)
@@ -2155,7 +2171,7 @@ class BugTaskSet:
             be either a Distribution, DistroSeries, Product, or ProductSeries.
             If target is None, the clause joins BugTask to all the supported
             BugTarget tables.
-        :raises NotImplementedError: If the target is an IProject,
+        :raises NotImplementedError: If the target is an IProjectGroup,
             ISourcePackage, or an IDistributionSourcePackage.
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
@@ -2209,7 +2225,7 @@ class BugTaskSet:
             target_clause = "target.product_pillar = %s" % sqlvalues(target)
         elif IProductSeries.providedBy(target):
             target_clause = "BugTask.productseries = %s" % sqlvalues(target)
-        elif (IProject.providedBy(target)
+        elif (IProjectGroup.providedBy(target)
               or ISourcePackage.providedBy(target)
               or IDistributionSourcePackage.providedBy(target)):
             raise NotImplementedError(

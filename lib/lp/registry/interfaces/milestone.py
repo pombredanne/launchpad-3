@@ -12,7 +12,7 @@ __all__ = [
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
-    'IProjectMilestone',
+    'IProjectGroupMilestone',
     ]
 
 from zope.interface import Interface, Attribute
@@ -163,6 +163,15 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget):
         :returns: `IProductRelease` object.
         """
 
+    def closeBugsAndBlueprints(user):
+        """Close completed bugs and blueprints.
+
+        Bugs that are fix committed status are updated to fix released.
+        Blueprints that are in deployment status are updated to implemented
+        status.
+        XXX sinzui 2010-01-27 bug=341687: blueprints not yet implemented.
+        """
+
     @export_write_operation()
     @export_operation_as('delete')
     def destroySelf():
@@ -207,7 +216,7 @@ class IMilestoneSet(Interface):
         """Return all visible milestones."""
 
 
-class IProjectMilestone(IMilestone):
+class IProjectGroupMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
 
 

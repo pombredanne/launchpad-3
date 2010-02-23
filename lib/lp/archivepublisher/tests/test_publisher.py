@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import bz2
 import gzip
+import hashlib
 import os
 import shutil
 import stat
@@ -20,8 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.publishing import (
-    Publisher, getPublisher, sha256)
+from lp.archivepublisher.publishing import Publisher, getPublisher
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
@@ -30,7 +30,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -137,7 +137,7 @@ class TestPublisher(TestPublisherBase):
         distroseries is always allowed, so check for that here.
         """
         archive = self.ubuntutest.getArchiveByComponent('partner')
-        self.ubuntutest['breezy-autotest'].status = DistroSeriesStatus.CURRENT
+        self.ubuntutest['breezy-autotest'].status = SeriesStatus.CURRENT
         pub_config = getPubConfig(archive)
         pub_config.setupArchiveDirs()
         disk_pool = DiskPool(
@@ -201,7 +201,7 @@ class TestPublisher(TestPublisherBase):
                              PackagePublishingPocket.UPDATES)])
 
         self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
         pub_source = self.getPubSource(
             filecontent='foo',
@@ -645,7 +645,7 @@ class TestPublisher(TestPublisherBase):
         # If the distroseries is CURRENT, then the release pocket is not
         # marked as dirty.
         self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
         publisher.dirty_pockets = set()
         publisher.A2_markPocketsWithDeletionsDirty()
@@ -744,70 +744,6 @@ class TestPublisher(TestPublisherBase):
             for dist in dists:
                 self.assertReleaseFileRequested(
                     publisher, 'breezy-autotest', component, dist)
-
-    def testAptSHA256(self):
-        """Test issues with python-apt in Ubuntu/hardy.
-
-        This test only runs on Ubuntu/hardy systems.
-
-        The version of python-apt in Ubuntu/hardy has problems with
-        contents containing '\0' character.
-
-        The documented workaround for it is passing the original
-        file-descriptor to apt_pkg.sha256sum(), instead of its contents.
-
-        The python-apt version in Ubuntu/Intrepid has a fix for this issue,
-        but it already has many other features that makes a backport
-        practically unfeasible. That's mainly why this 'bug' is documented
-        as a LP test, the current code was modified to cope with it.
-
-        Once the issue with python-apt is gone, either by having a backport
-        available in hardy or a production upgrade, this test will fail. At
-        that point we will be able to revert the affected code and remove
-        this test, restoring the balance of the force.
-
-        See https://bugs.edge.launchpad.net/soyuz/+bug/243630 and
-        https://bugs.edge.launchpad.net/soyuz/+bug/269014.
-        """
-        # XXX cprov 20090218 bug-279248: when hardy's apt gets fixed by a
-        # SRU, this test will fail in PQM/Buildbot. Then we should change
-        # the actual code for passing file descriptors instead of text to
-        # apt (it will perform better this way) and obviously remove this
-        # test.
-
-        # Skip this test if it's not being run on Ubuntu/hardy.
-        lsb_info = get_lsb_information()
-        if (lsb_info.get('ID') != 'Ubuntu' or
-            lsb_info.get('CODENAME') != 'hardy'):
-            return
-
-        def _getSHA256(content):
-            """Return checksums for the given content.
-
-            Return a tuple containing the checksum corresponding to the
-            given content (as string) and a file containing the same string.
-            """
-            # Write the given content in a tempfile.
-            test_filepath = tempfile.mktemp()
-            test_file = open(test_filepath, 'w')
-            test_file.write(content)
-            test_file.close()
-            # Generate the checksums for the two sources.
-            text = sha256(content).hexdigest()
-            file = sha256(open(test_filepath)).hexdigest()
-            # Remove the tempfile.
-            os.unlink(test_filepath)
-            return text, file
-
-        # Apt does the right thing for ordinary strings, both, file and text
-        # checksums are identical.
-        text, file = _getSHA256("foobar")
-        self.assertEqual(text, file)
-
-        # On the other hand, there is a mismatch for strings containing '\0'
-        text, file = _getSHA256("foo\0bar")
-        self.assertNotEqual(
-            text, file, "Python-apt no longer creates bad SHA256 sums.")
 
     def _getReleaseFileOrigin(self, contents):
         origin_header = 'Origin: '
@@ -908,6 +844,7 @@ class TestPublisher(TestPublisherBase):
         """
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov.archive.displayname = u'PPA for Celso Provid\xe8lo'
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
 
@@ -940,8 +877,8 @@ class TestPublisher(TestPublisherBase):
         release_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             release_md5_line,
-            (' 7214f0271efc59dd335c17e1d720c9e7              '
-             '129 main/source/Release'))
+            (' eadc1fbb1a878a2ee6dc66d7cd8d46dc              '
+            '130 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
         bz2_sources_md5_line = release_contents[md5_header_index + 16]
@@ -961,8 +898,8 @@ class TestPublisher(TestPublisherBase):
         release_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             release_sha1_line,
-            (' 22ac13fb5e2bc0589d76182c5a747bad08a5d291              '
-             '129 main/source/Release'))
+            (' 1a8d788a6d2d30e0cab002ab82e9f2921f7a2a61              '
+             '130 main/source/Release'))
         # See above.
         bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
@@ -981,8 +918,8 @@ class TestPublisher(TestPublisherBase):
         release_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             release_sha256_line,
-            (' c0e66e8b219c495b28d53ba207eb7175da5b5af90055544f597ee17'
-             'ad2177abf              129 main/source/Release'))
+            (' 795a3f17d485cc1983f588c53fb8c163599ed191be9741e61ca411f'
+             '1e2c505aa              130 main/source/Release'))
         # See above.
         bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
@@ -991,7 +928,7 @@ class TestPublisher(TestPublisherBase):
 
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1],
-            'Label: PPA for Celso Providelo')
+            'Label: PPA for Celso Provid\xc3\xa8lo')
 
         # Architecture Release files also have a distinct Origin: for PPAs.
         arch_release_file = os.path.join(

@@ -42,8 +42,8 @@ from canonical.widgets.itemswidgets import (
 
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.translations.interfaces.translations import (
@@ -57,6 +57,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 
 class ProductSeriesTranslationsMenuMixIn:
     """Translation menu for `IProductSeries`."""
+
     def overview(self):
         """Return a link to the overview page."""
         return Link('', 'Overview')
@@ -275,7 +276,7 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                         warning = (
                             "A file could not be uploaded because its "
                             "name matched multiple existing uploads, for "
-                            "different templates." )
+                            "different templates.")
                         ul_conflicts = (
                             "The conflicting file name was:<br /> "
                             "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
@@ -378,6 +379,14 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         return sorted(productserieslangs,
                       key=lambda a: a.language.englishname)
 
+    def isPreferredLanguage(self, language):
+        # if there are no preferred languages, mark all
+        # languages as preferred
+        if (len(self.translatable_languages) == 0):
+            return True
+        else:
+            return language in self.translatable_languages
+
     @property
     def has_translation_documentation(self):
         """Are there translation instructions for this product."""
@@ -421,8 +430,7 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
     def change_settings_action(self, action, data):
         """Change the translation settings."""
         if (self.context.translations_autoimport_mode !=
-            data['translations_autoimport_mode']
-            ):
+            data['translations_autoimport_mode']):
             self.updateContextFromData(data)
             # Request an initial upload of translation files.
             getUtility(IRosettaUploadJobSource).create(
@@ -471,18 +479,12 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
                 _("The import has been requested."))
 
 
-class ProductSeriesTemplatesView(LaunchpadView):
+class ProductSeriesTemplatesView(BaseSeriesTemplatesView):
     """Show a list of all templates for the ProductSeries."""
 
-    is_distroseries = False
-    label = "Translation templates"
-    page_title = "All templates"
-
-    def iter_templates(self):
-        """Return an iterator of all `IPOTemplates` for the series."""
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productseries=self.context,
-                                       ordered_by_names=True)
+    def initialize(self):
+        super(ProductSeriesTemplatesView, self).initialize(
+            series=self.context, is_distroseries=False)
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):

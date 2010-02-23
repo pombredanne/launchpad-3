@@ -42,7 +42,6 @@ transaction, since it doesn't need DB access.
     ...     InitializingExternalBugTracker(), [])
     COMMIT
     initializeRemoteBugDB() called: []
-    BEGIN
 
 
 === Choosing another ExternalBugTracker instance ===
@@ -80,7 +79,7 @@ private _getExternalBugTrackersAndWatches() method, which returns a set of
     ...     bug_tracker_to_use = Bugzilla
     ...
     ...     def getExternalBugTrackerToUse(self):
-    ...         print "Getting external bugtracker to use..."
+    ...         print "Getting external bugtracker to use"
     ...         return self.bug_tracker_to_use(self.baseurl)
 
 We'll create a helper method to allow us to avoid having to connect to a
@@ -100,7 +99,7 @@ remote server.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     standard_bugzilla, [])
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
 
     >>> len(trackers_and_watches)
     1
@@ -119,7 +118,7 @@ parameter. For most calls, this remains unaltered and only one
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     standard_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
 
     >>> len(trackers_and_watches)
     1
@@ -155,7 +154,7 @@ doesn't have the Launchpad plugin installed.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
 
     >>> len(trackers_and_watches)
     1
@@ -183,6 +182,7 @@ connect to any servers.
     ...         }
     ...
     ...     def getProductsForRemoteBugs(self, bug_ids):
+    ...         print "Getting products for remote bugs"
     ...         mappings = {}
     ...         for bug_id in bug_ids:
     ...             if int(bug_id) in self.remote_bug_products:
@@ -229,7 +229,8 @@ another BugzillaAPI instance which has syncing disabled.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
+    Getting products for remote bugs
 
     >>> len(trackers_and_watches)
     2
@@ -270,7 +271,8 @@ watches will be returned for the two Bugzilla ExternalBugTrackers.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
+    Getting products for remote bugs
 
     >>> len(trackers_and_watches)
     2
@@ -299,6 +301,19 @@ watches will be returned for the two Bugzilla ExternalBugTrackers.
     ...     print watch.remotebug
     4
 
+If there are no syncable GNOME products, only one batch is returned,
+and the remote system is never asked about product information.
+
+    >>> bug_watch_updater = BugWatchUpdater(
+    ...     FakeTransaction(), syncable_gnome_products=[])
+
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     gnome_bugzilla, bug_watches)
+    Getting external bugtracker to use
+
+    >>> len(trackers_and_watches)
+    1
+
 
 === Checking the server DB time ===
 
@@ -318,7 +333,6 @@ the time is.
     COMMIT
     getCurrentDBTime() called
     initializeRemoteBugDB() called: []
-    BEGIN
 
 If the difference between what we and the remote system think the time
 is, an error is raised.
@@ -370,7 +384,6 @@ If it's only a little skewed, it won't raise an error.
     >>> bug_watch_updater.updateBugWatches(
     ...     CorrectTimeExternalBugTracker(), [], now=utc_now)
     COMMIT
-    BEGIN
 
 If the timezone is known, the local time time should be returned, rather
 than the UTC time.
@@ -383,7 +396,6 @@ than the UTC time.
     >>> bug_watch_updater.updateBugWatches(
     ...     LocalTimeExternalBugTracker(), [], now=utc_now)
     COMMIT
-    BEGIN
 
 If the remote server time is unknown, we will refuse to import any
 comments from it. Bug watches will still be updated, but a warning is
@@ -399,12 +411,14 @@ logged saying that comments won't be imported.
     COMMIT
     getCurrentDBTime() called
     initializeRemoteBugDB() called: []
-    BEGIN
     WARNING:...:Comment importing supported, but server time can't be
                 trusted. No comments will be imported.
 
 
 === Limiting which bug watches to update ===
+
+XXX: GavinPanella 2010-01-13 bug=507205: Move this section to
+checkwatches-batching.txt.
 
 In order to reduce the amount of data we have to transfer over the
 network, each IExternalBugTracker has the ability to filter out bugs
@@ -494,9 +508,16 @@ to the ExternalBugTracker's initializeRemoteBugDB() method.
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
     BEGIN
     getRemoteStatus() called: u'1'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'2'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'3'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'4'
+    COMMIT
 
 If the bug watches have the lastchecked attribute set, they will be
 passed to getModifiedRemoteBugs(). Only the bugs that have been modified
@@ -530,7 +551,12 @@ will then be passed on to initializeRemoteBugDB().
     initializeRemoteBugDB() called: [u'1', u'4']
     BEGIN
     getRemoteStatus() called: u'1'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'4'
+    COMMIT
+    BEGIN
+    BEGIN
 
 The bug watches that are deemed as not being modified are still marked
 as being checked.
@@ -580,9 +606,16 @@ initializeRemoteBugDB() since we do need to update them.
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
     BEGIN
     getRemoteStatus() called: u'1'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'2'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'3'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'4'
+    COMMIT
 
 As mentioned earlier, getModifiedRemoteBugs() is only called if we can
 get the current time of the remote system. If the time is unknown, we
@@ -600,9 +633,16 @@ always update all the bug watches.
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
     BEGIN
     getRemoteStatus() called: u'1'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'2'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'3'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'4'
+    COMMIT
 
 The only exception to the rule of only updating modified bugs is the set
 of bug watches which have comments that need to be pushed to the remote
@@ -915,7 +955,7 @@ capable of dealing with multiple remote products.
 
 == Prioritisation of watches ==
 
-_getRemoteIdsToCheck() prioritises the IDs it returns. Bug watches which have
+_getRemoteIdsToCheck() prioritizes the IDs it returns. Bug watches which have
 comments to push or which have never been checked will always be returned in
 the remote_ids_to_check list, limited only by the batch_size of the bug
 tracker (see "Batched BugWatch Updating" in doc/checkwatches.txt).
@@ -1102,7 +1142,7 @@ thread.
     >>> bug_watch_updater.updateBugTrackers(
     ...     bug_tracker_names=[standard_bugzilla.name], batch_size=2)
     DEBUG Using a global batch size of 2
-    INFO Updating 4 watches for 2 bugs on http://example.com
+    INFO Updating 2 watches for 2 bugs on http://example.com
     initializeRemoteBugDB() called: [u'5', u'6']
     getRemoteStatus() called: u'5'
     getRemoteStatus() called: u'6'

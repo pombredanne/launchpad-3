@@ -21,7 +21,7 @@ from lp.soyuz.model.distroarchseriesbinarypackage import *
 from lp.soyuz.model.distroarchseriesbinarypackagerelease import *
 from lp.soyuz.model.processor import *
 from lp.soyuz.model.build import *
-from lp.soyuz.model.builder import *
+from lp.buildmaster.model.builder import *
 from lp.soyuz.model.buildqueue import *
 from lp.soyuz.model.publishing import *
 from lp.soyuz.model.files import *
@@ -55,7 +55,7 @@ from lp.services.worlddata.model.spokenin import *
 from lp.coop.answersbugs.model import *
 
 from canonical.launchpad.database.account import *
-from canonical.launchpad.database.personnotification import *
+from lp.registry.model.personnotification import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.message import *

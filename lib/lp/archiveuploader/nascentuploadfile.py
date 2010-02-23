@@ -21,9 +21,8 @@ __all__ = [
 
 import apt_inst
 import apt_pkg
+import hashlib
 import os
-import md5
-import sha
 import subprocess
 import sys
 import time
@@ -214,8 +213,8 @@ class NascentUploadFile:
 
         # Read in the file and compute its md5 and sha1 checksums and remember
         # the size of the file as read-in.
-        digest = md5.md5()
-        sha_cksum = sha.sha()
+        digest = hashlib.md5()
+        sha_cksum = hashlib.sha1()
         ckfile = open(self.filepath, "r")
         size = 0
         for chunk in filechunks(ckfile):

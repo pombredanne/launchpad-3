@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401,W0611
@@ -50,7 +50,7 @@ from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_collection_of,
+    export_destructor_operation, exported, operation_parameters,
     operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
@@ -356,6 +356,17 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
                 "This is the external location where the Bazaar "
                 "branch is hosted.")))
 
+    @operation_parameters(
+        scheme=TextLine(title=_("URL scheme"), default=u'http'))
+    @export_read_operation()
+    def composePublicURL(scheme='http'):
+        """Return a public URL for the branch using the given protocol.
+
+        :param scheme: a protocol name accepted by the public
+            code-hosting API.  (As a legacy issue, 'sftp' is also
+            accepted).
+        """
+
     description = exported(
         Text(
             title=_('Description'), required=False,
@@ -460,7 +471,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
                           "that is responsible for reviewing proposals and "
                           "merging into this branch.")))
 
-    # XXX: JonathanLange 2008-11-24: Export these.
+    # Distroseries and sourcepackagename are exported together as
+    # the sourcepackage.
     distroseries = Choice(
         title=_("Distribution Series"), required=False,
         vocabulary='DistroSeries',
@@ -480,9 +492,12 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         "The IDistribution that this branch belongs to. None if not a "
         "package branch.")
 
-    sourcepackage = Attribute(
-        "The ISourcePackage that this branch belongs to. None if not a "
-        "package branch.")
+    # Really an ISourcePackage.
+    sourcepackage = exported(
+        Reference(
+            title=_("The ISourcePackage that this branch belongs to. "
+                    "None if not a package branch."),
+            schema=Interface, required=False, readonly=True))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -681,10 +696,19 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             required=True,
             readonly=False))
 
+    @export_destructor_operation()
+    def destroySelfBreakReferences():
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted as 
+        well as any items with mandatory references.
+        """
+
     def destroySelf(break_references=False):
         """Delete the specified branch.
 
         BranchRevisions associated with this branch will also be deleted.
+
         :param break_references: If supplied, break any references to this
             branch by deleting items with mandatory references and
             NULLing other references.
@@ -865,6 +889,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         :param launchbag: `ILaunchBag`.
         """
 
+    @export_read_operation()
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 
@@ -1058,6 +1083,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         """
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
+    upgrade_pending = Attribute(
+        "Whether a branch has had an upgrade requested.")
 
     def requestUpgrade():
         """Create an IBranchUpgradeJob to upgrade this branch."""

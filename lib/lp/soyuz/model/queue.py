@@ -18,8 +18,8 @@ import shutil
 import StringIO
 import tempfile
 
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from storm.locals import Desc, In, Join
 from storm.store import Store
@@ -546,7 +546,8 @@ class PackageUpload(SQLBase):
                 # it's available.
                 changes_file = None
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
-                    changes_file = pub_record.sourcepackagerelease.package_upload.changesfile
+                    release = pub_record.sourcepackagerelease
+                    changes_file = release.package_upload.changesfile
 
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
@@ -561,7 +562,8 @@ class PackageUpload(SQLBase):
                     debug(
                         logger,
                         "sending email to %s" % self.distroseries.changeslist)
-                    changes_file_object = StringIO.StringIO(changes_file.read())
+                    changes_file_object = StringIO.StringIO(
+                        changes_file.read())
                     self.notify(
                         announce_list=self.distroseries.changeslist,
                         changes_file_object=changes_file_object,
@@ -1303,9 +1305,28 @@ class PackageUploadBuild(SQLBase):
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
         distroseries = self.packageupload.distroseries
+        is_ppa = self.packageupload.archive.is_ppa
+        is_delayed_copy = self.packageupload.is_delayed_copy
+
         for binary in self.build.binarypackages:
-            if (not self.packageupload.archive.is_ppa and
-                binary.component not in distroseries.upload_components):
+            component = binary.component
+
+            if is_delayed_copy:
+                # For a delayed copy the component will not yet have
+                # had the chance to be overridden, so we'll check the value
+                # that will be overridden by querying the ancestor in
+                # the destination archive - if one is available.
+                binary_name = binary.name
+                ancestry = getUtility(IPublishingSet).getNearestAncestor(
+                    package_name=binary_name,
+                    archive=self.packageupload.archive,
+                    distroseries=self.packageupload.distroseries, binary=True)
+
+                if ancestry is not None:
+                    component = ancestry.component
+
+            if (not is_ppa and component not in
+                distroseries.upload_components):
                 # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
@@ -1490,6 +1511,20 @@ class PackageUploadSource(SQLBase):
         distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
+
+        if self.packageupload.is_delayed_copy:
+            # For a delayed copy the component will not yet have
+            # had the chance to be overridden, so we'll check the value
+            # that will be overridden by querying the ancestor in
+            # the destination archive - if one is available.
+            source_name = self.sourcepackagerelease.name
+            ancestry = getUtility(IPublishingSet).getNearestAncestor(
+                package_name=source_name,
+                archive=self.packageupload.archive,
+                distroseries=self.packageupload.distroseries)
+
+            if ancestry is not None:
+                component = ancestry.component
 
         if (not self.packageupload.archive.is_ppa and
             component not in distroseries.upload_components):

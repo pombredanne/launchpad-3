@@ -8,18 +8,17 @@ __all__ = []
 
 import os
 import shutil
+from tempfile import mkdtemp, NamedTemporaryFile
 import unittest
 
-from tempfile import mkdtemp, NamedTemporaryFile
-from unittest import makeSuite, TestCase, TestSuite
-
-import lp.testing
-
 from canonical import config
+from lp.testing import TestCase
+
 
 class TestConfigLookup(TestCase):
 
     def setUp(self):
+        super(TestConfigLookup, self).setUp()
         self.temp_lookup_file = None
         self.original_CONFIG_LOOKUP_FILES = config.CONFIG_LOOKUP_FILES
         self.original_LPCONFIG = os.environ['LPCONFIG']
@@ -28,6 +27,7 @@ class TestConfigLookup(TestCase):
         del self.temp_lookup_file
         config.CONFIG_LOOKUP_FILES = self.original_CONFIG_LOOKUP_FILES
         os.environ['LPCONFIG'] = self.original_LPCONFIG
+        super(TestConfigLookup, self).tearDown()
 
     def makeLookupFile(self):
         self.temp_lookup_file = NamedTemporaryFile()
@@ -61,7 +61,7 @@ class TestConfigLookup(TestCase):
             config.find_instance_name(), config.DEFAULT_CONFIG)
 
 
-class ConfigTestCase(lp.testing.TestCase):
+class ConfigTestCase(TestCase):
     """Base test case that provides fixtures for testing configuration.
     """
 
@@ -78,7 +78,6 @@ class ConfigTestCase(lp.testing.TestCase):
         """Remove the work down by setUpConfigRoots()."""
         shutil.rmtree(self.temp_config_root_dir)
         config.CONFIG_ROOT_DIRS = self.original_root_dirs
-
 
     def setUpInstanceConfig(self, instance_name):
         """Create an instance directory with empty config files.
@@ -104,6 +103,7 @@ class TestInstanceConfigDirLookup(ConfigTestCase):
     """Test where instance config directories are looked up."""
 
     def setUp(self):
+        super(TestInstanceConfigDirLookup, self).setUp()
         self.setUpConfigRoots()
 
     def test_find_config_dir_raises_ValueError(self):

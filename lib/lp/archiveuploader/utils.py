@@ -17,6 +17,7 @@ __all__ = [
     're_changes_file_name',
     're_extract_src_version',
     'get_source_file_extension',
+    'determine_binary_file_type',
     'determine_source_file_type',
     'prefix_multi_line_string',
     'safe_fix_maintainer',
@@ -84,6 +85,19 @@ def determine_source_file_type(filename):
         return SourcePackageFileType.DEBIAN_TARBALL
     elif re_is_native_tar_ext.match(extension):
         return SourcePackageFileType.NATIVE_TARBALL
+    else:
+        return None
+
+
+def determine_binary_file_type(filename):
+    """Determine the BinaryPackageFileType of the given filename."""
+    # Avoid circular imports.
+    from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
+
+    if filename.endswith(".deb"):
+        return BinaryPackageFileType.DEB
+    elif filename.endswith(".udeb"):
+        return BinaryPackageFileType.UDEB
     else:
         return None
 

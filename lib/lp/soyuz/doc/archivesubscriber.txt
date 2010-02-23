@@ -116,7 +116,10 @@ entry is created:
     --------------------------------------
     <BLANKLINE>
     Celso Providelo has granted you access to a private software archive
-    "PPA for Celso Providelo", which is hosted by Launchpad.
+    "PPA for Celso Providelo" (ppa:cprov/ppa), which is hosted by Launchpad
+    and has the following description:
+    <BLANKLINE>
+    packages to help my friends.
     <BLANKLINE>
     To start downloading and using software from this archive you need to
     view your access details by visiting this link:
@@ -448,7 +451,8 @@ If the subscription is for a group which itself contains a group, all
 indirect members that are not themselves groups are included:
 
     >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
-    >>> launchpad_devs.addMember(team_cprov, mark, force_team_add=True)
+    >>> ignored = launchpad_devs.addMember(
+    ...     team_cprov, mark, force_team_add=True)
     >>> subscription = mark.archive.newSubscription(
     ...     launchpad_devs, mark, description=u"LP team too")
     >>> for person in subscription.getNonActiveSubscribers():

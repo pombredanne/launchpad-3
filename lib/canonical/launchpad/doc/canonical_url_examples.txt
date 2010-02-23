@@ -88,8 +88,8 @@ An ISignedCodeOfConduct
 
 An ICodeOfConduct
 
-    >>> canonical_url(cocset['1.0'])
-    u'http://launchpad.dev/codeofconduct/1.0'
+    >>> canonical_url(cocset['1.1'])
+    u'http://launchpad.dev/codeofconduct/1.1'
 
 
 == Distributions, distroseriess and so on ==
@@ -132,16 +132,17 @@ An IDistributionSourcePackage.
 
 == Projects and products ==
 
-    >>> from canonical.launchpad.interfaces import IProjectSet, IProductSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProjectGroupSet, IProductSet)
 
-The IProjectSet.
+The IProjectGroupSet.
 
-    >>> canonical_url(getUtility(IProjectSet))
+    >>> canonical_url(getUtility(IProjectGroupSet))
     u'http://launchpad.dev/projectgroups'
 
-An IProject.
+An IProjectGroup.
 
-    >>> canonical_url(getUtility(IProjectSet)['apache'])
+    >>> canonical_url(getUtility(IProjectGroupSet)['apache'])
     u'http://launchpad.dev/apache'
 
 The IProductSet.

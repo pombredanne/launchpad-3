@@ -26,7 +26,7 @@ class UpdateBranches(LaunchpadCronScript):
         bzr_logger.setLevel(logging.INFO)
         globalErrorUtility.configure('branchscanner')
 
-        BranchScanner(self.txn, self.logger).scanAllBranches()
+        BranchScanner(self.logger).scanAllBranches()
 
 
 if __name__ == '__main__':

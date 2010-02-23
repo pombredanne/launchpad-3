@@ -138,9 +138,9 @@ listed in the current subscriptions area:
     >>> for row in find_tags_by_class(joe_browser.contents,
     ...                               'archive-subscription-row'):
     ...     print extract_text(row)
-    Archive
-    PPA for Mark Shuttleworth    View
-    PPA for Celso Providelo      View
+    Archive                                     Owner
+    PPA for Mark Shuttleworth (ppa:mark/ppa)  Mark Shuttleworth       View
+    PPA for Celso Providelo (ppa:cprov/ppa)     Celso Providelo         View
 
 == Confirming a subscription ==
 

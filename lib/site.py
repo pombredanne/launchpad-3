@@ -28,7 +28,3 @@ import os
 import sys
 execfile(
     os.path.join(sys.prefix, 'lib', 'python' + sys.version[:3], 'site.py'))
-
-# Perform other start-up initialization.
-from lp.services.mime import customizeMimetypes
-customizeMimetypes()

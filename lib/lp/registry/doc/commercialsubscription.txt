@@ -550,7 +550,7 @@ access it.
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> login_person(registry_member)
@@ -580,11 +580,11 @@ An admin can access 'forReview'.
     python-gnome2-dev
 
 Members of the registry experts celebrity have permission to review
-IProduct and IProject objects and access an IProjectSet.
+IProduct and IProjectGroup objects and access an IProjectGroupSet.
 
-    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
 
-    >>> project_set = getUtility(IProjectSet)
+    >>> project_set = getUtility(IProjectGroupSet)
     >>> product = factory.makeProduct(name='dog')
     >>> project = factory.makeProject(name='cat')
 

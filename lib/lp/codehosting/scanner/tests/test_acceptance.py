@@ -22,7 +22,6 @@ import transaction
 from zope.component import getUtility
 
 from lp.codehosting.vfs import branch_id_to_path
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.tests.helpers import (
     create_branch_with_one_revision, LoomTestMixin)
 from canonical.config import config
@@ -49,7 +48,7 @@ class BranchScannerTest(TestCaseWithTransport, LoomTestMixin):
             local_path_from_url(
                 config.codehosting.internal_branch_by_id_root),
             branch_id_to_path(db_branch.id))
-        ensure_base(get_transport(destination))
+        get_transport(destination).create_prefix()
         self.addCleanup(lambda: shutil.rmtree(destination))
         return destination
 
@@ -112,7 +111,7 @@ class BranchScannerTest(TestCaseWithTransport, LoomTestMixin):
         # Build the loom in the destination directory.
         self.addCleanup(lambda: os.chdir(os.getcwd()))
         os.chdir(destination)
-        loom_tree = self.makeLoomBranchAndTree('.')
+        self.makeLoomBranchAndTree('.')
 
         loom_branch = bzrlib.branch.Branch.open(destination)
         self.installTestBranch(self.db_branch, loom_branch)
