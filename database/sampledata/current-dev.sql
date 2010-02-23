@@ -8100,6 +8100,7 @@ INSERT INTO processorfamily (id, name, title, description) VALUES (1, 'x86', 'In
 INSERT INTO processorfamily (id, name, title, description) VALUES (2, 'powerpc', 'PowerPC compatible systems, G3 G4 etc', 'An architecture conceived by Motorola and developed further in cooperation with IBM. Was used very successfully by Apple for their PowerMac range, until 2007.');
 INSERT INTO processorfamily (id, name, title, description) VALUES (3, 'amd64', 'AMD64 and Intel EM64T and compatible systems', 'A 64-bit extension to the venerable x86 architecture, pioneered by AMD and later adopted by Intel as well.');
 INSERT INTO processorfamily (id, name, title, description) VALUES (4, 'hppa', 'PA-RISC Processors', 'The HP PA-RISC and compatible processors');
+INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (5, 'arm', 'ARM Processors', 'The ARM and compatible processors', TRUE);
 
 
 ALTER TABLE processorfamily ENABLE TRIGGER ALL;
