@@ -867,22 +867,6 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertFalse(job.generateDiffs())
 
 
-def all_dirs(directory):
-    """Generate all parent directories and the directory itself.
-
-    Passing 'a/b/c/d' produces ['a', 'a/b', 'a/b/c', 'a/b/c/d'].
-    """
-    if directory == '':
-        return []
-    dirs = [directory]
-    while(1):
-        head, tail = os.path.split(directory)
-        if head == '':
-            return reversed(dirs)
-        directory = head
-        dirs.append(directory)
-
-
 class TestRosettaUploadJob(TestCaseWithFactory):
     """Tests for RosettaUploadJob."""
 
@@ -937,21 +921,18 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         seen_dirs = set()
         for file_pair in files:
             file_name = file_pair[0]
-            dname, fname = os.path.split(file_name)
-            for adir in all_dirs(dname):
-                if adir in seen_dirs:
-                    continue
-                self.tree.bzrdir.root_transport.mkdir(adir)
-                self.tree.add(adir)
-                seen_dirs.add(adir)
             try:
                 file_content = file_pair[1]
                 if file_content is None:
                     raise IndexError # Same as if missing.
             except IndexError:
                 file_content = self.factory.getUniqueString()
+            dname, fname = os.path.split(file_name)
+            self.tree.bzrdir.root_transport.clone(dname).create_prefix()
             self.tree.bzrdir.root_transport.put_bytes(file_name, file_content)
-            self.tree.add(file_name)
+        if len(files) > 0:
+            self.tree.smart_add(
+                [self.tree.abspath(file_pair[0]) for file_pair in files])
         if commit_message is None:
             commit_message = self.factory.getUniqueString('commit')
         revision_id = self.tree.commit(commit_message)
