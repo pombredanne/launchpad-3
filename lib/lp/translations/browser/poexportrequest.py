@@ -56,7 +56,8 @@ class BaseExportView(LaunchpadView):
 
     def describeBacklog(self, estimated_backlog):
         """Return string describing the current export backlog."""
-        if estimated_backlog is None or estimated_backlog == timedelta():
+        threshold = timedelta(minutes=10)
+        if estimated_backlog is None or estimated_backlog < threshold:
             return ""
 
         formatter = DurationFormatterAPI(estimated_backlog)

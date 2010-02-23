@@ -15,8 +15,6 @@ class FakeTransaction:
 
     Set `log_calls` to True to enable printing of commits and aborts.
     """
-    log_calls = False
-
     def __init__(self, log_calls=False):
         self.log_calls = log_calls
 
