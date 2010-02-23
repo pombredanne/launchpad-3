@@ -12,6 +12,7 @@ mirrors:
     >>> canonical_archive_json = webservice.get(canonical_archive['self_link']).jsonBody()
     >>> pprint_entry(canonical_archive_json)
     content: u'Archive'
+    country_link: u'http://.../+countries/GB'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
     date_reviewed: None
     description: None
@@ -38,6 +39,7 @@ And CD image mirrors:
     >>> canonical_releases_json = webservice.get(canonical_releases['self_link']).jsonBody()
     >>> pprint_entry(canonical_releases_json)
     content: u'CD Image'
+    country_link: u'http://.../+countries/GB'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
     date_reviewed: None
     description: None
@@ -126,6 +128,7 @@ Mirror listing admins may see all:
     ...     archive_404_mirror['self_link']).jsonBody()
     >>> pprint_entry(response)
     content: u'Archive'
+    country_link: u'http://.../+countries/FR'
     date_created: u'2006-10-16T18:31:43.438573+00:00'
     date_reviewed: None
     description: None
@@ -190,7 +193,10 @@ Some attributes are read-only via the API:
 
 While others can be set with the appropriate authorization:
 
+    >>> greenland = webservice.named_get("/+countries",
+    ...     "getByCode", code="GL").jsonBody()
     >>> patch = {
+    ...     u'country_link': greenland['self_link'],
     ...     u'status' : 'Unofficial',
     ...     u'whiteboard' : u'This mirror is too shiny to be true'
     ... }
@@ -203,7 +209,23 @@ While others can be set with the appropriate authorization:
     ...     canonical_releases['self_link'], 'application/json', dumps(patch)).jsonBody()
     >>> pprint_entry(response)
     content: u'CD Image'
-    ...
+    country_link: u'http://.../+countries/GL'
+    date_created: u'2006-10-16T18:31:43.434567+00:00'
+    date_reviewed: None
+    description: None
+    displayname: None
+    distribution_link: u'http://.../ubuntu'
+    enabled: True
+    ftp_base_url: None
+    http_base_url: u'http://releases.ubuntu.com/'
+    name: u'canonical-releases'
+    official_candidate: True
+    owner_link: u'http://.../~mark'
+    resource_type_link: u'http://.../#distribution_mirror'
+    reviewer_link: None
+    rsync_base_url: None
+    self_link: u'http://.../ubuntu/+mirror/canonical-releases'
+    speed: u'100 Mbps'
     status: u'Unofficial'
     whiteboard: u'This mirror is too shiny to be true'
 
