@@ -347,7 +347,9 @@ class TestPublishDistro(TestNativePublishingBase):
         """Test that some command line options are mutually exclusive."""
         self.assertRaises(
             LaunchpadScriptFailure,
-            self.runPublishDistro, ['--ppa', '--partner', '--primary-debug'])
+            self.runPublishDistro,
+            ['--ppa', '--partner', '--primary-debug', '--copy-archive',
+             'test'])
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro, ['--ppa', '--partner'])
@@ -359,10 +361,19 @@ class TestPublishDistro(TestNativePublishingBase):
             self.runPublishDistro, ['--ppa', '--primary-debug'])
         self.assertRaises(
             LaunchpadScriptFailure,
+            self.runPublishDistro, ['--ppa', '--copy-archive', 'test'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
             self.runPublishDistro, ['--partner', '--private-ppa'])
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro, ['--partner', '--primary-debug'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--partner', '--copy-archive', 'test'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--primary-debug', '--copy-archive','test'])
 
 
 def test_suite():

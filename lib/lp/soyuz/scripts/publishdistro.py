@@ -69,6 +69,10 @@ def add_options(parser):
                       dest="partner", metavar="PARTNER", default=False,
                       help="Run only over the partner archive.")
 
+    parser.add_option("--copy-archive", action="store",
+                      dest="copy_archive", metavar="COPYARCHIVE",
+                      help="Run only over the named copy archive specified.")
+
     parser.add_option(
         "--primary-debug", action="store_true", default=False,
         dest="primary_debug", metavar="PRIMARYDEBUG",
@@ -104,11 +108,13 @@ def run_publisher(options, txn, log=None):
     exclusive_options = (
         options.partner, options.ppa, options.private_ppa,
         options.primary_debug)
+
     num_exclusive = [flag for flag in exclusive_options if flag]
-    if len(num_exclusive) > 1:
+    if (len(num_exclusive) > 1 or
+        options.copy_archive and num_exclusive > 0):
         raise LaunchpadScriptFailure(
-            "Can only specify one of partner, ppa, private-ppa and "
-            "primary-debug.")
+            "Can only specify one of partner, ppa, private-ppa, copy-archive"
+            " and primary-debug.")
 
     log.debug("  Distribution: %s" % options.distribution)
     log.debug("    Publishing: %s" % careful_msg(options.careful_publishing))
@@ -161,6 +167,14 @@ def run_publisher(options, txn, log=None):
             raise LaunchpadScriptFailure(
                 "Could not find DEBUG archive for %s" % distribution.name)
         archives = [debug_archive]
+    elif options.copy_archive:
+        copy_archive = getUtility(IArchiveSet).getArchivesForDistribution(
+            distribution, name=options.copy_archive,
+            purposes=[ArchivePurpose.COPY]).one()
+        if copy_archive is None:
+            raise LaunchpadScriptFailure(
+                "Could not find COPY archive named %s" % options.copy_archive)
+        archives = [copy_archive]
     else:
         archives = [distribution.main_archive]
 
@@ -185,9 +199,9 @@ def run_publisher(options, txn, log=None):
         try_and_commit("dominating", publisher.B_dominate,
                        options.careful or options.careful_domination)
 
-        # The primary archive uses apt-ftparchive to generate the indexes,
-        # everything else uses the newer internal LP code.
-        if archive.purpose == ArchivePurpose.PRIMARY:
+        # The primary and copy archives use apt-ftparchive to generate the
+        # indexes, everything else uses the newer internal LP code.
+        if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
             try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                            options.careful or options.careful_apt)
         else:
