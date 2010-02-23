@@ -257,15 +257,28 @@ class TestBazaarBranchStore(WorkerTest):
     def test_all_revisions_saved(self):
         # All revisions in the branch's repo are transferred, not just those
         # in the ancestry of the tip.
-        tree = self.make_branch_and_tree('tree')
-        revid1 = tree.commit('.')
-        tree.branch.pull(tree.branch, overwrite=True, stop_revision='null:')
-        revid2 = tree.commit('.')
+        # Consider a branch with two heads in its repo:
+        #            revid
+        #           /     \
+        #       revid1   revid2 <- branch tip
+        # A naive push/pull would just store 'revid' and 'revid2' in the
+        # branch store -- we need to make sure all three revisions are stored
+        # and retrieved.
+        builder = self.make_branch_builder('tree')
+        revid = builder.build_snapshot(
+            None, None, [('add', ('', 'root-id', 'directory', ''))])
+        revid1 = builder.build_snapshot(None, [revid], [])
+        revid2 = builder.build_snapshot(None, [revid], [])
+        branch = builder.get_branch()
+        source_tree = branch.bzrdir.create_workingtree()
         store = self.makeBranchStore()
-        store.push(self.arbitrary_branch_id, tree, default_format)
-        store.pull(self.arbitrary_branch_id, 'pulled', default_format)
-        repo = BzrDir.open('pulled').open_repository()
-        self.assertEqual(set([revid1, revid2]), set(repo.all_revision_ids()))
+        store.push(self.arbitrary_branch_id, source_tree, default_format)
+        retrieved_tree = store.pull(
+            self.arbitrary_branch_id, 'pulled', default_format)
+        self.assertEqual(
+            set([revid, revid1, revid2]),
+            set(retrieved_tree.branch.repository.all_revision_ids()))
+
 
 class TestImportDataStore(WorkerTest):
     """Tests for `ImportDataStore`."""
