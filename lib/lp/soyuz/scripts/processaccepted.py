@@ -226,7 +226,7 @@ class ProcessAccepted(LaunchpadScript):
                     IArchiveSet).getArchivesForDistribution(
                         distribution, purposes=[ArchivePurpose.COPY])
                 target_archives = [
-                    (archive, archive.purpose.title)
+                    (archive, archive.displayname)
                     for archive in copy_archives]
             else:
                 target_archives = [
