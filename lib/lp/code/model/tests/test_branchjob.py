@@ -927,7 +927,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
                     raise IndexError # Same as if missing.
             except IndexError:
                 file_content = self.factory.getUniqueString()
-            dname, fname = os.path.split(file_name)
+            dname = os.path.dirname(file_name)
             self.tree.bzrdir.root_transport.clone(dname).create_prefix()
             self.tree.bzrdir.root_transport.put_bytes(file_name, file_content)
         if len(files) > 0:
