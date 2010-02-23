@@ -111,6 +111,17 @@ class BaseDatabasePolicy:
         """See `IDatabasePolicy`."""
         pass
 
+    def __enter__(self):
+        """See `IDatabasePolicy`."""
+        getUtility(IStoreSelector).push(self)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """See `IDatabasePolicy`."""
+        policy = getUtility(IStoreSelector).pop()
+        assert policy is self, (
+            "Unexpected database policy %s returned by store selector"
+            % repr(policy))
+
 
 class DatabaseBlockedPolicy(BaseDatabasePolicy):
     """`IDatabasePolicy` that blocks all access to the database."""
