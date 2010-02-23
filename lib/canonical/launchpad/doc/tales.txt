@@ -170,18 +170,19 @@ them.
 Similarly, references to private PPAs are not rendered unless the user has
 a subscription to the PPA.
 
-    >>> login('foo.bar@canonical.com')
+    >>> ppa_user = factory.makePerson(name="jake", displayname="Jake Smith")
+    >>> login_person(ppa_user)
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
 
     >>> login_person(owner)
-    >>> foo = getUtility(IPersonSet).getByName('name16')
-    >>> ignore = private_ppa.newSubscription(foo, owner)
-    >>> login('foo.bar@canonical.com')
+    >>> ignore = private_ppa.newSubscription(ppa_user, owner)
+    >>> login_person(ppa_user)
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
     ppa:joe/ppa
 
 We also have icons for builds which may have different dimensions.
 
+    >>> login('admin@canonical.com')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()

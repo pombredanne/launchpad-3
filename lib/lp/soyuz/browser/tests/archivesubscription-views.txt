@@ -33,7 +33,8 @@ First, ensure that the archives we'll be using are private:
 The view includes a label property.
 
     >>> login('celso.providelo@canonical.com')
-    >>> view = create_initialized_view(cprov_private_ppa, name="+subscriptions")
+    >>> view = create_initialized_view(
+    ...     cprov_private_ppa, name="+subscriptions")
     >>> print view.label
     Manage access to PPA for Celso Providelo
 

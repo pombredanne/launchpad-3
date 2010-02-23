@@ -8,7 +8,9 @@ by unauthorised people.  For publications attached to a public archive, there
 are no restrictions.  For those attached to a private archive, only those able
 to view the archive, or admins, can see the publication.
 
-    # Create two ppas, one public and one private and publish to both.
+We create two PPAs, one public and one private. Both PPAs are populated
+with some source and binary publishings.
+
     >>> login('admin@canonical.com')
     >>> public_ppa = factory.makeArchive(private=False)
     >>> private_ppa = factory.makeArchive(private=True)

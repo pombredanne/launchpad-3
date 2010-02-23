@@ -271,16 +271,15 @@ Similarly, populated PPA dependencies are listed in the building
         main restricted universe multiverse
 
 The authentication information gets added for private PPA
-dependencies.
+dependencies. We'll create a private PPA and then update cprov's PPA,
+removing the dependency on Mark's public PPA and adding one for the
+new private PPA.
 
     >>> private_ppa = factory.makeArchive(
     ...     owner=mark, name='p3a', private=True, distribution=ubuntu)
     >>> pub_binaries = test_publisher.getPubBinaries(
     ...     binaryname='dep-bin', archive=private_ppa,
     ...     status=PackagePublishingStatus.PUBLISHED)
-
-    # Remove the dependency on mark's archive and add one for the
-    # private PPA.
     >>> cprov.archive.removeArchiveDependency(mark.archive)
     >>> archive_dependency = cprov.archive.addArchiveDependency(
     ...     private_ppa, PackagePublishingPocket.RELEASE,
