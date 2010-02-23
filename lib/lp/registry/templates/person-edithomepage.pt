@@ -6,14 +6,12 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
 
 <div metal:fill-slot="main">
-
-  <h1>Change home page</h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 

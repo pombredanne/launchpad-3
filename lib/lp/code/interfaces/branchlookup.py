@@ -1,52 +1,31 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """Utility for looking up branches by name."""
 
 __metaclass__ = type
 __all__ = [
-    'CannotHaveLinkedBranch',
     'IBranchLookup',
-    'ICanHasLinkedBranch',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
-    'ISourcePackagePocket',
-    'ISourcePackagePocketFactory',
-    'NoLinkedBranch',
     ]
 
-from zope.interface import Attribute, Interface
-
-
-class CannotHaveLinkedBranch(Exception):
-    """Raised when we try to look up the linked branch for a thing that can't.
-    """
-
-    def __init__(self, component):
-        self.component = component
-        Exception.__init__(
-            self, "%r cannot have linked branches." % (component,))
-
-
-class NoLinkedBranch(Exception):
-    """Raised when there's no linked branch for a thing."""
-
-    def __init__(self, component):
-        self.component = component
-        Exception.__init__(self, "%r has no linked branch." % (component,))
-
-
-class ICanHasLinkedBranch(Interface):
-    """Something that has a linked branch."""
-
-    branch = Attribute("The linked branch.")
+from zope.interface import Interface
 
 
 class ILinkedBranchTraversable(Interface):
     """A thing that can be traversed to find a thing linked to a branch."""
 
-    def traverse(self, name):
-        """Return the object beneath this one that matches 'name'."""
+    def traverse(self, name, segments):
+        """Return the object beneath this one that matches 'name'.
+
+        :param name: The name of the object being traversed to.
+        :param segments: Remaining path segments.
+        :return: An `ILinkedBranchTraversable` object if traversing should
+            continue, an `ICanHasLinkedBranch` object otherwise.
+        """
 
 
 class ILinkedBranchTraverser(Interface):
@@ -69,7 +48,7 @@ class ILinkedBranchTraverser(Interface):
         :return: One of
             * `IProduct`
             * `IProductSeries`
-            * (ISourcePackage, PackagePublishingPocket)
+            * `ISuiteSourcePackage`
             * `IDistributionSourcePackage`
         """
 
@@ -87,6 +66,17 @@ class IBranchLookup(Interface):
         """Find a branch by its ~owner/product/name unique name.
 
         Return None if no match was found.
+        """
+
+    def getIdAndTrailingPath(self, path, from_slave=False):
+        """Return id of and path within the branch identified by the `path`.
+
+        To explain by example, if the branch with id 5 has unique name
+        '~user/project/name', getIdAndTrailingPath('~user/project/name/foo')
+        will return (5, '/foo').
+
+        :return: ``(branch_id, trailing_path)``, both will be ``None`` if no
+            branch is identified.
         """
 
     def uriToUniqueName(uri):
@@ -108,6 +98,14 @@ class IBranchLookup(Interface):
         http://bazaar.launchpad.net/ or the lp: URL.
 
         Return None if no match was found.
+        """
+
+    def getByUrls(urls):
+        """Find branches by URL.
+
+        :param urls: A list of URLs expressed as strings.
+        :return: A dictionary mapping those URLs to `IBranch` objects. If
+            there is no branch for a URL, the URL is mapped to `None` instead.
         """
 
     def getByLPPath(path):
@@ -150,44 +148,4 @@ class IBranchLookup(Interface):
         :return: a tuple of (`IBranch`, extra_path). 'extra_path' is used to
             make things like 'bzr cat lp:~foo/bar/baz/README' work. Trailing
             paths are not handled for shortcut paths.
-        """
-
-
-class ISourcePackagePocketFactory(Interface):
-    """Utility for constructing source package pocket wrappers."""
-
-    def new(package, pocket):
-        """Construct a new `ISourcePackagePocket`.
-
-        :param package: An `ISourcePackagePocket`.
-        :param pocket: A `DBItem` of `PackagePublishingPocket`.
-        :return: `ISourcePackagePocket`.
-        """
-
-
-class ISourcePackagePocket(ICanHasLinkedBranch):
-    """A wrapper around a source package and a pocket.
-
-    Used to provide a single object that can be used in exceptions about a
-    sourcepackage and a pocket not having an official linked branch.
-    """
-
-    # XXX: JonathanLange 2009-03-26: This ought to go away when ISourcePackage
-    # gets a pocket attribute.
-
-    displayname = Attribute("The display name")
-    pocket = Attribute("The pocket.")
-    sourcepackage = Attribute("The source package.")
-
-    def __eq__(other):
-        """Is this source package pocket equal to another?
-
-        True if and only if the package and pocket of the other are equal to
-        our package and pocket.
-        """
-
-    def __ne__(other):
-        """Is this source package pocket not equal to another?
-
-        True if and only if self and other are not equal.
         """

@@ -3,6 +3,8 @@
 
 this is initial data for launchpad. unlike the sample data, this will be loaded into our production install.
 
+     Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
 -- Person
@@ -26,7 +28,7 @@ INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perel
 ---
 
 -- EmailAddress
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'mark@hbd.com', 1, 2 );
+INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'mark@example.com', 1, 2 );
 INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robertc@robertcollins.net', 2, 2 );
 
 /*

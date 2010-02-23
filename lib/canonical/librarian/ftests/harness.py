@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture for the librarians."""
 
@@ -91,6 +92,9 @@ class LibrarianTestSetup:
 
     def setUp(self):
         """Start both librarian instances."""
+        if (os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None and
+            os.path.exists(TacLibrarianTestSetup().pidfile)):
+            return
         self.setUpRoot()
         try:
             TacLibrarianTestSetup().setUp()
@@ -101,6 +105,8 @@ class LibrarianTestSetup:
 
     def tearDown(self):
         """Shut downs both librarian instances."""
+        if os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None:
+            return
         TacLibrarianTestSetup().tearDown()
         self.tearDownRoot()
 

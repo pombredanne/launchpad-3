@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """`PPAKeyGenerator` script class tests."""
 
 __metaclass__ = type
@@ -11,9 +13,9 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
 
 

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for accessing the external Salesforce proxy."""
 
@@ -101,11 +102,6 @@ class SalesforceVoucherProxy:
 
     def _getUserIdentitifier(self, user):
         """Return the user's openid_identifier."""
-        # XXX sinzui 2008-09-12 bug=236193:
-        # SalesForce should be using the identity URL from
-        # IOpenIDPersistentIdentity, not the identifier which
-        # is technically not guaranteed to be permanent. This
-        # should be fixed during migration.
         from zope.security.proxy import removeSecurityProxy
         return removeSecurityProxy(user.account).openid_identifier
 

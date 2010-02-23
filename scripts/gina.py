@@ -1,8 +1,10 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # This module uses relative imports.
 # pylint: disable-msg=W0403
-
 
 """
 Gina launcher script. Handles commandline options and makes the proper
@@ -115,7 +117,7 @@ def main():
 
 def run_gina(options, ztm, target_section):
     # Avoid circular imports.
-    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     package_root = target_section.root
     keyrings_root = target_section.keyrings

@@ -1,8 +1,15 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
+__all__ = [
+    'ProductRelease',
+    'ProductReleaseFile',
+    'ProductReleaseSet',
+    'productrelease_to_milestone',
+    ]
 
 from StringIO import StringIO
 
@@ -20,9 +27,11 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFile, IProductReleaseSet, UpstreamFileType)
+    IProductRelease, IProductReleaseFile, IProductReleaseSet,
+    UpstreamFileType)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership, validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
@@ -43,11 +52,13 @@ class ProductRelease(SQLBase):
         dbName='datecreated', notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership,
+        notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
-                            orderBy='-date_uploaded')
+    files = SQLMultipleJoin(
+        'ProductReleaseFile', joinColumn='productrelease',
+        orderBy='-date_uploaded', prejoins=['productrelease'])
 
     # properties
     @property
@@ -222,14 +233,14 @@ class ProductReleaseSet(object):
             return default
         return productrelease
 
-    def getReleasesForSerieses(self, serieses):
+    def getReleasesForSeries(self, series):
         """See `IProductReleaseSet`."""
         # Local import of Milestone to avoid import loop.
         from lp.registry.model.milestone import Milestone
-        if len(list(serieses)) == 0:
+        if len(list(series)) == 0:
             return EmptyResultSet()
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        series_ids = [series.id for series in serieses]
+        series_ids = [s.id for s in series]
         result = store.find(
             ProductRelease,
             And(ProductRelease.milestone == Milestone.id),
@@ -238,10 +249,16 @@ class ProductReleaseSet(object):
 
     def getFilesForReleases(self, releases):
         """See `IProductReleaseSet`."""
-        if len(list(releases)) == 0:
-            return ProductReleaseFile.select('1 = 2')
+        releases = list(releases)
+        if len(releases) == 0:
+            return EmptyResultSet()
         return ProductReleaseFile.select(
             """ProductReleaseFile.productrelease IN %s""" % (
             sqlvalues([release.id for release in releases])),
             orderBy='-date_uploaded',
-            prejoins=['libraryfile'])
+            prejoins=['libraryfile', 'libraryfile.content', 'productrelease'])
+
+
+def productrelease_to_milestone(productrelease):
+    """Adapt an `IProductRelease` to an `IMilestone`."""
+    return productrelease.milestone

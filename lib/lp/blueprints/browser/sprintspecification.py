@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for SprintSpecification."""
 
@@ -9,9 +10,15 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
+from canonical.lazr.utils import smartquote
 
 
 class SprintSpecificationDecideView(LaunchpadView):
+
+    @property
+    def label(self):
+        return smartquote(
+            'Consider agenda item for "%s"' % self.context.sprint.title)
 
     def initialize(self):
         accept = self.request.form.get('accept')

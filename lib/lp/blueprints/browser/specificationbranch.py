@@ -1,4 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
 
@@ -12,6 +13,8 @@ __all__ = [
     ]
 
 from zope.interface import implements
+
+from canonical.lazr.utils import smartquote
 
 from canonical.launchpad import _
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
@@ -48,8 +51,8 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
     """Edit the summary of the SpecificationBranch link."""
 
     schema = ISpecificationBranch
-    field_names = ['summary']
-    label = _('Edit specification branch summary')
+    field_names = []
+    label = _('Delete link between specification and branch')
 
     def initialize(self):
         self.specification = self.context.specification
@@ -58,10 +61,6 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.specification)
-
-    @action(_('Update'), name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
 
     @action(_('Delete'), name='delete')
     def delete_action(self, action, data):
@@ -103,33 +102,25 @@ class BranchLinkToSpecificationView(LaunchpadFormView):
     # to get the read only fields rendered as input widgets.
     for_input = True
 
-    field_names = ['specification', 'summary']
+    field_names = ['specification']
+
+    @property
+    def label(self):
+        return "Link to a blueprint"
+
+    @property
+    def page_title(self):
+        return smartquote(
+            'Link branch "%s" to a blueprint' % self.context.displayname)
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         spec = data['specification']
         spec_branch = spec.linkBranch(
-            branch=self.context, summary=data['summary'],
-            registrant=self.user)
-
-    @action(_('Cancel'), name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the branch page."""
-
-    def validate(self, data):
-        """Ensure that this specification isn't already linked to the branch.
-        """
-        if 'specification' not in data:
-            return
-
-        link_spec = data['specification']
-        for link in self.context.spec_links:
-            if link.specification == link_spec:
-                self.setFieldError(
-                    'specification',
-                    'The blueprint "%s" is already linked to this branch'
-                    % link_spec.title)
+            branch=self.context, registrant=self.user)

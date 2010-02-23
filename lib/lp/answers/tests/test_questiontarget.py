@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to IQuestionTarget."""
 
@@ -14,10 +15,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import login_person
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.language import ILanguageSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 
 
 class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):

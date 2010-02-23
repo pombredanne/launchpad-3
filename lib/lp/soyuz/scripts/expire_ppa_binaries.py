@@ -1,14 +1,15 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
 
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -35,7 +36,7 @@ bzr-nightly-ppa
 
 class PPABinaryExpirer(LaunchpadCronScript):
     """Helper class for expiring old PPA binaries.
-    
+
     Any PPA binary older than 30 days that is superseded or deleted
     will be marked for immediate expiry.
     """
@@ -47,11 +48,72 @@ class PPABinaryExpirer(LaunchpadCronScript):
             "-n", "--dry-run", action="store_true",
             dest="dryrun", metavar="DRY_RUN", default=False,
             help="If set, no transactions are committed")
+        self.parser.add_option(
+            "-e", "--expire-after", action="store", type="int",
+            dest="num_days", metavar="DAYS", default=15,
+            help=("The number of days after which to expire binaries. "
+                  "Must be specified."))
 
-    def determineExpirables(self):
+    def determineSourceExpirables(self, num_days):
         """Return expirable libraryfilealias IDs."""
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archive import ArchivePurpose
 
-        stay_of_execution = '30 days'
+        stay_of_execution = '%d days' % num_days
+
+        # The subquery here has to repeat the checks for privacy and
+        # blacklisting on *other* publications that are also done in
+        # the main loop for the archive being considered.
+        results = self.store.execute("""
+            SELECT lfa.id
+            FROM
+                LibraryFileAlias AS lfa,
+                Archive,
+                SourcePackageReleaseFile AS sprf,
+                SourcePackageRelease AS spr,
+                SourcePackagePublishingHistory AS spph
+            WHERE
+                lfa.id = sprf.libraryfile
+                AND spr.id = sprf.sourcepackagerelease
+                AND spph.sourcepackagerelease = spr.id
+                AND spph.dateremoved < (
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
+                AND spph.archive = archive.id
+                AND archive.purpose = %s
+                AND lfa.expires IS NULL
+            EXCEPT
+            SELECT sprf.libraryfile
+            FROM
+                SourcePackageRelease AS spr,
+                SourcePackageReleaseFile AS sprf,
+                SourcePackagePublishingHistory AS spph,
+                Archive AS a,
+                Person AS p
+            WHERE
+                spr.id = sprf.sourcepackagerelease
+                AND spph.sourcepackagerelease = spr.id
+                AND spph.archive = a.id
+                AND p.id = a.owner
+                AND (
+                    p.name IN %s
+                    OR a.private IS TRUE
+                    OR a.purpose != %s
+                    OR dateremoved >
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
+                    OR dateremoved IS NULL);
+            """ % sqlvalues(
+                stay_of_execution, ArchivePurpose.PPA, self.blacklist,
+                ArchivePurpose.PPA, stay_of_execution))
+
+        lfa_ids = results.get_all()
+        return lfa_ids
+
+    def determineBinaryExpirables(self, num_days):
+        """Return expirable libraryfilealias IDs."""
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archive import ArchivePurpose
+
+        stay_of_execution = '%d days' % num_days
 
         # The subquery here has to repeat the checks for privacy and
         # blacklisting on *other* publications that are also done in
@@ -90,7 +152,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
                     p.name IN %s
                     OR a.private IS TRUE
                     OR a.purpose != %s
-                    OR dateremoved > 
+                    OR dateremoved >
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
                     OR dateremoved IS NULL);
             """ % sqlvalues(
@@ -102,10 +164,14 @@ class PPABinaryExpirer(LaunchpadCronScript):
 
     def main(self):
         self.logger.info('Starting the PPA binary expiration')
+        num_days = self.options.num_days
+        self.logger.info("Expiring files up to %d days ago" % num_days)
+
         self.store = getUtility(IStoreSelector).get(
             MAIN_STORE, DEFAULT_FLAVOR)
 
-        lfa_ids = self.determineExpirables()
+        lfa_ids = self.determineSourceExpirables(num_days)
+        lfa_ids.extend(self.determineBinaryExpirables(num_days))
         batch_count = 0
         batch_limit = 500
         for id in lfa_ids:

@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gina db handlers.
 
@@ -26,8 +27,10 @@ from zope.component import getUtility
 from canonical.database.sqlbase import quote
 from canonical.database.constants import UTC_NOW
 
-from canonical.archivepublisher.diskpool import poolify
-from canonical.archiveuploader.tagfiles import parse_tagfile
+from lp.archivepublisher.diskpool import poolify
+from lp.archiveuploader.tagfiles import parse_tagfile
+from lp.archiveuploader.utils import (determine_binary_file_type,
+    determine_source_file_type)
 
 from canonical.database.sqlbase import sqlvalues
 
@@ -44,11 +47,11 @@ from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.registry.interfaces.sourcepackage import SourcePackageFormat
+from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
 
 def check_not_in_librarian(files, archive_root, directory):
@@ -75,6 +78,39 @@ def check_not_in_librarian(files, archive_root, directory):
         #                                'librarian' % fname)
         to_upload.append((fname, path))
     return to_upload
+
+
+BINARYPACKAGE_EXTENSIONS = {
+    BinaryPackageFormat.DEB: '.deb',
+    BinaryPackageFormat.UDEB: '.udeb',
+    BinaryPackageFormat.RPM: '.rpm'}
+
+
+class UnrecognizedBinaryFormat(Exception):
+
+    def __init__(self, fname, *args):
+        Exception.__init__(self, *args)
+        self.fname = fname
+
+    def __str__(self):
+        return '%s is not recognized as a binary file.' % self.fname
+
+
+def getBinaryPackageFormat(fname):
+    """Return the BinaryPackageFormat for the given filename.
+
+    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
+    'DEB'
+    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
+    'UDEB'
+    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
+    'RPM'
+    """
+    for key, value in BINARYPACKAGE_EXTENSIONS.items():
+        if fname.endswith(value):
+            return key
+
+    raise UnrecognizedBinaryFormat(fname)
 
 
 class DataSetupError(Exception):
@@ -554,8 +590,12 @@ class SourcePackageHandler:
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         displayname, emailaddress = src.maintainer
-        maintainer = ensure_person(
-            displayname, emailaddress, src.package, distroseries.displayname)
+        comment = 'when the %s package was imported into %s' % (
+            src.package, distroseries.displayname)
+        maintainer = getUtility(IPersonSet).ensurePerson(
+            emailaddress, displayname,
+            PersonCreationRationale.SOURCEPACKAGEIMPORT,
+            comment=comment)
 
         # XXX Debonzi 2005-05-16: Check it later.
         #         if src.dsc_signing_key_owner:
@@ -594,7 +634,7 @@ class SourcePackageHandler:
             build_conflicts=src.build_conflicts,
             build_conflicts_indep=src.build_conflicts_indep,
             architecturehintlist=src.architecture,
-            format=SourcePackageFormat.DPKG,
+            format=SourcePackageType.DPKG,
             upload_distroseries=distroseries.id,
             dsc_format=src.format,
             dsc_maintainer_rfc822=maintainer_line,
@@ -608,9 +648,10 @@ class SourcePackageHandler:
         # SourcePackageReleaseFile entry on lp db.
         for fname, path in to_upload:
             alias = getLibraryAlias(path, fname)
-            SourcePackageReleaseFile(sourcepackagerelease=spr.id,
-                                     libraryfile=alias,
-                                     filetype=getFileType(fname))
+            SourcePackageReleaseFile(
+                sourcepackagerelease=spr.id,
+                libraryfile=alias,
+                filetype=determine_source_file_type(fname))
             log.info('Package file %s included into library' % fname)
 
         return spr
@@ -800,9 +841,10 @@ class BinaryPackageHandler:
                  (bin_name.name, bin.version))
 
         alias = getLibraryAlias(path, fname)
-        BinaryPackageFile(binarypackagerelease=binpkg.id,
-                          libraryfile=alias,
-                          filetype=getFileType(fname))
+        BinaryPackageFile(
+            binarypackagerelease=binpkg.id,
+            libraryfile=alias,
+            filetype=determine_binary_file_type(fname))
         log.info('Package file %s included into library' % fname)
 
         # Return the binarypackage object.
@@ -961,25 +1003,3 @@ class BinaryPackagePublisher:
         if ret:
             return ret[0]
         return None
-
-
-
-def ensure_person(displayname, emailaddress, package_name, distroseries_name):
-    """Return a person by its email.
-
-    :package_name: The imported package that mentions the person with the
-                   given email address.
-    :distroseries_name: The distroseries into which the package is to be
-                         imported.
-
-    Create and return a new Person if it does not exist.
-    """
-    person = getUtility(IPersonSet).getByEmail(emailaddress)
-    if person is None:
-        comment = ('when the %s package was imported into %s'
-                 % (package_name, distroseries_name))
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,
-            comment=comment, displayname=displayname)
-    return person
-

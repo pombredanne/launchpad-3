@@ -1,4 +1,6 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0231
 
 """Definition of the internet servers that Launchpad uses."""
@@ -43,16 +45,11 @@ from lazr.restful.interfaces import IWebServiceConfiguration
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
-from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IPerson, IPersonSet,
-    IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
-    TimestampOrderingError, ClockSkew)
-from canonical.shipit.interfaces.shipit import IShipItApplication
-from canonical.signon.interfaces.openidserver import IOpenIDApplication
+from canonical.launchpad.interfaces.launchpad import (
+    IFeedsApplication, IPrivateApplication, IWebServiceApplication)
+from canonical.launchpad.interfaces.oauth import (
+    ClockSkew, IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError)
 import canonical.launchpad.layers
-import canonical.launchpad.versioninfo
-import canonical.shipit.layers
-import canonical.signon.layers
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -464,7 +461,10 @@ class NotFoundRequestPublicationFactory:
 
 
 def get_query_string_params(request):
-    """Return a dict of the query string params for a request.
+    """Return a dict of the decoded query string params for a request.
+
+    The parameter values will be decoded as unicodes, exactly as
+    `BrowserRequest` would do to build the request form.
 
     Defined here so that it can be used in both BasicLaunchpadRequest and
     the LaunchpadTestRequest (which doesn't inherit from
@@ -478,7 +478,14 @@ def get_query_string_params(request):
     if query_string is None:
         query_string = ''
 
-    return cgi.parse_qs(query_string, keep_blank_values=True)
+    parsed_qs = cgi.parse_qs(query_string, keep_blank_values=True)
+    # Use BrowserRequest._decode() for decoding the received parameters.
+    decoded_qs = {}
+    for key, values in parsed_qs.iteritems():
+        decoded_qs[key] = [
+            request._decode(value) for value in values]
+    return decoded_qs
+
 
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo."""
@@ -707,8 +714,13 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__()
 
-    def redirect(self, location, status=None, temporary_if_possible=False):
+    def redirect(self, location, status=None, trusted=True,
+                 temporary_if_possible=False):
         """Do a redirect.
+
+        Unlike Zope's BrowserResponse.redirect(), consider all redirects to be
+        trusted. Otherwise we'd have to change all callsites that redirect
+        from lp.net to vhost.lp.net to pass trusted=True.
 
         If temporary_if_possible is True, then do a temporary redirect
         if this is a HEAD or GET, otherwise do a 303.
@@ -730,8 +742,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
             else:
                 status = 303
         super(LaunchpadBrowserResponse, self).redirect(
-                unicode(location).encode('UTF-8'), status=status
-                )
+            unicode(location).encode('UTF-8'), status=status, trusted=trusted)
 
 
 def adaptResponseToSession(response):
@@ -744,7 +755,8 @@ def adaptRequestToResponse(request):
     return request.response
 
 
-class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
+class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
+                           LaunchpadBrowserRequestMixin):
     """Mock request for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
@@ -779,6 +791,7 @@ class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
     ...     QUERY_STRING='a=1&b=2&c=3')
+    >>> request.charsets = ['utf-8']
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
 
@@ -1050,8 +1063,6 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
             'Vary', 'Cookie, Authorization, Accept-Language')
 
 
-# ---- openid
-
 class AccountPrincipalMixin:
     """Mixin for publication that works with person-less accounts."""
 
@@ -1069,82 +1080,6 @@ class AccountPrincipalMixin:
             assert principal is not None, "Missing unauthenticated principal."
         return principal
 
-
-class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
-    """The publication used for OpenID requests."""
-
-    def getApplication(self, request):
-        """Return the `IOpenIDApplication`."""
-        return getUtility(IOpenIDApplication)
-
-
-class IdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.signon.layers.IdLayer)
-
-
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(IdPublication):
-    """The publication used for old OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
-
-
-class OpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.signon.layers.OpenIDLayer)
-
-
-# ---- shipit
-
-class ShipItPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
-    """The publication used for the ShipIt sites."""
-
-    root_object_interface = IShipItApplication
-
-
-class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.shipit.layers.ShipItUbuntuLayer)
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        return allvhosts.configs['shipitubuntu'].rooturl
-
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-ubuntu/rev%d" % (
-            allvhosts.configs['shipitubuntu'].rooturl,
-            canonical.launchpad.versioninfo.revno)
-
-
-class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.shipit.layers.ShipItKUbuntuLayer)
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        return allvhosts.configs['shipitkubuntu'].rooturl
-
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-kubuntu/rev%d" % (
-            allvhosts.configs['shipitkubuntu'].rooturl,
-            canonical.launchpad.versioninfo.revno)
-
-
-class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.shipit.layers.ShipItEdUbuntuLayer)
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        return allvhosts.configs['shipitedubuntu'].rooturl
-
-    @property
-    def icing_url(self):
-        """The URL to the directory containing resources for this request."""
-        return "%s+icing-edubuntu/rev%d" % (
-            allvhosts.configs['shipitedubuntu'].rooturl,
-            canonical.launchpad.versioninfo.revno)
 
 # ---- feeds
 
@@ -1242,10 +1177,42 @@ class WebServicePublication(WebServicePublicationMixin,
         form = get_oauth_authorization(request)
 
         consumer_key = form.get('oauth_consumer_key')
-        consumer = getUtility(IOAuthConsumerSet).getByKey(consumer_key)
-        if consumer is None:
-            raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        consumers = getUtility(IOAuthConsumerSet)
+        consumer = consumers.getByKey(consumer_key)
         token_key = form.get('oauth_token')
+        anonymous_request = (token_key == '')
+        if consumer is None:
+            if consumer_key is None:
+                # Most likely the user is trying to make a totally
+                # unauthenticated request.
+                raise Unauthorized(
+                    'Request is missing an OAuth consumer key.')
+            if anonymous_request:
+                # This is the first time anyone has tried to make an
+                # anonymous request using this consumer
+                # name. Dynamically create the consumer.
+                #
+                # In the normal website this wouldn't be possible
+                # because GET requests have their transactions rolled
+                # back. But webservice requests always have their
+                # transactions committed so that we can keep track of
+                # the OAuth nonces and prevent replay attacks.
+                consumer = consumers.new(consumer_key, '')
+            else:
+                # An unknown consumer can never make a non-anonymous
+                # request, because access tokens are registered with a
+                # specific, known consumer.
+                raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        if anonymous_request:
+            # Skip the OAuth verification step and let the user access the
+            # web service as an unauthenticated user.
+            #
+            # XXX leonardr 2009-12-15 bug=496964: Ideally we'd be
+            # auto-creating a token for the anonymous user the first
+            # time, passing it through the OAuth verification step,
+            # and using it on all subsequent anonymous requests.
+            auth_utility = getUtility(IPlacelessAuthUtility)
+            return auth_utility.unauthenticatedPrincipal()
         token = consumer.getAccessToken(token_key)
         if token is None:
             raise Unauthorized('Unknown access token (%s).' % token_key)
@@ -1269,18 +1236,6 @@ class WebServicePublication(WebServicePublicationMixin,
             token.person.account.id, access_level=token.permission,
             scope=token.context)
 
-        # Make sure the principal is a member of the beta test team.
-        # XXX leonardr 2008-05-22 spec=api-bugs-remote:
-        # Once we launch the web service this code will be removed.
-        people = getUtility(IPersonSet)
-        webservice_beta_team_name = config.vhost.api.beta_test_team
-        if webservice_beta_team_name is not None:
-            webservice_beta_team = people.getByName(
-                webservice_beta_team_name)
-            person = IPerson(principal)
-            if not person.inTeam(webservice_beta_team):
-                raise Unauthorized(
-                    person.name + " is not a member of the beta test team.")
         return principal
 
 
@@ -1382,6 +1337,7 @@ class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
     # For now, the same as public requests.
 
+
 # ---- Protocol errors
 
 class ProtocolErrorRequest(LaunchpadBrowserRequest):
@@ -1479,15 +1435,6 @@ def register_launchpad_request_publication_factories():
                TranslationsPublication),
         VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
         VWSHRP('answers', AnswersBrowserRequest, AnswersPublication),
-        VHRP('id', IdBrowserRequest, IdPublication),
-        # XXX sinzui 2008-09-04 bug=264783: Remove openid.
-        VHRP('openid', OpenIDBrowserRequest, OpenIDPublication),
-        VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
-             ShipItPublication),
-        VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
-             ShipItPublication),
-        VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
-             ShipItPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),

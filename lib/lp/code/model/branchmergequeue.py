@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch merge queues contain queued branch merge proposals."""
 
@@ -18,12 +19,10 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
-from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal)
+from lp.code.enums import BranchMergeProposalStatus
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
 from lp.registry.interfaces.person import validate_public_person
 
 

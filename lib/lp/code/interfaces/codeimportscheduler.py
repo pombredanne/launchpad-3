@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """Code import scheduler interfaces."""
@@ -26,7 +28,7 @@ class ICodeImportScheduler(Interface):
     when they need more work to do.
     """
 
-    def getJobForMachine(hostname):
+    def getJobForMachine(hostname, worker_limit):
         """Get a job to run on the slave 'hostname'.
 
         This method selects the most appropriate job for the machine,

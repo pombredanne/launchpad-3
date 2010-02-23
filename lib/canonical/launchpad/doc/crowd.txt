@@ -5,14 +5,14 @@ A person is adaptable to ICrowd.
   >>> from canonical.launchpad.interfaces import IPersonSet, ICrowd
   >>> from zope.component import getUtility
   >>> personset = getUtility(IPersonSet)
-  >>> sabdfl = personset.getByName('sabdfl')
-  >>> print sabdfl.name
-  sabdfl
-  >>> sabdfl_crowd = ICrowd(sabdfl)
+  >>> mark = personset.getByName('mark')
+  >>> print mark.name
+  mark
+  >>> mark_crowd = ICrowd(mark)
 
 The person is in that crowd.
 
-  >>> sabdfl in sabdfl_crowd
+  >>> mark in mark_crowd
   True
 
 
@@ -29,9 +29,9 @@ The team is in that crowd.
   >>> vcs_imports in vcs_imports_crowd
   True
 
-sabdfl is not in that crowd, because he is not in the vcs-imports team.
+mark is not in that crowd, because he is not in the vcs-imports team.
 
-  >>> sabdfl in vcs_imports_crowd
+  >>> mark in vcs_imports_crowd
   False
 
 lifeless is in the vcs-imports team.  So, lifeless is in that crowd.
@@ -42,28 +42,28 @@ lifeless is in the vcs-imports team.  So, lifeless is in that crowd.
   >>> lifeless in vcs_imports_crowd
   True
 
-Adding sabdfl_crowd to the vcs_imports_crowd gives us a crowd that contains
-sabdfl and the vcs-imports team and lifeless, but not stevea.
+Adding mark_crowd to the vcs_imports_crowd gives us a crowd that contains
+mark and the vcs-imports team and lifeless, but not stevea.
 This tests ICrowd(team).__add__.
 
-  >>> combined_crowd = vcs_imports_crowd + sabdfl_crowd
+  >>> combined_crowd = vcs_imports_crowd + mark_crowd
   >>> stevea = personset.getByName('stevea')
   >>> stevea not in combined_crowd
   True
   >>> lifeless in combined_crowd
   True
-  >>> sabdfl in combined_crowd
+  >>> mark in combined_crowd
   True
   >>> vcs_imports in combined_crowd
   True
 
-Now, to try it the other way around: adding vcs_imports_crowd to sabdfl_crowd.
+Now, to try it the other way around: adding vcs_imports_crowd to mark_crowd.
 This tests ICrowd(person).__add__.
 
-  >>> combined_crowd = sabdfl_crowd + vcs_imports_crowd
+  >>> combined_crowd = mark_crowd + vcs_imports_crowd
   >>> lifeless in combined_crowd
   True
-  >>> sabdfl in combined_crowd
+  >>> mark in combined_crowd
   True
   >>> vcs_imports in combined_crowd
   True
@@ -71,7 +71,7 @@ This tests ICrowd(person).__add__.
 There is an AnyPersonCrowd that contains any person or team.
 
   >>> from canonical.launchpad.components.crowd import AnyPersonCrowd
-  >>> sabdfl in AnyPersonCrowd()
+  >>> mark in AnyPersonCrowd()
   True
   >>> vcs_imports in AnyPersonCrowd()
   True
@@ -80,16 +80,16 @@ There is an AnyPersonCrowd that contains any person or team.
 
 Adding an AnyPersonCrowd to some other crowd works as expected.
 
-  >>> combined_crowd = sabdfl_crowd + AnyPersonCrowd()
-  >>> sabdfl in combined_crowd
+  >>> combined_crowd = mark_crowd + AnyPersonCrowd()
+  >>> mark in combined_crowd
   True
   >>> stevea in combined_crowd
   True
 
 Same goes for the other way around.
 
-  >>> combined_crowd = AnyPersonCrowd() + sabdfl_crowd
-  >>> sabdfl in combined_crowd
+  >>> combined_crowd = AnyPersonCrowd() + mark_crowd
+  >>> mark in combined_crowd
   True
   >>> stevea in combined_crowd
   True
@@ -98,7 +98,7 @@ Same goes for the other way around.
 The EmptyCrowd doens't contain anything.
 
   >>> from canonical.launchpad.components.crowd import EmptyCrowd
-  >>> sabdfl in EmptyCrowd()
+  >>> mark in EmptyCrowd()
   False
   >>> vcs_imports_crowd in EmptyCrowd()
   False
@@ -108,7 +108,7 @@ Adding a crowd to EmptyCrowd, and vice versa, gives you essentially that crowd.
   >>> combined_crowd = EmptyCrowd() + vcs_imports_crowd
   >>> vcs_imports in combined_crowd
   True
-  >>> sabdfl in combined_crowd
+  >>> mark in combined_crowd
   False
   >>> lifeless in combined_crowd
   True
@@ -116,7 +116,7 @@ Adding a crowd to EmptyCrowd, and vice versa, gives you essentially that crowd.
   >>> combined_crowd = vcs_imports_crowd + EmptyCrowd()
   >>> vcs_imports in combined_crowd
   True
-  >>> sabdfl in combined_crowd
+  >>> mark in combined_crowd
   False
   >>> lifeless in combined_crowd
   True

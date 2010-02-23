@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for things which have Questions."""
@@ -10,8 +12,6 @@ __all__ = [
     'IQuestionTarget',
     'ISearchQuestionsForm',
     ]
-
-import sets
 
 from zope.interface import Interface
 from zope.schema import Choice, List, Set, TextLine
@@ -154,7 +154,7 @@ class ISearchQuestionsForm(Interface):
 
     status = Set(title=_('Status'), required=False,
                  value_type=Choice(vocabulary=QuestionStatus),
-                 default=sets.Set(QUESTION_STATUS_DEFAULT_SEARCH))
+                 default=set(QUESTION_STATUS_DEFAULT_SEARCH))
 
 
 class IAnswersFrontPageSearchForm(ISearchQuestionsForm):

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of branch scanner utility."""
 
@@ -12,8 +13,8 @@ from storm.expr import Or
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.code.enums import BranchType
 from lp.code.model.branch import Branch
-from lp.code.interfaces.branch import BranchType
 from lp.code.interfaces.branchscanner import IBranchScanner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)

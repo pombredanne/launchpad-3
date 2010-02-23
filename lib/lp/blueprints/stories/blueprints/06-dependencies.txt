@@ -28,6 +28,11 @@ confirm we can see the page for adding a dependency.
   >>> owner_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas/+linkdependency'
 
+One can decide not to add a dependency after all.
+
+  >>> owner_browser.getLink('Cancel').url
+  'http://blueprints.launchpad.dev/firefox/+spec/canvas'
+
 This +linkdependency page and the link to it are only accessible by
 users with launchpad.Edit permission for the blueprint.
 
@@ -69,6 +74,11 @@ authenticated.
   >>> owner_browser.getLink('Remove dependency').click()
   >>> owner_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas/+removedependency'
+
+One can decide not to remove a dependency after all.
+
+  >>> owner_browser.getLink('Cancel').url
+  'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
 Now, we make sure we can load the page. It should show two potential
 dependencies we could remove. The extension manager one, and "e4x".

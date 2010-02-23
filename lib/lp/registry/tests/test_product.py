@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -8,17 +9,22 @@ import pytz
 import transaction
 from cStringIO import StringIO
 
-from canonical.testing import LaunchpadFunctionalLayer
+from zope.component import getUtility
+
+from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import (
     find_main_content, get_feedback_messages, setupBrowser)
+from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.ftests import syncUpdate
 
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import License
 from lp.registry.model.product import Product
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
+from lp.testing import TestCaseWithFactory
 
 class TestProductFiles(unittest.TestCase):
     """Tests for downloadable product files."""
@@ -30,7 +36,7 @@ class TestProductFiles(unittest.TestCase):
         # XXX EdwinGrubbs 2008-03-06 bug=69988
         # Doctests are difficult to use with non-ascii characters, so
         # I have used a unittest.
-        firefox_owner = setupBrowser(auth='Basic mark@hbd.com:test')
+        firefox_owner = setupBrowser(auth='Basic mark@example.com:test')
         filename = u'foo\xa5.txt'.encode('utf-8')
         firefox_owner.open(
             'http://launchpad.dev/firefox/1.0/1.0.0/+adddownloadfile')
@@ -142,6 +148,32 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         # before the cache is populated.
         self.assertEqual(self.product.commercial_subscription.sales_system_id,
                          'new')
+
+
+class BugSupervisorTestCase(TestCaseWithFactory):
+    """A TestCase for bug supervisor management."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugSupervisorTestCase, self).setUp()
+        self.person = self.factory.makePerson()
+        self.product = self.factory.makeProduct(owner=self.person)
+        login(self.person.preferredemail.email)
+
+    def testPersonCanSetSelfAsSupervisor(self):
+        # A person can set themselves as bug supervisor for a product.
+        # This is a regression test for bug 438985.
+        user = getUtility(IPersonSet).getByName(self.person.name)
+        self.product.setBugSupervisor(
+            bug_supervisor=self.person, user=user)
+
+        self.assertEqual(
+            self.product.bug_supervisor, self.person,
+            "%s should be bug supervisor for %s. "
+            "Instead, bug supervisor for firefox is %s" % (
+            self.person.name, self.product.name,
+            self.product.bug_supervisor.name))
 
 
 def test_suite():

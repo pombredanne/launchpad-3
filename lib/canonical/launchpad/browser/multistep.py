@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Multiple step views."""
 
@@ -54,6 +55,14 @@ class MultiStepView(LaunchpadView):
         :return: A subclass of `StepView`
         :rtype: `StepView`
         """
+        raise NotImplementedError
+
+    # A page title should not be needed here, but our auto generated
+    # breadcrumbs will expect it to exist, so it must be defined in
+    # subclasses.
+    @property
+    def page_title(self):
+        """Must override in subclasses for breadcrumbs to work."""
         raise NotImplementedError
 
     def initialize(self):

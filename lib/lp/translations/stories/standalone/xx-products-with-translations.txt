@@ -1,0 +1,15 @@
+= Products with translations =
+
+The +products-with-translations page lists all translatable products in
+Launchpad.
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'translations/+products-with-translations')
+
+    >>> print find_main_content(browser.contents).renderContents()
+    <...>
+    ... of 2 results
+    ...alsa-utils...
+    ...Evolution...
+

@@ -1,8 +1,20 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+"""Miscellaneous testing helpers."""
 
-# Re-import code from lazr.restful until it can be refactored into a
-# utility module.
-__all__ = []
-import lazr.restful.testing.layers
-__all__.extend(lazr.restful.testing.layers.__all__)
-from lazr.restful.testing.layers import *
+__metaclass__ = type
+__all__ = [
+    'MockRootFolder',
+]
+
+class MockRootFolder:
+    """Implement the minimum functionality required by Z3 ZODB dependencies
+
+    Installed as part of FunctionalLayer.testSetUp() to allow the http()
+    method (zope.app.testing.functional.HTTPCaller) to work.
+    """
+    @property
+    def _p_jar(self):
+        return self
+    def sync(self):
+        pass

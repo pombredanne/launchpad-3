@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for karma allocated for code reviews."""
 
@@ -10,7 +11,7 @@ from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.ftests.event import TestEventListener
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
 
@@ -28,7 +29,7 @@ class TestCodeReviewKarma(TestCaseWithFactory):
     def setUp(self):
         # Use an admin to get launchpad.Edit on all the branches to easily
         # approve and reject the proposals.
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        super(TestCodeReviewKarma, self).setUp('admin@canonical.com')
         # The way the zope infrastructure works is that we can register
         # subscribers easily, but there is no way to unregister them (bug
         # 2338).  TestEventListener does this with by setting a property to
@@ -45,6 +46,7 @@ class TestCodeReviewKarma(TestCaseWithFactory):
 
     def tearDown(self):
         self.karma_listener.unregister()
+        super(TestCodeReviewKarma, self).tearDown()
 
     def _on_karma_assigned(self, object, event):
         # Store the karma event for checking in the test method.

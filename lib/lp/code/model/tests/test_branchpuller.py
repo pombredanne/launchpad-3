@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the branch puller model code."""
 
@@ -14,10 +15,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from lp.code.interfaces.branch import BranchType, BranchTypeError
-from lp.code.interfaces.branchpuller import IBranchPuller
-from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import BranchTypeError
+from lp.code.interfaces.branchpuller import IBranchPuller
+from lp.testing import TestCaseWithFactory, login_person
 
 
 class TestMirroringForHostedBranches(TestCaseWithFactory):
@@ -56,6 +58,26 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.requestMirror()
         self.assertEqual(UTC_NOW, branch.next_mirror_time)
 
+    def test_requestMirror_doesnt_demote_branch(self):
+        # requestMirror() sets the mirror request time to 'now' unless
+        # next_mirror_time is already in the past, i.e. calling
+        # requestMirror() doesn't move the branch backwards in the queue of
+        # branches that need mirroring.
+        branch = self.makeAnyBranch()
+        past_time = datetime.now(pytz.UTC) - timedelta(days=1)
+        removeSecurityProxy(branch).next_mirror_time = past_time
+        branch.requestMirror()
+        self.assertEqual(past_time, branch.next_mirror_time)
+
+    def test_requestMirror_can_promote_branch(self):
+        # requestMirror() sets the mirror request time to 'now' if
+        # next_mirror_time is set and in the future.
+        branch = self.makeAnyBranch()
+        future_time = datetime.now(pytz.UTC) - timedelta(days=1)
+        removeSecurityProxy(branch).next_mirror_time = future_time
+        branch.requestMirror()
+        self.assertEqual(UTC_NOW, branch.next_mirror_time)
+
     def test_requestMirrorDuringPull(self):
         """Branches can have mirrors requested while they are being mirrored.
         If so, they should not be removed from the pull queue when the mirror
@@ -71,7 +93,6 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         self.assertEqual(
             [branch],
             list(self.branch_puller.getPullQueue(branch.branch_type)))
-        next_mirror_time = branch.next_mirror_time
         branch.mirrorComplete('rev1')
         self.assertEqual(
             [branch],
@@ -254,6 +275,23 @@ class AcquireBranchToPullTests:
         branch.requestMirror()
         self.assertBranchIsAquired(branch)
 
+    def test_remote_branch_not_acquired(self):
+        # On a few occasions a branch type that is mirrored has been
+        # converted, with non-NULL next_mirror_time, to a remote branch, which
+        # is not mirrored.  These branches should not be returned.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch.requestMirror()
+        removeSecurityProxy(branch).branch_type = BranchType.REMOTE
+        self.assertNoBranchIsAquired()
+
+
+    def test_private(self):
+        # If there is a private branch that needs mirroring,
+        # acquireBranchToPull returns that.
+        branch = self.factory.makeAnyBranch(private=True)
+        removeSecurityProxy(branch).requestMirror()
+        self.assertBranchIsAquired(branch)
+
     def test_no_inprogress(self):
         # If a branch is being mirrored, it is not returned.
         branch = self.factory.makeAnyBranch()
@@ -291,6 +329,7 @@ class TestAcquireBranchToPullDirectly(TestCaseWithFactory,
     def assertBranchIsAquired(self, branch):
         """See `AcquireBranchToPullTests`."""
         acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
+        login_person(removeSecurityProxy(branch).owner)
         self.assertEqual(branch, acquired_branch)
         self.assertIsNot(None, acquired_branch.last_mirror_attempt)
         self.assertIs(None, acquired_branch.next_mirror_time)

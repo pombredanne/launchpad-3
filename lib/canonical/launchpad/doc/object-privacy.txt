@@ -34,7 +34,7 @@ private.
     >>> IObjectPrivacy(question).is_private
     False
 
-    >>> from canonical.launchpad.database import QuestionSet
+    >>> from lp.answers.model.question import QuestionSet
     >>> QuestionSet().private
     Traceback (most recent call last):
     ...

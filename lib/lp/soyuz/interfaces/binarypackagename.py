@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Binary package name interfaces."""
@@ -82,6 +84,7 @@ class IBinaryAndSourcePackageName(Interface):
     to report a bug in.
     """
 
+    id = Int(title=_('ID'), required=True, readonly=True)
+
     name = TextLine(title=_('Binary or Source package name'),
                     required=True, constraint=name_validator)
-

@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """FTPMaster base classes.
 
 PackageLocation and SoyuzScript.
@@ -17,7 +19,7 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location)
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
 

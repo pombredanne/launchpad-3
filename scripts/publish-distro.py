@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 import _pythonpath
@@ -9,7 +12,7 @@ from optparse import OptionParser
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger)
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from canonical.lp import initZopeless
 from lp.soyuz.scripts import publishdistro
 

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for Code Import page tests."""
 
@@ -17,12 +18,11 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.ftests import sync
-from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportReviewStatus)
+from lp.code.enums import (
+    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus)
+from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from lp.testing import time_counter
 from lp.testing.factory import LaunchpadObjectFactory
 
@@ -119,17 +119,13 @@ def make_finished_import(code_import=None, status=None, date_finished=None,
     return code_import
 
 
-def make_all_result_types(code_import=None, factory=None, machine=None):
+def make_all_result_types(code_import, factory, machine, start, count):
     """Make a code import result of each possible type for the code import."""
-    if factory is None:
-        factory = LaunchpadObjectFactory()
-    if code_import is None:
-        code_import = factory.makeCodeImport()
     start_dates = time_counter(
         datetime(2007,12,1,12, tzinfo=UTC), timedelta(days=1))
     end_dates = time_counter(
         datetime(2007,12,1,13, tzinfo=UTC), timedelta(days=1, hours=1))
-    for result_status in CodeImportResultStatus.items:
+    for result_status in sorted(CodeImportResultStatus.items)[start:start+count]:
         factory.makeCodeImportResult(
             code_import, result_status, start_dates.next(), end_dates.next(),
             machine=machine)

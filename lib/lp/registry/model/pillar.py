@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Launchpad Pillars share a namespace.
@@ -24,10 +26,11 @@ from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.productlicense import ProductLicense
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.distribution import IDistribution, IDistributionSet
+from lp.registry.interfaces.distribution import (
+    IDistribution, IDistributionSet)
 from lp.registry.interfaces.pillar import IPillarName, IPillarNameSet
 from lp.registry.interfaces.product import IProduct, IProductSet, License
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -120,7 +123,7 @@ class PillarNameSet:
         if product is not None:
             return getUtility(IProductSet).get(product)
         elif project is not None:
-            return getUtility(IProjectSet).get(project)
+            return getUtility(IProjectGroupSet).get(project)
         else:
             return getUtility(IDistributionSet).get(distribution)
 

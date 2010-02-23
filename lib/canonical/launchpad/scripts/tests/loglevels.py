@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Parse logging command line arguments and output some log messages.
 
@@ -7,12 +8,6 @@ Used by test_logger.txt.
 
 __metaclass__ = type
 __all__ = []
-
-# Fix path so imports work.
-import sys, os, os.path
-sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir,
-    ))
 
 # Monkey patch time.gmtime to make our tests easier to read.
 import time

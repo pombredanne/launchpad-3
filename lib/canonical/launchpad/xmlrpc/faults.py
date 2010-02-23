@@ -1,4 +1,5 @@
-# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad XMLRPC faults."""
 
@@ -41,6 +42,9 @@ __all__ = [
 
 
 import xmlrpclib
+
+
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 def check_fault(fault, *fault_classes):
@@ -308,12 +312,16 @@ class CannotHaveLinkedBranch(LaunchpadFault):
     error_code = 230
     msg_template = (
         "%(component_name)s is a %(component_type)s, and a "
-        "%(component_type)s doesn't have a default branch.")
+        "%(component_type)s cannot have a default branch.")
 
     def __init__(self, component):
+        if IProjectGroup.providedBy(component):
+            component_type = 'project group'
+        else:
+            component_type = component.__class__.__name__.lower()
         LaunchpadFault.__init__(
             self, component_name=component.displayname,
-            component_type=component.__class__.__name__.lower())
+            component_type=component_type)
 
 
 class InvalidProductIdentifier(LaunchpadFault):

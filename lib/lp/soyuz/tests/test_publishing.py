@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test native publication workflow for Soyuz. """
 
 import datetime
@@ -12,8 +14,8 @@ import unittest
 import pytz
 from zope.component import getUtility
 
-from canonical.archivepublisher.config import Config
-from canonical.archivepublisher.diskpool import DiskPool
+from lp.archivepublisher.config import Config
+from lp.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.soyuz.model.publishing import (
@@ -26,15 +28,17 @@ from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingPriority,
-    PackagePublishingStatus)
+    PackagePublishingPriority, PackagePublishingStatus)
 from canonical.launchpad.scripts import FakeLogger
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -106,7 +110,7 @@ class SoyuzTestPublisher:
         for arch in distroseries.architectures:
             arch.addOrUpdateChroot(fake_chroot)
 
-    def regetBreezyAutotest(self): 
+    def regetBreezyAutotest(self):
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.person = getUtility(IPersonSet).getByName('name16')
@@ -148,7 +152,7 @@ class SoyuzTestPublisher:
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
-                     maintainer=None, date_uploaded=UTC_NOW):
+                     maintainer=None, creator=None, date_uploaded=UTC_NOW):
         """Return a mock source publishing record."""
         if sourcename is None:
             sourcename = self.default_package_name
@@ -163,11 +167,13 @@ class SoyuzTestPublisher:
             archive = distroseries.main_archive
         if maintainer is None:
             maintainer = self.person
+        if creator is None:
+            creator = self.person
 
         spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
             maintainer=maintainer,
-            creator=self.person,
+            creator=creator,
             component=component,
             section=section,
             urgency=urgency,
@@ -200,6 +206,11 @@ class SoyuzTestPublisher:
             filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
 
+        if status == PackagePublishingStatus.PUBLISHED:
+            datepublished = UTC_NOW
+        else:
+            datepublished = None
+
         sspph = SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
@@ -208,10 +219,12 @@ class SoyuzTestPublisher:
             status=status,
             datecreated=date_uploaded,
             dateremoved=dateremoved,
+            datepublished=datepublished,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
             embargo=False,
             archive=archive)
+
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.
@@ -318,7 +331,21 @@ class SoyuzTestPublisher:
             restricted=build.archive.private)
         binarypackagerelease.addFile(alias)
 
+        # Adjust the build record in way it looks complete.
         build.buildstate = BuildStatus.FULLYBUILT
+        build.datebuilt = datetime.datetime(
+            2008, 1, 1, 0, 5, 0, tzinfo=pytz.timezone("UTC"))
+        build.buildduration = datetime.timedelta(minutes=5)
+        buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
+            build.distribution.name,
+            build.distroseries.name,
+            build.distroarchseries.architecturetag,
+            build.sourcepackagerelease.name,
+            build.sourcepackagerelease.version,
+            build.buildstate.name)
+        build.buildlog = self.addMockFile(
+            buildlog_filename, filecontent='Built!',
+            restricted=build.archive.private)
 
         return binarypackagerelease
 
@@ -357,6 +384,41 @@ class SoyuzTestPublisher:
 
         return [BinaryPackagePublishingHistory.get(pub.id)
                 for pub in secure_pub_binaries]
+
+    def _findChangesFile(self, top, name_fragment):
+        """File with given name fragment in directory tree starting at top."""
+        for root, dirs, files in os.walk(top, topdown=False):
+            for name in files:
+                if name.endswith('.changes') and name.find(name_fragment) > -1:
+                    return os.path.join(root, name)
+        return None
+
+    def createSource(
+        self, archive, sourcename, version, distroseries=None,
+        new_version=None):
+        """Create source with meaningful '.changes' file."""
+        top = 'lib/lp/archiveuploader/tests/data/suite'
+        name_fragment = '%s_%s' % (sourcename, version)
+        changesfile_path = self._findChangesFile(top, name_fragment)
+
+        source = None
+
+        if changesfile_path is not None:
+            if new_version is None:
+                new_version = version
+            changesfile_content = ''
+            handle = open(changesfile_path, 'r')
+            try:
+                changesfile_content = handle.read()
+            finally:
+                handle.close()
+
+            source = self.getPubSource(
+                sourcename=sourcename, archive=archive, version=new_version,
+                changes_file_content=changesfile_content,
+                distroseries=distroseries)
+
+        return source
 
 
 class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
@@ -471,16 +533,45 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
 
 class TestNativePublishing(TestNativePublishingBase):
 
-    def testPublish(self):
-        """Test publishOne in normal conditions (new file)."""
+    def test_publish_source(self):
+        # Source publications result in a PUBLISHED publishing record and
+        # the corresponding files are dumped in the disk pool/.
         pub_source = self.getPubSource(filecontent='Hello world')
         pub_source.publish(self.disk_pool, self.logger)
-        self.layer.commit()
+        self.assertEqual(
+            PackagePublishingStatus.PUBLISHED,
+            pub_source.secure_record.status)
+        pool_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
+        self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
-        pub_source.sync()
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
-        foo_name = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
-        self.assertEqual(open(foo_name).read().strip(), 'Hello world')
+    def test_publish_binaries(self):
+        # Binary publications result in a PUBLISHED publishing record and
+        # the corresponding files are dumped in the disk pool/.
+        pub_binary = self.getPubBinaries(filecontent='Hello world')[0]
+        pub_binary.publish(self.disk_pool, self.logger)
+        self.assertEqual(
+            PackagePublishingStatus.PUBLISHED,
+            pub_binary.secure_record.status)
+        pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
+        self.assertEqual(open(pool_path).read().strip(), 'Hello world')
+
+    def test_publish_ddeb_for_ppas(self):
+        # DDEB publications in PPAs result in a PUBLISHED publishing record
+        # but the corresponding files are *not* dumped in the disk pool/.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        pub_binary = self.getPubBinaries(
+            filecontent='Hello world', format=BinaryPackageFormat.DDEB,
+            archive=cprov.archive)[0]
+
+        # Publication happens in the database domain.
+        pub_binary.publish(self.disk_pool, self.logger)
+        self.assertEqual(
+            PackagePublishingStatus.PUBLISHED,
+            pub_binary.secure_record.status)
+
+        # But the DDEB isn't dumped to the repository pool/.
+        pool_path = "%s/main/f/foo/foo-bin_666_all.ddeb" % self.pool_dir
+        self.assertFalse(os.path.exists(pool_path))
 
     def testPublishingOverwriteFileInPool(self):
         """Test if publishOne refuses to overwrite a file in pool.
@@ -619,6 +710,148 @@ class TestNativePublishing(TestNativePublishingBase):
         # Remove locally created dir.
         shutil.rmtree(test_pool_dir)
         shutil.rmtree(test_temp_dir)
+
+
+class OverrideFromAncestryTestCase(TestCaseWithFactory):
+    """Test `IPublishing.overrideFromAncestry`.
+
+    When called from a `SourcePackagePublishingHistory` or a
+    `BinaryPackagePublishingHistory` it sets the object target component
+    according to its ancestry if available or falls back to the component
+    it was originally uploaded to.
+    """
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+
+    def test_overrideFromAncestry_only_works_for_pending_records(self):
+        # overrideFromAncestry only accepts PENDING publishing records.
+        source = self.test_publisher.getPubSource()
+
+        forbidden_status = [
+            item
+            for item in PackagePublishingStatus.items
+            if item is not PackagePublishingStatus.PENDING]
+
+        for status in forbidden_status:
+            source.secure_record.status = status
+            self.layer.commit()
+            self.assertRaisesWithContent(
+                AssertionError,
+                'Cannot override published records.',
+                source.overrideFromAncestry)
+
+    def makeSource(self):
+        """Return a 'source' publication.
+
+        It's pending publication with binaries in a brand new PPA
+        and in 'main' component.
+        """
+        test_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose = ArchivePurpose.PPA)
+        source = self.test_publisher.getPubSource(archive=test_archive)
+        self.test_publisher.getPubBinaries(pub_source=source)
+        return source
+
+    def copyAndCheck(self, pub_record, series, component_name):
+        """Copy and check if overrideFromAncestry is working as expected.
+
+        The copied publishing record is targeted to the same component
+        as its source, but override_from_ancestry changes it to follow
+        the ancestry or fallback to the SPR/BPR original component.
+        """
+        copied = pub_record.copyTo(
+            series, pub_record.pocket, series.main_archive)
+
+        # Cope with heterogeneous results from copyTo().
+        try:
+            copies = tuple(copied)
+        except TypeError:
+            copies = (copied,)
+
+        for copy in copies:
+            self.assertEquals(copy.component, pub_record.component)
+            copy.overrideFromAncestry()
+            self.layer.commit()
+            self.assertEquals(copy.component.name, 'universe')
+
+    def test_overrideFromAncestry_fallback_to_source_component(self):
+        # overrideFromancestry on the lack of ancestry, falls back to the
+        # component the source was originally uploaded to.
+        source = self.makeSource()
+
+        # Adjust the source package release original component.
+        universe = getUtility(IComponentSet)['universe']
+        source.sourcepackagerelease.component = universe
+
+        self.copyAndCheck(source, source.distroseries, 'universe')
+
+    def test_overrideFromAncestry_fallback_to_binary_component(self):
+        # overrideFromAncestry on the lack of ancestry, falls back to the
+        # component the binary was originally uploaded to.
+        binary = self.makeSource().getPublishedBinaries()[0]
+
+        # Adjust the binary package release original component.
+        universe = getUtility(IComponentSet)['universe']
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(binary.binarypackagerelease).component = universe
+
+        self.copyAndCheck(
+            binary, binary.distroarchseries.distroseries, 'universe')
+
+    def test_overrideFromAncestry_follow_ancestry_source_component(self):
+        # overrideFromAncestry finds and uses the component of the most
+        # recent PUBLISHED publication of the same name in the same
+        #location.
+        source = self.makeSource()
+
+        # Create a published ancestry source in the copy destination
+        # targeted to 'universe' and also 2 other noise source
+        # publications, a pending source target to 'restricted' and
+        # a published, but older, one target to 'multiverse'.
+        self.test_publisher.getPubSource(component='restricted')
+
+        self.test_publisher.getPubSource(
+            component='multiverse', status=PackagePublishingStatus.PUBLISHED)
+
+        self.test_publisher.getPubSource(
+            component='universe', status=PackagePublishingStatus.PUBLISHED)
+
+        # Overridden copy it targeted to 'universe'.
+        self.copyAndCheck(source, source.distroseries, 'universe')
+
+    def test_overrideFromAncestry_follow_ancestry_binary_component(self):
+        # overrideFromAncestry finds and uses the component of the most
+        # recent published publication of the same name in the same
+        # location.
+        binary = self.makeSource().getPublishedBinaries()[0]
+
+        # Create a published ancestry binary in the copy destination
+        # targeted to 'universe'.
+        restricted_source = self.test_publisher.getPubSource(
+            component='restricted')
+        self.test_publisher.getPubBinaries(pub_source=restricted_source)
+
+        multiverse_source = self.test_publisher.getPubSource(
+            component='multiverse')
+        self.test_publisher.getPubBinaries(
+            pub_source=multiverse_source,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        ancestry_source = self.test_publisher.getPubSource(
+            component='universe')
+        self.test_publisher.getPubBinaries(
+            pub_source=ancestry_source,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Overridden copy it targeted to 'universe'.
+        self.copyAndCheck(
+            binary, binary.distroarchseries.distroseries, 'universe')
+
 
 
 def test_suite():

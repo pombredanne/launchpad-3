@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -5,7 +9,7 @@
     i18n_domain="launchpad">
 
     <class class="canonical.launchpad.database.EmailAddress">
-        <allow interface="canonical.launchpad.interfaces.IHasOwner" />
+        <allow interface="lp.registry.interfaces.role.IHasOwner" />
         <allow attributes="
             id person personID account accountID status rdf_sha1" />
         <require

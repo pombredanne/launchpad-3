@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Component interfaces."""
@@ -8,13 +10,14 @@ __metaclass__ = type
 __all__ = [
     'IComponent',
     'IComponentSelection',
-    'IComponentSet'
+    'IComponentSet',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice
 
 from canonical.launchpad import _
+
 
 class IComponent(Interface):
     """Represents the Component table.
@@ -52,4 +55,3 @@ class IComponentSet(Interface):
 
     def new(name):
         """Create a new component."""
-

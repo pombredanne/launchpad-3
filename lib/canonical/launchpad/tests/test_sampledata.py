@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Confirm nobody has broken sampledata.
 
@@ -14,7 +15,7 @@ import subprocess
 import unittest
 
 from canonical.testing.layers import DatabaseLayer
-from canonical.launchpad.testing import TestCase
+from lp.testing import TestCase
 
 class SampleDataTestCase(TestCase):
     layer = DatabaseLayer

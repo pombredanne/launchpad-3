@@ -1,0 +1,30 @@
+= Creating new distributions =
+
+This can be done only by launchpad admins.
+
+  >>> user_browser.open("http://launchpad.dev/distros/+add")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ...
+
+Create a Test distribution:
+
+  >>> admin_browser.open("http://launchpad.dev/distros/+add")
+  >>> admin_browser.url
+  'http://launchpad.dev/distros/+add'
+
+  >>> admin_browser.getControl(name="field.name").value = 'test'
+  >>> admin_browser.getControl("Display Name").value = 'Test Distro'
+  >>> admin_browser.getControl("Title").value = 'The Test Distribution'
+  >>> admin_browser.getControl("Summary").value = 'Test Distro Summary'
+  >>> admin_browser.getControl("Description").value = 'Test Distro Description'
+  >>> admin_browser.getControl("Domain name").value = 'foo.com'
+  >>> admin_browser.getControl("Members").value = 'mark'
+
+  >>> admin_browser.getControl("Save").click()
+  >>> admin_browser.url
+  'http://launchpad.dev/test'
+
+  >>> admin_browser.contents
+  '...The Test Distribution...'
+

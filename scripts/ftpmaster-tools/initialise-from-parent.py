@@ -1,4 +1,8 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Initialise a new distroseries from its parent
 
 It performs two additional tasks before call initialiseFromParent:
@@ -22,7 +26,7 @@ from canonical.config import config
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.lp import initZopeless
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.interfaces import IDistributionSet, NotFoundError
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
@@ -77,7 +81,7 @@ def main():
     log.debug('Check for no pending builds in parentseries')
     check_builds(distroseries)
 
-    log.debug('Copying distroarchserieses from parent '
+    log.debug('Copying distroarchseries from parent '
               'and setting nominatedarchindep.')
     copy_architectures(distroseries)
 
@@ -103,8 +107,8 @@ def check_builds(distroseries):
     via initialiseFromParent method.
     """
     # Avoid circular import.
+    from lp.registry.interfaces.pocket import PackagePublishingPocket
     from lp.soyuz.interfaces.build import BuildStatus
-    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 
     parentseries = distroseries.parent_series
 
@@ -123,7 +127,7 @@ def check_queue(distroseries):
     via initialiseFromParent method.
     """
     # Avoid circular import.
-    from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     parentseries = distroseries.parent_series
 

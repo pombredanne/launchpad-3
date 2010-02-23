@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Cached properties for situations where a property is computed once and
 then returned each time it is asked for.
@@ -6,6 +7,7 @@ then returned each time it is asked for.
 
 __metaclass__ = type
 
+# XXX: JonathanLange 2010-01-11 bug=505731: Move this to lp.services.
 
 def cachedproperty(attrname_or_fn):
     """A decorator for methods that makes them properties with their return

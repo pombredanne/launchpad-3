@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 """Script to probe distribution mirrors and check how up-to-date they are."""
@@ -15,7 +18,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet, MirrorContent)

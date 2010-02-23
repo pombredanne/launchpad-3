@@ -15,21 +15,20 @@
 </head>
 <body>
     <div id="container">
-        <p class="page-number">9 of 11</p>
+        <p class="page-number">8 of 11</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="feature-tracking" tabindex="1" accesskey="1">Next</a></li>
+            <li class="button-next"><a id="btnNext" href="feature-tracking" tabindex="1" accesskey="1" title="Read about spec tracking in Launchpad">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
-            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and tracking</a></li>
-            <li><a href="code-review" accesskey="5">Code review</a></li>
-            <li><a href="translation" accesskey="6">Web-based translation</a></li>
-            <li><a href="community" accesskey="7">Community building</a></li>
-            <li><a href="ppa" accesskey="8">Software distribution</a></li>
-            <li><a href="community-support" accesskey="9">Community support</a></li>
-            <li class="current"><a href="api" accesskey="a">Beta: web services API</a></li>
-            <li><a href="feature-tracking" accesskey="b">Lightweight specifications</a></li>
-            <li><a href="release-management" accesskey="c">Release management</a></li>
-            
+            <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
+            <li><a href="translation" accesskey="5">Web-based translation</a></li>
+            <li><a href="community" accesskey="6">Mailing lists and teams</a></li>
+            <li><a href="ppa" accesskey="7">Software distribution</a></li>
+            <li><a href="community-support" accesskey="8">Community support</a></li>
+            <li class="current"><a href="api" accesskey="9">Beta: web services API</a></li>
+            <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
+            <li><a href="release-management" accesskey="b">Release management</a></li>
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -47,8 +46,11 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
         </div>
         <div id="page-intro-bottom"></div>
         <ul id="secondary-navigation">
+            <li class="button-prev">
+                <a href="community-support" title="Back to the user support tracking page" accesskey="d" tabindex="2">Back</a>
+            </li>
             <li class="button-next">
-                <a href="feature-tracking" accesskey="d" tabindex="2">Next</a>
+                <a href="feature-tracking" accesskey="e" tabindex="3" title="Read about spec tracking in Launchpad">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -65,13 +67,13 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
 
                         </p>
                         <p>
-                          <ul>   
+                          <ul>
                             <li><strong>bugs:</strong> report, access and manage</li>
                             <li><strong>people, teams and projects:</strong> create, search and edit</li>
                             <li><strong>code</strong>: access branch information.</li>
                           </ul>
                         </p>
-                        
+
                         <p>We're adding more every month. See the Launchpad <a href="http://news.launchpad.net/category/api">blog's API category</a> for regular updates.</p>
 
 
@@ -85,7 +87,7 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
                             <img src="images/api/3.png" alt="Using launchpadlib"  />                        </p>
                         <p>
                            If you're a Python developer, you can access and manipulate data in Launchpad as though it were any other Python object.<p>
-                        
+
                         <p><br />
                                 <code>
                                 people = launchpad.people<br />
@@ -97,7 +99,7 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
                         </p>
 
                         <p>You can be up and running in minutes, without having to make any API calls directly. <a href="https://help.launchpad.net/API/launchpadlib">Read more about launchpadlib &gt;</a>.
-                        </p>  
+                        </p>
                     </div>
                     <div class="clear"></div>
                 </div>
@@ -111,7 +113,8 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
                         <h4>
                         Your application's users log into their own Launchpad account.</h4>
                         <p class="screen-holder">
-                            <img src="images/api/2.png" alt="The API's authentication page" />                        </p>
+                            <img src="images/api/2.png" alt="The API's authentication page" />
+                        </p>
                         <p>
                           Before the API will give your software access to Launchpad data, your user needs to log into their Launchpad account. Launchpad handles that for you, using <a href="http://oauth.net/">OAuth</a>, by opening an authentication page in your user's web browser. They can then choose what access to grant your software, from reading only public data through to full read-write access.</p>
                     </div>
@@ -119,13 +122,16 @@ We've even done the hard work for you: use our LGPL Python library &mdash; <a hr
                 <div class="furthur-information-block-bot"></div>
             </div>
         </div>
+        </div>
         <ul id="footer-navigation">
-            <li class="button-next">
-                <a href="feature-tracking" accesskey="e" tabindex="3">Next</a>
+            <li class="button-prev">
+                <a href="community-support" title="Back to the user support tracking page" accesskey="f" tabindex="4">Back</a>
+            </li>
+            <li class="button-next" title="Read about spec tracking in Launchpad">
+                <a href="feature-tracking" accesskey="g" tabindex="5">Next</a>
             </li>
              <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="f" tabindex="4">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="g" tabindex="5">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="h" tabindex="6">FAQ</a>
-
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

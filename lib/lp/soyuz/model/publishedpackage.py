@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -15,6 +17,8 @@ from canonical.database.enumcol import EnumCol
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackage, IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
+
 class PublishedPackage(SQLBase):
     """See IPublishedPackage for details."""
 
@@ -83,7 +87,8 @@ class PublishedPackageSet:
         if text:
             text = text.lower().strip()
             queries.append("binarypackagefti @@ ftq(%s)" % quote(text))
-        return PublishedPackage.select(" AND ".join(queries), orderBy=['-datebuilt',])
+        return PublishedPackage.select(
+            " AND ".join(queries), orderBy=['-datebuilt',])
 
     def findDepCandidate(self, name, distroarchseries):
         """See IPublishedSet."""

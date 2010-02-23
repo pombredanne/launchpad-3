@@ -1,5 +1,6 @@
-Distro Arch Release Binary Package
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=================================
+Distro Arch Series Binary Package
+=================================
 
   >>> from lp.soyuz.model.binarypackagename import (
   ...     BinaryPackageName)
@@ -14,6 +15,11 @@ Distro Arch Release Binary Package
   ...                                                    pmount_name)
   >>> firefox_hoary_i386 = DistroArchSeriesBinaryPackage(hoary_i386,
   ...                                                    firefox_name)
+
+`DistroArchSeriesBinaryPackage`s have a title property:
+
+  >>> print pmount_hoary_i386.title
+  "pmount" binary package in Ubuntu Hoary i386
 
 
 First, we create a new version of pmount, and a version of
@@ -33,10 +39,11 @@ existing builds that are in sampledata!
   >>> binpackageformat = BinaryPackageFormat.DEB
   >>> from canonical.launchpad.interfaces import (
   ...     PackagePublishingPriority, PackagePublishingStatus,
-  ...     PackagePublishingPocket, IDistributionSet)
+  ...     IDistributionSet)
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> priority = PackagePublishingPriority.STANDARD
 
-XXX: noodles 2008-11-05 bug=294585: The dependency on a database id 
+XXX: noodles 2008-11-05 bug=294585: The dependency on a database id
 needs to be removed.
   >>> bpr = Build.get(8).createBinaryPackageRelease(
   ...   binarypackagename=firefox_name.id,
@@ -77,7 +84,7 @@ needs to be removed.
   ...   dateremoved=None,
   ...   archive=hoary_i386.main_archive)
 
-XXX: noodles 2008-11-06 bug=294585: The dependency on a database id 
+XXX: noodles 2008-11-06 bug=294585: The dependency on a database id
 needs to be removed.
   >>> bpr = Build.get(9).createBinaryPackageRelease(
   ...   binarypackagename=pmount_name.id,
@@ -202,6 +209,7 @@ First, update the cache tables for Celso's PPA:
 
   >>> ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn, log=TestLog())
+  DEBUG: ...
   DEBUG: Considering source 'pmount'
   ...
 

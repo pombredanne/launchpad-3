@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0401
 
 """Vocabularies for content objects.
@@ -23,4 +25,4 @@ The binding of name -> class is done in the configure.zcml
 """
 
 from canonical.launchpad.vocabularies.dbobjects import *
-from canonical.launchpad.vocabularies.timezones import *
+

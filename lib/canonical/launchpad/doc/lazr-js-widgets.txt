@@ -38,8 +38,8 @@ link into an AJAX control when JS is available:
     <h1 id="..."><span class="yui-editable_text-text">My bug is &gt;
         important</span>
         <a href="http://bugs.launchpad.dev/.../+edit"
-           class="yui-editable_text-trigger"
-        ><img src="/@@/edit" alt="[edit]" title="Edit" /></a>
+           class="yui-editable_text-trigger sprite edit"
+        ></a>
     </h1>
     <script>
     ...
@@ -53,7 +53,27 @@ constructor:
     ...     id="bug-title", title="Edit this summary")
     >>> print widget()
     <h1 id="bug-title">...
-        ><img src="/@@/edit" alt="[edit]" title="Edit this summary" />...
+        ...class="yui-editable_text-trigger sprite edit"...
+
+The initial_value_override parameter is passed as a JSON-serialized value.
+
+    >>> widget = TextLineEditorWidget(
+    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'),
+    ...     id="bug-title", title="Edit this summary",
+    ...     initial_value_override='This bug has no title')
+    >>> print widget()
+    <h1 id="bug-title">...
+        ...initial_value_override: "This bug has no title"...
+
+When the value isn't supplied it defaults to None, which is serialized as a
+Javascript null.
+
+    >>> widget = TextLineEditorWidget(
+    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'),
+    ...     id="bug-title", title="Edit this summary")
+    >>> print widget()
+    <h1 id="bug-title">...
+        ...initial_value_override: null...
 
 
 InlineEditPickerWidget
@@ -106,4 +126,4 @@ The resource_uri is the canonical_url for the object in
 WebServiceClientRequests.
 
     >>> print widget.resource_uri
-    "\/firefox\/+bug\/1"
+    "/firefox/+bug/1"

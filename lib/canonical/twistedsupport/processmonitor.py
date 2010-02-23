@@ -1,9 +1,14 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for running a child process and communicating things about it."""
 
 __metaclass__ = type
-__all__ = ['ProcessMonitorProtocol', 'ProcessMonitorProtocolWithTimeout']
+__all__ = [
+    'ProcessMonitorProtocol',
+    'ProcessMonitorProtocolWithTimeout',
+    'run_process_with_timeout',
+    ]
 
 
 from twisted.internet import defer, error, reactor
@@ -231,3 +236,20 @@ class ProcessMonitorProtocolWithTimeout(ProcessMonitorProtocol, TimeoutMixin):
         self.setTimeout(None)
         ProcessMonitorProtocol.processEnded(self, reason)
 
+
+def run_process_with_timeout(args, timeout=5, clock=None):
+    """Run the given process with the specificed timeout.
+
+    :param args: tuple with the command-line arguments.
+    :param timeout: command timeout in seconds, defaults to 5.
+    :param clock: Passed to `ProcessMonitorProtocolWithTimeout.__init__`.
+
+    :return: a `Deferred` of the spawed process using
+        `ProcessMonitorProtocolWithTimeout`
+    """
+    assert isinstance(args, tuple), "'args' must be a tuple."
+    d = defer.Deferred()
+    p = ProcessMonitorProtocolWithTimeout(d, timeout, clock)
+    executable = args[0]
+    reactor.spawnProcess(p, executable, args)
+    return d

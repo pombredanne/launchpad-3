@@ -1,33 +1,44 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Stuff to do with logging in and logging out."""
 
 __metaclass__ = type
 
 import cgi
+import hashlib
+import random
 import urllib
+
 from datetime import datetime, timedelta
+
+from BeautifulSoup import UnicodeDammit
 
 from zope.component import getUtility
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from z3c.ptcompat import ViewPageTemplateFile
+
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
-from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.interfaces import (
+    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility,
+    IPlacelessLoginSource, LoggedOutEvent)
+from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -38,9 +49,25 @@ class UnauthorizedView(SystemErrorView):
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
 
+    read_only_page = ViewPageTemplateFile(
+        '../templates/launchpad-readonlyfailure.pt')
+
     notification_message = _('To continue, you must log in to Launchpad.')
 
     def __call__(self):
+        # In read only mode, Unauthorized exceptions get raised by the
+        # security policy when write permissions are requested. We need
+        # to render the read-only failure screen so the user knows their
+        # request failed for operational reasons rather than a genuine
+        # permission problem.
+        if is_read_only():
+            # Our context is an Unauthorized exception, which acts like
+            # a tuple containing (object, attribute_requested, permission).
+            lp_permission = getUtility(ILaunchpadPermission, self.context[2])
+            if lp_permission.access_level != "read":
+                self.request.response.setStatus(503) # Service Unavailable
+                return self.read_only_page()
+
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             if 'loggingout' in self.request.form:
                 target = '%s?loggingout=1' % self.request.URL[-2]
@@ -129,8 +156,44 @@ class RestrictedLoginInfo:
         return getUtility(IPersonSet).getByName(
             config.launchpad.restrict_to_team).title
 
+class CaptchaMixin:
+    """Mixin class to provide simple captcha capabilities."""
+    def validateCaptcha(self):
+        """Validate the submitted captcha value matches what we expect."""
+        expected = self.request.form.get(self.captcha_hash)
+        submitted = self.request.form.get(self.captcha_submission)
+        if expected is not None and submitted is not None:
+            return hashlib.md5(submitted).hexdigest() == expected
+        return False
 
-class LoginOrRegister:
+    @cachedproperty
+    def captcha_answer(self):
+        """Get the answer for the current captcha challenge.
+
+        With each failed attempt a new challenge will be given.  Our answer
+        space is acknowledged to be ridiculously small but is chosen in the
+        interest of ease-of-use.  We're not trying to create an iron-clad
+        challenge but only a minimal obstacle to dumb bots.
+        """
+        return random.randint(10, 20)
+
+    @property
+    def get_captcha_hash(self):
+        """Get the captcha hash.
+
+        The hash is the value we put in the form for later comparison.
+        """
+        return hashlib.md5(str(self.captcha_answer)).hexdigest()
+
+    @property
+    def captcha_problem(self):
+        """Create the captcha challenge."""
+        op1 = random.randint(1, self.captcha_answer - 1)
+        op2 = self.captcha_answer - op1
+        return '%d + %d =' % (op1, op2)
+
+
+class LoginOrRegister(CaptchaMixin):
     """Merges the former CookieLoginPage and JoinLaunchpadView classes
     to allow the two forms to appear on a single page.
 
@@ -146,6 +209,8 @@ class LoginOrRegister:
     submit_registration = form_prefix + 'submit_registration'
     input_email = form_prefix + 'email'
     input_password = form_prefix + 'password'
+    captcha_submission = form_prefix + 'captcha_submission'
+    captcha_hash = form_prefix + 'captcha_hash'
 
     # Instance variables that represent the state of the form.
     login_error = None
@@ -271,10 +336,18 @@ class LoginOrRegister:
             redirection_url = redirection_url_list[0]
 
         self.email = request.form.get(self.input_email).strip()
+
         if not valid_email(self.email):
             self.registration_error = (
                 "The email address you provided isn't valid. "
                 "Please verify it and try again.")
+            return
+
+        # Validate the user is human, more or less.
+        if not self.validateCaptcha():
+            self.registration_error = (
+                "The answer to the simple math question was incorrect "
+                "or missing.  Please try again.")
             return
 
         registered_email = getUtility(IEmailAddressSet).getByEmail(self.email)
@@ -357,13 +430,13 @@ class LoginOrRegister:
     def preserve_query(self):
         """Return zero or more hidden inputs that preserve the URL's query."""
         L = []
+        html = u'<input type="hidden" name="%s" value="%s" />'
         for name, value in self.iter_form_items():
-            L.append('<input type="hidden" name="%s" value="%s" />' % (
-                name, cgi.escape(value, quote=True)
-                ))
-
+            # Thanks to apport (https://launchpad.net/bugs/61171), we need to
+            # do this here.
+            value = UnicodeDammit(value).markup
+            L.append(html % (name, cgi.escape(value, quote=True)))
         return '\n'.join(L)
-
 
 def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
@@ -473,33 +546,51 @@ class CookieLogoutPage:
         return ''
 
 
-class ForgottenPasswordPage:
+class ForgottenPasswordPage(CaptchaMixin):
 
     errortext = None
     submitted = False
+    captcha_submission = 'captcha_submission'
+    captcha_hash = 'captcha_hash'
+    page_title = 'Need a new Launchpad password?'
 
     def process_form(self):
         request = self.request
         if request.method != "POST":
             return
 
+        # Validate the user is human, more or less.
+        if not self.validateCaptcha():
+            self.errortext = (
+                "The answer to the simple math question was incorrect "
+                "or missing.  Please try again.")
+            return
+
         email = request.form.get("email").strip()
-        person = getUtility(IPersonSet).getByEmail(email)
-        if person is None:
+        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+        if email_address is None:
             self.errortext = ("Your account details have not been found. "
                               "Please check your subscription email "
                               "address and try again.")
             return
 
-        if person.isTeam():
+        person = email_address.person
+        if person is not None and person.isTeam():
             self.errortext = ("The email address <strong>%s</strong> "
                               "belongs to a team, and teams cannot log in to "
                               "Launchpad." % email)
             return
 
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-            person, email, email, LoginTokenType.PASSWORDRECOVERY)
+        if person is None:
+            account = email_address.account
+            redirection_url = urlappend(
+                self.request.getApplicationURL(), '+login')
+            token = getUtility(IAuthTokenSet).new(
+                account, email, email, LoginTokenType.PASSWORDRECOVERY,
+                redirection_url=redirection_url)
+        else:
+            token = getUtility(ILoginTokenSet).new(
+                person, email, email, LoginTokenType.PASSWORDRECOVERY)
         token.sendPasswordResetEmail()
         self.submitted = True
         return

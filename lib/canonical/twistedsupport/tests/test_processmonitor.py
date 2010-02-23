@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 """Tests for ProcessMonitorProtocol and ProcessMonitorProtocolWithTimeout."""
@@ -8,7 +10,7 @@ __metaclass__ = type
 
 import unittest
 
-from twisted.internet import defer, error, task
+from twisted.internet import defer, error, reactor, task
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -16,7 +18,7 @@ from canonical.testing import TwistedLayer
 from canonical.twistedsupport import suppress_stderr
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocol, ProcessMonitorProtocolWithTimeout,
-    ProcessProtocolWithTwoStageKill)
+    ProcessProtocolWithTwoStageKill, run_process_with_timeout)
 
 
 def makeFailure(exception_factory, *args, **kwargs):
@@ -309,6 +311,56 @@ class TestProcessMonitorProtocolWithTimeout(
         self.clock.advance(2)
         deferred.callback(None)
         return self.termination_deferred
+
+
+class TestRunProcessWithTimeout(TrialTestCase):
+    """Tests for `run_process_with_timeout`."""
+
+    layer = TwistedLayer
+
+    def setUp(self):
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
+
+    def test_run_process_with_timeout_invalid_args(self):
+        # `run_process_with_timeout` expects the process 'args' to be a
+        # tuple.
+        self.assertRaises(
+            AssertionError, run_process_with_timeout, 'true')
+
+    def test_run_proces_with_timeout_success(self):
+        # On success, i.e process succeeded before the specified timeout,
+        # callback is fired with 'None'.
+        d = run_process_with_timeout(('true',))
+        def check_success_result(result):
+            self.assertEquals(result, None, "Success result is not None.")
+        d.addCallback(check_success_result)
+        return d
+
+    def test_run_process_with_timeout_failure(self):
+        # On failed process, the errback is fired with a `ProcessTerminated`
+        # failure.
+        d = run_process_with_timeout(('false',))
+        return self.assertFailure(d, error.ProcessTerminated)
+
+    def test_run_process_with_timeout_broken(self):
+        # On broken process, the errback is fired with a `ProcessTerminated`
+        # failure.
+        d = run_process_with_timeout(('does-not-exist',))
+        return self.assertFailure(d, error.ProcessTerminated)
+
+    def test_run_process_with_timeout_timeout(self):
+        # On process timeout, the errback is fired with `TimeoutError`
+        # failure.
+        clock = task.Clock()
+        d = run_process_with_timeout(
+            ('sleep', '2'), timeout=1, clock=clock)
+        clock.advance(2)
+        return self.assertFailure(d, error.TimeoutError)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

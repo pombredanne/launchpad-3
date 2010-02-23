@@ -1,11 +1,10 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ZCML directive for help folder registrations."""
 
 __metaclass__ = type
 __all__ = []
-
-import inspect
 
 from zope.component.zcml import handler
 from zope.configuration.fields import GlobalInterface, Path

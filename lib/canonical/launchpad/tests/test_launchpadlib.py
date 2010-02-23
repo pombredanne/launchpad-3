@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -42,9 +43,7 @@ class TestLaunchpadLib(unittest.TestCase):
 
     def test_branch(self):
         """Test branch attributes."""
-        # launchpadlib can only slice and not subscript
-        # so project.branches[0] doesn't work.
-        branch = self.project.branches[:1][0]
+        branch = self.project.getBranches()[0]
         self.verifyAttributes(branch)
 
     def test_milestone(self):

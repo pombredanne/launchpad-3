@@ -1,5 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import os
-import shutil
 import tempfile
 import unittest
 from ConfigParser import SafeConfigParser
@@ -17,6 +16,8 @@ import canonical
 
 from canonical.buildd.slave import BuildDSlave
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+
+from lp.services.osutils import remove_tree
 
 
 test_conffile = os.path.join(
@@ -48,8 +49,7 @@ class BuilddTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Remove the 'filecache' directory used for the tests."""
-        if os.path.isdir(self.slave._cachepath):
-            shutil.rmtree(self.slave._cachepath)
+        remove_tree(self.slave._cachepath)
 
     def makeLog(self, size):
         """Inject data into the default buildlog file."""
@@ -79,8 +79,18 @@ class BuilddSlaveTestSetup(TacTestSetup):
     >>> s.echo('Hello World')
     ['Hello World']
 
-    >>> s.info()
-    ['1.0', 'i386', ['debian']]
+    >>> info = s.info()
+    >>> len(info)
+    3
+    >>> print info[:2]
+    ['1.0', 'i386']
+
+    >>> for buildtype in sorted(info[2]):
+    ...     print buildtype
+    binarypackage
+    debian
+    sourcepackagerecipe
+    translation-templates
 
     >>> s.status()
     ['BuilderStatus.IDLE', '']
@@ -89,8 +99,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
     """
     def setUpRoot(self):
         """Recreate empty root directory to avoid problems."""
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
+        remove_tree(self.root)
         os.mkdir(self.root)
         filecache = os.path.join(self.root, 'filecache')
         os.mkdir(filecache)
@@ -104,8 +113,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
     def tearDown(self):
         """Tear down the system normally and additionaly remove the root."""
         TacTestSetup.tearDown(self)
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
+        remove_tree(self.root)
 
     @property
     def root(self):
@@ -124,5 +132,4 @@ class BuilddSlaveTestSetup(TacTestSetup):
 
     @property
     def logfile(self):
-        return os.path.join(self.root, 'build-slave.log')
-
+        return '/var/tmp/build-slave.log'

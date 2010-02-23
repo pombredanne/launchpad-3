@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View support classes for the bazaar application."""
 
@@ -17,16 +18,18 @@ import bzrlib
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad.webapp.authorization import (
+    precache_permission_for_objects)
 
 from lp.code.interfaces.branch import IBranchCloud, IBranchSet
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.codeimport import ICodeImportSet
 from canonical.launchpad.interfaces.launchpad import IBazaarApplication
-from lp.registry.interfaces.product import IProduct, IProductSet
+from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, LaunchpadView, Link)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link)
 
-from lazr.delegates import delegates
 
 class BazaarBranchesMenu(ApplicationMenu):
     usedfor = IBazaarApplication
@@ -64,23 +67,35 @@ class BazaarApplicationView(LaunchpadView):
     def bzr_version(self):
         return bzrlib.__version__
 
+    def _precacheViewPermissions(self, branches):
+        """Precache the launchpad.View permissions on the branches."""
+        # XXX: TimPenhey 2009-06-08 bug=324546
+        # Until there is an API to do this nicely, shove the launchpad.view
+        # permission into the request cache directly.
+        precache_permission_for_objects(
+            self.request, 'launchpad.View', branches)
+        return branches
+
     @cachedproperty
     def recently_changed_branches(self):
         """Return the five most recently changed branches."""
-        return list(getUtility(IBranchSet).getRecentlyChangedBranches(
-            5, visible_by_user=self.user))
+        return self._precacheViewPermissions(
+            list(getUtility(IBranchSet).getRecentlyChangedBranches(
+                    5, visible_by_user=self.user)))
 
     @cachedproperty
     def recently_imported_branches(self):
         """Return the five most recently imported branches."""
-        return list(getUtility(IBranchSet).getRecentlyImportedBranches(
-            5, visible_by_user=self.user))
+        return self._precacheViewPermissions(
+            list(getUtility(IBranchSet).getRecentlyImportedBranches(
+                    5, visible_by_user=self.user)))
 
     @cachedproperty
     def recently_registered_branches(self):
         """Return the five most recently registered branches."""
-        return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(
-            5, visible_by_user=self.user))
+        return self._precacheViewPermissions(
+            list(getUtility(IBranchSet).getRecentlyRegisteredBranches(
+                    5, visible_by_user=self.user)))
 
     @cachedproperty
     def short_product_tag_cloud(self):
@@ -133,6 +148,17 @@ class ProductInfo:
             commit = (
                 "last commit %d days old" % self.elapsed_since_commit.days)
         return "%s, %s" % (size, commit)
+
+
+class BazaarProjectsRedirect(LaunchpadView):
+    """Redirect the user to /projects on the code rootsite."""
+
+    def initialize(self):
+        # Redirect to the caller to the new location.
+        product_set = getUtility(IProductSet)
+        redirect_url = canonical_url(product_set, rootsite="code")
+        # Moved permanently.
+        self.request.response.redirect(redirect_url, status=301)
 
 
 class BazaarProductView:

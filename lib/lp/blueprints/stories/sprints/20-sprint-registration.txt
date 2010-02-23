@@ -10,8 +10,8 @@ It should be possible to register yourself to attend the sprint:
     >>> browser.url
     'http://launchpad.dev/sprints/ubz/+attend'
 
-    >>> browser.title
-    'Register your attendance at Ubuntu Below Zero'
+    >>> print browser.title
+    Register your attendance : Ubuntu Below Zero : Meetings
 
 Invalid dates, for instance entering a starting date after the ending date,
 are reported as errors to the users. (See also the tests in
@@ -150,7 +150,7 @@ First, we add a couple of IRC nicknames for Carlos.
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.database import IrcID
+    >>> from lp.registry.model.person import IrcID
     >>> from zope.component import getUtility
     >>> login('carlos@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
@@ -165,12 +165,6 @@ First, we add a couple of IRC nicknames for Carlos.
     >>> browser.getLink('Export attendees to CSV').click()
     >>> print browser.headers['content-type']
     text/csv
-    >>> print browser.contents
-    Launchpad username,Display name,Email,IRC nickname,Phone,Organization,City,Country,Timezone,Arriving,Leaving
-    carlos,Carlos Perelló Marín,carlos@canonical.com,"carlos, qarlos",,,,,,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
-    name12,Sample Person,,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
-    salgado,Guilherme Salgado,guilherme.salgado@canonical.com,,+55 16 3374-2027,Something,whatever,France,,2006-01-09T23:00:00Z,2006-02-12T07:30:00Z
-    <BLANKLINE>
 
     >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> carlos_browser.open('http://launchpad.dev/sprints/ubz')

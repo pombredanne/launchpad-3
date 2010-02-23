@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -25,8 +27,8 @@ from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
-from canonical.launchpad.interfaces.bugtask import IBugTask
-from canonical.launchpad.interfaces.job import IJob
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.registry.interfaces.person import IPerson
 
@@ -64,10 +66,6 @@ class IMessage(Interface):
         Reference(title=_('Parent'), schema=Interface,
                   required=False, readonly=True))
 
-    distribution = Reference(
-        title=_('Distribution'),
-        schema=Interface, # Redefined in distribution.py
-        required=False, readonly=True)
     rfc822msgid = TextLine(
         title=_('RFC822 Msg ID'), required=True, readonly=True)
     raw = Reference(title=_('Original unmodified email'),
@@ -191,15 +189,21 @@ class IIndexedMessage(Interface):
                 description=_("The index of this message in the list "
                               "of messages in its context."))
 
+
 class IndexedMessage:
     """Adds the `inside` and `index` attributes to an IMessage."""
     delegates(IMessage)
     implements(IIndexedMessage)
 
-    def __init__(self, context, inside, index):
+    def __init__(self, context, inside, index, parent=None):
         self.context = context
         self.inside = inside
         self.index = index
+        self._parent = parent
+
+    @property
+    def parent(self):
+        return self._parent
 
 
 class IMessageChunk(Interface):

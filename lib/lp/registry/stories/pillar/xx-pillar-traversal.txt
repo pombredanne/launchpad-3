@@ -19,7 +19,7 @@ canonical URL.
     ...
     NotFound:...
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> getUtility(IProductSet)['firefox'].setAliases(['iceweasel'])
     >>> logout()
 

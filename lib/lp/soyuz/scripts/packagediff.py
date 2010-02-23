@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """PackageDiff cronscript class."""
 
 __metaclass__ = type
@@ -9,8 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 

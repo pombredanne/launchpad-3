@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Process branches with translation to import.
@@ -14,10 +17,10 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.codehosting.vfs.branchfs import get_scanner_server
-from canonical.codehosting.jobs import JobRunner
+from lp.codehosting.vfs.branchfs import get_scanner_server
+from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
@@ -26,13 +29,14 @@ class RunRosettaBranchJobs(LaunchpadCronScript):
 
     def main(self):
         globalErrorUtility.configure('rosettabranches')
-        runner = JobRunner.fromReady(getUtility(IRosettaUploadJobSource))
+        runner = JobRunner.fromReady(
+            getUtility(IRosettaUploadJobSource), self.logger)
         server = get_scanner_server()
-        server.setUp()
+        server.start_server()
         try:
             runner.runAll()
         finally:
-            server.tearDown()
+            server.stop_server()
         self.logger.info('Ran %d RosettaBranchJobs.',
                          len(runner.completed_jobs))
 

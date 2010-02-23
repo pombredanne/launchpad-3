@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Remove personal details of a user from the database, leaving a stub."""
 
@@ -110,7 +112,6 @@ def close_account(con, log, username):
         ('GpgKey', 'owner'),
 
         # Subscriptions
-        ('BountySubscription', 'person'),
         ('BranchSubscription', 'person'),
         ('BugSubscription', 'person'),
         ('QuestionSubscription', 'person'),

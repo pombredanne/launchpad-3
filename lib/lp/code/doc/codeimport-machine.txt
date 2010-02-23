@@ -4,8 +4,9 @@ There is a simple CodeImportMachine table in the database that records
 the machines that can perform imports and whether they are online (that
 is, currently capable of performing imports).
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
+    >>> from lp.code.enums import CodeImportMachineState
+    >>> from lp.code.interfaces.codeimportmachine import (
+    ...     ICodeImportMachine, ICodeImportMachineSet)
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -73,7 +74,7 @@ If they are created in the ONLINE state, an ONLINE event is created in
 the CodeImportEvent audit trail.  The NewEvents class helps testing
 the creation of CodeImportEvent objects.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
     >>> from lp.code.model.tests.test_codeimportjob import (
     ...     NewEvents)

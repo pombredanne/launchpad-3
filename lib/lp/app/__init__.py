@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """This package contains the Launchpad.net web application.
 
@@ -9,4 +10,10 @@ from it.
 
 __metaclass__ = type
 __all__ = []
+
+# Zope recently changed the behavior of items widgets with regards to missing
+# values, but they kindly left this global variable for you to monkey patch if
+# you want the old behavior, just like we do.
+from zope.app.form.browser import itemswidgets
+itemswidgets.EXPLICIT_EMPTY_SELECTION = False
 

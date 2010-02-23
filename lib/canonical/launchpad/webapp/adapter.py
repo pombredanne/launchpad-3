@@ -1,10 +1,13 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # We use global in this module.
 # pylint: disable-msg=W0602
 
 __metaclass__ = type
 
 import os
+import re
 import sys
 import thread
 import threading
@@ -34,6 +37,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
@@ -59,6 +63,18 @@ __all__ = [
 
 classImplements(TimeoutError, IRequestExpired)
 
+
+class LaunchpadTimeoutError(TimeoutError):
+    """A variant of TimeoutError that reports the original PostgreSQL error.
+    """
+
+    def __init__(self, statement, params, original_error):
+        super(LaunchpadTimeoutError, self).__init__(statement, params)
+        self.original_error = original_error
+
+    def __str__(self):
+        return ('Statement: %r\nParameters:%r\nOriginal error: %r'
+                % (self.statement, self.params, self.original_error))
 
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
@@ -110,7 +126,15 @@ def summarize_requests():
     """Produce human-readable summary of requests issued so far."""
     secs = get_request_duration()
     statements = getattr(_local, 'request_statements', [])
-    log = "%s queries issued in %.2f seconds" % (len(statements), secs)
+    from canonical.launchpad.webapp.errorlog import (
+        maybe_record_user_requested_oops)
+    oopsid = maybe_record_user_requested_oops()
+    if oopsid is None:
+        oops_str = ""
+    else:
+        oops_str = " %s" % oopsid
+    log = "%s queries issued in %.2f seconds%s" % (
+        len(statements), secs, oops_str)
     return log
 
 
@@ -124,7 +148,7 @@ def store_sql_statements_and_request_duration(event):
 def get_request_statements():
     """Get the list of executed statements in the request.
 
-    The list is composed of (starttime, endtime, statement) tuples.
+    The list is composed of (starttime, endtime, db_id, statement) tuples.
     Times are given in milliseconds since the start of the request.
     """
     return getattr(_local, 'request_statements', [])
@@ -155,7 +179,11 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((starttime, endtime, statement))
+    # A string containing no whitespace that lets us identify which Store
+    # is being used.
+    database_identifier = connection_wrapper._database.name
+    _local.request_statements.append(
+        (starttime, endtime, database_identifier, statement))
 
     # store the last executed statement as an attribute on the current
     # thread
@@ -251,11 +279,13 @@ class ReadOnlyModeConnection(PostgresConnection):
             # is raised when an attempt is made to make changes when
             # the connection has been put in read-only mode.
             if exception.pgcode == '25006':
-                raise ReadOnlyModeViolation, None, sys.exc_info()[2]
+                raise ReadOnlyModeViolation(None, sys.exc_info()[2])
             raise
 
 
 class LaunchpadDatabase(Postgres):
+
+    _dsn_user_re = re.compile('user=[^ ]*')
 
     def __init__(self, uri):
         # The uri is just a property name in the config, such as main_master
@@ -264,6 +294,15 @@ class LaunchpadDatabase(Postgres):
         # opinion on what uri is.
         # pylint: disable-msg=W0231
         self._uri = uri
+        # A unique name for this database connection.
+        self.name = uri.database
+
+    @property
+    def dsn_without_user(self):
+        """This database's dsn without the 'user=...' bit."""
+        assert self._dsn is not None, (
+            'Must not be called before self._dsn has been set.')
+        return self._dsn_user_re.sub('', self._dsn)
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -300,13 +339,13 @@ class LaunchpadDatabase(Postgres):
         self._dsn = "%s user=%s" % (connection_string, dbuser)
 
         flags = _get_dirty_commit_flags()
-        raw_connection = super(LaunchpadDatabase, self).raw_connect()
 
         if my_dbconfig.isolation_level is None:
-            isolation_level = ISOLATION_LEVEL_SERIALIZABLE
+            self._isolation = ISOLATION_LEVEL_SERIALIZABLE
         else:
-            isolation_level = isolation_level_map[my_dbconfig.isolation_level]
-        raw_connection.set_isolation_level(isolation_level)
+            self._isolation = isolation_level_map[my_dbconfig.isolation_level]
+
+        raw_connection = super(LaunchpadDatabase, self).raw_connect()
 
         # Set read only mode for the session.
         # An alternative would be to use the _ro users generated by
@@ -331,12 +370,15 @@ class LaunchpadDatabase(Postgres):
         If we are running in read-only mode, returns a
         ReadOnlyModeConnection. Otherwise it returns the Storm default.
         """
-        if config.launchpad.read_only:
+        if is_read_only():
             return ReadOnlyModeConnection
         return super(LaunchpadDatabase, self).connection_factory
 
 
 class LaunchpadSessionDatabase(Postgres):
+
+    # A unique name for this database connection.
+    name = 'session'
 
     def raw_connect(self):
         self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
@@ -401,7 +443,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
             return
         if isinstance(error, QueryCanceledError):
             OpStats.stats['timeouts'] += 1
-            raise TimeoutError(statement, params)
+            raise LaunchpadTimeoutError(statement, params, error)
 
     def get_remaining_time(self):
         """See `TimeoutTracer`"""
@@ -448,8 +490,11 @@ class LaunchpadStatementTracer:
             connection, raw_cursor, statement, params)
 
 
-install_tracer(LaunchpadTimeoutTracer())
+# The LaunchpadTimeoutTracer needs to be installed last, as it raises
+# TimeoutError exceptions. When this happens, tracers installed later
+# are not invoked.
 install_tracer(LaunchpadStatementTracer())
+install_tracer(LaunchpadTimeoutTracer())
 
 
 class StoreSelector:

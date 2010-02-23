@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Module docstring goes here."""
 
@@ -43,7 +44,7 @@ class MockSessionData(dict):
 class MockHTTPApplicationResponse:
     implements(IHTTPApplicationResponse)
 
-    def redirect(self, location, status=None):
+    def redirect(self, location, status=None, trusted=False):
         """Just report the redirection to the doctest"""
         if status is None:
             status=302

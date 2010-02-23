@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -28,7 +29,7 @@ from canonical.launchpad.components.tokens import (
 
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
@@ -242,7 +243,7 @@ class OAuthRequestToken(OAuthBase):
         self.permission = permission
         if IProduct.providedBy(context):
             self.product = context
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             self.project = context
         elif IDistribution.providedBy(context):
             self.distribution = context

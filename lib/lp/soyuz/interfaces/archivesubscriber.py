@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """ArchiveSubscriber interface."""
@@ -9,17 +11,16 @@ __all__ = [
     'ArchiveSubscriberStatus',
     'ArchiveSubscriptionError',
     'IArchiveSubscriber',
-    'IArchiveSubscriberUI',
     'IArchiveSubscriberSet',
     'IPersonalArchiveSubscription'
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Date, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, Text, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.person import IPerson
 from lazr.restful.declarations import export_as_webservice_entry, exported
@@ -63,15 +64,16 @@ class IArchiveSubscriberView(Interface):
         description=_("The archive for this subscription.")))
 
     registrant = exported(Reference(
-        IPerson, title=_("Registrant"), required=True,
+        IPerson, title=_("Registrant"), required=True, readonly=True,
         description=_("The person who registered this subscription.")))
 
     date_created = exported(Datetime(
         title=_("Date Created"), required=True, readonly=True,
         description=_("The timestamp when the subscription was created.")))
 
-    subscriber = exported(PublicPersonChoice(
-        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
+    subscriber = exported(ParticipatingPersonChoice(
+        title=_("Subscriber"), required=True, readonly=True,
+        vocabulary='ValidPersonOrTeam',
         description=_("The person who is subscribed.")))
 
     date_expires = exported(Datetime(
@@ -112,7 +114,7 @@ class IArchiveSubscriberEdit(Interface):
 
     def cancel(cancelled_by):
         """Cancel a subscription.
-        
+
         :param cancelled_by: An `IPerson` who is cancelling the subscription.
 
         Sets cancelled_by to the supplied person and date_cancelled to
@@ -164,26 +166,6 @@ class IArchiveSubscriberSet(Interface):
         """
 
 
-class IArchiveSubscriberUI(Interface):
-    """A custom interface for user interaction with archive subscriptions.
-
-    IArchiveSubscriber uses a datetime field for date_expires, whereas
-    we simply want to use a date field when users create or edit new
-    subscriptions.
-    """
-    subscriber = PublicPersonChoice(
-        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
-        description=_("The person or team to subscribe."))
-
-    date_expires = Date(
-        title=_("Date of Expiration"), required=False,
-        description=_("The date when the subscription will expire."))
-
-    description = Text(
-        title=_("Description"), required=False,
-        description=_("Optional notes about this subscription."))
-
-
 class IPersonalArchiveSubscription(Interface):
     """An abstract interface representing a subscription for an individual.
 
@@ -204,3 +186,5 @@ class IPersonalArchiveSubscription(Interface):
     displayname = TextLine(title=_("Subscription displayname"),
         required=False)
 
+    title = TextLine(title=_("Subscription title"),
+        required=False)

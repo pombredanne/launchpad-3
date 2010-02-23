@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """ChrootManager facilities tests."""
 
 __metaclass__ = type
@@ -13,10 +15,10 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from lp.soyuz.scripts.ftpmaster import (
     ChrootManager, ChrootManagerError)
 from canonical.testing import LaunchpadZopelessLayer
+
 
 class TestChrootManager(TestCase):
     layer = LaunchpadZopelessLayer
@@ -71,7 +73,8 @@ class TestChrootManager(TestCase):
 
         chroot_manager.add()
         match = re.match(
-            "LibraryFileAlias: \d+, 5 bytes, 5088e6471ab02d4268002f529a02621c",
+            ("LibraryFileAlias: \d+, 5 bytes, "
+             "5088e6471ab02d4268002f529a02621c"),
             chroot_manager._messages[0])
         self.assert_(match is not None,
                      "chroot_manager message mismatch: %s" %
@@ -109,8 +112,8 @@ class TestChrootManager(TestCase):
 
         chroot_manager.update()
         match = re.match(
-            "LibraryFileAlias: \d+, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
-            chroot_manager._messages[0])
+            ("LibraryFileAlias: \d+, 6 bytes, "
+             "a4cd43e083161afcdf26f4324024d8ef"), chroot_manager._messages[0])
         self.assert_(match is not None,
                      "chroot_manager message mismatch: %s" %
                      chroot_manager._messages[0])

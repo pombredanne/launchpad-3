@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211, E0213
 
 """A collection of branches.
@@ -48,36 +50,41 @@ class IBranchCollection(Interface):
     def count():
         """The number of branches in this collection."""
 
-    def getBranches(join_owner=True, join_product=True):
+    def ownerCounts():
+        """Return the number of different branch owners.
+
+        :return:  a tuple (individual_count, team_count) containing the number
+            of individuals and teams that own branches in this collection.
+        """
+
+    def getBranches():
         """Return a result set of all branches in this collection.
 
         The returned result set will also join across the specified tables as
         defined by the arguments to this function.  These extra tables are
         joined specificly to allow the caller to sort on values not in the
         Branch table itself.
-
-        XXX TimPenhey 2009-03-16, spec=package-branches
-        When we have extra sorting columns in the views on source package
-        branches, we'll have to update the parameters to this method.  Ideally
-        we'll come up with a cleaner interface.  If we don't then a source
-        package listing, which obviously won't have a "Sort by Project name"
-        will be joining across the Product table (which will be empty anyway)
-        and slowing down the query.  By having these parameters, we can make
-        the queries for the counting and branch id queries much faster.
-
-        :param join_owner: Join the Person table with the Branch.owner.
-        :param join_product: Left Join the Product table with Branch.product.
         """
 
-    def getMergeProposals(statuses=None, for_branches=None):
+    def getMergeProposals(statuses=None, for_branches=None,
+                          target_branch=None):
         """Return a result set of merge proposals for the branches in this
         collection.
 
         :param statuses: If specified, only return merge proposals with these
             statuses. If not, return all merge proposals.
         :param for_branches: An iterable of branches what will restrict the
-            resulting set of merge proposals to be only those for the
-            branches specified.
+            resulting set of merge proposals to be only those where the source
+            branch is one of the branches specified.
+        :param target_branch: If specified, only return merge proposals
+            that target the specified branch.
+        """
+
+    def getMergeProposalsForPerson(person, status=None):
+        """Proposals for `person`.
+
+        Return the proposals for branches owned by `person` or where `person`
+        is reviewing or been asked to review.
         """
 
     def getMergeProposalsForReviewer(reviewer, status=None):
@@ -92,6 +99,9 @@ class IBranchCollection(Interface):
             are returned.
         """
 
+    def getTeamsWithBranches(person):
+        """Return the teams that person is a member of that have branches."""
+
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""
 
@@ -99,7 +109,23 @@ class IBranchCollection(Interface):
         """Restrict the collection to branches in 'project'."""
 
     def inSourcePackage(package):
-        """Restrict the collection to branches in 'package'."""
+        """Restrict the collection to branches in 'package'.
+
+        A source package is effectively a sourcepackagename in a distro
+        series.
+        """
+
+    def inDistribution(distribution):
+        """Restrict the collection to branches in 'distribution'."""
+
+    def inDistroSeries(distro_series):
+        """Restrict the collection to branches in 'distro_series'."""
+
+    def inDistributionSourcePackage(distro_source_package):
+        """Restrict to branches in a 'package' for a 'distribution'."""
+
+    def officialBranches(pocket=None):
+        """Restrict to branches that are official for some source package."""
 
     def isJunk():
         """Restrict the collection to junk branches.
@@ -148,6 +174,13 @@ class IBranchCollection(Interface):
 
     def scannedSince(epoch):
         """Restrict the collection to branches scanned since `epoch`."""
+
+    def targetedBy(person):
+        """Restrict the collection to branches targeted by person.
+
+        A branch is targeted by a person if that person has registered a merge
+        proposal with the branch as the target.
+        """
 
 
 class IAllBranches(IBranchCollection):

@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The code import scheduler XML-RPC API."""
 
@@ -21,9 +22,10 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
 
     implements(ICodeImportScheduler)
 
-    def getJobForMachine(self, hostname):
+    def getJobForMachine(self, hostname, worker_limit):
         """See `ICodeImportScheduler`."""
-        job = getUtility(ICodeImportJobSet).getJobForMachine(hostname)
+        job = getUtility(ICodeImportJobSet).getJobForMachine(
+            hostname, worker_limit)
         if job is not None:
             return job.id
         else:

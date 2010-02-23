@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 LaunchBag
 
@@ -16,7 +18,7 @@ from zope import thread
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
         IAccount, IBug, IDistribution, IDistroSeries, IPerson,
-        IProject, IProduct, ISourcePackage, IDistroArchSeries,
+        IProjectGroup, IProduct, ISourcePackage, IDistroArchSeries,
         ISpecification, IBugTask, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
@@ -50,7 +52,7 @@ class LaunchBag:
     _registry = {
         ILaunchpadApplication: 'site',
         IPerson: 'person',
-        IProject: 'project',
+        IProjectGroup: 'project',
         IProduct: 'product',
         IDistribution: 'distribution',
         IDistroSeries: 'distroseries',

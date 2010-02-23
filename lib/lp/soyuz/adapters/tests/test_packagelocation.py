@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test PackageLocation class."""
 
 import unittest
@@ -9,7 +11,7 @@ from lp.soyuz.adapters.packagelocation import (
     PackageLocationError, build_package_location)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 class TestPackageLocation(TestCaseWithFactory):

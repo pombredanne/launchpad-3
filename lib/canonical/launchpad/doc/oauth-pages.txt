@@ -113,7 +113,7 @@ package, it must specify the distribution and the package's name.
     >>> view, token = get_view_with_fresh_token(
     ...     {'lp.context': 'ubuntu/evolution'})
     >>> view.token_context.title
-    u'...evolution... source package in Ubuntu'
+    u'...evolution... package in Ubuntu'
 
     # The context is also stored in a hidden field in the HTML so that
     # it's submitted together with the user's chosen permission.
@@ -124,7 +124,7 @@ package, it must specify the distribution and the package's name.
 
     >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
     >>> token.context.title
-    u'...evolution... source package in Ubuntu'
+    u'...evolution... package in Ubuntu'
 
 An error is raised if the context is not found.
 

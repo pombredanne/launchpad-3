@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Featured Project views."""
 
@@ -39,6 +40,9 @@ class FeaturedProjectForm(Interface):
 
 class FeaturedProjectsView(LaunchpadFormView):
     """A view for adding and removing featured projects."""
+
+    label = 'Manage featured projects in Launchpad'
+    page_title = label
 
     schema = FeaturedProjectForm
     custom_widget('remove', LabeledMultiCheckBoxWidget)

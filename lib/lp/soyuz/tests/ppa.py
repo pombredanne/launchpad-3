@@ -1,6 +1,8 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Helper functions/classes to be used when testing Personal Package Archives."""
+"""Helper functions/classes to be used when testing Personal Package Archives.
+"""
 
 __metaclass__ = type
 
@@ -18,11 +20,13 @@ from lp.soyuz.model.sourcepackagerelease import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingPriority,
-    PackagePublishingStatus)
+    PackagePublishingPriority, PackagePublishingStatus)
+
+
 def publishToTeamPPA(team_name=None, distroseries_name=None,
                      sourcepackage_name=None, sourcepackage_version=None,
                      team_member_name=None, distribution_name=None,
@@ -40,9 +44,10 @@ def publishToTeamPPA(team_name=None, distroseries_name=None,
     if team_member_name is None:
         team_member_name = "name16"
     team = getUtility(IPersonSet).getByName(team_name)
-    _publishToPPA(team.archive, team_member_name, distroseries_name,
-                  sourcepackage_name, sourcepackage_version, distribution_name,
-                  binarypackage_version, publishing_status, arch)
+    _publishToPPA(
+        team.archive, team_member_name, distroseries_name,
+        sourcepackage_name, sourcepackage_version, distribution_name,
+        binarypackage_version, publishing_status, arch)
 
 def publishToPPA(person_name, distroseries_name=None, sourcepackage_name=None,
                  sourcepackage_version=None, distribution_name=None,

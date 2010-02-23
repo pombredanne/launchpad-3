@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for ISourcePackage implementations."""
 
@@ -11,12 +12,16 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distribution import NoPartnerArchive
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -105,6 +110,15 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertEqual(
             [(pocket, branch)], list(sourcepackage.linked_branches))
 
+    def test_getSuiteSourcePackage(self):
+        # ISourcePackage.getSuiteSourcePackage returns the suite source
+        # package object for the given pocket.
+        sourcepackage = self.factory.makeSourcePackage()
+        pocket = PackagePublishingPocket.RELEASE
+        ssp = sourcepackage.getSuiteSourcePackage(pocket)
+        self.assertEqual(sourcepackage, ssp.sourcepackage)
+        self.assertEqual(pocket, ssp.pocket)
+
     def test_path_to_release_pocket(self):
         # ISourcePackage.getPocketPath returns the path to a pocket. For the
         # RELEASE pocket, it's the same as the package path.
@@ -131,9 +145,9 @@ class TestSourcePackage(TestCaseWithFactory):
         # the source package.
         distribution = self.factory.makeDistribution()
         dev_series = self.factory.makeDistroRelease(
-            distribution=distribution, status=DistroSeriesStatus.DEVELOPMENT)
+            distribution=distribution, status=SeriesStatus.DEVELOPMENT)
         other_series = self.factory.makeDistroRelease(
-            distribution=distribution, status=DistroSeriesStatus.OBSOLETE)
+            distribution=distribution, status=SeriesStatus.OBSOLETE)
         self.assertEqual(dev_series, distribution.currentseries)
         dev_sourcepackage = self.factory.makeSourcePackage(
             distroseries=dev_series)
@@ -144,6 +158,70 @@ class TestSourcePackage(TestCaseWithFactory):
             dev_sourcepackage, other_sourcepackage.development_version)
         self.assertEqual(
             dev_sourcepackage, dev_sourcepackage.development_version)
+
+    def test_distribution_sourcepackage(self):
+        # ISourcePackage.distribution_sourcepackage is the distribution source
+        # package for the ISourcePackage.
+        sourcepackage = self.factory.makeSourcePackage()
+        distribution = sourcepackage.distribution
+        distribution_sourcepackage = distribution.getSourcePackage(
+            sourcepackage.sourcepackagename)
+        self.assertEqual(
+            distribution_sourcepackage,
+            sourcepackage.distribution_sourcepackage)
+
+    def test_default_archive(self):
+        # The default archive of a source package is the primary archive of
+        # its distribution.
+        sourcepackage = self.factory.makeSourcePackage()
+        distribution = sourcepackage.distribution
+        self.assertEqual(
+            distribution.main_archive, sourcepackage.get_default_archive())
+
+    def test_default_archive_partner(self):
+        # If the source package was most recently uploaded to a partner
+        # component, then its default archive is the partner archive for the
+        # distribution.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackage.sourcepackagename,
+            distroseries=sourcepackage.distroseries,
+            component=partner,
+            status=PackagePublishingStatus.PUBLISHED)
+        distribution = sourcepackage.distribution
+        expected_archive = self.factory.makeArchive(
+            distribution=distribution,
+            purpose=ArchivePurpose.PARTNER)
+        self.assertEqual(
+            expected_archive, sourcepackage.get_default_archive())
+
+    def test_default_archive_specified_component(self):
+        # If the component is explicitly specified as partner, then we return
+        # the partner archive.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        distribution = sourcepackage.distribution
+        expected_archive = self.factory.makeArchive(
+            distribution=distribution,
+            purpose=ArchivePurpose.PARTNER)
+        self.assertEqual(
+            expected_archive,
+            sourcepackage.get_default_archive(component=partner))
+
+    def test_default_archive_partner_doesnt_exist(self):
+        # If the default archive ought to be the partner archive (because the
+        # last published upload was to a partner component) then
+        # default_archive will raise an exception.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackage.sourcepackagename,
+            distroseries=sourcepackage.distroseries,
+            component=partner,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertRaises(
+            NoPartnerArchive, sourcepackage.get_default_archive)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):

@@ -14,7 +14,7 @@
     </tt>
 
     <span class="foldable-quoted">
-    <br><span tal:content="structure view/body_summary">First line of the message,</span>
+    <br /><span tal:content="structure view/body_summary">First line of the message,</span>
     <span class="foldable" tal:content="structure view/body_details">
     followed by the subsequent lines of the message.</span>
     </span>

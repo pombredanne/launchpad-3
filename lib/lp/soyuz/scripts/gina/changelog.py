@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -9,7 +10,7 @@ import re, sys
 first_re = re.compile(r"^([a-z0-9][a-z0-9\\+\\.\\-]+)\s+\(([^ ]+)\)")
 urgency_re = re.compile(r'(?:urgency|priority)=([^ ,;:.]+)')
 
-from canonical.archivepublisher.debversion import Version
+from lp.archivepublisher.debversion import Version
 
 def parse_first_line(line):
     # SRCPKGNAME (VERSION).*((urgency|priority)=\S+)?

@@ -1,5 +1,8 @@
-#! /usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#! /usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Populate schema additions for Translations Message Sharing.
@@ -25,7 +28,7 @@ from zope.interface import implements
 from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 
 

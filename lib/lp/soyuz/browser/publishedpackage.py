@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -9,9 +10,6 @@ __all__ = [
     'BinPackage',
     ]
 
-from zope.component import getUtility
-
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 class PkgBuild:
 
     def __init__(self, id, processorfamilyname,
@@ -21,7 +19,9 @@ class PkgBuild:
         self.distroarchseries = distroarchseries
 
     def html(self):
-        return '<a href="/soyuz/packages/'+str(self.id)+'">'+self.processorfamilyname+'</a>'
+        return (
+            '<a href="/soyuz/packages/%s">%s</a>'
+            % (self.id, self.processorfamilyname))
 
 class PkgVersion:
 

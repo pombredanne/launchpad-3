@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """OAuth interfaces."""
@@ -201,7 +203,7 @@ class IOAuthRequestToken(IOAuthToken):
     def review(user, permission, context=None):
         """Grant `permission` as `user` to this token's consumer.
 
-        :param context: An IProduct, IProject, IDistribution or
+        :param context: An IProduct, IProjectGroup, IDistribution or
             IDistributionSourcePackage in which the permission is valid. If
             None, the permission will be valid everywhere.
 

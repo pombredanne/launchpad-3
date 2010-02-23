@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize the cluster.
 
@@ -39,9 +41,9 @@ def duplicate_schema():
     """Duplicate the master schema into the slaves."""
     log.info('Duplicating database schema')
 
-    master_cs = ConnectionString(config.database.main_master)
+    master_cs = ConnectionString(config.database.rw_main_master)
     master_cs.user = options.dbuser
-    slave1_cs = ConnectionString(config.database.main_slave)
+    slave1_cs = ConnectionString(config.database.rw_main_slave)
     slave1_cs.user = options.dbuser
 
     # We can't use pg_dump to replicate security as not all of the roles
@@ -68,7 +70,7 @@ def initialize_cluster():
     """Initialize the cluster."""
     log.info('Initializing Slony-I cluster')
     master_connection_string = ConnectionString(
-        config.database.main_master)
+        config.database.rw_main_master)
     master_connection_string.user = 'slony'
     helpers.execute_slonik("""
         node 1 admin conninfo = '%s';
@@ -142,9 +144,11 @@ def create_replication_sets(
             comment='Launchpad tables and sequences');
         """)
 
+    script.append(
+        "echo 'Adding %d tables to replication set @lpmain_set';"
+        % len(lpmain_tables))
     for table in sorted(lpmain_tables):
         script.append("""
-            echo 'Adding %(table)s to replication set @lpmain_set';
             set add table (
                 set id=@lpmain_set,
                 origin=@master_node,
@@ -154,9 +158,11 @@ def create_replication_sets(
         entry_id += 1
 
     entry_id = 200
+    script.append(
+        "echo 'Adding %d sequences to replication set @lpmain_set';"
+        % len(lpmain_sequences))
     for sequence in sorted(lpmain_sequences):
         script.append("""
-            echo 'Adding %(sequence)s to replication set @lpmain_set';
             set add sequence (
                 set id=@lpmain_set,
                 origin=@master_node,
@@ -218,7 +224,8 @@ def main():
             fails += 1
     for sequence in all_sequences_in_schema(cur, 'public'):
         times_seen = 0
-        for sequence_set in [authdb_sequences, lpmain_sequences]:
+        for sequence_set in [
+            authdb_sequences, lpmain_sequences, helpers.IGNORED_SEQUENCES]:
             if sequence in sequence_set:
                 times_seen += 1
         if times_seen == 0:

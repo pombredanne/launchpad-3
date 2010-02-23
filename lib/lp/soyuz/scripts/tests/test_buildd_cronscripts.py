@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """cronscripts/buildd-* tests."""
 
 __metaclass__ = type
@@ -20,7 +22,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from lp.soyuz.scripts.buildd import (
     QueueBuilder, RetryDepwait)
-from canonical.launchpad.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (
     DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)

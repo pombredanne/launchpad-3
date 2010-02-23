@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Product series interfaces."""
@@ -13,46 +15,55 @@ __all__ = [
     'NoSuchProductSeries',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
-    ContentNameField, PublicPersonChoice, Title)
+    ContentNameField, NoneableDescription, ParticipatingPersonChoice,
+    PublicPersonChoice, Title)
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.code.interfaces.branch import IBranch
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers)
+    IHasAppointedDriver, IHasDrivers)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad import _
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_factory_operation, exported,
+    export_as_webservice_entry, export_factory_operation, export_operation_as,
+    export_read_operation, exported, operation_parameters,
     rename_parameters_as)
 
 
 class ProductSeriesNameField(ContentNameField):
-
+    """A class to ensure `IProductSeries` has unique names."""
     errormessage = _("%s is already in use by another series.")
 
     @property
     def _content_iface(self):
+        """See `IField`."""
         return IProductSeries
 
     def _getByName(self, name):
+        """See `IField`."""
         if self._content_iface.providedBy(self.context):
             return self.context.product.getSeries(name)
         else:
@@ -60,7 +71,12 @@ class ProductSeriesNameField(ContentNameField):
 
 
 def validate_release_glob(value):
-    if validate_url(value, ["http", "https", "ftp"]):
+    """Validate that the URL is supported."""
+    parts = urlparse(value)
+    if (validate_url(value, ["http", "https", "ftp"])
+        and '*' in parts[2]):
+        # The product release finder does support the url scheme and
+        # can match more than one file to the url's path part.
         return True
     else:
         raise LaunchpadValidationError('Invalid release URL pattern.')
@@ -90,8 +106,8 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     status = exported(
         Choice(
-            title=_('Status'), required=True, vocabulary=DistroSeriesStatus,
-            default=DistroSeriesStatus.DEVELOPMENT))
+            title=_('Status'), required=True, vocabulary=SeriesStatus,
+            default=SeriesStatus.DEVELOPMENT))
 
     parent = Attribute('The structural parent of this series - the product')
 
@@ -112,18 +128,19 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         exported_as='date_created')
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_('Project owner, either a valid Person or Team')))
 
     driver = exported(
-        PublicPersonChoice(
-            title=_("Driver"),
+        ParticipatingPersonChoice(
+            title=_("Release manager"),
             description=_(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted to this series. If you don't "
                 "nominate someone here, then the owner of this series will "
-                "automatically have those permissions."),
+                "automatically have those permissions, as will the project "
+                "and project group drivers."),
             required=False, vocabulary='ValidPersonOrTeam'))
 
     title = exported(
@@ -141,10 +158,11 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         exported_as='display_name')
 
     summary = exported(
-        Text(title=_("Summary"),
-             description=_('A single paragraph introduction or overview '
-                           'of this series. For example: "The 2.0 series '
-                           'of Apache represents the current stable series, '
+        NoneableDescription(title=_("Summary"),
+             description=_('A single paragraph that explains the goals of '
+                           'of this series and the intended users. '
+                           'For example: "The 2.0 series of Apache '
+                           'represents the current stable series, '
                            'and is recommended for all new deployments".'),
              required=True))
 
@@ -220,6 +238,31 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         description=_("Specify which files will be imported from the "
                       "source code branch."))
 
+    potemplate_count = Int(
+        title=_("The total number of POTemplates in this series."),
+        readonly=True, required=True)
+
+    productserieslanguages = Attribute(
+        "The set of ProductSeriesLanguages for this series.")
+
+    translations_branch = ReferenceChoice(
+        title=_("Translations export branch"),
+        vocabulary='HostedBranchRestrictedOnOwner',
+        schema=IBranch,
+        required=False,
+        description=_(
+            "A Bazaar branch to commit translation snapshots to. "
+            "Leave blank to disable."))
+
+    translations_branch = ReferenceChoice(
+        title=_("Translations export branch"),
+        vocabulary='HostedBranchRestrictedOnOwner',
+        schema=IBranch,
+        required=False,
+        description=_(
+            "A Bazaar branch to commit translation snapshots to.  "
+            "Leave blank to disable."))
+
     def getRelease(version):
         """Get the release in this series that has the specified version.
         Return None is there is no such release.
@@ -259,8 +302,17 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
 
+    @operation_parameters(
+        include_inactive=Bool(title=_("Include inactive"),
+                              required=False, default=False))
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline(include_inactive):
+        """Return basic timeline data useful for creating a diagram."""
 
-class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):
+
+class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
+                     IStructuralSubscriptionTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 
@@ -280,9 +332,6 @@ class IProductSeriesSet(Interface):
 
         Return the default value if there is no such series.
         """
-
-    def getSeriesForBranches(branches):
-        """Return the ProductSeries associated with a branch in branches."""
 
 
 class NoSuchProductSeries(NameLookupFailed):

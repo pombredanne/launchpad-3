@@ -1,7 +1,7 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
 __all__ = [
     'copy_and_close',
     'filechunks',
@@ -9,7 +9,8 @@ __all__ = [
     'sha1_from_path',
     ]
 
-import sha
+
+import hashlib
 
 MEGABYTE = 1024*1024
 
@@ -38,7 +39,7 @@ def copy_and_close(from_file, to_file):
 def sha1_from_path(path):
     """Return the hexdigest SHA1 for the contents of the path."""
     the_file = open(path)
-    the_hash = sha.new()
+    the_hash = hashlib.sha1()
 
     for chunk in filechunks(the_file):
         the_hash.update(chunk)

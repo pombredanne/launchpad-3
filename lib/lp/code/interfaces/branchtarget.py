@@ -1,4 +1,6 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """Interface for branch targets.
@@ -19,6 +21,7 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.security.interfaces import Unauthorized
 
+from lp.code.enums import BranchType
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lazr.restful.fields import Reference
@@ -36,8 +39,6 @@ def check_default_stacked_on(branch):
     If the given branch is not suitable, return None. For convenience, also
     returns None if passed None. Otherwise, return the branch.
     """
-    # Import here to avoid circular imports.
-    from lp.code.interfaces.branch import BranchType
     if branch is None:
         return None
     try:
@@ -81,6 +82,15 @@ class IBranchTarget(IPrimaryContext):
         description=_(
             'The branch that new branches will be stacked on by default.'))
 
+    default_merge_target = Attribute(
+        "The branch to merge other branches into for this target.")
+
+    supports_merge_proposals = Attribute(
+        "Does this target support merge proposals at all?")
+
+    def areBranchesMergeable(other_target):
+        """Are branches from other_target mergeable into this target."""
+
     def __eq__(other):
         """Is this target the same as another target?
 
@@ -94,8 +104,12 @@ class IBranchTarget(IPrimaryContext):
         """
 
     def getNamespace(owner):
-        """Return a `IBranchNamespace` for this target and the specified owner.
-        """
+        """Return a `IBranchNamespace` for 'owner' and this target."""
 
     collection = Attribute("An IBranchCollection for this target.")
 
+    def assignKarma(person, action_name, date_created=None):
+        """Assign karma to the person on the appropriate target."""
+
+    def getBugTask(bug):
+        """Get the BugTask for a given bug related to the branch target."""

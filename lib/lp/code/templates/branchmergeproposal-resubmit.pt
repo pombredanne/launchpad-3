@@ -3,12 +3,8 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
 
 <body>
 
@@ -16,9 +12,17 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info">
-      Resubmitting this proposal to merge will cause this proposal
-      to be marked as <strong>superseded</strong> another proposal
-      to merge with the same source and target branches will be created.
+      <p>
+        Resubmitting this proposal to merge will cause this proposal to be
+        marked as <strong>superseded</strong>.  Another merge proposal will
+        be created, with the same source, target and prerequisite branch
+        (if any).
+      </p>
+      <p>
+        Everyone who has reviewed the previous proposal or was requested to
+        review the previous proposal will be requested to review the new
+        proposal.
+      </p>
     </div>
   </div>
 

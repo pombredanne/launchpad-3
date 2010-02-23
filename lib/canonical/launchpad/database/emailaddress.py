@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -9,8 +11,9 @@ __all__ = [
     'UndeletableEmailAddress',
     ]
 
+
+import hashlib
 import operator
-import sha
 
 from zope.interface import implements
 
@@ -78,7 +81,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     @property
     def rdf_sha1(self):
         """See `IEmailAddress`."""
-        return sha.new('mailto:' + self.email).hexdigest().upper()
+        return hashlib.sha1('mailto:' + self.email).hexdigest().upper()
 
 
 class EmailAddressSet:

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Milestone interfaces."""
@@ -10,20 +12,23 @@ __all__ = [
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
-    'IProjectMilestone',
+    'IProjectGroupMilestone',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.registry.interfaces.productrelease import IProductRelease
-from canonical.launchpad.interfaces.bugtarget import IHasBugs
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, Description
-    )
+    ContentNameField, NoneableDescription, NoneableTextLine)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.components.apihelpers import (
+    patch_plain_parameter_type)
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
@@ -55,7 +60,7 @@ class MilestoneNameField(ContentNameField):
         elif IDistroSeries.providedBy(self.context):
             milestone = self.context.distribution.getMilestone(name)
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 'Editing a milestone in an unexpected context: %r'
                 % self.context)
         if milestone is not None:
@@ -65,7 +70,7 @@ class MilestoneNameField(ContentNameField):
         return milestone
 
 
-class IMilestone(IHasBugs):
+class IMilestone(IHasBugs, IStructuralSubscriptionTarget):
     """A milestone, or a targeting point for bugs and other
     release-management items that need coordination.
     """
@@ -79,8 +84,9 @@ class IMilestone(IHasBugs):
                 "Only letters, numbers, and simple punctuation are allowed."),
             constraint=name_validator))
     code_name = exported(
-        TextLine(title=u'Code name', required=False,
-                 description=_('An alternative name for the milestone.')))
+        NoneableTextLine(
+            title=u'Code name', required=False,
+            description=_('An alternative name for the milestone.')))
     product = Choice(
         title=_("Project"),
         description=_("The project to which this milestone is associated"),
@@ -110,7 +116,7 @@ class IMilestone(IHasBugs):
                           "in web forms for bug targeting.")),
         exported_as='is_active')
     summary = exported(
-        Description(
+        NoneableDescription(
             title=_("Summary"),
             required=False,
             description=_(
@@ -157,6 +163,15 @@ class IMilestone(IHasBugs):
         :returns: `IProductRelease` object.
         """
 
+    def closeBugsAndBlueprints(user):
+        """Close completed bugs and blueprints.
+
+        Bugs that are fix committed status are updated to fix released.
+        Blueprints that are in deployment status are updated to implemented
+        status.
+        XXX sinzui 2010-01-27 bug=341687: blueprints not yet implemented.
+        """
+
     @export_write_operation()
     @export_operation_as('delete')
     def destroySelf():
@@ -168,6 +183,8 @@ class IMilestone(IHasBugs):
 
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
+patch_plain_parameter_type(
+    IBugTask, 'transitionToMilestone', 'new_milestone', IMilestone)
 
 
 class IMilestoneSet(Interface):
@@ -199,7 +216,7 @@ class IMilestoneSet(Interface):
         """Return all visible milestones."""
 
 
-class IProjectMilestone(IMilestone):
+class IProjectGroupMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
 
 

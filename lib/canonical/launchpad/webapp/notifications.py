@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser notification messages
 
 Provides an API for displaying arbitrary  notifications to users after
@@ -207,7 +209,7 @@ class NotificationResponse:
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         self._notifications = None
 
-    def redirect(self, location, status=None):
+    def redirect(self, location, status=None, trusted=True):
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         # We are redirecting, so we need to stuff our notifications into
         # the session
@@ -218,7 +220,8 @@ class NotificationResponse:
             allowUnauthenticatedSession(self._request)
             session = ISession(self)[SESSION_KEY]
             session['notifications'] = self._notifications
-        return super(NotificationResponse, self).redirect(location, status)
+        return super(NotificationResponse, self).redirect(
+            location, status, trusted=trusted)
 
     def addDebugNotification(self, msg):
         """See `INotificationResponse`."""
@@ -313,6 +316,9 @@ class NotificationTestView1(LaunchpadView):
     in the test suite, as this page is useful for adjusting the visual style
     of the notifications
     """
+
+    label = page_title = 'Notification test'
+
     def initialize(self):
         response = self.request.response
 

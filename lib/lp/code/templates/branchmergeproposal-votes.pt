@@ -15,11 +15,13 @@
   </thead>
   <tbody>
     <!-- Current reviews -->
-    <tr tal:repeat="review view/current_reviews">
+    <tr tal:repeat="review view/current_reviews"
+        tal:attributes="id string:review-${review/reviewer/name}">
       <td>
         <tal:reviewer replace="structure review/reviewer/fmt:link:mainsite">
         Eric the Reviewer</tal:reviewer>
-      </td>
+        <tal:community condition="not: review/trusted">
+        (community)</tal:community></td>
       <td tal:content="review/review_type" />
       <td>
         <tal:date-requested condition="review/show_date_requested">
@@ -40,8 +42,15 @@
       </td>
     </tr>
     <!-- Pending reviews -->
-    <tr tal:repeat="review view/requested_reviews">
-      <td tal:content="structure review/reviewer/fmt:link:mainsite" />
+    <tr tal:repeat="review view/requested_reviews"
+        tal:attributes="id string:review-${review/reviewer/name}">
+      <td>
+        <tal:reviewer
+          tal:replace="structure review/reviewer/fmt:link:mainsite" />
+          <a tal:condition="review/user_can_reassign"
+             tal:attributes="href string:reviews/${review/id}/+reassign"><img
+             src="/@@/edit" title="Reassign reviewer" alt="Reassign" /></a>
+      </td>
       <td tal:content="review/review_type" />
       <td>
         <tal:date-requested condition="review/show_date_requested">
@@ -53,21 +62,17 @@
       <td>
         <span class="votePENDING">Pending</span>
         <tal:vote-link condition="review/user_can_review">
-          <a tal:attributes="href string:+review?claim=${review/reviewer/name}&review_type=${review/review_type_str}">[Review]</a>
+          <a tal:attributes="href string:+review?claim=${review/reviewer/name}&amp;review_type=${review/review_type_str}">[Review]</a>
         </tal:vote-link>
+          <form method="POST" tal:condition="review/user_can_claim">
+            <input type="submit" name="field.actions.claim"
+                id="field.actions.claim" value="Claim review" />
+            <input type="hidden" name="field.review_id" id="field.claim"
+                tal:attributes="value string:${review/id}" />
+          </form>
       </td>
     </tr>
-    <tr tal:condition="view/show_user_review_link">
-      <td class="greylink">
-        <tal:user replace="structure view/user/fmt:link:mainsite"/>
-      </td>
-      <td colspan="2"></td>
-      <td>
-        <a href="+review">[Review]</a>
-      </td>
-    </tr>
-
-    <tr>
+    <tr id="email-review">
       <td colspan="4" style="padding-top: 1em; patting-bottom: 0.5em">
         Review <a href="https://help.launchpad.net/Code/Review"
                   class="help">via email</a>:
@@ -81,8 +86,11 @@
                         condition="link/enabled">
     <tr>
       <td colspan="4" style="text-align:right">
-        <div tal:content="structure link/render">
-          Request review
+        <div>
+          <a id="request-review"
+             class="sprite add"
+             tal:attributes="href link/url"
+             tal:content="link/text">Request a review</a>
         </div>
       </td>
     </tr>

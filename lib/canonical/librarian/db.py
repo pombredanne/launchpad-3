@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database access layer for the Librarian."""
 
@@ -29,7 +30,7 @@ def retry_transaction(func):
     The function being decorated should not have side effects outside
     of the transaction.
     """
-    def wrapper(*args, **kwargs):
+    def retry_transaction_decorator(*args, **kwargs):
         attempt = 0
         while True:
             attempt += 1
@@ -39,7 +40,7 @@ def retry_transaction(func):
                     TransactionRollbackError), exc:
                 if attempt >= RETRY_ATTEMPTS:
                     raise # tried too many times
-    return mergeFunctionMetadata(func, wrapper)
+    return mergeFunctionMetadata(func, retry_transaction_decorator)
 
 
 def read_transaction(func):
@@ -49,13 +50,14 @@ def read_transaction(func):
     function.  The transaction will be retried if appropriate.
     """
     @reset_store
-    def wrapper(*args, **kwargs):
+    def read_transaction_decorator(*args, **kwargs):
         transaction.begin()
         try:
             return func(*args, **kwargs)
         finally:
             transaction.abort()
-    return retry_transaction(mergeFunctionMetadata(func, wrapper))
+    return retry_transaction(mergeFunctionMetadata(
+        func, read_transaction_decorator))
 
 
 def write_transaction(func):
@@ -66,7 +68,7 @@ def write_transaction(func):
     if appropriate.
     """
     @reset_store
-    def wrapper(*args, **kwargs):
+    def write_transaction_decorator(*args, **kwargs):
         transaction.begin()
         try:
             ret = func(*args, **kwargs)
@@ -75,7 +77,8 @@ def write_transaction(func):
             raise
         transaction.commit()
         return ret
-    return retry_transaction(mergeFunctionMetadata(func, wrapper))
+    return retry_transaction(mergeFunctionMetadata(
+        func, write_transaction_decorator))
 
 
 class Library:
@@ -93,14 +96,16 @@ class Library:
     # The following methods are read-only queries.
 
     def lookupBySHA1(self, digest):
-        return [fc.id for fc in
-                LibraryFileContent.selectBy(sha1=digest, deleted=False)]
+        return [fc.id for fc in LibraryFileContent.selectBy(sha1=digest)]
 
     def getAlias(self, aliasid):
-        """Returns a LibraryFileAlias, or raises LookupError."""
+        """Returns a LibraryFileAlias, or raises LookupError.
+
+        A LookupError is raised if no record with the given ID exists
+        or if not related LibraryFileContent exists.
+        """
         alias = LibraryFileAlias.selectOne(AND(
             LibraryFileAlias.q.id==aliasid,
-            LibraryFileContent.q.deleted==False,
             LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
             LibraryFileAlias.q.restricted==self.restricted,
             ))
@@ -112,7 +117,6 @@ class Library:
         results = LibraryFileAlias.select(AND(
                 LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
                 LibraryFileContent.q.id==fileid,
-                LibraryFileContent.q.deleted==False,
                 LibraryFileAlias.q.restricted==self.restricted,
                 ))
         return [(a.id, a.filename, a.mimetype) for a in results]

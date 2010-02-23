@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -8,12 +10,13 @@ __all__ = [
     'TemporaryStorageManager',
     ]
 
-from cStringIO import StringIO
-from datetime import timedelta, datetime
+
 import random
-import sha
 import time
 import thread
+
+from cStringIO import StringIO
+from datetime import timedelta, datetime
 
 from pytz import utc
 from sqlobject import StringCol, ForeignKey

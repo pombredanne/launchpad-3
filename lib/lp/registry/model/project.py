@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """Launchpad Project-related Database Table Objects."""
 
@@ -13,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
+    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound)
 from storm.expr import And, In, SQL
 from storm.store import Store
 
@@ -28,28 +30,26 @@ from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
 from lp.blueprints.interfaces.sprintspecification import (
     SprintSpecificationStatus)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import (
-    IProject, IProjectSeries, IProjectSet)
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup, IProjectGroupSeries, IProjectGroupSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
-
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from canonical.launchpad.database.bug import (
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
 from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.karma import KarmaContextMixin
-from canonical.launchpad.database.language import Language
+from lp.services.worlddata.model.language import Language
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     Milestone, ProjectMilestone, milestone_sort_key)
@@ -57,12 +57,11 @@ from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.database.projectbounty import ProjectBounty
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.answers.model.question import QuestionTargetSearch
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.person import validate_public_person
@@ -71,12 +70,12 @@ from lp.registry.interfaces.person import validate_public_person
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
-              StructuralSubscriptionTargetMixin):
+              StructuralSubscriptionTargetMixin,
+              HasBranchesMixin, HasMergeProposalsMixin):
     """A Project"""
 
-    implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner,
-               IStructuralSubscriptionTarget)
+    implements(IProjectGroup, IFAQCollection, IHasIcon, IHasLogo,
+               IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -125,24 +124,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     # convenient joins
 
-    bounties = SQLRelatedJoin('Bounty', joinColumn='project',
-                            otherColumn='bounty',
-                            intermediateTable='ProjectBounty')
-
     @property
     def products(self):
         return Product.selectBy(project=self, active=True, orderBy='name')
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
-
-    def ensureRelatedBounty(self, bounty):
-        """See `IProject`."""
-        for curr_bounty in self.bounties:
-            if bounty.id == curr_bounty.id:
-                return None
-        ProjectBounty(project=self, bounty=bounty)
-        return None
 
     @property
     def drivers(self):
@@ -153,7 +140,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def mentoring_offers(self):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         via_specs = MentoringOffer.select("""
             Product.project = %s AND
             Specification.product = Product.id AND
@@ -175,7 +162,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     def translatables(self):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -397,23 +384,23 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def milestones(self):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         return self._getMilestones(True)
 
     @property
     def all_milestones(self):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         return self._getMilestones(False)
 
     def getMilestone(self, name):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         for milestone in self.all_milestones:
             if milestone.name == name:
                 return milestone
         return None
 
     def getSeries(self, series_name):
-        """See `IProject.`"""
+        """See `IProjectGroup.`"""
         has_series = ProductSeries.selectFirst(
             AND(ProductSeries.q.productID == Product.q.id,
                 ProductSeries.q.name == series_name,
@@ -426,7 +413,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
 
 class ProjectSet:
-    implements(IProjectSet)
+    implements(IProjectGroupSet)
 
     def __init__(self):
         self.title = 'Projects registered in Launchpad'
@@ -441,11 +428,11 @@ class ProjectSet:
         return project
 
     def get(self, projectid):
-        """See `lp.registry.interfaces.project.IProjectSet`.
+        """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`.
 
-        >>> getUtility(IProjectSet).get(1).name
+        >>> getUtility(IProjectGroupSet).get(1).name
         u'apache'
-        >>> getUtility(IProjectSet).get(-1)
+        >>> getUtility(IProjectGroupSet).get(-1)
         Traceback (most recent call last):
         ...
         NotFoundError: -1
@@ -457,16 +444,16 @@ class ProjectSet:
         return project
 
     def getByName(self, name, ignore_inactive=False):
-        """See `IProjectSet`."""
+        """See `IProjectGroupSet`."""
         pillar = getUtility(IPillarNameSet).getByName(name, ignore_inactive)
-        if not IProject.providedBy(pillar):
+        if not IProjectGroup.providedBy(pillar):
             return None
         return pillar
 
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None,
             registrant=None):
-        """See `lp.registry.interfaces.project.IProjectSet`."""
+        """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`."""
         if registrant is None:
             registrant = owner
         return Project(
@@ -490,17 +477,19 @@ class ProjectSet:
         return Project.select("reviewed IS FALSE")
 
     def search(self, text=None, soyuz=None,
-                     rosetta=None, malone=None,
-                     bazaar=None,
-                     search_products=True,
-                     show_inactive=False):
+               rosetta=None, malone=None,
+               bazaar=None,
+               search_products=False,
+               show_inactive=False):
         """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
-        bounties, bazaar, malone etc are hints as to whether the search
+        bazaar, malone etc are hints as to whether the search
         should be limited to projects that are active in those Launchpad
         applications.
         """
+        if text:
+            text = text.replace("%", "%%")
         clauseTables = set()
         clauseTables.add('Project')
         queries = []
@@ -521,9 +510,11 @@ class ProjectSet:
         if text:
             if search_products:
                 clauseTables.add('Product')
-                queries.append("Product.fti @@ ftq(%s)" % sqlvalues(text))
+                product_query = "Product.fti @@ ftq(%s)" % sqlvalues(text)
+                queries.append(product_query)
             else:
-                queries.append("Project.fti @@ ftq(%s)" % sqlvalues(text))
+                project_query = "Project.fti @@ ftq(%s)" % sqlvalues(text)
+                queries.append(project_query)
 
         if 'Product' in clauseTables:
             queries.append('Product.project=Project.id')
@@ -540,7 +531,7 @@ class ProjectSet:
 class ProjectSeries(HasSpecificationsMixin):
     """See `IprojectSeries`."""
 
-    implements(IProjectSeries)
+    implements(IProjectGroupSeries)
 
     def __init__(self, project, name):
         self.project = project

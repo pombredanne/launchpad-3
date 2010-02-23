@@ -3,10 +3,17 @@ settings. These command line options change what log levels are output
 by our logging handler.
 
     >>> def test(*args, **kw):
+    ...     import os
     ...     import sys
     ...     import subprocess
-    ...     import os.path
     ...     from canonical.config import config
+    ...     # We want to make sure that the subprocess will have the benefit
+    ...     # of all of the dependency paths inserted by the buildout.
+    ...     # We pass them via PYTHONPATH.
+    ...     env = kw.get('env')
+    ...     if env is None:
+    ...         kw['env'] = env = dict(os.environ)
+    ...     env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
     ...     test_script_path = os.path.join(
     ...         config.root, 'lib', 'canonical', 'launchpad',
     ...         'scripts', 'tests', 'loglevels.py')

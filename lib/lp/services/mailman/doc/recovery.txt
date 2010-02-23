@@ -1,4 +1,6 @@
-= Error recovery =
+==============
+Error recovery
+==============
 
 Under various conditions, reporting status from Mailman to Launchpad can
 fail.  For example, if during construction, the reportStatus() call has
@@ -18,14 +20,15 @@ automatically.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink('Create a mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.review_list('itest-one')
 
 
-== Lost construction ==
+Lost construction
+=================
 
 The mailing list is now active, but let's say that the status reporting
 failed.  The mailing list would be in the CONSTRUCTING state.  We
@@ -37,7 +40,7 @@ state.
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingListSet, MailingListStatus)
     >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> mailing_list_set = getUtility(IMailingListSet)
     >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
     >>> itest_one.status = MailingListStatus.CONSTRUCTING
@@ -84,7 +87,8 @@ does not actually exist in Mailman, then Mailman will create it.
     <DBItem MailingListStatus.ACTIVE, (5) Active>
 
 
-== Lost updates ==
+Lost updates
+============
 
 Another situation can occur if the team owner updates the mailing list,
 say by giving it a welcome message.

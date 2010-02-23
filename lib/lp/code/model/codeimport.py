@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to CodeImport."""
@@ -31,18 +33,16 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.code.interfaces.branch import BranchType
-from lp.code.interfaces.codeimport import (
-    CodeImportReviewStatus, ICodeImport, ICodeImportSet)
+from lp.code.enums import (
+    BranchType, CodeImportJobState, CodeImportResultStatus,
+    CodeImportReviewStatus, RevisionControlSystems)
+from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.interfaces.codeimportjob import CodeImportJobState
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
-from lp.code.interfaces.codeimport import RevisionControlSystems
-from lp.code.model.codeimportresult import (
-    CodeImportResult, CodeImportResultStatus)
+from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.mail.codeimport import code_import_updated
 from lp.registry.interfaces.person import validate_public_person
 
@@ -87,9 +87,7 @@ class CodeImport(SQLBase):
 
     cvs_module = StringCol(default=None)
 
-    svn_branch_url = StringCol(default=None)
-
-    git_repo_url = StringCol(default=None)
+    url = StringCol(default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
@@ -104,8 +102,12 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_cvs,
             RevisionControlSystems.SVN:
                 config.codeimport.default_interval_subversion,
+            RevisionControlSystems.BZR_SVN:
+                config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
+            RevisionControlSystems.HG:
+                config.codeimport.default_interval_hg,
             }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
@@ -119,10 +121,12 @@ class CodeImport(SQLBase):
             "Only makes sense for series with import details set.")
         if self.rcs_type == RevisionControlSystems.CVS:
             return '%s %s' % (self.cvs_root, self.cvs_module)
-        elif self.rcs_type == RevisionControlSystems.SVN:
-            return self.svn_branch_url
-        elif self.rcs_type == RevisionControlSystems.GIT:
-            return self.git_repo_url
+        elif self.rcs_type in (
+            RevisionControlSystems.SVN,
+            RevisionControlSystems.GIT,
+            RevisionControlSystems.BZR_SVN,
+            RevisionControlSystems.HG):
+            return self.url
         else:
             raise AssertionError(
                 'Unknown rcs type: %s'% self.rcs_type.title)
@@ -146,18 +150,6 @@ class CodeImport(SQLBase):
         'CodeImportResult', joinColumn='code_import',
         orderBy=['-date_job_started'])
 
-    def changeDetails(self, data, user):
-        """See `ICodeImport`."""
-        if 'review_status' in data:
-            raise AssertionError(
-                'changeDetails cannot be used to change review_status.')
-        modify_event = self.updateFromData(data, user)
-        if modify_event is not None:
-            code_import_updated(modify_event)
-            return True
-        else:
-            return False
-
     @property
     def consecutive_failure_count(self):
         """See `ICodeImport`."""
@@ -168,7 +160,8 @@ class CodeImport(SQLBase):
             "coalesce",
             Select(
                 CodeImportResult.id,
-                And(CodeImportResult.status == CodeImportResultStatus.SUCCESS,
+                And(CodeImportResult.status.is_in(
+                        CodeImportResultStatus.successes),
                     CodeImportResult.code_import == self),
                 order_by=Desc(CodeImportResult.id),
                 limit=1),
@@ -206,6 +199,15 @@ class CodeImport(SQLBase):
     def __repr__(self):
         return "<CodeImport for %s>" % self.branch.unique_name
 
+    def tryFailingImportAgain(self, user):
+        """See `ICodeImport`."""
+        if self.review_status != CodeImportReviewStatus.FAILING:
+            raise AssertionError(
+                "review_status is %s not FAILING" % self.review_status.name)
+        self.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED}, user)
+        getUtility(ICodeImportJobWorkflow).requestJob(self.import_job, user)
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""
@@ -213,39 +215,39 @@ class CodeImportSet:
     implements(ICodeImportSet)
 
     def new(self, registrant, product, branch_name, rcs_type,
-            svn_branch_url=None, cvs_root=None, cvs_module=None,
-            review_status=None, git_repo_url=None):
+            url=None, cvs_root=None, cvs_module=None, review_status=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
-            assert svn_branch_url is None
-            assert git_repo_url is None
-        elif rcs_type == RevisionControlSystems.SVN:
+            assert url is None
+        elif rcs_type in (RevisionControlSystems.SVN,
+                          RevisionControlSystems.BZR_SVN,
+                          RevisionControlSystems.GIT,
+                          RevisionControlSystems.HG):
             assert cvs_root is None and cvs_module is None
-            assert svn_branch_url is not None
-            assert git_repo_url is None
-        elif rcs_type == RevisionControlSystems.GIT:
-            assert cvs_root is None and cvs_module is None
-            assert svn_branch_url is None
-            assert git_repo_url is not None
+            assert url is not None
         else:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
         if review_status is None:
-            review_status = CodeImportReviewStatus.NEW
+            # Auto approve git and hg imports.
+            if rcs_type in (
+                RevisionControlSystems.GIT, RevisionControlSystems.HG):
+                review_status = CodeImportReviewStatus.REVIEWED
+            else:
+                review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        namespace = get_branch_namespace(vcs_imports, product)
+        namespace = get_branch_namespace(registrant, product)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
-            registrant=vcs_imports)
+            registrant=registrant)
 
         code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=import_branch,
-            rcs_type=rcs_type, svn_branch_url=svn_branch_url,
+            rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
-            review_status=review_status, git_repo_url=git_repo_url)
+            review_status=review_status)
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(ObjectCreatedEvent(code_import))
@@ -258,7 +260,7 @@ class CodeImportSet:
 
     def delete(self, code_import):
         """See `ICodeImportSet`."""
-        from canonical.launchpad.database import CodeImportJob
+        from lp.code.model.codeimportjob import CodeImportJob
         if code_import.import_job is not None:
             CodeImportJob.delete(code_import.import_job.id)
         CodeImport.delete(code_import.id)
@@ -324,13 +326,9 @@ class CodeImportSet:
         return CodeImport.selectOneBy(
             cvs_root=cvs_root, cvs_module=cvs_module)
 
-    def getByGitDetails(self, git_repo_url):
+    def getByURL(self, url):
         """See `ICodeImportSet`."""
-        return CodeImport.selectOneBy(git_repo_url=git_repo_url)
-
-    def getBySVNDetails(self, svn_branch_url):
-        """See `ICodeImportSet`."""
-        return CodeImport.selectOneBy(svn_branch_url=svn_branch_url)
+        return CodeImport.selectOneBy(url=url)
 
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""

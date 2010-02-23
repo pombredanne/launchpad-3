@@ -1,4 +1,6 @@
-= Deactivating mailing lists =
+==========================
+Deactivating mailing lists
+==========================
 
 A team administrator can also deactivate a mailing list.  Mailman handles this
 by archiving and deleting the mailing list data, which allows for easy

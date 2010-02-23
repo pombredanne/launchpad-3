@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ISeriesSourcePackageBranch."""
 
@@ -20,8 +21,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
     ISeriesSourcePackageBranch)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import TestCaseWithFactory
 from canonical.testing import DatabaseFunctionalLayer
 
 

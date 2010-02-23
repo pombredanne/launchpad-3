@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for extensions in stormsugar, but not stormsugar proper."""
 
@@ -11,9 +12,9 @@ from storm.expr import Lower
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.launchpad.database import Person
+from lp.registry.model.person import Person
 from canonical.launchpad.database.stormsugar import StartsWith
-from canonical.launchpad.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 

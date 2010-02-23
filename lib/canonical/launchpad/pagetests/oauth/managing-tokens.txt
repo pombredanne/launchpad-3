@@ -18,6 +18,8 @@ and/or revoked from that user's +oauth-tokens page.
     # View the tokens.
     >>> my_browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
     >>> my_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')
+    >>> print my_browser.title
+    Authorized applications...
     >>> main_content = find_tag_by_id(my_browser.contents, 'maincontent')
     >>> print extract_text(main_content)
     Authorized applications
@@ -39,7 +41,7 @@ For each token we have a separate <form> with the token and consumer
 keys stored in hidden <input>s as well as the button to revoke the
 authorization.
 
-    >>> li = main_content.find('li')
+    >>> li = find_tag_by_id(main_content, 'tokens').find('li')
     >>> for input in li.find('form').findAll('input'):
     ...     print input['name'], input['value']
     consumer_key foobar123451432
@@ -68,8 +70,8 @@ Launchpad on that user's behalf anymore, nor will that application be
 shown as one of the authorized ones.
 
     >>> my_browser.getControl('Revoke Authorization', index=1).click()
-    >>> my_browser.title
-    'Guilherme Salgado in Launchpad'
+    >>> print my_browser.title
+    Authorized applications...
     >>> for message in get_feedback_messages(my_browser.contents):
     ...     print message
     Authorization revoked successfully.

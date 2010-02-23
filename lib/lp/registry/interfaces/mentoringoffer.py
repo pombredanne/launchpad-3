@@ -1,4 +1,6 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """MentoringOffer interfaces."""
@@ -19,7 +21,7 @@ from zope.schema import Datetime, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 class IMentoringOffer(IHasOwner):
     """An offer of mentoring help."""
 

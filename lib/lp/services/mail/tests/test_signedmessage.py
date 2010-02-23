@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the SignedMessage class."""
 
@@ -22,7 +23,8 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.testing import GPGSigningContext, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import GPGSigningContext
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 class TestSignedMessage(TestCaseWithFactory):

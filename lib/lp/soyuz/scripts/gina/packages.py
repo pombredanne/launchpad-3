@@ -1,4 +1,8 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0631
+
 """Package information classes.
 
 This classes are responsable for fetch and hold the information inside
@@ -8,7 +12,15 @@ the sources and binarypackages.
 __metaclass__ = type
 
 
-__all__ = ['AbstractPackageData', 'SourcePackageData', 'BinaryPackageData']
+__all__ = [
+    'AbstractPackageData',
+    'BinaryPackageData',
+    'get_dsc_path',
+    'PoolFileNotFound',
+    'prioritymap',
+    'SourcePackageData',
+    'urgencymap',
+    ]
 
 import re
 import os
@@ -19,7 +31,7 @@ import rfc822
 
 from canonical import encoding
 
-from canonical.archivepublisher.diskpool import poolify
+from lp.archivepublisher.diskpool import poolify
 from lp.soyuz.scripts.gina.changelog import parse_changelog
 
 from canonical.database.constants import UTC_NOW
@@ -136,12 +148,13 @@ def read_dsc(package, version, component, archive_root):
 
     return dsc, changelog, copyright
 
+
 def parse_person(val):
     if "," in val:
         # Some emails have ',' like "Adam C. Powell, IV
         # <hazelsct@debian.org>". rfc822.parseaddr seems to do not
         # handle this properly, so we munge them here
-        val = val.replace(',','')
+        val = val.replace(',', '')
     return rfc822.parseaddr(val)
 
 
@@ -171,12 +184,6 @@ def get_person_by_key(keyrings, key):
 
         line = line.split(":")
         algo = int(line[3])
-        if GPGALGOS.has_key(algo):
-            algochar = GPGALGOS[algo]
-        else:
-            algochar = "?" % algo
-        # STRIPPED GPGID Support by cprov 20041004
-        #          id = line[2] + algochar + "/" + line[4][-8:]
         id = line[4][-8:]
         algorithm = algo
         keysize = line[2]
@@ -376,7 +383,6 @@ class SourcePackageData(AbstractPackageData):
 
         AbstractPackageData.__init__(self)
 
-
     def do_package(self, archive_root):
         """Get the Changelog and urgency from the package on archive.
 
@@ -393,7 +399,7 @@ class SourcePackageData(AbstractPackageData):
         self.changelog = None
         if changelog and changelog[0]:
             cldata = changelog[0]
-            if cldata.has_key("changes"):
+            if 'changes' in cldata:
                 if cldata["package"] != self.package:
                     log.warn("Changelog package %s differs from %s" %
                              (cldata["package"], self.package))
@@ -405,22 +411,6 @@ class SourcePackageData(AbstractPackageData):
             else:
                 log.warn("Changelog empty for source %s (%s)" %
                          (self.package, self.version))
-
-    def do_katie(self, kdb, keyrings):
-        # XXX kiko 2005-10-23: Disabled for the moment, untested.
-        raise AssertionError
-
-        data = kdb.getSourcePackageRelease(self.package, self.version)
-        if not data:
-            return
-
-        assert len(data) == 1
-        data = data[0]
-        # self.date_uploaded = data["install_date"]
-        #
-        #    self.dsc_signing_key = data["fingerprint"]
-        #    self.dsc_signing_key_owner = \
-        #        get_person_by_key(keyrings, self.dsc_signing_key)
 
     def ensure_complete(self, kdb):
         if self.format is None:
@@ -555,22 +545,3 @@ class BinaryPackageData(AbstractPackageData):
         if os.path.exists(shlibfile):
             self.shlibs = open(shlibfile).read().strip()
             log.debug("Grabbing shared library info from %s" % shlibfile)
-
-    def do_katie(self, kdb, keyrings):
-        # XXX kiko 2005-10-23: Disabled for the moment, untested.
-        raise AssertionError
-
-        data = kdb.getBinaryPackageRelease(self.package, self.version,
-                                           self.architecture)
-        if not data:
-            return
-
-        assert len(data) >= 1
-        data = data[0]
-
-        self.gpg_signing_key = data["fingerprint"]
-        log.debug(self.gpg_signing_key)
-        self.gpg_signing_key_owner = \
-            get_person_by_key(keyrings, self.gpg_signing_key)
-        return True
-

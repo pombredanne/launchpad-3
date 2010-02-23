@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Classes to represent source packages in a distribution."""
@@ -13,35 +15,48 @@ import itertools
 import operator
 
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import And, Desc, In
+from storm.expr import And, Desc, In, Join, Lower
+from storm.store import EmptyResultSet
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.interfaces.structuralsubscription import IStructuralSubscriptionTarget
-from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask
-from lp.soyuz.model.distributionsourcepackagerelease import (
-    DistributionSourcePackageRelease)
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
+from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.lazr.utils import smartquote
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
+from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtask import BugTask
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.karma import KarmaTotalCache
+from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
-from canonical.launchpad.database.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-
-from canonical.lazr.utils import smartquote
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes)
+from lp.translations.model.customlanguagecode import (
+    CustomLanguageCode, HasCustomLanguageCodesMixin)
 
 
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
-                                StructuralSubscriptionTargetMixin):
+                                StructuralSubscriptionTargetMixin,
+                                HasBranchesMixin, 
+                                HasCustomLanguageCodesMixin,
+                                HasMergeProposalsMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -50,8 +65,7 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IDistributionSourcePackage, IQuestionTarget,
-        IStructuralSubscriptionTarget)
+        IDistributionSourcePackage, IHasCustomLanguageCodes, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -81,8 +95,16 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def title(self):
         """See `IDistributionSourcePackage`."""
-        return smartquote('"%s" source package in %s') % (
+        return smartquote('"%s" package in %s') % (
             self.sourcepackagename.name, self.distribution.displayname)
+
+    @property
+    def development_version(self):
+        """See `IDistributionSourcePackage`."""
+        series = self.distribution.currentseries
+        if series is None:
+            return None
+        return series.getSourcePackage(self.sourcepackagename)
 
     @property
     def _self_in_database(self):
@@ -120,9 +142,6 @@ class DistributionSourcePackage(BugTargetBase,
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
 
-    def __getitem__(self, version):
-        return self.getVersion(version)
-
     @property
     def latest_overall_publication(self):
         """See `IDistributionSourcePackage`."""
@@ -138,15 +157,19 @@ class DistributionSourcePackage(BugTargetBase,
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            pocket NOT IN (30, 40) AND
-            status in (2,5)""" %
+            pocket NOT IN (%s, %s) AND
+            status in (%s, %s)""" %
                 sqlvalues(self.distribution,
                           self.sourcepackagename,
-                          self.distribution.all_distro_archive_ids),
+                          self.distribution.all_distro_archive_ids,
+                          PackagePublishingPocket.PROPOSED,
+                          PackagePublishingPocket.BACKPORTS,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.OBSOLETE),
             clauseTables=["SourcePackagePublishingHistory",
                           "SourcePackageRelease", 
                           "DistroSeries"],
-            orderBy=["-status",
+            orderBy=["status",
                      SQLConstant(
                         "to_number(DistroSeries.version, '99.99') DESC"),
                      "-pocket"])
@@ -205,7 +228,7 @@ class DistributionSourcePackage(BugTargetBase,
     def get_distroseries_packages(self, active_only=True):
         """See `IDistributionSourcePackage`."""
         result = []
-        for series in self.distribution.serieses:
+        for series in self.distribution.series:
             if active_only:
                 if not series.active:
                     continue
@@ -214,6 +237,56 @@ class DistributionSourcePackage(BugTargetBase,
                 result.append(candidate)
         return result
 
+    def findRelatedArchives(self,
+                            exclude_archive=None,
+                            archive_purpose=ArchivePurpose.PPA,
+                            required_karma=0):
+        """See `IDistributionSourcePackage`."""
+
+        extra_args = []
+
+        # Exclude the specified archive where appropriate
+        if exclude_archive is not None:
+            extra_args.append(Archive.id != exclude_archive.id)
+
+        # Filter by archive purpose where appropriate
+        if archive_purpose is not None:
+            extra_args.append(Archive.purpose == archive_purpose)
+
+        # Include only those archives containing the source package released
+        # by a person with karma for this source package greater than that
+        # specified.
+        if required_karma > 0:
+            extra_args.append(KarmaTotalCache.karma_total >= required_karma)
+
+        store = Store.of(self.distribution)
+        results = store.find(
+            Archive,
+            Archive.distribution == self.distribution,
+            Archive.private == False,
+            SourcePackagePublishingHistory.archive == Archive.id,
+            (SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED),
+            (SourcePackagePublishingHistory.sourcepackagerelease ==
+                SourcePackageRelease.id),
+            SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            # Ensure that the package was not copied.
+            SourcePackageRelease.upload_archive == Archive.id,
+            # Next, the joins for the ordering by soyuz karma of the
+            # SPR creator.
+            KarmaTotalCache.person == SourcePackageRelease.creatorID,
+            *extra_args
+            )
+
+        # Note: If and when we later have a field on IArchive to order by,
+        # such as IArchive.rank, we will then be able to return distinct
+        # results. As it is, we cannot return distinct results while ordering
+        # by a non-selected column.
+        results.order_by(
+            Desc(KarmaTotalCache.karma_total), Archive.id)
+
+        return results
+
     @property
     def publishing_history(self):
         """See `IDistributionSourcePackage`."""
@@ -221,7 +294,7 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def upstream_product(self):
-        for distroseries in self.distribution.serieses:
+        for distroseries in self.distribution.series:
             source_package = distroseries.getSourcePackage(
                 self.sourcepackagename)
             if source_package.direct_packaging is not None:
@@ -259,7 +332,7 @@ class DistributionSourcePackage(BugTargetBase,
     def getReleasesAndPublishingHistory(self):
         """See `IDistributionSourcePackage`."""
         # Local import of DistroSeries to avoid import loop.
-        from canonical.launchpad.database import DistroSeries
+        from lp.registry.model.distroseries import DistroSeries
         store = Store.of(self.distribution)
         result = store.find(
             (SourcePackageRelease, SourcePackagePublishingHistory),
@@ -348,6 +421,36 @@ class DistributionSourcePackage(BugTargetBase,
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
+
+    def composeCustomLanguageCodeMatch(self):
+        """See `HasCustomLanguageCodesMixin`."""
+        return And(
+            CustomLanguageCode.distribution == self.distribution,
+            CustomLanguageCode.sourcepackagename == self.sourcepackagename)
+
+    def createCustomLanguageCode(self, language_code, language):
+        """See `IHasCustomLanguageCodes`."""
+        return CustomLanguageCode(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            language_code=language_code, language=language)
+
+    @staticmethod
+    def getPersonsByEmail(email_addresses):
+        """[(EmailAddress,Person), ..] iterable for given email addresses."""
+        if email_addresses is None or len(email_addresses) < 1:
+            return EmptyResultSet()
+        # Perform basic sanitization of email addresses.
+        email_addresses = [
+            address.lower().strip() for address in email_addresses]
+        store = IStore(Person)
+        origin = [
+            Person, Join(EmailAddress, EmailAddress.personID == Person.id)]
+        # Get all persons whose email addresses are in the list.
+        result_set = store.using(*origin).find(
+            (EmailAddress, Person),
+            In(Lower(EmailAddress.email), email_addresses))
+        return result_set
 
 
 class DistributionSourcePackageInDatabase(Storm):

@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -19,13 +16,10 @@
 <div metal:fill-slot="main"
      tal:define="batch view/forReviewBatched">
 
-  <h1>Projects for review</h1>
-
   <div tal:condition="not: batch/currentBatch" class="warning message">
     No items found with these search options.
   </div>
   <tal:result condition="batch/currentBatch">
-    <h3 >Please review these items.</h3>
     <tal:navigation replace="structure batch/@@+navigation-links-upper" />
     <table id="product-listing" class="listing">
       <thead>

@@ -1,10 +1,12 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser file for LibraryFileAlias."""
 
 __metaclass__ = type
 
 __all__ = [
+    'DeletedProxiedLibraryFileAlias',
     'FileNavigationMixin',
     'LibraryFileAliasMD5View',
     'LibraryFileAliasView',
@@ -67,7 +69,7 @@ class LibraryFileAliasMD5View(LaunchpadView):
     def render(self):
         """Return the plain text MD5 signature"""
         self.request.response.setHeader('Content-type', 'text/plain')
-        return self.context.content.md5
+        return '%s %s' % (self.context.content.md5, self.context.filename)
 
 
 class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
@@ -128,6 +130,10 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         chain with this view. If the context file is public return the
         appropriate `RedirectionView` for its HTTP url.
         """
+        assert not self.context.deleted, (
+            "StreamOrRedirectLibraryFileAliasView can not operate on "
+            "deleted librarian files, since their URL is undefined.")
+
         if self.context.restricted:
             return self, ()
 
@@ -136,6 +142,10 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
     def publishTraverse(self, request, name):
         """See `IBrowserPublisher`."""
         raise NotFound(name, self.context)
+
+
+class DeletedProxiedLibraryFileAlias(NotFound):
+    """Raised when a deleted `ProxiedLibraryFileAlias` is accessed."""
 
 
 class FileNavigationMixin:
@@ -158,6 +168,11 @@ class FileNavigationMixin:
         if not check_permission('launchpad.View', self.context):
             raise Unauthorized()
         library_file  = self.context.getFileByName(filename)
+
+        # Deleted library files result in NotFound-like error.
+        if library_file.deleted:
+            raise DeletedProxiedLibraryFileAlias(filename, self.context)
+
         return StreamOrRedirectLibraryFileAliasView(
             library_file, self.request)
 
@@ -178,9 +193,15 @@ class ProxiedLibraryFileAlias:
     def http_url(self):
         """Return the webapp URL for the context `LibraryFileAlias`.
 
+        Preserve the `LibraryFileAlias.http_url` behavior for deleted
+        files, returning None.
+
         Mask webservice requests if it's the case, so the returned URL will
         be always relative to the parent webapp URL.
         """
+        if self.context.deleted:
+            return None
+
         request = get_current_browser_request()
         if WebServiceLayer.providedBy(request):
             request = IWebBrowserOriginatingRequest(request)

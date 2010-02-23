@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Code import interfaces."""
@@ -6,10 +8,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeImportReviewStatus',
     'ICodeImport',
     'ICodeImportSet',
-    'RevisionControlSystems',
     ]
 
 import re
@@ -17,78 +17,11 @@ import re
 from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 from CVS.protocol import CVSRoot, CvsRootError
-from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.validators import LaunchpadValidationError
-
-
-class RevisionControlSystems(DBEnumeratedType):
-    """Revision Control Systems
-
-    Bazaar brings code from a variety of upstream revision control
-    systems into bzr. This schema documents the known and supported
-    revision control systems.
-    """
-
-    CVS = DBItem(1, """
-        Concurrent Versions System
-
-        Imports from CVS via CSCVS.
-        """)
-
-    SVN = DBItem(2, """
-        Subversion
-
-        Imports from SVN using CSCVS.
-        """)
-
-    BZR_SVN = DBItem(3, """
-        Subversion via bzr-svn
-
-        Imports from SVN using bzr-svn.
-        """)
-
-    GIT = DBItem(4, """
-        Git
-
-        Imports from Git using bzr-git.
-        """)
-
-
-class CodeImportReviewStatus(DBEnumeratedType):
-    """CodeImport review status.
-
-    Before a code import is performed, it is reviewed. Only reviewed imports
-    are processed.
-    """
-
-    NEW = DBItem(1, """Pending Review
-
-        This code import request has recently been filed and has not
-        been reviewed yet.
-        """)
-
-    INVALID = DBItem(10, """Invalid
-
-        This code import will not be processed.
-        """)
-
-    REVIEWED = DBItem(20, """Reviewed
-
-        This code import has been approved and will be processed.
-        """)
-
-    SUSPENDED = DBItem(30, """Suspended
-
-        This code import has been approved, but it has been suspended
-        and is not processed.""")
-
-    FAILING = DBItem(40, """Failing
-
-        The code import is failing for some reason and is no longer being
-        attempted.""")
+from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
 
 
 def validate_cvs_root(cvsroot):
@@ -98,6 +31,8 @@ def validate_cvs_root(cvsroot):
         raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
+    if not root.hostname:
+        raise LaunchpadValidationError('CVS root is invalid.')
     if root.hostname.count('.') == 0:
         raise LaunchpadValidationError(
             'Please use a fully qualified host name.')
@@ -171,22 +106,9 @@ class ICodeImport(Interface):
             "The version control system to import from. "
             "Can be CVS or Subversion."))
 
-    svn_branch_url = URIField(title=_("Branch URL"), required=False,
-        description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
-        allowed_schemes=["http", "https", "svn"],
-        allow_userinfo=False, # Only anonymous access is supported.
-        allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
-        allow_fragment=False, # Fragment makes no sense in Subversion.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
-
-    git_repo_url = URIField(title=_("Git URL"), required=False,
-        description=_(
-            "The URL of the git repository.  The MASTER branch will be "
-            "imported."),
-        allowed_schemes=["git"],
+    url = URIField(title=_("URL"), required=False,
+        description=_("The URL of the VCS branch."),
+        allowed_schemes=["http", "https", "svn", "git"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
         allow_query=False,    # Query makes no sense in Subversion.
@@ -245,18 +167,28 @@ class ICodeImport(Interface):
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
-            `CodeImportEvent`.
+            `CodeImportEvent`.  May be ``None``.
         :return: The MODIFY `CodeImportEvent`, if any changes were made, or
             None if no changes were made.
+        """
+
+    def tryFailingImportAgain(user):
+        """Try a failing import again.
+
+        This method sets the review_status back to REVIEWED and requests the
+        import be attempted as soon as possible.
+
+        The import must be in the FAILING state.
+
+        :param user: the user who is requesting the import be tried again.
         """
 
 
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None, git_repo_url=None,
-            review_status=None):
+    def new(registrant, product, branch_name, rcs_type, url=None,
+            cvs_root=None, cvs_module=None, review_status=None):
         """Create a new CodeImport."""
 
     def getAll():
@@ -284,11 +216,8 @@ class ICodeImportSet(Interface):
     def getByCVSDetails(cvs_root, cvs_module):
         """Get the CodeImport with the specified CVS details."""
 
-    def getByGitDetails(git_repo_url):
-        """Get the CodeImport with the specified Git details."""
-
-    def getBySVNDetails(svn_branch_url):
-        """Get the CodeImport with the specified SVN details."""
+    def getByURL(url):
+        """Get the CodeImport with the url."""
 
     def delete(id):
         """Delete a CodeImport given its id."""

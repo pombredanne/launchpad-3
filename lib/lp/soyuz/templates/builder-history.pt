@@ -3,25 +3,18 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Build history</h1>
-    </metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
+<body>
   <div metal:fill-slot="main">
+    <h1 tal:content="view/page_title">Bob the builder</h1>
 
+    <div class="top-portlet">
       <div tal:replace="structure context/@@+builds-list"/>
+    </div>
 
+    <a href=".">&laquo;back</a>
   </div>
-  </body>
+</body>
 </html>

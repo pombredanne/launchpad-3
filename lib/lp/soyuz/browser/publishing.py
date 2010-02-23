@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for Soyuz publishing records."""
 
@@ -224,10 +225,10 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     def build_status_img_src(self):
         """Return the image path for the current build status summary."""
         image_map = {
-            BuildSetStatus.BUILDING: '/@@/build-building',
+            BuildSetStatus.BUILDING: '/@@/processing',
             BuildSetStatus.NEEDSBUILD: '/@@/build-needed',
             BuildSetStatus.FAILEDTOBUILD: '/@@/no',
-            BuildSetStatus.FULLYBUILT_PENDING: '/@@/build-success-pending'
+            BuildSetStatus.FULLYBUILT_PENDING: '/@@/build-success-publishing'
             }
 
         return image_map.get(self.build_status_summary['status'], '/@@/yes')

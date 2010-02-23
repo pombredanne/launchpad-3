@@ -1,4 +1,5 @@
-# Copyright 2004-2007, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bazaar plugin to run the smart server on Launchpad.
 
@@ -11,16 +12,13 @@ __all__ = ['cmd_launchpad_server']
 
 
 import sys
-import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
-from bzrlib import lockdir, urlutils, ui
+from bzrlib import lockdir, ui
 
 from bzrlib.smart import medium, server
-from bzrlib.transport import get_transport, remote
-
-from canonical.config import config
+from bzrlib.transport import get_transport
 
 
 class cmd_launchpad_server(Command):
@@ -60,9 +58,9 @@ class cmd_launchpad_server(Command):
             smart_server = medium.SmartServerPipeStreamMedium(
                 sys.stdin, sys.stdout, transport)
         else:
-            host = remote.BZR_DEFAULT_INTERFACE
+            host = medium.BZR_DEFAULT_INTERFACE
             if port is None:
-                port = remote.BZR_DEFAULT_PORT
+                port = medium.BZR_DEFAULT_PORT
             else:
                 if ':' in port:
                     host, port = port.split(':')
@@ -88,11 +86,13 @@ class cmd_launchpad_server(Command):
 
     def run(self, user_id, port=None, upload_directory=None,
             mirror_directory=None, branchfs_endpoint_url=None, inet=False):
-        from canonical.codehosting.vfs import get_lp_server
+        from lp.codehosting.bzrutils import install_oops_handler
+        from lp.codehosting.vfs import get_lp_server
+        install_oops_handler(user_id)
         lp_server = get_lp_server(
             int(user_id), branchfs_endpoint_url,
             upload_directory, mirror_directory)
-        lp_server.setUp()
+        lp_server.start_server()
 
         old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
         try:
@@ -102,7 +102,7 @@ class cmd_launchpad_server(Command):
             self.run_server(smart_server)
         finally:
             lockdir._DEFAULT_TIMEOUT_SECONDS = old_lockdir_timeout
-            lp_server.tearDown()
+            lp_server.stop_server()
 
 
 register_command(cmd_launchpad_server)

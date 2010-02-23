@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Disable pylint 'should have "self" as first argument' warnings.
 # pylint: disable-msg=E0213
@@ -10,25 +11,26 @@ __all__ = [
     'BranchSetAPI', 'IBranchSetAPI', 'IPublicCodehostingAPI',
     'PublicCodehostingAPI']
 
-import os
+
+from bzrlib import urlutils
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
-from lazr.uri import URI
-
 from canonical.config import config
-from canonical.launchpad.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from lp.code.enums import BranchType
 from lp.code.interfaces.branch import (
-    BranchCreationException, BranchCreationForbidden, BranchType, IBranch)
+    BranchCreationException, BranchCreationForbidden, IBranch)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branch import NoSuchBranch
-from lp.code.interfaces.branchlookup import (
-    CannotHaveLinkedBranch, IBranchLookup, NoLinkedBranch)
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, NoLinkedBranch)
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import (
@@ -55,7 +57,7 @@ class IBranchSetAPI(Interface):
                         owner_name=''):
         """Register a new branch in Launchpad."""
 
-    def link_branch_to_bug(branch_url, bug_id, whiteboard):
+    def link_branch_to_bug(branch_url, bug_id):
         """Link the branch to the bug."""
 
 
@@ -100,7 +102,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
         try:
             unicode_branch_url = branch_url.decode('utf-8')
-            url = IBranch['url'].validate(unicode_branch_url)
+            IBranch['url'].validate(unicode_branch_url)
         except LaunchpadValidationError, exc:
             return faults.InvalidBranchUrl(branch_url, exc)
 
@@ -135,7 +137,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
         return canonical_url(branch)
 
-    def link_branch_to_bug(self, branch_url, bug_id, whiteboard):
+    def link_branch_to_bug(self, branch_url, bug_id):
         """See IBranchSetAPI."""
         branch = getUtility(IBranchLookup).getByUrl(url=branch_url)
         if branch is None:
@@ -144,13 +146,10 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             bug = getUtility(IBugSet).get(bug_id)
         except NotFoundError:
             return faults.NoSuchBug(bug_id)
-        if not whiteboard:
-            whiteboard = None
-
         # Since this API is controlled using launchpad.AnyPerson there must be
         # an authenticated person, so use this person as the registrant.
         registrant = getUtility(ILaunchBag).user
-        bug.addBranch(branch, registrant=registrant, whiteboard=whiteboard)
+        bug.linkBranch(branch, registrant=registrant)
         return canonical_url(bug)
 
 
@@ -185,11 +184,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     supported_schemes = 'bzr+ssh', 'http'
 
-    def _getBazaarHost(self):
-        """Return the hostname for the codehosting server."""
-        return URI(config.codehosting.supermirror_root).host
-
-    def _getResultDict(self, branch, suffix=None):
+    def _getResultDict(self, branch, suffix=None, supported_schemes=None):
         """Return a result dict with a list of URLs for the given branch.
 
         :param branch: A Branch object.
@@ -202,17 +197,18 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 return faults.NoUrlForBranch(branch.unique_name)
             return dict(urls=[branch.url])
         else:
-            return self._getUniqueNameResultDict(branch.unique_name, suffix)
+            return self._getUniqueNameResultDict(
+                branch.unique_name, suffix, supported_schemes)
 
-    def _getUniqueNameResultDict(self, unique_name, suffix=None):
+    def _getUniqueNameResultDict(self, unique_name, suffix=None,
+                                 supported_schemes=None):
+        from lp.code.model.branch import compose_public_url
+        if supported_schemes is None:
+            supported_schemes = self.supported_schemes
         result = dict(urls=[])
-        host = self._getBazaarHost()
-        path = '/' + unique_name
-        if suffix is not None:
-            path = os.path.join(path, suffix)
-        for scheme in self.supported_schemes:
+        for scheme in supported_schemes:
             result['urls'].append(
-                str(URI(host=host, scheme=scheme, path=path)))
+                compose_public_url(scheme, unique_name, suffix))
         return result
 
     @return_fault
@@ -225,6 +221,11 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         strip_path = path.strip('/')
         if strip_path == '':
             raise faults.InvalidBranchIdentifier(path)
+        supported_schemes = self.supported_schemes
+        hot_products = [product.strip() for product
+                        in config.codehosting.hot_products.split(',')]
+        if strip_path in hot_products:
+            supported_schemes = ['http']
         branch_set = getUtility(IBranchLookup)
         try:
             branch, suffix = branch_set.getByLPPath(strip_path)
@@ -239,24 +240,25 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         # the model code(blech) or some automated way of reraising as faults
         # or using a narrower range of faults (e.g. only one "NoSuch" fault).
         except InvalidProductName, e:
-            raise faults.InvalidProductIdentifier(e.name)
+            raise faults.InvalidProductIdentifier(urlutils.escape(e.name))
         except NoSuchProductSeries, e:
-            raise faults.NoSuchProductSeries(e.name, e.product)
+            raise faults.NoSuchProductSeries(
+                urlutils.escape(e.name), e.product)
         except NoSuchPerson, e:
-            raise faults.NoSuchPersonWithName(e.name)
+            raise faults.NoSuchPersonWithName(urlutils.escape(e.name))
         except NoSuchProduct, e:
-            raise faults.NoSuchProduct(e.name)
+            raise faults.NoSuchProduct(urlutils.escape(e.name))
         except NoSuchDistroSeries, e:
-            raise faults.NoSuchDistroSeries(e.name)
+            raise faults.NoSuchDistroSeries(urlutils.escape(e.name))
         except NoSuchSourcePackageName, e:
-            raise faults.NoSuchSourcePackageName(e.name)
+            raise faults.NoSuchSourcePackageName(urlutils.escape(e.name))
         except NoLinkedBranch, e:
             raise faults.NoLinkedBranch(e.component)
         except CannotHaveLinkedBranch, e:
             raise faults.CannotHaveLinkedBranch(e.component)
         except InvalidNamespace, e:
-            raise faults.InvalidBranchUniqueName(e.name)
-        return self._getResultDict(branch, suffix)
+            raise faults.InvalidBranchUniqueName(urlutils.escape(e.name))
+        return self._getResultDict(branch, suffix, supported_schemes)
 
     def resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""

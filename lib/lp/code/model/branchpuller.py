@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The way the branch puller talks to the database."""
 
@@ -13,11 +14,12 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
+from lp.code.enums import BranchType
 from lp.code.model.branch import Branch
+from lp.code.interfaces.branch import BranchTypeError
+from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
-from lp.code.interfaces.branch import BranchType, BranchTypeError
-from lp.code.interfaces.branchpuller import IBranchPuller
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -53,7 +55,8 @@ class BranchPuller:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch = store.find(
             Branch,
-            Branch.next_mirror_time <= UTC_NOW).order_by(
+            Branch.next_mirror_time <= UTC_NOW,
+            Branch.branch_type != BranchType.REMOTE).order_by(
                 Branch.next_mirror_time).first()
         if branch is not None:
             branch.startMirroring()

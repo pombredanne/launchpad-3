@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test harness for Launchpad/Mailman doctests."""
 
@@ -14,6 +15,7 @@ from Mailman.mm_cfg import MAILMAN_SITE_LIST, QUEUE_DIR, VAR_PREFIX
 from Mailman.Utils import list_names
 
 import lp.services.mailman.doc
+from lp.services.testing import build_test_suite
 
 from canonical.launchpad.testing.browser import (
     setUp as setUpBrowser,
@@ -94,16 +96,8 @@ def tearDown(testobj):
             os.remove(os.path.join(data_dir, filename))
 
 
+here = os.path.dirname(os.path.realpath(__file__))
+
 def test_suite():
-    suite = unittest.TestSuite()
-    doc_directory = os.path.normpath(
-        os.path.dirname(lp.services.mailman.doc.__file__))
-    for filename in os.listdir(doc_directory):
-        if filename.endswith('.txt'):
-            test = LayeredDocFileSuite(
-                filename,
-                package=lp.services.mailman.doc,
-                setUp=setUp, tearDown=tearDown,
-                layer=MailmanLayer)
-            suite.addTest(test)
-    return suite
+    return build_test_suite(
+        here, setUp=setUp, tearDown=tearDown, layer=MailmanLayer)

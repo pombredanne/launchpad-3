@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # We know we are not using root and handlers.
 # pylint: disable-msg=W0612
 
@@ -9,6 +11,7 @@ __metaclass__ = type
 
 import ZConfig
 import os
+import pkg_resources
 import unittest
 
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
@@ -18,11 +21,10 @@ from lazr.config.interfaces import ConfigErrors
 
 # Calculate some landmark paths.
 import canonical.config
-here = os.path.dirname(canonical.config.__file__)
-schema_file = os.path.join(
-    here, os.pardir, os.pardir, 'zope/app/server/schema.xml')
+schema_file = pkg_resources.resource_filename('zope.app.server', 'schema.xml')
 schema = ZConfig.loadSchema(schema_file)
 
+here = os.path.dirname(canonical.config.__file__)
 lazr_schema_file = os.path.join(here, 'schema-lazr.conf')
 
 
@@ -54,7 +56,7 @@ def make_config_test(config_file, description):
                 message = '\n'.join([str(e) for e in error.errors])
                 self.fail(message)
     # Hack the config file name into the class name.
-    LAZRConfigTestCase.__name__ = '../configs/' + description
+    LAZRConfigTestCase.__name__ = '../' + description
     return LAZRConfigTestCase
 
 
@@ -68,26 +70,26 @@ def test_suite():
         optionflags=NORMALIZE_WHITESPACE | ELLIPSIS
         ))
     # Add a test for every launchpad[.lazr].conf file in our tree.
-    top_directory = os.path.join(here, '../../..', 'configs')
-    prefix_len = len(top_directory) + 1
-    for dirpath, dirnames, filenames in os.walk(top_directory):
-        for filename in filenames:
-            if filename == 'launchpad.conf':
-                config_file = os.path.join(dirpath, filename)
-                description = config_file[prefix_len:]
-                # Hack the config file name into the test_function's __name__
-                # so that the test -vv output is more informative.
-                # Unfortunately, FunctionTestCase's description argument
-                # doesn't do what we want.
-                suite.addTest(unittest.FunctionTestCase(
-                    make_test(config_file, 'configs/' + description)))
-            elif filename.endswith('-lazr.conf'):
-                # Test the lazr.config conf files.
-                config_file = os.path.join(dirpath, filename)
-                description = config_file[prefix_len:]
-                test = make_config_test(config_file, description)
-                suite.addTest(test('testConfig'))
-            else:
-                # This file is not a config that can be validated.
-                pass
+    for config_dir in canonical.config.CONFIG_ROOT_DIRS:
+        prefix_len = len(os.path.dirname(config_dir)) + 1
+        for dirpath, dirnames, filenames in os.walk(config_dir):
+            for filename in filenames:
+                if filename == 'launchpad.conf':
+                    config_file = os.path.join(dirpath, filename)
+                    description = config_file[prefix_len:]
+                    # Hack the config file name into the test_function's
+                    # __name__ # so that the test -vv output is more
+                    # informative. Unfortunately, FunctionTestCase's
+                    # description argument doesn't do what we want.
+                    suite.addTest(unittest.FunctionTestCase(
+                        make_test(config_file, description)))
+                elif filename.endswith('-lazr.conf'):
+                    # Test the lazr.config conf files.
+                    config_file = os.path.join(dirpath, filename)
+                    description = config_file[prefix_len:]
+                    test = make_config_test(config_file, description)
+                    suite.addTest(test('testConfig'))
+                else:
+                    # This file is not a config that can be validated.
+                    pass
     return suite

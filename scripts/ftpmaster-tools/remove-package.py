@@ -1,10 +1,13 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # General purpose package removal tool for ftpmaster
-# Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005  James Troup <james@nocrew.org>
-# Copyright (C) 2006  James Troup <james.troup@canonical.com>
 
 ################################################################################
+
+import _pythonpath
 
 import commands
 import optparse
@@ -15,8 +18,6 @@ import sys
 import dak_utils
 
 import apt_pkg
-
-import _pythonpath
 
 from zope.component import getUtility
 
@@ -186,12 +187,12 @@ def game_over():
 #     else:
 #         print "No dependency problem found."
 #     print
-    
+
 ################################################################################
 
 def options_init():
     global Options
-    
+
     parser = optparse.OptionParser()
     logger_options(parser)
     parser.add_option("-a", "--architecture", dest="architecture",
@@ -274,7 +275,7 @@ def init():
 
     return arguments
 
-################################################################################    
+################################################################################
 
 def summary_to_remove(to_remove):
     # Generate the summary of what's to be removed
@@ -313,7 +314,7 @@ def summary_to_remove(to_remove):
 
     return summary
 
-################################################################################   
+################################################################################
 
 def what_to_remove(packages):
     to_remove = []

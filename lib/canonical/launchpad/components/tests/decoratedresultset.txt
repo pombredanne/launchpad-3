@@ -6,23 +6,29 @@ indeed implement the IResultSet interface correctly.
 
 Please see doc/decoratedresultset.txt for the documentation.
 
-First we'll setup the decorated result set:
+First we'll setup the decorated result set using a properly proxied
+ResultSet:
 
     >>> from zope.component import getUtility
     >>> from storm.store import Store
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> store = Store.of(ubuntu)
-    >>> from canonical.launchpad.database import Distribution
+    >>> from lp.registry.model.distribution import Distribution
     >>> result_set = store.find(Distribution)
+
+    >>> from zope.security.checker import ProxyFactory
+    >>> proxied_result_set = ProxyFactory(result_set)
+    >>> print proxied_result_set
+    <security proxied storm.store.ResultSet ...>
 
     >>> def result_decorator(distribution):
     ...     return "Dist name is: %s" % distribution.name
 
     >>> from canonical.launchpad.components.decoratedresultset import (
     ...     DecoratedResultSet)
-    >>> decorated_result_set = DecoratedResultSet(result_set,
-    ...     result_decorator)
+    >>> decorated_result_set = DecoratedResultSet(
+    ...     proxied_result_set, result_decorator)
 
 == copy() ==
 
@@ -51,10 +57,13 @@ But it still contains the expected results:
 
 The decorated config method updates the config of the original result set:
 
-    >>> decorated_result_set.result_set._distinct
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_result_set = removeSecurityProxy(
+    ...     decorated_result_set.result_set)
+    >>> naked_result_set._distinct
     False
     >>> returned_result = decorated_result_set.config(distinct=True)
-    >>> decorated_result_set.result_set._distinct
+    >>> naked_result_set._distinct
     True
 
 but returns a copy of itself:
@@ -100,7 +109,9 @@ method and decorates the result:
 The decorated order_by() method calls the original result set's order_by()
 method and decorates the result:
 
-    >>> ordered_results = decorated_result_set.order_by('name DESC')
+    >>> from storm.expr import Desc
+    >>> ordered_results = decorated_result_set.order_by(
+    ...     Desc(Distribution.name))
     >>> for dist in ordered_results:
     ...     dist
     u'Dist name is: ubuntutest'
@@ -118,4 +129,10 @@ method and decorates the result:
     >>> result_decorator(decorated_result_set.result_set.one())
     u'Dist name is: redhat'
 
+== splicing ==
+
+Splicing a decorated resultset returns another decorated resultset:
+
+    >>> isinstance(decorated_result_set[0:3], DecoratedResultSet)
+    True
 

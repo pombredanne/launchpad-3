@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snapshot adapter for the Storm result set."""
 
@@ -18,4 +19,4 @@ def snapshot_sql_result(value):
     # SelectResults, which doesn't really help the Snapshot
     # object. We therefore list()ify the values; this isn't
     # perfect but allows deltas to be generated reliably.
-    return shortlist(value, longest_expected=100, hardlimit=5000)
+    return shortlist(value, longest_expected=100, hardlimit=1000)

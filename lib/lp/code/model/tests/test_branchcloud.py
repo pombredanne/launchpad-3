@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for IBranchCloud provider."""
 
@@ -11,7 +12,8 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.interfaces.branch import BranchType, IBranchCloud
+from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranchCloud
 from lp.testing import TestCaseWithFactory, time_counter
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches)

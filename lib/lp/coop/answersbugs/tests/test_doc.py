@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Run the doctests and pagetests.
 """
@@ -20,6 +22,10 @@ from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from lp.testing.mail_helpers import pop_notifications
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+
+from lp.services.testing import build_test_suite
+
+here = os.path.dirname(os.path.realpath(__file__))
 
 
 def _createUbuntuBugTaskLinkedToQuestion():
@@ -107,14 +113,4 @@ special = {
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-
-    pagetests_dir = os.path.join(os.path.pardir, 'pagetests')
-    suite.addTest(PageTestSuite(pagetests_dir))
-
-    # Add special needs tests
-    for key in sorted(special):
-        special_suite = special[key]
-        suite.addTest(special_suite)
-
-    return suite
+    return build_test_suite(here, special)
