@@ -69,9 +69,10 @@ def add_options(parser):
                       dest="partner", metavar="PARTNER", default=False,
                       help="Run only over the partner archive.")
 
-    parser.add_option("--copy-archive", action="store",
+    parser.add_option("--copy-archive", action="store_true",
                       dest="copy_archive", metavar="COPYARCHIVE",
-                      help="Run only over the named copy archive specified.")
+                      default=False,
+                      help="Run only over the copy archives.")
 
     parser.add_option(
         "--primary-debug", action="store_true", default=False,
@@ -107,11 +108,10 @@ def run_publisher(options, txn, log=None):
 
     exclusive_options = (
         options.partner, options.ppa, options.private_ppa,
-        options.primary_debug)
+        options.primary_debug, options.copy_archive)
 
     num_exclusive = [flag for flag in exclusive_options if flag]
-    if (len(num_exclusive) > 1 or
-        options.copy_archive and num_exclusive > 0):
+    if (len(num_exclusive) > 1:
         raise LaunchpadScriptFailure(
             "Can only specify one of partner, ppa, private-ppa, copy-archive"
             " and primary-debug.")
@@ -168,13 +168,12 @@ def run_publisher(options, txn, log=None):
                 "Could not find DEBUG archive for %s" % distribution.name)
         archives = [debug_archive]
     elif options.copy_archive:
-        copy_archive = getUtility(IArchiveSet).getArchivesForDistribution(
-            distribution, name=options.copy_archive,
-            purposes=[ArchivePurpose.COPY]).one()
-        if copy_archive is None:
-            raise LaunchpadScriptFailure(
-                "Could not find COPY archive named %s" % options.copy_archive)
-        archives = [copy_archive]
+        archives = getUtility(IArchiveSet).getArchivesForDistribution(
+            distribution, purposes=[ArchivePurpose.COPY])
+        # Fix this to use bool when Storm fixes __nonzero__ on sqlobj
+        # result sets.
+        if archives.count() == 0:
+            raise LaunchpadScriptFailure("Could not find any COPY archives")
     else:
         archives = [distribution.main_archive]
 

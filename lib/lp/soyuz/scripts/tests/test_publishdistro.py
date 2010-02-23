@@ -1,3 +1,4 @@
+import pdb
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -307,6 +308,37 @@ class TestPublishDistro(TestNativePublishingBase):
             repo_path, 'dists/breezy-autotest/main/binary-i386/Packages')
         self.assertEqual(
             open(debug_index_path).readlines()[0], 'Package: foo-bin\n')
+
+    def testPublishCopyArchive(self):
+        """Run publish-distro in copy archive mode.
+
+        It should only publish copy archives.
+        """
+        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        copy_archive_name = 'test-copy-publish'
+        copy_archive = getUtility(IArchiveSet).new(
+            distribution=ubuntutest, owner=cprov, name=copy_archive_name,
+            purpose=ArchivePurpose.COPY, enabled=True)
+
+        # Publish something.
+        pub_source =  self.getPubSource(
+            sourcename='baz', filecontent='baz', archive=copy_archive)
+        self.layer.txn.commit()
+
+        # Try a plain PPA run, to ensure the copy archive is not published.
+        self.runPublishDistro(['--ppa'])
+
+        pub_source.sync()
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+
+        # Now publish the private PPAs and make sure they are really
+        # published.
+        pdb.set_trace() ############################## Breakpoint ##############################
+        self.runPublishDistro(['--copy-archive', copy_archive_name])
+
+        pub_source.sync()
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
     def testRunWithEmptySuites(self):
         """Try a publish-distro run on empty suites in careful_apt mode
