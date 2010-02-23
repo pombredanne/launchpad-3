@@ -12,6 +12,7 @@ __all__ = [
 import gettextpo
 import datetime
 import os
+import posixpath
 import pytz
 from zope.component import getUtility
 from zope.interface import implements
@@ -316,11 +317,12 @@ class TranslationImporter:
 
     def isHidden(self, path):
         """See `ITranslationImporter`."""
-        return path.startswith('.') or '/.' in path
+        normalized_path = posixpath.normpath(path)
+        return normalized_path.startswith('.') or '/.' in normalized_path
 
     def isTranslationName(self, path):
         """See `ITranslationImporter`."""
-        base_name, suffix = os.path.splitext(path)
+        base_name, suffix = posixpath.splitext(path)
         if suffix not in self.supported_file_extensions:
             return False
         for importer_suffix in self.template_suffixes:
