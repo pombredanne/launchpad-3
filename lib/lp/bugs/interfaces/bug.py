@@ -16,7 +16,7 @@ __all__ = [
     'IBugDelta',
     'IBugSet',
     'IFrontPageBugAddForm',
-    'IProjectBugAddForm',
+    'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
     'UserCannotUnsubscribePerson',
@@ -513,6 +513,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         :is_patch: A boolean.
         """
 
+    def linkAttachment(owner, file_alias, comment, is_patch=False,
+                       description=None):
+        """Link an `ILibraryFileAlias` to this bug.
+
+        :owner: An IPerson.
+        :file_alias: The `ILibraryFileAlias` to link to this bug.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
     def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
@@ -891,8 +903,8 @@ class IBugAddForm(IBug):
         required=True, default=False)
 
 
-class IProjectBugAddForm(IBugAddForm):
-    """Create a bug for an IProject."""
+class IProjectGroupBugAddForm(IBugAddForm):
+    """Create a bug for an IProjectGroup."""
     product = Choice(
         title=_("Project"), required=True,
         vocabulary="ProjectProductsUsingMalone")

@@ -112,7 +112,7 @@
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_product"/>
   <adapter
-      for="lp.registry.interfaces.project.IProject"
+      for="lp.registry.interfaces.projectgroup.IProjectGroup"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
   <adapter
@@ -153,7 +153,7 @@
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
       factory="lp.code.adapters.revisioncache.revision_cache_for_product"/>
   <adapter
-      for="lp.registry.interfaces.project.IProject"
+      for="lp.registry.interfaces.projectgroup.IProjectGroup"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
       factory="lp.code.adapters.revisioncache.revision_cache_for_project"/>
   <adapter
@@ -399,6 +399,7 @@
                     branch_type
                     name
                     url
+                    composePublicURL
                     whiteboard
                     target
                     mirror_status_message
@@ -932,7 +933,9 @@
     <allow interface="lp.code.interfaces.diff.IStaticDiff" />
   </class>
   <class class="lp.code.model.diff.PreviewDiff">
-    <allow interface="lp.code.interfaces.diff.IPreviewDiff" />
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.diff.IPreviewDiff"/>
   </class>
   <securedutility
       component="lp.code.model.diff.StaticDiff"
@@ -952,6 +955,9 @@
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild">
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
+    <!-- This is needed for UploadProcessor to run. The permission isn't
+         important; launchpad.Edit isn't actually held by anybody. -->
+    <require permission="launchpad.Edit" set_attributes="buildstate upload_log" />
   </class>
 
   <securedutility

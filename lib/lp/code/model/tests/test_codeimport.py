@@ -195,7 +195,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
 
     def makeApprovedImportWithRunningJob(self):
         code_import = self.makeApprovedImportWithPendingJob()
-        job = CodeImportJobSet().getJobForMachine('machine')
+        job = CodeImportJobSet().getJobForMachine('machine', 10)
         self.assertEqual(code_import.import_job, job)
         return code_import
 
