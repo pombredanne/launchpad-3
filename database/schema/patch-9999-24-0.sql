@@ -3,6 +3,6 @@
 
 SET client_min_messages=ERROR;
 
-ALTER TABLE processorfamily ADD COLUMN restricted boolean DEFAULT FALSE;
+ALTER TABLE processorfamily ADD COLUMN restricted boolean DEFAULT FALSE NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (9999, 24, 0);

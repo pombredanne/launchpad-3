@@ -13,7 +13,10 @@ __all__ = [
     'IProcessorFamilySet',
     ]
 
+from canonical.launchpad import _
+
 from zope.interface import Interface, Attribute
+from zope.schema import Bool
 
 class IProcessor(Interface):
     """The SQLObject Processor Interface"""
@@ -29,8 +32,9 @@ class IProcessorFamily(Interface):
     name = Attribute("The Processor Family Name")
     title = Attribute("The Processor Family Title")
     description = Attribute("The Processor Name Description")
-
     processors = Attribute("The Processors in this family.")
+    restricted = Bool(title=_("Whether this family is restricted."))
+
 
 class IProcessorFamilySet(Interface):
     """Operations related to ProcessorFamily instances."""

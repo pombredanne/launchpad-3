@@ -10,6 +10,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
+from storm.locals import Bool
 
 from canonical.database.sqlbase import SQLBase
 
@@ -39,6 +40,7 @@ class ProcessorFamily(SQLBase):
     description = StringCol(dbName='description', notNull=True)
 
     processors = SQLMultipleJoin('Processor', joinColumn='family')
+    restricted = Bool(allow_none=False, default=False)
 
 
 class ProcessorFamilySet:
