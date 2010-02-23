@@ -776,6 +776,21 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             new_job.date_due - running_job.date_due,
             code_import.effective_update_interval)
 
+    def test_partialSuccessCreatesNewJobDueNow(self):
+        # If called with a status of SUCCESS_PARTIAL, finishJob() creates a
+        # new CodeImportJob for the given CodeImport that is due to run right
+        # now.
+        running_job = self.makeRunningJob()
+        code_import = running_job.code_import
+        self.switchDbUser()
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESS_PARTIAL, None)
+        new_job = code_import.import_job
+        self.assert_(new_job is not None)
+        self.assertEqual(new_job.state, CodeImportJobState.PENDING)
+        self.assertEqual(new_job.machine, None)
+        self.assertSqlAttributeEqualsDate(new_job, 'date_due', UTC_NOW)
+
     def test_doesntCreateNewJobIfCodeImportNotReviewed(self):
         # finishJob() creates a new CodeImportJob for the given CodeImport,
         # unless the CodeImport has been suspended or marked invalid.
