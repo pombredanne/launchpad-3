@@ -213,7 +213,7 @@ class CodeImportWorkerMonitor:
     @read_only_transaction
     def getSourceDetails(self):
         """Get a `CodeImportSourceDetails` for the job we are working on."""
-        # Becomes a call on to `getSourceDetailsForJobID` or similar.
+        # XXX Becomes a call on to `getSourceDetailsForJobID` or similar.
         code_import = self.getJob().code_import
         source_details = CodeImportSourceDetails.fromCodeImport(code_import)
         self._logger.info(
@@ -226,7 +226,7 @@ class CodeImportWorkerMonitor:
     @writing_transaction
     def updateHeartbeat(self, tail):
         """Call the updateHeartbeat method for the job we are working on."""
-        # Becomes a call on to `updateHeartbeat` or similar.
+        # XXX Becomes a call on to `updateHeartbeat` or similar.
         self._logger.debug("Updating heartbeat.")
         getUtility(ICodeImportJobWorkflow).updateHeartbeat(
             self.getJob(), tail)
@@ -237,7 +237,7 @@ class CodeImportWorkerMonitor:
         This is a separate method that exists only to be patched in
         tests.
         """
-        # Need to use IFileUploadClient directly?
+        # XXX Need to use IFileUploadClient['remoteAddFile']
         return getUtility(ILibraryFileAliasSet).create(
             name, size, file, contentType)
 
@@ -248,7 +248,7 @@ class CodeImportWorkerMonitor:
 
         This method uploads the log file to the librarian first.
         """
-        # Mostly becomes a call to a finishJob(job_id, status,
+        # XXX Mostly becomes a call to a finishJob(job_id, status,
         # log_file_alias_id) XML-RPC method.  Requires some fun to keep nice
         # names for the uploaded log.
         job = self.getJob()
