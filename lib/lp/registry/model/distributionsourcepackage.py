@@ -162,9 +162,7 @@ class DistributionSourcePackage(BugTargetBase,
             Store.of(self.distribution).add(dsp_in_db)
         dsp_in_db.max_heat = value
 
-    max_heat = property(
-        _get_max_heat,
-        _set_max_heat)
+    max_heat = property(_get_max_heat, _set_max_heat)
 
     @property
     def latest_overall_publication(self):
