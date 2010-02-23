@@ -254,6 +254,18 @@ class TestBazaarBranchStore(WorkerTest):
             store._getMirrorURL(self.arbitrary_branch_id),
             sftp_prefix_noslash + '/' + '%08x' % self.arbitrary_branch_id)
 
+    def test_all_revisions_saved(self):
+        # All revisions in the branch's repo are transferred, not just those
+        # in the ancestry of the tip.
+        tree = self.make_branch_and_tree('tree')
+        revid1 = tree.commit('.')
+        tree.branch.pull(tree.branch, overwrite=True, stop_revision='null:')
+        revid2 = tree.commit('.')
+        store = self.makeBranchStore()
+        store.push(self.arbitrary_branch_id, tree, default_format)
+        store.pull(self.arbitrary_branch_id, 'pulled', default_format)
+        repo = BzrDir.open('pulled').open_repository()
+        self.assertEqual(set([revid1, revid2]), set(repo.all_revision_ids()))
 
 class TestImportDataStore(WorkerTest):
     """Tests for `ImportDataStore`."""
