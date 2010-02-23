@@ -96,6 +96,7 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -565,6 +566,7 @@ class LaunchpadRootNavigation(Navigation):
         'token': ILoginTokenSet,
         '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
+        'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
         '+rpconfig': IOpenIDRPConfigSet,
         # These three have been renamed, and no redirects done, as the old
