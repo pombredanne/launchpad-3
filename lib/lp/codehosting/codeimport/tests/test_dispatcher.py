@@ -24,11 +24,11 @@ from lp.testing import TestCase
 class StubSchedulerClient:
     """A scheduler client that returns a pre-arranged answer."""
 
-    def __init__(self, id_to_return):
-        self.id_to_return = id_to_return
+    def __init__(self, ids_to_return):
+        self.ids_to_return = ids_to_return
 
     def getJobForMachine(self, machine, limit):
-        return self.id_to_return
+        return self.ids_to_return.pop(0)
 
 
 class MockSchedulerClient:
@@ -51,9 +51,10 @@ class TestCodeImportDispatcherUnit(TestCase):
         TestCase.setUp(self)
         self.pushConfig('codeimportdispatcher', forced_hostname='none')
 
-    def makeDispatcher(self, worker_limit=10):
+    def makeDispatcher(self, worker_limit=10, _sleep=lambda delay: None):
         """Make a `CodeImportDispatcher`."""
-        return CodeImportDispatcher(QuietFakeLogger(), worker_limit)
+        return CodeImportDispatcher(
+            QuietFakeLogger(), worker_limit, _sleep=_sleep)
 
     def test_getHostname(self):
         # By default, getHostname return the same as socket.gethostname()
@@ -111,16 +112,16 @@ class TestCodeImportDispatcherUnit(TestCase):
         calls = []
         dispatcher = self.makeDispatcher()
         dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
-        dispatcher.findAndDispatchJob(StubSchedulerClient(10))
-        self.assertEqual([10], calls)
+        found = dispatcher.findAndDispatchJob(StubSchedulerClient([10]))
+        self.assertEqual(([10], True), (calls, found))
 
     def test_findAndDispatchJob_noJobWaiting(self):
         # If there is no job to dispatch, then we just exit quietly.
         calls = []
         dispatcher = self.makeDispatcher()
         dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
-        dispatcher.findAndDispatchJob(StubSchedulerClient(0))
-        self.assertEqual([], calls)
+        found = dispatcher.findAndDispatchJob(StubSchedulerClient([0]))
+        self.assertEqual(([], False), (calls, found))
 
     def test_findAndDispatchJob_calls_getJobForMachine_with_limit(self):
         # findAndDispatchJob calls getJobForMachine on the scheduler client
@@ -132,6 +133,30 @@ class TestCodeImportDispatcherUnit(TestCase):
         self.assertEqual(
             [(dispatcher.getHostname(), worker_limit)],
             scheduler_client.calls)
+
+    def test_findAndDispatchJobs(self):
+        # findAndDispatchJobs calls getJobForMachine on the scheduler_client,
+        # dispatching jobs, until it indicates that there are no more jobs to
+        # dispatch.
+        calls = []
+        dispatcher = self.makeDispatcher()
+        dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
+        dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 9, 0]))
+        self.assertEqual([10, 9], calls)
+
+    def test_findAndDispatchJobs_sleeps(self):
+        # After finding a job, findAndDispatchJobs sleeps for an interval as
+        # returned by _getSleepInterval.
+        sleep_calls = []
+        interval = self.factory.getUniqueInteger()
+        def _sleep(delay):
+            sleep_calls.append(delay)
+        dispatcher = self.makeDispatcher(_sleep=_sleep)
+        dispatcher.dispatchJob = lambda job_id: None
+        dispatcher._getSleepInterval = lambda : interval
+        dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 0]))
+        self.assertEqual([interval], sleep_calls)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
