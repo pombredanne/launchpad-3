@@ -333,19 +333,16 @@ class TestPublishDistro(TestNativePublishingBase):
         # Publish something.
         pub_source =  self.getPubSource(
             sourcename='baz', filecontent='baz', archive=copy_archive)
-        self.layer.txn.commit()
 
         # Try a plain PPA run, to ensure the copy archive is not published.
         self.runPublishDistro(['--ppa'])
 
-        pub_source.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
 
         # Now publish the copy archives and make sure they are really
         # published.
         self.runPublishDistro(['--copy-archive'])
 
-        pub_source.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         # Make sure that the files were published in the right place.
