@@ -32,11 +32,8 @@ The ICodeImportScheduler interface defines a single method,
 getJobForMachine(), that returns the id of the job that the code
 import slave should next run.
 
-    >>> codeimportscheduler_api.getJobForMachine('bazaar-importer')
+    >>> codeimportscheduler_api.getJobForMachine('bazaar-importer', 2)
     1
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
 
 The method just calls the 'getJobForMachine' method from the
 ICodeImportJobSet interface, and tests all the details of what it does
@@ -49,7 +46,7 @@ The point of all this is for it to be accessed over XMLRPC.
     >>> codeimportscheduler = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc-private.launchpad.dev:8087/codeimportscheduler',
     ...     transport=XMLRPCTestTransport())
-    >>> codeimportscheduler.getJobForMachine('bazaar-importer')
+    >>> codeimportscheduler.getJobForMachine('bazaar-importer', 2)
     0
 
 This includes the behaviour of auto-creating machine rows for
@@ -60,7 +57,7 @@ previously unseen hostnames.
     >>> print getUtility(ICodeImportMachineSet).getByHostname(
     ...     'doesnt-exist-yet')
     None
-    >>> codeimportscheduler.getJobForMachine('doesnt-exist-yet')
+    >>> codeimportscheduler.getJobForMachine('doesnt-exist-yet', 1)
     0
     >>> new_machine = getUtility(ICodeImportMachineSet).getByHostname(
     ...     'doesnt-exist-yet')

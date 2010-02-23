@@ -51,7 +51,7 @@ class CodeImportMachine(SQLBase):
         'CodeImportEvent', joinColumn='machine',
         orderBy=['-date_created', '-id'])
 
-    def shouldLookForJob(self):
+    def shouldLookForJob(self, worker_limit):
         """See `ICodeImportMachine`."""
         job_count = self.current_jobs.count()
 
@@ -64,8 +64,7 @@ class CodeImportMachine(SQLBase):
                     CodeImportMachineOfflineReason.QUIESCED)
             return False
         elif self.state == CodeImportMachineState.ONLINE:
-            max_jobs = config.codeimportdispatcher.max_jobs_per_machine
-            return job_count < max_jobs
+            return job_count < worker_limit
         else:
             raise AssertionError(
                 "Unknown machine state %r??" % self.state)

@@ -637,7 +637,7 @@ class BugWatchUpdater(object):
 
         if batch_size is not None:
             # We'll recreate our remote_ids_to_check list so that it's
-            # prioritised. We always include remote ids with comments.
+            # prioritized. We always include remote ids with comments.
             actual_remote_ids_to_check = sorted(
                 remote_ids_with_comments[:batch_size])
 
