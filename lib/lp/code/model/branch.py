@@ -1309,7 +1309,7 @@ def compose_public_url(scheme, unique_name, suffix=None):
     accepted_schemes.add('sftp')
     assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
     host = URI(config.codehosting.supermirror_root).host
-    path = '/' + unique_name
+    path = '/' + urlutils.escape(unique_name)
     if suffix is not None:
         path = os.path.join(path, suffix)
     return str(URI(scheme=scheme, host=host, path=path))

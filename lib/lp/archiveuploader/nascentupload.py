@@ -801,10 +801,6 @@ class NascentUpload:
             self.do_reject(notify)
             return False
         try:
-            maintainerfrom = None
-            if self.changes.signer:
-                maintainerfrom = self.changes.changed_by['rfc2047']
-
             self.storeObjectsInDatabase()
 
             # Send the email.
@@ -905,7 +901,8 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            sourcepackagerelease = self.changes.dsc.storeInDatabase()
+            build = self.changes.dsc.findBuild()
+            sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
             ancestry = package_upload_source.getSourceAncestry()

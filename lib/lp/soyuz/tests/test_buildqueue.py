@@ -100,17 +100,9 @@ def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
     delay = bq._estimateTimeToNextBuilder()
     test.assertTrue(
-        almost_equal(delay, min_time),
-        "Wrong min time to next available builder (%s != %s)"
+        delay <= min_time,
+        "Wrong min time to next available builder (%s > %s)"
         % (delay, min_time))
-
-
-def almost_equal(a, b, deviation=1):
-    """Compare the values tolerating the given deviation.
-
-    This used to  spurious failures in time based tests.
-    """
-    return (abs(a - b) <= deviation)
 
 
 def set_remaining_time_for_running_job(bq, remainder):
@@ -150,8 +142,8 @@ def check_estimate(test, job, delay_in_seconds):
     else:
         estimate -= datetime.utcnow()
         test.assertTrue(
-            almost_equal(estimate.seconds, delay_in_seconds),
-            "The estimated delay (%s) deviates from the expected one (%s)" %
+            estimate.seconds <= delay_in_seconds,
+            "The estimated delay deviates from the expected one (%s > %s)" %
             (estimate.seconds, delay_in_seconds))
 
 
@@ -255,7 +247,8 @@ class TestBuildQueueBase(TestCaseWithFactory):
         self.builders[(self.amd_proc.id, True)] = [self.a1, self.a2, self.a3]
 
         # hppa native
-        self.builders[(self.hppa_proc.id, False)] = [self.h5, self.h6, self.h7]
+        self.builders[(self.hppa_proc.id, False)] = [
+            self.h5, self.h6, self.h7]
         # hppa virtual
         self.builders[(self.hppa_proc.id, True)] = [
             self.h1, self.h2, self.h3, self.h4]
