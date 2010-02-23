@@ -330,9 +330,9 @@ class InlineEditPickerWidget:
             # the REST API may have a mutator method configured, such as
             # transitionToAssignee.
             #
-            # We looking at the top of the annotation stack, since
-            # Ajax requests always go to the most recent version of
-            # the web service.
+            # We look at the top of the annotation stack, since Ajax
+            # requests always go to the most recent version of the web
+            # service.
             exported_tag_stack = self.interface_attribute.getTaggedValue(
                 'lazr.restful.exported')
             mutator_info = exported_tag_stack.get('mutator_annotations')
