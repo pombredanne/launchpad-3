@@ -50,100 +50,100 @@ class Version(unittest.TestCase):
 
     def testAcceptsString(self):
         """Version should accept a string input."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         Version("1.0")
 
     def testReturnString(self):
         """Version should convert to a string."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         self.assertEquals(str(Version("1.0")), "1.0")
 
     def testAcceptsInteger(self):
         """Version should accept an integer."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         self.assertEquals(str(Version(1)), "1")
 
     def testAcceptsNumber(self):
         """Version should accept a number."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         self.assertEquals(str(Version(1.2)), "1.2")
 
     def testOmitZeroEpoch(self):
         """Version should omit epoch when zero."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         self.assertEquals(str(Version("0:1.0")), "1.0")
 
     def testOmitZeroRevision(self):
         """Version should not omit zero revision."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         self.assertEquals(str(Version("1.0-0")), "1.0-0")
 
     def testNotEmpty(self):
         """Version should fail with empty input."""
-        from lp.archivepublisher.debversion import Version, BadInputError
-        self.assertRaises(BadInputError, Version, "")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, "")
 
     def testEpochNotEmpty(self):
         """Version should fail with empty epoch."""
-        from lp.archivepublisher.debversion import Version, BadEpochError
-        self.assertRaises(BadEpochError, Version, ":1")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, ":1")
 
     def testEpochNonNumeric(self):
         """Version should fail with non-numeric epoch."""
-        from lp.archivepublisher.debversion import Version, BadEpochError
-        self.assertRaises(BadEpochError, Version, "a:1")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, "a:1")
 
     def testEpochNonInteger(self):
         """Version should fail with non-integral epoch."""
-        from lp.archivepublisher.debversion import Version, BadEpochError
-        self.assertRaises(BadEpochError, Version, "1.0:1")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, "1.0:1")
 
     def testEpochNonNegative(self):
         """Version should fail with a negative epoch."""
-        from lp.archivepublisher.debversion import Version, BadEpochError
-        self.assertRaises(BadEpochError, Version, "-1:1")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, "-1:1")
 
     def testUpstreamNotEmpty(self):
         """Version should fail with empty upstream."""
-        from lp.archivepublisher.debversion import Version, BadUpstreamError
-        self.assertRaises(BadUpstreamError, Version, "1:-1")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, "1:-1")
 
     def testUpstreamNonDigitStart(self):
         """Version should fail when upstream doesn't start with a digit."""
-        from lp.archivepublisher.debversion import Version, BadUpstreamError
-        self.assertRaises(BadUpstreamError, Version, "a1")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, "a1")
 
     def testUpstreamInvalid(self):
         """Version should fail when upstream contains a bad character."""
-        from lp.archivepublisher.debversion import Version, BadUpstreamError
-        self.assertRaises(BadUpstreamError, Version, "1!0")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, "1!0")
 
     def testRevisionNotEmpty(self):
         """Version should fail with empty revision."""
-        from lp.archivepublisher.debversion import Version, BadRevisionError
-        self.assertRaises(BadRevisionError, Version, "1-")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, "1-")
 
     def testRevisionInvalid(self):
         """Version should fail when revision contains a bad character."""
-        from lp.archivepublisher.debversion import Version, BadRevisionError
-        self.assertRaises(BadRevisionError, Version, "1-!")
+        from debian_bundle.changelog import Version, VersionError
+        self.assertRaises(VersionError, Version, "1-!")
 
     def testValues(self):
         """Version should give same input as output."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         for value in self.VALUES:
             result = str(Version(value))
             self.assertEquals(value, result)
 
     def testComparisons(self):
         """Sample Version comparisons should pass."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         for x, y in self.COMPARISONS:
             self.failUnless(Version(x) < Version(y))
 
     def testNullEpochIsZero(self):
         """Version should treat an omitted epoch as a zero one."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         self.failUnless(Version("1.0") == Version("0:1.0"))
 
     def testNullRevisionIsZero(self):
@@ -157,12 +157,12 @@ class Version(unittest.TestCase):
         revision equal to a zero one.  I'm obviously biased as to which
         this module obeys.
         """
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         self.failUnless(Version("1.0") == Version("1.0-0"))
 
     def testWithoutEpoch(self):
         """Version.without_epoch returns version without epoch."""
-        from lp.archivepublisher.debversion import Version
+        from debian_bundle.changelog import Version
         self.assertEquals(Version("1:2.0").without_epoch, "2.0")
 
 
