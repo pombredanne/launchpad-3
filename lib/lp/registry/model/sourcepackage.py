@@ -460,6 +460,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                 BugTask.sourcepackagename == self.sourcepackagename),
             user)
 
+    def _get_max_heat(self):
+        """See `IHasBugs`."""
+        return self.distribution_sourcepackage.max_heat
+
+    def _set_max_heat(self, value):
+        """See `IHasBugs`."""
+        self.distribution_sourcepackage.max_heat = value
+
+    max_heat = property(_get_max_heat, _set_max_heat)
+
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
