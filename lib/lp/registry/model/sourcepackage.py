@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from warnings import warn
 from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import classProvides, implements
 from zope.component import getUtility
@@ -693,4 +692,4 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def linkedBranches(self):
         """See `ISourcePackage`."""
-        return dict((p.name,b) for (p,b) in self.linked_branches)
+        return dict((p.name, b) for (p, b) in self.linked_branches)
