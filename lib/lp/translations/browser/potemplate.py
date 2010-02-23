@@ -538,7 +538,10 @@ class POTemplateEditView(LaunchpadEditFormView):
 
     @property
     def cancel_url(self):
-        return self.next_url
+        if self.next_url == "DIRTY_HACK":
+            return canonical_url(self.context)
+        else:
+            return self.next_url
 
     @property
     def next_url(self):
@@ -548,6 +551,13 @@ class POTemplateEditView(LaunchpadEditFormView):
         referrer = self.request.form.get('next_url')
         if referrer is None:
             referrer = self.request.getHeader('referer')
+            if (referrer is None
+                or canonical_url(self.context) in referrer):
+                    # XXX: AdiRoiban 2010-02-32 
+                    # Since 'referer' can depend on the object name, and
+                    # from this form we can rename the object I was forced 
+                    # to use this dirty hack.
+                    return "DIRTY_HACK"
 
         if (referrer is not None
             and referrer.startswith(self.request.getApplicationURL())
