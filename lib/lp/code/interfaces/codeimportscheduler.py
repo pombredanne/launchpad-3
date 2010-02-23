@@ -35,3 +35,15 @@ class ICodeImportScheduler(Interface):
         mark it as having started on said machine and return its id,
         or 0 if there are no jobs pending.
         """
+
+    def getWorkerArgumentsForJobID(job_id):
+        """XXX."""
+
+    def updateHeartbeat(job_id, log_tail):
+        """XXX."""
+
+    def getLogFileNameForJobID(job_id):
+        """XXX."""
+
+    def finishJobID(job_id, status, log_file_alias_id):
+        """XXX."""

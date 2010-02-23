@@ -30,3 +30,4 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
             return job.id
         else:
             return 0
+
