@@ -16,6 +16,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from zope.interface import Interface
 
+
 class ICodeImportSchedulerApplication(ILaunchpadApplication):
     """Code import scheduler application root."""
 
@@ -36,14 +37,11 @@ class ICodeImportScheduler(Interface):
         or 0 if there are no jobs pending.
         """
 
-    def getWorkerArgumentsForJobID(job_id):
+    def getImportDataForJobID(job_id):
         """XXX."""
 
-    def updateHeartbeat(job_id, log_tail):
-        """XXX."""
+    ## def updateHeartbeat(job_id, log_tail):
+    ##     """XXX."""
 
-    def getLogFileNameForJobID(job_id):
-        """XXX."""
-
-    def finishJobID(job_id, status, log_file_alias_id):
-        """XXX."""
+    ## def finishJobID(job_id, status, log_file_alias_id):
+    ##     """XXX."""

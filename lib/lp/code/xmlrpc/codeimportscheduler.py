@@ -8,13 +8,16 @@ __all__ = [
     'CodeImportSchedulerAPI',
     ]
 
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
+from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 
 from lp.code.interfaces.codeimportjob import ICodeImportJobSet
 from lp.code.interfaces.codeimportscheduler import ICodeImportScheduler
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
-
-from zope.component import getUtility
-from zope.interface import implements
+from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 
 
 class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
@@ -31,3 +34,14 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         else:
             return 0
 
+    def getImportDataForJobID(self, job_id):
+        job_set = removeSecurityProxy(getUtility(ICodeImportJobSet))
+        job = removeSecurityProxy(job_set.getById(job_id))
+        if job is None:
+            return NoSuchCodeImportJob()
+        arguments = CodeImportSourceDetails.fromCodeImport(
+            job.code_import).asArguments()
+        branch = job.code_import.branch
+        branch_url = canonical_url(branch)
+        log_file_name = '%s.log' % branch.unique_name[1:].replace('/', '-')
+        return (arguments, branch_url, log_file_name)

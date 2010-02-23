@@ -27,6 +27,7 @@ __all__ = [
     'NoLinkedBranch',
     'NoSuchBranch',
     'NoSuchBug',
+    'NoSuchCodeImportJob',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
@@ -474,3 +475,8 @@ class NoSuchSourcePackageName(LaunchpadFault):
         self.sourcepackagename = sourcepackagename
         LaunchpadFault.__init__(self, sourcepackagename=sourcepackagename)
 
+
+class NoSuchCodeImportJob(LaunchpadFault):
+
+    error_code = 360
+    msg_template = ''
