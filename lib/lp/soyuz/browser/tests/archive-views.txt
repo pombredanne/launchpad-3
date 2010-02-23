@@ -1008,8 +1008,8 @@ allowing Celso to set PPA for Pirulito Team as dependency of his PPA.
     ...     print dependency.value.displayname
     PPA for Pirulito Team
 
-Remove Celso's membership on the new team and disable subsequent tests
-unaffected.
+Remove Celso's membership on the new team and disable his PPA so we don't
+affect the following tests.
 
     >>> cprov.leave(a_team)
     >>> cprov_private_ppa.disable()
