@@ -69,9 +69,8 @@ data is being processed.
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
-    Please wait. Launchpad is processing the extra bug data you
-    uploaded. This page will refresh every 10 seconds until processing
-    is complete.
+    Please wait while bug data is processed. This page will refresh
+    every 10 seconds until processing is complete.
 
 The page header contains a 10-second meta refresh tag.
 
