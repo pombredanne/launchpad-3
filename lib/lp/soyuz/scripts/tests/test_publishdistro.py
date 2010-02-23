@@ -380,8 +380,7 @@ class TestPublishDistro(TestNativePublishingBase):
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro,
-            ['--ppa', '--partner', '--primary-debug', '--copy-archive',
-             'test'])
+            ['--ppa', '--partner', '--primary-debug', '--copy-archive'])
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro, ['--ppa', '--partner'])
@@ -393,7 +392,7 @@ class TestPublishDistro(TestNativePublishingBase):
             self.runPublishDistro, ['--ppa', '--primary-debug'])
         self.assertRaises(
             LaunchpadScriptFailure,
-            self.runPublishDistro, ['--ppa', '--copy-archive', 'test'])
+            self.runPublishDistro, ['--ppa', '--copy-archive'])
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro, ['--partner', '--private-ppa'])
@@ -402,10 +401,10 @@ class TestPublishDistro(TestNativePublishingBase):
             self.runPublishDistro, ['--partner', '--primary-debug'])
         self.assertRaises(
             LaunchpadScriptFailure,
-            self.runPublishDistro, ['--partner', '--copy-archive', 'test'])
+            self.runPublishDistro, ['--partner', '--copy-archive'])
         self.assertRaises(
             LaunchpadScriptFailure,
-            self.runPublishDistro, ['--primary-debug', '--copy-archive','test'])
+            self.runPublishDistro, ['--primary-debug', '--copy-archive'])
 
 
 def test_suite():

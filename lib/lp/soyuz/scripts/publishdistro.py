@@ -111,7 +111,7 @@ def run_publisher(options, txn, log=None):
         options.primary_debug, options.copy_archive)
 
     num_exclusive = [flag for flag in exclusive_options if flag]
-    if (len(num_exclusive) > 1:
+    if len(num_exclusive) > 1:
         raise LaunchpadScriptFailure(
             "Can only specify one of partner, ppa, private-ppa, copy-archive"
             " and primary-debug.")
