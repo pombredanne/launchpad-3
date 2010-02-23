@@ -159,6 +159,17 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
             test_tales('preview/fmt:link', preview=preview))
 
 
+class TestDiffFormatter(TestCaseWithFactory):
+    """Test the DiffFormatterAPI class."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_url(self):
+        diff = self.factory.makeDiff()
+        self.assertEqual(
+            diff.diff_text.getURL(), test_tales('diff/fmt:url', diff=diff))
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
