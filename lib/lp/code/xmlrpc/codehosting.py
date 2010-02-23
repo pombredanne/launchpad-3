@@ -12,6 +12,7 @@ __all__ = [
 
 
 import datetime
+import urllib
 
 import pytz
 
@@ -232,7 +233,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         def create_branch(requester):
             if not branch_path.startswith('/'):
                 return faults.InvalidPath(branch_path)
-            escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
+            escaped_path = unescape(branch_path.strip('/'))
             try:
                 namespace_name, branch_name = split_unique_name(escaped_path)
             except ValueError:
@@ -254,7 +255,12 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             try:
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
-            except (BranchCreationException, LaunchpadValidationError), e:
+            except LaunchpadValidationError, e:
+                msg = e.args[0]
+                if isinstance(msg, unicode):
+                    msg = msg.encode('utf-8')
+                return faults.PermissionDenied(msg)
+            except BranchCreationException, e:
                 return faults.PermissionDenied(str(e))
             else:
                 return branch.id
@@ -294,8 +300,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
     def _serializeControlDirectory(self, requester, product_path,
                                    trailing_path):
         try:
-            namespace = lookup_branch_namespace(
-                unescape(product_path).encode('utf-8'))
+            namespace = lookup_branch_namespace(product_path)
         except (InvalidNamespace, NotFoundError):
             return
         if not ('.bzr' == trailing_path or trailing_path.startswith('.bzr/')):
@@ -321,9 +326,9 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 return faults.InvalidPath(path)
             stripped_path = path.strip('/')
             for first, second in iter_split(stripped_path, '/'):
+                first = unescape(first)
                 # Is it a branch?
-                branch = getUtility(IBranchLookup).getByUniqueName(
-                    unescape(first).encode('utf-8'))
+                branch = getUtility(IBranchLookup).getByUniqueName(first)
                 if branch is not None:
                     branch = self._serializeBranch(requester, branch, second)
                     if branch is None:
