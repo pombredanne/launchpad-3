@@ -1348,16 +1348,10 @@ COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder whi
 COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.archive IS 'The archive the source package will be uploaded to.';
-
--- SourcePackageRecipeBuildUpload
-
-COMMENT ON TABLE SourcePackageRecipeBuildUpload IS 'The record of uploading the source package built by a SourcePackageRecipeBuild to an archive.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.registrant IS 'Who requested the upload.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.sourcepackage_recipe_build IS 'Upload the output of this build.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.archive IS 'The archive to upload to.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.upload_log IS 'The output from uploading the source package to the archive.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.state IS 'The state of the upload.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.archive IS 'The archive the source package will be built in and uploaded to.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.pocket IS 'The pocket the source package will be built in and uploaded to.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.dependencies IS 'The missing build dependencies, if any.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.upload_log IS 'The output from uploading the source package to the archive.';
 
 -- SourcePackageRecipeBuildJob
 

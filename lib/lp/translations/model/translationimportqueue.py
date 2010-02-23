@@ -58,25 +58,13 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationImportQueueConflictError,
+    translation_import_queue_entry_age,
     UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-
-
-# Approximate number of days in a 6-month period.
-half_year = 366 / 2
-
-# Period after which entries with certain statuses are culled from the
-# queue.
-entry_gc_age = {
-    RosettaImportStatus.DELETED: datetime.timedelta(days=3),
-    RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
-    RosettaImportStatus.FAILED: datetime.timedelta(days=30),
-    RosettaImportStatus.NEEDS_REVIEW: datetime.timedelta(days=half_year),
-}
 
 
 def is_gettext_name(path):
@@ -1256,8 +1244,8 @@ class TranslationImportQueue:
         """
         now = datetime.datetime.now(pytz.UTC)
         deletion_clauses = []
-        for status, gc_age in entry_gc_age.iteritems():
-            cutoff = now - gc_age
+        for status, max_age in translation_import_queue_entry_age.iteritems():
+            cutoff = now - max_age
             deletion_clauses.append(And(
                 TranslationImportQueueEntry.status == status,
                 TranslationImportQueueEntry.date_status_changed < cutoff))

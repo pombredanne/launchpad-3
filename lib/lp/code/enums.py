@@ -806,6 +806,13 @@ class CodeImportResultStatus(DBEnumeratedType):
         import.
         """)
 
+    SUCCESS_PARTIAL = DBItem(120, """
+        Partial Success
+
+        Import job successfully imported some but not all of the foreign
+        revisions.
+        """)
+
     FAILURE = DBItem(200, """
         Failure
 

@@ -44,7 +44,7 @@ from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -199,7 +199,7 @@ class SpecificationLifecycleStatus(DBEnumeratedType):
 class SpecificationPriority(DBEnumeratedType):
     """The Priority with a Specification must be implemented.
 
-    This enum is used to prioritise work.
+    This enum is used to prioritize work.
     """
 
     NOTFORUS = DBItem(0, """
@@ -218,7 +218,7 @@ class SpecificationPriority(DBEnumeratedType):
         Undefined
 
         This feature has recently been proposed and has not yet been
-        evaluated and prioritised by the project leaders.
+        evaluated and prioritized by the project leaders.
         """)
 
     LOW = DBItem(10, """
@@ -513,7 +513,7 @@ class SpecNameField(ContentNameField):
             # set corresponds to multiple specification namespaces, we
             # return None.
             return None
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             # The context is a project group. Since a project group
             # corresponds to multiple specification namespaces, we
             # return None.

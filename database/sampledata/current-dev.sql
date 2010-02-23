@@ -9062,13 +9062,6 @@ ALTER TABLE sourcepackagerecipebuildjob DISABLE TRIGGER ALL;
 ALTER TABLE sourcepackagerecipebuildjob ENABLE TRIGGER ALL;
 
 
-ALTER TABLE sourcepackagerecipebuildupload DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE sourcepackagerecipebuildupload ENABLE TRIGGER ALL;
-
-
 ALTER TABLE sourcepackagerecipedata DISABLE TRIGGER ALL;
 
 
