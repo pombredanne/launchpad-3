@@ -359,6 +359,11 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
                 user.inTeam(self.obj.distribution.mirror_admin))
 
 
+class ViewDistributionMirror(AnonymousAuthorization):
+    """Anyone can view an IDistributionMirror."""
+    usedfor = IDistributionMirror
+
+
 class EditSpecificationBranch(AuthorizationBase):
 
     usedfor = ISpecificationBranch
