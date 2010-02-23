@@ -67,7 +67,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         self.assertEqual(False, preview.stale)
         self.assertEqual(True, self._createStalePreviewDiff().stale)
         self.assertEqual(u'conflicts', preview.conflicts)
-        self.assertEqual({'filename': (3,2)}, preview.diffstat)
+        self.assertEqual({'filename': (3, 2)}, preview.diffstat)
 
     def test_fmt_no_diff(self):
         # If there is no diff, there is no link.
