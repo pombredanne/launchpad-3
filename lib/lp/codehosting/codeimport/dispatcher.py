@@ -32,12 +32,13 @@ class CodeImportDispatcher:
     worker_script = os.path.join(
         config.root, 'scripts', 'code-import-worker-db.py')
 
-    def __init__(self, logger):
+    def __init__(self, logger, worker_limit):
         """Initialize an instance.
 
         :param logger: A `Logger` object.
         """
         self.logger = logger
+        self.worker_limit = worker_limit
 
     def getHostname(self):
         """Return the hostname of this machine.
@@ -66,7 +67,8 @@ class CodeImportDispatcher:
     def findAndDispatchJob(self, scheduler_client):
         """Check for and dispatch a job if necessary."""
 
-        job_id = scheduler_client.getJobForMachine(self.getHostname())
+        job_id = scheduler_client.getJobForMachine(
+            self.getHostname(), self.worker_limit)
 
         if job_id == 0:
             self.logger.info("No jobs pending.")

@@ -11,64 +11,60 @@ import os
 import shutil
 import socket
 import tempfile
-from textwrap import dedent
 from unittest import TestLoader
 
-from twisted.trial.unittest import TestCase
-
-from canonical.config import config
-from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from canonical.launchpad import scripts
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing.layers import TwistedLaunchpadZopelessLayer
+from canonical.testing.layers import BaseLayer
+
+from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
+from lp.testing import TestCase
 
 
 class StubSchedulerClient:
-    """A stub scheduler client that returns a pre-arranged answer."""
+    """A scheduler client that returns a pre-arranged answer."""
 
     def __init__(self, id_to_return):
         self.id_to_return = id_to_return
 
-    def getJobForMachine(self, machine):
+    def getJobForMachine(self, machine, limit):
         return self.id_to_return
+
+
+class MockSchedulerClient:
+    """A scheduler client that records calls to `getJobForMachine`."""
+
+    def __init__(self):
+        self.calls = []
+
+    def getJobForMachine(self, machine, limit):
+        self.calls.append((machine, limit))
+        return 0
 
 
 class TestCodeImportDispatcherUnit(TestCase):
     """Unit tests for `CodeImportDispatcher`."""
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = BaseLayer
 
     def setUp(self):
-        self.config_count = 0
-        self.pushConfig(forced_hostname='none')
-        self.dispatcher = CodeImportDispatcher(QuietFakeLogger())
+        TestCase.setUp(self)
+        self.pushConfig('codeimportdispatcher', forced_hostname='none')
 
-    def pushConfig(self, **args):
-        """Push some key-value pairs into the codeimportdispatcher config.
-
-        The config values will be restored during test tearDown.
-        """
-        self.config_count += 1
-        name = 'test%d' % self.config_count
-        body = '\n'.join(["%s: %s"%(k, v) for k, v in args.iteritems()])
-        config.push(name, dedent("""
-            [codeimportdispatcher]
-            %s
-            """ % body))
-        self.addCleanup(config.pop, name)
+    def makeDispatcher(self, worker_limit=10):
+        """Make a `CodeImportDispatcher`."""
+        return CodeImportDispatcher(QuietFakeLogger(), worker_limit)
 
     def test_getHostname(self):
         # By default, getHostname return the same as socket.gethostname()
-        self.assertEqual(
-            self.dispatcher.getHostname(),
-            socket.gethostname())
+        dispatcher = self.makeDispatcher()
+        self.assertEqual(socket.gethostname(), dispatcher.getHostname())
 
     def test_getHostnameOverride(self):
         # getHostname can be overriden by the config for testing, however.
-        self.pushConfig(forced_hostname='test-value')
-        self.assertEqual(
-            self.dispatcher.getHostname(),
-            'test-value')
+        dispatcher = self.makeDispatcher()
+        self.pushConfig('codeimportdispatcher', forced_hostname='test-value')
+        self.assertEqual('test-value', dispatcher.getHostname())
 
     def writePythonScript(self, script_path, script_body):
         """Write out an executable Python script.
@@ -94,6 +90,7 @@ class TestCodeImportDispatcherUnit(TestCase):
 
         # We create a script that writes its command line arguments to
         # some a temporary file and examine that.
+        dispatcher = self.makeDispatcher()
         tmpdir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmpdir)
         script_path = os.path.join(tmpdir, 'script.py')
@@ -102,26 +99,39 @@ class TestCodeImportDispatcherUnit(TestCase):
             script_path,
             ['import sys',
              'open(%r, "w").write(str(sys.argv[1:]))' % output_path])
-        self.dispatcher.worker_script = script_path
-        proc = self.dispatcher.dispatchJob(10)
+        dispatcher.worker_script = script_path
+        proc = dispatcher.dispatchJob(10)
         proc.wait()
         arglist = self.filterOutLoggingOptions(eval(open(output_path).read()))
-        self.assertEqual(arglist, ['10'])
+        self.assertEqual(['10'], arglist)
 
     def test_findAndDispatchJob_jobWaiting(self):
-        # If there is a job to dispatch, then we call dispatchJob with its id.
+        # If there is a job to dispatch, then we call dispatchJob with its id
+        # and the worker_limit supplied to the dispatcher.
         calls = []
-        self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
-        self.dispatcher.findAndDispatchJob(StubSchedulerClient(10))
-        self.assertEqual(calls, [10])
+        dispatcher = self.makeDispatcher()
+        dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
+        dispatcher.findAndDispatchJob(StubSchedulerClient(10))
+        self.assertEqual([10], calls)
 
     def test_findAndDispatchJob_noJobWaiting(self):
         # If there is no job to dispatch, then we just exit quietly.
         calls = []
-        self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
-        self.dispatcher.findAndDispatchJob(StubSchedulerClient(0))
-        self.assertEqual(calls, [])
+        dispatcher = self.makeDispatcher()
+        dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
+        dispatcher.findAndDispatchJob(StubSchedulerClient(0))
+        self.assertEqual([], calls)
 
+    def test_findAndDispatchJob_calls_getJobForMachine_with_limit(self):
+        # findAndDispatchJob calls getJobForMachine on the scheduler client
+        # with the hostname and supplied worker limit.
+        worker_limit = self.factory.getUniqueInteger()
+        dispatcher = self.makeDispatcher(worker_limit)
+        scheduler_client = MockSchedulerClient()
+        dispatcher.findAndDispatchJob(scheduler_client)
+        self.assertEqual(
+            [(dispatcher.getHostname(), worker_limit)],
+            scheduler_client.calls)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
