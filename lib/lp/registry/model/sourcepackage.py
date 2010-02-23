@@ -720,4 +720,4 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     def linkedBranches(self):
         """See `ISourcePackage`."""
-        return dict((p.name,b) for (p,b) in self.linked_branches)
+        return dict((p.name, b) for (p, b) in self.linked_branches)
