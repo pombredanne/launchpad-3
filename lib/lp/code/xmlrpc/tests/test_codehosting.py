@@ -676,12 +676,26 @@ class BranchFileSystemTest(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         invalid_name = 'invalid name!'
-        message = ("Invalid branch name %r. %s"
+        message = ("Invalid branch name '%s'. %s"
                    % (invalid_name, BRANCH_NAME_VALIDATION_ERROR_MESSAGE))
         fault = self.branchfs.createBranch(
             owner.id, escape(
                 '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
         self.assertFaultEqual(faults.PermissionDenied(message), fault)
+
+    def test_createBranch_unicode_name(self):
+        # Creating a branch with an invalid name fails.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        invalid_name = u'invalid\N{LATIN SMALL LETTER E WITH ACUTE}'
+        message = ("Invalid branch name '%s'. %s"
+                   % (invalid_name.encode('utf-8'),
+                      str(BRANCH_NAME_VALIDATION_ERROR_MESSAGE)))
+        fault = self.branchfs.createBranch(
+            owner.id, escape(
+                '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
+        self.assertFaultEqual(
+            faults.PermissionDenied(message), fault)
 
     def test_createBranch_bad_user(self):
         # Creating a branch under a non-existent user fails.
@@ -919,6 +933,13 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         path = '/~%s/%s/no-such-branch' % (requester.name, product.name)
         self.assertNotFound(requester, path)
+
+    def test_translatePath_no_such_branch_non_ascii(self):
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = u'/~%s/%s/non-asci\N{LATIN SMALL LETTER I WITH DIAERESIS}' % (
+            requester.name, product.name)
+        self.assertNotFound(requester, escape(path))
 
     def test_translatePath_private_branch(self):
         requester = self.factory.makePerson()

@@ -80,10 +80,20 @@ change the owner's of mirrors:
     >>> no_priv_webservice = webservice_for_person(no_priv_db,
     ...     permission=OAuthPermission.READ_PUBLIC)
     >>> logout()
-    >>> karl = webservice.get("/~karl").jsonBody()
-    >>> patch = {
-    ...     u'owner_link': karl['self_link']
-    ... }
+
+Ensure that anonymous API sessions can view mirror listings; archive/releases.
+
+    >>> archive_response = anon_webservice.get(
+    ...     ubuntu['archive_mirrors_collection_link'])
+    >>> anon_archive_mirrors = archive_response.jsonBody()
+    >>> print anon_archive_mirrors['total_size']
+    4
+
+    >>> cd_response = anon_webservice.get(
+    ...     ubuntu['cdimage_mirrors_collection_link'])
+    >>> anon_cd_mirrors = cd_response.jsonBody()
+    >>> print anon_cd_mirrors['total_size']
+    4
 
 One must have special permissions to access certain attributes:
 
@@ -140,6 +150,10 @@ Mirror listing admins may see all:
 
 Now trying to set the owner using Sample Person's webservice is not authorized.
 
+    >>> karl = webservice.get("/~karl").jsonBody()
+    >>> patch = {
+    ...     u'owner_link': karl['self_link']
+    ... }
     >>> response = test_webservice.patch(
     ...     canonical_archive['self_link'], 'application/json', dumps(patch))
     >>> print response.getheader('status')
