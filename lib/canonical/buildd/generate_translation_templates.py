@@ -46,7 +46,7 @@ class GenerateTranslationTemplates:
     def generate(self):
         """Do It.  Generate templates."""
         self._getBranch()
-        generate_pots(self.branch_dir)
+        po_directories = generate_pots(self.branch_dir)
         return 0
 
 
