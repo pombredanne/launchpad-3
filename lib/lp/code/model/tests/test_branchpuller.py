@@ -17,7 +17,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
-from lp.code.interfaces.branch import BranchTypeError
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.testing import TestCaseWithFactory, login_person
 
@@ -78,37 +77,6 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.requestMirror()
         self.assertEqual(UTC_NOW, branch.next_mirror_time)
 
-    def test_requestMirrorDuringPull(self):
-        """Branches can have mirrors requested while they are being mirrored.
-        If so, they should not be removed from the pull queue when the mirror
-        is complete.
-        """
-        # We run these in separate transactions so as to have the times set to
-        # different values. This is closer to what happens in production.
-        branch = self.makeAnyBranch()
-        branch.startMirroring()
-        self.assertEqual(
-            [], list(self.branch_puller.getPullQueue(branch.branch_type)))
-        branch.requestMirror()
-        self.assertEqual(
-            [branch],
-            list(self.branch_puller.getPullQueue(branch.branch_type)))
-        branch.mirrorComplete('rev1')
-        self.assertEqual(
-            [branch],
-            list(self.branch_puller.getPullQueue(branch.branch_type)))
-
-    def test_startMirroringRemovesFromPullQueue(self):
-        # Starting a mirror removes the branch from the pull queue.
-        branch = self.makeAnyBranch()
-        branch.requestMirror()
-        self.assertEqual(
-            set([branch]),
-            set(self.branch_puller.getPullQueue(branch.branch_type)))
-        branch.startMirroring()
-        self.assertEqual(
-            set(), set(self.branch_puller.getPullQueue(branch.branch_type)))
-
     def test_mirroringResetsMirrorRequest(self):
         """Mirroring branches resets their mirror request times."""
         branch = self.makeAnyBranch()
@@ -128,44 +96,6 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.mirrorFailed('No particular reason')
         self.assertEqual(1, branch.mirror_failures)
         self.assertEqual(None, branch.next_mirror_time)
-
-    def test_pullQueueEmpty(self):
-        """Branches with no next_mirror_time are not in the pull queue."""
-        branch = self.makeAnyBranch()
-        self.assertIs(None, branch.next_mirror_time)
-        self.assertEqual(
-            [], list(self.branch_puller.getPullQueue(self.branch_type)))
-
-    def test_pastNextMirrorTimeInQueue(self):
-        """Branches with next_mirror_time in the past are mirrored."""
-        transaction.begin()
-        branch = self.makeAnyBranch()
-        branch.requestMirror()
-        queue = self.branch_puller.getPullQueue(branch.branch_type)
-        self.assertEqual([branch], list(queue))
-
-    def test_futureNextMirrorTimeInQueue(self):
-        """Branches with next_mirror_time in the future are not mirrored."""
-        transaction.begin()
-        branch = removeSecurityProxy(self.makeAnyBranch())
-        tomorrow = self.getNow() + timedelta(1)
-        branch.next_mirror_time = tomorrow
-        branch.syncUpdate()
-        transaction.commit()
-        self.assertEqual(
-            [], list(self.branch_puller.getPullQueue(branch.branch_type)))
-
-    def test_pullQueueOrder(self):
-        """Pull queue has the oldest mirror request times first."""
-        branches = []
-        for i in range(3):
-            branch = removeSecurityProxy(self.makeAnyBranch())
-            branch.next_mirror_time = self.getNow() - timedelta(hours=i+1)
-            branch.sync()
-            branches.append(branch)
-        self.assertEqual(
-            list(reversed(branches)),
-            list(self.branch_puller.getPullQueue(self.branch_type)))
 
 
 class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
@@ -229,18 +159,6 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
 class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
 
     branch_type = BranchType.IMPORTED
-
-
-class TestRemoteBranches(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_raises_branch_type_error(self):
-        # getPullQueue raises `BranchTypeError` if passed BranchType.REMOTE.
-        # It's impossible to mirror remote branches, so we shouldn't even try.
-        puller = getUtility(IBranchPuller)
-        self.assertRaises(
-            BranchTypeError, puller.getPullQueue, BranchType.REMOTE)
 
 
 class AcquireBranchToPullTests:
