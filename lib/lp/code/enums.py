@@ -871,7 +871,7 @@ class CodeImportResultStatus(DBEnumeratedType):
         job, or the deletion of a CodeImport which had a running job.
         """)
 
-    successes = [SUCCESS, SUCCESS_NOCHANGE]
+    successes = [SUCCESS, SUCCESS_NOCHANGE, SUCCESS_PARTIAL]
 
 
 class CodeReviewVote(DBEnumeratedType):
