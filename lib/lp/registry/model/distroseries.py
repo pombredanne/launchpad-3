@@ -314,9 +314,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result += self.distribution.name + self.name
         return result
 
-    @property
-    def packagings(self):
-        """See `IDistroSeries`."""
+    @cachedproperty
+    def _all_packagings(self):
+        """Get an unordered list of all packagings."""
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implicitly needed to work with a
         # Packaging object.
@@ -335,14 +335,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(
                 Product,
                 ProductSeries.product == Product.id)]
-        condition = [Packaging.distroseries == self.id]
-        results = IStore(self).using(*origin).find(find_spec, *condition)
+        condition = Packaging.distroseries == self.id
+        results = IStore(self).using(*origin).find(find_spec, condition)
+        return results
+
+    @property
+    def packagings(self):
+        """See `IDistroSeries`."""
+        results = self._all_packagings
         results = results.order_by(SourcePackageName.name)
         return [
             packaging
             for (packaging, spn, product_series, product) in results]
 
-    def getPriorizedUnlinkedSourcePackages(self):
+    def getPrioritizedUnlinkedSourcePackages(self):
         """See `IDistroSeries`.
 
         The prioritization is a heuristic rule using bug heat,
@@ -367,7 +373,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                  'total_messages': total_messages}
                 for (spn, score, total_bugs, total_messages) in results]
 
-    def getPriorizedlPackagings(self):
+    def getPrioritizedlPackagings(self):
         """See `IDistroSeries`.
 
         The prioritization is a heuristic rule using the branch, bug heat,
@@ -404,7 +410,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
-        """The SQL joins and conditions to prioritise source packages."""
+        """The SQL joins and conditions to prioritize source packages."""
         heat_score = ("""
             LEFT JOIN (
                 SELECT
@@ -465,6 +471,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 active_status=active_publishing_status,
                 primary=ArchivePurpose.PRIMARY))
         return (joins, conditions)
+
+    def getMostRecentlyLinkedPackagings(self):
+        """See `IDistroSeries`."""
+        results = self._all_packagings
+        # Order by creation date with a secondary ordering by sourcepackage
+        # name to ensure the ordering for test data where many packagings have
+        # identical creation dates.
+        results = results.order_by(Desc(Packaging.datecreated),
+                                   SourcePackageName.name)[:5]
+        return [
+            packaging
+            for (packaging, spn, product_series, product) in results]
 
     @property
     def supported(self):

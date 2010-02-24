@@ -12,7 +12,7 @@ __all__ = [
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
-    'IProjectMilestone',
+    'IProjectGroupMilestone',
     ]
 
 from zope.interface import Interface, Attribute
@@ -216,7 +216,7 @@ class IMilestoneSet(Interface):
         """Return all visible milestones."""
 
 
-class IProjectMilestone(IMilestone):
+class IProjectGroupMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
 
 

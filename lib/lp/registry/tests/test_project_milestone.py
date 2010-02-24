@@ -20,7 +20,7 @@ from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus, SpecificationPriority)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from canonical.launchpad.ftests import login, syncUpdate
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -74,7 +74,7 @@ class ProjectMilestoneTest(unittest.TestCase):
         A project milestone named `A` exists, if at least one product of this
         project has a milestone named `A`.
         """
-        gnome = getUtility(IProjectSet)['gnome']
+        gnome = getUtility(IProjectGroupSet)['gnome']
         product_milestones = []
         for product in gnome.products:
             product_milestones += [milestone.name
@@ -109,7 +109,7 @@ class ProjectMilestoneTest(unittest.TestCase):
 
         dateexpected is set to min(productmilestones.dateexpected).
         """
-        gnome = getUtility(IProjectSet)['gnome']
+        gnome = getUtility(IProjectGroupSet)['gnome']
         evolution_milestone = self.createProductMilestone(
             '1.1', 'evolution', None)
         gnomebaker_milestone = self.createProductMilestone(
@@ -133,7 +133,7 @@ class ProjectMilestoneTest(unittest.TestCase):
     def test_milestone_activity(self):
         """A project milestone is active, if at least one product milestone
         is active."""
-        gnome = getUtility(IProjectSet)['gnome']
+        gnome = getUtility(IProjectGroupSet)['gnome']
         evolution_milestone = self.createProductMilestone(
             '1.1', 'evolution', None)
         gnomebaker_milestone = self.createProductMilestone(
@@ -175,7 +175,7 @@ class ProjectMilestoneTest(unittest.TestCase):
         self.assertNotEqual(firefox.project.name, 'gnome')
 
         self.createProductMilestone('1.1', 'firefox', None)
-        gnome = getUtility(IProjectSet)['gnome']
+        gnome = getUtility(IProjectGroupSet)['gnome']
         self.assertEqual(
             [milestone.name for milestone in gnome.all_milestones],
             [u'2.1.6', u'1.0'])
@@ -213,7 +213,8 @@ class ProjectMilestoneTest(unittest.TestCase):
         self.createSpecification('1.1', 'gnomebaker')
         self.createSpecification('1.1', 'firefox')
 
-        gnome_milestone = getUtility(IProjectSet)['gnome'].getMilestone('1.1')
+        gnome_project_group = getUtility(IProjectGroupSet)['gnome']
+        gnome_milestone = gnome_project_group.getMilestone('1.1')
         # The spec for firefox (not a gnome product) is not included
         # in the specifications, while the other two specs are included.
         self.assertEqual(
@@ -270,7 +271,7 @@ class ProjectMilestoneTest(unittest.TestCase):
         self._createProductBugtask('gnomebaker', '1.1')
         self._createProductBugtask('firefox', '1.1')
 
-        milestone = getUtility(IProjectSet)['gnome'].getMilestone('1.1')
+        milestone = getUtility(IProjectGroupSet)['gnome'].getMilestone('1.1')
         searchparams = BugTaskSearchParams(user=None, milestone=milestone)
         bugtasks = list(getUtility(IBugTaskSet).search(searchparams))
 

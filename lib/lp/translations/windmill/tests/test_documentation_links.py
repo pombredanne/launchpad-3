@@ -38,9 +38,7 @@ class DocumentationLinksTest(WindmillTestCase):
         """
         client = self.client
 
-        start_url = 'http://translations.launchpad.dev:8085/'
         user = lpuser.TRANSLATIONS_ADMIN
-
 
         # Create a translation group with documentation to use in the test.
         group = self.factory.makeTranslationGroup(

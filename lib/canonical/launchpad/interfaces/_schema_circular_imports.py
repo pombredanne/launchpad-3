@@ -84,11 +84,13 @@ IBranch['linkBug'].queryTaggedValue(
 IBranch['linkSpecification'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
 IBranch['product'].schema = IProduct
-IBranch['setTarget'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['project'].schema= IProduct
-IBranch['setTarget'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['source_package'].schema= \
-        ISourcePackage
+
+patch_plain_parameter_type(
+    IBranch, 'setTarget', 'project', IProduct)
+patch_plain_parameter_type(
+    IBranch, 'setTarget', 'source_package', ISourcePackage)
+patch_reference_property(IBranch, 'sourcepackage', ISourcePackage)
+
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription

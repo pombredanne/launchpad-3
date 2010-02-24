@@ -34,7 +34,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.milestone import (
-    IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
+    IHasMilestones, IMilestone, IMilestoneSet, IProjectGroupMilestone)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -262,7 +262,7 @@ class ProjectMilestone(HasBugsBase):
     the `dateexpected` values of the product milestones.
     """
 
-    implements(IProjectMilestone)
+    implements(IProjectGroupMilestone)
 
     def __init__(self, target, name, dateexpected, active):
         self.name = name

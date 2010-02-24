@@ -78,8 +78,8 @@ possible duplicates for a bug asynchronously.
 For project groups, the URLs returned will refer to the default product
 for those project groups.
 
-    >>> from lp.registry.interfaces.project import IProjectSet
-    >>> gnome_project = getUtility(IProjectSet).getByName('gnome')
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> gnome_project = getUtility(IProjectGroupSet).getByName('gnome')
     >>> gnome_filebug_view = create_initialized_view(
     ...     gnome_project, '+filebug')
 
