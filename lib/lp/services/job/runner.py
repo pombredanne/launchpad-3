@@ -205,7 +205,10 @@ class JobRunner(BaseJobRunner):
 
     @classmethod
     def runFromSource(cls, job_source, dbuser, logger):
-        """Run all ready jobs provided by the specified source."""
+        """Run all ready jobs provided by the specified source.
+
+        The dbuser parameter is ignored.
+        """
         with removeSecurityProxy(job_source.contextManager()):
             logger.info("Running synchronously.")
             runner = cls.fromReady(job_source, logger)
@@ -368,10 +371,13 @@ class TwistedJobRunner(BaseJobRunner):
         self.terminated()
 
     @classmethod
-    def runFromSource(cls, job_source, dbuser, logger, error_utility=None):
-        """Run all ready jobs provided by the specified source."""
+    def runFromSource(cls, job_source, dbuser, logger):
+        """Run all ready jobs provided by the specified source.
+
+        The dbuser parameter is not ignored.
+        """
         logger.info("Running through Twisted.")
-        runner = cls(job_source, dbuser, logger, error_utility)
+        runner = cls(job_source, dbuser, logger)
         reactor.callWhenRunning(runner.runAll)
         handler = getsignal(SIGCHLD)
         try:
