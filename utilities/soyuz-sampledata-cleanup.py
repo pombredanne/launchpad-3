@@ -13,6 +13,9 @@
 
 DO NOT RUN ON PRODUCTION SYSTEMS.  This script deletes lots of
 Ubuntu-related data.
+
+This script creates a user "ppa-user" (email ppa-user@example.com,
+password test) who is able to create PPAs.
 """
 
 __metaclass__ = type
@@ -23,6 +26,7 @@ from optparse import OptionParser
 from os import getenv
 import re
 import sys
+import transaction
 
 from zope.component import getUtility
 from zope.event import notify
@@ -35,20 +39,27 @@ from canonical.database.sqlbase import sqlvalues
 
 from canonical.lp import initZopeless
 
+from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.logger import logger, logger_options
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
+from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class DoNotRunOnProduction(Exception):
@@ -100,17 +111,19 @@ def parse_args(arguments):
         help="DANGEROUS: run even if the database looks production-like.")
     parser.add_option('-n', '--dry-run', action='store_true', dest='dry_run',
         help="Do not commit changes.")
+    parser.add_option('-A', '--amd64', action='store_true', dest='amd64',
+        help="Support amd64 architecture.")
     logger_options(parser)
 
     options, args = parser.parse_args(arguments)
     return options, args, logger(options)
 
 
-def get_person(name):
+def get_person_set():
     """Return `IPersonSet` utility."""
     # Avoid circular import.
     from lp.registry.interfaces.person import IPersonSet
-    return getUtility(IPersonSet).getByName(name)
+    return getUtility(IPersonSet)
 
 
 def retire_series(distribution):
@@ -149,6 +162,26 @@ def set_lucille_config(distribution):
         removeSecurityProxy(series).lucilleconfig = '''[publishing]
 components = main restricted universe multiverse'''
 
+
+def add_architecture(distroseries, architecture_name):
+    """Add a DistroArchSeries for the given architecture to `distroseries`."""
+    # Avoid circular import.
+    from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    family = getUtility(IProcessorFamilySet).getByName(architecture_name)
+    archseries = DistroArchSeries(
+        distroseries=distroseries, processorfamily=family,
+        owner=distroseries.owner, official=True,
+        architecturetag=architecture_name)
+    store.add(archseries)
+
+
+def add_architectures(distroseries, options):
+    """Add support for additional architectures as specified by options."""
+    if options.amd64:
+        add_architecture(distroseries, 'amd64')
+    
 
 def create_sections(distroseries):
     """Set up some sections for `distroseries`."""
@@ -253,7 +286,7 @@ def clean_up(distribution, log):
     # published binaries without corresponding sources.
 
     log.info("Deleting all items in official archives...")
-    retire_distro_archives(distribution, get_person('name16'))
+    retire_distro_archives(distribution, get_person_set().getByName('name16'))
 
     # Disable publishing of all PPAs, as they probably have broken
     # publishings too.
@@ -271,7 +304,7 @@ def set_source_package_format(distroseries):
         utility.add(distroseries, format)
 
 
-def populate(distribution, parent_series_name, uploader_name, log):
+def populate(distribution, parent_series_name, uploader_name, options, log):
     """Set up sample data on `distribution`."""
     parent_series = distribution.getSeries(parent_series_name)
 
@@ -281,13 +314,50 @@ def populate(distribution, parent_series_name, uploader_name, log):
 
     log.info("Configuring sections...")
     create_sections(parent_series)
+    add_architectures(parent_series, options)
 
     log.info("Configuring components and permissions...")
-    create_components(parent_series, get_person(uploader_name))
+    uploader = get_person_set().getByName(uploader_name)
+    create_components(parent_series, uploader)
 
     set_source_package_format(parent_series)
 
     create_sample_series(parent_series, log)
+
+
+def create_ppa_user(username, options, approver):
+    """Create new user, with password "test," and sign code of conduct."""
+    # Avoid circular import.
+    from lp.registry.interfaces.person import PersonCreationRationale
+
+    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+    email = "%s@example.com" % username
+    person = get_person_set().getByName(username)
+    if person is None:
+        person, email = get_person_set().createPersonAndEmail(
+            email, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+            name=username, displayname=username, password='test')
+        email.status = EmailAddressStatus.PREFERRED
+        email.account.status = AccountStatus.ACTIVE
+
+    if not options.dry_run:
+        transaction.commit()
+
+    signedcocset = getUtility(ISignedCodeOfConductSet)
+    person_id = person.id
+    if signedcocset.searchByUser(person_id).count() == 0:
+        existing_keys = list(getUtility(IGPGKeySet).getGPGKeys(person))
+        if len(existing_keys) == 0:
+            gpg_key = LaunchpadObjectFactory().makeGPGKey(person)
+        else:
+            gpg_key = existing_keys[0]
+
+        store.add(SignedCodeOfConduct(
+            owner=person, signingkey=gpg_key,
+            signedcode="Normally a signed CoC would go here.", active=True))
+
+    get_person_set().getByName('ubuntu-team').addMember(person, approver)
 
 
 def main(argv):
@@ -302,7 +372,10 @@ def main(argv):
     clean_up(ubuntu, log)
 
     # Use Hoary as the root, as Breezy and Grumpy are broken.
-    populate(ubuntu, 'hoary', 'ubuntu-team', log)
+    populate(ubuntu, 'hoary', 'ubuntu-team', options, log)
+
+    admin = get_person_set().getByName('name16')
+    create_ppa_user('ppa-user', options, admin)
 
     if options.dry_run:
         txn.abort()
