@@ -34,19 +34,16 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import (
     allowUnauthenticatedSession, logInPrincipal, logoutPerson)
 from canonical.launchpad.webapp.publisher import Navigation, stepthrough
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
 
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
 from lp.testopenid.interfaces.server import (
-    ITestOpenIDApplication, ITestOpenIDLoginForm,
+    get_server_url, ITestOpenIDApplication, ITestOpenIDLoginForm,
     ITestOpenIDPersistentIdentity)
 
 
 OPENID_REQUEST_SESSION_KEY = 'testopenid.request'
 SESSION_PKG_KEY = 'TestOpenID'
-SERVER_URL = urlappend(allvhosts.configs['testopenid'].rooturl, '+openid')
 openid_store = MemoryStore()
 
 
@@ -85,7 +82,7 @@ class TestOpenIDXRDSContentNegotiationMixin(XRDSContentNegotiationMixin):
     @property
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return SERVER_URL
+        return get_server_url()
 
 
 class TestOpenIDIndexView(
@@ -101,7 +98,7 @@ class OpenIDMixin:
 
     def __init__(self, context, request):
         super(OpenIDMixin, self).__init__(context, request)
-        self.server_url = SERVER_URL
+        self.server_url = get_server_url()
         self.openid_server = Server(openid_store, self.server_url)
 
     @property
