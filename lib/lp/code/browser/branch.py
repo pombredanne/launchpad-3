@@ -514,10 +514,10 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     def iconForCodeImportResultStatus(self, status):
         """The icon to represent the `CodeImportResultStatus` `status`."""
-        if status in CodeImportResultStatus.successes:
-            return "/@@/yes"
-        elif status == CodeImportResultStatus.SUCCESS_PARTIAL:
+        if status == CodeImportResultStatus.SUCCESS_PARTIAL:
             return "/@@/yes-gray"
+        elif status in CodeImportResultStatus.successes:
+            return "/@@/yes"
         else:
             return "/@@/no"
 
@@ -1189,8 +1189,10 @@ class RegisterProposalSchema(Interface):
             ' will not be shown in the diff.)'))
 
     comment = Text(
-        title=_('Initial Comment'), required=False,
-        description=_('Describe your change.'))
+        title=_('Description of the Change'), required=False,
+        description=_('Describe what changes your branch introduces, '
+                      'what bugs it fixes, or what features it implements. '
+                      'Ideally include rationale and how to test.'))
 
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
@@ -1260,7 +1262,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 registrant=registrant, target_branch=target_branch,
                 prerequisite_branch=prerequisite_branch,
                 needs_review=data['needs_review'],
-                initial_comment=data.get('comment'),
+                description=data.get('comment'),
                 review_requests=review_requests,
                 commit_message=data.get('commit_message'))
             self.next_url = canonical_url(proposal)

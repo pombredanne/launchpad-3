@@ -26,6 +26,8 @@ from pytz import timezone
 from simplejson import dumps
 import urllib
 
+from sqlobject import SQLObjectNotFound
+
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
@@ -40,6 +42,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.browser.feeds import (
@@ -56,8 +59,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -66,8 +67,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IProjectGroupBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.utilities.filebugdataparser import (
-    FileBugData, FileBugDataParser)
+from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -77,6 +77,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.job.interfaces.job import JobStatus
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action)
@@ -114,7 +115,8 @@ class FileBugViewBase(LaunchpadFormView):
     def initialize(self):
         LaunchpadFormView.initialize(self)
         if (not self.redirect_ubuntu_filebug and
-            self.extra_data_token is not None):
+            self.extra_data_token is not None and
+            not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
@@ -456,15 +458,13 @@ class FileBugViewBase(LaunchpadFormView):
                         cgi.escape(filename))
 
             for attachment in extra_data.attachments:
-                bug.addAttachment(
-                    owner=self.user, data=attachment['content'],
+                bug.linkAttachment(
+                    owner=self.user, file_alias=attachment['file_alias'],
                     description=attachment['description'],
-                    comment=attachment_comment,
-                    filename=attachment['filename'],
-                    content_type=attachment['content_type'])
+                    comment=attachment_comment)
                 notifications.append(
                     'The file "%s" was attached to the bug report.' %
-                        cgi.escape(attachment['filename']))
+                        cgi.escape(attachment['file_alias'].filename))
 
         if extra_data.subscribers:
             # Subscribe additional subscribers to this bug
@@ -578,14 +578,8 @@ class FileBugViewBase(LaunchpadFormView):
             # expected.
             raise NotFound(self, name, request=request)
 
-        extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
-        if extra_bug_data is not None:
-            self.extra_data_token = name
-            extra_bug_data.file_alias.open()
-            self.data_parser = FileBugDataParser(extra_bug_data.file_alias)
-            self.extra_data = self.data_parser.parse()
-            extra_bug_data.file_alias.close()
-        else:
+        self.extra_data_token = name
+        if self.extra_data_processing_job is None:
             # The URL might be mistyped, or the blob has expired.
             # XXX: Bjorn Tillenius 2006-01-15:
             #      We should handle this case better, since a user might
@@ -593,6 +587,9 @@ class FileBugViewBase(LaunchpadFormView):
             #      registration. In that case we should inform the user
             #      that the blob has expired.
             raise NotFound(self, name, request=request)
+        else:
+            self.extra_data = self.extra_data_processing_job.getFileBugData()
+
         return self
 
     def browserDefault(self, request):
@@ -700,6 +697,31 @@ class FileBugViewBase(LaunchpadFormView):
                             "content": content,
                             })
         return guidelines
+
+    @cachedproperty
+    def extra_data_processing_job(self):
+        """Return the ProcessApportBlobJob for a given BLOB token."""
+        if self.extra_data_token is None:
+            # If there's no extra data token, don't bother looking for a
+            # ProcessApportBlobJob.
+            return None
+
+        try:
+            return getUtility(IProcessApportBlobJobSource).getByBlobUUID(
+                self.extra_data_token)
+        except SQLObjectNotFound:
+            return None
+
+    @property
+    def extra_data_to_process(self):
+        """Return True if there is extra data to process."""
+        apport_processing_job = self.extra_data_processing_job
+        if apport_processing_job is None:
+            return False
+        elif apport_processing_job.job.status == JobStatus.COMPLETED:
+            return False
+        else:
+            return True
 
 
 class FileBugInlineFormView(FileBugViewBase):

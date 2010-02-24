@@ -92,6 +92,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
@@ -548,6 +549,7 @@ class LaunchpadRootNavigation(Navigation):
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
+        '+countries': ICountrySet,
         'distros': IDistributionSet,
         '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
