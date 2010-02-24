@@ -119,6 +119,7 @@ from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.services.worlddata.interfaces.country import ICountry
 
 
 class AuthorizationBase:
@@ -357,6 +358,11 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
         return (user.isOwner(self.obj) or user.in_admin or
                 user.isOwner(self.obj.distribution) or
                 user.inTeam(self.obj.distribution.mirror_admin))
+
+
+class ViewDistributionMirror(AnonymousAuthorization):
+    """Anyone can view an IDistributionMirror."""
+    usedfor = IDistributionMirror
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -833,6 +839,11 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
 class ViewDistroSeries(AnonymousAuthorization):
     """Anyone can view a DistroSeries."""
     usedfor = IDistroSeries
+
+
+class ViewCountry(AnonymousAuthorization):
+    """Anyone can view a Country."""
+    usedfor = ICountry
 
 
 class SeriesDrivers(AuthorizationBase):
