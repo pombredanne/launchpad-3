@@ -26,6 +26,8 @@ from lp.services.job.interfaces.job import JobStatus, IRunnableJob
 from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class NullJob(BaseRunnableJob):
@@ -283,6 +285,10 @@ class StuckJob(BaseRunnableJob):
     def run(self):
         if self.id == 2:
             sleep(30)
+        else:
+            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+            assert (
+                'user=branchscanner' in store._connection._raw_connection.dsn)
 
 
 class ListLogger:
