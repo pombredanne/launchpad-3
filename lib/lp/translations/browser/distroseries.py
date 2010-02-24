@@ -11,6 +11,7 @@ __all__ = [
     'DistroSeriesTranslationsAdminView',
     'DistroSeriesTranslationsMenu',
     'DistroSeriesView',
+    'check_distroseries_translations_viewable',
     ]
 
 from zope.component import getUtility
@@ -19,6 +20,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import action
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
     Link, NavigationMenu, enabled_with_permission)
@@ -26,9 +28,8 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.translations.browser.translations import TranslationsMixin
-from lp.translations.browser.browser_helpers import (
-    check_distroseries_translations_viewable)
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -183,6 +184,8 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
     def checkTranslationsViewable(self):
         """ Check if user can view translations for this `IDistroSeries`"""
 
+        # Is user allowed allowed to see translations for this distroseries?
+        # If not, raise TranslationUnavailable.
         check_distroseries_translations_viewable(self.context)
 
     def distroserieslanguages(self):
@@ -252,3 +255,47 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
 
     def language_packs(self):
         return Link('+language-packs', 'Language packs')
+
+
+def check_distroseries_translations_viewable(distroseries):
+    """Check that these distribution series translations are visible.
+
+    Launchpad admins, Translations admins, and users with admin
+    rights on the `IDistroSeries` are always allowed.
+
+    Checks the `hide_all_translations` flag.  If it is set, these
+    translations are not to be shown to the public. In that case an
+    appropriate message is composed based on the series' `status`,
+    and a `TranslationUnavailable` exception is raised.
+
+    :return: Returns normally if this series' translations are
+        viewable to the current user.
+    :raise TranslationUnavailable: if this series' translations are
+        hidden and the user is not one of the limited caste that is
+        allowed to access them.
+    """
+
+    if not distroseries.hide_all_translations:
+        # Yup, viewable.
+        return
+
+    if check_permission(
+        'launchpad.TranslationsAdmin', distroseries):
+        return
+
+    future = [
+        SeriesStatus.EXPERIMENTAL,
+        SeriesStatus.DEVELOPMENT,
+        SeriesStatus.FUTURE,
+        ]
+    if distroseries.status in future:
+        raise TranslationUnavailable(
+            "Translations for this release series are not available yet.")
+    elif distroseries.status == SeriesStatus.OBSOLETE:
+        raise TranslationUnavailable(
+            "This release series is obsolete.  Its translations are no "
+            "longer available.")
+    else:
+        raise TranslationUnavailable(
+            "Translations for this release series are not currently "
+            "available.  Please come back soon.")

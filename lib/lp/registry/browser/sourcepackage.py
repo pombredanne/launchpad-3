@@ -40,7 +40,7 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.translations.browser.browser_helpers import (
+from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
@@ -68,7 +68,8 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
         # If we are able to view the translations for distribution series
         # we should also be allowed to see them for a distribution
-        # source package
+        # source package.
+        # If not, raise TranslationUnavailable.
         check_distroseries_translations_viewable(self.context.distroseries)
 
         return sourcepackage_pots

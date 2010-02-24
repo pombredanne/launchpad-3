@@ -37,10 +37,8 @@ from lp.soyuz.browser.queue import QueueItemsView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.browser.browser_helpers import (
+from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable)
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
@@ -81,19 +79,12 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
         except IndexError:
             # Unknown language code.
             raise NotFoundError
-        distroserieslang = self.context.getDistroSeriesLanguage(lang)
 
-        if distroserieslang is None:
-            # There is no IDistroSeriesLanguage yet for this IDistroSeries,
-            # but we still need to list it as an available language, so we
-            # generate a dummy one so users have a chance to get to it in the
-            # navigation and start adding translations for it.
-            distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-            distroserieslang = distroserieslangset.getDummy(
-                self.context, lang)
+        distroserieslang = self.context.getDistroSeriesLanguageOrDummy(lang)
 
         # Check if user is able to view the translations for
-        # this distribution series
+        # this distribution series language.
+        # If not, raise TranslationUnavailable.
         check_distroseries_translations_viewable(self.context)
 
         return distroserieslang
