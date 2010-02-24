@@ -224,7 +224,7 @@ class MaxHeatByTargetBase:
     factory = LaunchpadObjectFactory()
 
     def test_target_max_bug_heat_default(self):
-        self.assertEqual(self.target.max_bug_heat, 0)
+        self.assertEqual(self.target.max_bug_heat, None)
 
     def test_set_target_max_bug_heat(self):
         self.target.setMaxBugHeat(1000)
