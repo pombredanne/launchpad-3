@@ -8,6 +8,7 @@ import os.path
 import sys
 from subprocess import call
 
+from lp.translations.pottery.buildd import generate_pots
 
 class GenerateTranslationTemplates:
     """Script to generate translation templates from a branch."""
@@ -45,7 +46,7 @@ class GenerateTranslationTemplates:
     def generate(self):
         """Do It.  Generate templates."""
         self._getBranch()
-        # XXX JeroenVermeulen 2010-01-19 bug=509557: Actual payload goes here.
+        generate_pots(self.branch_dir)
         return 0
 
 
