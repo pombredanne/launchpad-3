@@ -16,4 +16,4 @@ ALTER TABLE distroseries
 ALTER TABLE distributionsourcepackage
     ADD COLUMN max_bug_heat integer DEFAULT 0 NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 34, 0);
