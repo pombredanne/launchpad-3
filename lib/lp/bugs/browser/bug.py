@@ -10,7 +10,6 @@ __all__ = [
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
-    'BugHeatView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
@@ -963,11 +962,3 @@ def bug_description_xhtml_representation(context, field, request):
         return html.encode('utf-8')
     return renderer
 
-
-class BugHeatView(LaunchpadView):
-    """View for rendering the graphical (HTML) representation of bug heat."""
-
-    def __call__(self):
-        """Render the bug heat representation."""
-        from lp.bugs.browser.bugtask import bugtask_heat_html
-        return bugtask_heat_html(self.context.default_bugtask)

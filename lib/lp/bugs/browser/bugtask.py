@@ -1081,16 +1081,16 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        view = getMultiAdapter(
-            (self.context.bug, self.request),
-            name='+bug-heat')
-        return view()
+        return bugtask_heat_html(self.context)
 
 
 def bugtask_heat_html(bugtask):
     """Render the HTML representing bug heat for a given bugask."""
+    max_heat = bugtask.target.max_heat
+    if max_heat == 0:
+        max_heat = 5000
     heat_ratio = floor(
-        (bugtask.bug.heat / float(bugtask.target.max_heat)) * 4)
+        (bugtask.bug.heat / float(max_heat)) * 4)
     html = '<span>'
     for flame in range(1, 5):
         if flame <= heat_ratio:
