@@ -61,7 +61,7 @@ class IHasBugs(Interface):
         description=_("The list of bug tags defined as official."),
         value_type=Tag(),
         readonly=True))
-    max_heat = Attribute(
+    max_bug_heat = Attribute(
         "The current highest bug heat value for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
@@ -222,7 +222,7 @@ class IHasBugs(Interface):
         """
 
     def setMaxHeat(self, heat):
-        """Set the max_heat for this context."""
+        """Set the max_bug_heat for this context."""
 
 
 class IBugTarget(IHasBugs):

@@ -196,7 +196,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     sections = SQLRelatedJoin(
         'Section', joinColumn='distroseries', otherColumn='section',
         intermediateTable='SectionSelection')
-    max_heat = Int(allow_none=False, default=0)
+    max_bug_heat = Int(allow_none=False, default=0)
 
     @property
     def named_version(self):

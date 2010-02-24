@@ -158,7 +158,7 @@ class HasBugsBase:
 
     def setMaxHeat(self, heat):
         """See `IHasBugs`."""
-        self.max_heat = heat
+        self.max_bug_heat = heat
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""

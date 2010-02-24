@@ -216,30 +216,30 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
 
 
 class MaxHeatByTargetBase:
-    """Base class for testing a bug target's max_heat attribute."""
+    """Base class for testing a bug target's max_bug_heat attribute."""
 
     layer = LaunchpadZopelessLayer
 
     target = None
     factory = LaunchpadObjectFactory()
 
-    def test_target_max_heat_default(self):
-        self.assertEqual(self.target.max_heat, 0)
+    def test_target_max_bug_heat_default(self):
+        self.assertEqual(self.target.max_bug_heat, 0)
 
-    def test_set_target_max_heat(self):
+    def test_set_target_max_bug_heat(self):
         self.target.setMaxHeat(1000)
-        self.assertEqual(self.target.max_heat, 1000)
+        self.assertEqual(self.target.max_bug_heat, 1000)
 
 
 class ProjectMaxHeatByTargetTest(MaxHeatByTargetBase, unittest.TestCase):
-    """Ensure a project has a max_heat value that can be set."""
+    """Ensure a project has a max_bug_heat value that can be set."""
 
     def setUp(self):
         self.target = self.factory.makeProduct()
 
 
 class DistributionMaxHeatByTargetTest(MaxHeatByTargetBase, unittest.TestCase):
-    """Ensure a distribution has a max_heat value that can be set."""
+    """Ensure a distribution has a max_bug_heat value that can be set."""
 
     def setUp(self):
         self.target = self.factory.makeDistribution()
@@ -247,7 +247,7 @@ class DistributionMaxHeatByTargetTest(MaxHeatByTargetBase, unittest.TestCase):
 
 class DistributionSourcePackageMaxHeatByTargetTest(
     MaxHeatByTargetBase, unittest.TestCase):
-    """Ensure a distro source package has a max_heat value that can be set."""
+    """Ensure a distro source package has a max_bug_heat value that can be set."""
 
     def setUp(self):
         self.target = self.factory.makeDistributionSourcePackage()
@@ -255,7 +255,7 @@ class DistributionSourcePackageMaxHeatByTargetTest(
 
 class SourcePackageMaxHeatByTargetTest(
     MaxHeatByTargetBase, unittest.TestCase):
-    """Ensure a source package has a max_heat value that can be set."""
+    """Ensure a source package has a max_bug_heat value that can be set."""
 
     def setUp(self):
         self.target = self.factory.makeSourcePackage()
@@ -263,7 +263,7 @@ class SourcePackageMaxHeatByTargetTest(
 
 class ProductSeriesMaxHeatByTargetTest(
     MaxHeatByTargetBase, unittest.TestCase):
-    """Ensure a product series has a max_heat value that can be set."""
+    """Ensure a product series has a max_bug_heat value that can be set."""
 
     def setUp(self):
         self.target = self.factory.makeProductSeries()
@@ -271,7 +271,7 @@ class ProductSeriesMaxHeatByTargetTest(
 
 class DistroSeriesMaxHeatByTargetTest(
     MaxHeatByTargetBase, unittest.TestCase):
-    """Ensure a distro series has a max_heat value that can be set."""
+    """Ensure a distro series has a max_bug_heat value that can be set."""
 
     def setUp(self):
         self.target = self.factory.makeDistroSeries()
@@ -279,7 +279,7 @@ class DistroSeriesMaxHeatByTargetTest(
 
 class ProjectGroupMaxHeatByTargetTest(
     MaxHeatByTargetBase, unittest.TestCase):
-    """Ensure a project group has a max_heat value that can be set."""
+    """Ensure a project group has a max_bug_heat value that can be set."""
 
     def setUp(self):
         self.target = self.factory.makeProject()

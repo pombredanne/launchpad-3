@@ -460,15 +460,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                 BugTask.sourcepackagename == self.sourcepackagename),
             user)
 
-    def _get_max_heat(self):
+    def _get_max_bug_heat(self):
         """See `IHasBugs`."""
-        return self.distribution_sourcepackage.max_heat
+        return self.distribution_sourcepackage.max_bug_heat
 
-    def _set_max_heat(self, value):
+    def _set_max_bug_heat(self, value):
         """See `IHasBugs`."""
-        self.distribution_sourcepackage.max_heat = value
+        self.distribution_sourcepackage.max_bug_heat = value
 
-    max_heat = property(_get_max_heat, _set_max_heat)
+    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

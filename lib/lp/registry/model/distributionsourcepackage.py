@@ -142,7 +142,7 @@ class DistributionSourcePackage(BugTargetBase,
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
 
-    def _get_max_heat(self):
+    def _get_max_bug_heat(self):
         """See `IHasBugs`."""
         dsp_in_db = self._self_in_database
         if dsp_in_db is None:
@@ -150,9 +150,9 @@ class DistributionSourcePackage(BugTargetBase,
             dsp_in_db.sourcepackagename = self.sourcepackagename
             dsp_in_db.distribution = self.distribution
             Store.of(self.distribution).add(dsp_in_db)
-        return dsp_in_db.max_heat
+        return dsp_in_db.max_bug_heat
 
-    def _set_max_heat(self, value):
+    def _set_max_bug_heat(self, value):
         """See `IHasBugs`."""
         dsp_in_db = self._self_in_database
         if dsp_in_db is None:
@@ -160,9 +160,9 @@ class DistributionSourcePackage(BugTargetBase,
             dsp_in_db.sourcepackagename = self.sourcepackagename
             dsp_in_db.distribution = self.distribution
             Store.of(self.distribution).add(dsp_in_db)
-        dsp_in_db.max_heat = value
+        dsp_in_db.max_bug_heat = value
 
-    max_heat = property(_get_max_heat, _set_max_heat)
+    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
 
     @property
     def latest_overall_publication(self):
@@ -497,5 +497,5 @@ class DistributionSourcePackageInDatabase(Storm):
 
     bug_reporting_guidelines = Unicode()
 
-    max_heat = Int(allow_none=False, default=0)
+    max_bug_heat = Int(allow_none=False, default=0)
 
