@@ -659,7 +659,6 @@ COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'Level of
 translations imports from codehosting branch: None, templates only, templates
 and translations. See TranslationsBranchImportMode.';
 COMMENT ON COLUMN ProductSeries.translations_branch IS 'Branch to push translations updates to.';
-COMMENT ON COLUMN ProductSeries.max_bug_heat IS 'The highest heat value across bugs for this product series.';
 
 -- ProductSeriesCodeImport
 
@@ -987,7 +986,6 @@ COMMENT ON COLUMN DistroSeries.language_pack_base IS 'Current full export langua
 COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
-COMMENT ON COLUMN DistroSeries.max_bug_heat IS 'The highest heat value across bugs for this distro series.';
 
 
 -- PackageDiff
