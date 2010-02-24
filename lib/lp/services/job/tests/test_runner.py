@@ -306,7 +306,9 @@ class TestTwistedJobRunner(TestCaseWithFactory):
         followed by a job that is sure to time out.
         """
         logger = ListLogger()
-        runner = TwistedJobRunner.runFromSource(StuckJob, logger)
+        runner = TwistedJobRunner.runFromSource(
+            StuckJob, 'branchscanner', logger)
+
         self.assertEqual(1, len(runner.completed_jobs))
         self.assertEqual(1, len(runner.incomplete_jobs))
         oops = errorlog.globalErrorUtility.getLastOopsReport()
@@ -327,7 +329,7 @@ class TestJobCronScript(TestCaseWithFactory):
         class DummyRunner:
 
             @classmethod
-            def runFromSource(cls, source, logger):
+            def runFromSource(cls, source, dbuser, logger):
                 expected_config = errorlog.ErrorReportingUtility()
                 expected_config.configure('update_preview_diffs')
                 self.assertEqual(
