@@ -13,6 +13,7 @@ from lp.testing import TestCaseWithFactory
 
 
 class ProcessorFamilyTests(TestCaseWithFactory):
+    """Test ProcessorFamily."""
 
     layer = LaunchpadZopelessLayer
 
@@ -26,3 +27,4 @@ class ProcessorFamilyTests(TestCaseWithFactory):
             "The Modified Harvard architecture 8-bit RISC processors.")
         proc = family.addProcessor("avr2001", "The 2001 AVR", "Fast as light.")
         self.assertProvides(proc, IProcessor)
+        self.assertEquals(family, proc.family)

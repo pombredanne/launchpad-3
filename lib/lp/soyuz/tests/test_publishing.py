@@ -863,12 +863,14 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
 
 
 class BuildRecordCreationTests(TestNativePublishingBase):
+    """Test the creation of build records."""
 
     def setUp(self):
         super(BuildRecordCreationTests, self).setUp()
         self.distro = self.factory.makeDistribution()
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.distro, name="crazy")
+        self.addFakeChroots(self.distroseries)
         self.archive = self.factory.makeArchive()
         self.avr_family = self.factory.makeProcessorFamily(
             name="avr", restricted=True)
@@ -911,7 +913,6 @@ class BuildRecordCreationTests(TestNativePublishingBase):
 
     def test_createMissingBuilds_restricts(self):
         available_archs = [self.sparc_distroarch, self.avr_distroarch]
-        self.addFakeChroots(self.distroseries)
         pubrec = self.getPubSource(distroseries=self.distroseries,
             archive=self.archive, architecturehintlist='any')
         builds = pubrec.createMissingBuilds(available_archs)

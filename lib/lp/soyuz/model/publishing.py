@@ -512,9 +512,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         :param available_archs: Architectures to consider
         :return: Sequence of `IDistroArch` instances.
         """
-        associated_proc_families = [archivearch.processorfamily for archivearch 
+        associated_proc_families = [
+            archivearch.processorfamily for archivearch 
             in getUtility(IArchiveArchSet).getByArchive(self.archive)]
-        # Return all distroarches with unrestricted processor families or with 
+        # Return all distroarches with unrestricted processor families or with
         # processor families the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
             if not distroarch.processorfamily.restricted or 
