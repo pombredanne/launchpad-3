@@ -265,6 +265,16 @@ It's also possible to retrieve the user's non-expired request tokens.
     >>> salgado.oauth_request_tokens.count()
     4
 
+A user has edit permission over his own access tokens, he can expire them.
+
+    >>> api_user = factory.makePerson()
+    >>> login_person(api_user)
+    >>> api_request_token = consumer.newRequestToken()
+    >>> api_request_token.review(api_user, OAuthPermission.WRITE_PUBLIC)
+    >>> api_access_token = api_request_token.createAccessToken()
+    >>> api_access_token.date_expires = (
+    ...     datetime.now(pytz.timezone('UTC')) - timedelta(hours=1))
+
 
 == Nonces and timestamps ==
 
