@@ -31,6 +31,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
@@ -718,6 +719,36 @@ class TestNativePublishing(TestNativePublishingBase):
         # Remove locally created dir.
         shutil.rmtree(test_pool_dir)
         shutil.rmtree(test_temp_dir)
+
+    def test__getAllowedArchitectures(self):
+        """Test _getAllowedArchitectures.
+
+        Unrestricted architectures should never be filtered out.
+        Restricted architectures should only be allowed if there is 
+        an explicit ArchiveArch association with the archive.
+        """
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(distribution=distro,
+            name="crazy")
+        archive = self.factory.makeArchive()
+        avr_family = self.factory.makeProcessorFamily(name="avr",
+            restricted=True)
+        avr_distroarch = self.factory.makeDistroArchSeries(
+            architecturetag='avr', processorfamily=avr_family,
+            distroseries=distroseries)
+        sparc_family = self.factory.makeProcessorFamily(name="sparc",
+            restricted=False)
+        sparc_distroarch = self.factory.makeDistroArchSeries(
+            architecturetag='sparc', processorfamily=sparc_family,
+            distroseries=distroseries)
+        available_archs = [sparc_distroarch, avr_distroarch]
+        pubrec = self.getPubSource(distroseries=distroseries,
+            archive=archive, architecturehintlist='any')
+        self.assertEquals([sparc_distroarch],
+            pubrec._getAllowedArchitectures(available_archs ))
+        getUtility(IArchiveArchSet).new(archive, avr_family)
+        self.assertEquals([sparc_distroarch, avr_distroarch], 
+            pubrec._getAllowedArchitectures(available_archs ))
 
 
 class OverrideFromAncestryTestCase(TestCaseWithFactory):
