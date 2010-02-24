@@ -42,6 +42,11 @@ class ProcessorFamily(SQLBase):
     processors = SQLMultipleJoin('Processor', joinColumn='family')
     restricted = Bool(allow_none=False, default=False)
 
+    def addProcessor(self, name, title, description):
+        """See `IProcessorFamily`."""
+        return Processor(family=self, name=name, title=title,
+            description=description)
+
 
 class ProcessorFamilySet:
     implements(IProcessorFamilySet)
@@ -65,7 +70,7 @@ class ProcessorFamilySet:
         # a non-existent processor.
         return rset.one()
 
-    def new(self, name, title, description, processors, restricted=False):
+    def new(self, name, title, description, restricted=False):
         """See `IProcessorFamily`."""
         return ProcessorFamily(name=name, title=title, description=description,
-                               processors=processors, restricted=restricted)
+                               restricted=restricted)

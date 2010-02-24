@@ -34,7 +34,14 @@ class IProcessorFamily(Interface):
     description = Attribute("The Processor Name Description")
     processors = Attribute("The Processors in this family.")
     restricted = Bool(title=_("Whether this family is restricted."))
+    def addProcessor(name, title, description):
+        """Add a new processor to this family.
 
+        :param name: Name of the processor
+        :param title: Title of the processor
+        :param description: Description of the processor
+        :return: A `IProcessor`
+        """
 
 class IProcessorFamilySet(Interface):
     """Operations related to ProcessorFamily instances."""
@@ -54,13 +61,12 @@ class IProcessorFamilySet(Interface):
         :return: A `IProcessorFamily` instance if found, None otherwise.
         """
 
-    def new(name, title, description, processors, restricted):
+    def new(name, title, description, restricted):
         """Create a new processor family.
 
         :param name: Name of the family.
         :param title: Title for the family.
         :param description: Extended description of the family
-        :param processors: The processors in this family.
         :param restricted: Whether the processor family is restricted
         :return: a `IProcessorFamily`.
         """
