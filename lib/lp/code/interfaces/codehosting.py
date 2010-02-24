@@ -61,7 +61,9 @@ class IBranchPuller(Interface):
     def acquireBranchToPull(branch_type_names):
         """Return a Branch to pull and mark it as mirror-started.
 
-        :param branch_type_names: XXX
+        :param branch_type_names: Only consider branches of these type names.
+            An empty list means consider HOSTED, MIRRORED and IMPORTED
+            branches.
         :return: A 5-tuple::
 
               (branch_id, pull_url, unique_name, default_branch, branch_type)
