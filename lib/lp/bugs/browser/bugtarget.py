@@ -1283,15 +1283,33 @@ class BugsPatchesView(LaunchpadView):
         else:
             return 'Patch attachments in %s' % self.context.displayname
 
+    @property
+    def patch_task_orderings(self):
+        """The list of possible sort orderings for the patches view.
+
+        The orderings are a list of tuples of the form:
+          [(DisplayName, InternalOrderingName), ...]
+        For example:
+          [("Patch age", "-latest_patch_uploaded"),
+           ("Importance", "-importance"),
+           ...]
+        """
+        orderings = [("patch age", "-latest_patch_uploaded"),
+                     ("importance", "-importance"),
+                     ("status", "status"),
+                     ("oldest first", "datecreated"),
+                     ("newest first", "-datecreated")]
+        targetname = self.targetName()
+        if targetname is not None:
+            # Lower case for consistency with the other orderings.
+            orderings.append((targetname.lower(), "targetname"))
+        return orderings
+
+
     def batchedPatchTasks(self):
         """Return a BatchNavigator for bug tasks with patch attachments."""
-        # XXX: Karl Fogel 2010-02-01 bug=515584: we should be using a
-        # Zope form instead of validating the values by hand in the
-        # code.  Doing it the Zope form way would specify rendering
-        # and validation from the same enum, and thus observe DRY.
         orderby = self.request.get("orderby", "-latest_patch_uploaded")
-        if orderby not in ["-latest_patch_uploaded", "-importance", "status",
-                           "targetname", "datecreated", "-datecreated"]:
+        if orderby not in [x[1] for x in self.patch_task_orderings]:
             raise UnexpectedFormData(
                 "Unexpected value for field 'orderby': '%s'" % orderby)
         return BatchNavigator(
