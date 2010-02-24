@@ -23,12 +23,6 @@ class IBranchPuller(Interface):
     MIRROR_TIME_INCREMENT = Attribute(
         "How frequently we mirror branches.")
 
-    def getPullQueue(branch_type):
-        """Return a queue of branches to mirror using the puller.
-
-        :param branch_type: A value from the `BranchType` enum.
-        """
-
     def acquireBranchToPull():
         """Return a Branch to pull and mark it as mirror-started.
 
