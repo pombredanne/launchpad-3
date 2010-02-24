@@ -336,8 +336,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         return IStore(SourcePackageRelease).find(
             SourcePackageRelease,
-            In(SourcePackageRelease.id, subselect)
-            ).order_by(Desc(
+            In(SourcePackageRelease.id, subselect)).order_by(Desc(
                 SQL("debversion_sort_key(SourcePackageRelease.version)")))
 
     @property
@@ -355,9 +354,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def direct_packaging(self):
         """See `ISourcePackage`."""
-        return Packaging.selectOneBy(
+        store = Store.of(self.sourcepackagename)
+        return store.find(
+            Packaging,
             sourcepackagename=self.sourcepackagename,
-            distroseries=self.distroseries)
+            distroseries=self.distroseries).one()
 
     @property
     def packaging(self):
@@ -678,14 +679,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         uploads = [
             build.package_upload
             for build in builds
-            if build.package_upload
-            ]
+            if build.package_upload]
         custom_files = []
         for upload in uploads:
             custom_files += [
                 custom for custom in upload.customfiles
-                if custom.customformat == our_format
-                ]
+                if custom.customformat == our_format]
 
         custom_files.sort(key=attrgetter('id'))
         return [custom.libraryfilealias for custom in custom_files]

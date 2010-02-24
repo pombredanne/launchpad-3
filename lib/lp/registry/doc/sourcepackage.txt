@@ -259,22 +259,23 @@ package.
     1.0
 
 A source package's product series is None when it does not have a
-Packaging entry.
+Packaging entry. Historical packaging does not affect the state of the
+productseries attribute.
 
     >>> from lp.registry.model.packaging import PackagingUtil
     >>> hoary_a52dec = SourcePackage(sourcepackagename=a52dec,
     ...     distroseries=hoary)
-    >>> print hoary_a52dec.productseries
-    None
-
     >>> PackagingUtil().packagingEntryExists(
     ...     productseries=hoary_a52dec.productseries,
     ...     sourcepackagename=a52dec,
     ...     distroseries=hoary)
     False
 
+    >>> print hoary_a52dec.productseries
+    None
+
 Once a Packaging entry is created to link a distro series source package name
-to a product series, the source paackage does have a product series.
+to a product series, the source package does have a product series.
 
     >>> from lp.registry.interfaces.packaging import PackagingType
 
@@ -297,7 +298,7 @@ to a product series, the source paackage does have a product series.
     ratty
 
 Packaging entries can be deleted using PackagingUtil.deletePackaging. That
-also removed the source package product series.
+also removes the source package product series.
 
     >>> PackagingUtil().deletePackaging(
     ...     productseries=a52dec_series,
