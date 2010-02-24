@@ -18,7 +18,7 @@ from sqlobject import (
 from storm.expr import Sum, Max
 from zope.component import getUtility
 from zope.interface import implements
-from storm.locals import And, Desc, Int
+from storm.locals import And, Desc
 from storm.store import Store
 
 from canonical.database.constants import UTC_NOW

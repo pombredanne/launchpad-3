@@ -247,7 +247,7 @@ class DistributionMaxHeatByTargetTest(MaxHeatByTargetBase, unittest.TestCase):
 
 class DistributionSourcePackageMaxHeatByTargetTest(
     MaxHeatByTargetBase, unittest.TestCase):
-    """Ensure a distro source package has a max_bug_heat value that can be set."""
+    """Ensure distro source package has max_bug_heat value that can be set."""
 
     def setUp(self):
         self.target = self.factory.makeDistributionSourcePackage()
