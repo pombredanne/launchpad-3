@@ -23,13 +23,11 @@ __all__ = [
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
     'MaloneView',
-    'MAX_HEAT',
     ]
 
 from datetime import datetime, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
-from math import floor
 import re
 
 import pytz
@@ -77,10 +75,6 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 
-# Constant for the maximum bug heat we'll use for converting
-# IBug.heat to ratio. In the future this should come from the DB.
-# The value must be a float
-MAX_HEAT = 5000.0
 
 class BugNavigation(Navigation):
     """Navigation for the `IBug`."""
@@ -975,12 +969,5 @@ class BugHeatView(LaunchpadView):
 
     def __call__(self):
         """Render the bug heat representation."""
-        heat_ratio = floor((self.context.heat / MAX_HEAT) * 4)
-        html = '<span>'
-        for flame in range(1, 5):
-            if flame <= heat_ratio:
-                html += '<img src="/@@/flame-icon" />'
-            else:
-                html += '<img src="/@@/flame-bw-icon" />'
-        html += '</span>'
-        return html
+        from lp.bugs.browser.bugtask import bugtask_heat_html
+        return bugtask_heat_html(self.context.default_bugtask)

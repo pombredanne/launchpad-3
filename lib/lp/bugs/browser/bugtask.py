@@ -33,6 +33,7 @@ __all__ = [
     'BugTaskTextView',
     'BugTaskView',
     'BugTasksAndNominationsView',
+    'bugtask_heat_html',
     'BugsBugTaskSearchListingView',
     'NominationsReviewTableBatchNavigatorView',
     'TextualBugTaskSearchListingView',
@@ -49,6 +50,7 @@ import re
 from simplejson import dumps
 import urllib
 from operator import attrgetter, itemgetter
+from math import floor
 
 from zope import component
 from zope.app.form import CustomWidgetFactory
@@ -1083,6 +1085,20 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             (self.context.bug, self.request),
             name='+bug-heat')
         return view()
+
+
+def bugtask_heat_html(bugtask):
+    """Render the HTML representing bug heat for a given bugask."""
+    heat_ratio = floor(
+        (bugtask.bug.heat / float(bugtask.target.max_heat)) * 4)
+    html = '<span>'
+    for flame in range(1, 5):
+        if flame <= heat_ratio:
+            html += '<img src="/@@/flame-icon" />'
+        else:
+            html += '<img src="/@@/flame-bw-icon" />'
+    html += '</span>'
+    return html
 
 
 class BugTaskPortletView:

@@ -4,9 +4,8 @@ Bug heat is represented as four flame icons. The quantity of flames that are
 coloured is dependent on the value of the heat field. The view BugHeatView
 is used to render the flames.
 
-    >>> from lp.bugs.browser.bug import MAX_HEAT
+    >>> MAX_HEAT = 5000.0
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.webapp import canonical_url
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from BeautifulSoup import BeautifulSoup
     >>> def print_flames(html):
@@ -20,6 +19,7 @@ The maximum heat is defined as a constant in browser/bug.py. A bug with
 a heat of half the maximum will result in a display of two coloured flames
 and two black-and-white flames.
 
+    >>> removeSecurityProxy(bug.default_bugtask.target).max_heat = MAX_HEAT
     >>> removeSecurityProxy(bug).heat = MAX_HEAT / 2
     >>> bug_heat_view = create_initialized_view(bug, name='+bug-heat')
     >>> print_flames(bug_heat_view())
