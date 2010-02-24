@@ -12,4 +12,4 @@ from lp.translations.pottery.build_slave import generate_pots
 
 
 if __name__ == "__main__":
-    print "\n".join(generate_pots())
+    print "\n".join(generate_pots('.'))

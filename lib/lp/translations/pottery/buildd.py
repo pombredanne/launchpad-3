@@ -166,13 +166,14 @@ def generate_pot(podir, domain):
     return returncode == 0
 
 
-def generate_pots():
-    """Top-level function to generate all PO templates in a pacakage."""
+def generate_pots(package_dir):
+    """Top-level function to generate all PO templates in a package."""
     potpaths = []
-    for podir in find_intltool_dirs():
-        domain = get_translation_domain(podir)
-        if generate_pot(podir, domain):
-            potpaths.append(os.path.join(podir, domain + ".pot"))
+    with chdir(package_dir):
+        for podir in find_intltool_dirs():
+            domain = get_translation_domain(podir)
+            if generate_pot(podir, domain):
+                potpaths.append(os.path.join(podir, domain + ".pot"))
     return potpaths
 
 
