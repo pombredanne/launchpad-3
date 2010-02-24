@@ -413,14 +413,14 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
     def assertNoBranchIsAquired(self, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch_types = tuple(branch_type.name for branch_type in branch_types)
-        pull_info = self.storage.acquireBranchToPull(*branch_types)
+        pull_info = self.storage.acquireBranchToPull(branch_types)
         self.assertEqual((), pull_info)
 
     def assertBranchIsAquired(self, branch, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch = removeSecurityProxy(branch)
         branch_types = tuple(branch_type.name for branch_type in branch_types)
-        pull_info = self.storage.acquireBranchToPull(*branch_types)
+        pull_info = self.storage.acquireBranchToPull(branch_types)
         default_branch = branch.target.default_stacked_on_branch
         if default_branch:
             default_branch_name = default_branch
@@ -486,7 +486,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
     def test_unknown_branch_type_name_raises(self):
         self.assertRaises(
             UnknownBranchTypeError, self.storage.acquireBranchToPull,
-            'NO_SUCH_TYPE')
+            ('NO_SUCH_TYPE',))
 
 
 class BranchFileSystemTest(TestCaseWithFactory):

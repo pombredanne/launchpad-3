@@ -456,7 +456,7 @@ class JobScheduler:
 
     def _poll(self):
         deferred = self.branch_puller_endpoint.callRemote(
-            'acquireBranchToPull', *self.branch_type_names)
+            'acquireBranchToPull', self.branch_type_names)
         deferred.addCallback(self._turnJobTupleIntoTask)
         return deferred
 

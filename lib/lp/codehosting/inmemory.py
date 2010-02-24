@@ -443,7 +443,7 @@ class FakeBranchPuller:
         self._branch_set = branch_set
         self._script_activity_set = script_activity_set
 
-    def acquireBranchToPull(self, *branch_type_names):
+    def acquireBranchToPull(self, branch_type_names):
         if not branch_type_names:
             branch_type_names = 'HOSTED', 'MIRRORED', 'IMPORTED'
         branch_types = []

@@ -45,7 +45,7 @@ if __name__ == '__main__':
     log = set_up_logging_for_script(options, 'supermirror_puller')
     manager = scheduler.JobScheduler(
         LoggingProxy(config.codehosting.branch_puller_endpoint, log), log,
-        options['branch_type'])
+        options.branch_type)
 
     reactor.callWhenRunning(run_mirror, log, manager)
     reactor.run()

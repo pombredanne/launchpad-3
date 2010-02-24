@@ -103,7 +103,7 @@ class TestJobScheduler(TrialTestCase):
         manager = self.makeJobScheduler(('HOSTED',))
         manager.run()
         self.assertEqual(
-            [('acquireBranchToPull', 'HOSTED')],
+            [('acquireBranchToPull', ('HOSTED',))],
             manager.branch_puller_endpoint.calls)
 
 

@@ -55,7 +55,7 @@ class BranchPuller(LaunchpadXMLRPCView):
 
     implements(IBranchPuller)
 
-    def acquireBranchToPull(self, *branch_type_names):
+    def acquireBranchToPull(self, branch_type_names):
         """See `IBranchPuller`."""
         branch_types = []
         for branch_type_name in branch_type_names:
