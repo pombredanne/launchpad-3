@@ -25,7 +25,6 @@ from canonical.launchpad.webapp.servers import (
     TranslationsBrowserRequest, VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
     WebServiceClientRequest, WebServicePublication, WebServiceTestRequest)
-from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):
@@ -97,7 +96,7 @@ class TestApplicationServerSettingRequestFactory(TestCase):
             "factory should not have set HTTPS env")
 
 
-class TestVhostWebserviceFactory(DummyConfigurationTestCase):
+class TestVhostWebserviceFactory(WebServiceTestCase):
 
     def setUp(self):
         super(TestVhostWebserviceFactory, self).setUp()
@@ -115,7 +114,7 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
     @property
     def working_api_path(self):
         """A path to the webservice API that should work every time."""
-        return '/' + self.config.path_override
+        return '/' + getUtility(IWebServiceConfiguration).path_override
 
     @property
     def failing_api_path(self):
@@ -126,7 +125,8 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
         """The factory should produce WebService request and publication
         objects for requests to the /api root URL.
         """
-        env = self.wsgi_env('/' + self.config.path_override)
+        env = self.wsgi_env(
+            '/' + getUtility(IWebServiceConfiguration).path_override)
 
         # Necessary preamble and sanity check.  We need to call
         # the factory's canHandle() method with an appropriate
@@ -213,7 +213,8 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
         # This is a sanity check, so I can write '/api/foo' instead
         # of PATH_OVERRIDE + '/foo' in my tests.  The former's
         # intention is clearer.
-        self.assertEqual(self.config.path_override, 'api',
+        self.assertEqual(
+            getUtility(IWebServiceConfiguration).path_override, 'api',
             "Sanity check: The web service path override should be 'api'.")
 
         self.assert_(
