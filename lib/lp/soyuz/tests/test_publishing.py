@@ -918,6 +918,15 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(1, len(builds))
         self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
 
+    def test_createMissingBuilds_restrict_override(self):
+        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        pubrec = self.getPubSource(distroseries=self.distroseries,
+            archive=self.archive, architecturehintlist='any')
+        builds = pubrec.createMissingBuilds()
+        self.assertEquals(2, len(builds))
+        self.assertEquals(self.avr_distroarch, builds[0].distroarchseries)
+        self.assertEquals(self.sparc_distroarch, builds[1].distroarchseries)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
