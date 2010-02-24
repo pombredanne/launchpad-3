@@ -126,6 +126,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.buildqueue import BuildQueue
@@ -612,6 +613,26 @@ class LaunchpadObjectFactory(ObjectFactory):
         return Milestone(product=product, distribution=distribution,
                          productseries=productseries,
                          name=name)
+
+    def makeProcessorFamily(self, name, title=None, description=None,
+                            processors=None):
+        """Create a new processor family.
+        
+        :param name: Name of the family (e.g. x86)
+        :param title: Optional title of the family
+        :param description: Optional extended description
+        :param processors: The processors in this family
+        """
+        if description is None:
+            title = "Description of the %s processor family" % name
+        if processors is None:
+            # XXX JRV 20100224: Perhaps add one example processors if none
+            # were specified ?
+            processors = []
+        if title is None:
+            title = "%s and compatible processors." % name
+        return getUtility(IProcessorFamilySet).new(name, title, description,
+                                                   processors)
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):

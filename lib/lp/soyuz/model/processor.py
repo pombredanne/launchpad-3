@@ -64,3 +64,8 @@ class ProcessorFamilySet:
         # but there is also the possibility that the user specified a name for
         # a non-existent processor.
         return rset.one()
+
+    def new(self, name, title, description, processors):
+        """See `IProcessorFamily`."""
+        return ProcessorFamily(name=name, title=title, description=description,
+                               processors=processors)
