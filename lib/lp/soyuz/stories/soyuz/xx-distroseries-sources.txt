@@ -69,12 +69,15 @@ We can see 'mozilla-firefox' is published once in pocket RELEASE:
     mozilla-firefox 0.9
 
 It also provides the upstream relationships for this source, Project,
-Product and Branches:
+Product, Branches, and Bugs:
 
   >>> print extract_text(find_tag_by_id(browser.contents, 'upstreams'))
+  Mozilla Firefox ... project
   Project Group: the Mozilla Project
-  Project: Mozilla Firefox ...
-  Series: trunk Change upstream link
+  Bug supervisor: no
+  Bug tracker: yes
+  Mozilla Firefox trunk series
+  Branch: no
 
 The user can also download the files for the "currentrelease" (last
 published version) if they are available:

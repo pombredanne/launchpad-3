@@ -14,7 +14,7 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import login, ANONYMOUS
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
@@ -50,7 +50,7 @@ def distributionSetUp(test):
 def projectSetUp(test):
     """Test environment for project."""
     setUp(test)
-    gnome_project = getUtility(IProjectSet).getByName('gnome')
+    gnome_project = getUtility(IProjectGroupSet).getByName('gnome')
     products_queue = list(gnome_project.products)
 
     def newFAQ(owner, title, content, keywords=None, date_created=None):

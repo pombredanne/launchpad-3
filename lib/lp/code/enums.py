@@ -806,6 +806,13 @@ class CodeImportResultStatus(DBEnumeratedType):
         import.
         """)
 
+    SUCCESS_PARTIAL = DBItem(120, """
+        Partial Success
+
+        Import job successfully imported some but not all of the foreign
+        revisions.
+        """)
+
     FAILURE = DBItem(200, """
         Failure
 
@@ -864,7 +871,7 @@ class CodeImportResultStatus(DBEnumeratedType):
         job, or the deletion of a CodeImport which had a running job.
         """)
 
-    successes = [SUCCESS, SUCCESS_NOCHANGE]
+    successes = [SUCCESS, SUCCESS_NOCHANGE, SUCCESS_PARTIAL]
 
 
 class CodeReviewVote(DBEnumeratedType):
