@@ -52,7 +52,8 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingStatus, PoolFileOverwriteError)
+    PackagePublishingPriority, PackagePublishingStatus,
+    PoolFileOverwriteError)
 from lp.soyuz.interfaces.build import BuildSetStatus, BuildStatus, IBuildSet
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.components.decoratedresultset import (

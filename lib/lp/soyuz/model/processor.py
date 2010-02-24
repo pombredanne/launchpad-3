@@ -72,5 +72,5 @@ class ProcessorFamilySet:
 
     def new(self, name, title, description, restricted=False):
         """See `IProcessorFamily`."""
-        return ProcessorFamily(name=name, title=title, description=description,
-                               restricted=restricted)
+        return ProcessorFamily(name=name, title=title,
+            description=description, restricted=restricted)
