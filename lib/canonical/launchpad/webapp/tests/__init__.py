@@ -14,7 +14,7 @@ class DummyWebServiceConfiguration:
     """A totally vanilla web service configuration."""
     implements(IWebServiceConfiguration)
     path_override = "api"
-    service_version_uri_prefix = "beta"
+    active_versions = ["beta"]
 
 
 class DummyConfigurationTestCase(TestCase):

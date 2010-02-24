@@ -6,9 +6,16 @@ __metaclass__ = type
 import StringIO
 import unittest
 
+from zope.component import getGlobalSiteManager, getUtility
 from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.interface import implements, Interface
+
+from lazr.restful.interfaces import (
+    IServiceRootResource, IWebServiceConfiguration)
+from lazr.restful.simple import RootResource
+from lazr.restful.tests.test_webservice import (
+    IGenericCollection, IGenericEntry, WebServiceTestCase)
 
 from lp.testing import TestCase
 
@@ -241,7 +248,24 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
             "/api.")
 
 
-class TestWebServiceRequestTraversal(DummyConfigurationTestCase):
+class TestWebServiceRequestTraversal(WebServiceTestCase):
+
+    testmodule_objects = [IGenericEntry, IGenericCollection]
+
+    def setUp(self):
+        super(TestWebServiceRequestTraversal, self).setUp()
+        # For this test we need to make the URL "/foo" resolve to a
+        # resource.  To this end, we'll define a top-level collection
+        # named 'foo'.
+        class GenericCollection:
+            implements(IGenericCollection)
+            pass
+
+        class MyRootResource(RootResource):
+            def _build_top_level_objects(self):
+                return ({'foo' : (IGenericEntry, GenericCollection())}, {})
+        getGlobalSiteManager().registerUtility(
+            MyRootResource(), IServiceRootResource)
 
     def test_traversal_of_api_path_urls(self):
         """Requests that have /api at the root of their path should trim
@@ -249,35 +273,26 @@ class TestWebServiceRequestTraversal(DummyConfigurationTestCase):
         """
         # First, we need to forge a request to the API.
         data = ''
-        api_url = ('/' + self.config.path_override +
-                   '/' + 'beta' + '/' + 'foo')
+        config = getUtility(IWebServiceConfiguration)
+        api_url = ('/' + config.path_override +
+                   '/' + '1.0' + '/' + 'foo')
         env = {'PATH_INFO': api_url}
-        request = WebServiceClientRequest(data, env)
-
-        # And we need a mock publication object to use during traversal.
-        class WebServicePublicationStub(DefaultPublication):
-            def getResource(self, request, obj):
-                pass
-
-        request.setPublication(WebServicePublicationStub(None))
-
-        # And we need a traversible object that knows about the 'foo' name.
-        root = {'foo': object()}
+        request = config.createRequest(data, env)
 
         stack = request.getTraversalStack()
-        self.assert_(self.config.path_override in stack,
+        self.assert_(config.path_override in stack,
             "Sanity check: the API path should show up in the request's "
             "traversal stack: %r" % stack)
 
-        request.traverse(root)
+        request.traverse(None)
 
         stack = request.getTraversalStack()
-        self.failIf(self.config.path_override in stack,
+        self.failIf(config.path_override in stack,
             "Web service paths should be dropped from the webservice "
             "request traversal stack: %r" % stack)
 
 
-class TestWebServiceRequest(TestCase):
+class TestWebServiceRequest(WebServiceTestCase):
 
     def test_application_url(self):
         """Requests to the /api path should return the original request's
@@ -293,7 +308,7 @@ class TestWebServiceRequest(TestCase):
 
         # WebServiceTestRequest will suffice, as it too should conform to
         # the Same Origin web browser policy.
-        request = WebServiceTestRequest(environ=env)
+        request = WebServiceTestRequest(environ=env, version="1.0")
         self.assertEqual(request.getApplicationURL(), server_url)
 
     def test_response_should_vary_based_on_content_type(self):
