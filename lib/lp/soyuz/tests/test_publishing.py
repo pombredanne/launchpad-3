@@ -870,7 +870,6 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.distro = self.factory.makeDistribution()
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.distro, name="crazy")
-        self.addFakeChroots(self.distroseries)
         self.archive = self.factory.makeArchive()
         self.avr_family = self.factory.makeProcessorFamily(
             name="avr", restricted=True)
@@ -884,6 +883,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.sparc_distroarch = self.factory.makeDistroArchSeries(
             architecturetag='sparc', processorfamily=self.sparc_family,
             distroseries=self.distroseries, supports_virtualized=True)
+        self.addFakeChroots(self.distroseries)
 
     def test__getAllowedArchitectures_restricted(self):
         """Test _getAllowedArchitectures doesn't return unrestricted
@@ -912,10 +912,9 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             pubrec._getAllowedArchitectures(available_archs))
 
     def test_createMissingBuilds_restricts(self):
-        available_archs = [self.sparc_distroarch, self.avr_distroarch]
         pubrec = self.getPubSource(distroseries=self.distroseries,
             archive=self.archive, architecturehintlist='any')
-        builds = pubrec.createMissingBuilds(available_archs)
+        builds = pubrec.createMissingBuilds()
         self.assertEquals(1, len(builds))
         self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
 
