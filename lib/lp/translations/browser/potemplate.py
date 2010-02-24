@@ -553,7 +553,7 @@ class POTemplateEditView(LaunchpadEditFormView):
             referrer = self.request.getHeader('referer')
             if (referrer is None
                 or canonical_url(self.context) in referrer):
-                    # XXX: AdiRoiban 2010-02-32 
+                    # XXX: AdiRoiban 2010-02-32 bug=526998
                     # Since 'referer' can depend on the object name, and
                     # from this form we can rename the object I was forced 
                     # to use this dirty hack.
