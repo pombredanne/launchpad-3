@@ -1,6 +1,14 @@
 #!/usr/bin/python2.5
 # pylint: disable-msg=W0403
 
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
+# This code is based on William Grant's make-ubuntu-sane.py script, but
+# reorganized to fit Launchpad coding guidelines, and extended.  The
+# code is included under Canonical copyright with his permission
+# (2010-02-24).
+
 """Clean up sample data so it will allow Soyuz to run locally.
 
 DO NOT RUN ON PRODUCTION SYSTEMS.  This script deletes lots of
@@ -8,9 +16,6 @@ Ubuntu-related data.
 """
 
 __metaclass__ = type
-
-__all__ = ['main']
-
 
 import _pythonpath
 
@@ -40,6 +45,8 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
 
@@ -58,7 +65,7 @@ def get_max_id(store, table_name):
 
 
 def check_preconditions(options):
-    """Try to ensure it's safe to run.
+    """Try to ensure that it's safe to run.
 
     This script must not run on a production server, or anything
     remotely like it.
@@ -256,6 +263,14 @@ def clean_up(distribution, log):
     retire_series(distribution)
 
 
+def set_source_package_format(distroseries):
+    """Register a series' source package format selection."""
+    utility = getUtility(ISourcePackageFormatSelectionSet)
+    format = SourcePackageFormat.FORMAT_1_0
+    if utility.getBySeriesAndFormat(distroseries, format) is None:
+        utility.add(distroseries, format)
+
+
 def populate(distribution, parent_series_name, uploader_name, log):
     """Set up sample data on `distribution`."""
     parent_series = distribution.getSeries(parent_series_name)
@@ -269,6 +284,8 @@ def populate(distribution, parent_series_name, uploader_name, log):
 
     log.info("Configuring components and permissions...")
     create_components(parent_series, get_person(uploader_name))
+
+    set_source_package_format(parent_series)
 
     create_sample_series(parent_series, log)
 
@@ -291,6 +308,8 @@ def main(argv):
         txn.abort()
     else:
         txn.commit()
+
+    log.info("Done.")
 
 
 if __name__ == "__main__":
