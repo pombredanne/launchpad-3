@@ -34,6 +34,7 @@ class IProcessorFamily(Interface):
     description = Attribute("The Processor Name Description")
     processors = Attribute("The Processors in this family.")
     restricted = Bool(title=_("Whether this family is restricted."))
+
     def addProcessor(name, title, description):
         """Add a new processor to this family.
 
@@ -45,6 +46,7 @@ class IProcessorFamily(Interface):
 
 class IProcessorFamilySet(Interface):
     """Operations related to ProcessorFamily instances."""
+
     def getByName(name):
         """Return the ProcessorFamily instance with the matching name.
 
