@@ -18,7 +18,8 @@ HERE:=$(shell pwd)
 LPCONFIG=development
 
 JSFLAGS=
-LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
+ICING=lib/canonical/launchpad/icing
+LP_BUILT_JS_ROOT=${ICING}/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
 
 MINS_TO_SHUTDOWN=15
@@ -53,12 +54,6 @@ $(API_INDEX): $(WADL_FILE)
 
 apidoc: compile $(API_INDEX)
 
-check_loggerhead_on_merge:
-	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
-	# depends on it (yet).
-	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
-
 check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
@@ -66,13 +61,6 @@ check_merge: $(PY)
 
 check_db_merge: $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
-
-# This can be removed once we move to zc.buildout and we have versioned
-# dependencies, but for now we run both Launchpad and all other
-# dependencies tests for any merge to sourcecode.
-check_sourcecode_merge: check
-	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
@@ -122,13 +110,24 @@ pagetests: build
 
 inplace: build
 
-build: $(BZR_VERSION_INFO) compile apidoc jsbuild
+build: compile apidoc jsbuild css_combine
+
+css_combine: sprite_css
+	${SHHH} bin/combine-css
+
+sprite_css: ${LP_BUILT_JS_ROOT}/style-3-0.css
+
+${LP_BUILT_JS_ROOT}/style-3-0.css: ${ICING}/style-3-0.css.in ${ICING}/icon-sprites.positioning
+	${SHHH} bin/sprite-util create-css
+
+sprite_image:
+	${SHHH} bin/sprite-util create-image
 
 jsbuild_lazr:
 	# We absolutely do not want to include the lazr.testing module and its
 	# jsTestDriver test harness modifications in the lazr.js and launchpad.js
 	# roll-up files.  They fiddle with built-in functions!  See Bug 482340.
-	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ -c $(LAZR_BUILT_JS_ROOT)/yui
 
 jsbuild: jsbuild_lazr
 	${SHHH} bin/jsbuild \
@@ -136,19 +135,29 @@ jsbuild: jsbuild_lazr
 		-n launchpad \
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
-		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
+	${SHHH} bin/jssize
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
 
+# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
+# want the parent directory where the download-cache and eggs directory
+# are. We re-use the variable that is using for the rocketfuel-get script.
 download-cache:
+ifdef LP_SOURCEDEPS_PATH
+	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
+else
 	@echo "Missing ./download-cache."
 	@echo "Developers: please run utilities/link-external-sourcecode."
 	@exit 1
+endif
+
+buildonce_eggs: $(PY)
+	find eggs -name '*.pyc' -exec rm {} \;
 
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
@@ -162,7 +171,7 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
-compile: $(PY)
+compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
@@ -185,7 +194,7 @@ mpcreationjobs:
 
 run: inplace stop
 	$(RM) thread*.request
-	bin/run -r librarian,google-webservice -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
 start-gdb: inplace stop support_files
 	$(RM) thread*.request
@@ -195,7 +204,8 @@ start-gdb: inplace stop support_files
 
 run_all: inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice -i $(LPCONFIG)
+	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached \
+	    -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
@@ -205,6 +215,11 @@ start_codebrowse: build
 
 stop_codebrowse:
 	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
+
+run_codehosting: inplace stop hosted_branches
+	$(RM) thread*.request
+	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
+
 
 start_librarian: build
 	bin/start_librarian
@@ -217,7 +232,7 @@ pull_branches: support_files
 
 scan_branches:
 	# Scan branches from the filesystem into the database.
-	$(PY) cronscripts/branch-scanner.py
+	$(PY) cronscripts/scan_branches.py
 
 
 sync_branches: pull_branches scan_branches mpcreationjobs
@@ -357,9 +372,6 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart
 
-static:
-	$(PY) scripts/make-static.py
-
 TAGS: compile
 	# emacs tags
 	bin/tags -e
@@ -374,7 +386,7 @@ ID: compile
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
+	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild clean_js
+	jsbuild clean_js buildonce_eggs

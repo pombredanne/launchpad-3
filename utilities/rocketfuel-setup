@@ -118,6 +118,7 @@ fi
 declare -a hostnames
 hostnames=$(cat <<EOF
     answers.launchpad.dev
+    archive.launchpad.dev
     api.launchpad.dev
     bazaar-internal.launchpad.dev
     beta.launchpad.dev
@@ -135,6 +136,7 @@ hostnames=$(cat <<EOF
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
+    testopenid.dev
     translations.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev

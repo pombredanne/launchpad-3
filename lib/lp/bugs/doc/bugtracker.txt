@@ -442,7 +442,7 @@ unique URL, so it too ignores the remote_product parameter.
     >>> links = example_google_code.getBugFilingAndSearchLinks(
     ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: http://.../issues/entry?summary=Foo&amp;comment=Bar
+    bug_filing_url: http://.../issues/entry?summary=Foo&comment=Bar
     bug_search_url: http://.../issues/list?q=Foo
 
 Trac's bug filing form doesn't accept data in the query string, so we don't

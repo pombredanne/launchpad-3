@@ -64,13 +64,14 @@ from lp.code.interfaces.branchnamespace import InvalidNamespace
 from lp.code.interfaces.linkedbranch import (
     CannotHaveLinkedBranch, NoLinkedBranch)
 from lp.bugs.interfaces.bug import IBugSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
-from canonical.launchpad.interfaces.hwdb import IHWDBApplication
+from canonical.launchpad.interfaces.account import AccountStatus
+from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
@@ -79,7 +80,6 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
 from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
@@ -87,15 +87,17 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProductSet)
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -103,7 +105,7 @@ from canonical.launchpad.webapp import (
     stepto)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -547,18 +549,18 @@ class LaunchpadRootNavigation(Navigation):
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
+        '+countries': ICountrySet,
         'distros': IDistributionSet,
         '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
-        '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         'projects': IProductSet,
-        'projectgroups': IProjectSet,
+        'projectgroups': IProjectGroupSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
@@ -566,6 +568,7 @@ class LaunchpadRootNavigation(Navigation):
         'token': ILoginTokenSet,
         '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
+        'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
         '+rpconfig': IOpenIDRPConfigSet,
         # These three have been renamed, and no redirects done, as the old
@@ -595,14 +598,20 @@ class LaunchpadRootNavigation(Navigation):
                     status=301)
             else:
                 person = getUtility(IPersonSet).getByName(name[1:])
+                if person is None:
+                    return person
                 # Check to see if this is a team, and if so, whether the
                 # logged in user is allowed to view the team, by virtue of
                 # team membership or Launchpad administration.
-                if (person is None or
-                    not person.is_team or
-                    check_permission('launchpad.View', person)):
-                    return person
-                raise NotFound(self.context, name)
+                if (person.is_team
+                    and not check_permission('launchpad.View', person)):
+                    raise NotFound(self.context, name)
+                # Only admins are permitted to see suspended users.
+                if person.account_status == AccountStatus.SUSPENDED:
+                    if not check_permission('launchpad.Admin', person):
+                        raise GoneError(
+                            'User is suspended: %s' % name)
+                return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
@@ -939,7 +948,7 @@ class ApplicationButtons(LaunchpadView):
         Button(blueprints="Track blueprints through approval and "
             "implementation."),
         Button(translations="Localize software into your favorite language."),
-        Button(answers="Ask and answer questions about software.")
+        Button(answers="Ask and answer questions about software."),
         ]
 
     def render(self):

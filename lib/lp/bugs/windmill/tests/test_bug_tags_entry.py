@@ -9,22 +9,21 @@ __all__ = []
 import transaction
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import constants, lpuser
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 from zope.security.proxy import removeSecurityProxy
 
-class TestBugTagsEntry(TestCaseWithFactory):
+class TestBugTagsEntry(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'Bug tags entry test'
 
     def test_bug_tags_entry(self):
         """Test bug tags inline, auto-completing UI."""
-        client = WindmillTestClient('Bug tags entry test')
+        client = self.client
 
         # First, we add some official tags to test with
 
@@ -33,9 +32,7 @@ class TestBugTagsEntry(TestCaseWithFactory):
             u'eenie', u'meenie', u'meinie', u'moe']
         bug = self.factory.makeBug(product=product)
         removeSecurityProxy(bug).tags = ['unofficial-tag']
-        # XXX Make the testing canonical_url available as a global utility
-        bug_url = canonical_url(bug).replace(
-            'https', 'http').replace('.dev/', '.dev:8085/')
+        bug_url = canonical_url(bug)
         transaction.commit()
 
 
@@ -73,7 +70,7 @@ class TestBugTagsEntry(TestCaseWithFactory):
         client.click(id=u'edit-tags-trigger')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertJS(
-            js=u'window.location.href.indexOf("+login") > 0')
+            js=u'window.location.href.indexOf("+openid") > 0')
 
 
 def test_suite():

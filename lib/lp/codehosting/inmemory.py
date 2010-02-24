@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'InMemoryFrontend',
-    'XMLRPCWrapper'
+    'XMLRPCWrapper',
     ]
 
 import operator
@@ -28,10 +28,10 @@ from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.utils import iter_split
 from lp.testing.factory import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
-from lp.code.xmlrpc.codehosting import (
-    datetime_from_tuple, iter_split)
+from lp.code.xmlrpc.codehosting import datetime_from_tuple
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -555,7 +555,7 @@ class FakeBranchFilesystem:
     def createBranch(self, requester_id, branch_path):
         if not branch_path.startswith('/'):
             return faults.InvalidPath(branch_path)
-        escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
+        escaped_path = unescape(branch_path.strip('/'))
         try:
             namespace_path, branch_name = escaped_path.rsplit('/', 1)
         except ValueError:
@@ -565,7 +565,7 @@ class FakeBranchFilesystem:
         owner = self._person_set.getByName(data['person'])
         if owner is None:
             return faults.NotFound(
-                "User/team %r does not exist." % (data['person'],))
+                "User/team '%s' does not exist." % (data['person'],))
         registrant = self._person_set.get(requester_id)
         # The real code consults the branch creation policy of the product. We
         # don't need to do so here, since the tests above this layer never
@@ -583,7 +583,7 @@ class FakeBranchFilesystem:
             product = self._product_set.getByName(data['product'])
             if product is None:
                 return faults.NotFound(
-                    "Project %r does not exist." % (data['product'],))
+                    "Project '%s' does not exist." % (data['product'],))
         elif data['distribution'] is not None:
             distro = self._distribution_set.getByName(data['distribution'])
             if distro is None:
@@ -612,7 +612,10 @@ class FakeBranchFilesystem:
                 sourcepackage=sourcepackage, registrant=registrant,
                 branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
-            return faults.PermissionDenied(str(e))
+            msg = e.args[0]
+            if isinstance(msg, unicode):
+                msg = msg.encode('utf-8')
+            return faults.PermissionDenied(msg)
 
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()

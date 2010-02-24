@@ -10,8 +10,17 @@ __all__ = [
 
 
 from canonical.launchpad import _
+from canonical.launchpad.browser.librarian import FileNavigationMixin
+from canonical.launchpad.webapp import Navigation
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectFormatterAPI
+from lp.code.interfaces.diff import IPreviewDiff
 from lp.services.browser_helpers import get_plural_text
+
+
+class PreviewDiffNavigation(Navigation, FileNavigationMixin):
+
+    usedfor = IPreviewDiff
 
 
 class PreviewDiffFormatterAPI(ObjectFormatterAPI):
@@ -24,7 +33,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         if librarian_alias is None:
             return None
         else:
-            return librarian_alias.getURL()
+            return canonical_url(self._context) + '/+files/preview.diff'
 
     def link(self, view_name):
         """The link to the diff should show the line count.
@@ -41,7 +50,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         """
         diff = self._context
         conflict_text = ''
-        if diff.conflicts is not None:
+        if diff.has_conflicts:
             conflict_text = _(' (has conflicts)')
 
         count_text = ''
@@ -74,4 +83,5 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         else:
             return (
                 '<a href="%(url)s" class="diff-link">'
-                '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s</a>' % args)
+                '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s'
+                '</a>' % args)

@@ -115,7 +115,10 @@ timeout by sleeping for 200ms with a 100ms statement timeout:
     >>> store.execute('SELECT pg_sleep(0.200)', noresult=True)
     Traceback (most recent call last):
       ...
-    TimeoutError: ...SELECT pg_sleep(0.200)...
+    LaunchpadTimeoutError: Statement: 'SELECT pg_sleep(0.200)'
+    Parameters:()
+    Original error: QueryCanceledError('canceling statement due to
+    statement timeout\n',)
 
 Even though the statement timed out, it is recorded in the statement log:
 
@@ -175,7 +178,10 @@ timeout being reported by PostgreSQL is actually working:
     >>> store.execute('SELECT pg_sleep(0.2)', noresult=True)
     Traceback (most recent call last):
       ...
-    TimeoutError: ...SELECT pg_sleep(0.2)...
+    LaunchpadTimeoutError: Statement: 'SELECT pg_sleep(0.2)'
+    Parameters:()
+    Original error: QueryCanceledError('canceling statement due to
+    statement timeout\n',)
     >>> clear_request_started()
 
 

@@ -74,7 +74,7 @@ class TestErrorHandling(TestCaseWithFactory):
         log = logging.Logger(self.factory.getUniqueString())
         self._log_records = []
         log.addHandler(AppendingHandler(self._log_records))
-        self.scanner = BranchScanner(None, log)
+        self.scanner = BranchScanner(log)
         # Used as an OOPS id in log messages. Assign to this variable to
         # change the OOPS ID used.
         self._oopsid = None

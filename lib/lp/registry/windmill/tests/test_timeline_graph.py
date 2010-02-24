@@ -1,19 +1,22 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Test for timeline graph widget."""
+
+__metaclass__ = type
+__all__ = []
+
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
-class TestTimelineGraph(TestCaseWithFactory):
+
+class TestTimelineGraph(WindmillTestCase):
+    """Test timeline graph widget."""
 
     layer = RegistryWindmillLayer
-
-    def setUp(self):
-        self.client = WindmillTestClient('TimelineGraph')
+    suite_name = 'TimelineGraph'
 
     def test_timeline_graph(self):
         """Test timeline graph on /$project/+timeline-graph page."""

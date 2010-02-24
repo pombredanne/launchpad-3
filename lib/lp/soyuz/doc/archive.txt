@@ -955,8 +955,9 @@ it continues to be considered 'available for deletion'.
     >>> len(removal_candidate.getPublishedBinaries())
     1
 
-    >>> deleted = removal_candidate.requestDeletion(cprov, 'go away !')
-    >>> syncUpdate(deleted)
+    >>> login("celso.providelo@canonical.com")
+    >>> removal_candidate.requestDeletion(cprov, 'go away !')
+    >>> syncUpdate(removal_candidate.secure_record)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     1
@@ -995,8 +996,8 @@ The source publication is only excluded from 'deletion list' when its
 binary is also DELETED.
 
     >>> for bin in removal_candidate.getPublishedBinaries():
-    ...     deleted = bin.requestDeletion(cprov, 'go away !')
-    ...     syncUpdate(deleted)
+    ...     bin.requestDeletion(cprov, 'go away !')
+    ...     syncUpdate(bin.secure_record)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     0
@@ -1341,9 +1342,9 @@ The IArchive interface includes a convenience method for creating a
 package copy request:
 
     >>> requestor = factory.makePerson(name='me-copy')
-    >>> target = factory.makeCopyArchiveLocation(distribution=ubuntu,
-    ...     name='my-copy-archive')
-    >>> pcr = ubuntu.main_archive.requestPackageCopy(target, requestor)
+    >>> copy_target = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu, name='my-copy-archive')
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
     >>> print pcr
     Package copy request
     source = primary/hoary/-/RELEASE
@@ -1356,7 +1357,7 @@ package copy request:
 The requestPackageCopy method can also take an optional suite name:
 
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     target, requestor, suite="hoary-updates");
+    ...     copy_target, requestor, suite="hoary-updates");
     >>> print package_copy_request
     Package copy request
     source = primary/hoary/-/UPDATES
@@ -1464,6 +1465,13 @@ use to retrieve files from it.
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntu, ArchivePurpose.DEBUG).archive_url
     http://ftpmaster.internal/ubuntu-debug
+
+COPY archives use a URL format of <distro-name>-<archive-name>:
+
+    >>> print copy_target.archive.is_copy
+    True
+    >>> print copy_target.archive.archive_url
+    http://rebuild-test.internal/ubuntu-my-copy-archive
 
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
@@ -1652,7 +1660,8 @@ and user and give the team access to cprov's PPA:
 
 But if we make him part of the uploader_team he'll gain access:
 
-    >>> uploader_team.addMember(indirect_uploader, indirect_uploader)
+    >>> ignored = uploader_team.addMember(
+    ...     indirect_uploader, indirect_uploader)
     >>> for ppa in archive_set.getPPAsForUser(indirect_uploader):
     ...     print ppa.displayname
     PPA for Celso Providelo
@@ -1932,7 +1941,7 @@ archives:
     my-copy-archive  person-name6  False    True
     partner          ubuntu-team   False    True
 
-First we create three copy archives for ubuntu:
+First we create four copy archives for ubuntu:
 
     >>> copy_owner1 = factory.makePerson(name="copy-owner1")
     >>> copy_owner2 = factory.makePerson(name="copy-owner2")
@@ -1940,6 +1949,9 @@ First we create three copy archives for ubuntu:
     ...     distribution=ubuntu, name="ultimate-copy", owner=copy_owner1)
     >>> copy = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu, name="fine-copy", owner=copy_owner2)
+    >>> copy = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu, name="true-copy", owner=copy_owner2,
+    ...     enabled=False)
 
 One of the new copy archives will be owned by a team:
 
@@ -1974,6 +1986,7 @@ archive using an archive name:
 After making two of the archives private, the getArchivesForDistribution()
 method will by default only return public archives:
 
+    >>> login("foo.bar@canonical.com")
     >>> my_copy_archive = archive_set.getArchivesForDistribution(
     ...     ubuntu, name='my-copy-archive')[0]
     >>> my_copy_archive.buildd_secret = 'really secret'
@@ -2022,6 +2035,7 @@ An admin will see all the private and disabled archives in the results:
     my-copy-archive  person-name6  True     True
     team-archive     t1            True     True
     there-we-go      juergen       False    False
+    true-copy        copy-owner2   False    False
     ultimate-copy    copy-owner1   False    True
 
 And if the archive is owned by a team, then anyone in the team will also
@@ -2034,6 +2048,19 @@ be able to view the private team archive:
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
     team-archive     t1            True     True
+    ultimate-copy    copy-owner1   False    True
+
+A separate argument allows forcing the inclusion of all disabled archives.
+
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY], user=cprov,
+    ...     exclude_disabled=False)
+    >>> print_archive_names(ubuntu_copy_archives)
+    Name             Owner         Private  Enabled
+    fine-copy        copy-owner2   False    True
+    team-archive     t1            True     True
+    there-we-go      juergen       False    False
+    true-copy        copy-owner2   False    False
     ultimate-copy    copy-owner1   False    True
 
 
@@ -2166,7 +2193,7 @@ permissions are kept. No one has permission to upload or copy sources
 to it.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov_archive.enabled = False
+    >>> cprov_archive.disable()
 
     >>> login("carlos@canonical.com")
     >>> check_permission('launchpad.Append', cprov_archive)
@@ -2202,7 +2229,7 @@ owners or uploaders.
 Re-enable Celso's PPA.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov_archive.enabled = True
+    >>> cprov_archive.enable()
 
 Another important aspect of the upload permission for ubuntu main
 archives (PRIMARY, PARTNER and DEBUG) is that in addition to owners
@@ -2230,7 +2257,7 @@ Carlos can now *copy* packages directly to ubuntu.
     >>> login('foo.bar@canonical.com')
     >>> ubuntu_security = getUtility(IPersonSet).getByName(
     ...     'ubuntu-security')
-    >>> ubuntu_security.addMember(carlos, cprov)
+    >>> ignored = ubuntu_security.addMember(carlos, cprov)
 
     >>> login('carlos@canonical.com')
     >>> check_permission('launchpad.Append', primary)
@@ -2329,13 +2356,17 @@ hoary:
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> discard = test_publisher.getPubSource(
-    ...     sourcename="package1", version="1.0", archive=cprov.archive)
+    ...     sourcename="package1", version="1.0", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED) 
+    >>> discard = test_publisher.getPubSource( 
+    ...     sourcename="package1", version="1.1", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> discard = test_publisher.getPubSource(
-    ...     sourcename="package1", version="1.1", archive=cprov.archive)
+    ...     sourcename="package2", version="1.0", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> discard = test_publisher.getPubSource(
-    ...     sourcename="package2", version="1.0", archive=cprov.archive)
-    >>> discard = test_publisher.getPubSource(
-    ...     sourcename="pack", version="1.0", archive=cprov.archive)
+    ...     sourcename="pack", version="1.0", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
 
 Now we have package1 1.0 and 1.1, and package2 1.0 in cprov's PPA.  We
 can ask syncSources to synchronise these packages into mark's PPA in the

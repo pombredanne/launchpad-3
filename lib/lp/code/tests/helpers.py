@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'add_revision_to_branch',
     'make_linked_package_branch',
     'make_erics_fooix_project',
     ]
@@ -20,9 +21,29 @@ from zope.security.proxy import isinstance as zisinstance
 
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import time_counter
+
+
+def add_revision_to_branch(factory, branch, revision_date, date_created=None,
+                           mainline=True, commit_msg=None):
+    """Add a new revision to the branch with the specified revision date.
+
+    If date_created is None, it gets set to the revision_date.
+    """
+    if date_created is None:
+        date_created = revision_date
+    revision = factory.makeRevision(
+        revision_date=revision_date, date_created=date_created,
+        log_body=commit_msg)
+    if mainline:
+        sequence = branch.revision_count + 1
+        branch_revision = branch.createBranchRevision(sequence, revision)
+        branch.updateScannedDetails(revision, sequence)
+    else:
+        branch_revision = branch.createBranchRevision(None, revision)
+    return branch_revision
 
 
 def make_erics_fooix_project(factory):
@@ -164,14 +185,14 @@ def make_mint_distro_with_branches(factory):
     mint = factory.makeDistribution(
         name='mint', displayname='Mint', owner=albert, members=mint_team)
     series = [
-        ("wild", "5.5", DistroSeriesStatus.EXPERIMENTAL),
-        ("dev", "4.0", DistroSeriesStatus.DEVELOPMENT),
-        ("stable", "3.0", DistroSeriesStatus.CURRENT),
-        ("old", "2.0", DistroSeriesStatus.SUPPORTED),
-        ("very-old", "1.5", DistroSeriesStatus.SUPPORTED),
-        ("ancient", "1.0", DistroSeriesStatus.SUPPORTED),
-        ("mouldy", "0.6", DistroSeriesStatus.SUPPORTED),
-        ("dead", "0.1", DistroSeriesStatus.OBSOLETE),
+        ("wild", "5.5", SeriesStatus.EXPERIMENTAL),
+        ("dev", "4.0", SeriesStatus.DEVELOPMENT),
+        ("stable", "3.0", SeriesStatus.CURRENT),
+        ("old", "2.0", SeriesStatus.SUPPORTED),
+        ("very-old", "1.5", SeriesStatus.SUPPORTED),
+        ("ancient", "1.0", SeriesStatus.SUPPORTED),
+        ("mouldy", "0.6", SeriesStatus.SUPPORTED),
+        ("dead", "0.1", SeriesStatus.OBSOLETE),
         ]
     for name, version, status in series:
         factory.makeDistroRelease(

@@ -36,10 +36,11 @@ from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
 from lp.code.enums import BranchType, CodeReviewVote
+from lp.code.errors import BranchMergeProposalExists, UserNotBranchReviewer
+from lp.code.interfaces.branch import BranchCreationException
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalExists, IBranchMergeProposalGetter,
-    ICreateMergeProposalJobSource, UserNotBranchReviewer)
+    IBranchMergeProposalGetter, ICreateMergeProposalJobSource)
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces.branchtarget import check_default_stacked_on
@@ -491,7 +492,7 @@ class CodeHandler:
 
         # Create the LP server as if the submitter was pushing a branch to LP.
         lp_server = get_lp_server(submitter.id)
-        lp_server.setUp()
+        lp_server.start_server()
         try:
             source_url = urljoin(lp_server.get_url(), db_source.unique_name)
             target_url = urljoin(lp_server.get_url(), db_target.unique_name)
@@ -512,7 +513,7 @@ class CodeHandler:
                 db_source.requestMirror()
             return db_source
         finally:
-            lp_server.tearDown()
+            lp_server.stop_server()
 
     def _pullRevisionsFromMergeDirectiveIntoSourceBranch(self, md,
                                                          target_url,
@@ -581,8 +582,13 @@ class CodeHandler:
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
             return
-
-
+        except BranchCreationException, e:
+            body = get_error_message(
+                    'branch-creation-exception.txt', reason=e)
+            simple_sendmail('merge@code.launchpad.net',
+                [message.get('from')],
+                'Error Creating Merge Proposal', body)
+            return
         try:
             bmp = source.addLandingTarget(submitter, target,
                                           needs_review=True)

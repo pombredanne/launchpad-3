@@ -9,7 +9,7 @@
   <a id="tags-content-link"
      tal:attributes="href context/fmt:url/+bugtarget-portlet-tags-content"></a>
   <script type="text/javascript">
-    YUI().use('io-base', 'node', function(Y) {
+    LPS.use('io-base', 'node', function(Y) {
       Y.on('domready', function() {
         Y.one('#tags-portlet-spinner').setStyle('display', 'block');
 

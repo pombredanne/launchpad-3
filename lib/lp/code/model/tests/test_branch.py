@@ -37,6 +37,7 @@ from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
     BranchVisibilityRule, CodeReviewNotificationLevel)
+from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
@@ -45,8 +46,7 @@ from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    InvalidBranchMergeProposal)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
@@ -60,10 +60,12 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.tests.helpers import add_revision_to_branch
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
     run_with_login, TestCase, TestCaseWithFactory, time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
@@ -74,6 +76,7 @@ class TestCodeImport(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestCodeImport, self).setUp()
         login('test@canonical.com')
         self.factory = LaunchpadObjectFactory()
 
@@ -140,37 +143,6 @@ class TestBranchGetRevision(TestCaseWithFactory):
                           revision=rev1, revision_id=rev1.revision_id)
         self.assertRaises(AssertionError, self.branch.getBranchRevision,
                           sequence=1, revision_id=rev1.revision_id)
-
-
-class TestGetMainlineBranchRevisions(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_getMainlineBranchRevisions(self):
-        """Only gets the mainline revisions, ignoring the others."""
-        branch = self.factory.makeBranch()
-        self.factory.makeBranchRevision(branch, 'rev1', 1)
-        self.factory.makeBranchRevision(branch, 'rev2', 2)
-        self.factory.makeBranchRevision(branch, 'rev2b', None)
-        result_set = branch.getMainlineBranchRevisions(
-            ['rev1', 'rev2', 'rev3'])
-        revid_set = set(
-            branch_revision.revision.revision_id for
-            branch_revision in result_set)
-        self.assertEqual(set(['rev1', 'rev2']), revid_set)
-
-    def test_getMainlineBranchRevisionsWrongBranch(self):
-        """Only gets the revisions for this branch, ignoring the others."""
-        branch = self.factory.makeBranch()
-        other_branch = self.factory.makeBranch()
-        self.factory.makeBranchRevision(branch, 'rev1', 1)
-        self.factory.makeBranchRevision(other_branch, 'rev1b', 2)
-        result_set = branch.getMainlineBranchRevisions(
-            ['rev1', 'rev1b'])
-        revid_set = set(
-            branch_revision.revision.revision_id for
-            branch_revision in result_set)
-        self.assertEqual(set(['rev1']), revid_set)
 
 
 class TestBranch(TestCaseWithFactory):
@@ -344,24 +316,67 @@ class TestBranch(TestCaseWithFactory):
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
 
+
+class TestBranchUpgrade(TestCaseWithFactory):
+    """Test the upgrade functionalities of branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_needsUpgrading_empty_formats(self):
+        branch = self.factory.makePersonalBranch()
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrade_mirrored_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.MIRRORED,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrade_remote_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.REMOTE,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrade_import_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.IMPORTED,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_already_requested(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If the format is
+        # unrecognized, we don't try to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade()
+
+        self.assertFalse(branch.needs_upgrading)
+
     def test_needsUpgrading_branch_format_unrecognized(self):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If the format is
         # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.UNRECOGNIZED)
+            branch_format=BranchFormat.UNRECOGNIZED,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_not_needed(self):
         # A branch has a needs_upgrading attribute that returns whether or not
-        # a branch needs to be upgraded or not.  If a branch is up to date, it
+        # a branch needs to be upgraded or not.  If a branch is up-to-date, it
         # doesn't need to be upgraded.
-        #
-        # XXX: JonathanLange 2009-06-06: This test needs to be changed every
-        # time Bazaar adds a new branch format. Surely we can think of a
-        # better way of testing this?
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_8)
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_needed(self):
@@ -369,7 +384,8 @@ class TestBranch(TestCaseWithFactory):
         # a branch needs to be upgraded or not.  If a branch doesn't support
         # stacking, it needs to be upgraded.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_6)
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertTrue(branch.needs_upgrading)
 
     def test_needsUpgrading_repository_format_unrecognized(self):
@@ -377,6 +393,7 @@ class TestBranch(TestCaseWithFactory):
         # a branch needs to be upgraded or not.  In the repo format is
         # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.UNRECOGNIZED)
         self.assertFalse(branch.needs_upgrading)
 
@@ -385,7 +402,8 @@ class TestBranch(TestCaseWithFactory):
         # branch needs to be upgraded or not.  If the repo format is up to
         # date, there's no need to upgrade it.
         branch = self.factory.makePersonalBranch(
-            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_repository_format_upgrade_needed(self):
@@ -393,6 +411,7 @@ class TestBranch(TestCaseWithFactory):
         # branch needs to be upgraded or not.  If the format doesn't support
         # stacking, it needs to be upgraded.
         branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         self.assertTrue(branch.needs_upgrading)
 
@@ -400,12 +419,69 @@ class TestBranch(TestCaseWithFactory):
         # A BranchUpgradeJob can be created by calling IBranch.requestUpgrade.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
         job = removeSecurityProxy(branch.requestUpgrade())
 
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
         self.assertEqual(
             jobs,
             [job,])
+
+    def test_requestUpgrade_no_upgrade_needed(self):
+        # If a branch doesn't need to be upgraded, requestUpgrade raises an
+        # AssertionError.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        self.assertRaises(AssertionError, branch.requestUpgrade)
+
+    def test_requestUpgrade_upgrade_pending(self):
+        # If there is a pending upgrade already requested, requestUpgrade
+        # raises an AssertionError.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade()
+
+        self.assertRaises(AssertionError, branch.requestUpgrade)
+
+    def test_upgradePending(self):
+        # If there is a BranchUpgradeJob pending for the branch, return True.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade()
+
+        self.assertTrue(branch.upgrade_pending)
+
+    def test_upgradePending_no_upgrade_requested(self):
+        # If the branch never had an upgrade requested, return False.
+        branch = self.factory.makeAnyBranch()
+
+        self.assertFalse(branch.upgrade_pending)
+
+    def test_upgradePending_old_job_exists(self):
+        # If the branch had an upgrade pending, but then the job was completed,
+        # then upgrade_pending should return False.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch_job = removeSecurityProxy(branch.requestUpgrade())
+        branch_job.job.start()
+        branch_job.job.complete()
+
+        self.assertFalse(branch.upgrade_pending)
 
 
 class TestBzrIdentity(TestCaseWithFactory):
@@ -680,6 +756,7 @@ class TestBranchDeletionConsequences(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestBranchDeletionConsequences, self).setUp()
         login('test@canonical.com')
         self.factory = LaunchpadObjectFactory()
         # Has to be a product branch because of merge proposals.
@@ -1065,7 +1142,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        super(BranchAddLandingTarget, self).setUp('admin@canonical.com')
         self.product = self.factory.makeProduct()
 
         self.user = self.factory.makePerson()
@@ -1078,6 +1155,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def tearDown(self):
         logout()
+        super(BranchAddLandingTarget, self).tearDown()
 
     def test_junkSource(self):
         """Junk branches cannot be used as a source for merge proposals."""
@@ -1459,6 +1537,18 @@ class TestPendingWrites(TestCaseWithFactory):
         rev_id = self.factory.getUniqueString('rev-id')
         branch.mirrorComplete(rev_id)
         self.assertEqual(True, branch.pending_writes)
+
+    def test_mirrorComplete_creates_scan_job(self):
+        # After a branch has been pulled, it should have created a
+        # BranchScanJob to complete the process.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        rev_id = self.factory.getUniqueString('rev-id')
+        branch.mirrorComplete(rev_id)
+
+        store = Store.of(branch)
+        scan_jobs = store.find(BranchJob, job_type=BranchJobType.SCAN_BRANCH)
+        self.assertEqual(scan_jobs.count(), 1)
 
     def test_pulled_and_scanned(self):
         # If a branch has been pulled and scanned, then there are no pending
@@ -1945,6 +2035,75 @@ class TestScheduleDiffUpdates(TestCaseWithFactory):
                 removeSecurityProxy(bmp).deleteProposal()
         jobs = source_branch.scheduleDiffUpdates()
         self.assertEqual(0, len(jobs))
+
+
+class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
+    """Tests for Branch.getMainlineBranchRevisions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_start_date(self):
+        # Revisions created before the start date are not returned.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        old = add_revision_to_branch(
+            self.factory, branch, epoch - timedelta(days=1))
+        new = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=1))
+        result = branch.getMainlineBranchRevisions(epoch)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([new], branch_revisions)
+
+    def test_end_date(self):
+        # Revisions created after the end date are not returned.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        end_date = epoch + timedelta(days=2)
+        in_range = add_revision_to_branch(
+            self.factory, branch, end_date - timedelta(days=1))
+        too_new = add_revision_to_branch(
+            self.factory, branch, end_date + timedelta(days=1))
+        result = branch.getMainlineBranchRevisions(epoch, end_date)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([in_range], branch_revisions)
+
+    def test_newest_first(self):
+        # If oldest_first is False, the newest are returned first.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        old = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=1))
+        new = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=2))
+        result = branch.getMainlineBranchRevisions(epoch, oldest_first=False)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([new, old], branch_revisions)
+
+    def test_oldest_first(self):
+        # If oldest_first is True, the oldest are returned first.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        old = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=1))
+        new = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=2))
+        result = branch.getMainlineBranchRevisions(epoch, oldest_first=True)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([old, new], branch_revisions)
+
+    def test_only_mainline_revisions(self):
+        # Only mainline revisions are returned.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        old = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=1))
+        merged = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=2), mainline=False)
+        new = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=3))
+        result = branch.getMainlineBranchRevisions(epoch)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([new, old], branch_revisions)
 
 
 def test_suite():

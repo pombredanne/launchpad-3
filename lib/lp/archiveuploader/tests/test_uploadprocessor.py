@@ -26,6 +26,7 @@ from lp.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -38,8 +39,9 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -106,7 +108,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestUploadProcessorBase, self).setUp()
 
         self.queue_folder = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
@@ -133,6 +135,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
     def tearDown(self):
         shutil.rmtree(self.queue_folder)
+        super(TestUploadProcessorBase, self).tearDown()
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
@@ -492,7 +495,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
-        self.breezy.status = DistroSeriesStatus.FROZEN
+        self.breezy.status = SeriesStatus.FROZEN
         self.layer.txn.commit()
 
         # Upload a newer version of bar.
@@ -575,7 +578,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         See bug 369512.
         """
         self._checkCopyArchiveUploadToDistro(
-            PackagePublishingPocket.RELEASE, DistroSeriesStatus.CURRENT)
+            PackagePublishingPocket.RELEASE, SeriesStatus.CURRENT)
 
     def testCopyArchiveUploadToSupportedDistro(self):
         """Check binary copy archive uploads to RELEASE pockets.
@@ -587,7 +590,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         See bug 369512.
         """
         self._checkCopyArchiveUploadToDistro(
-            PackagePublishingPocket.RELEASE, DistroSeriesStatus.SUPPORTED)
+            PackagePublishingPocket.RELEASE, SeriesStatus.SUPPORTED)
 
     def testDuplicatedBinaryUploadGetsRejected(self):
         """The upload processor rejects duplicated binary uploads.
@@ -963,7 +966,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
     def testPartnerUploadToProposedPocket(self):
         """Upload a partner package to the proposed pocket."""
         self.setupBreezy()
-        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self.options.context = 'insecure'
         uploadprocessor = UploadProcessor(
@@ -982,7 +985,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         distroseries is allowed.
         """
         self.setupBreezy()
-        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self.options.context = 'insecure'
         uploadprocessor = UploadProcessor(
@@ -1028,21 +1031,21 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check unstable states:
 
-        self.breezy.status = DistroSeriesStatus.DEVELOPMENT
+        self.breezy.status = SeriesStatus.DEVELOPMENT
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
-        self.breezy.status = DistroSeriesStatus.EXPERIMENTAL
+        self.breezy.status = SeriesStatus.EXPERIMENTAL
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
         # Check stable states:
 
-        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
-        self.breezy.status = DistroSeriesStatus.SUPPORTED
+        self.breezy.status = SeriesStatus.SUPPORTED
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
@@ -1501,6 +1504,156 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "breezy." in raw_msg,
             "Source was not rejected properly:\n%s" % raw_msg)
 
+    def test30QuiltUpload(self):
+        """Ensure that 3.0 (quilt) uploads work properly. """
+        self.setupBreezy(
+            permitted_formats=[SourcePackageFormat.FORMAT_3_0_QUILT])
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the source.
+        upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it went ok:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "rejected" not in raw_msg,
+            "Failed to upload bar source:\n%s" % raw_msg)
+        spph = self._publishPackage("bar", "1.0-1")
+
+        self.assertEquals(
+            sorted((sprf.libraryfile.filename, sprf.filetype)
+                   for sprf in spph.sourcepackagerelease.files),
+            [('bar_1.0-1.debian.tar.bz2',
+              SourcePackageFileType.DEBIAN_TARBALL),
+             ('bar_1.0-1.dsc',
+              SourcePackageFileType.DSC),
+             ('bar_1.0.orig-comp1.tar.gz',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig-comp2.tar.bz2',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig.tar.gz',
+              SourcePackageFileType.ORIG_TARBALL)])
+
+    def test30QuiltUploadWithSameComponentOrig(self):
+        """Ensure that 3.0 (quilt) uploads with shared component origs work.
+        """
+        self.setupBreezy(
+            permitted_formats=[SourcePackageFormat.FORMAT_3_0_QUILT])
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the first source.
+        upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it went ok:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "rejected" not in raw_msg,
+            "Failed to upload bar source:\n%s" % raw_msg)
+        spph = self._publishPackage("bar", "1.0-1")
+
+        # Upload another source sharing the same (component) orig.
+        upload_dir = self.queueUpload("bar_1.0-2_3.0-quilt_without_orig")
+        self.assertEquals(
+            self.processUpload(uploadprocessor, upload_dir), ['accepted'])
+
+        queue_item = uploadprocessor.last_processed_upload.queue_root
+        self.assertEquals(
+            sorted((sprf.libraryfile.filename, sprf.filetype) for sprf
+                   in queue_item.sources[0].sourcepackagerelease.files),
+            [('bar_1.0-2.debian.tar.bz2',
+              SourcePackageFileType.DEBIAN_TARBALL),
+             ('bar_1.0-2.dsc',
+              SourcePackageFileType.DSC),
+             ('bar_1.0.orig-comp1.tar.gz',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig-comp2.tar.bz2',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig.tar.gz',
+              SourcePackageFileType.ORIG_TARBALL)])
+
+    def test30NativeUpload(self):
+        """Ensure that 3.0 (native) uploads work properly. """
+        self.setupBreezy(
+            permitted_formats=[SourcePackageFormat.FORMAT_3_0_NATIVE])
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the source.
+        upload_dir = self.queueUpload("bar_1.0_3.0-native")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it went ok:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "rejected" not in raw_msg,
+            "Failed to upload bar source:\n%s" % raw_msg)
+        spph = self._publishPackage("bar", "1.0")
+
+        self.assertEquals(
+            sorted((sprf.libraryfile.filename, sprf.filetype)
+                   for sprf in spph.sourcepackagerelease.files),
+            [('bar_1.0.dsc',
+              SourcePackageFileType.DSC),
+             ('bar_1.0.tar.bz2',
+              SourcePackageFileType.NATIVE_TARBALL)])
+
+    def test10Bzip2UploadIsRejected(self):
+        """Ensure that 1.0 sources with bzip2 compression are rejected."""
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the source.
+        upload_dir = self.queueUpload("bar_1.0-1_1.0-bzip2")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it was rejected.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "bar_1.0-1.dsc: is format 1.0 but uses bzip2 compression."
+            in raw_msg,
+            "Source was not rejected properly:\n%s" % raw_msg)
+
+    def testUploadToWrongPocketIsRejected(self):
+        # Uploads to the wrong pocket are rejected.
+        self.setupBreezy()
+        breezy = self.ubuntu['breezy']
+        breezy.status = SeriesStatus.CURRENT
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        rejection_message = (
+            uploadprocessor.last_processed_upload.rejection_message)
+        self.assertEqual(
+            "Not permitted to upload to the RELEASE pocket in a series in "
+            "the 'CURRENT' state.",
+            rejection_message)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Not permitted to upload to the RELEASE pocket in a series "
+            "in the 'CURRENT' state.",
+            "If you don't understand why your files were rejected",
+            "http://answers.launchpad.net/soyuz",
+            "You are receiving this email because you are the "
+               "uploader, maintainer or",
+            "signer of the above package.",
+            ]
+        recipients = [
+            'Foo Bar <foo.bar@canonical.com>',
+            'Daniel Silverstone <daniel.silverstone@canonical.com>',
+            ]
+        self.assertEmail(contents, recipients=recipients)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

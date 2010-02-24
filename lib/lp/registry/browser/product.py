@@ -58,7 +58,7 @@ from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
-from lp.bugs.interfaces.bugwatch import IBugTracker
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -66,7 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductReviewSearch, License
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
@@ -90,7 +90,7 @@ from lp.translations.browser.customlanguagecode import (
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
@@ -174,6 +174,7 @@ class ProductLicenseMixin:
     Requires the "product" attribute be set in the child
     classes' action handler.
     """
+
     def validate(self, data):
         """Validate 'licenses' and 'license_info'.
 
@@ -221,6 +222,7 @@ class ProductLicenseMixin:
                 "Launchpad", config.canonical.noreply_from_address)
             license_titles = '\n'.join(
                 license.title for license in self.product.licenses)
+
             def indent(text):
                 text = '\n    '.join(line for line in text.split('\n'))
                 text = '    ' + text
@@ -524,7 +526,6 @@ class SortSeriesMixin:
         series_list.insert(0, self.product.development_focus)
         return series_list
 
-
     @property
     def sorted_series_list(self):
         """Return a sorted list of series.
@@ -540,7 +541,7 @@ class SortSeriesMixin:
         # Callback for the filter which only allows series that have not been
         # marked obsolete.
         def check_active(series):
-            return series.status != DistroSeriesStatus.OBSOLETE
+            return series.status != SeriesStatus.OBSOLETE
         return self._sorted_filtered_list(check_active)
 
 
@@ -618,7 +619,7 @@ class SeriesWithReleases:
         """The highlighted, unhighlighted, or dimmed CSS class."""
         if self.is_development_focus:
             return 'highlighted'
-        elif self.status == DistroSeriesStatus.OBSOLETE:
+        elif self.status == SeriesStatus.OBSOLETE:
             return 'dimmed'
         else:
             return 'unhighlighted'
@@ -712,10 +713,11 @@ class ProductDownloadFileMixin:
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
         del_count = None
-        self.delete_ids = [int(value) for key, value in self.form.items()
-                           if key.startswith('checkbox')]
         if 'delete_files' in self.form:
             if self.request.method == 'POST':
+                self.delete_ids = [
+                    int(value) for key, value in self.form.items()
+                    if key.startswith('checkbox')]
                 del(self.form['delete_files'])
                 releases = self.getReleases()
                 del_count = self.deleteFiles(releases)
@@ -778,7 +780,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
-            self.user == self.context.owner)
+            check_permission('launchpad.Edit', self.context))
 
     @property
     def show_license_status(self):
@@ -979,11 +981,25 @@ class ProductPackagesView(PackagingDeleteView):
         return results
 
 
+class SeriesReleasePair:
+    """Class for holding a series and release.
+
+    Replaces the use of a (series, release) tuple so that it can be more
+    clearly addressed in the view class.
+    """
+
+    def __init__(self, series, release):
+        self.series = series
+        self.release = release
+
+
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
+
+    batch_size = config.launchpad.download_batch_size
 
     @property
     def page_title(self):
@@ -1001,6 +1017,24 @@ class ProductDownloadFilesView(LaunchpadView,
         for series in self.product.series:
             releases.update(series.releases)
         return releases
+
+    @cachedproperty
+    def series_and_releases_batch(self):
+        """Get a batch of series and release
+
+        Each entry returned is a tuple of (series, release).
+        """
+        series_and_releases = []
+        for series in self.sorted_series_list:
+            for release in series.releases:
+                if len(release.files) > 0:
+                    pair = SeriesReleasePair(series, release)
+                    if pair not in series_and_releases:
+                        series_and_releases.append(pair)
+        batch = BatchNavigator(series_and_releases, self.request,
+                               size=self.batch_size)
+        batch.setHeadings("release", "releases")
+        return batch
 
     @cachedproperty
     def has_download_files(self):
@@ -1164,6 +1198,7 @@ class EditPrivateBugsMixin:
                     'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
+
 
 class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
     label = "Administer project details"
@@ -1661,7 +1696,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     # StepView requires that its validate() method not be overridden, so make
     # sure this calls the right method.  validateStep() will call the license
     # validation code.
-
     def validate(self, data):
         """See `MultiStepView`."""
         StepView.validate(self, data)
@@ -1678,13 +1712,16 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     def create_product(self, data):
         """Create the product from the user data."""
-        project = data.get('project', None)
+        # Get optional data.
+        project = data.get('project')
+        description = data.get('description')
         return getUtility(IProductSet).createProduct(
             owner=self.user,
             name=data['name'],
+            displayname=data['displayname'],
             title=data['title'],
             summary=data['summary'],
-            displayname=data['displayname'],
+            description=description,
             licenses=data['licenses'],
             license_info=data['license_info'],
             project=project

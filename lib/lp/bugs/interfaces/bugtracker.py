@@ -31,6 +31,7 @@ from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 from lazr.restful.fields import CollectionField, Reference
@@ -226,10 +227,11 @@ class IBugTracker(Interface):
                 'security breach).'),
             required=False),
         exported_as='contact_details')
-    watches = exported(
-        CollectionField(
-            title=_('The remote watches on this bug tracker.'),
-            value_type=Reference(schema=IObject)))
+    watches = doNotSnapshot(
+        exported(
+            CollectionField(
+                title=_('The remote watches on this bug tracker.'),
+                value_type=Reference(schema=IObject))))
     has_lp_plugin = exported(
         Bool(
             title=_('This bug tracker has a Launchpad plugin installed.'),

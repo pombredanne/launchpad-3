@@ -19,13 +19,13 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces._schema_circular_imports import IDistribution
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import (
+    IDistribution, IDistributionSet)
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
@@ -58,9 +58,10 @@ def project_filebug(project, summary, status=None):
 
 
 def projectSetUp(test):
-    """Setup the `IProject` test."""
+    """Setup the `IProjectGroup` test."""
     setUp(test)
-    test.globs['bugtarget'] = getUtility(IProjectSet).getByName('mozilla')
+    projectgroups = getUtility(IProjectGroupSet)
+    test.globs['bugtarget'] = projectgroups.getByName('mozilla')
     test.globs['filebug'] = project_filebug
 
 

@@ -710,3 +710,36 @@ And direct access to the PPA page is also denied.
     ...
     Unauthorized: ...
 
+
+== Enabling or disabling of PPAs by the owner ==
+
+Users with 'launchpad.Edit' permission for a PPA may disable or enable it.
+
+    >>> no_priv_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+
+Initially, the PPA is enabled.
+
+    >>> print no_priv_browser.getControl(name='field.enabled').value
+    True
+
+After disabling the PPA a warning message is displayed on its page.
+
+    >>> no_priv_browser.getControl(name='field.enabled').value = False
+    >>> no_priv_browser.getControl('Save').click()
+    >>> print extract_text(
+    ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
+    This archive has been disabled.
+
+Once we re-enable the PPA the warning message is gone.
+
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> print no_priv_browser.getControl(name='field.enabled').value
+    False
+
+    >>> no_priv_browser.getControl(name='field.enabled').value = True
+    >>> no_priv_browser.getControl('Save').click()
+    >>> (first_tag_by_class(no_priv_browser.contents, 'warning message')
+    ...  is None)
+    True

@@ -35,7 +35,7 @@
       if (auto_resize == 'true') {
           timeline_url += 'resize_frame=timeline-iframe&';
       }
-      YUI().use('node', function(Y) {
+      LPS.use('node', function(Y) {
           if (Y.UA.ie) {
               return;
           }

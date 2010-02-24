@@ -11,7 +11,7 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Bool
+from zope.schema import Bool, TextLine
 
 from canonical.launchpad import _
 from lazr.restful.fields import CollectionField, Reference
@@ -19,6 +19,9 @@ from lazr.restful.fields import CollectionField, Reference
 
 class IComment(Interface):
     """A comment which may have a body or footer."""
+
+    extra_css_class = TextLine(
+        description=_("A css class to apply to the comment's outer div."))
 
     has_body = Bool(
         description=_("Does the comment have body text?"),

@@ -11,6 +11,7 @@ __all__ = [
     'MilestoneContextMenu',
     'MilestoneDeleteView',
     'MilestoneEditView',
+    'MilestoneInlineNavigationMenu',
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
@@ -22,6 +23,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import implements, Interface
 from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
@@ -31,9 +33,9 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
-    IMilestone, IMilestoneSet, IProjectMilestone)
+    IMilestone, IMilestoneSet, IProjectGroupMilestone)
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
@@ -82,7 +84,7 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
         text = 'Change details'
         # ProjectMilestones are virtual milestones and do not have
         # any properties which can be edited.
-        enabled = not IProjectMilestone.providedBy(self.context)
+        enabled = not IProjectGroupMilestone.providedBy(self.context)
         summary = "Edit this milestone"
         return Link(
             '+edit', text, icon='edit', summary=summary, enabled=enabled)
@@ -104,7 +106,7 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
         """The link to delete this milestone."""
         text = 'Delete milestone'
         # ProjectMilestones are virtual.
-        enabled = not IProjectMilestone.providedBy(self.context)
+        enabled = not IProjectGroupMilestone.providedBy(self.context)
         summary = "Delete milestone"
         return Link(
             '+delete', text, icon='trash-icon',
@@ -118,7 +120,7 @@ class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
-    """Overview navigation menus for `IMilestone` objects."""
+    """Overview navigation menu for `IMilestone` objects."""
     usedfor = IMilestone
     facet = 'overview'
     links = ('edit', 'delete', 'subscribe')
@@ -131,11 +133,22 @@ class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
     links = ('create_release', )
 
 
+class IMilestoneInline(Interface):
+    """A marker interface for views that show a milestone inline."""
+
+
+class MilestoneInlineNavigationMenu(NavigationMenu, MilestoneLinkMixin):
+    """An inline navigation menus for milestone views."""
+    usedfor = IMilestoneInline
+    facet = 'overview'
+    links = ('edit', )
+
+
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     """A View for listing milestones and releases."""
     # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
     # to a mixin so that MilestoneView and others can use it.
-
+    implements(IMilestoneInline)
     show_series_context = False
 
     def __init__(self, context, request):
@@ -201,7 +214,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The list of non-conjoined bugtasks targeted to this milestone."""
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
-                    orderby=['-importance', 'datecreated', 'id'],
+                    orderby=['status', '-importance', 'id'],
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
         # We could replace all the code below with a simple
@@ -231,7 +244,8 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
             bugtask,
             badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
-            badge_property['has_specification'])
+            badge_property['has_specification'],
+            badge_property['has_patch'])
 
     @cachedproperty
     def bugtasks(self):
@@ -317,7 +331,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
 
         Return true, if the current milestone is a project milestone,
         else return False."""
-        return IProjectMilestone.providedBy(self.context)
+        return IProjectGroupMilestone.providedBy(self.context)
 
     @property
     def has_bugs_or_specs(self):

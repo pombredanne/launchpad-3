@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -7,9 +7,11 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'compose_public_url',
     ]
 
 from datetime import datetime
+import os.path
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
@@ -27,6 +29,8 @@ from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
 
+from lazr.uri import URI
+
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -42,17 +46,19 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+    BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
+    CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
     BranchMergeProposalStatus, BranchType)
+from lp.code.errors import (
+    BranchMergeProposalExists, InvalidBranchMergeProposal)
 from lp.code.mail.branch import send_branch_modified_notifications
 from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
-from lp.code.model.revision import Revision
+from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
@@ -63,8 +69,7 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
-     BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposalExists,
-     InvalidBranchMergeProposal)
+     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -73,6 +78,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
@@ -475,6 +481,14 @@ class Branch(SQLBase):
             is_dev_focus = False
         return bazaar_identity(self, is_dev_focus)
 
+    def composePublicURL(self, scheme='http'):
+        """See `IBranch`."""
+        # Not all protocols work for private branches.
+        public_schemes = ['http']
+        assert not (self.private and scheme in public_schemes), (
+            "Private branch %s has no public URL." % self.unique_name)
+        return compose_public_url(scheme, self.unique_name)
+
     @property
     def warehouse_url(self):
         """See `IBranch`."""
@@ -518,7 +532,26 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return self.revision_history.limit(quantity)
 
-    def revisions_since(self, timestamp):
+    def getMainlineBranchRevisions(self, start_date, end_date=None,
+                                   oldest_first=False):
+        """See `IBranch`."""
+        date_clause = Revision.revision_date >= start_date
+        if end_date is not None:
+            date_clause = And(date_clause, Revision.revision_date <= end_date)
+        result = Store.of(self).find(
+            (BranchRevision, Revision, RevisionAuthor),
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_author == RevisionAuthor.id,
+            date_clause)
+        if oldest_first:
+            result = result.order_by(BranchRevision.sequence)
+        else:
+            result = result.order_by(Desc(BranchRevision.sequence))
+        return result
+
+    def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
         return BranchRevision.select(
             'Revision.id=BranchRevision.revision AND '
@@ -593,6 +626,7 @@ class Branch(SQLBase):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
+        # XXX MichaelHudson 2010-01-13: Handle sourcepackagerecipes here.
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -705,14 +739,6 @@ class Branch(SQLBase):
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
         store.flush()
-
-    def getMainlineBranchRevisions(self, revision_ids):
-        return Store.of(self).find(
-            BranchRevision,
-            BranchRevision.branch == self,
-            BranchRevision.sequence != None,
-            BranchRevision.revision == Revision.id,
-            Revision.revision_id.is_in(revision_ids))
 
     def getBranchRevision(self, sequence=None, revision=None,
                           revision_id=None):
@@ -916,6 +942,8 @@ class Branch(SQLBase):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC')) + increment)
         self.last_mirrored_id = last_revision_id
+        from lp.code.model.branchjob import BranchScanJob
+        BranchScanJob.create(self)
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
@@ -931,6 +959,10 @@ class Branch(SQLBase):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC'))
                 + increment * 2 ** (self.mirror_failures - 1))
+
+    def destroySelfBreakReferences(self):
+        """See `IBranch`."""
+        return self.destroySelf(break_references=True)
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
@@ -979,10 +1011,27 @@ class Branch(SQLBase):
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None)
-            or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
-            return True
-        return False
+        if self.branch_type is not BranchType.HOSTED:
+            return False
+        if self.upgrade_pending:
+            return False
+        return not (
+            self.branch_format in CURRENT_BRANCH_FORMATS and
+            self.repository_format in CURRENT_REPOSITORY_FORMATS)
+
+    @property
+    def upgrade_pending(self):
+        """See `IBranch`."""
+        from lp.code.model.branchjob import BranchJob, BranchJobType
+        store = Store.of(self)
+        jobs = store.find(
+            BranchJob,
+            BranchJob.branch == self,
+            Job.id == BranchJob.jobID,
+            Job._status != JobStatus.COMPLETED,
+            Job._status != JobStatus.FAILED,
+            BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
+        return jobs.count() > 0
 
     def requestUpgrade(self):
         """See `IBranch`."""
@@ -1249,3 +1298,18 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def compose_public_url(scheme, unique_name, suffix=None):
+    # Avoid circular imports.
+    from lp.code.xmlrpc.branch import PublicCodehostingAPI
+
+    # Accept sftp as a legacy protocol.
+    accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
+    accepted_schemes.add('sftp')
+    assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
+    host = URI(config.codehosting.supermirror_root).host
+    path = '/' + urlutils.escape(unique_name)
+    if suffix is not None:
+        path = os.path.join(path, suffix)
+    return str(URI(scheme=scheme, host=host, path=path))

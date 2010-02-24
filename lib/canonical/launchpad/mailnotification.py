@@ -39,7 +39,7 @@ from lp.bugs.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -953,10 +953,13 @@ def notify_team_join(event):
             'new-member-notification-for-admins.txt')
         subject = '%s joined %s' % (person.name, team.name)
     elif membership.status == proposed:
-        if person.isTeam():
+        # In the UI, a user can only propose himself or a team he
+        # admins. Some users of the REST API have a workflow, where
+        # they propose users that are designated as mentees (Bug 498181).
+        if reviewer != person:
             headers = {"Reply-To": reviewer.preferredemail.email}
             template = get_email_template(
-                'pending-membership-approval-for-teams.txt')
+                'pending-membership-approval-for-third-party.txt')
         else:
             headers = {"Reply-To": person.preferredemail.email}
             template = get_email_template('pending-membership-approval.txt')
@@ -1200,9 +1203,13 @@ def notify_new_ppa_subscription(subscription, event):
     """Notification that a new PPA subscription can be activated."""
     non_active_subscribers = subscription.getNonActiveSubscribers()
 
+    archive = subscription.archive
     registrant_name = subscription.registrant.displayname
-    ppa_name = subscription.archive.displayname
-    subject = 'PPA access granted for ' + ppa_name
+    ppa_displayname = archive.displayname
+    ppa_reference = "ppa:%s/%s" % (
+        archive.owner.name, archive.name)
+    ppa_description = archive.description
+    subject = 'PPA access granted for ' + ppa_displayname
 
     template = get_email_template('ppa-subscription-new.txt')
 
@@ -1219,7 +1226,9 @@ def notify_new_ppa_subscription(subscription, event):
             'recipient_name': person.displayname,
             'registrant_name': registrant_name,
             'registrant_profile_url': canonical_url(subscription.registrant),
-            'ppa_name': ppa_name,
+            'ppa_displayname': ppa_displayname,
+            'ppa_reference': ppa_reference,
+            'ppa_description': ppa_description,
             'recipient_subscriptions_url': recipient_subscriptions_url,
             }
         body = MailWrapper(72).format(template % replacements,

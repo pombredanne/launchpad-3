@@ -1298,3 +1298,128 @@ $$;
 COMMENT ON FUNCTION mv_branch_distribution_update() IS
 'Maintain Branch name cache when Distribution is modified.';
 
+
+-- Mirror tables for the login service.
+-- We maintain a duplicate of a few tables which are replicated
+-- in a seperate replication set.
+-- Insert triggers
+CREATE OR REPLACE FUNCTION lp_mirror_teamparticipation_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_TeamParticipation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_personlocation_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_PersonLocation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_Person SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- UPDATE triggers
+CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_TeamParticipation
+    SET id = NEW.id,
+        team = NEW.team,
+        person = NEW.person
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_personlocation_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_PersonLocation
+    SET id = NEW.id,
+        date_created = NEW.date_created,
+        person = NEW.person,
+        latitude = NEW.latitude,
+        longitude = NEW.longitude,
+        time_zone = NEW.time_zone,
+        last_modified_by = NEW.last_modified_by,
+        date_last_modified = NEW.date_last_modified,
+        visible = NEW.visible,
+        locked = NEW.locked
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_person_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_Person
+    SET id = NEW.id,
+        displayname = NEW.displayname,
+        teamowner = NEW.teamowner,
+        teamdescription = NEW.teamdescription,
+        name = NEW.name,
+        language = NEW.language,
+        fti = NEW.fti,
+        defaultmembershipperiod = NEW.defaultmembershipperiod,
+        defaultrenewalperiod = NEW.defaultrenewalperiod,
+        subscriptionpolicy = NEW.subscriptionpolicy,
+        merged = NEW.merged,
+        datecreated = NEW.datecreated,
+        addressline1 = NEW.addressline1,
+        addressline2 = NEW.addressline2,
+        organization = NEW.organization,
+        city = NEW.city,
+        province = NEW.province,
+        country = NEW.country,
+        postcode = NEW.postcode,
+        phone = NEW.phone,
+        homepage_content = NEW.homepage_content,
+        icon = NEW.icon,
+        mugshot = NEW.mugshot,
+        hide_email_addresses = NEW.hide_email_addresses,
+        creation_rationale = NEW.creation_rationale,
+        creation_comment = NEW.creation_comment,
+        registrant = NEW.registrant,
+        logo = NEW.logo,
+        renewal_policy = NEW.renewal_policy,
+        personal_standing = NEW.personal_standing,
+        personal_standing_reason = NEW.personal_standing_reason,
+        mail_resumption_date = NEW.mail_resumption_date,
+        mailing_list_auto_subscribe_policy 
+            = NEW.mailing_list_auto_subscribe_policy,
+        mailing_list_receive_duplicates = NEW.mailing_list_receive_duplicates,
+        visibility = NEW.visibility,
+        verbose_bugnotifications = NEW.verbose_bugnotifications,
+        account = NEW.account
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- Delete triggers
+CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    EXECUTE 'DELETE FROM lp_' || TG_TABLE_NAME || ' WHERE id=' || OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+

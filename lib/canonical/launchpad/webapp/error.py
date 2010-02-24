@@ -212,6 +212,12 @@ class NotFoundView(SystemErrorView):
             return None
 
 
+class GoneView(NotFoundView):
+    """The page is gone, such as a page belonging to a suspended user."""
+    page_title = 'Error: Page gone'
+    response_code = 410
+
+
 class RequestExpiredView(SystemErrorView):
 
     page_title = 'Error: Timeout'

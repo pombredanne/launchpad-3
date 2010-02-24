@@ -3,11 +3,9 @@
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 FILEBUG_URL = 'http://bugs.launchpad.dev:8085/firefox/+filebug'
 
@@ -28,9 +26,10 @@ FORM_VISIBLE = (
 BUG_INFO_HIDDEN = 'style.height|0px'
 BUG_INFO_SHOWN_JS = 'element.style.height != "0px"'
 
-class TestDupeFinder(TestCaseWithFactory):
+class TestDupeFinder(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = "Duplicate bug finder test"
 
     def test_duplicate_finder(self):
         """Test the +filebug duplicate finder.
@@ -39,24 +38,25 @@ class TestDupeFinder(TestCaseWithFactory):
         duplicates for a bug, with an expander that allows the user to view
         more information if they wish.
         """
-        client = WindmillTestClient("Duplicate bug finder test")
+        client = self.client
+        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Go to the +filebug page for Firefox
         client.open(url=FILEBUG_URL)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
 
-        # Ensure the "title" field has finished loading, then enter a simple
-        # title and hit search.
+        # Ensure the "search" field has finished loading, then enter a simple
+        # search and hit search.
         client.waits.forElement(
-            xpath=u'//input[@id="field.title"]',
+            xpath=u'//input[@id="field.search"]',
             timeout=constants.FOR_ELEMENT)
-        client.type(text=u'problem', id=u'field.title')
+        client.type(text=u'problem', id=u'field.search')
         client.click(xpath=u'//input[@id="field.actions.search"]')
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+
         # The details div for the duplicate bug should not be shown.
-        client.asserts.assertProperty(
-            id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
+        client.waits.forElementProperty(
+            id='details-for-bug-4', option=BUG_INFO_HIDDEN,
+            timeout=constants.FOR_ELEMENT)
 
         # The expander for the duplicate should be collapsed.
         client.asserts.assertProperty(
@@ -92,29 +92,6 @@ class TestDupeFinder(TestCaseWithFactory):
         client.asserts.assertElemJS(
             id='details-for-bug-4', js=BUG_INFO_SHOWN_JS)
 
-        # Clicking "No, I need to file a new bug" will collapse the
-        # duplicate details and expander and will show the filebug form.
-        client.click(id='bug-not-already-reported')
-        client.waits.sleep(milliseconds=constants.SLEEP)
-        client.asserts.assertProperty(
-            id='bug-details-expander-bug-4',
-            validator='src|/@@/treeCollapsed')
-        client.asserts.assertProperty(
-            id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
-        client.asserts.assertProperty(
-            id='bug_reporting_form', validator='style.display|block')
-
-        # Clicking the duplicate expander again will collapse the filebug
-        # form and expand the duplicate.
-        client.click(id='bug-details-expander-bug-4')
-        client.waits.sleep(milliseconds=constants.SLEEP)
-        client.asserts.assertProperty(
-            id='bug_reporting_form', validator='style.display|none')
-        client.asserts.assertProperty(
-            id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
-        client.asserts.assertElemJS(
-            id='details-for-bug-4', js=BUG_INFO_SHOWN_JS)
-
         # Clicking on the "Yes, this is my bug button" will show a form
         # overlay, which will offer the user the option to subscribe to the
         # bug.
@@ -126,6 +103,17 @@ class TestDupeFinder(TestCaseWithFactory):
         client.click(xpath=FORM_OVERLAY_CANCEL)
         client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_NOT_VISIBLE)
+
+        # Validation errors are displayed on the current page.
+        client.click(id="bug-not-already-reported")
+        client.asserts.assertProperty(
+            id="filebug-form-container", validator="style.display|block",
+            timeout=constants.FOR_ELEMENT)
+        client.click(id="field.actions.submit_bug")
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.asserts.assertText(
+            xpath=u'//div[@class="message"]',
+            validator="Required input is missing.")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

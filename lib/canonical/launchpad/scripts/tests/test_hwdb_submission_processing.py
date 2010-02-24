@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from canonical.launchpad.interfaces.hwdb import (
+from lp.hardwaredb.interfaces.hwdb import (
     HWBus, HWSubmissionFormat, HWSubmissionProcessingStatus,
     IHWDeviceDriverLinkSet, IHWDeviceSet, IHWDriverSet,
     IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.hwdb import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.librarian.ftests.harness import fillLibrarianFile
 from canonical.librarian.interfaces import LibrarianServerError
-from canonical.launchpad.scripts.hwdbsubmissions import (
+from lp.hardwaredb.scripts.hwdbsubmissions import (
     HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
     PCI_CLASS_STORAGE, PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
     PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA,
@@ -33,6 +33,7 @@ from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import BaseLayer, LaunchpadZopelessLayer
 
 from lp.testing import TestCase, validate_mock_class
+
 
 class TestCaseHWDB(TestCase):
     """Common base class for HWDB processing tests."""
@@ -91,6 +92,7 @@ class TestCaseHWDB(TestCase):
 
     def setUp(self):
         """Setup the test environment."""
+        super(TestCaseHWDB, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
@@ -4534,6 +4536,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
 
     def setUp(self):
         """Setup the test environment."""
+        super(TestHWDBSubmissionTablePopulation, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)

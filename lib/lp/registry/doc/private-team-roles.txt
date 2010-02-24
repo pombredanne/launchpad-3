@@ -243,6 +243,7 @@ Private Membership Teams cannot subscribe to private PPAs.
     >>> import transaction
     >>> transaction.abort()
 
+
 Structural Subscriptions
 ========================
 

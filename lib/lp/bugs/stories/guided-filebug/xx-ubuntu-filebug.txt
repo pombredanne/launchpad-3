@@ -81,3 +81,17 @@ Filing bugs with Apport also allows us to get to the bug filing interface.
 
     >>> _ = config.pop('malone')
 
+The inline filebug form never gets redirected.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+filebug-inline-form')
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/ubuntu/+filebug-inline-form
+
+Neither does the show-similar-bugs view.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/'
+    ...     '+filebug-show-similar?title=testing')
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/ubuntu/+filebug-show-similar?title=testing

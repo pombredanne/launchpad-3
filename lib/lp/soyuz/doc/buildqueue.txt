@@ -98,12 +98,22 @@ set 'manual' attribute atomically. For this we use manualScore:
     (True, 1000)
 
 
+The BuildQueue item is responsible for providing the required build behavior
+for the item.
+
+    >>> from zope.security.proxy import isinstance
+    >>> from lp.soyuz.model.binarypackagebuildbehavior import (
+    ...     BinaryPackageBuildBehavior)
+    >>> isinstance(bq.required_build_behavior, BinaryPackageBuildBehavior)
+    True
+
+
 == Dispatching and Reseting jobs ==
 
 The sampledata contains an active job, being built by the 'bob'
 builder.
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
 
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> job = bob.currentjob
@@ -225,7 +235,7 @@ for testing if we will also be able to deal with more than one architecture.
     >>> alsa_build = alsa_spr.createBuild(
     ...     hoary['hppa'], PackagePublishingPocket.RELEASE,
     ...     hoary.main_archive)
-    >>> alsa_build.createBuildQueueEntry().lastscore = 500
+    >>> alsa_build.queueBuild().lastscore = 500
 
     >>> pmount_hoary = hoary.getSourcePackage('pmount')
     >>> pmount_spr = pmount_hoary.currentrelease.sourcepackagerelease
@@ -235,7 +245,7 @@ for testing if we will also be able to deal with more than one architecture.
     >>> pmount_build = pmount_spr.createBuild(
     ...     hoary['hppa'], PackagePublishingPocket.RELEASE,
     ...     hoary.main_archive)
-    >>> pmount_build.createBuildQueueEntry().lastscore = 1500
+    >>> pmount_build.queueBuild().lastscore = 1500
 
 Materialize the changes in database:
 
@@ -271,7 +281,7 @@ The build score for the fake language pack is zero.
     >>> na_build = na_spr.createBuild(
     ...     hoary['i386'], PackagePublishingPocket.RELEASE,
     ...     hoary.main_archive)
-    >>> na_build.createBuildQueueEntry().lastscore
+    >>> na_build.queueBuild().lastscore
     0
 
 The fake language pack will be queued behind the other source packages

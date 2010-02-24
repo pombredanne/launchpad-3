@@ -1280,7 +1280,8 @@ Person, a member, does.
     ...     displayname='Concise Team Person',
     ...     email='conciseteam@example.com')
     >>> concise_team_person.verbose_bugnotifications = True
-    >>> concise_team.addMember(concise_team_person, concise_team_person)
+    >>> ignored = concise_team.addMember(
+    ...     concise_team_person, concise_team_person)
     >>> bug.subscribe(concise_team, concise_team_person)
     <BugSubscription...>
 
@@ -1294,7 +1295,8 @@ member, does not.
     ...     displayname='Verbose Team Person',
     ...     email='verboseteam@example.com')
     >>> verbose_team_person.verbose_bugnotifications = False
-    >>> verbose_team.addMember(verbose_team_person, verbose_team_person)
+    >>> ignored = verbose_team.addMember(
+    ...     verbose_team_person, verbose_team_person)
     >>> bug.subscribe(verbose_team, verbose_team_person)
     <BugSubscription...>
 
@@ -1444,7 +1446,7 @@ notification level of the subscription.
     >>> switch_db_to_launchpad()
 
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.interfaces.structuralsubscription import (
+    >>> from lp.registry.interfaces.structuralsubscription import (
     ...     BugNotificationLevel)
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')

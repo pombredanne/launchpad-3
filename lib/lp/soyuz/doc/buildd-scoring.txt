@@ -64,7 +64,7 @@ BuildQueue entries.
     ...     build = pub.sourcepackagerelease.createBuild(
     ...         hoary386, pub.pocket, pub.archive)
     ...
-    ...     build_queue = build.createBuildQueueEntry()
+    ...     build_queue = build.queueBuild()
     ...     build_queue.job.date_created = date_created
     ...     build_queue.manual = manual
     ...

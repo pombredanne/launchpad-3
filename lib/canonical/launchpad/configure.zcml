@@ -16,6 +16,8 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="lp.hardwaredb" />
+
   <include package="lp.app" />
   <include package="lp.bugs" />
   <include package="lp.registry" />
@@ -24,6 +26,7 @@
   <include package="lp.code" />
   <include package="lp.soyuz" />
   <include package="lp.translations" />
+  <include package="lp.testopenid" />
   <include package="lp.blueprints" />
   <include package="lp.services.comments" />
 
@@ -58,7 +61,7 @@
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IProjectSet"
+    for="canonical.launchpad.interfaces.IProjectGroupSet"
     path_expression="string:projectgroups"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
@@ -66,12 +69,6 @@
   <browser:url
     for="canonical.launchpad.interfaces.ILoginTokenSet"
     path_expression="string:token"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <browser:url
-    for="canonical.launchpad.interfaces.IMailingListSet"
-    path_expression="string:+mailinglists"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
@@ -99,5 +96,4 @@
       name="PlotKit"
       directory="../../contrib/PlotKit"
       />
-
 </configure>

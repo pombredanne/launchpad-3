@@ -31,6 +31,7 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
+from collections import defaultdict
 import operator
 
 import simplejson
@@ -71,14 +72,15 @@ from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
     CodeReviewVote)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, WrongBranchMergeProposal)
+from lp.code.errors import WrongBranchMergeProposal
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.comments.interfaces.conversation import IConversation
+from lp.services.comments.interfaces.conversation import (
+    IComment, IConversation)
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
@@ -195,10 +197,10 @@ class BranchMergeProposalMenuMixin:
         return Link('+edit', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
-    def edit_commit_message(self):
-        text = 'Edit commit message'
+    def set_commit_message(self):
+        text = 'Set commit message'
         enabled = self.context.isMergable()
-        return Link('+edit-commit-message', text, icon='edit',
+        return Link('+edit-commit-message', text, icon='add',
                     enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -292,7 +294,7 @@ class BranchMergeProposalContextMenu(ContextMenu,
     links = [
         'add_comment',
         'dequeue',
-        'edit_commit_message',
+        'set_commit_message',
         'edit_status',
         'enqueue',
         'merge',
@@ -503,6 +505,36 @@ class DiffRenderingMixin:
         return diff_text.count('\n') >= config.diff.max_format_lines
 
 
+class ICodeReviewNewRevisions(Interface):
+    """Marker interface used to register views for CodeReviewNewRevisions."""
+
+
+class CodeReviewNewRevisions:
+    """Represents a logical grouping of revisions.
+
+    Each object instance represents a number of revisions scanned at a
+    particular time.
+    """
+    implements(IComment, ICodeReviewNewRevisions)
+
+    def __init__(self, revisions, date, branch):
+        self.revisions = revisions
+        self.branch = branch
+        self.has_body = False
+        self.has_footer = True
+        # The date attribute is used to sort the comments in the conversation.
+        self.date = date
+
+
+class CodeReviewNewRevisionsView(LaunchpadView):
+    """The view for rendering the new revisions."""
+
+    @property
+    def codebrowse_url(self):
+        """Return the link to codebrowse for this branch."""
+        return self.context.branch.codebrowse_url()
+
+
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin,
                               BranchMergeProposalStatusMixin,
@@ -519,9 +551,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def claim_action(self, action, data):
         """Claim this proposal."""
         request = self.context.getVoteReference(data['review_id'])
-        if request.reviewer == self.user:
-            return
-        request.reviewer = self.user
+        if request is not None:
+            request.claimReview(self.user)
         self.next_url = canonical_url(self.context)
 
     @property
@@ -529,13 +560,52 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
 
+    @property
+    def revision_end_date(self):
+        """The cutoff date for showing revisions.
+
+        If the proposal has been merged, then we stop at the merged date. If
+        it is rejected, we stop at the reviewed date. For superseded
+        proposals, it should ideally use the non-existant date_last_modified,
+        but could use the last comment date.
+        """
+        status = self.context.queue_status
+        if status == BranchMergeProposalStatus.MERGED:
+            return self.context.date_merged
+        if status == BranchMergeProposalStatus.REJECTED:
+            return self.context.date_reviewed
+        # Otherwise return None representing an open end date.
+        return None
+
+    def _getRevisionsSinceReviewStart(self):
+        """Get the grouped revisions since the review started."""
+        # Work out the start of the review.
+        start_date = self.context.date_review_requested
+        if start_date is None:
+            start_date = self.context.date_created
+        source = self.context.source_branch
+        resultset = source.getMainlineBranchRevisions(
+            start_date, self.revision_end_date, oldest_first=True)
+        # Now group by date created.
+        groups = defaultdict(list)
+        for branch_revision, revision, revision_author in resultset:
+            groups[revision.date_created].append(branch_revision)
+        return [
+            CodeReviewNewRevisions(revisions, date, source)
+            for date, revisions in groups.iteritems()]
+
     @cachedproperty
     def conversation(self):
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
-        comments = [
-            CodeReviewDisplayComment(comment)
-            for comment in self.context.all_comments]
+        comments = self._getRevisionsSinceReviewStart()
+        merge_proposal = self.context
+        while merge_proposal is not None:
+            from_superseded = merge_proposal != self.context
+            comments.extend(
+                CodeReviewDisplayComment(comment, from_superseded)
+                for comment in merge_proposal.all_comments)
+            merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
         return CodeReviewConversation(comments)
 
@@ -559,6 +629,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+    @property
+    def pending_diff(self):
+        return self.context.next_preview_diff_job is not None
 
     @cachedproperty
     def preview_diff(self):
@@ -600,7 +674,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             self.context,
             'commit_message',
             canonical_url(self.context, view_name='+edit-commit-message'),
-            id="edit-description",
+            id="edit-commit-message",
             title="Commit Message",
             value=commit_message,
             accept_empty=True)
@@ -1274,11 +1348,11 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
             team = getUtility(IPersonSet).getByName(claim_review)
             if team is not None and self.user.inTeam(team):
                 # If the review type is None, then don't show the field.
+                self.reviewer = team.name
                 if self.initial_values['review_type'] == '':
                     self.form_fields = self.form_fields.omit('review_type')
                 else:
                     # Disable the review_type field
-                    self.reviewer = team.name
                     self.form_fields['review_type'].for_display = True
 
     @property
@@ -1313,7 +1387,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
                 # Claim this vote reference, i.e. say that the individual
                 # self. user is doing this review ond behalf of the 'reviewer'
                 # team.
-                vote_ref.reviewer = self.user
+                vote_ref.claimReview(self.user)
 
         comment = self.context.createComment(
             self.user, subject=None, content=data['comment'],

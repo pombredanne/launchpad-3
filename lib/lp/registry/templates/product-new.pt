@@ -14,7 +14,7 @@
  * details widgets until the user states that the project they are
  * registering is not a duplicate.
  */
-YUI().use('node', 'lazr.effects', function(Y) {
+LPS.use('node', 'lazr.effects', function(Y) {
     Y.on('domready', function() {
         /* These two regexps serve slightly different purposes.  The first
          * finds the leftmost run of valid url characters for the autofill
@@ -100,7 +100,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
             url_field.on('keyup', function(e) {
                 if (url_field.get('value') == '') {
                     /* The user cleared the URL field; turn on autofill. */
-                    name_field.attach('keyup', autofill);
+                    name_field.on('keyup', autofill);
                 }
                 else {
                     /* Honor the user's URL; turn off autofill. */
