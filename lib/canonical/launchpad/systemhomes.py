@@ -12,6 +12,7 @@ __all__ = [
     'MaloneApplication',
     'PrivateMaloneApplication',
     'RosettaApplication',
+    'TestOpenIDApplication',
     ]
 
 __metaclass__ = type
@@ -31,6 +32,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
     IWebServiceApplication)
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsoverview import (
     ITranslationsOverview)
@@ -382,3 +384,7 @@ class WebServiceApplication(ServiceRootResource):
         wadl = super(WebServiceApplication, self).toWADL()
         self.__class__.cached_wadl = wadl
         return wadl
+
+
+class TestOpenIDApplication:
+    implements(ITestOpenIDApplication)

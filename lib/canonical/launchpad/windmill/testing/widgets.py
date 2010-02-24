@@ -60,9 +60,8 @@ class InlineEditorWidgetTest:
         * reloads and verifies that the new value sticked.
         """
         client = WindmillTestClient(self.suite)
-        client.open(url=self.url)
-
         self.user.ensure_login(client)
+        client.open(url=self.url)
 
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         widget_base = u"//%s[@id='%s']" % (self.widget_tag, self.widget_id)
@@ -298,11 +297,10 @@ class FormPickerWidgetTest:
 
     def __call__(self):
         client = WindmillTestClient(self.suite)
+        self.user.ensure_login(client)
 
         # Load page.
         client.open(url=self.url)
-
-        self.user.ensure_login(client)
 
         # Click on "Choose" link to show picker for the given field.
         client.waits.forElement(
