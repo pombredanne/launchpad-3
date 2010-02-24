@@ -221,7 +221,7 @@ class IHasBugs(Interface):
                        None, all statuses will be included.
         """
 
-    def setMaxHeat(self, heat):
+    def setMaxBugHeat(self, heat):
         """Set the max_bug_heat for this context."""
 
 

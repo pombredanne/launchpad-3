@@ -227,7 +227,7 @@ class MaxHeatByTargetBase:
         self.assertEqual(self.target.max_bug_heat, 0)
 
     def test_set_target_max_bug_heat(self):
-        self.target.setMaxHeat(1000)
+        self.target.setMaxBugHeat(1000)
         self.assertEqual(self.target.max_bug_heat, 1000)
 
 
