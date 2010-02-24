@@ -179,7 +179,7 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
     def checkTranslationsViewable(self):
         """ Check if user can view translations for this `IDistroSeries`"""
 
-        # Is user allowed allowed to see translations for this distroseries?
+        # Is user allowed to see translations for this distroseries?
         # If not, raise TranslationUnavailable.
         check_distroseries_translations_viewable(self.context)
 
