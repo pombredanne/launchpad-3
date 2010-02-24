@@ -205,8 +205,7 @@ the source into a public PPA to demonstrate this.
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     allow_delayed_copies=False)
     >>> expander_link_id = "pub%s-expander" % copied_source.id
-    >>> from zope.security.management import endInteraction
-    >>> endInteraction()
+    >>> logout()
 
 
 We can view the link on the public PPA to the Celso's private PPA when logged
