@@ -1299,8 +1299,10 @@ class BugsPatchesView(LaunchpadView):
                      ("status", "status"),
                      ("oldest first", "datecreated"),
                      ("newest first", "-datecreated")]
-        if self.targetName() is not None:
-            orderings.append(("target name", "targetname"))
+        targetname = self.targetName()
+        if targetname is not None:
+            # Lower case for consistency with the other orderings.
+            orderings.append((targetname.lower(), "targetname"))
         return orderings
 
 
