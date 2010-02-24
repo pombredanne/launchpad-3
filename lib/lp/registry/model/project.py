@@ -122,7 +122,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
-    max_bug_heat = Int(allow_none=False, default=0)
+    max_bug_heat = Int()
 
     # convenient joins
 

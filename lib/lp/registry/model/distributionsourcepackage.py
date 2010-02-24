@@ -497,5 +497,5 @@ class DistributionSourcePackageInDatabase(Storm):
 
     bug_reporting_guidelines = Unicode()
 
-    max_bug_heat = Int(allow_none=False, default=0)
+    max_bug_heat = Int()
 

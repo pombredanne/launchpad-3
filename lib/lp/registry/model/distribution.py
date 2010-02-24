@@ -178,7 +178,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
     active = True # Required by IPillar interface.
-    max_bug_heat = Int(allow_none=False, default=0)
+    max_bug_heat = Int()
 
     def __repr__(self):
         return "<%s '%s' (%s)>" % (
