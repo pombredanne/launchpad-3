@@ -12,7 +12,6 @@ __all__ = [
 
 
 import datetime
-import urllib
 
 import pytz
 
@@ -25,8 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
 from lp.code.enums import BranchType
-from lp.code.interfaces.branch import (
-    BranchCreationException, UnknownBranchTypeError)
+from lp.code.interfaces.branch import BranchCreationException
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
@@ -55,46 +53,6 @@ class BranchPuller(LaunchpadXMLRPCView):
     """See `IBranchPuller`."""
 
     implements(IBranchPuller)
-
-    def _getBranchPullInfo(self, branch):
-        """Return information the branch puller needs to pull this branch.
-
-        This is outside of the IBranch interface so that the authserver can
-        access the information without logging in as a particular user.
-
-        :return: (id, url, unique_name, default_stacked_on_url), where 'id'
-            is the branch database ID, 'url' is the URL to pull from,
-            'unique_name' is the `unique_name` property and
-            'default_stacked_on_url' is the URL of the branch to stack on by
-            default (normally of the form '/~foo/bar/baz'). If there is no
-            default stacked-on branch, then it's ''.
-        """
-        branch = removeSecurityProxy(branch)
-        if branch.branch_type == BranchType.REMOTE:
-            raise AssertionError(
-                'Remote branches should never be in the pull queue.')
-        default_branch = branch.target.default_stacked_on_branch
-        if default_branch is None:
-            default_branch = ''
-        elif (branch.branch_type == BranchType.MIRRORED
-              and default_branch.private):
-            default_branch = ''
-        else:
-            default_branch = '/' + default_branch.unique_name
-        return (
-            branch.id, branch.getPullURL(), branch.unique_name,
-            default_branch)
-
-    def getBranchPullQueue(self, branch_type):
-        """See `IBranchPuller`."""
-        try:
-            branch_type = BranchType.items[branch_type]
-        except KeyError:
-            raise UnknownBranchTypeError(
-                'Unknown branch type: %r' % (branch_type,))
-        branches = getUtility(branchpuller.IBranchPuller).getPullQueue(
-            branch_type)
-        return [self._getBranchPullInfo(branch) for branch in branches]
 
     def acquireBranchToPull(self):
         """See `IBranchPuller`."""
