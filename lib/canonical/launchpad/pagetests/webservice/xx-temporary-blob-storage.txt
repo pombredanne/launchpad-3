@@ -1,0 +1,10 @@
+The set of temporary blobs
+==========================
+
+The set of temporary blobs in Launchpad is represented by the collection
+found at /temporary_blobs. By default it lists the 50 most recently
+uploaded blobs.
+
+    >>> temporary_blobs = webservice.get('/temporary_blobs').jsonBody()
+    >>> len(temporary_blobs['entries'])
+    1

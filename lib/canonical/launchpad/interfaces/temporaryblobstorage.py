@@ -17,6 +17,13 @@ from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Text, Bytes
 from canonical.launchpad import _
 
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (
+    call_with, collection_default_content, exported,
+    export_as_webservice_collection, export_as_webservice_entry,
+    export_read_operation, operation_parameters, REQUEST_USER)
+from lazr.restful.interface import copy_field
+
 class BlobTooLarge(Exception):
     """Raised if attempting to create a blob larger than the maximum
        allowed size.
@@ -26,8 +33,11 @@ class BlobTooLarge(Exception):
 
 class ITemporaryBlobStorage(Interface):
     """A blob which we will store in the database temporarily."""
+    export_as_webservice_entry(
+        singular_name='temporary_blob', plural_name='temporary_blobs')
 
-    uuid = Text(title=_('UUID'), required=True, readonly=True)
+    uuid = exported(
+        Text(title=_('UUID'), required=True, readonly=True))
     blob = Bytes(title=_('BLOB'), required=True, readonly=True)
     date_created = Datetime(title=_('Date created'),
         required=True, readonly=True)
@@ -36,6 +46,7 @@ class ITemporaryBlobStorage(Interface):
 
 class ITemporaryStorageManager(Interface):
     """A tool to create temporary blobs."""
+    export_as_webservice_collection(ITemporaryBlobStorage)
 
     def new(blob, expires=None):
         """Create a new blob for storage in the database, returning the
@@ -47,9 +58,14 @@ class ITemporaryStorageManager(Interface):
         config.launchpad.default_blob_expiry
         """
 
+    @operation_parameters(uuid=copy_field(ITemporaryBlobStorage['uuid']))
+    @export_read_operation()
     def fetch(uuid):
         """Retrieve a TemporaryBlobStorage by uuid."""
 
     def delete(uuid):
         """Delete a TemporaryBlobStorage by uuid."""
 
+    @collection_default_content(user=REQUEST_USER)
+    def default_temporary_blob_storage_list(user):
+        """Return the default list of ITemporaryBlobStorage objects."""

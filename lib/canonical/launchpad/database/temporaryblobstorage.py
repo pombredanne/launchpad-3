@@ -115,3 +115,9 @@ class TemporaryStorageManager:
         if blob is not None:
             TemporaryBlobStorage.delete(blob.id)
 
+    def default_temporary_blob_storage_list(self, user=None):
+        """See `ITemporaryStorageManager`."""
+        # We return an empty list, since this method is required by
+        # lazr.restful but we don't want to expose all the
+        # ITemporaryBlobStorage objects.
+        return []
