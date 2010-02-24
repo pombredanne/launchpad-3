@@ -263,7 +263,7 @@ class AcquireBranchToPullTests:
             branch, BranchType.HOSTED, BranchType.IMPORTED)
 
     def test_type_filter_hosted_imported_returns_imported(self):
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
         branch.requestMirror()
         self.assertBranchIsAquired(
             branch, BranchType.HOSTED, BranchType.IMPORTED)
