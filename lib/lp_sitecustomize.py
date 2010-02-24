@@ -8,10 +8,15 @@ import os
 from lp.services.mime import customizeMimetypes
 
 def main():
+    # Note that we configure the LPCONFIG environmental variable in the
+    # custom buildout-generated sitecustomize.py in
+    # parts/scripts/sitecustomize.py rather than here.  This is because
+    # the instance name, ${configuration:instance_name}, is dynamic,
+    # sent to buildout from the Makefile.  See buildout.cfg in the
+    # initialization value of the [scripts] section for the code that
+    # goes into this custom sitecustomize.py.  We do as much other
+    # initialization as possible here, in a more visible place.
     os.environ['STORM_CEXTENSIONS'] = '1'
-    # This next line is done, via buildout, in parts/scripts/sitecustomize.py
-    # (because the instance name, ${configuration:instance_name}, is dynamic).
-    # os.environ.setdefault('LPCONFIG', '${configuration:instance_name}')
     customizeMimetypes()
 
 main()
