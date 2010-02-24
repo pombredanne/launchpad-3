@@ -23,6 +23,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
+from lp.code.errors import UnknownBranchTypeError
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import BranchCreationException
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -54,9 +55,17 @@ class BranchPuller(LaunchpadXMLRPCView):
 
     implements(IBranchPuller)
 
-    def acquireBranchToPull(self):
+    def acquireBranchToPull(self, branch_type_names):
         """See `IBranchPuller`."""
-        branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull()
+        branch_types = []
+        for branch_type_name in branch_type_names:
+            try:
+                branch_types.append(BranchType.items[branch_type_name])
+            except KeyError:
+                raise UnknownBranchTypeError(
+                    'Unknown branch type: %r' % (branch_type_name,))
+        branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull(
+            *branch_types)
         if branch is not None:
             branch = removeSecurityProxy(branch)
             default_branch = branch.target.default_stacked_on_branch

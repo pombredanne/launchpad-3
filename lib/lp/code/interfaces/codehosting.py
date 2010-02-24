@@ -58,9 +58,12 @@ class IBranchPuller(Interface):
     Published at 'branch_puller' on the private XML-RPC server.
     """
 
-    def acquireBranchToPull():
+    def acquireBranchToPull(branch_type_names):
         """Return a Branch to pull and mark it as mirror-started.
 
+        :param branch_type_names: Only consider branches of these type names.
+            An empty list means consider HOSTED, MIRRORED and IMPORTED
+            branches.
         :return: A 5-tuple::
 
               (branch_id, pull_url, unique_name, default_branch, branch_type)
