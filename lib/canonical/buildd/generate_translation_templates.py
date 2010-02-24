@@ -46,7 +46,10 @@ class GenerateTranslationTemplates:
     def generate(self):
         """Do It.  Generate templates."""
         self._getBranch()
-        po_directories = generate_pots(self.branch_dir)
+        pots = generate_pots(self.branch_dir)
+        print "\n".join(
+            [os.path.normpath(os.path.join(self.branch_dir, potpath))
+                for potpath in pots])
         return 0
 
 

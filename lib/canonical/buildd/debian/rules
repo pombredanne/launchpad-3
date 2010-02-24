@@ -39,7 +39,10 @@ install:
 	  var/run/launchpad-buildd var/log/launchpad-buildd  \
 	  etc/launchpad-buildd \
 	  usr/share/launchpad-buildd/canonical/launchpad/daemons \
-	  usr/share/doc/launchpad-buildd
+	  usr/share/doc/launchpad-buildd \
+	  usr/share/launchpad-buildd/lp \
+	  usr/share/launchpad-buildd/lp/translations \
+	  usr/share/launchpad-buildd/lp/translations/pottery \
 
 	# Do installs here
 	touch $(pytarget)/../launchpad/__init__.py
