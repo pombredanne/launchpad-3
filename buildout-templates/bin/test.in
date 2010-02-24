@@ -38,8 +38,9 @@ if os.getsid(0) == os.getsid(os.getppid()):
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
 
-# Enable Storm's C extensions.
-os.environ['STORM_CEXTENSIONS'] = '1'
+# Storm's C extensions should already be enabled from lp_sitecustomize.py,
+# which our custom sitecustomize.py ran.
+assert os.environ['STORM_CEXTENSIONS'] == '1'
 
 # Make sure our site.py is the one that subprocesses use.
 os.environ['PYTHONPATH'] = "${scripts:parts-directory}"
