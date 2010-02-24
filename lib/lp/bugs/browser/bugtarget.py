@@ -1262,7 +1262,7 @@ class BugsPatchesView(LaunchpadView):
             return 'Patch attachments in %s' % self.context.displayname
 
     @property
-    def patchTaskOrderings(self):
+    def patch_task_orderings(self):
         """The list of possible sort orderings for the patches view.
 
         The orderings are a list of tuples of the form:
@@ -1272,20 +1272,20 @@ class BugsPatchesView(LaunchpadView):
            ("Importance", "-importance"),
            ...]
         """
-        orderings = [("Patch age", "-latest_patch_uploaded"),
-                     ("Importance", "-importance"),
-                     ("Status", "status"),
-                     ("Oldest first", "datecreated"),
-                     ("Newest first", "-datecreated")]
+        orderings = [("patch age", "-latest_patch_uploaded"),
+                     ("importance", "-importance"),
+                     ("status", "status"),
+                     ("oldest first", "datecreated"),
+                     ("newest first", "-datecreated")]
         if self.targetName() is not None:
-            orderings.append(("Target", "targetname"))
+            orderings.append(("target name", "targetname"))
         return orderings
 
 
     def batchedPatchTasks(self):
         """Return a BatchNavigator for bug tasks with patch attachments."""
         orderby = self.request.get("orderby", "-latest_patch_uploaded")
-        if orderby not in [x[1] for x in self.patchTaskOrderings]:
+        if orderby not in [x[1] for x in self.patch_task_orderings]:
             raise UnexpectedFormData(
                 "Unexpected value for field 'orderby': '%s'" % orderby)
         return BatchNavigator(

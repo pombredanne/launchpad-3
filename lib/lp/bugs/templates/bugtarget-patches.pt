@@ -33,7 +33,7 @@
     Order&nbsp;by:&nbsp;<select
           name="orderby" id="orderby" size="1"
           tal:define="orderby request/orderby|string:-latest_patch_uploaded">
-      <option tal:repeat="ordering view/patchTaskOrderings"
+      <option tal:repeat="ordering view/patch_task_orderings"
               tal:attributes="value python: ordering[1];
                               selected python:orderby == ordering[1]"
               tal:content="python: ordering[0]"></option>
