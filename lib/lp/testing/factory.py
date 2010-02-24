@@ -615,16 +615,17 @@ class LaunchpadObjectFactory(ObjectFactory):
                          name=name)
 
     def makeProcessorFamily(self, name, title=None, description=None,
-                            processors=None):
+                            processors=None, restricted=False):
         """Create a new processor family.
         
         :param name: Name of the family (e.g. x86)
         :param title: Optional title of the family
         :param description: Optional extended description
         :param processors: The processors in this family
+        :param restricted: Whether the processor family is restricted
         """
         if description is None:
-            title = "Description of the %s processor family" % name
+            description = "Description of the %s processor family" % name
         if processors is None:
             # XXX JRV 20100224: Perhaps add one example processors if none
             # were specified ?
@@ -632,7 +633,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = "%s and compatible processors." % name
         return getUtility(IProcessorFamilySet).new(name, title, description,
-                                                   processors)
+            processors, restricted=restricted)
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):

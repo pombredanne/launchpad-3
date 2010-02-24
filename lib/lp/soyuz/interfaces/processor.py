@@ -54,12 +54,13 @@ class IProcessorFamilySet(Interface):
         :return: A `IProcessorFamily` instance if found, None otherwise.
         """
 
-    def new(name, title, description, processors):
+    def new(name, title, description, processors, restricted):
         """Create a new processor family.
 
         :param name: Name of the family.
         :param title: Title for the family.
         :param description: Extended description of the family
         :param processors: The processors in this family.
+        :param restricted: Whether the processor family is restricted
         :return: a `IProcessorFamily`.
         """
