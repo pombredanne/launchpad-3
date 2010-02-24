@@ -80,7 +80,8 @@ class MemcacheExpr:
     _valid_key_characters = ''.join(
         chr(i) for i in range(33, 127) if i != ord(':'))
 
-    # For use with str.translate to sanitize keys.
+    # For use with str.translate to sanitize keys. No control characters,
+    # and skip ':' too since it is a magic separator.
     _key_translate_map = (
         '_'*33 + ''.join(chr(i) for i in range(33, ord(':'))) + '_'
         + ''.join(chr(i) for i in range(ord(':')+1, 127)) + '_' * 129)
