@@ -46,6 +46,11 @@ install:
 	touch $(pytarget)/../launchpad/daemons/__init__.py
 	cp launchpad-files/tachandler.py $(pytarget)/../launchpad/daemons/
 	install -m644 launchpad-files/buildd-slave.tac $(targetshare)/buildd-slave.tac
+	touch $(pytarget)/../../lp/__init__.py
+	touch $(pytarget)/../../lp/translations/__init__.py
+	touch $(pytarget)/../../lp/translations/pottery/__init__.py
+	cp launchpad-files/pottery_buildd.py \
+	  $(pytarget)/../../lp/translations/pottery/buildd.py
 	for pyfile in $(pyfiles); do \
 	 install -m644 ./$$pyfile $(pytarget)/$$pyfile; \
         done
@@ -92,6 +97,7 @@ package:
 	mkdir -p launchpad-files
 	install -m644 $(daemons)/buildd-slave.tac launchpad-files/buildd-slave.tac
 	cp ../launchpad/daemons/tachandler.py launchpad-files/tachandler.py
+	cp ../../lp/translations/pottery/buildd.py launchpad-files/pottery_buildd.py
 	debuild -uc -us -S
 
 build:
