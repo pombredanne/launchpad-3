@@ -53,7 +53,7 @@ A heat of less than a quarter of the maximum will display no coloured flames.
 == Scaling Bug Heat ==
 
 To ensure a reasonable proportion of cold and hot bugs, the number used to
-calculate the number of flames to display is not a straight-forward ration.
+calculate the number of flames to display is not a straight-forward ratio.
 Instead, we transform it by forcing low heat bugs to produce no flames and
 scaling the hottest bugs logarithmically.
 
