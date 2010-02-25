@@ -14,20 +14,22 @@ set -x
 set -e
 set -u
 
-# Launchpad cron.daily (currently just for Ubuntu).
+#
+# This script publishes the COPY (rebuild) archvies *only*.
+#
+
 
 # Informational -- this *MUST* match the database.
 ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
 DISTSROOT=$ARCHIVEROOT/dists
 OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
-CACHEROOT=$ARCHIVEROOT/../ubuntu-cache
-DISTSCOPYROOT=$ARCHIVEROOT/../ubuntu-distscopy
 INDICES=$ARCHIVEROOT/indices
 PRODUCTION_CONFIG=ftpmaster
 
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
 else
+    echo GPG keys will come from ~/.gnupg
     # GNUPGHOME does not need to be set, keys can come from ~/.gnupg.
 fi
 
@@ -36,8 +38,6 @@ LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 DISTRONAME=ubuntu
 TOUCHLIST=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
-DSYNCLIST=$CACHEROOT/dsync.list
-MD5LIST=$INDICES/md5sums.gz
 
 # Manipulate the environment.
 export GNUPGHOME
@@ -51,6 +51,13 @@ fi
 
 # Lock claimed.
 
+cleanup () {
+  echo "Cleaning up lockfile."
+  rm -f $LOCKFILE
+}
+
+trap cleanup EXIT
+
 # Process the accepted queue into the publishing records.
 process-accepted.py --copy-archive -v -v -v $DISTRONAME
 
@@ -58,20 +65,6 @@ process-accepted.py --copy-archive -v -v -v $DISTRONAME
 publish-distro.py -v -v --copy-archive -d $DISTRONAME
 
 set +x
-# Find all the Release files for which the Release.GPG is missing/too-old
-# We use -maxdepth 2 to only sign Release files for distroreleases,
-# not distroarchreleases/distrosourcereleases.
-# Also we sign the dist-upgrader tarballs because they're handy too.
-for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
-       $(find ${DISTSROOT}.new/*/*/dist-upgrader* -name "*.tar.gz"); do
-  #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
-  if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
-    echo "(re-)signing $CANDIDATE"
-    gpg --yes --detach-sign --armor -o $CANDIDATE.gpg --sign $CANDIDATE
-  else
-    echo "Not re-signing $CANDIDATE"
-  fi
-done
 
 echo Removing uncompressed Packages and Sources files
 find ${DISTSROOT} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
