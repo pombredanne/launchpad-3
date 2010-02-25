@@ -1859,6 +1859,7 @@ COMMENT ON COLUMN DistributionMirror.status IS 'This mirror''s status.';
 COMMENT ON COLUMN DistributionMirror.whiteboard IS 'Notes on the current status of the mirror';
 COMMENT ON COLUMN DistributionMirror.date_created IS 'The date and time the mirror was created.';
 COMMENT ON COLUMN DistributionMirror.date_reviewed IS 'The date and time the mirror was reviewed.';
+COMMENT ON COLUMN DistributionMirror.country_dns_mirror IS 'Is the mirror a country DNS mirror?';
 
 -- MirrorDistroArchSeries
 COMMENT ON TABLE MirrorDistroArchSeries IS 'The mirror of the packages of a given Distro Arch Release.';
