@@ -18,7 +18,7 @@ from sqlobject import (
 from storm.expr import Sum, Max
 from zope.component import getUtility
 from zope.interface import implements
-from storm.locals import And, Desc, Int
+from storm.locals import And, Desc
 from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
@@ -115,7 +115,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     # where are the tarballs released from this branch placed?
     releasefileglob = StringCol(default=None)
     releaseverstyle = StringCol(default=None)
-    max_heat = Int(allow_none=False, default=0)
 
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
@@ -160,6 +159,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def bugtargetname(self):
         """See IBugTarget."""
         return "%s/%s" % (self.product.name, self.name)
+
+    def _get_max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.product.max_bug_heat
+
+    def _set_max_bug_heat(self, value):
+        """See `IHasBugs`."""
+        self.product.max_bug_heat = value
+
+    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
 
     @property
     def drivers(self):

@@ -249,7 +249,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_rosetta', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
-    max_heat = Int(allow_none=False, default=0)
+    max_bug_heat = Int()
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""

@@ -21,7 +21,7 @@ The maximum heat is defined as a constant in browser/bug.py. A bug with
 a heat of half the maximum will result in a display of two coloured flames
 and two black-and-white flames.
 
-    >>> removeSecurityProxy(bug.default_bugtask.target).max_heat = MAX_HEAT
+    >>> removeSecurityProxy(bug.default_bugtask.target).max_bug_heat = MAX_HEAT
     >>> removeSecurityProxy(bug).heat = MAX_HEAT / 2
     >>> print_flames(bug.default_bugtask)
     /@@/flame-icon
