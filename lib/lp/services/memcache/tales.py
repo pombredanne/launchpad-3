@@ -44,7 +44,10 @@ class MemcacheExpr:
 
             anonymous: Unauthenticated users use a shared copy of the
                        cached information. Authenticated users don't
-                       use the cache.
+                       use the cache. This probably isn't that useful
+                       in practice, as Anonymous requests should already
+                       be cached by reverse proxies on the production
+                       systems.
 
         units is one of 'seconds', 'minutes', 'hours' or 'days'.
 

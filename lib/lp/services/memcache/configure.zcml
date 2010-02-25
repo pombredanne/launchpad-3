@@ -15,6 +15,6 @@
         />
 
     <!-- TALES expression letting us cache chunks of rendered templates -->
-    <tales:expressiontype name="memcache" handler=".tales.MemcacheExpr" />
+    <tales:expressiontype name="cache" handler=".tales.MemcacheExpr" />
 </configure>
 
