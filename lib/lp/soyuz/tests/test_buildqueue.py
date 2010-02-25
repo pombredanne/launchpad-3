@@ -961,7 +961,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         apg_job.lastscore = 1024
         # print_build_setup(self.builds)
 
-    def test_job_delay_for_binary_builds(self):
+    def disabled_test_job_delay_for_binary_builds(self):
         # One of four builders for the 'flex' build is immediately available.
         flex_build, flex_job = find_job(self, 'flex', 'hppa')
         check_mintime_to_builder(self, flex_job, 0)
@@ -1002,7 +1002,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # seconds.
         check_delay_for_job(self, gedit_job, 1172)
 
-    def test_job_delay_for_recipe_builds(self):
+    def disabled_test_job_delay_for_recipe_builds(self):
         # One of the 9 builders for the 'bash' build is immediately available.
         bash_build, bash_job = find_job(self, 'xx-recipe-bash', None)
         check_mintime_to_builder(self, bash_job, 0)
