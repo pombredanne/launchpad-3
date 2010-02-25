@@ -49,6 +49,13 @@ class MemcacheExpr:
                        be cached by reverse proxies on the production
                        systems.
 
+            authenticated: Authenticated user share a copy of the cached
+                           information, and unauthenticated users share
+                           a seperate copy. Use this when information is
+                           being hidden from unauthenticated users, eg.
+                           for bug comments where email addresses are
+                           obfuscated for unauthenticated users.
+
         units is one of 'seconds', 'minutes', 'hours' or 'days'.
 
         visibility is required. If the cache timeout is not specified,
@@ -62,8 +69,9 @@ class MemcacheExpr:
         else:
             self.visibility = expr.strip()
             max_age = None
-        assert self.visibility in ('anonymous', 'public', 'private'), (
-            'visibility must be anonymous, public or private')
+        assert self.visibility in (
+            'anonymous', 'public', 'private', 'authenticated',
+            ), 'visibility must be anonymous, public, private or authenticated'
 
         if max_age is None:
             self.max_age = 0
@@ -120,7 +128,8 @@ class MemcacheExpr:
 
         # We include the visibility in the key so private information
         # is not leaked. We use 'p' for public information, 'a' for
-        # unauthenticated user information, or Person.id for private
+        # unauthenticated user information, 'l' for information shared
+        # between all authenticated users, or ${Person.id} for private
         # information.
         if self.visibility == 'public':
             uid = 'p'
@@ -128,7 +137,9 @@ class MemcacheExpr:
             logged_in_user = getUtility(ILaunchBag).user
             if logged_in_user is None:
                 uid = 'a'
-            else:
+            elif self.visibility == 'authenticated':
+                uid = 'l'
+            else: # private visibility
                 uid = str(logged_in_user.id)
 
         # We include a counter in the key, reset at the start of the
