@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Implementation of the memcache: namespace in TALES."""
+"""Implementation of the cache: namespace in TALES."""
 
 __metaclass__ = type
 __all__ = []
@@ -27,7 +27,7 @@ class MemcacheExpr:
     This namespace is exclusively used in tal:content directives.
     The only sensible way of using this is the following syntax:
 
-    <div tal:content="memcache:1h public">
+    <div tal:content="cache:1h public">
         [... Potentially expensive page template chunk ...]
     </div>
     """
@@ -236,7 +236,7 @@ def do_insertText_tal(self, stuff):
     # Start Launchpad customization
     if isinstance(text, MemcacheMiss):
         # We got a MemcacheCallback instance. This means we hit a
-        # content="memcache:..." attribute but there was no valid
+        # content="cache:..." attribute but there was no valid
         # data in memcache. So we need to interpret the enclosed
         # chunk of template and stuff it in the cache for next time.
         callback = text
