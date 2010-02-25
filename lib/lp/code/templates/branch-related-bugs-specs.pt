@@ -49,7 +49,7 @@
     }
 
     Y.on('domready', function() {
-        Y.code.branchlinks.connect_branchlinks();
+        Y.lp.code.branchlinks.connect_branchlinks();
     });
 
     });
