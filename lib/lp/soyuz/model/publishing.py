@@ -45,14 +45,15 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, IArchiveSafePublisher,
-    IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
-    IPublishingEdit, IPublishingSet, ISourcePackageFilePublishing,
-    ISourcePackagePublishingHistory, PackagePublishingPriority,
-    PackagePublishingStatus, PoolFileOverwriteError)
+    active_publishing_status, IBinaryPackageFilePublishing,
+    IBinaryPackagePublishingHistory, IPublishingSet,
+    ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
+    PackagePublishingPriority, PackagePublishingStatus,
+    PoolFileOverwriteError)
 from lp.soyuz.interfaces.build import BuildSetStatus, BuildStatus, IBuildSet
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.components.decoratedresultset import (
@@ -505,6 +506,22 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         the_url = self._proxied_urls((changes_lfa,), self.archive)[0]
         return the_url
 
+    def _getAllowedArchitectures(self, available_archs):
+        """Filter out any restricted architectures not specifically allowed 
+        for an archive.
+
+        :param available_archs: Architectures to consider
+        :return: Sequence of `IDistroArch` instances.
+        """
+        associated_proc_families = [
+            archivearch.processorfamily for archivearch 
+            in getUtility(IArchiveArchSet).getByArchive(self.archive)]
+        # Return all distroarches with unrestricted processor families or with
+        # processor families the archive is explicitly associated with.
+        return [distroarch for distroarch in available_archs
+            if not distroarch.processorfamily.restricted or 
+               distroarch.processorfamily in associated_proc_families]
+
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
@@ -514,6 +531,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if architectures_available is None:
             architectures_available = list(
                 self.distroseries.enabled_architectures)
+
+        architectures_available = self._getAllowedArchitectures(
+            architectures_available)
 
         build_architectures = determineArchitecturesToBuild(
             self, architectures_available, self.distroseries, pas_verify)
