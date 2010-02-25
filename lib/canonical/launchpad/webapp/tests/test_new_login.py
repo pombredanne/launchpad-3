@@ -1,6 +1,7 @@
 # Copyright 2009 Canonical Ltd.  All rights reserved.
 from __future__ import with_statement
 
+# pylint: disable-msg=W0105
 """Test harness for running the new-login.txt tests."""
 
 __metaclass__ = type
