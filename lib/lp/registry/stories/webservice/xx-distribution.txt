@@ -123,6 +123,7 @@ packages matching (substring) the given text.
     ...     name='canonical-releases').jsonBody()
     >>> pprint_entry(canonical_releases)
     content: u'CD Image'
+    country_link: u'http://.../+countries/GB'
     date_created: u'2006-10-16T18:31:43.434567+00:00'
     date_reviewed: None
     description: None
