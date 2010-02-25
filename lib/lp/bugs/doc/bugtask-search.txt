@@ -962,8 +962,34 @@ return True for isUserAffected(foo_bar).
     >>> print reduce(
     ...     lambda x, y: x and y,
     ...     [task.bug.isUserAffected(foo_bar)
-    ...      for task in firefox.searchTasks(search_params)]) 
+    ...      for task in firefox.searchTasks(search_params)])
     True
+
+
+== Searching for bugs linked to branches ==
+
+We can search for bugs having branches linked to them.
+
+    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id, task.bug.linked_branches.count()
+    4 2
+    5 1
+
+Similary, we can search for bugs that do not have any linked branches.
+
+    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id, task.bug.linked_branches.count()
+    1 0
+    6 0
+    18 0
+    20 0
+    21 0
 
 
 == Ordering search results ==

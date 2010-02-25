@@ -14,6 +14,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
+from lazr.restful.interfaces import IServiceRootResource
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -402,7 +403,7 @@ class IReadZODBAnnotation(Interface):
         """Removes annotation at the given namespace."""
 
 
-class IWebServiceApplication(ILaunchpadApplication):
+class IWebServiceApplication(ILaunchpadApplication, IServiceRootResource):
     """Launchpad web service application root."""
 
 

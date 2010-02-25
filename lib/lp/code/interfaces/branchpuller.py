@@ -23,9 +23,11 @@ class IBranchPuller(Interface):
     MIRROR_TIME_INCREMENT = Attribute(
         "How frequently we mirror branches.")
 
-    def acquireBranchToPull():
+    def acquireBranchToPull(*branch_types):
         """Return a Branch to pull and mark it as mirror-started.
 
+        :param branch_types: Only return branches of these types.  Passing no
+            types means consider all types (apart from REMOTE).
         :return: The branch object to pull next, or ``None`` if there is no
             branch to pull.
         """

@@ -28,13 +28,16 @@ class BranchPuller:
     MAXIMUM_MIRROR_FAILURES = 5
     MIRROR_TIME_INCREMENT = timedelta(hours=6)
 
-    def acquireBranchToPull(self):
+    def acquireBranchToPull(self, *branch_types):
         """See `IBranchPuller`."""
+        if not branch_types:
+            branch_types = (
+                BranchType.HOSTED, BranchType.MIRRORED, BranchType.IMPORTED)
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch = store.find(
             Branch,
             Branch.next_mirror_time <= UTC_NOW,
-            Branch.branch_type != BranchType.REMOTE).order_by(
+            Branch.branch_type.is_in(branch_types)).order_by(
                 Branch.next_mirror_time).first()
         if branch is not None:
             branch.startMirroring()
