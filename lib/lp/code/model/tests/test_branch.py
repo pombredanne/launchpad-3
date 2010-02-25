@@ -867,7 +867,7 @@ class TestBranchDeletionConsequences(TestCase):
         """Deletion requirements for a branch with a bug are right."""
         bug = self.factory.makeBug()
         bug.linkBranch(self.branch, self.branch.owner)
-        self.assertEqual({bug.linked_branches[0]:
+        self.assertEqual({bug.default_bugtask:
             ('delete', _('This bug is linked to this branch.'))},
             self.branch.deletionRequirements())
 
@@ -1238,16 +1238,14 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
-        whiteboard = u"Some whiteboard"
         commit_message = u'Some commit message'
         proposal = self.source.addLandingTarget(
-            self.user, self.target, self.prerequisite, whiteboard,
+            self.user, self.target, self.prerequisite,
             commit_message=commit_message)
         self.assertEqual(proposal.registrant, self.user)
         self.assertEqual(proposal.source_branch, self.source)
         self.assertEqual(proposal.target_branch, self.target)
         self.assertEqual(proposal.prerequisite_branch, self.prerequisite)
-        self.assertEqual(proposal.whiteboard, whiteboard)
         self.assertEqual(proposal.commit_message, commit_message)
 
     def test__createMergeProposal_with_reviewers(self):

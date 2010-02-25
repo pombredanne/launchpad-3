@@ -12,10 +12,12 @@ and the ones that failed with the error associated.
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.testing.faketransaction import FakeTransaction
     >>> from lp.testing.mail_helpers import pop_notifications, print_emails
     >>> from lp.translations.scripts.po_export_queue import ExportResult
     >>> import logging
     >>> logger = logging.getLogger()
+    >>> fake_transaction = FakeTransaction()
 
 When there is an error, the system will notify it.
 
@@ -273,7 +275,7 @@ Once a new entry has been added, the queue has content.
 
 Once the queue is processed, the queue is empty again.
 
-    >>> process_queue(transaction, logging.getLogger())
+    >>> process_queue(fake_transaction, logging.getLogger())
     INFO:...Stored file at http://.../po_evolution-2.2.pot
 
     >>> export_request_set.entry_count
@@ -331,7 +333,7 @@ Exporting this pofile yields both messages in the resulting file.
 
     >>> export_request_set.addRequest(
     ...     carlos, pofiles=[pofile], format=TranslationFileFormat.PO)
-    >>> process_queue(transaction, logging.getLogger())
+    >>> process_queue(fake_transaction, logging.getLogger())
     INFO:root:Stored file at http://...eo.po
 
     >>> transaction.commit()
@@ -352,7 +354,7 @@ after having been imported.
 
     >>> export_request_set.addRequest(
     ...     carlos, pofiles=[pofile], format=TranslationFileFormat.POCHANGED)
-    >>> process_queue(transaction, logging.getLogger())
+    >>> process_queue(fake_transaction, logging.getLogger())
     INFO:root:Stored file at http://...eo.po
 
     >>> transaction.commit()
@@ -372,6 +374,6 @@ Two more email notifications were sent, we'd better get rid of them.
 Finally, if we try to do an export with an empty queue, we don't do
 anything:
 
-    >>> process_queue(transaction, logging.getLogger())
+    >>> process_queue(fake_transaction, logging.getLogger())
     >>> len(pop_notifications())
     0

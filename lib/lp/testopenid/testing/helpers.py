@@ -21,7 +21,7 @@ from openid.consumer.discover import (
 
 from canonical.launchpad.webapp import LaunchpadView
 
-from lp.testopenid.browser.server import SERVER_URL
+from lp.testopenid.interfaces.server import get_server_url
 
 
 class EchoView(LaunchpadView):
@@ -69,6 +69,6 @@ def complete_from_browser(consumer, browser):
 def make_identifier_select_endpoint():
     """Create an endpoint for use in OpenID identifier select mode."""
     endpoint = OpenIDServiceEndpoint()
-    endpoint.server_url = SERVER_URL
+    endpoint.server_url = get_server_url()
     endpoint.type_uris = [OPENID_IDP_2_0_TYPE]
     return endpoint

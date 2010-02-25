@@ -933,13 +933,6 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(1, len(builds))
         self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
 
-    def test_createMissingBuilds_restricts_nominatedindeparch(self):
-        self.distroseries.nominatedarchindep = self.avr_distroarch
-        pubrec = self.getPubSource(architecturehintlist='all')
-        builds = pubrec.createMissingBuilds()
-        self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
-
     def test_createMissingBuilds_restrict_override(self):
         getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
         pubrec = self.getPubSource(architecturehintlist='any')
