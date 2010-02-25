@@ -87,7 +87,7 @@ from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
-from lp.code.model.diff import Diff, PreviewDiff
+from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -1006,6 +1006,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         preview_diff.source_revision_id = self.getUniqueUnicode()
         preview_diff.target_revision_id = self.getUniqueUnicode()
         return preview_diff
+
+    def makeStaticDiff(self):
+        return StaticDiff.acquireFromText(
+            self.getUniqueUnicode(), self.getUniqueUnicode(),
+            self.getUniqueString())
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
