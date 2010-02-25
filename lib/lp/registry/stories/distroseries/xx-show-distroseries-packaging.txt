@@ -73,8 +73,6 @@ packages with the greatest need are listed first.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary')
     >>> anon_browser.getLink('Needs upstream links').click()
-    >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+needs-packaging')
     >>> print anon_browser.title
     Needs upstream links : ...
 
