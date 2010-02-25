@@ -1068,5 +1068,11 @@
         factory="lp.code.browser.diff.PreviewDiffFormatterAPI"
         name="fmt"
         />
+    <adapter
+        for="lp.code.interfaces.diff.IDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.code.browser.diff.DiffFormatterAPI"
+        name="fmt"
+        />
 
 </configure>
