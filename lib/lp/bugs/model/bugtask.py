@@ -55,13 +55,13 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
-    BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
-    IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
-    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskImportance, UserCannotEditBugTaskMilestone,
-    UserCannotEditBugTaskStatus)
+    BUG_SUPERVISOR_BUGTASK_STATUSES, BugBranchSearch, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
+    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
+    IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
+    IUpstreamBugTask, IllegalTarget, RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES, UserCannotEditBugTaskImportance,
+    UserCannotEditBugTaskMilestone, UserCannotEditBugTaskStatus)
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -1670,6 +1670,21 @@ class BugTaskSet:
         hw_clause = self._buildHardwareRelatedClause(params)
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
+
+        if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+            extra_clauses.append(
+                """EXISTS (
+                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                """)
+        elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
+            extra_clauses.append(
+                """NOT EXISTS (
+                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                """)
+        else:
+            # If no branch specific search restriction is specified,
+            # we don't need to add any clause.
+            pass
 
         orderby_arg = self._processOrderBy(params)
 
