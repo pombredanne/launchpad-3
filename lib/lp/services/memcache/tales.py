@@ -16,6 +16,8 @@ from zope.tal.talinterpreter import TALInterpreter, I18nMessageTypes
 
 from canonical.base import base
 from canonical.config import config
+from canonical.launchpad import versioninfo
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.memcache.interfaces import IMemcacheClient
 
 
@@ -80,8 +82,8 @@ class MemcacheExpr:
     _valid_key_characters = ''.join(
         chr(i) for i in range(33, 127) if i != ord(':'))
 
-    # For use with str.translate to sanitize keys. No control characters,
-    # and skip ':' too since it is a magic separator.
+    # For use with str.translate to sanitize keys. No control characters
+    # allowed, and we skip ':' too since it is a magic separator.
     _key_translate_map = (
         '_'*33 + ''.join(chr(i) for i in range(33, ord(':'))) + '_'
         + ''.join(chr(i) for i in range(ord(':')+1, 127)) + '_' * 129)
@@ -98,39 +100,77 @@ class MemcacheExpr:
             - the config in use
             - the URL and query string
         """
+        # We include the URL and query string in the key.
+        # We use the full, unadulterated url to calculate a hash.
+        # We use a sanitized version in the human readable chunk of
+        # the key.
         request = econtext.getValue('request')
+        url = str(request.URL) + '?' + request['QUERY_STRING']
+        url = url.encode('utf8') # Ensure it is a byte string.
+        sanitized_url = url.translate(self._key_translate_map)
+
+        # We include the source file and position in the source file in
+        # the key.
         source_file = os.path.abspath(econtext.source_file)
         source_file = source_file[
             len(os.path.commonprefix([source_file, config.root + '/lib']))+1:]
+
+        # We include the visibility in the key so private information
+        # is not leaked. We use 'p' for public information, 'a' for
+        # unauthenticated user information, or Person.id for private
+        # information.
         if self.visibility == 'public':
-            uid = 0
+            uid = 'p'
         else:
-            raise NotImplementedError("Only public visibility implemented")
-        # TODO: Add counter incremented for each cache: encountered so
-        # this works in loops.
-        # TODO: Add tree revno to key.
-        # TODO: Add the config name to key.
-        key = "pt:%s:%d:%d,%d:%s?%s" % (
-            source_file, uid, econtext.position[0], econtext.position[1],
-            str(request.URL), request['QUERY_STRING'],
+            logged_in_user = getUtility(ILaunchBag).user
+            if logged_in_user is None:
+                uid = 'a'
+            else:
+                uid = str(logged_in_user.id)
+
+        # We include a counter in the key, reset at the start of the
+        # request, to ensure we get unique but repeatable keys inside
+        # tal:repeat loops.
+        counter_key = 'lp.services.memcache.tales.counter'
+        counter = request.annotations.get(counter_key, 0) + 1
+        request.annotations[counter_key] = counter
+
+        # We use pt: as a unique prefix to ensure no clashes with other
+        # components using the memcached servers. The order of components
+        # below only matters for human readability and memcached reporting
+        # tools - it doesn't really matter provided all the components are
+        # included and separators used.
+        key = "pt:%s:%s,%s:%s:%d,%d:%d,%s" % (
+            config.instance_name,
+            source_file, versioninfo.revno, uid,
+            econtext.position[0], econtext.position[1], counter,
+            sanitized_url,
             )
-        key = key.encode('utf8')
 
         # Memcached max key length is 250, so truncate but ensure uniqueness
         # with a hash. A short hash is good, provided it is still unique,
-        # to preserve readability as much as possible.
-        key_hash = base(int(md5(key).hexdigest(), 16), 62)
+        # to preserve readability as much as possible. We include the
+        # unsanitized URL in the hash to ensure uniqueness.
+        key_hash = base(int(md5(key + url).hexdigest(), 16), 62)
         key = key[:250-len(key_hash)] + key_hash
-
-        # Encode characters illegal in memcache keys. We still remain unique
-        # due to the appended hash.
-        key = key.translate(self._key_translate_map)
 
         return key
 
     def __call__(self, econtext):
+
+        # If we have an 'anonymous' visibility chunk and are logged in,
+        # we don't cache. Return the 'default' magic token to interpret
+        # the contents.
+        request = econtext.getValue('request')
+        if (self.visibility == 'anonymous'
+            and getUtility(ILaunchBag).user is not None):
+            return econtext.getDefault()
+
+        # Calculate a unique key so we serve the right cached information.
         key = self.getKey(econtext)
+
         cached_chunk = getUtility(IMemcacheClient).get(key)
+
         if cached_chunk is None:
             logging.debug("Memcache miss for %s", key)
             return MemcacheMiss(key, self.max_age)
@@ -181,7 +221,7 @@ class MemcacheHit:
 
 
 # Oh my bleeding eyes! Monkey patching & cargo culting seems the sanest
-# way of installing our extensions.
+# way of installing our extensions, which makes me sad.
 
 def do_insertText_tal(self, stuff):
     text = self.engine.evaluateText(stuff[0])
@@ -203,7 +243,7 @@ def do_insertText_tal(self, stuff):
         self.popStream()
         # Now we have generated the chunk, cache it for next time.
         callback(text)
-        # And output it to the currently rendered page.
+        # And output it to the currently rendered page, unquoted.
         self.stream_write(text)
         return
     if isinstance(text, MemcacheHit):
