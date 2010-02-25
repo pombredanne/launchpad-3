@@ -640,6 +640,21 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             [revisions[2], revisions[3]]]
         self.assertRevisionGroups(bmp, expected_groups)
 
+    def test_include_superseded_comments(self):
+        for x, time in zip(range(3), time_counter()):
+            if x != 0:
+                self.bmp = self.bmp.resubmit(self.user)
+            self.bmp.createComment(
+                self.user, 'comment %d' % x, _date_created=time)
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual(
+            ['comment 0', 'comment 1', 'comment 2'],
+            [comment.comment.message.subject for comment
+             in view.conversation.comments])
+        self.assertFalse(view.conversation.comments[2].from_superseded)
+        self.assertTrue(view.conversation.comments[1].from_superseded)
+        self.assertTrue(view.conversation.comments[0].from_superseded)
+
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
     """Test the status vocabulary generated for then +edit-status view."""

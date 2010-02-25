@@ -619,7 +619,7 @@ not be able to move it.
 Atom/RSS Feeds
 --------------
 
-We publish a feed of news for every IProject, IProduct and
+We publish a feed of news for every IProjectGroup, IProduct and
 IDistribution.
 
 The feeds are published even when there are no announcements.

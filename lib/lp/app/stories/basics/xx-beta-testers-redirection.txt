@@ -157,29 +157,6 @@ Now when they go to a page on the site, it loads as normal:
     >>> print beta_browser.url
     http://launchpad.dev/ubuntu
 
-If a beta tester comes to Launchpad but is not yet logged in, they
-will be redirected once they do log in.  First we'll go to the Ubuntu
-product page and try to log in.  We get redirected back to the Ubuntu
-page after authenticating successfully:
-
-    >>> browser.mech_browser.set_handle_redirect(False)
-    >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> browser.getLink('Log in / Register').click()
-    >>> print browser.url
-    http://launchpad.dev/ubuntu/+login
-    >>> browser.getControl('E-mail address',
-    ...                    index=0).value = 'beta-admin@launchpad.net'
-    >>> browser.getControl('Password').value = 'test'
-    >>> check(browser.getControl('Log In').click)
-    HTTP Error 303: See Other
-    Location: http://launchpad.dev/ubuntu
-
-The Ubuntu product page then redirects to the beta site:
-
-    >>> check(browser.open, 'http://launchpad.dev/ubuntu')
-    HTTP Error 303: See Other
-    Location: http://beta.launchpad.dev/ubuntu
-
 
 == Shortcut redirection for bugs ==
 

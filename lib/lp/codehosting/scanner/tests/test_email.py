@@ -63,8 +63,12 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.assertEqual(len(stub.test_emails), 1)
         [initial_email] = stub.test_emails
         expected = 'First scan of the branch detected 0 revisions'
-        email_body = email.message_from_string(initial_email[2]).get_payload()
+        message = email.message_from_string(initial_email[2])
+        email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
+        self.assertEqual(
+            '[Branch %s] 0 revisions' % self.db_branch.unique_name,
+            message['Subject'])
 
     def test_import_revision(self):
         self.commitRevision()
@@ -74,8 +78,12 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         [initial_email] = stub.test_emails
         expected = ('First scan of the branch detected 1 revision'
                     ' in the revision history of the=\n branch.')
-        email_body = email.message_from_string(initial_email[2]).get_payload()
+        message = email.message_from_string(initial_email[2])
+        email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
+        self.assertEqual(
+            '[Branch %s] 1 revision' % self.db_branch.unique_name,
+            message['Subject'])
 
     def test_import_uncommit(self):
         self.commitRevision()
@@ -88,9 +96,12 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.assertEqual(len(stub.test_emails), 1)
         [uncommit_email] = stub.test_emails
         expected = '1 revision was removed from the branch.'
-        email_body = email.message_from_string(
-            uncommit_email[2]).get_payload()
+        message = email.message_from_string(uncommit_email[2])
+        email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
+        self.assertEqual(
+            '[Branch %s] 1 revision removed' % self.db_branch.unique_name,
+            message['Subject'])
 
     def test_import_recommit(self):
         # When scanning the uncommit and new commit there should be an email
