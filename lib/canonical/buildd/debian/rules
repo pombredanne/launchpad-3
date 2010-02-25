@@ -42,7 +42,7 @@ install:
 	  usr/share/doc/launchpad-buildd \
 	  usr/share/launchpad-buildd/lp \
 	  usr/share/launchpad-buildd/lp/translations \
-	  usr/share/launchpad-buildd/lp/translations/pottery \
+	  usr/share/launchpad-buildd/lp/translations/pottery
 
 	# Do installs here
 	touch $(pytarget)/../launchpad/__init__.py
