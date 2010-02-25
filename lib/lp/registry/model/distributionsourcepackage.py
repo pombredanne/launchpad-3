@@ -146,11 +146,9 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IHasBugs`."""
         dsp_in_db = self._self_in_database
         if dsp_in_db is None:
-            dsp_in_db = DistributionSourcePackageInDatabase()
-            dsp_in_db.sourcepackagename = self.sourcepackagename
-            dsp_in_db.distribution = self.distribution
-            Store.of(self.distribution).add(dsp_in_db)
-        return dsp_in_db.max_bug_heat
+            return None
+        else:
+            return dsp_in_db.max_bug_heat
 
     def _set_max_bug_heat(self, value):
         """See `IHasBugs`."""
