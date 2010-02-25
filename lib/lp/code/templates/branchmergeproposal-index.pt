@@ -199,7 +199,7 @@
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   conf = <tal:status-config replace="view/status_config" />
   <!--
-  LPS.use('io-base', 'code.codereview', 'code.branchmergeproposal', 'lp.comment',
+  LPS.use('io-base', 'lp.code.codereview', 'code.branchmergeproposal', 'lp.comment',
             function(Y) {
 
     Y.on('load', function() {
@@ -213,7 +213,7 @@
                 return;
             }
 
-            Y.code.branchmergeproposal.connect_status(conf);
+            Y.lp.code.branchmergeproposal.connect_status(conf);
         }
         Y.code.codereview.connect_links();
         (new Y.codereview.NumberToggle()).render();
