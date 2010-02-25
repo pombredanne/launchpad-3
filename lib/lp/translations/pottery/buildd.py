@@ -166,7 +166,7 @@ def generate_pot(podir, domain):
     return returncode == 0
 
 
-def generate_pots(package_dir):
+def generate_pots(package_dir='.'):
     """Top-level function to generate all PO templates in a package."""
     potpaths = []
     with chdir(package_dir):
