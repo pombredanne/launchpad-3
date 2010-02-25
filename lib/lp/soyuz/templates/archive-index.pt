@@ -86,8 +86,7 @@
           target="help">adding</a> <strong
           tal:content="context/fmt:reference">ppa:cprov/ppa</strong>
           to your system's Software Sources.
-          <span id="pre-karmic-systems-slide-trigger"
-            >Not using Ubuntu 9.10 (Karmic)?</span></p>
+        </p>
 
         <div id="ppa-install-slide-trigger">
           <div class="widget-header">
@@ -173,8 +172,6 @@ YUI({
     }
     Y.on('click', toggle_body_visibility,
          '#ppa-install-slide-trigger');
-    Y.on('click', toggle_body_visibility,
-         '#pre-karmic-systems-slide-trigger');
 });
         </script>
       </tal:is-active>

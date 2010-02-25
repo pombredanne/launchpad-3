@@ -281,7 +281,6 @@ context PPA in their systems.
     Adding this PPA to your system
     You can update your system with unsupported packages from this
     untrusted PPA by adding ppa:cprov/ppa to your system's Software Sources.
-    Not using Ubuntu 9.10 (Karmic)?
     Technical details about this PPA
     ...
     For questions and bugs with software in this PPA please contact

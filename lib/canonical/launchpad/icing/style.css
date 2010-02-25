@@ -943,13 +943,6 @@ a.update-retry {
 }
 
 /* PPA installation instructions slider.*/
-#pre-karmic-systems-slide-trigger {
-    cursor: pointer;
-    color: #093; /* for the underline on hover */
-}
-#pre-karmic-systems-slide-trigger:hover {
-    text-decoration: underline
-}
 #ppa-install-slide-trigger {
     cursor: pointer;
     color: #093; /* for the underline on hover */
