@@ -1994,10 +1994,7 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        view = getMultiAdapter(
-            (self.bugtask.bug, self.request),
-            name='+bug-heat')
-        return view()
+        return bugtask_heat_html(self.bugtask)
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
