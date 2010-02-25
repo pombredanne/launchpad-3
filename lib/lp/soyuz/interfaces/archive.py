@@ -145,10 +145,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))
 
-    publish = Bool(
-        title=_("Publish"), required=False,
-        description=_("Whether the archive is to be published or not."))
-
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is guarded by a validator.
     private = exported(
@@ -992,6 +988,10 @@ class IArchiveAppend(Interface):
 
 class IArchiveEdit(Interface):
     """Archive interface for operations restricted by edit privilege."""
+
+    publish = Bool(
+        title=_("Publish"), required=False,
+        description=_("Whether the archive is to be published or not."))
 
     @operation_parameters(
         person=Reference(schema=IPerson),

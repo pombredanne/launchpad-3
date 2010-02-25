@@ -320,7 +320,8 @@ class TestPublishDistro(TestNativePublishingBase):
         # The COPY repository path is not created yet.
         repo_path = os.path.join(
             config.archivepublisher.root,
-            ubuntutest.name + '-' + copy_archive_name)
+            ubuntutest.name + '-' + copy_archive_name,
+            ubuntutest.name)
         self.assertNotExists(repo_path)
 
         copy_archive = getUtility(IArchiveSet).new(
