@@ -1085,24 +1085,24 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         return bugtask_heat_html(self.context)
 
 
-def calculate_heat_display(heat, max_heat):
+def calculate_heat_display(heat, max_bug_heat):
     """Calculate the number of heat 'flames' to display."""
     heat = float(heat)
-    max_heat = float(max_heat)
-    if heat / max_heat < 0.33333:
+    max_bug_heat = float(max_bug_heat)
+    if heat / max_bug_heat < 0.33333:
         return 0
-    if heat / max_heat < 0.66666:
-        return int(floor((heat / max_heat) * 4))
+    if heat / max_bug_heat < 0.66666:
+        return int(floor((heat / max_bug_heat) * 4))
     else:
-        return int(floor((log(heat) / log(max_heat)) * 4))
+        return int(floor((log(heat) / log(max_bug_heat)) * 4))
 
 
 def bugtask_heat_html(bugtask):
     """Render the HTML representing bug heat for a given bugask."""
-    max_heat = bugtask.target.max_heat
-    if max_heat == 0:
-        max_heat = 5000
-    heat_ratio = calculate_heat_display(bugtask.bug.heat, max_heat)
+    max_bug_heat = bugtask.target.max_bug_heat
+    if max_bug_heat == 0:
+        max_bug_heat = 5000
+    heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
     html = '<span>'
     for flame in range(1, 5):
         if flame <= heat_ratio:
