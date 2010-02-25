@@ -6,7 +6,6 @@ __metaclass__ = type
 
 import os.path
 import sys
-from subprocess import call
 
 from lp.translations.pottery.buildd import generate_pots
 
