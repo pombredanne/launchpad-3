@@ -216,7 +216,7 @@
             Y.lp.code.branchmergeproposal.connect_status(conf);
         }
         Y.lp.code.codereview.connect_links();
-        (new Y.lp.codereview.NumberToggle()).render();
+        (new Y.lp.code.codereview.NumberToggle()).render();
       }, window);
   });
   -->
