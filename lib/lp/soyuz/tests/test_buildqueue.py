@@ -1243,7 +1243,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         vim_build, vim_job = find_job(self, 'vim', '386')
         check_estimate(self, vim_job, None)
 
-    def test_estimates_with_small_builder_pool(self):
+    def disabled_test_estimates_with_small_builder_pool(self):
         # Test that a reduced builder pool results in longer dispatch time
         # estimates.
         vim_build, vim_job = find_job(self, 'vim', '386')
