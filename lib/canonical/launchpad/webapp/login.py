@@ -268,10 +268,10 @@ class OpenIDCallbackView(OpenIDLogin):
                 # Here we assume the OP sent us the user's email address and
                 # full name in the response. Note we can only do that because
                 # we used a fixed OP (login.launchpad.net) that includes the
-                # user's email address in the response when asked to.  Once we
-                # start using other OPs we won't be able to make this
-                # assumption here as they might not include what we want in
-                # the response.
+                # user's email address and full name in the response when
+                # asked to.  Once we start using other OPs we won't be able to
+                # make this assumption here as they might not include what we
+                # want in the response.
                 sreg_response = sreg.SRegResponse.fromSuccessResponse(
                     self.openid_response)
                 assert sreg_response is not None, (

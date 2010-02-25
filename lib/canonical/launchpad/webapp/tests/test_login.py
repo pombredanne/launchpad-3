@@ -53,7 +53,7 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
 
 
 @contextmanager
-def stub_SRegResponse_fromSuccessResponse():
+def SRegResponse_fromSuccessResponse_stubbed():
     def sregFromFakeSuccessResponse(cls, success_response, signed_only=True):
         return {'email': success_response.sreg_email,
                 'fullname': success_response.sreg_fullname}
@@ -127,7 +127,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             'http://testopenid.dev/+id/%s' % identifier, status=SUCCESS,
             email='non-existent@example.com', full_name='Foo User')
         view = self._createView(openid_response)
-        with stub_SRegResponse_fromSuccessResponse():
+        with SRegResponse_fromSuccessResponse_stubbed():
             view.render()
         self.assertTrue(view.login_called)
         account = account_set.getByOpenIDIdentifier(identifier)
@@ -135,7 +135,9 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertEquals(AccountStatus.ACTIVE, account.status)
         self.assertEquals('non-existent@example.com',
                           removeSecurityProxy(account.preferredemail).email)
-        self.assertIsNot(None, IPerson(account, None))
+        person = IPerson(account, None)
+        self.assertIsNot(None, person)
+        self.assertEquals('Foo User', person.displayname)
 
     def test_deactivated_account(self):
         # The user has the account's password and is trying to login, so we'll
