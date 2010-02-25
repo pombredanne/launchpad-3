@@ -24,6 +24,7 @@ from lazr.restful.declarations import (
     export_read_operation, operation_parameters, REQUEST_USER)
 from lazr.restful.interface import copy_field
 
+
 class BlobTooLarge(Exception):
     """Raised if attempting to create a blob larger than the maximum
        allowed size.
@@ -37,11 +38,13 @@ class ITemporaryBlobStorage(Interface):
         singular_name='temporary_blob', plural_name='temporary_blobs')
 
     uuid = exported(
-        Text(title=_('UUID'), required=True, readonly=True))
+        Text(title=_('UUID'), required=True, readonly=True),
+        exported_as='token')
     blob = Bytes(title=_('BLOB'), required=True, readonly=True)
     date_created = Datetime(title=_('Date created'),
         required=True, readonly=True)
     file_alias = Attribute("Link to actual storage of blob")
+    has_been_processed = Attribute("Whether the blob has been processed.")
 
 
 class ITemporaryStorageManager(Interface):

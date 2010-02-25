@@ -53,6 +53,15 @@ from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.layers import WebServiceLayer
+from canonical.launchpad.interfaces.launchpad import (
+    IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
+    IRosettaApplication, IStructuralHeaderPresentation,
+    IStructuralObjectPresentation)
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet)
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryStorageManager)
 
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.registry.interfaces.announcement import IAnnouncementSet
@@ -73,13 +82,6 @@ from lp.registry.interfaces.karma import IKarmaActionSet
 from canonical.launchpad.interfaces.account import AccountStatus
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
-    IRosettaApplication, IStructuralHeaderPresentation,
-    IStructuralObjectPresentation)
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
 from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
@@ -567,6 +569,7 @@ class LaunchpadRootNavigation(Navigation):
         'translations': IRosettaApplication,
         'questions': IQuestionSet,
         '+rpconfig': IOpenIDRPConfigSet,
+        'temporary_blobs': ITemporaryStorageManager,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,

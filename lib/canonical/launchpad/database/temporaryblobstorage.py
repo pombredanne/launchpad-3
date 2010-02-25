@@ -19,7 +19,7 @@ from cStringIO import StringIO
 from datetime import timedelta, datetime
 
 from pytz import utc
-from sqlobject import StringCol, ForeignKey
+from sqlobject import StringCol, ForeignKey, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -34,6 +34,9 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet,
     BlobTooLarge,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
+
+from lp.services.job.interfaces.job import JobStatus
 
 
 class TemporaryBlobStorage(SQLBase):
@@ -57,6 +60,22 @@ class TemporaryBlobStorage(SQLBase):
             return self.file_alias.read()
         finally:
             self.file_alias.close()
+
+    @property
+    def has_been_processed(self):
+        """See `ITemporaryBlobStorage`."""
+        # Imported here to avoid circular imports
+        from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+        try:
+            job_for_blob = getUtility(
+                IProcessApportBlobJobSource).getByBlobUUID(self.uuid)
+        except SQLObjectNotFound:
+            return None
+
+        if job_for_blob.job.status == JobStatus.COMPLETE:
+            return True
+        else:
+            return False
 
 
 class TemporaryStorageManager:
@@ -117,7 +136,7 @@ class TemporaryStorageManager:
 
     def default_temporary_blob_storage_list(self, user=None):
         """See `ITemporaryStorageManager`."""
-        # We return an empty list, since this method is required by
-        # lazr.restful but we don't want to expose all the
-        # ITemporaryBlobStorage objects.
-        return []
+        # Return the 50 most recent blobs.
+        store = IStore(TemporaryBlobStorage)
+        return store.find(TemporaryBlobStorage).order_by(
+            TemporaryBlobStorage.date_created)[:50]

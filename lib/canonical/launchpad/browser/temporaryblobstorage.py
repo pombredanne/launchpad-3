@@ -9,11 +9,14 @@ __all__ = [
     ]
 
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
 
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     BlobTooLarge, ITemporaryBlobStorage, ITemporaryStorageManager)
+from canonical.launchpad.webapp import GetitemNavigation
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.librarian.interfaces import UploadFailed
 
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
@@ -64,3 +67,44 @@ class TemporaryBlobStorageAddView(LaunchpadFormView):
             blob = getUtility(ITemporaryStorageManager).fetch(uuid)
             getUtility(IProcessApportBlobJobSource).create(blob)
             return uuid
+
+
+class TemporaryBlobStorageURL:
+    """Bug URL creation rules."""
+    implements(ICanonicalUrlData)
+
+    inside = None
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def path(self):
+        """Return the path component of the URL."""
+        return u'temporary_blobs/%s' % self.context.uuid
+
+
+class TemporaryStorageManagerURL:
+    """Bug URL creation rules."""
+    implements(ICanonicalUrlData)
+
+    inside = None
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def path(self):
+        """Return the path component of the URL."""
+        return u'temporary_blobs'
+
+
+class TemporaryBlobStorageNavigation(GetitemNavigation):
+    """Navigation for temporary blobs."""
+
+    usedfor = ITemporaryStorageManager
+
+    def traverse(self, name):
+        return getUtility(ITemporaryStorageManager).fetch(name)
