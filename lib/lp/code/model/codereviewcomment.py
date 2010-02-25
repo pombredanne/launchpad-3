@@ -75,6 +75,11 @@ class CodeReviewComment(SQLBase):
     vote_tag = StringCol(default=None)
 
     @property
+    def author(self):
+        """See `ICodeReviewComment'."""
+        return self.message.owner
+
+    @property
     def target(self):
         """See `IHasBranchTarget`."""
         return self.branch_merge_proposal.target
