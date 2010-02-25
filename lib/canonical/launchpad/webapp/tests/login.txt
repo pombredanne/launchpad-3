@@ -25,7 +25,7 @@ The OpenID Provider will ask us to authenticate.
 
     >>> print browser.title
     Login
-    >>> from canonical.launchpad.webapp.tests.test_new_login import (
+    >>> from canonical.launchpad.webapp.tests.test_login import (
     ...     fill_login_form_and_submit)
     >>> fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
 
