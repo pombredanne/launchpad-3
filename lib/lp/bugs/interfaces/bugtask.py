@@ -1128,7 +1128,7 @@ class BugTaskSearchParams:
                        hardware_owner_is_bug_reporter=None,
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
-                       hardware_is_linked_to_bug=False):
+                       hardware_is_linked_to_bug=False, linked_branches=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1195,6 +1195,7 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
+        search_params.linked_branches=linked_branches
 
         return search_params
 
