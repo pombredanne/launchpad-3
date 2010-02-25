@@ -415,7 +415,7 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="publish description displayname"/>
+            set_attributes="description displayname publish"/>
         <require
             permission="launchpad.Commercial"
             set_attributes="authorized_size buildd_secret
