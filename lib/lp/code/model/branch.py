@@ -606,7 +606,7 @@ class Branch(SQLBase):
 
         for bugbranch in self.bug_branches:
             deletion_operations.append(
-                DeletionCallable(bugbranch,
+                DeletionCallable(bugbranch.bug.default_bugtask,
                 _('This bug is linked to this branch.'),
                 bugbranch.destroySelf))
         for spec_link in self.spec_links:

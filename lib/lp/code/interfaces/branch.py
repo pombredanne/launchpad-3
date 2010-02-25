@@ -119,10 +119,6 @@ class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
 
 
-class UnknownBranchTypeError(Exception):
-    """Raised when the user specifies an unrecognized branch type."""
-
-
 class BranchCreationForbidden(BranchCreationException):
     """A Branch visibility policy forbids branch creation.
 

@@ -867,7 +867,7 @@ class TestBranchDeletionConsequences(TestCase):
         """Deletion requirements for a branch with a bug are right."""
         bug = self.factory.makeBug()
         bug.linkBranch(self.branch, self.branch.owner)
-        self.assertEqual({bug.linked_branches[0]:
+        self.assertEqual({bug.default_bugtask:
             ('delete', _('This bug is linked to this branch.'))},
             self.branch.deletionRequirements())
 
