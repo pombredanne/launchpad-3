@@ -160,15 +160,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See IBugTarget."""
         return "%s/%s" % (self.product.name, self.name)
 
-    def _get_max_bug_heat(self):
+    @property
+    def max_bug_heat(self):
         """See `IHasBugs`."""
         return self.product.max_bug_heat
-
-    def _set_max_bug_heat(self, value):
-        """See `IHasBugs`."""
-        self.product.max_bug_heat = value
-
-    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
 
     @property
     def drivers(self):

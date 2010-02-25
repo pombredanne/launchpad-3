@@ -25,7 +25,10 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
@@ -158,7 +161,14 @@ class HasBugsBase:
 
     def setMaxBugHeat(self, heat):
         """See `IHasBugs`."""
-        self.max_bug_heat = heat
+        if (IDistribution.providedBy(self)
+            or IProduct.providedBy(self)
+            or IProjectGroup.providedBy(self)
+            or IDistributionSourcePackage.providedBy(self)):
+            # Only objects that don't delegate have a setter.
+            self.max_bug_heat = heat
+        else:
+            raise NotImplementedError
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""

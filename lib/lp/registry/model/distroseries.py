@@ -623,15 +623,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IBugTarget."""
         return self.fullseriesname
 
-    def _get_max_bug_heat(self):
+    @property
+    def max_bug_heat(self):
         """See `IHasBugs`."""
         return self.distribution.max_bug_heat
-
-    def _set_max_bug_heat(self, value):
-        """See `IHasBugs`."""
-        self.distribution.max_bug_heat = value
-
-    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
 
     @property
     def last_full_language_pack_exported(self):

@@ -220,15 +220,24 @@ class MaxHeatByTargetBase:
 
     layer = LaunchpadZopelessLayer
 
-    target = None
     factory = LaunchpadObjectFactory()
+
+    # The target to test.
+    target = None
+
+    # Does the target have a set method?
+    delegates_setter = False
 
     def test_target_max_bug_heat_default(self):
         self.assertEqual(self.target.max_bug_heat, None)
 
     def test_set_target_max_bug_heat(self):
-        self.target.setMaxBugHeat(1000)
-        self.assertEqual(self.target.max_bug_heat, 1000)
+        if self.delegates_setter:
+            self.assertRaises(
+                NotImplementedError, self.target.setMaxBugHeat, 1000)
+        else:
+            self.target.setMaxBugHeat(1000)
+            self.assertEqual(self.target.max_bug_heat, 1000)
 
 
 class ProjectMaxHeatByTargetTest(MaxHeatByTargetBase, unittest.TestCase):
@@ -259,6 +268,7 @@ class SourcePackageMaxHeatByTargetTest(
 
     def setUp(self):
         self.target = self.factory.makeSourcePackage()
+        self.delegates_setter = True
 
 
 class ProductSeriesMaxHeatByTargetTest(
@@ -267,6 +277,7 @@ class ProductSeriesMaxHeatByTargetTest(
 
     def setUp(self):
         self.target = self.factory.makeProductSeries()
+        self.delegates_setter = True
 
 
 class DistroSeriesMaxHeatByTargetTest(
@@ -275,6 +286,7 @@ class DistroSeriesMaxHeatByTargetTest(
 
     def setUp(self):
         self.target = self.factory.makeDistroSeries()
+        self.delegates_setter = True
 
 
 class ProjectGroupMaxHeatByTargetTest(
