@@ -1100,7 +1100,7 @@ def calculate_heat_display(heat, max_bug_heat):
 def bugtask_heat_html(bugtask):
     """Render the HTML representing bug heat for a given bugask."""
     max_bug_heat = bugtask.target.max_bug_heat
-    if max_bug_heat == 0:
+    if max_bug_heat is None:
         max_bug_heat = 5000
     heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
     html = '<span>'
