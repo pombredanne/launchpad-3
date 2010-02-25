@@ -18,11 +18,13 @@ class ProcessorFamilyTests(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_create(self):
+        """Test adding a new ProcessorFamily."""
         family = getUtility(IProcessorFamilySet).new("avr", "Atmel AVR",
             "The Modified Harvard architecture 8-bit RISC processors.")
         self.assertProvides(family, IProcessorFamily)
 
     def test_add_processor(self):
+        """Test adding a new Processor to a ProcessorFamily."""
         family = getUtility(IProcessorFamilySet).new("avr", "Atmel AVR",
             "The Modified Harvard architecture 8-bit RISC processors.")
         proc = family.addProcessor("avr2001", "The 2001 AVR", "Fast as light.")

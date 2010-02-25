@@ -916,24 +916,38 @@ class BuildRecordCreationTests(TestNativePublishingBase):
             pubrec._getAllowedArchitectures(available_archs))
 
     def test_createMissingBuilds_restricts_any(self):
+        """createMissingBuilds() should limit builds targeted at 'any'
+        architecture to those allowed for the archive.
+        """
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
         self.assertEquals(1, len(builds))
         self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
+        """createMissingBuilds() should limit builds targeted at a 
+        variety of architectures architecture to those allowed for the archive.
+        """
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()
         self.assertEquals(1, len(builds))
         self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
 
     def test_createMissingBuilds_restricts_all(self):
+        """createMissingBuilds() should limit builds targeted at 'all'
+        architectures to the nominated independent architecture, 
+        if that is allowed for the archive.
+        """
         pubrec = self.getPubSource(architecturehintlist='all')
         builds = pubrec.createMissingBuilds()
         self.assertEquals(1, len(builds))
         self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
 
     def test_createMissingBuilds_restrict_override(self):
+        """createMissingBuilds() should limit builds targeted at 'any'
+        architecture to architectures that are unrestricted or 
+        explicitly associated with the archive.
+        """
         getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
