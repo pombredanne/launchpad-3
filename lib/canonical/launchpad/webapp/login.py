@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from BeautifulSoup import UnicodeDammit
 
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from openid.extensions import sreg
 from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
 
 import transaction
@@ -27,7 +28,6 @@ from zope.session.interfaces import ISession, IClientIdManager
 
 from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
@@ -181,6 +181,8 @@ class OpenIDLogin(LaunchpadView):
         openid_vhost = config.launchpad.openid_provider_vhost
         self.openid_request = consumer.begin(
             allvhosts.configs[openid_vhost].rooturl)
+        self.openid_request.addExtension(
+            sreg.SRegRequest(optional=['email', 'fullname']))
 
         trust_root = self.request.getApplicationURL()
         assert not self.openid_request.shouldSendRedirect(), (
@@ -258,8 +260,34 @@ class OpenIDCallbackView(OpenIDLogin):
 
     def render(self):
         if self.openid_response.status == SUCCESS:
-            account = getUtility(IAccountSet).getByOpenIDIdentifier(
-                self.openid_response.identity_url.split('/')[-1])
+            identifier = self.openid_response.identity_url.split('/')[-1]
+            account_set = getUtility(IAccountSet)
+            try:
+                account = account_set.getByOpenIDIdentifier(identifier)
+            except LookupError:
+                # Here we assume the OP sent us the user's email address and
+                # full name in the response. Note we can only do that because
+                # we used a fixed OP (login.launchpad.net) that includes the
+                # user's email address in the response when asked to.  Once we
+                # start using other OPs we won't be able to make this
+                # assumption here as they might not include what we want in
+                # the response.
+                sreg_response = sreg.SRegResponse.fromSuccessResponse(
+                    self.openid_response)
+                assert sreg_response is not None, (
+                    "OP didn't include an sreg extension in the response.")
+                email_address = sreg_response.get('email')
+                full_name = sreg_response.get('fullname')
+                assert email_address is not None and full_name is not None, (
+                    "No email address or full name found in sreg response; "
+                    "can't create a new account for this identity URL.")
+                account, email = account_set.createAccountAndEmail(
+                    email_address,
+                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                    full_name,
+                    password=None,
+                    openid_identifier=identifier)
+
             if account.status == AccountStatus.SUSPENDED:
                 return self.suspended_account_template()
             if IPerson(account, None) is None:
