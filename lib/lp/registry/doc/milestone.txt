@@ -22,7 +22,7 @@ To retrieve all milestones, iterate over an IMilestoneSet object:
 To create a new Milestone, use the .newMilestone(name, dateexpected=None)
 method of a ProductSeries or DistroSeries:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
     >>> ff_onedotzero = upstream_firefox.getSeries('1.0')

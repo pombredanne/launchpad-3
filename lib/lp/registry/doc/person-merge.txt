@@ -49,7 +49,7 @@ put the person we will merge into some of those.
 Karma gets reassigned to the person we merge into. Let's assign karma to
 Marilize and save it for later comparison.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> marilize_karma = marilize.assignKarma('bugfixed', product=firefox)
     >>> saved_marilize_karma_id = marilize_karma.id

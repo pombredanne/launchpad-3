@@ -228,7 +228,7 @@ can ask for its dependencies, or the specs which it blocks. And you can ask
 for the full set of dependencies-and-their-dependencies, as well as the full
 set of specs-which-block-this-one-and-all-the-specs-that-block-them-too.
 
- >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
  >>> efourx = getUtility(IProductSet).getByName('firefox').getSpecification('e4x')
  >>> for spec in efourx.dependencies: print spec.name
  svg-support

@@ -241,7 +241,7 @@ as well as displaying the product name in the product widget. The
 distribution widget is set to 'ubuntu' because it is the default
 value when there is no distribution.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> widget = LaunchpadTargetWidget(
     ...     IFrontPageBugAddForm['bugtarget'], empty_request)
     >>> widget.setRenderedValue(getUtility(IProductSet).getByName('firefox'))

@@ -37,7 +37,7 @@ isn't a bug supervisor, so no bugs are found for him:
 
 Firefox has a few bugs:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_bugs = firefox.searchTasks(all_public)
     >>> firefox_public_bugs = firefox_bugs.count()
@@ -432,7 +432,7 @@ If No Privileges Person reports a bug and does not comment on it, that bug
 will not be included in the results returned by the bug commenter search.
 
     >>> from canonical.launchpad.interfaces import CreateBugParams
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.createBug(

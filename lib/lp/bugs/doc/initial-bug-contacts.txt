@@ -309,7 +309,7 @@ Like reassigning a bug task to another package, reassigning a bug task
 to another product will subscribe any new product bug supervisors to the
 bug that aren't already subscribed.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> mozilla_firefox = getUtility(IProductSet).get(4)
 

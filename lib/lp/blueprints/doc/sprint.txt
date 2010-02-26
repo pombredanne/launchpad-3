@@ -151,7 +151,7 @@ And if we ask just for specs, we get them all
 
 Inactive products are excluded from the listings.
 
- >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
  >>> from canonical.launchpad.ftests import login
  >>> firefox = getUtility(IProductSet).getByName('firefox')
  >>> login("foo.bar@canonical.com")

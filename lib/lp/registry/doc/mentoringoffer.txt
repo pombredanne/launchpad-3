@@ -71,7 +71,7 @@ Now, Bug #2 is associated with both Ubuntu and Debian
 It is also associated with the ubuntu *upstream* (this is a weirdness in the
 Launchpad sample data, we have an upstream product called Ubuntu).
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> productset = getUtility(IProductSet)
     >>> tomcat = productset.getByName('tomcat')
     >>> for offer in tomcat.mentoring_offers:

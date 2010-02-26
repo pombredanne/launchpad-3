@@ -159,7 +159,7 @@ Inactive products are excluded from the listings.
     >>> mozilla.specifications(filter=filter).count()
     5
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.active = False
     >>> flush_database_updates()

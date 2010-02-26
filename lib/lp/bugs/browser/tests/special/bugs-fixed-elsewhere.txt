@@ -33,7 +33,7 @@ asyncronously.
 
 Simply opening a bug elsewhere won't increase the count.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution != bugtarget
     True

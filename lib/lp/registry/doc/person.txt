@@ -1343,7 +1343,7 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")

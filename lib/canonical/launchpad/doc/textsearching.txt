@@ -627,7 +627,7 @@ considered a stop word by tsearch2). If the constraint uses any
 additional tables, you can pass in list of names of these tables as a
 forth parameter:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox_product = getUtility(IProductSet).getByName('firefox')
 
     >>> firefox_count = Question.select(

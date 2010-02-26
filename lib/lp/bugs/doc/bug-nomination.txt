@@ -39,7 +39,7 @@ was nominated and the user that submitted the nomination (the "owner".)
 
 Let's create another nomination, this time on a product series.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
 
