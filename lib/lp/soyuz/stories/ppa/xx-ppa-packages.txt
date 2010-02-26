@@ -198,17 +198,13 @@ the source into a public PPA to demonstrate this.
     >>> test_publisher.prepareBreezyAutotest()
     >>> source = test_publisher.getPubSource(
     ...     sourcename='foo', archive=private_ppa, distroseries=warty)
-    >>> from lp.soyuz.scripts.packagecopier import do_copy
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-    >>> [copied_source] = do_copy(
-    ...     [source], public_ppa, series=warty,
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     allow_delayed_copies=False)
+    >>> copied_source = source.copyTo(
+    ...     source.distroseries, source.pocket, public_ppa)
     >>> expander_link_id = "pub%s-expander" % copied_source.id
     >>> logout()
 
 
-We can view the link on the public PPA to the Celso's private PPA when logged
+We can view the link on the public PPA to Celso's private PPA when logged
 in as Celso.
 
     >>> cprov_browser = setupBrowser(
