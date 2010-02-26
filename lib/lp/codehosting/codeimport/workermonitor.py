@@ -302,6 +302,9 @@ class CodeImportWorkerMonitor:
                 if reason.value.exitCode == \
                        CodeImportWorkerExitCode.SUCCESS_NOCHANGE:
                     return CodeImportResultStatus.SUCCESS_NOCHANGE
+                elif reason.value.exitCode == \
+                       CodeImportWorkerExitCode.SUCCESS_PARTIAL:
+                    return CodeImportResultStatus.SUCCESS_PARTIAL
             return CodeImportResultStatus.FAILURE
         else:
             return CodeImportResultStatus.SUCCESS
