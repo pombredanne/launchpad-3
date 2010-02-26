@@ -112,7 +112,6 @@ Create a private PPA for Celso with some binaries.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     binaryname='privacy-test-bin',
     ...     archive=cprov_private_ppa_db)
-    >>> transaction.commit()
     >>> logout()
 
 Only Celso (or anyone who participates on the PPA owner team) has
