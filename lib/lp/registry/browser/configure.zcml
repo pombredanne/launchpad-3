@@ -1952,6 +1952,14 @@
         facet="overview"
         class="lp.registry.browser.sourcepackage.SourcePackageAssociationPortletView"
         template="../templates/sourcepackage-portlet-associations.pt"/>
+
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="zope.Public"
+        name="+upstream-connections"
+        facet="overview"
+        class="lp.registry.browser.sourcepackage.SourcePackageAssociationPortletView"
+        template="../templates/sourcepackage-upstream-connections.pt"/>
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
