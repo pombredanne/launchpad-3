@@ -93,18 +93,19 @@ edit page.
 We remember the 'last_update_date' in order to check if it was changed
 after updating the template.
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-  >>> from lp.translations.model.potemplate import POTemplateSubset
-  >>> from lp.registry.interfaces.product import IProductSet
-  >>> login('foo.bar@canonical.com')
-  >>> evolution = getUtility(IProductSet).getByName('evolution')
-  >>> evolution_trunk = evolution.getSeries('trunk')
-  >>> hoary_subset = POTemplateSubset(productseries=evolution_trunk)
-  >>> evolution_template = hoary_subset.getPOTemplateByName(
-  ...     'evolution-2.2')
-  >>> previous_date_last_updated = evolution_template.date_last_updated
-  >>> logout()
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.translations.model.potemplate import POTemplateSubset
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login('foo.bar@canonical.com')
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> hoary_subset = POTemplateSubset(productseries=evolution_trunk)
+    >>> evolution_template = hoary_subset.getPOTemplateByName(
+    ...     'evolution-2.2')
+    >>> previous_date_last_updated = evolution_template.date_last_updated
+    >>> logout()
 
 The visible fields can be changed and saved.
 

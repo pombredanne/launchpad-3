@@ -11,7 +11,7 @@ and the ones that failed with the error associated.
 
     >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.testing.faketransaction import FakeTransaction
     >>> from lp.testing.mail_helpers import pop_notifications, print_emails
     >>> from lp.translations.scripts.po_export_queue import ExportResult

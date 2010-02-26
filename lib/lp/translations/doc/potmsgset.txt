@@ -9,8 +9,10 @@ We need to get a POTMsgSet object to performe this test.
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
     >>> from lp.translations.interfaces.potmsgset import IPOTMsgSet
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IProductSet)
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> potemplate = factory.makePOTemplate()
     >>> potmsgset = factory.makePOTMsgSet(potemplate=potemplate, singular="bla")
@@ -629,8 +631,6 @@ External translation suggestions are current, imported or suggested
 translation for exactly the same English string, but in a different
 translation template.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet)
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 Suggestions between modules depend also on whether the other translation

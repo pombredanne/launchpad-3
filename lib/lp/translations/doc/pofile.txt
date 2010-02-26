@@ -6,8 +6,10 @@ Get evolution template for Ubuntu Hoary
     >>> import pytz
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILanguageSet, IPersonSet,
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.translations.interfaces.pofile import IPOFile
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -369,8 +371,9 @@ This method determines if someone is allowed to edit translations.
 
 Do some needed imports.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.translations.interfaces.translationgroup import (
     ...     ITranslationGroupSet, TranslationPermission)
     >>> from lp.translations.model.pofile import POFile

@@ -494,8 +494,10 @@ we do it directly in the database.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> login("carlos@canonical.com")
     >>> carlos = getUtility(IPersonSet).getByName('carlos')

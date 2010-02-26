@@ -11,7 +11,7 @@ Homepage
 
 The Rosetta homepage.
 
-    >>> from canonical.launchpad.interfaces import IRosettaApplication
+    >>> from lp.registry.interfaces.launchpad import IRosettaApplication
     >>> canonical_url(getUtility(IRosettaApplication))
     u'http://launchpad.dev/translations'
 
@@ -29,7 +29,7 @@ First, the distribution kind.  We'll need the source package name.
 
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distroset = getUtility(IDistributionSet)
@@ -81,7 +81,7 @@ product series.  Let's get a product series.
 Now we can get an upstream subset and do the same sorts of thing as we did
 with the distro subset.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> productset = getUtility(IProductSet)
     >>> evolution_product = productset['evolution']
     >>> evolution_trunk_series = evolution_product.getSeries('trunk')

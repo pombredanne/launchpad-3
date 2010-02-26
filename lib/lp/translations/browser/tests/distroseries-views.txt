@@ -4,7 +4,7 @@
 
 Let's use ubuntu/hoary for these tests.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distroseries import IDistributionSet
     >>> from lp.registry.interfaces.series import SeriesStatus
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
@@ -23,8 +23,10 @@ reveal its translations to the public or hide them from the public.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.translations.browser.distroseries import (
     ...     DistroSeriesView)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, ITeamMembershipSet, TeamMembershipStatus)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     ITeamMembershipSet, TeamMembershipStatus)
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     TranslationUnavailable)
 

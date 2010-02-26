@@ -85,8 +85,10 @@ admin or expert, but he is one of the owners of a translation group.
     >>> from zope.component import getUtility
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> # Log in so we can use utilities and the LaunchpadObjectFactory.
     >>> login('foo.bar@canonical.com')

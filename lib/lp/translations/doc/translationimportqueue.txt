@@ -25,9 +25,13 @@ Here we have some imports and utility fetch.
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistroSeries, ILaunchpadCelebrities,
-    ...     IProductSet, ISourcePackageNameSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distroserues import IDistroSeries
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from lp.registry.model.distroseries import DistroSeries
@@ -251,7 +255,6 @@ First, we are going to add three new sourcepackagenames for this test,
 kdebase, kde-i18n-es and kde-i18n-srlatn. The first is from where the .pot
 file come and the others have .po files.
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> kdebase = sourcepackagenameset.new('kdebase')
     >>> kde_i18n_es = sourcepackagenameset.new('kde-i18n-es')

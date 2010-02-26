@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import ZopelessDatabaseLayer
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)

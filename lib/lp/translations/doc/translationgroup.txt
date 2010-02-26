@@ -1,4 +1,5 @@
-= Translation Groups =
+Translation Groups
+==================
 
     >>> from zope.component import getUtility
 
@@ -11,16 +12,16 @@ Here are various sets of things that we'll need.
     ...     ITranslationGroupSet)
     >>> translation_group_set = getUtility(ITranslationGroupSet)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> product_set = getUtility(IProductSet)
 
     >>> from lp.translations.interfaces.translator import ITranslatorSet
     >>> translator_set = getUtility(ITranslatorSet)
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> language_set = getUtility(ILanguageSet)
 
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -63,12 +64,12 @@ Let's only allow translators from that group to translate.
 
 No Privileges Person isn't allowed to translate into Welsh.
 
-   >>> series = evolution.getSeries('trunk')
-   >>> subset = potemplate_set.getSubset(productseries=series)
-   >>> potemplate = subset['evolution-2.2']
-   >>> pofile = potemplate.newPOFile('cy')
-   >>> pofile.canEditTranslations(no_priv)
-   False
+    >>> series = evolution.getSeries('trunk')
+    >>> subset = potemplate_set.getSubset(productseries=series)
+    >>> potemplate = subset['evolution-2.2']
+    >>> pofile = potemplate.newPOFile('cy')
+    >>> pofile.canEditTranslations(no_priv)
+    False
 
 Let's add him to the group.
 
