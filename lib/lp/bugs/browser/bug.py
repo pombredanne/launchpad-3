@@ -229,7 +229,8 @@ class BugContextMenu(ContextMenu):
         text = 'Subscribe someone else'
         return Link(
             '+addsubscriber', text, icon='add', summary=(
-                'Launchpad will email that person whenever this bugs changes'))
+                'Launchpad will email that person whenever this bugs '
+                'changes'))
 
     def nominate(self):
         """Return the 'Target/Nominate for release' Link."""
@@ -976,11 +977,8 @@ class BugHeatView(LaunchpadView):
     def __call__(self):
         """Render the bug heat representation."""
         heat_ratio = floor((self.context.heat / MAX_HEAT) * 4)
-        html = '<span>'
-        for flame in range(1, 5):
-            if flame <= heat_ratio:
-                html += '<img src="/@@/flame-icon" />'
-            else:
-                html += '<img src="/@@/flame-bw-icon" />'
-        html += '</span>'
+        html = (
+            '<img src="/@@/bug-heat-%(ratio)i.png" '
+            'alt="%(ratio)i out of 4 heat flames"  title="Heat: %(heat)i" />'
+            % {'ratio': heat_ratio, 'heat': self.context.heat})
         return html
