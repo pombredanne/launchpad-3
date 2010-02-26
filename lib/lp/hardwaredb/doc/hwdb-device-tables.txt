@@ -482,7 +482,7 @@ like a hard disk controller that is soldered onto the main board.
 
 A new device record is created by IHWDeviceSet.create.
 
-    >>> from canonical.launchpad.interfaces import IHWDeviceSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDeviceSet
     >>> device_set = getUtility(IHWDeviceSet)
     >>> product_name='82801GBM/GHM (ICH7 Family) USB2 EHCI Controller'
     >>> usb_controller = device_set.create(bus=HWBus.PCI,
@@ -1038,7 +1038,7 @@ distribution, which we want to access in this test.
 We can limit the results to a specific driver. (See below for details about
 HWDriver.)
 
-    >>> from canonical.launchpad.interfaces import IHWDriverSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> ahci_driver = getUtility(IHWDriverSet).getByPackageAndName(
     ...     'linux-image-2.6.24-19-generic', 'ahci')
     >>> for submission in sata_controller.getSubmissions(
@@ -1131,7 +1131,7 @@ nevertheless want to look up devices by the vendor and product name
 they see in a store. HWDeviceNameVariant allows us to assign alternative
 vendor and product names to a device.
 
-    >>> from canonical.launchpad.interfaces import IHWDeviceNameVariantSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDeviceNameVariantSet
     >>> device_name_variant_set = getUtility(IHWDeviceNameVariantSet)
     >>> variant = device_name_variant_set.create(device=optic_pro_ut16,
     ...                                          vendor_name='Medion',
@@ -1178,7 +1178,7 @@ HWDeviceDriverLink (see below).
 The driver is not in every case a kernel driver, it may also be for
 example a Ghostscript driver of a printer or a Sane scanner backend.
 
-    >>> from canonical.launchpad.interfaces import IHWDriverSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> from lp.registry.interfaces.product import License
     >>> driver_set = getUtility(IHWDriverSet)
     >>> usb_driver = driver_set.create(package_name='linux-image-generic',
@@ -1502,7 +1502,7 @@ is not included.
 
 This table links devices and drivers.
 
-    >>> from canonical.launchpad.interfaces import IHWDeviceDriverLinkSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWDeviceDriverLinkSet
     >>> device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
     >>> usb_controller_usb_link = device_driver_link_set.create(
     ...     device=usb_controller, driver=usb_driver)
