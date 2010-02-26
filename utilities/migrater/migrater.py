@@ -34,7 +34,15 @@ TLA_MAP = dict(
     tes='testing',
     tra='translations',
     pkg='registry',
-    hdb='hardwaredb'
+    hdb='hardwaredb',
+    aut='services/authentication',
+    oau='services/oauth',
+    geo='services/geoip',
+    gpg='services/gpg',
+    sts='services/statistics',
+    loo='services/looptunner',
+    stm='services/storm',
+    web='services/webapp',
     )
 
 RENAME_MAP = dict(
@@ -158,9 +166,10 @@ def make_tree(app):
         else:
             # Touch an empty __init__.py to make the thing a package.
             init_file = os.path.join(d, '__init__.py')
-            fd = os.open(init_file, FLAGS, 0666)
-            os.close(fd)
-            bzr_add(init_file)
+            if not os.path.exists(init_file):
+                fd = os.open(init_file, FLAGS, 0666)
+                os.close(fd)
+                bzr_add(init_file)
     # Add the whole directory.
     bzr_add(tld)
 
