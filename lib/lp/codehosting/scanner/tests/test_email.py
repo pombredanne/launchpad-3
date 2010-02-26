@@ -19,9 +19,6 @@ from lp.code.interfaces.branchjob import (
     IRevisionMailJobSource, IRevisionsAddedJobSource)
 from lp.code.model.branchjob import (RevisionMailJob)
 from lp.codehosting.scanner import events
-from lp.codehosting.scanner.email import (
-    send_removed_revision_emails)
-from lp.codehosting.scanner.fixture import make_zope_event_fixture
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
@@ -34,10 +31,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(
-            send_removed_revision_emails)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
     def makeDatabaseBranch(self):
@@ -160,6 +153,19 @@ class TestScanBranches(TestCaseWithFactory):
         notify(events.TipChanged(db_branch, tree.branch, True))
         self.assertEqual(1, len(list(RevisionMailJob.iterReady())))
 
+    def test_send_removed_revision_emails_subscribed(self):
+        """send_removed_revision_emails run when RevisionsRemoved emitted."""
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree()
+        db_branch.subscribe(
+            db_branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL)
+        self.assertEqual(0, len(list(RevisionMailJob.iterReady())))
+        notify(events.RevisionsRemoved(db_branch, tree.branch, ['x']))
+        self.assertEqual(1, len(list(RevisionMailJob.iterReady())))
+
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):
     """Tests BzrSync support for not generating branch email notifications
@@ -168,10 +174,6 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(
-            send_removed_revision_emails)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
     def assertNoPendingEmails(self):

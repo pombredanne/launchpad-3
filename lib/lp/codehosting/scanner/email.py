@@ -26,8 +26,7 @@ def subscribers_want_notification(db_branch):
     return subscriptions.count() > 0
 
 
-@adapter(events.RevisionsRemoved)
-def send_removed_revision_emails(revisions_removed):
+def send_removed_revision_emails(object, revisions_removed):
     """Notify subscribers of removed revisions.
 
     When the history is shortened, we send an email that says this.

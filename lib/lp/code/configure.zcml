@@ -533,6 +533,10 @@
       for="lp.code.interfaces.branch.IBranch
            lp.codehosting.scanner.events.ITipChanged"
       handler="lp.codehosting.scanner.email.queue_tip_changed_email_jobs"/>
+  <subscriber
+      for="lp.code.interfaces.branch.IBranch
+           lp.codehosting.scanner.events.IRevisionsRemoved"
+      handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
 
   <!-- Temporarily disabling queues
        <browser:page

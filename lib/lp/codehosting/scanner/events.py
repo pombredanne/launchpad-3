@@ -81,8 +81,14 @@ class TipChanged(ScannerEvent):
         return self.bzr_branch.last_revision()
 
 
+class IRevisionsRemoved(IObjectEvent):
+    """Revisions have been removed from the branch."""
+
+
 class RevisionsRemoved(ScannerEvent):
     """Revisions have been removed from the branch."""
+
+    implements(IRevisionsRemoved)
 
     def __init__(self, db_branch, bzr_branch, removed_history):
         """Construct a `RevisionsRemoved` event.
