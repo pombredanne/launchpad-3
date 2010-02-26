@@ -1090,6 +1090,9 @@ class IArchiveEdit(Interface):
     def disable():
         """Disable the archive."""
 
+    arm_builds_allowed = Bool(
+        title=_("Builds on ARM are allowed for this archive."))
+
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
     """Main Archive interface."""

@@ -19,8 +19,10 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -557,6 +559,57 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             self.archive, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+
+
+class TestARMBuildsAllowed(TestCaseWithFactory):
+    """Ensure that ARM builds can be allowed and disallowed correctly."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestARMBuildsAllowed, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+        self.archive = self.factory.makeArchive()
+        self.archive_arch_set = getUtility(IArchiveArchSet)
+        self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+
+    def test_default(self):
+        """By default, ARM builds are not allowed."""
+        self.assertEquals(0, 
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+    def test_get_uses_archivearch(self):
+        """Adding an entry to ArchiveArch for ARM and an archive will 
+        enable arm_builds_allowed for that archive."""
+        self.assertFalse(self.archive.arm_builds_allowed)
+        self.archive_arch_set.new(self.archive, self.arm)
+        self.assertTrue(self.archive.arm_builds_allowed)
+
+    def test_get_uses_arm_only(self):
+        """Adding an entry to ArchiveArch for something other than ARM 
+        does not enable arm_builds_allowed for that archive."""
+        self.assertFalse(self.archive.arm_builds_allowed)
+        self.archive_arch_set.new(self.archive, 
+            getUtility(IProcessorFamilySet).getByName('amd64'))
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+    def test_set(self):
+        """The property remembers its value correctly and sets ArchiveArch."""
+        self.archive.arm_builds_allowed = True
+        allowed_restricted_families = self.archive_arch_set.getByArchive(
+            self.archive, self.arm)
+        self.assertEquals(1, allowed_restricted_families.count())
+        self.assertEquals(self.arm,
+            allowed_restricted_families[0].processorfamily)
+        self.assertTrue(self.archive.arm_builds_allowed)
+        self.archive.arm_builds_allowed = False
+        self.assertEquals(0, 
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertFalse(self.archive.arm_builds_allowed)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
