@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from __future__ import with_statement
 
 """Stuff to do with logging in and logging out."""
 
@@ -34,6 +35,7 @@ from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.registry.interfaces.person import IPerson, PersonCreationRationale
 from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, ILaunchpadApplication, ILaunchpadPrincipal,
@@ -290,7 +292,15 @@ class OpenIDCallbackView(OpenIDLogin):
 
             if account.status == AccountStatus.SUSPENDED:
                 return self.suspended_account_template()
-            if IPerson(account, None) is None:
+            # XXX: salgado, 2010-02-15, bug=527921: Force the use of the
+            # master database to make sure a lagged slave doesn't fool us into
+            # creating a Person when one already exists. This was done without
+            # proof that it will fix the bug, but if it works we may decide to
+            # move it to lp.registry.model.person.person_from_account() or
+            # just catch the error raised by createPerson() and move on.
+            with MasterDatabasePolicy():
+                person = IPerson(account, None)
+            if person is None:
                 removeSecurityProxy(account).createPerson(
                     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
             self.login(account)

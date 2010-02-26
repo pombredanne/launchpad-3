@@ -1104,13 +1104,10 @@ def bugtask_heat_html(bugtask):
     if max_bug_heat is None:
         max_bug_heat = 5000
     heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
-    html = '<span>'
-    for flame in range(1, 5):
-        if flame <= heat_ratio:
-            html += '<img src="/@@/flame-icon" />'
-        else:
-            html += '<img src="/@@/flame-bw-icon" />'
-    html += '</span>'
+    html = (
+        '<img src="/@@/bug-heat-%(ratio)i.png" '
+        'alt="%(ratio)i out of 4 heat flames"  title="Heat: %(heat)i" />'
+        % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
     return html
 
 
