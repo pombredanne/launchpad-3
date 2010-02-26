@@ -508,14 +508,15 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             "in listings of bugs or on a person's membership table."))
     iconID = Int(title=_('Icon ID'), required=True, readonly=True)
 
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/person-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to you. Traditionally this "
-            "is a logo, a small picture or a personal mascot. It should be "
-            "no bigger than 50kb in size."))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/person-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to you. Traditionally this "
+                "is a logo, a small picture or a personal mascot. It should be "
+                "no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
 
     mugshot = exported(MugshotImageUpload(
