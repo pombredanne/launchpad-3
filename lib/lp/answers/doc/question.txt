@@ -78,7 +78,7 @@ attribute on the IProduct and IDistribution.
 
 Questions are manipulated through the IQuestion interface:
 
-    >>> from canonical.launchpad.interfaces import IQuestion
+    >>> from lp.answers.interfaces.question import IQuestion
     >>> from zope.security.proxy import removeSecurityProxy
 
     # The complete interface is not necessarily available to the

@@ -111,7 +111,7 @@ lib/canonical/launchpad/interfaces/ftests/faqcollection.txt)
 
 FAQ document provides the IFAQ interface.
 
-    >>> from canonical.launchpad.interfaces import IFAQ
+    >>> from lp.answers.interfaces.faq import IFAQ
     >>> verifyObject(IFAQ, firefox_faq)
     True
 
@@ -199,7 +199,7 @@ But if we make him an answer contact, he will:
 There is a global utility registered under the IFAQSet interface that
 can be used to retrieve all FAQs posted on Launchpad.
 
-    >>> from canonical.launchpad.interfaces import IFAQSet
+    >>> from lp.answers.interfaces.faq import IFAQSet
     >>> faqset = getUtility(IFAQSet)
     >>> verifyObject(IFAQSet, faqset)
     True

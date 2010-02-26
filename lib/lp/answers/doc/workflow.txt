@@ -96,7 +96,7 @@ It returns the IQuestionMessage that was added to the question messages
 history:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IQuestionMessage
+    >>> from lp.answers.interfaces.questionmessage import IQuestionMessage
     >>> verifyObject(IQuestionMessage, request_message)
     True
     >>> request_message == question.messages[-1]
@@ -594,7 +594,7 @@ the message they create and a ObjectModifiedEvent for the question.
     # Register an event listener that will print event it receives.
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from canonical.launchpad.interfaces import IQuestion
+    >>> from lp.answers.interfaces.question import IQuestion
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> def print_event(object, event):
     ...     print "Received %s on %s" % (
@@ -637,7 +637,7 @@ is reopened, a QuestionReopening is created.
 
     # Let's register an event listener to notify us whenever a
     # QuestionReopening is created.
-    >>> from canonical.launchpad.interfaces import IQuestionReopening
+    >>> from lp.answers.interfaces.questionreopening import IQuestionReopening
     >>> reopening_event_listener = TestEventListener(
     ...     IQuestionReopening, IObjectCreatedEvent, print_event)
 

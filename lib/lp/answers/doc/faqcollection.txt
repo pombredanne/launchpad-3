@@ -11,7 +11,7 @@ name space. That way we can verify that multiple implementation provide
 the interface correctly.)
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IFAQCollection
+    >>> from lp.answers.interfaces.faqcollection import IFAQCollection
 
     >>> verifyObject(IFAQCollection, collection)
     True

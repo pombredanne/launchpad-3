@@ -4,7 +4,7 @@ There is an IQuestionSet utility that can be use to retrieve and search
 for question whatever the target they were created in.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> question_set = getUtility(IQuestionSet)
     >>> verifyObject(IQuestionSet, question_set)
     True
@@ -249,7 +249,6 @@ It returns the number of open questions for each given package.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(closed_question)
 
-    >>> from operator import itemgetter
     >>> packages = [
     ...     ubuntu_evolution, ubuntu_pmount, debian_evolution, debian_pmount]
     >>> package_counts = question_set.getOpenQuestionCountByPackages(packages)

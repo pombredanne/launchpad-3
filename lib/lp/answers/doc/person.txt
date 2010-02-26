@@ -212,7 +212,7 @@ person is involved.
 This includes questions which the person owns. But also, questions that
 the user subscribed to.
 
-    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> pt_BR_question = getUtility(IQuestionSet).get(13)
     >>> login('foo.bar@canonical.com')
     >>> pt_BR_question.subscribe(foo_bar_raw)

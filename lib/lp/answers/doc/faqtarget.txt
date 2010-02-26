@@ -8,7 +8,7 @@ Projects that can host a FAQ provides the IFAQTarget.
 
     >>> from zope.interface.verify import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import IFAQTarget
+    >>> from lp.answers.interfaces.faqtarget import IFAQTarget
 
     # removeSecurityProxy() is needed because some attributes are
     # protected.
@@ -62,7 +62,7 @@ or one of its answer contacts is authorized to create a new FAQ.
 
 The returned object provides the IFAQ interface:
 
-    >>> from canonical.launchpad.interfaces import IFAQ
+    >>> from lp.answers.interfaces.faq import IFAQ
     >>> verifyObject(IFAQ, faq)
     True
 

@@ -681,7 +681,7 @@ Projects
 Questions
 .........
 
-    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> question = getUtility(IQuestionSet).get(1)
     >>> test_tales("question/fmt:link", question=question)
     u'<a... class="sprite question">1:...</a>'

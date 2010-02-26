@@ -121,7 +121,7 @@ possibilities for the user.
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
     # We need to refetch the question, since a new transaction was started.
-    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
     >>> question = getUtility(IQuestionSet).get(question_id)
 
     # Define an helper to change the question status easily.
