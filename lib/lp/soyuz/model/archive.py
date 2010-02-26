@@ -185,6 +185,7 @@ class Archive(SQLBase):
         dbName='external_dependencies', notNull=False, default=None)
 
     def _get_arm_builds_enabled(self):
+        """Check whether ARM builds are allowed for this archive."""
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
         arm = getUtility(IProcessorFamilySet).getByName('arm')
@@ -196,6 +197,7 @@ class Archive(SQLBase):
         return False
 
     def _set_arm_builds_enabled(self, value):
+        """Set whether ARM builds are enabled for this archive."""
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedfamilies(self)
         arm = getUtility(IProcessorFamilySet).getByName('arm')
@@ -203,13 +205,15 @@ class Archive(SQLBase):
             if family == arm:
                 if value:
                     if archive_arch is not None:
-                        # A link is required but it is present
+                        # ARM builds are already enabled
                         return
                     else:
                         archive_arch_set.new(self, family)
-                elif archive_arch is not None:
-                    Store.of(self).remove(archive_arch)
-
+                else:
+                    if archive_arch is not None:
+                        Store.of(self).remove(archive_arch)
+                    else:
+                        pass # ARM builds are already disabled
     arm_builds_allowed = property(_get_arm_builds_enabled,
         _set_arm_builds_enabled)
 

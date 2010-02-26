@@ -887,6 +887,11 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.addFakeChroots(self.distroseries)
 
     def getPubSource(self, architecturehintlist):
+        """Return a mock source package publishing record for the archive 
+        and architecture used in this testcase.
+
+        :param architecturehintlist: Architecture hint list (e.g. "i386 amd64")
+        """
         return super(BuildRecordCreationTests, self).getPubSource(
             archive=self.archive, distroseries=self.distroseries,
             architecturehintlist=architecturehintlist)
