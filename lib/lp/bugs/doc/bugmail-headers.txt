@@ -15,7 +15,7 @@ BugTask -> Email Header Value
 You can ask an IBugTask for its representation as an email header value:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> upstream_firefox_bugtask = bugtaskset.get(2)

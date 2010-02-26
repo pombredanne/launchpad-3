@@ -1405,7 +1405,7 @@ contributor.
 
 We assign a bug task to Celso.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> search_params = BugTaskSearchParams(user=foobar)
     >>> search_params.setProduct(firefox)
     >>> firefox_bugtask = getUtility(IBugTaskSet).search(search_params)[0]

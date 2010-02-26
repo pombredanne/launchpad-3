@@ -240,7 +240,7 @@ When a distribution bug nomination is approved, a task is created for
 each package the bug affects in that distro. For example, let's ensure
 bug #1 affects more than one Ubuntu package.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> ubuntu_tbird = ubuntu.getSourcePackage("thunderbird")
 

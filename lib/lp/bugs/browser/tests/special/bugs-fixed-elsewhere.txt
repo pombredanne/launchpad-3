@@ -40,7 +40,7 @@ Simply opening a bug elsewhere won't increase the count.
 
     >>> bug = filebug(bugtarget, 'Example Bug')
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> elsewhere = getUtility(IBugTaskSet).createTask(
     ...     bug, owner=getUtility(ILaunchBag).user, product=evolution)
     >>> view.bugs_fixed_elsewhere_count

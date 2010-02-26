@@ -48,7 +48,7 @@ the XML-RPC interface.
 
     >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> def on_created_event(obj, event):
     ...     print "ObjectCreatedEvent: %r" % obj
@@ -72,7 +72,7 @@ return value.)
     http://bugs.launchpad.dev/bugs/...
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(get_bug_id_from_url(bug_url))

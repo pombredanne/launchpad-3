@@ -11,7 +11,7 @@ an event listener to demonstrate this.
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> def on_created_event(object, event):
     ...     print "ObjectCreatedEvent: %r" % object
     >>> on_created_listener = TestEventListener(
@@ -664,7 +664,7 @@ imported comments.
 
     >>> from zope.component import getUtility
     >>> from lp.bugs.browser.bugtask import BugTaskView
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.webapp.servers import (
     ...     LaunchpadTestRequest)
     >>> bug = getUtility(IBugSet).get(15)

@@ -136,7 +136,7 @@ a PrivateRemoteBug error.
 First, we create some bug watches to test with. Example.com hosts a
 SourceForge instance which has several bugs that we wish to watch:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.

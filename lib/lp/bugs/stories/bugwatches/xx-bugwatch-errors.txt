@@ -8,7 +8,7 @@ no existing bug watches.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> bug12 = getUtility(IBugSet).get(12)
     >>> bug12.watches.count() == 0

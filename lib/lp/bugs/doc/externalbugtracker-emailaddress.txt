@@ -69,7 +69,7 @@ fashion. For email addresses, we record the message ID of the mail sent
 to the remote email address, if it is known. The presence of a bug watch
 means that a message has been sent to the upstream tracker.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> example_bug = getUtility(IBugSet).get(15)
 
 If the message ID of the email sent to the remote tracker is not known,

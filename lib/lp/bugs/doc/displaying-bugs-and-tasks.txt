@@ -62,7 +62,7 @@ Let's use a few examples to demonstrate:
 The logo for a bug task display the corresponding logo for its
 target.
 
-  >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
   >>> bug1 = getUtility(IBugSet).get(1)
   >>> upstream_task = bug1.bugtasks[0]
   >>> print upstream_task.product.name

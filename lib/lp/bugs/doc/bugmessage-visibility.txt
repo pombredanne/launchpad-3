@@ -7,7 +7,7 @@ A bug message has a visible field, which is True by default.
 
     # Setup for creating a new message
     >>> from canonical.launchpad.interfaces import IBugMessageSet
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> bugmessageset = getUtility(IBugMessageSet)

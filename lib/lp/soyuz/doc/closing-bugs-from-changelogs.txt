@@ -92,7 +92,7 @@ been published. Passing a queue item with a Launchpad-bugs-fixed header
 will close the specified bug.
 
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> def print_single_task_status(bug_id):
     ...     bug = getUtility(IBugSet).get(bug_id)

@@ -396,7 +396,7 @@ product itself are included in the vocabulary.
 If the context is a bugtask, only the bugtask's target's milestones are
 in the vocabulary.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> firefox_task = bug_one.bugtasks[0]
     >>> firefox_task.bugtargetdisplayname

@@ -137,7 +137,7 @@ For example, no Firefox bugs are found when searching for
 If we add a comment containing the search string to bug one, that bug
 will be returned by the search only if search_comments is True.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.newMessage(no_priv, 'No subject', 'some wordincomment')
     <Message at ...>

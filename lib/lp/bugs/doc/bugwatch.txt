@@ -102,7 +102,7 @@ If we have a bug, we can query for a bug watch associated with that
 bug. This method is useful for preventing duplicate bug watches from
 being added.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> mozilla_watch = bug_one.getBugWatch(mozilla_bugtracker, '2000')
     >>> mozilla_watch in bug_one.watches
@@ -261,7 +261,7 @@ we can confirm that an event is indeed fired off.
     ...         print "%s => %s" % (old_bugtask.importance.title,
     ...             bugtask.importance.title)
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.interfaces import IBugTask
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> event_listener = TestEventListener(
     ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified)

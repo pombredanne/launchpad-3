@@ -25,7 +25,7 @@ You can get all the imported comments for a bug using
 getImportedBugMessages. Imported comments are comments being linked to a
 bug watch.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_15 = getUtility(IBugSet).get(15)
     >>> bug_15.messages.count()
     7

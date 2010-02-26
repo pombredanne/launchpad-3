@@ -7,7 +7,7 @@ distribution. Let's start with a product, this is done using
 affects and creates the new bugtask.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> len(bug_four.bugtasks)
     1

@@ -76,7 +76,7 @@ bug got submitted correctly:
 
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import sync
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
     >>> from canonical.launchpad.database import BugNotification

@@ -22,7 +22,7 @@ If we add an attachment to the bug report...
     >>> import StringIO
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login("test@canonical.com")
     >>> bug_11 =  getUtility(IBugSet).get(11)
     >>> attachment = bug_11.addAttachment(

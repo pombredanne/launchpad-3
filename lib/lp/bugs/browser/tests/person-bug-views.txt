@@ -465,7 +465,7 @@ that bug as being one of the bugs on which he has commented. The bug will be
 listed three times since there are three BugTasks for that particular bug (see
 bug 1357):
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.newMessage(no_priv, 'Some message', 'Contents')
     <Message at ...>

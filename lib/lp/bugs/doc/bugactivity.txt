@@ -48,7 +48,7 @@ are simple little functions.
 
 == Bug title edited ==
 
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> old_state = Snapshot(bug, providing=IBug)
     >>> bug.title = "new bug title"
     >>> bug_edited = ObjectModifiedEvent(

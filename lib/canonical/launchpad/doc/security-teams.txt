@@ -151,7 +151,7 @@ security contact of the new product to be subscribed.
 
 We'll set lifeless as the security_contact for evolution.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
 (Make the bug public to ensure the security contact will get
 subscribed.)
@@ -252,7 +252,7 @@ stub will be added to the subscriber list:
 When a bug becomes security-related, the security contacts for the pillars it
 affects are subscribed to it.
 
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot

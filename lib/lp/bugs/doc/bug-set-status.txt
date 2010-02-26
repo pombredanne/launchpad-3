@@ -28,7 +28,7 @@ changing the status, the target, and the new status.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -88,7 +88,7 @@ product, not the product series, the product bugtask is edited.
 If the bug is targeted to the product series, the product series bugtask
 is edited.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug = getUtility(IBugSet).get(bug_id)

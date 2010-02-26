@@ -24,7 +24,7 @@ subscriber), mark, the distro bug supervisor, ubuntu-team, and carlos
 and foobar, who are subscribed to the distribution.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
 
     >>> def subscriber_names(bug):

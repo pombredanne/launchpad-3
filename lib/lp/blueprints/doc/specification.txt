@@ -104,7 +104,7 @@ When we modify a specification, we can get a delta of the changes using
 ISpecification.getDelta(). If there are no changes, None will be
 returned:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from zope.interface import providedBy
     >>> unmodified_spec = Snapshot(ubuspec, providing=providedBy(ubuspec))

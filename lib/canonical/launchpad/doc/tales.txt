@@ -84,7 +84,7 @@ We also have image:icon for KarmaCategory:
 
 We also have an icon for bugs.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug = getUtility(IBugSet).get(1)
     >>> print test_tales("bug/image:sprite_css", bug=bug)
     sprite bug

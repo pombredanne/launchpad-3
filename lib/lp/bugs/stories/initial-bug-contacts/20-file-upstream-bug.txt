@@ -20,7 +20,7 @@ supervisor), Landscape Developers (another former bug supervisor) and
 Robert Collins (the current bug supervisor) are subscribed to this bug:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
 
     >>> def subscriber_names(bug):

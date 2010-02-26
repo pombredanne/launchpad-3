@@ -10,7 +10,7 @@ Let's start simple and edit the status of a bug task logged in as Sample
 Person:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> login('test@canonical.com')
     >>> bug_nine = getUtility(IBugSet).get(9)
@@ -256,7 +256,7 @@ set to their default values:
     >>> thunderbird_task.bugwatch is None
     True
 
-    >>> from canonical.launchpad.interfaces import IBugTask
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> thunderbird_task.status == IBugTask['status'].default
     True
     >>> thunderbird_task.importance == IBugTask['importance'].default
@@ -271,7 +271,7 @@ permission, the edit page renders an input widget, otherwise it renders
 a display widget.
 
     >>> from zope.app.form.interfaces import IInputWidget
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
 The distribution owner gets an edit widget for the distribution task.
 

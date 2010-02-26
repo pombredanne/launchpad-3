@@ -31,7 +31,7 @@ Let's reopen it and close it again, to ensure that the date closed isn't
 in the future.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> bug_eight = getUtility(IBugSet).get(8)
     >>> len(bug_eight.bugtasks)

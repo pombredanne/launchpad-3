@@ -86,7 +86,7 @@ To demonstrate, let's change the source package for bug #1 in
 mozilla-firefox in Ubuntu to be pmount in Ubuntu, and see how the
 subscribers list changes.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
 

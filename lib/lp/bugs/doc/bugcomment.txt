@@ -5,7 +5,7 @@ abstracts a single bug comment, has an index, and can be rendered
 independently.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 

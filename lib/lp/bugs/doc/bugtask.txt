@@ -15,7 +15,7 @@ All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
     >>> from zope.component import getUtility
     >>> import transaction
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> bugtaskset = getUtility(IBugTaskSet)
 
 To create a bug task, you have to be logged in:
@@ -824,7 +824,7 @@ going to subscribe the Ubuntu team to the bug report to help demonstrate
 later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> from lazr.lifecycle.snapshot import Snapshot
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
@@ -1053,7 +1053,7 @@ Let's just make sure that the tasks on bug_one sort correctly.
 
 An IBugTask can be adapted to an IBug.
 
-   >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
 
    >>> bugtask_four = bugtaskset.get(4)
    >>> bug = IBug(bugtask_four)
