@@ -1251,7 +1251,7 @@ If a mentoring offer gets made...
 
 ..., a specification gets linked...
 
-    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> from lp.blueprints.interfaces.specification import ISpecificationSet
     >>> spec = getUtility(ISpecificationSet).all_specifications[0]
     >>> spec.linkBug(bug_two)
     <SpecificationBug at ...>

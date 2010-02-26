@@ -129,7 +129,7 @@ spec, and mails it to the related people.
 
     >>> log._log.setLevel(OLD_LOG_LEVEL)
 
-    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> from lp.blueprints.interfaces.specification import ISpecificationSet
     >>> spec = getUtility(ISpecificationSet).getByURL(
     ...     'https://wiki.ubuntu.com/MediaIntegrityCheck')
     >>> spec.notificationRecipientAddresses()

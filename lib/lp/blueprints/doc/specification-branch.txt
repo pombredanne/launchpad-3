@@ -1,7 +1,8 @@
 = Specification Branch Links =
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ISpecificationBranch
+    >>> from lp.blueprints.interfaces.specificationbranch import (
+    ...     ISpecificationBranch)
     >>> from lp.blueprints.model.specification import SpecificationBranch
     >>> verifyObject(ISpecificationBranch, SpecificationBranch.get(1))
     True
