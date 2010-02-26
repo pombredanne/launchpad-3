@@ -5,20 +5,20 @@ for IDistroSeries context (IDistroSeriesView)
 
 Let's instantiate the view for +queue for anonymous access:
 
-  >>> from zope.component import queryMultiAdapter
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.database import LibraryFileAlias
-  >>> fake_chroot = LibraryFileAlias.get(1)
+    >>> from zope.component import queryMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> fake_chroot = LibraryFileAlias.get(1)
 
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> breezy_autotest = ubuntu['breezy-autotest']
-  >>> breezy_autotest_i386 = breezy_autotest['i386']
-  >>> unused = breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> breezy_autotest = ubuntu['breezy-autotest']
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+    >>> unused = breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
 
-  >>> request = LaunchpadTestRequest()
-  >>> queue_view = queryMultiAdapter(
-  ...     (breezy_autotest, request), name="+queue")
+    >>> request = LaunchpadTestRequest()
+    >>> queue_view = queryMultiAdapter(
+    ...     (breezy_autotest, request), name="+queue")
 
 View parameters need to be set properly before start:
 
@@ -46,7 +46,7 @@ A list of available actions in this queue:
 
 Let's instantiate the view for a specific queue:
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.interfaces.packageupload import PackageUploadStatus
   >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.DONE.value})
   >>> warty = ubuntu['warty']
@@ -128,7 +128,7 @@ It accepts the 'Accept'/'Reject' and 'QUEUE_ID' arguments via POST.
 
 Accepting an item from NEW queue.
 
-  >>> from canonical.launchpad.interfaces import IPackageUploadSet
+  >>> from lp.soyuz.interfaces.packageupload import IPackageUploadSet
   >>> getUtility(IPackageUploadSet).get(1).status.name
   'NEW'
   >>> getUtility(IPackageUploadSet).get(3).status.name
@@ -232,7 +232,8 @@ for a package "foo" and uploading a new build that has "foo" and
     ...     SoyuzTestPublisher)
     >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
     >>> stp = SoyuzTestPublisher()
     >>> hoary = ubuntu['hoary']
     >>> stp.prepareBreezyAutotest()
@@ -248,7 +249,7 @@ for a package "foo" and uploading a new build that has "foo" and
 Now that "foo" is published in Hoary, we can upload a new build.
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.model.component import ComponentSelection
     >>> from lp.archiveuploader.tests import (
     ...     datadir, getPolicy, mock_logger_quiet)
