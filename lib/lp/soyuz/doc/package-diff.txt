@@ -44,7 +44,7 @@ Its main attributes are:
  * 'requester', which maps to a `IPerson`, the user who made the diff
    request.
 
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> verifyObject(IPerson, package_diff.requester)
     True
 

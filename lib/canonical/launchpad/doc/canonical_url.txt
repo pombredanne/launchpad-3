@@ -477,7 +477,7 @@ The `nearest(obj, *interfaces)` function returns the nearest object up the
 canonical url chain that provides at least one of the interfaces given.
 
     >>> from canonical.launchpad.webapp import nearest
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> nearest(town_instance, IPerson) is None
     True
     >>> nearest(town_instance, ITown) is town_instance
