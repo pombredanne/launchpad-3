@@ -53,6 +53,7 @@ from canonical.config import config
 from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.layers import WebServiceLayer
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
     IRosettaApplication, IStructuralHeaderPresentation,
@@ -62,31 +63,46 @@ from canonical.launchpad.interfaces.launchpadstatistic import (
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
+from canonical.launchpad.webapp import (
+    LaunchpadFormView, LaunchpadView, Link, Navigation,
+    StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
+    stepto)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import (
+    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    NotFoundError, POSTToNonCanonicalURL)
+from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
+from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.widgets.project import ProjectScopeWidget
+
+from lazr.uri import URI
 
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import InvalidNamespace
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.linkedbranch import (
     CannotHaveLinkedBranch, NoLinkedBranch)
-from lp.bugs.interfaces.bug import IBugSet
-from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
-from canonical.launchpad.interfaces.account import AccountStatus
-from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProductSet)
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
@@ -98,22 +114,6 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
-
-from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
-    stepto)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
-    NotFoundError, POSTToNonCanonicalURL)
-from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.authorization import check_permission
-from lazr.uri import URI
-from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.widgets.project import ProjectScopeWidget
 
 
 # XXX SteveAlexander 2005-09-22: this is imported here because there is no
