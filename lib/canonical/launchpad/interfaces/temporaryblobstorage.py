@@ -44,7 +44,10 @@ class ITemporaryBlobStorage(Interface):
     date_created = Datetime(title=_('Date created'),
         required=True, readonly=True)
     file_alias = Attribute("Link to actual storage of blob")
-    has_been_processed = Attribute("Whether the blob has been processed.")
+
+    @export_read_operation()
+    def hasBeenProcessed():
+        """Return True if this blob has been processed."""
 
 
 class ITemporaryStorageManager(Interface):

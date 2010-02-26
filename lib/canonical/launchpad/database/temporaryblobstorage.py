@@ -61,8 +61,7 @@ class TemporaryBlobStorage(SQLBase):
         finally:
             self.file_alias.close()
 
-    @property
-    def has_been_processed(self):
+    def hasBeenProcessed(self):
         """See `ITemporaryBlobStorage`."""
         # Imported here to avoid circular imports
         from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource

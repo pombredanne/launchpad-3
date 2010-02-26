@@ -49,11 +49,12 @@ that can be used whilst filing a bug (or in any other operation,
 ostensibly) can be extracted from the blob without affecting the
 processing time of web requests.
 
-It's possible to see whether a blob has been processed by checking its
-has_been_processed attribute. In the case of the blob we created above,
-it hasn't been processed because no job was created to process it.
+It's possible to see whether a blob has been processed by calling its
+hasBeenProcessed() method. In the case of the blob we created above, it
+hasn't been processed because no job was created to process it.
 
-    >>> print blob['has_been_processed']
+    >>> print webservice.named_get(
+    ...     blob['self_link'], 'hasBeenProcessed').jsonBody()
     False
 
 Once the blob has been processed, its has_been_processed attribute will
@@ -67,6 +68,6 @@ be True.
     >>> job.job.complete()
     >>> logout()
 
-    >>> blob = webservice.get(blob_link).jsonBody()
-    >>> print blob['has_been_processed']
+    >>> print webservice.named_get(
+    ...     blob['self_link'], 'hasBeenProcessed').jsonBody()
     True
