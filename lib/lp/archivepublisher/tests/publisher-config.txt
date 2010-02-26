@@ -200,3 +200,32 @@ modified to be clearly different than the PRIMARY one.
     hoary-test:
       Architectures: amd64, i386
       Components: main, multiverse, restricted, universe
+
+
+== COPY ==
+
+In the case of copy archives (used for rebuild testing) the archiveroot
+is of the form distroroot/distroname-archivename/distroname
+
+    >>> copy_archive = getUtility(IArchiveSet).new(
+    ...     purpose=ArchivePurpose.COPY, owner=ubuntutest.owner,
+    ...     distribution=ubuntutest, name="rebuildtest99")
+
+    >>> copy_config = getPubConfig(copy_archive)
+
+    >>> dump_config(copy_config)
+    stayofexecution: 5.0
+    distroroot:      /var/tmp/archive
+    archiveroot:     /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest
+    poolroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest/pool
+    distsroot:       /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest/dists
+    overrideroot:    /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-overrides
+    cacheroot:       /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-cache
+    miscroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-misc
+    temproot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-temp
+    breezy-autotest:
+      Architectures:
+      Components: main, multiverse, restricted, universe
+    hoary-test:
+      Architectures: amd64, i386
+      Components: main, multiverse, restricted, universe
