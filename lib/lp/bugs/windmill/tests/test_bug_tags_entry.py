@@ -70,7 +70,7 @@ class TestBugTagsEntry(WindmillTestCase):
         client.click(id=u'edit-tags-trigger')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertJS(
-            js=u'window.location.href.indexOf("+login") > 0')
+            js=u'window.location.href.indexOf("+openid") > 0')
 
 
 def test_suite():

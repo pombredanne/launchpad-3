@@ -9,7 +9,6 @@ import datetime
 import os
 import pytz
 import shutil
-from storm.locals import Store
 import tempfile
 from unittest import TestLoader
 
@@ -874,7 +873,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestRosettaUploadJob, self).setUp()
         self.series = None
 
     def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
@@ -922,19 +921,18 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         seen_dirs = set()
         for file_pair in files:
             file_name = file_pair[0]
-            dname, fname = os.path.split(file_name)
-            if dname != '' and dname not in seen_dirs:
-                self.tree.bzrdir.root_transport.mkdir(dname)
-                self.tree.add(dname)
-                seen_dirs.add(dname)
             try:
                 file_content = file_pair[1]
                 if file_content is None:
                     raise IndexError # Same as if missing.
             except IndexError:
                 file_content = self.factory.getUniqueString()
+            dname = os.path.dirname(file_name)
+            self.tree.bzrdir.root_transport.clone(dname).create_prefix()
             self.tree.bzrdir.root_transport.put_bytes(file_name, file_content)
-            self.tree.add(file_name)
+        if len(files) > 0:
+            self.tree.smart_add(
+                [self.tree.abspath(file_pair[0]) for file_pair in files])
         if commit_message is None:
             commit_message = self.factory.getUniqueString('commit')
         revision_id = self.tree.commit(commit_message)
@@ -1035,6 +1033,20 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # configured for template import.
         entries = self._runJobWithFile(
             TranslationsBranchImportMode.IMPORT_TEMPLATES, 'empty.pot', '')
+        self.assertEqual(entries, [])
+
+    def test_upload_hidden_pot(self):
+        # A POT cannot be uploaded if its name starts with a dot.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, '.hidden.pot')
+        self.assertEqual(entries, [])
+
+    def test_upload_pot_hidden_in_subdirectory(self):
+        # In fact, if any parent directory is hidden, the file will not be
+        # imported.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            'bar/.hidden/bla/foo.pot')
         self.assertEqual(entries, [])
 
     def test_upload_pot_uploader(self):
