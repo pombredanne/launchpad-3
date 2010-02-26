@@ -197,10 +197,10 @@ class TestBugHeatCalculator(TestCaseWithFactory):
     def test_getBugHeat_decay(self):
         # Every month, a bug that wasn't touched has its heat reduced by 10%.
         aging_bug = self.factory.makeBug()
+        fresh_heat = BugHeatCalculator(aging_bug).getBugHeat()
         aging_bug.date_last_updated = (
             aging_bug.date_last_updated - timedelta(days=32))
-        expected = int((
-            BugHeatConstants.AFFECTED_USER + BugHeatConstants.SUBSCRIBER) * 0.9)
+        expected = int(fresh_heat * 0.9)
         heat = BugHeatCalculator(aging_bug).getBugHeat()
         self.assertEqual(
             expected, heat,
