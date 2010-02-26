@@ -582,7 +582,10 @@ class NascentUpload:
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
-        if self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
+        # If the archive is a main archive or a copy archive, we want to
+        # look up the ancestry in all the main archives.
+        if (self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES and
+            not self.policy.archive.is_copy):
             archive = self.policy.archive
         else:
             archive = None
