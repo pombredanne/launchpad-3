@@ -180,33 +180,21 @@ class HasBugsBase:
             return self.distribution.recalculateMaxBugHeat()
 
         if IDistribution.providedBy(self):
-            sql = """SELECT MAX(max_heat)
-                     FROM (
-                        SELECT MAX(heat) AS max_heat
-                        FROM Bug, Bugtask
-                        WHERE Bugtask.bug = Bug.id AND
-                        Bugtask.distribution = %s
-                        UNION ALL
-                        SELECT MAX(heat) AS max_heat
-                        FROM Bug, Bugtask, DistroSeries
-                        WHERE Bugtask.bug = Bug.id AND
-                        Bugtask.distroseries = DistroSeries.id AND
-                        DistroSeries.distribution = %s)
-                        AS union_heat""" % sqlvalues(self, self)
+            sql = """SELECT Bug.heat
+                     FROM Bug, Bugtask, DistroSeries
+                     WHERE Bugtask.bug = Bug.id
+                     AND Bugtask.distroseries = DistroSeries.id
+                     OR Bugtask.distribution = DistroSeries.distribution
+                     AND Bugtask.distribution = %s
+                     ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)
         elif IProduct.providedBy(self):
-            sql = """SELECT MAX(max_heat)
-                     FROM (
-                        SELECT MAX(heat) AS max_heat
-                        FROM Bug, Bugtask
-                        WHERE Bugtask.bug = Bug.id AND
-                        Bugtask.product = %s
-                        UNION ALL
-                        SELECT MAX(heat) AS max_heat
-                        FROM Bug, Bugtask, ProductSeries
-                        WHERE Bugtask.bug = Bug.id AND
-                        Bugtask.productseries = ProductSeries.id AND
-                        ProductSeries.product = %s)
-                        AS union_heat""" % sqlvalues(self, self)
+            sql = """SELECT Bug.heat
+                     FROM Bug, Bugtask, ProductSeries
+                     WHERE Bugtask.bug = Bug.id
+                     AND Bugtask.productseries = ProductSeries.id
+                     OR Bugtask.product = ProductSeries.product
+                     AND Bugtask.product = %s
+                     ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)
         elif IProjectGroup.providedBy(self):
             sql = """SELECT MAX(heat)
                      FROM Bug, Bugtask, Product
