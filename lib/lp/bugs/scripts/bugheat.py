@@ -8,6 +8,7 @@ __all__ = [
     'BugHeatCalculator',
     ]
 
+from datetime import datetime
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -82,6 +83,16 @@ class BugHeatCalculator:
             self._getHeatFromSecurity(),
             self._getHeatFromSubscribers(),
             ])
+
+        # Bugs decay over time. Every month the bug isn't touched its heat
+        # decreeses by 5%.
+        months = (
+            datetime.utcnow() -
+            self.bug.date_last_updated.replace(tzinfo=None)).days / 30
+        for i in range(months):
+            total_heat = total_heat * 0.95
+
+        total_heat = int(total_heat)
 
         return total_heat
 

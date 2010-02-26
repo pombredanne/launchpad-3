@@ -1,4 +1,3 @@
-
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -7,6 +6,8 @@
 __metaclass__ = type
 
 import unittest
+
+from datetime import datetime, timedelta
 
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -178,9 +179,8 @@ class TestBugHeatCalculator(TestCaseWithFactory):
             "Expected %s, got %s" % (expected_heat, actual_heat))
 
     def test_getBugHeat_complete_bugs(self):
+        # Bug which are in a resolved status don't have heat at all.
         complete_bug = self.factory.makeBug()
-        person = self.factory.makePerson()
-        complete_bug.subscribe(person, person)
         heat = BugHeatCalculator(complete_bug).getBugHeat()
         self.assertNotEqual(
             0, heat,
@@ -193,6 +193,19 @@ class TestBugHeatCalculator(TestCaseWithFactory):
             0, heat,
             "Expected bug heat did not match actual bug heat. "
             "Expected %s, got %s" % (0, heat))
+
+    def test_getBugHeat_decay(self):
+        # Every month, a bug that wasn't touched has its heat reduced by 10%.
+        aging_bug = self.factory.makeBug()
+        aging_bug.date_last_updated = (
+            aging_bug.date_last_updated - timedelta(days=32))
+        expected = int((
+            BugHeatConstants.AFFECTED_USER + BugHeatConstants.SUBSCRIBER) * 0.9)
+        heat = BugHeatCalculator(aging_bug).getBugHeat()
+        self.assertEqual(
+            expected, heat,
+            "Expected bug heat did not match actual bug heat. "
+            "Expected %s, got %s" % (expected, heat))
 
 
 def test_suite():
