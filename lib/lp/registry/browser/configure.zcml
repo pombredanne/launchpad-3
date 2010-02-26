@@ -91,6 +91,10 @@
             name="+portlet-details"
             facet="overview"
             template="../templates/distroseries-details.pt"/>
+        <browser:page
+            name="+portlet-package-summary"
+            facet="overview"
+            template="../templates/distroseries-portlet-packaging.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"

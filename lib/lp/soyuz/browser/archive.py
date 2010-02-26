@@ -1781,7 +1781,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['displayname', 'description', 'enabled']
+    field_names = ['displayname', 'description', 'enabled', 'publish']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 
