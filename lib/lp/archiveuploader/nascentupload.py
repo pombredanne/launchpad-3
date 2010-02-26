@@ -699,8 +699,11 @@ class NascentUpload:
 
         All files are also marked as new unless it's a PPA file, which are
         never considered new as they are auto-accepted.
+
+        COPY archive build uploads are also auto-accepted, otherwise they
+        would sit in the NEW queue since it's likely there's no ancestry.
         """
-        if self.is_ppa:
+        if self.is_ppa or self.policy.archive.is_copy:
             return
 
         # All newly-uploaded, non-PPA files must be marked as new so that

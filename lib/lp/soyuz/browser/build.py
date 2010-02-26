@@ -36,6 +36,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lazr.delegates import delegates
+from lp.services.job.interfaces.job import JobStatus
 
 
 class BuildUrl:
@@ -197,6 +198,18 @@ class BuildView(LaunchpadView):
                     files.append(alias)
 
         return files
+
+    @property
+    def dispatch_time_estimate_available(self):
+        """True if a dispatch time estimate is available for this build.
+
+        The build must be in state NEEDSBUILD and the associated job must be
+        in state WAITING.
+        """
+        return (
+            self.context.buildstate == BuildStatus.NEEDSBUILD and
+            self.context.buildqueue_record.job.status == JobStatus.WAITING)
+
 
 class BuildRetryView(BuildView):
     """View class for retrying `IBuild`s"""

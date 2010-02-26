@@ -598,10 +598,14 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def conversation(self):
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
-        comments = [
-            CodeReviewDisplayComment(comment)
-            for comment in self.context.all_comments]
-        comments.extend(self._getRevisionsSinceReviewStart())
+        comments = self._getRevisionsSinceReviewStart()
+        merge_proposal = self.context
+        while merge_proposal is not None:
+            from_superseded = merge_proposal != self.context
+            comments.extend(
+                CodeReviewDisplayComment(comment, from_superseded)
+                for comment in merge_proposal.all_comments)
+            merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
         return CodeReviewConversation(comments)
 
@@ -683,6 +687,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 self._createStatusVocabulary(),
                 css_class_prefix='mergestatus'),
             'status_value': self.context.queue_status.title,
+            'source_revid': self.context.source_branch.last_scanned_id,
             'user_can_edit_status': check_permission(
                 'launchpad.Edit', self.context),
             })

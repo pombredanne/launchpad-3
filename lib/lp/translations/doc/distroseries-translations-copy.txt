@@ -65,13 +65,8 @@ Also, template3 happens to be deactivated.
 
 We need a transaction manager (in this case a fake one) to make the copy work.
 
-    >>> class FakeTransactionManager:
-    ...     """Mock transaction manager for test."""
-    ...     def begin(self):
-    ...         pass
-    ...     def commit(self):
-    ...         pass
-    >>> transaction_stub = FakeTransactionManager()
+    >>> from lp.testing.faketransaction import FakeTransaction
+    >>> transaction_stub = FakeTransaction()
 
 
 == Preconditions for migrating translations between distro series ==
