@@ -29,7 +29,7 @@ Tests for the team '+join' page's raw view objects.
     ...         subscriptionpolicy=subscription_policy)
     ...     return team
 
-    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> subscribers = getUtility(IMailingListSet)
 
 Attempting to post a mailing list subscription request to a team that has no list

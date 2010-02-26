@@ -22,7 +22,7 @@ member in good standing (as is the default).
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> login('foo.bar@canonical.com')
     >>> guadamen = getUtility(IMailingListSet).get('guadamen')
     >>> logout()

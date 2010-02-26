@@ -389,7 +389,7 @@ A team with a mailing list can only be merged if has no mailing list or if the
 mailing list is in the PURGED state.  This state indicates that there are no
 artifacts of the list on the Mailman side.
 
-    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> mailing_list = getUtility(IMailingListSet).new(landscape)
     >>> from lp.registry.tests.mailinglists_helper import mailman
     >>> mailman.act()

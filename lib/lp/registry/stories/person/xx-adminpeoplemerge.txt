@@ -37,7 +37,7 @@ If the user confirms, spiv will be merged into salgado.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.interfaces import IMailingListSet, IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> person_set = getUtility(IPersonSet)
     >>> person_set.getByEmail('andrew.bennetts@ubuntulinux.com').name

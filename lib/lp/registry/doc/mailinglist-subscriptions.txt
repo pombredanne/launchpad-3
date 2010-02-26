@@ -169,7 +169,7 @@ address (if any) a user is subscribed. That information is available
 as the email_address member.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IMailingListSubscription
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSubscription
     >>> subscription = list_one.getSubscription(bart)
     >>> verifyObject(IMailingListSubscription, subscription)
     True

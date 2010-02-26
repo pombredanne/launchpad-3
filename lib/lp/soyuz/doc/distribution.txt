@@ -91,7 +91,7 @@ team.
     Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Append')
 
     >>> login('mark@example.com')
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
     >>> distroseriesset = getUtility(IDistroSeriesSet)
     >>> gentoo_two = gentoo.newSeries('gentoo-two', 'Gentoo Two',
     ...                               'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',

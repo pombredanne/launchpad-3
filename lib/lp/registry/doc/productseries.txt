@@ -54,7 +54,7 @@ It's also possible to ask a product for all its associated series.
 
 A ProductSeries can also be fetched with the IProductSeriesSet utility.
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesSet
+    >>> from lp.registry.interfaces.productseries import IProductSeriesSet
 
     >>> firefox_1_0 = getUtility(IProductSeriesSet).get(2)
     >>> print firefox_1_0.product.name
