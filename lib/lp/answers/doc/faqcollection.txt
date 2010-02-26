@@ -26,7 +26,7 @@ Since not all IFAQCollections are IFAQTarget, we rely on the harness
 to provide us with a newFAQ() function that can be used to add a FAQ to
 the collection.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> no_priv = personset.getByName('no-priv')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')

@@ -13,7 +13,7 @@ public PPA:
 
     >>> login(ANONYMOUS)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
     >>> cprov_ppa.private
     False

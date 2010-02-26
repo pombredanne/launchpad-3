@@ -356,7 +356,7 @@ the mailing list, she will not get a copy of the message.
     >>> helpers.ensure_nonmembership('itest-one', anne)
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('admin@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)

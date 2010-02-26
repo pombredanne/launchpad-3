@@ -90,7 +90,7 @@ to view the bug. So if we set the INCOMPLETE bug above to be private,
 Sample Person (the bug reporter) will still get the bug included in the
 count, but not No Privileges Person or the anonymous user.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> old_counts = bugtarget.getBugCounts(None)
     >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
     True

@@ -236,7 +236,7 @@ Uploads to PPAs will not close bugs (see bug #137767).  Here we upload a
 package, cdrkit, to cprov's PPA.  The bug status before and after calling
 close_bugs is "NEW".
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> arbitrary_ppa = getUtility(IPersonSet).getByName('cprov').archive
     >>> queue_item_id = add_package_upload(
     ...     cdrkit_release, cdrkit_bug_id, archive=arbitrary_ppa).id

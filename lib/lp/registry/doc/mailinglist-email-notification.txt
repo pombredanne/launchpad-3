@@ -6,7 +6,7 @@ via email.
     >>> from lp.services.mail import stub
     >>> from lp.testing.mail_helpers import (
     ...     pop_notifications, print_emails)
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
 
     >>> from lp.registry.tests.mailinglists_helper import (
@@ -85,7 +85,7 @@ sub-teams.  If a sub-team has a primary contact email address, that
 address will be ignored, and the message will be sent to the
 individual team members.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
 
     >>> super_team = new_team('super-team', with_list=False)

@@ -27,7 +27,7 @@ Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
     >>> trash = hoary_i386.addOrUpdateChroot(fake_chroot)
     >>> trash = hoary_hppa.addOrUpdateChroot(fake_chroot)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> from lp.registry.interfaces.pocket import (

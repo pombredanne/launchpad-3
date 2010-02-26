@@ -9,7 +9,7 @@ to, is subscribed to, commented on, or answered. Various subsets can
 be selected by using the following criteria status, search_text and
 participation type.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.answers.interfaces.questionsperson import IQuestionsPerson
     >>> personset = getUtility(IPersonSet)
     >>> foo_bar_raw = personset.getByEmail('foo.bar@canonical.com')

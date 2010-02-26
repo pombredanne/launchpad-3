@@ -414,7 +414,7 @@ in the main archive, the important differences are:
    they are in the team owning the PPA (to avoid spamming the innocent
    when PPA users upload unchanged source packages).
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
   >>> from canonical.launchpad.interfaces import BuildStatus

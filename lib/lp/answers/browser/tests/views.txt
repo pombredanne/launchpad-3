@@ -958,7 +958,7 @@ register himself or the Ubuntu Team as answer contact for ubuntu:
     >>> login('jeff.waugh@ubuntulinux.com')
     >>> jeff_waugh = getUtility(ILaunchBag).user
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> jeff_waugh in ubuntu_team.getDirectAdministrators()
     True

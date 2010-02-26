@@ -11,7 +11,7 @@ AT LEAST run this test to see that you haven't broken any assumptions.
 == User Accounts and Teams ==
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
   >>> personset = getUtility(IPersonSet)
 
 Here we make assertions about each of the key user accounts which should be

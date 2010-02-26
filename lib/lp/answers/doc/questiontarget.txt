@@ -23,7 +23,7 @@ associated with it at the start of the test.)
 
 Questions are always owned by a registered user.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
 

@@ -23,7 +23,7 @@ Adding a package subscription is done with the
 IDistributionSourcePackage.addBugSubscription method. You have to
 be logged in to call this method:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByName("name12")
 

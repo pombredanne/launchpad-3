@@ -5,7 +5,7 @@ change the bug's status for that specific target. It expects the user
 changing the status, the target, and the new status.
 
     >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')

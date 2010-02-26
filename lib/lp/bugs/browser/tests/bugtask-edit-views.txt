@@ -302,7 +302,7 @@ But an unprivileged user does not.
 A bug supervisor can also change the milestone. Let's set no-priv as
 Ubuntu's bug supervisor.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")

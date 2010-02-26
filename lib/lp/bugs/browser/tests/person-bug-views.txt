@@ -3,7 +3,7 @@
 In every person page, the 'Bugs' facet has a series of bug listings for
 that person. These pages provide simple and advanced search forms.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> name16 = getUtility(IPersonSet).get(16)
 
 Let's define a helper function to make it easier to construct a view.

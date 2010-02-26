@@ -302,7 +302,7 @@ for them considering the packages currently published in their context.
 
 We will use Celso's PPA.
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 With empty cache contents in Archive table we can't even find a PPA by

@@ -30,7 +30,7 @@ person icon in front of the name.
 If we would want to display a different value than the real assignee,
 we can use setRenderedValue()
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> assignee_widget.setRenderedValue(foo_bar)
     >>> print assignee_widget()

@@ -196,7 +196,7 @@ we first create team-two as a subteam of team-one.
     >>> team_two = factory.makeTeam(name='team-two', owner=team_owner)
     >>> team_names.append(team_two.name)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> team_two.join(team_one, salgado)
     >>> sorted(member.displayname for member in team_one.allmembers)

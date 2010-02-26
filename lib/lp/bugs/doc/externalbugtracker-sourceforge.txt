@@ -142,7 +142,7 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> example_bug = getUtility(IBugSet).get(10)

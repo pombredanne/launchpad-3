@@ -62,7 +62,7 @@ IBug.getBugNotificationRecipients().
 
 Let's up some data for our test:
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
   >>> from canonical.launchpad.mailnotification import (
   ...     BugNotificationRecipients)
   >>> debian = Distribution.selectOneBy(name="debian")

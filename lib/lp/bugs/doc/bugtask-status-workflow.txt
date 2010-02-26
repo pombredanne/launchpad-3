@@ -258,7 +258,7 @@ unassigned, to assigned, but not if the assignee changes from one person
 to another. Like status, assignee cannot be set directly, because
 setting an assignee has "side effects".
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).get(12)
 
     >>> ubuntu_firefox_task.assignee = foobar

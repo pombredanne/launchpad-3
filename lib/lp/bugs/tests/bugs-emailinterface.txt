@@ -721,7 +721,7 @@ Unsubscribing from a bug also unsubscribes you from its duplicates. To
 demonstrate, let's first make no_privs an indirect subscriber from bug
 #5, by subscribing him directly to a dupe of bug #5, bug #6.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login("no-priv@canonical.com")
 

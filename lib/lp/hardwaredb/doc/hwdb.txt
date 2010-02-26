@@ -202,7 +202,7 @@ submitted emailaddress belongs to an existing Launchpad account.
 If no Person record is yet known for the submitter's email address,
 the field `owner` is None.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> beeblebrox = getUtility(IPersonSet).getByEmail(
     ...     'beeblebrox@example.com')
     >>> print beeblebrox
@@ -730,7 +730,7 @@ It is also possible to search for a distroseries and architecture.
 
 And we can also search for submissions from a particular user.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> owner = getUtility(IPersonSet).getByName('name12')
     >>> set(submission.owner.name for submission
     ...     in hw_submission_set.search(owner=owner))

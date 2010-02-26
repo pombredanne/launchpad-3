@@ -318,7 +318,7 @@ discussion of the spec.
 
  >>> for subscriber in canvas.subscribers: print subscriber.name
 
- >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
  >>> jdub = getUtility(IPersonSet).getByName('jdub')
  >>> sub = canvas.subscribe(jdub, jdub, False)
  >>> print sub.essential

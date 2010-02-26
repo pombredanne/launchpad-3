@@ -25,7 +25,7 @@ person is responsible for. A person can be a bug supervisor for a product,
 a distribution, or a distribution source package. No Privileges Person
 isn't a bug supervisor, so no bugs are found for him:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> no_priv_bug_supervisor = BugTaskSearchParams(
     ...     user=None, bug_supervisor=no_priv)
@@ -389,7 +389,7 @@ The 'bug_commenter' parameter allows you to search bugtasks on which a certain
 person has commented. No Privileges Person hasn't commented on any bugs, so no
 bugs are found for him:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> import transaction
     >>> transaction.abort()
 

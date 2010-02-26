@@ -227,7 +227,7 @@ immediately approved, and a new task added. By "privileged user" in this
 context, we mean a user that has, either directly or through a team,
 launchpad.Driver permission on the nomination.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
 

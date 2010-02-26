@@ -338,7 +338,7 @@ testing, as unsigned uploads are allowed.
 Force weird behavior with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
   >>> name16 = getUtility(IPersonSet).getByName('name16')
   >>> name16.displayname = "Foo B. Bar"
   >>> syncUpdate(name16)

@@ -40,7 +40,7 @@ simple_sendmail_from_person has the advantage that it makes sure that
 the person's name is encoded properly.
 
     >>> from canonical.launchpad.mail import simple_sendmail_from_person
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> msgid = simple_sendmail_from_person(
     ...     person=foo_bar,

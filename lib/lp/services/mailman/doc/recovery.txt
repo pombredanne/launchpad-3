@@ -68,7 +68,7 @@ does not actually exist in Mailman, then Mailman will create it.
     ['itest-one', 'unused_mailman_site_list']
 
     >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> team_two = person_set.getByName('itest-two')
     >>> itest_two = mailing_list_set.new(team_two, team_two.teamowner)

@@ -29,7 +29,7 @@ You can use it as is or derive from it
 You add recipients to the set using the add() method. The method takes the
 IPerson to add along the notification rationale and header code.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> sample_person = person_set.getByEmail('test@canonical.com')
     >>> cprov = person_set.getByName('cprov')

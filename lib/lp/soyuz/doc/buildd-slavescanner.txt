@@ -1123,7 +1123,7 @@ sources_list.
 
 Similarly, PPA builds pass the 'archives' arguments:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
     >>> removeSecurityProxy(a_build).archive = cprov_archive
     >>> a_builder.virtualized = True

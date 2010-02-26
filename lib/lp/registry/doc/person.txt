@@ -790,7 +790,7 @@ The key concept in displaying the latest team memberships is that the
 team list is actually sorted by date joined.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
     >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()

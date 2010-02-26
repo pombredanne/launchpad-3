@@ -127,7 +127,7 @@ The bug branches returned are only those where the user can see the
 bugs that are associated.  This way if there are bugs associated with
 a branch that the user cannot see, then they are not shown.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> user = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
     ...     branches, user)

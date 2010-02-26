@@ -188,7 +188,7 @@ The Account's displayname is synced to the Person's displayname if there
 is one. If the Person.displayname is changed, the Account.displayname is
 changed too.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> personset = getUtility(IPersonSet)
     >>> person = personset.getByEmail('no-priv@canonical.com')

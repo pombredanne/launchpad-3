@@ -184,7 +184,7 @@ Handling Personal Package Archives
  * getPendingAcceptancePPAs
  * getPendingPublicationPPAs
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> mark = getUtility(IPersonSet).getByName('mark')

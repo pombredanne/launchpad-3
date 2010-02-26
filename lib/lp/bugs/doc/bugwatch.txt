@@ -122,7 +122,7 @@ If no matching bug watch can be found, None is returned.
 
 To create a bugwatch, use IBugWatchSet.createBugWatch:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> bug_one = getUtility(IBugSet).get(1)

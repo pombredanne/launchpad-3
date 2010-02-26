@@ -60,7 +60,7 @@ if the 'age' result looks sane:
 Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
 property only returns the non-PPA builds.
 
-   >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
    >>> from lp.soyuz.model.build import Build
    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
    >>> ff_ppa_build = Build.selectBy(

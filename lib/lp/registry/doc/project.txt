@@ -17,7 +17,7 @@ When creating a new project there are a bunch of things we need to provide.
 While some of them (homepageurl, icon, logo and mugshot) are optional, others
 (name, displayname, title, summary, description and owner) are required).
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> test_project = projectset.new(
     ...     name='project-test', displayname='Test Project',

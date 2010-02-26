@@ -2,7 +2,7 @@
 
 Let's use Celso's PPA for the tests.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 

@@ -216,7 +216,7 @@ It can retrieve any FAQ by id using the getFAQ() method.
 
 The searchFAQs() method can be used to find FAQs by keywords or owner.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> for faq in faqset.searchFAQs(
     ...     search_text='java | flash', owner=foo_bar):

@@ -301,7 +301,7 @@ allow unsigned uploads.
 Since we are using Foo Bar's GPG key to sign packages, in order to test
 PPA uploads we will create a PPA for it.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> print foobar.archive
     None

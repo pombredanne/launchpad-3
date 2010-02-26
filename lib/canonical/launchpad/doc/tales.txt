@@ -41,7 +41,7 @@ The same image:icon, as well as a image:logo and a image:logo is also
 available for Person, Product, Project, Sprint and Distributions, since
 they all implement IHasLogo, IHasMugshot and IHasIcon.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> test_tales("person/image:sprite_css", person=mark)
     'sprite person'

@@ -17,7 +17,7 @@ ISpecificationMessageSet.createMessage:
     >>> specset = getUtility(ISpecificationSet)
     >>> specmessageset = getUtility(ISpecificationMessageSet)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> spec = specset.getByURL(
     ...     'http://developer.mozilla.org/en/docs/SVG')

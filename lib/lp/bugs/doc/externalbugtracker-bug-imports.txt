@@ -35,7 +35,7 @@ methods.
 When importing bugs, the reporter is automatically created in Launchpad,
 if he doesn't exist.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> print getUtility(IPersonSet).getByEmail('joe.bloggs@example.com')
     None
 

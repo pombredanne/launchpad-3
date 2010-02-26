@@ -125,7 +125,7 @@ Store current status of the database:
 We will create a group of source publications that represent the
 exact circumstances we want to test below.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> from canonical.database.sqlbase import commit

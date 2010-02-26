@@ -36,7 +36,7 @@ targeted to the PRIMARY archive.
 The 'PPA' action-menu item will be enabled if we target the build to
 Celso's PPA.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_failed_build = cprov.archive.getBuildRecords(

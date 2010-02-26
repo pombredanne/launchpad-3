@@ -51,7 +51,7 @@ bug watch.
 
 To create a bug message, use IBugMessageSet.createMessage:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> bug_one = getUtility(IBugSet).get(1)

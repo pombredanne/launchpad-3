@@ -254,7 +254,7 @@ This will make sure that the handler is setup properly to handle
 unknown users, since webmaster@ubuntu.com doesn't belong to any Person
 in Launchpad:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> getUtility(IPersonSet).getByEmail('webmaster@ubuntu.com') is None
     True
 

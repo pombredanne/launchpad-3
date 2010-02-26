@@ -69,7 +69,7 @@ the bugtarget's bugs, and choose to make it into a question. The UI
 would pass Sample Person as the Person changing the status. He may
 provide a message about why the report is a question.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')

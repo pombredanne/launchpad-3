@@ -159,7 +159,7 @@ If a Person who's account is inactive sends an email, it will be
 silently rejected.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> bigjools = person_set.getByEmail('launchpad@julian-edwards.com')
     >>> print bigjools.account_status.name

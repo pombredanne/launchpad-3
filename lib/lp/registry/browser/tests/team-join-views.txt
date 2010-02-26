@@ -4,7 +4,7 @@ Tests for the team '+join' page's raw view objects.
 
 == Joining and Subscribing to the List ==
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
 
     # Set up a harness to make form submission testing easier.

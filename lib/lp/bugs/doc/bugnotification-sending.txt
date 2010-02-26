@@ -438,7 +438,7 @@ If we add three comments, three notifications will be sent:
 If Sample Person does a few changes, and Foo Bar steps in a does a
 change in between, three notifications will be sent:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a comment.', sample_person,
