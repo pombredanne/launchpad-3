@@ -225,11 +225,12 @@ class AccountSet:
     implements(IAccountSet)
 
     def new(self, rationale, displayname, password=None,
-            password_is_encrypted=False):
+            password_is_encrypted=False, openid_identifier=DEFAULT):
         """See `IAccountSet`."""
 
         account = Account(
-            displayname=displayname, creation_rationale=rationale)
+            displayname=displayname, creation_rationale=rationale,
+            openid_identifier=openid_identifier)
 
         # Create the password record.
         if password is not None:
@@ -247,13 +248,15 @@ class AccountSet:
         return account
 
     def createAccountAndEmail(self, email, rationale, displayname, password,
-                              password_is_encrypted=False):
+                              password_is_encrypted=False,
+                              openid_identifier=DEFAULT):
         """See `IAccountSet`."""
         # Convert the PersonCreationRationale to an AccountCreationRationale.
         account_rationale = getattr(AccountCreationRationale, rationale.name)
         account = self.new(
             account_rationale, displayname, password=password,
-            password_is_encrypted=password_is_encrypted)
+            password_is_encrypted=password_is_encrypted,
+            openid_identifier=openid_identifier)
         account.status = AccountStatus.ACTIVE
         email = getUtility(IEmailAddressSet).new(
             email, status=EmailAddressStatus.PREFERRED, account=account)
