@@ -219,7 +219,7 @@ them properly, see doc/package-archive.txt.
     >>> from zope.component import getUtility
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

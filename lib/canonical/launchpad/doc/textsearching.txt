@@ -669,7 +669,7 @@ keywords could be eliminated. For that reason, when there are less than
 For example, there are less than 5 questions filed on the
 mozilla-firefox source package.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.database.sqlbase import sqlvalues
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')

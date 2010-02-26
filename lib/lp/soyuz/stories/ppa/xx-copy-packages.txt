@@ -935,7 +935,7 @@ different version of foo_1.0 in Mark's and Celso's PPAs and a foo_2.0
 in No Privileges' PPA.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 

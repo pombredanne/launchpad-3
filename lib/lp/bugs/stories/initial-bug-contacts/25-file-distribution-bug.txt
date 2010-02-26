@@ -44,7 +44,7 @@ and foobar, who are subscribed to the distribution.
 When filing a security bug, only the bug reporter and registrant are explicitly
 Cc'd, because the Ubuntu distribution does not have a security contact.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")

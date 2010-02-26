@@ -52,7 +52,7 @@ are found there.
 We can also search for distribution bugs:
 
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     sample_person, "Thunderbird crashes when displaying SVG",

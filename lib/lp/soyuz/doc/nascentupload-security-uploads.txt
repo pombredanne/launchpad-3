@@ -31,7 +31,7 @@ We are going to use 'warty/powerpc' distroarchseries and its
 respective processorfamily and processor. Let's create them
 on-the-fly:
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from canonical.launchpad.database import (
   ...    Processor, ProcessorFamily)
 

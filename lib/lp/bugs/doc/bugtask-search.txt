@@ -48,7 +48,7 @@ Firefox has a few bugs:
 
 Ubuntu does too:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> all_public = BugTaskSearchParams(user=None)
     >>> ubuntu_bugs = ubuntu.searchTasks(all_public)

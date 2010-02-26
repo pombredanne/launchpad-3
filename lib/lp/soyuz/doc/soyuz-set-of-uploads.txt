@@ -150,7 +150,7 @@ And then we need a way to process the uploads from the queue
 And we need a way to process the accepted queue
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.ftests import syncUpdate

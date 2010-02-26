@@ -83,7 +83,7 @@ return None:
 
 Now, lets test all of that for DistroSeriess too!
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
     >>> krunch = kubuntu.getSeries('krunch')
 

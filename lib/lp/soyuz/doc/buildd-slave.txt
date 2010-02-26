@@ -59,7 +59,7 @@ to retrieve files from the slave. Verify it works...
 
 Retrieve a known DistroArchSeries.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
     >>> warty_i386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
 

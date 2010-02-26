@@ -28,7 +28,7 @@ into the expected content class.
 
 First, we'll create the un-decorated result set of all distributions:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from storm.store import Store
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> store = Store.of(ubuntu)

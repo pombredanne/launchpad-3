@@ -165,7 +165,7 @@ Counter, optionally by status (informally named "queue") and or distroseries:
 
 Retrieve some data from DB to play more with counter.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']

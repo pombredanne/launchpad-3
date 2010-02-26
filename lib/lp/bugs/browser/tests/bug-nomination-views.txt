@@ -43,7 +43,7 @@ Here's an example of nominating a bug for a distroseries.
 
 (Add objects to the LaunchBag that will be used by the view.)
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> launchbag.clear()
     >>> launchbag.add(bug_one_in_ubuntu_firefox)

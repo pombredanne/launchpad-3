@@ -21,7 +21,7 @@ DistributionSourcePackageCache table, including:
  * fti, a tsvector generated on insert or update with the text indexes
    for name, binpkgnames, binpkgsummaries and binpkgdescriptions.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
 

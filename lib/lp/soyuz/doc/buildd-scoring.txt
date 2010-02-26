@@ -20,7 +20,7 @@ A summary:
 Let's create a 'mock' class which emulate the real behaviour of
 BuildQueue entries.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']

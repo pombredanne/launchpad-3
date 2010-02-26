@@ -11,7 +11,7 @@ IDistributionSourcePackage.bug_subscriptions attribute. When there are
 no subscriptions associated with a package, an empty list is returned:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> debian = getUtility(IDistributionSet).getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
@@ -388,7 +388,7 @@ supervisor for Mozilla Firefox.
 The list of teams that a user may add to a package as a bug supervisor will
 only contain those teams of which the user is an administrator.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 

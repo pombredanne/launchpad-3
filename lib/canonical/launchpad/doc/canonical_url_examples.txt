@@ -94,7 +94,7 @@ An ICodeOfConduct
 
 == Distributions, distroseriess and so on ==
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
 The IDistributionSet.
 

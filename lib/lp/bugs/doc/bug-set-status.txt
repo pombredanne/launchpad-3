@@ -140,7 +140,7 @@ for product tasks.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
     # Set a milestone to ensure that the current db user has enough

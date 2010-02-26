@@ -283,7 +283,7 @@ contact through his team membership.
     >>> no_priv_raw.inTeam(landscape_team)
     True
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> landscape_team.addLanguage(english)
     >>> ubuntu.addAnswerContact(landscape_team)

@@ -71,7 +71,7 @@ in order to facilitate uploads.
 name16 does not have any package set based upload permissions for 'bar'
 at present.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> ubuntu_archive = ubuntu.main_archive
     >>> print_permission(

@@ -6,7 +6,7 @@ We need to create an initialisable DistroSeries as a child of Ubuntu
 Hoary (we do it inside the ubuntutest distribution to avoid conflicts
 with other tests)
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from canonical.launchpad.ftests import login
 
   >>> login("foo.bar@canonical.com")

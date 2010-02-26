@@ -17,7 +17,7 @@ The source package mozilla-firefox has two unique binaries:
 "mozilla-firefox-data" and "mozilla-firefox". Although the latter
 is published twice in two architectures it is only returned once.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
     >>> ff_sp = warty.getSourcePackage('mozilla-firefox')

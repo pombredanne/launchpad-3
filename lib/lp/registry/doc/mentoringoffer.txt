@@ -6,7 +6,7 @@ Launchpad allows people to make an offer of mentoring for a bug or
 specification. Here, Foo Bar will make an offer on a spec and a bug:
 
     >>> from canonical.launchpad.interfaces import IPersonSet, IBugSet
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.launchpad.ftests import login, syncUpdate
     >>> distroset = getUtility(IDistributionSet)
     >>> personset = getUtility(IPersonSet)

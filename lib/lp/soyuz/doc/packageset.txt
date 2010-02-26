@@ -622,7 +622,7 @@ happy hacker.
 Introduce a copy archive that will be used to disambiguate archive
 permissions.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

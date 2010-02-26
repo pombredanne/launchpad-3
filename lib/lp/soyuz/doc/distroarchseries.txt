@@ -9,7 +9,7 @@ Distro Arch Series
    ...    IBinaryPackagePublishingHistory,
    ...    ISectionSet)
 
-   >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
    >>> hoary = ubuntu.getSeries('hoary')
 

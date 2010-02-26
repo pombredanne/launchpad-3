@@ -16,7 +16,7 @@ Let's say we rename the '+old_tickets_page' view on IQuestionTarget to
 like this:
 
     >>> request = LaunchpadTestRequest()
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> view = RenamedView(ubuntu, request, '+questions')
 
