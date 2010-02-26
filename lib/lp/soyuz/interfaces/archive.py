@@ -1091,7 +1091,7 @@ class IArchiveEdit(Interface):
         """Disable the archive."""
 
     arm_builds_allowed = Bool(
-        title=_("Builds on ARM are allowed for this archive."))
+        title=_("Allow ARM builds for this archive"))
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
