@@ -1092,10 +1092,13 @@ def calculate_heat_display(heat, max_bug_heat):
     max_bug_heat = float(max_bug_heat)
     if heat / max_bug_heat < 0.33333:
         return 0
-    if heat / max_bug_heat < 0.66666:
+    if heat / max_bug_heat < 0.66666 or max_bug_heat < 2:
         return int(floor((heat / max_bug_heat) * 4))
     else:
-        return int(floor((log(heat) / log(max_bug_heat)) * 4))
+        heat_index = int(floor((log(heat) / log(max_bug_heat)) * 4))
+        # ensure that we never return a value > 4, even if
+        # max_bug_heat is outdated.
+        return min(heat_index, 4)
 
 
 def bugtask_heat_html(bugtask):
@@ -1105,8 +1108,9 @@ def bugtask_heat_html(bugtask):
         max_bug_heat = 5000
     heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
     html = (
-        '<img src="/@@/bug-heat-%(ratio)i.png" '
+        '<span><img src="/@@/bug-heat-%(ratio)i.png" '
         'alt="%(ratio)i out of 4 heat flames"  title="Heat: %(heat)i" />'
+        '</span>'
         % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
     return html
 
