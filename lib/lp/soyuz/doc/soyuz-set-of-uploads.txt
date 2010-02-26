@@ -401,12 +401,13 @@ Add a new series of bar sourcepackage, rename its binary package to
 'bar-bin', upload the binary and look for a spurious sourcepackagename
 created with the binary package name.
 
-  >>> simulate_upload('bar_1.0-6', upload_policy='sync')
-  >>> simulate_upload('bar_1.0-6_binary', is_new=True)
+    >>> simulate_upload('bar_1.0-6', upload_policy='sync')
+    >>> simulate_upload('bar_1.0-6_binary', is_new=True)
 
-  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
-  >>> spn_set = getUtility(ISourcePackageNameSet)
-  >>> assert spn_set.queryByName('bar-bin') is None
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> spn_set = getUtility(ISourcePackageNameSet)
+    >>> assert spn_set.queryByName('bar-bin') is None
 
 
 == Source Uploads using epochs ==

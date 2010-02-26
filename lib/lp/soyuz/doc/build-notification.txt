@@ -486,14 +486,14 @@ we will change the 'failed_candidate' source, setting its
 
 We also make 'Foo Bar' the source signer.
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> gpgkey = getUtility(IGPGKeySet).get(1)
-  >>> print gpgkey.owner.name
-  name16
-  >>> naked_sourcepackagerelease.dscsigningkey = gpgkey
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
+    >>> gpgkey = getUtility(IGPGKeySet).get(1)
+    >>> print gpgkey.owner.name
+    name16
+    >>> naked_sourcepackagerelease.dscsigningkey = gpgkey
 
-  >>> commit()
-  >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
 Since 'mark' is the 'creator' it makes the failed-to-build source
 look like a 'sponsored' upload.

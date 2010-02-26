@@ -11,7 +11,7 @@ This document is about milestones in Malone.
 All Milestone creation and retrieval is done through IMilestoneSet.
 IMilestoneSet can be accessed as a utility.
 
-    >>> from canonical.launchpad.interfaces import IMilestoneSet
+    >>> from lp.registry.interfaces.milestone import IMilestoneSet
     >>> milestoneset = getUtility(IMilestoneSet)
 
 To retrieve all milestones, iterate over an IMilestoneSet object:

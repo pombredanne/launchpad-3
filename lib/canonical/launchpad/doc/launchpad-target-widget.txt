@@ -58,7 +58,7 @@ By default the first option is selected:
 If we select a distribution, the distribution with that name is returned
 by getInputValue().
 
-    >>> from canonical.launchpad.interfaces import IDistribution
+    >>> from lp.registry.interfaces.distribution import IDistribution
     >>> form = {'field.bugtarget': 'package',
     ...         'field.bugtarget.distribution': 'ubuntu'}
     >>> widget = LaunchpadTargetWidget(
@@ -189,7 +189,7 @@ isn't published is selected.
 
 If a product is selected, the product with the given name is returned.
 
-    >>> from canonical.launchpad.interfaces import IProduct
+    >>> from lp.registry.interfaces.product import IProduct
     >>> form = {'field.bugtarget': 'product',
     ...         'field.bugtarget.product': 'firefox'}
     >>> widget = LaunchpadTargetWidget(

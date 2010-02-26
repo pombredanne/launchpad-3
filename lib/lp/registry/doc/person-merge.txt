@@ -345,7 +345,7 @@ are carried over just like when merging people.
 
     >>> from datetime import datetime, timedelta
     >>> import pytz
-    >>> from canonical.launchpad.interfaces import IPollSubset, PollSecrecy
+    >>> from lp.registry.interfaces.poll import IPollSubset, PollSecrecy
     >>> test_team = personset.newTeam(sample, 'test-team', 'Test team')
     >>> launchpad_devs = personset.getByName('launchpad')
     >>> ignored = launchpad_devs.addMember(

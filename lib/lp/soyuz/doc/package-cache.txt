@@ -436,16 +436,17 @@ information will be available, no packages information will be cached.
 We insert a new source cache with texts containing punctuation and
 duplicated words pointing to Celso's PPA.
 
-  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
-  >>> cdrkit_name = getUtility(ISourcePackageNameSet).queryByName('cdrkit')
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> cdrkit_name = getUtility(ISourcePackageNameSet).queryByName('cdrkit')
 
-  >>> unclean_cache = DistributionSourcePackageCache(
-  ...    archive=cprov.archive,
-  ...    distribution=ubuntu,
-  ...    sourcepackagename=cdrkit_name,
-  ...    name=cdrkit_name.name,
-  ...    binpkgnames='cdrkit-bin cdrkit-extra',
-  ...    binpkgsummaries='Ding! Dong? Ding,Dong. Ding; DONG: ding dong')
+    >>> unclean_cache = DistributionSourcePackageCache(
+    ...    archive=cprov.archive,
+    ...    distribution=ubuntu,
+    ...    sourcepackagename=cdrkit_name,
+    ...    name=cdrkit_name.name,
+    ...    binpkgnames='cdrkit-bin cdrkit-extra',
+    ...    binpkgsummaries='Ding! Dong? Ding,Dong. Ding; DONG: ding dong')
 
 Note that 'binpkgdescription' and 'changelog' are not considered yet,
 and we have no binary cache.

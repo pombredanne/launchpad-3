@@ -166,7 +166,7 @@ list.
   * a distroseries sourcepackage
 
     >>> from lp.registry.model.sourcepackage import SourcePackage
-    >>> from canonical.launchpad.interfaces import ISourcePackage
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> distro_series_sp_task = bugtaskset.get(16)
     >>> expected_target = SourcePackage(
     ...     distroseries=distro_series_sp_task.distroseries,

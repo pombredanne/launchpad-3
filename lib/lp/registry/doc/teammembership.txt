@@ -187,7 +187,7 @@ returns a tuple with False and the current status of the membership.
 As expected, the membership object implements ITeamMembership.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ITeamMembership
+    >>> from lp.registry.interfaces.teammembership import ITeamMembership
     >>> verifyObject(ITeamMembership, membership)
     True
 

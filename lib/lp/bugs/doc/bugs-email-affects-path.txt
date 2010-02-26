@@ -40,7 +40,7 @@ on it, so an exception with an appropriate error message is raised.
 
 Getting a product is done by specifying the name of the product.
 
-    >>> from canonical.launchpad.interfaces import IProduct
+    >>> from lp.registry.interfaces.product import IProduct
     >>> evolution = AffectsEmailCommand.getBugTarget('evolution')
     >>> IProduct.providedBy(evolution)
     True
@@ -94,7 +94,7 @@ exception with an appropriate error is raised.
 Getting a distribution is done by specifying the name of the
 distribution.
 
-    >>> from canonical.launchpad.interfaces import IDistribution
+    >>> from lp.registry.interfaces.distribution import IDistribution
     >>> ubuntu = AffectsEmailCommand.getBugTarget('ubuntu')
     >>> IDistribution.providedBy(ubuntu)
     True
@@ -157,7 +157,7 @@ both.
 When getting a source package within a distribution series, the source
 package is given after the distribution series.
 
-    >>> from canonical.launchpad.interfaces import ISourcePackage
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> warty_evolution = AffectsEmailCommand.getBugTarget(
     ...     'ubuntu/warty/evolution')
     >>> ISourcePackage.providedBy(warty_evolution)

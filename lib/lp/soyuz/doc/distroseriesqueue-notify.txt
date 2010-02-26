@@ -103,10 +103,10 @@ a different recipient list to unsigned ones; recipients for signed package
 uploads can be the signer, the maintainer and the changer, where these people 
 are different.  Unsigned packages only send notifications to the changer.
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> gpgkey = getUtility(IGPGKeySet).get(1)
-  >>> removeSecurityProxy(netapplet_upload).signing_key = gpgkey
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> gpgkey = getUtility(IGPGKeySet).get(1)
+    >>> removeSecurityProxy(netapplet_upload).signing_key = gpgkey
 
 Now request the email:
 
@@ -115,7 +115,7 @@ Now request the email:
   >>> changes_file = open(changes_file_path,'r')
   >>> netapplet_upload.setAccepted()
   >>> netapplet_upload.notify(
-  ...     announce_list="announcelist@canonical.com", 
+  ...     announce_list="announcelist@canonical.com",
   ...     changes_file_object=changes_file, logger=mock_logger)
   DEBUG: Building recipients list.
   ...
