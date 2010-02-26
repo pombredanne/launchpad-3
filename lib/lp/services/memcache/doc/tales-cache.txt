@@ -6,6 +6,8 @@ rendered page templates to be cached in Memcached.
 
     >>> from textwrap import dedent
     >>> from zope.pagetemplate.pagetemplate import PageTemplate
+    >>> import zope.pagetemplate.engine
+    >>> from zope.publisher.browser import TestRequest
 
     >>> class TestPageTemplate(PageTemplate):
     ...     _num_instances = 0
@@ -16,11 +18,20 @@ rendered page templates to be cached in Memcached.
     ...         self.pt_edit(source, 'text/html')
     ...     def pt_source_file(self):
     ...         return 'fake/test_%d.pt' % self._my_instance_num
+    ...     def pt_getEngine(self):
+    ...         return zope.pagetemplate.engine.Engine
+    ...     def pt_getContext(self, args=(), options={}):
+    ...         context = {'request': self._request}
+    ...         context.update(options)
+    ...         return context
+    ...     def __call__(self, *args, **kw):
+    ...         self._request = TestRequest()
+    ...         return super(TestPageTemplate, self).__call__(*args, **kw)
 
 
-    >>> def clear_memcache():
+    >>> def clear_memcache(): # Only do this in tests!
     ...     from lp.services.memcache.interfaces import IMemcacheClient
-    ...     getUtility(IMemcacheClient).flush_all() # Only do this in tests!
+    ...     getUtility(IMemcacheClient).flush_all()
 
 
     >>> template = TestPageTemplate(dedent("""\
