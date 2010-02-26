@@ -193,11 +193,6 @@ class HasBugsBase:
                         Bugtask.distroseries = DistroSeries.id AND
                         DistroSeries.distribution = %s)
                         AS union_heat""" % sqlvalues(self, self)
-
-            #sql = """SELECT MAX(heat)
-            #         FROM Bug, Bugtask
-            #         WHERE Bugtask.bug = Bug.id AND
-            #         Bugtask.distribution = %s""" % sqlvalues(self)
         elif IProduct.providedBy(self):
             sql = """SELECT MAX(max_heat)
                      FROM (
