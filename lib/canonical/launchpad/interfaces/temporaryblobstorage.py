@@ -17,9 +17,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Text, Bytes
 from canonical.launchpad import _
 
-from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    call_with, collection_default_content, exported,
+    collection_default_content, exported,
     export_as_webservice_collection, export_as_webservice_entry,
     export_read_operation, operation_parameters, REQUEST_USER)
 from lazr.restful.interface import copy_field

@@ -11,10 +11,6 @@ __all__ = [
     ]
 
 
-import random
-import time
-import thread
-
 from cStringIO import StringIO
 from datetime import timedelta, datetime
 
@@ -25,7 +21,7 @@ from zope.interface import implements
 
 from canonical import uuid
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
