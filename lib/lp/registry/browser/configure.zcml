@@ -1414,13 +1414,16 @@
             facet="overview"
             template="../templates/product-portlet-license-missing.pt"/>
         <browser:page
-            name="+portlet-packages"
-            facet="overview"
-            template="../templates/product-portlet-packages.pt"/>
-        <browser:page
             name="+purchase-subscription"
             template="../templates/product-purchase-subscription.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        name="+portlet-packages"
+        facet="overview"
+        class="lp.registry.browser.product.ProductPackagesPortletView"
+        template="../templates/product-portlet-packages.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductSeriesView"

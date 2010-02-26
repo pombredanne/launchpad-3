@@ -21,6 +21,7 @@ __all__ = [
     'ProductNavigationMenu',
     'ProductOverviewMenu',
     'ProductPackagesView',
+    'ProductPackagesPortletView',
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSeriesView',
@@ -37,6 +38,7 @@ __all__ = [
     ]
 
 
+from cgi import escape
 from operator import attrgetter
 
 from zope.component import getUtility
@@ -45,6 +47,9 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    SimpleVocabulary, SimpleTerm)
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -979,6 +984,54 @@ class ProductPackagesView(PackagingDeleteView):
         distro_names.sort(cmp=_cmp_distros)
         results = [distros[name] for name in distro_names]
         return results
+
+
+class ProductPackagesPortletView(LaunchpadFormView):
+    """View class for product packaging portlet."""
+
+    schema = Interface
+    custom_widget(
+        'distributionsourcepackage', LaunchpadRadioWidget,
+        orientation='vertical')
+    suggestions = None
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProductPackagesPortletView, self).setUpFields()
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        source_packages = ubuntu.searchSourcePackages(self.context.name)
+        # Based upon the matches, create a new vocabulary with
+        # term descriptions that include a link to the source package.
+        self.suggestions = []
+        vocab_terms = []
+        for package in source_packages:
+            self.suggestions.append(package)
+            item_url = canonical_url(package)
+            description = """<a href="%s">%s</a>""" % (
+                item_url, escape(package.name))
+            vocab_terms.append(SimpleTerm(package, package.name, description))
+        vocabulary = SimpleVocabulary(vocab_terms)
+        self.form_fields = form.Fields(
+            Choice(__name__='distributionsourcepackage',
+                   title=_('Registered upstream project'),
+                   default=None,
+                   vocabulary=vocabulary,
+                   required=True))
+
+    @action(_('Link to Ubuntu Package'), name='link')
+    def link(self, action, data):
+        product = self.context
+        dsp = data.get('distributionsourcepackage')
+        assert dsp is not None, "distributionsourcepackage was not specified"
+        product_series = product.development_focus
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        product_series.setPackaging(ubuntu.currentseries,
+                                    dsp.sourcepackagename,
+                                    self.user)
+        self.request.response.addInfoNotification(
+            'This project was linked to the source package "%s"' %
+            dsp.displayname)
+        self.next_url = self.request.getURL()
 
 
 class SeriesReleasePair:
