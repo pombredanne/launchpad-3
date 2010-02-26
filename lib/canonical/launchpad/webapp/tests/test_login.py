@@ -122,7 +122,9 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         view.initialize()
         view.openid_response = response
         # Monkey-patch getByOpenIDIdentifier() to make sure the view uses the
-        # master DB.
+        # master DB. This mimics the problem we're trying to avoid, where
+        # getByOpenIDIdentifier() doesn't find a newly created account because
+        # it looks in the slave database.
         with IAccountSet_getByOpenIDIdentifier_monkey_patched():
             html = view.render()
         return view, html
