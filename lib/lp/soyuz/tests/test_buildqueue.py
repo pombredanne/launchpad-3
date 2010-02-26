@@ -497,7 +497,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
     processor."""
     # XXX Michael Nelson 20100223 bug=525329
     # This is still failing spuriously.
-    def disabled_test_min_time_to_next_builder(self):
+    def test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
         # Test the estimation of the minimum time until a builder becomes
@@ -686,7 +686,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     """Test estimated time-to-builder with builds and multiple processors."""
     # XXX Michael Nelson 20100223 bug=525329
     # This is still failing spuriously.
-    def disabled_test_min_time_to_next_builder(self):
+    def test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
         # One of four builders for the 'apg' build is immediately available.
