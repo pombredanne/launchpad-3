@@ -25,7 +25,9 @@ import _pythonpath
 from optparse import OptionParser
 from os import getenv
 import re
+import os.path
 import sys
+from textwrap import dedent
 import transaction
 
 from zope.component import getUtility
@@ -39,6 +41,7 @@ from canonical.database.sqlbase import sqlvalues
 
 from canonical.lp import initZopeless
 
+from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import (
@@ -49,7 +52,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
-from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.soyuz.interfaces.component import IComponentSet
@@ -106,16 +108,21 @@ def parse_args(arguments):
     :return: (options, args, logger)
     """
     parser = OptionParser(
-        description="Delete existing Ubuntu releases and set up new ones.")
+        description="Set up fresh Ubuntu series and ppa-user identity.")
     parser.add_option('-f', '--force', action='store_true', dest='force',
         help="DANGEROUS: run even if the database looks production-like.")
     parser.add_option('-n', '--dry-run', action='store_true', dest='dry_run',
         help="Do not commit changes.")
     parser.add_option('-A', '--amd64', action='store_true', dest='amd64',
         help="Support amd64 architecture.")
+    parser.add_option('-e', '--email', action='store', dest='email',
+        default='ppa-user@example.com',
+        help="Email address to use for ppa-user.  Should match your GPG key.")
+
     logger_options(parser)
 
     options, args = parser.parse_args(arguments)
+
     return options, args, logger(options)
 
 
@@ -325,18 +332,35 @@ def populate(distribution, parent_series_name, uploader_name, options, log):
     create_sample_series(parent_series, log)
 
 
-def create_ppa_user(username, options, approver):
+def sign_code_of_conduct(person, log):
+    """Sign Ubuntu Code of Conduct for `person`, if necessary."""
+    if person.is_ubuntu_coc_signer:
+        # Already signed.
+        return
+
+    log.info("Signing Ubuntu code of conduct.")
+    signedcocset = getUtility(ISignedCodeOfConductSet)
+    person_id = person.id
+    if signedcocset.searchByUser(person_id).count() == 0:
+        fake_gpg_key = LaunchpadObjectFactory().makeGPGKey(person)
+        Store.of(person).add(SignedCodeOfConduct(
+            owner=person, signingkey=fake_gpg_key,
+            signedcode="Normally a signed CoC would go here.", active=True))
+
+
+def create_ppa_user(username, options, approver, log):
     """Create new user, with password "test," and sign code of conduct."""
     # Avoid circular import.
     from lp.registry.interfaces.person import PersonCreationRationale
 
     store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
-    email = "%s@example.com" % username
+    log.info("Creating ppa-user with email address '%s'." % options.email)
+
     person = get_person_set().getByName(username)
     if person is None:
         person, email = get_person_set().createPersonAndEmail(
-            email, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+            options.email, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
             name=username, displayname=username, password='test')
         email.status = EmailAddressStatus.PREFERRED
         email.account.status = AccountStatus.ACTIVE
@@ -344,19 +368,7 @@ def create_ppa_user(username, options, approver):
     if not options.dry_run:
         transaction.commit()
 
-    signedcocset = getUtility(ISignedCodeOfConductSet)
-    person_id = person.id
-    if signedcocset.searchByUser(person_id).count() == 0:
-        existing_keys = list(getUtility(IGPGKeySet).getGPGKeys(person))
-        if len(existing_keys) == 0:
-            gpg_key = LaunchpadObjectFactory().makeGPGKey(person)
-        else:
-            gpg_key = existing_keys[0]
-
-        store.add(SignedCodeOfConduct(
-            owner=person, signingkey=gpg_key,
-            signedcode="Normally a signed CoC would go here.", active=True))
-
+    sign_code_of_conduct(person, log)
     get_person_set().getByName('ubuntu-team').addMember(person, approver)
 
 
@@ -375,7 +387,7 @@ def main(argv):
     populate(ubuntu, 'hoary', 'ubuntu-team', options, log)
 
     admin = get_person_set().getByName('name16')
-    create_ppa_user('ppa-user', options, admin)
+    create_ppa_user('ppa-user', options, admin, log)
 
     if options.dry_run:
         txn.abort()
@@ -383,6 +395,18 @@ def main(argv):
         txn.commit()
 
     log.info("Done.")
+
+    print dedent("""
+        Now start your local Launchpad with "make run" and log into
+        https://launchpad.dev/ as "%(email)s" with "test" as the password.
+        Your user name will be ppa-user.
+
+        Obtain your GPG key fingerprint with gpg --fingerprint %(email)s
+        and register it at https://launchpad.dev/~ppa-user/+editpgpkeys
+
+        You will then be able to create PPAs, make uploads signed with
+        your own GPG key, etc.
+        """ % {'email': options.email})
 
 
 if __name__ == "__main__":
