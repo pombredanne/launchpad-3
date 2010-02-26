@@ -21,7 +21,6 @@ We need to insert some dependent fake data before continuing.
     >>> for pub in ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
     ...     pub.sourcepackagerelease.dscsigningkey = fake_signer
-    >>> transaction.commit()
     >>> logout()
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
@@ -151,7 +150,6 @@ Make cprov's PPA packages unsigned:
     >>> for pub in ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
     ...     pub.sourcepackagerelease.dscsigningkey = None
-    >>> transaction.commit()
     >>> logout()
 
 Query the source again:
@@ -238,7 +236,6 @@ Create a private PPA for Celso with some binaries.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     binaryname='privacy-test-bin',
     ...     archive=cprov_private_ppa_db)
-    >>> transaction.commit()
     >>> logout()
 
 
