@@ -239,7 +239,6 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             'INFO    Ran 1 IProcessApportBlobJobSource jobs.\n', stderr)
 
 
-
 class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
     """Test case for the TemporaryBlobStorageAddView."""
 

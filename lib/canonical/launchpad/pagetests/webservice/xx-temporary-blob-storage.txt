@@ -40,6 +40,14 @@ It's possible to fetch a blob directly using its token.
     >>> blob['token'] == blob_token
     True
 
+It's also possible to fetch the blob by calling temporary_blobs.fetch()
+and passing it a token.
+
+    >>> blob = webservice.named_get(
+    ...     '/temporary_blobs', 'fetch', uuid=blob_token).jsonBody()
+    >>> blob['token'] == blob_token
+    True
+
 
 Checking whether a blob has been processed
 ------------------------------------------
