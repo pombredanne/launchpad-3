@@ -218,7 +218,7 @@ Mark a bug as a duplicate:
 
 Adding a comment generates a karma event, but gives no points:
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> comment = getUtility(IBugMessageSet).createMessage(
     ...     subject="foo", bug=bug, owner=foo_bar, content="bar")
     >>> notify(ObjectCreatedEvent(comment))

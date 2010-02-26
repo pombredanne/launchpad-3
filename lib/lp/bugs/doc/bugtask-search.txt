@@ -370,7 +370,7 @@ of the single filters.
 
 The search filter can also return bugs that are related to CVE reports:
 
-    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from lp.bugs.interfaces.cve import ICveSet
     >>> def getCves(bugtask):
     ...     bugcve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
     ...     return bugcve.cve.sequence

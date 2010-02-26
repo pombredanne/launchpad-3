@@ -606,7 +606,7 @@ The same is done if the distribution task's source package is changed.
 IBugNominationSet is used to fetch bug nominations by ID. This is useful
 mainly in traversal code.
 
-    >>> from canonical.launchpad.interfaces import IBugNominationSet
+    >>> from lp.bugs.interfaces.bugnomination import IBugNominationSet
 
     >>> getUtility(IBugNominationSet).get(1)
     <BugNomination at ...>

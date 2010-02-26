@@ -327,7 +327,7 @@ doc/bugactivity.txt for details of the BugActivityItem class).
 
     >>> from lp.bugs.browser.bugcomment import BugComment
     >>> from lp.bugs.browser.bugtask import BugActivityItem
-    >>> from canonical.launchpad.interfaces import IBugActivitySet
+    >>> from lp.bugs.interfaces.bugactivity import IBugActivitySet
 
     >>> user = factory.makePerson(displayname="Arthur Dent")
     >>> message = factory.makeMessage(

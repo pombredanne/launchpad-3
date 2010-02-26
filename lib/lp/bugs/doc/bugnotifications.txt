@@ -183,7 +183,7 @@ bug. Let's take a look at each type.
 
 === Commenting on a bug report ===
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
 
     >>> bugmessageset = getUtility(IBugMessageSet)
     >>> current_user = getUtility(ILaunchBag).user

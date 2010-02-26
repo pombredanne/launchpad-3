@@ -6,7 +6,7 @@ for hiding messages rather than having to delete them.
 A bug message has a visible field, which is True by default.
 
     # Setup for creating a new message
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import IPersonSet
 

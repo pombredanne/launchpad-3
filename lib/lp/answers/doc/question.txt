@@ -319,7 +319,7 @@ The complete question workflow is documented in
 Question implements the IBugLinkTarget interface which makes it possible
 to link bug report to question.
 
-    >>> from canonical.launchpad.interfaces import IBugLinkTarget
+    >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
     >>> verifyObject(IBugLinkTarget, firefox_question)
     True
 

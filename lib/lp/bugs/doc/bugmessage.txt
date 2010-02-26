@@ -11,7 +11,7 @@ always associated with exactly one bug.
 IBugMessageSet represents the set of all IBugMessages in the
 system.
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> bugmessageset = getUtility(IBugMessageSet)
 
 An individual IBugMessage can be retrieved with

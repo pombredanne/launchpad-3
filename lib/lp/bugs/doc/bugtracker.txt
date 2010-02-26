@@ -323,7 +323,7 @@ The Mozilla Bugzilla has only one imported bug message.
 
 We will forge some BugMessage records before trying again:
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> from zope.security.proxy import removeSecurityProxy
 
     >>> for num, bug_watch in enumerate(mozilla_bugzilla.watches):
