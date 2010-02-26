@@ -580,7 +580,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED,
             version="1.0-1",
-            name="bar")
+            name="bar",
+            archive=copy_archive)
         self.assertEqual(
             queue_items.count(), 1,
             "Binary upload was not accepted when it should have been.")
