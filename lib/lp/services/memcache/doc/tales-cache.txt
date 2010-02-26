@@ -4,35 +4,6 @@ Memcache with TALES
 We have extended TALES with a cache: expression to allow chunks of
 rendered page templates to be cached in Memcached.
 
-    >>> from textwrap import dedent
-    >>> from zope.pagetemplate.pagetemplate import PageTemplate
-    >>> import zope.pagetemplate.engine
-    >>> from zope.publisher.browser import TestRequest
-
-    >>> class TestPageTemplate(PageTemplate):
-    ...     _num_instances = 0
-    ...     def __init__(self, source):
-    ...         super(TestPageTemplate, self).__init__()
-    ...         TestPageTemplate._num_instances += 1
-    ...         self._my_instance_num = TestPageTemplate._num_instances
-    ...         self.pt_edit(source, 'text/html')
-    ...     def pt_source_file(self):
-    ...         return 'fake/test_%d.pt' % self._my_instance_num
-    ...     def pt_getEngine(self):
-    ...         return zope.pagetemplate.engine.Engine
-    ...     def pt_getContext(self, args=(), options={}):
-    ...         context = {'request': self._request}
-    ...         context.update(options)
-    ...         return context
-    ...     def __call__(self, *args, **kw):
-    ...         self._request = TestRequest()
-    ...         return super(TestPageTemplate, self).__call__(*args, **kw)
-
-
-    >>> def clear_memcache(): # Only do this in tests!
-    ...     from lp.services.memcache.interfaces import IMemcacheClient
-    ...     getUtility(IMemcacheClient).flush_all()
-
 
     >>> template = TestPageTemplate(dedent("""\
     ...     <div tal:content="cache:public,1 hour">
