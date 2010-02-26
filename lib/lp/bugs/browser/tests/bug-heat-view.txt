@@ -86,3 +86,9 @@ log(max_heat) in this case.
 
     >>> print calculate_heat_display(1, 1)
     4
+
+Even if the max heat value is smaller than the heat value itself,
+calculate_heat_display() does not return a value greater than 4.
+
+    >>> print calculate_heat_display(2000, 1000)
+    4
