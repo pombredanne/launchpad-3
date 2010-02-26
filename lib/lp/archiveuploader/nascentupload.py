@@ -780,7 +780,11 @@ class NascentUpload:
                     # fine.
                     ancestry = self.getBinaryAncestry(
                         uploaded_file, try_other_archs=False)
-                    if ancestry is not None:
+                    if (ancestry is not None and 
+                        not self.policy.archive.is_copy):
+                        # Ignore version checks for copy archives
+                        # because the ancestry comes from the primary
+                        # which may have changed since the copy.
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     self.logger.debug(
