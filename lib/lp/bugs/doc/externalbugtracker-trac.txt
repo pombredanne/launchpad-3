@@ -309,7 +309,7 @@ And have a Trac instance process them:
 
 We'll add some more watches now.
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> bug_watches = dict(
