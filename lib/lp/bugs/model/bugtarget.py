@@ -25,9 +25,11 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
@@ -169,6 +171,72 @@ class HasBugsBase:
             self.max_bug_heat = heat
         else:
             raise NotImplementedError
+
+    def recalculateMaxBugHeat(self):
+        """See `IHasBugs`."""
+        if IProductSeries.providedBy(self):
+            return self.product.recalculateMaxBugHeat()
+        if IDistroSeries.providedBy(self):
+            return self.distribution.recalculateMaxBugHeat()
+
+        if IDistribution.providedBy(self):
+            sql = """SELECT MAX(max_heat)
+                     FROM (
+                        SELECT MAX(heat) AS max_heat
+                        FROM Bug, Bugtask
+                        WHERE Bugtask.bug = Bug.id AND
+                        Bugtask.distribution = %s
+                        UNION ALL
+                        SELECT MAX(heat) AS max_heat
+                        FROM Bug, Bugtask, DistroSeries
+                        WHERE Bugtask.bug = Bug.id AND
+                        Bugtask.distroseries = DistroSeries.id AND
+                        DistroSeries.distribution = %s)
+                        AS union_heat""" % sqlvalues(self, self)
+
+            #sql = """SELECT MAX(heat)
+            #         FROM Bug, Bugtask
+            #         WHERE Bugtask.bug = Bug.id AND
+            #         Bugtask.distribution = %s""" % sqlvalues(self)
+        elif IProduct.providedBy(self):
+            sql = """SELECT MAX(max_heat)
+                     FROM (
+                        SELECT MAX(heat) AS max_heat
+                        FROM Bug, Bugtask
+                        WHERE Bugtask.bug = Bug.id AND
+                        Bugtask.product = %s
+                        UNION ALL
+                        SELECT MAX(heat) AS max_heat
+                        FROM Bug, Bugtask, ProductSeries
+                        WHERE Bugtask.bug = Bug.id AND
+                        Bugtask.productseries = ProductSeries.id AND
+                        ProductSeries.product = %s)
+                        AS union_heat""" % sqlvalues(self, self)
+        elif IProjectGroup.providedBy(self):
+            sql = """SELECT MAX(heat)
+                     FROM Bug, Bugtask, Product
+                     WHERE Bugtask.bug = Bug.id AND
+                     Bugtask.product = Product.id AND
+                     Product.project =  %s""" % sqlvalues(self)
+        elif IDistributionSourcePackage.providedBy(self):
+            sql = """SELECT MAX(heat)
+                     FROM Bug, Bugtask
+                     WHERE Bugtask.bug = Bug.id AND
+                     Bugtask.distribution = %s AND
+                     Bugtask.sourcepackagename = %s""" % sqlvalues(
+                self.distribution, self.sourcepackagename)
+        else:
+            raise NotImplementedError
+
+        cur = cursor()
+        cur.execute(sql)
+        self.setMaxBugHeat(cur.fetchone()[0])
+
+        # If the product is part of a project group we calculate the maximum
+        # heat for the project group too.
+        if IProduct.providedBy(self) and self.project is not None:
+            self.project.recalculateMaxBugHeat()
+
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""

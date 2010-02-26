@@ -876,6 +876,10 @@ class Bug(SQLBase):
             distroseries=distro_series,
             sourcepackagename=source_package_name)
 
+        # When a new task is added, the bug's heat becomes relevant to the
+        # target's max_bug_heat.
+        target.recalculateMaxBugHeat()
+
         return new_task
 
     def addWatch(self, bugtracker, remotebug, owner):
@@ -1529,6 +1533,8 @@ class Bug(SQLBase):
     def setHeat(self, heat):
         """See `IBug`."""
         self.heat = heat
+        for task in self.bugtasks:
+            task.target.recalculateMaxBugHeat()
 
 
 class BugSet:

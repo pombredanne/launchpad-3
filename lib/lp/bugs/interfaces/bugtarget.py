@@ -224,6 +224,10 @@ class IHasBugs(Interface):
     def setMaxBugHeat(heat):
         """Set the max_bug_heat for this context."""
 
+    def recalculateMaxBugHeat():
+        """Recalculate and set the max_bug_heat for this context."""
+
+
 
 class IBugTarget(IHasBugs):
     """An entity on which a bug can be reported.
