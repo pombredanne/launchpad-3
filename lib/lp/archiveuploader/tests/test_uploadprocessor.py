@@ -26,6 +26,7 @@ from lp.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -540,6 +541,13 @@ class TestUploadProcessor(TestUploadProcessorBase):
         bar_source_pub = self._publishPackage('bar', '1.0-1')
         [bar_original_build] = bar_source_pub.createMissingBuilds()
 
+        # Move the source from the accepted queue.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1",
+            name="bar")
+        queue_item.setDone()
+
         # Create a COPY archive for building in non-virtual builds.
         uploader = getUtility(IPersonSet).getByName('name16')
         copy_archive = getUtility(IArchiveSet).new(
@@ -566,6 +574,17 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Make sure the upload succeeded.
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
+
+        # The upload should also be auto-accepted even though there's no
+        # ancestry.  This means items should go to ACCEPTED and not NEW.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1",
+            name="bar",
+            archive=copy_archive)
+        self.assertEqual(
+            queue_items.count(), 1,
+            "Binary upload was not accepted when it should have been.")
 
     def testCopyArchiveUploadToCurrentDistro(self):
         """Check binary copy archive uploads to RELEASE pockets.
@@ -1621,6 +1640,38 @@ class TestUploadProcessor(TestUploadProcessorBase):
             in raw_msg,
             "Source was not rejected properly:\n%s" % raw_msg)
 
+    def testUploadToWrongPocketIsRejected(self):
+        # Uploads to the wrong pocket are rejected.
+        self.setupBreezy()
+        breezy = self.ubuntu['breezy']
+        breezy.status = SeriesStatus.CURRENT
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        rejection_message = (
+            uploadprocessor.last_processed_upload.rejection_message)
+        self.assertEqual(
+            "Not permitted to upload to the RELEASE pocket in a series in "
+            "the 'CURRENT' state.",
+            rejection_message)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Not permitted to upload to the RELEASE pocket in a series "
+            "in the 'CURRENT' state.",
+            "If you don't understand why your files were rejected",
+            "http://answers.launchpad.net/soyuz",
+            "You are receiving this email because you are the "
+               "uploader, maintainer or",
+            "signer of the above package.",
+            ]
+        recipients = [
+            'Foo Bar <foo.bar@canonical.com>',
+            'Daniel Silverstone <daniel.silverstone@canonical.com>',
+            ]
+        self.assertEmail(contents, recipients=recipients)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

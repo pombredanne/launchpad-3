@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=E0211,E0213
 
+from datetime import timedelta
+
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, Object, Text, TextLine)
@@ -39,6 +41,7 @@ __all__ = [
     'RosettaImportStatus',
     'SpecialTranslationImportTargetFilter',
     'TranslationFileType',
+    'translation_import_queue_entry_age',
     'UserCannotSetTranslationImportStatus',
     ]
 
@@ -103,6 +106,28 @@ class RosettaImportStatus(DBEnumeratedType):
 
         The entry has been blocked to be imported by a Rosetta Expert.
         """)
+
+    NEEDS_INFORMATION = DBItem(7, """
+        Needs Information
+
+        The reviewer needs more information before this entry can be approved.
+        """)
+
+
+# Some time spans in days.
+DAYS_IN_MONTH = 30
+DAYS_IN_HALF_YEAR = 366 / 2
+
+
+# Period after which entries with certain statuses are culled from the
+# queue.
+translation_import_queue_entry_age = {
+    RosettaImportStatus.DELETED: timedelta(days=3),
+    RosettaImportStatus.FAILED: timedelta(days=DAYS_IN_MONTH),
+    RosettaImportStatus.IMPORTED: timedelta(days=3),
+    RosettaImportStatus.NEEDS_INFORMATION: timedelta(days=DAYS_IN_HALF_YEAR),
+    RosettaImportStatus.NEEDS_REVIEW: timedelta(days=DAYS_IN_HALF_YEAR),
+}
 
 
 class SpecialTranslationImportTargetFilter(DBEnumeratedType):
@@ -266,15 +291,11 @@ class ITranslationImportQueueEntry(Interface):
             required=False,
             readonly=True))
 
-    def isUbuntuAndIsUserTranslationGroupOwner(self, user):
-        """Check for special Ubuntu Translation Group.
+    def canAdmin(roles):
+        """Check if the user can administer this entry."""
 
-        Return true if the entry is targeted to Ubuntu and the user is in
-        the team owning the Ubuntu translation group.
-        """
-
-    def isUserUploaderOrOwner(user):
-        """Check for entry uploader or series owner."""
+    def canEdit(roles):
+        """Check if the user can edit this entry."""
 
     def canSetStatus(new_status, user):
         """Check if the user can set this new status."""

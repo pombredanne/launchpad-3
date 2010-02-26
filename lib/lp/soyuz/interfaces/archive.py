@@ -145,10 +145,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))
 
-    publish = Bool(
-        title=_("Publish"), required=False,
-        description=_("Whether the archive is to be published or not."))
-
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is guarded by a validator.
     private = exported(
@@ -896,8 +892,8 @@ class IArchiveAppend(Interface):
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
 
-        It will copy the most recent versions of the named sources to
-        the destination archive if necessary.
+        It will copy the most recent PUBLISHED versions of the named
+        sources to the destination archive if necessary.
 
         This operation will only succeeds when all requested packages
         are synchronised between the archives. If any of the requested
@@ -992,6 +988,10 @@ class IArchiveAppend(Interface):
 
 class IArchiveEdit(Interface):
     """Archive interface for operations restricted by edit privilege."""
+
+    publish = Bool(
+        title=_("Publish"), required=False,
+        description=_("Whether the archive is to be published or not."))
 
     @operation_parameters(
         person=Reference(schema=IPerson),

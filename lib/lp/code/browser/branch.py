@@ -81,7 +81,8 @@ from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType, CodeImportJobState,
-    CodeImportReviewStatus, RevisionControlSystems, UICreatableBranchType)
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
+    UICreatableBranchType)
 from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
@@ -424,11 +425,13 @@ class BranchView(LaunchpadView, FeedsMixin):
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
+    @property
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
-        return (self.user is not None and
-                self.user.inTeam(self.context.owner) and
-                self.context.branch_type == BranchType.HOSTED)
+        branch = self.context
+        if branch.branch_type != BranchType.HOSTED:
+            return False
+        return check_permission('launchpad.Edit', branch)
 
     def user_can_download(self):
         """Whether the user can download this branch."""
@@ -508,6 +511,15 @@ class BranchView(LaunchpadView, FeedsMixin):
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
+
+    def iconForCodeImportResultStatus(self, status):
+        """The icon to represent the `CodeImportResultStatus` `status`."""
+        if status == CodeImportResultStatus.SUCCESS_PARTIAL:
+            return "/@@/yes-gray"
+        elif status in CodeImportResultStatus.successes:
+            return "/@@/yes"
+        else:
+            return "/@@/no"
 
     @property
     def is_svn_import(self):

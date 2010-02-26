@@ -79,7 +79,7 @@ from canonical.widgets.project import ProjectScopeWidget
 
 # Constant for the maximum bug heat we'll use for converting
 # IBug.heat to ratio. In the future this should come from the DB.
-# The value must be a float 
+# The value must be a float
 MAX_HEAT = 5000.0
 
 class BugNavigation(Navigation):
@@ -220,12 +220,17 @@ class BugContextMenu(ContextMenu):
         else:
             text = 'Subscribe'
             icon = 'add'
-        return Link('+subscribe', text, icon=icon)
+        return Link('+subscribe', text, icon=icon, summary=(
+                'When you are subscribed, Launchpad will email you each time '
+                'this bug changes'))
 
     def addsubscriber(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
-        return Link('+addsubscriber', text, icon='add')
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this bugs '
+                'changes'))
 
     def nominate(self):
         """Return the 'Target/Nominate for release' Link."""
@@ -972,12 +977,8 @@ class BugHeatView(LaunchpadView):
     def __call__(self):
         """Render the bug heat representation."""
         heat_ratio = floor((self.context.heat / MAX_HEAT) * 4)
-        html = '<span>'
-        for flame in range(1, 5):
-            if flame <= heat_ratio:
-                html += '<img src="/@@/flame-icon" />'
-            else:
-                html += '<img src="/@@/flame-bw-icon" />'
-        html += '</span>'
+        html = (
+            '<img src="/@@/bug-heat-%(ratio)i.png" '
+            'alt="%(ratio)i out of 4 heat flames"  title="Heat: %(heat)i" />'
+            % {'ratio': heat_ratio, 'heat': self.context.heat})
         return html
-

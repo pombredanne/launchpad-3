@@ -12,6 +12,7 @@ __all__ = [
     'MaloneApplication',
     'PrivateMaloneApplication',
     'RosettaApplication',
+    'TestOpenIDApplication',
     ]
 
 __metaclass__ = type
@@ -31,6 +32,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
     IWebServiceApplication)
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsoverview import (
     ITranslationsOverview)
@@ -159,7 +161,7 @@ class MaloneApplication:
     def latest_bugs(self):
         user = getUtility(ILaunchBag).user
         return getUtility(IBugSet).searchAsUser(
-            user=user, orderBy=['-datecreated', '-id'], limit=5)
+            user=user, orderBy=['-datecreated'], limit=5)
 
     def default_bug_list(self, user=None):
         return getUtility(IBugSet).searchAsUser(user)
@@ -382,3 +384,7 @@ class WebServiceApplication(ServiceRootResource):
         wadl = super(WebServiceApplication, self).toWADL()
         self.__class__.cached_wadl = wadl
         return wadl
+
+
+class TestOpenIDApplication:
+    implements(ITestOpenIDApplication)

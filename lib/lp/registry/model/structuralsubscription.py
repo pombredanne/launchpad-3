@@ -23,7 +23,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.structuralsubscription import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
     IStructuralSubscription, IStructuralSubscriptionTarget,
@@ -122,7 +122,7 @@ class StructuralSubscriptionTargetMixin:
             args['sourcepackagename'] = self.sourcepackagename
         elif IProduct.providedBy(self):
             args['product'] = self
-        elif IProject.providedBy(self):
+        elif IProjectGroup.providedBy(self):
             args['project'] = self
         elif IDistribution.providedBy(self):
             args['distribution'] = self
@@ -320,7 +320,7 @@ class StructuralSubscriptionTargetMixin:
             return 'package'
         elif IProduct.providedBy(self):
             return 'project'
-        elif IProject.providedBy(self):
+        elif IProjectGroup.providedBy(self):
             return 'project group'
         elif IDistribution.providedBy(self):
             return 'distribution'

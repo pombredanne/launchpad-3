@@ -79,7 +79,8 @@ time goes on.
     >>> fooix = factory.makeProduct(name='fooix')
     >>> branch = factory.makeProductBranch(
     ...     branch_type=BranchType.HOSTED, owner=eric, product=fooix,
-    ...     name='trunk', title='The Fooix Trunk')
+    ...     name='trunk', title='The Fooix Trunk',
+    ...     date_created=datetime(2009, 1, 1, tzinfo=pytz.UTC))
     >>> feature_branch = factory.makeAnyBranch(
     ...     owner=eric, product=fooix, name='feature-branch',
     ...     lifecycle_status=BranchLifecycleStatus.EXPERIMENTAL)
@@ -108,8 +109,8 @@ time goes on.
     branch_type: u'Hosted'
     bzr_identity: u'lp://dev/~eric/fooix/trunk'
     control_format: None
-    date_created: ...
-    date_last_modified: ...
+    date_created: u'2009-01-01T00:00:00+00:00'
+    date_last_modified: u'2009-01-01T00:00:00+00:00'
     dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
     description: None
     display_name: u'lp://dev/~eric/fooix/trunk'
@@ -132,6 +133,7 @@ time goes on.
     reviewer_link: None
     revision_count: 0
     self_link: u'.../~eric/fooix/trunk'
+    sourcepackage_link: None
     spec_links_collection_link: u'.../~eric/fooix/trunk/spec_links'
     subscribers_collection_link: u'http://.../~eric/fooix/trunk/subscribers'
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
@@ -181,15 +183,22 @@ The branches of a project are also available.
 
     >>> def print_branch(branch):
     ...     print branch['unique_name'] + ' - ' + branch['lifecycle_status']
-    >>> def print_branches(webservice, url, status=None):
+    >>> def print_branches(webservice, url, status=None, modified_since=None):
     ...     branches = webservice.named_get(
     ...         url, 'getBranches',
-    ...         status=status).jsonBody()
+    ...         status=status, modified_since=modified_since).jsonBody()
     ...     for branch in branches['entries']:
     ...         print_branch(branch)
 
     >>> print_branches(webservice, '/fooix')
     ~eric/fooix/trunk - Development
+    ~eric/fooix/feature-branch - Experimental
+
+The branches can be limited to those that have been modified since a specified
+time.
+
+    >>> print_branches(webservice, '/fooix',
+    ...                modified_since=u'2010-01-01T00:00:00+00:00')
     ~eric/fooix/feature-branch - Experimental
 
 A list of lifecycle statuses can be provided for filtering.

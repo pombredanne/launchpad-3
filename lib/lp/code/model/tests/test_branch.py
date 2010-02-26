@@ -322,6 +322,31 @@ class TestBranchUpgrade(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_needsUpgrading_empty_formats(self):
+        branch = self.factory.makePersonalBranch()
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrade_mirrored_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.MIRRORED,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrade_remote_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.REMOTE,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrade_import_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.IMPORTED,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertFalse(branch.needs_upgrading)
+
     def test_needsUpgrading_already_requested(self):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If the format is
@@ -842,7 +867,7 @@ class TestBranchDeletionConsequences(TestCase):
         """Deletion requirements for a branch with a bug are right."""
         bug = self.factory.makeBug()
         bug.linkBranch(self.branch, self.branch.owner)
-        self.assertEqual({bug.linked_branches[0]:
+        self.assertEqual({bug.default_bugtask:
             ('delete', _('This bug is linked to this branch.'))},
             self.branch.deletionRequirements())
 

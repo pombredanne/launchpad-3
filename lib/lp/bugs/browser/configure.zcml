@@ -399,13 +399,13 @@
         template="../templates/bugtask-portlet-milestonebugs.pt"/>
     <browser:page
         name="+filebug"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
         name="+filebug-advanced"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
@@ -718,6 +718,13 @@
         name="+edit"
         permission="launchpad.AnyPerson"
         template="../templates/bug-attachment-edit.pt"/>
+    <browser:page
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment"
+        class="lp.bugs.browser.bugattachment.BugAttachmentPatchConfirmationView"
+        facet="bugs"
+        name="+confirm-is-patch"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-attachment-confirm-is-patch.pt"/>
     <browser:navigation
         module="lp.bugs.browser.bugattachment"
         classes="

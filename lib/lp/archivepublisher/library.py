@@ -113,7 +113,9 @@ class Librarian (object):
         return os.link(path, archive)
 
 if __name__ == '__main__':
-    import os, sys, sha
+    import hashlib
+    import os
+    import sys
 
     lib = Librarian('localhost', 9090, 8000, "/tmp/cache")
 
@@ -124,7 +126,7 @@ if __name__ == '__main__':
                                           lib.upload_port)
     fileobj = open(name, 'rb')
     size = os.stat(name).st_size
-    digest = sha.sha(open(name, 'rb').read()).hexdigest()
+    digest = hashlib.sha1(open(name, 'rb').read()).hexdigest()
 
     fileid, filealias = lib.addFile(name, size, fileobj,
                                     contentType='test/test',
