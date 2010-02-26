@@ -1,17 +1,21 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
-__all__ = ('POExportRequestSet', 'POExportRequest')
+__all__ = [
+    'POExportRequest',
+    'POExportRequestSet',
+    ]
 
 from sqlobject import ForeignKey
 
+from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from lp.translations.interfaces.poexportrequest import (
@@ -19,6 +23,8 @@ from lp.translations.interfaces.poexportrequest import (
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -28,7 +34,17 @@ class POExportRequestSet:
     @property
     def entry_count(self):
         """See `IPOExportRequestSet`."""
-        return POExportRequest.select().count()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(POExportRequest, True).count()
+
+    def estimateBacklog(self):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        row = store.execute(
+            "SELECT now() - min(date_created) FROM POExportRequest").get_one()
+        if row is None:
+            return None
+        else:
+            return row[0]
 
     def addRequest(self, person, potemplates=None, pofiles=None,
             format=TranslationFileFormat.PO):
@@ -58,13 +74,13 @@ class POExportRequestSet:
             'pofiles': pofile_ids,
             }
 
-        cur = cursor()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
         if potemplates:
             # Create requests for all these templates, insofar as the same
             # user doesn't already have requests pending for them in the same
             # format.
-            cur.execute("""
+            store.execute("""
                 INSERT INTO POExportRequest(person, potemplate, format)
                 SELECT %(person)s, template.id, %(format)s
                 FROM POTemplate AS template
@@ -81,7 +97,7 @@ class POExportRequestSet:
         if pofiles:
             # Create requests for all these translations, insofar as the same
             # user doesn't already have identical requests pending.
-            cur.execute("""
+            store.execute("""
                 INSERT INTO POExportRequest(
                     person, potemplate, pofile, format)
                 SELECT %(person)s, template.id, pofile.id, %(format)s
