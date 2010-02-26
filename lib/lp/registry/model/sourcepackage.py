@@ -489,10 +489,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             target.datecreated = UTC_NOW
         else:
             # ok, we need to create a new one
-            Packaging(distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename,
-            productseries=productseries, owner=user,
-            packaging=PackagingType.PRIME)
+            Packaging(
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename,
+                productseries=productseries, owner=user,
+                packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
 

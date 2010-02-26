@@ -12,7 +12,7 @@ __all__ = [
     'SourcePackageFacets',
     'SourcePackageHelpView',
     'SourcePackageNavigation',
-    'SourcePackagePackaging',
+    'SourcePackageRemoveUpstreamView',
     'SourcePackageView',
     ]
 
@@ -40,7 +40,7 @@ from canonical.launchpad.browser.packagerelationship import (
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.packaging import IPackaging
+from lp.registry.interfaces.packaging import IPackaging, IPackagingUtil
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productseries import IProductSeries
@@ -108,7 +108,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     usedfor = ISourcePackage
     facet = 'overview'
     links = [
-        'distribution_source_package', 'edit_packaging',
+        'distribution_source_package', 'edit_packaging', 'remove_packaging',
         'changelog', 'builds', 'set_upstream',
         ]
 
@@ -123,6 +123,10 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
+
+    def remove_packaging(self):
+        return Link(
+            '+remove-packaging', 'Remove upstream link', icon='remove')
 
     def set_upstream(self):
         return Link("+edit-packaging", "Set upstream link", icon="add")
@@ -274,6 +278,31 @@ class SourcePackageChangeUpstreamView(MultiStepView):
     total_steps = 2
     first_step = SourcePackageChangeUpstreamStepOne
 
+
+class SourcePackageRemoveUpstreamView(LaunchpadFormView):
+    """A view for removing the link to an upstream package."""
+
+    schema = Interface
+    field_names = []
+    title = 'Unlink an upstream project'
+    page_title = title
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    next_url = cancel_url
+
+    @action('Unlink')
+    def unlink(self, action, data):
+        old_series = self.context.productseries
+        getUtility(IPackagingUtil).deletePackaging(
+            self.context.productseries,
+            self.context.sourcepackagename,
+            self.context.distroseries)
+        self.request.response.addInfoNotification(
+            'The %s was unlinked from this source package.' %
+            old_series.title)
 
 class SourcePackageView:
     """A view for (distro series) source packages."""

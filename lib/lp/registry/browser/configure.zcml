@@ -2128,6 +2128,14 @@
         facet="overview"
         template="../templates/sourcepackage-edit-packaging.pt"
         />
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="launchpad.AnyPerson"
+        class="lp.registry.browser.sourcepackage.SourcePackageRemoveUpstreamView"
+        name="+remove-packaging"
+        facet="overview"
+        template="../templates/sourcepackage-remove-packaging.pt"
+        />
 
     <browser:page
         for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
