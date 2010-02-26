@@ -71,6 +71,6 @@ class ITemporaryStorageManager(Interface):
     def delete(uuid):
         """Delete a TemporaryBlobStorage by uuid."""
 
-    @collection_default_content(user=REQUEST_USER)
-    def default_temporary_blob_storage_list(user):
+    @collection_default_content()
+    def default_temporary_blob_storage_list():
         """Return the default list of ITemporaryBlobStorage objects."""

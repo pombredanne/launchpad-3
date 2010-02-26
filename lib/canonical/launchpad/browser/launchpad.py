@@ -573,7 +573,7 @@ class LaunchpadRootNavigation(Navigation):
         'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
         '+rpconfig': IOpenIDRPConfigSet,
-        'temporary_blobs': ITemporaryStorageManager,
+        'temporary-blobs': ITemporaryStorageManager,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,

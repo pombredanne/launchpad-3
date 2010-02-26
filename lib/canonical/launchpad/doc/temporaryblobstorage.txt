@@ -60,7 +60,7 @@ Size limits can be enforced, although this is turned off by default:
 Checking blob processing status
 -------------------------------
 
-A blob has an hasBeenProcessed() methopd which returns True if the
+A blob has an hasBeenProcessed() method which returns True if the
 ProcessApportBlobJob for the blob has been completed.
 
 The hasBeenProcessed() of a  newly created blob, with no
@@ -77,7 +77,6 @@ We'll create a ProcessApportBlobJob for the blob.
     ...     IProcessApportBlobJobSource)
     >>> processing_job = getUtility(IProcessApportBlobJobSource).create(
     ...     blob)
-    >>> transaction.commit()
 
     >>> blob = getUtility(ITemporaryStorageManager).fetch(blob_token)
     >>> processing_job.blob == blob

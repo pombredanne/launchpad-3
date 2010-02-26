@@ -67,10 +67,7 @@ class TemporaryBlobStorage(SQLBase):
         except SQLObjectNotFound:
             return False
 
-        if job_for_blob.job.status == JobStatus.COMPLETED:
-            return True
-        else:
-            return False
+        return (job_for_blob.job.status == JobStatus.COMPLETED)
 
 
 class TemporaryStorageManager:
@@ -129,7 +126,7 @@ class TemporaryStorageManager:
         if blob is not None:
             TemporaryBlobStorage.delete(blob.id)
 
-    def default_temporary_blob_storage_list(self, user=None):
+    def default_temporary_blob_storage_list(self):
         """See `ITemporaryStorageManager`."""
         # Return the 50 most recent blobs.
         store = IStore(TemporaryBlobStorage)
