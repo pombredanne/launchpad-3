@@ -222,7 +222,8 @@ class BugContextMenu(ContextMenu):
         text = 'Subscribe someone else'
         return Link(
             '+addsubscriber', text, icon='add', summary=(
-                'Launchpad will email that person whenever this bugs changes'))
+                'Launchpad will email that person whenever this bugs '
+                'changes'))
 
     def nominate(self):
         """Return the 'Target/Nominate for release' Link."""
@@ -961,4 +962,3 @@ def bug_description_xhtml_representation(context, field, request):
         html    = formatter(nomail).text_to_html()
         return html.encode('utf-8')
     return renderer
-
