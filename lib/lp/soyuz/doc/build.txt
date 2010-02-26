@@ -780,7 +780,7 @@ Let's make cprov's archive private (and hence its builds become private):
 
 The default set of builds with no user specified excludes private builds:
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> bob_builds = bob.getBuildRecords()
     >>> print_build_details(bob_builds)

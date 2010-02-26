@@ -240,7 +240,7 @@ in categories. They are:
  * 'PPA build machines': a group of builders capable of building
    'untrusted' sources, PPA packages. The 'virtualized' build-farm.
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> builderset = getUtility(IBuilderSet)
 
     >>> builderset_view = getMultiAdapter(
