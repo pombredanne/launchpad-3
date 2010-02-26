@@ -103,13 +103,15 @@ from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, BugTaskStatusSearchDisplay, IBugTask, IBugTaskSearch,
+    BugBranchSearch, BugTagsSearchCombinator, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay,
+    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY, IBugTask, IBugTaskSearch,
     IBugTaskSet, ICreateQuestionFromBugTaskForm, IDistroBugTask,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
     IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
+    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
+    RESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -121,7 +123,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
@@ -1848,6 +1850,14 @@ class BugsStatsMixin(BugsInfoMixin):
             params.assignee = self.user
             return self.context.searchTasks(params).count()
 
+    @property
+    def bugs_with_patches_count(self):
+        """A count of unresolved bugs with patches."""
+        return self.context.searchTasks(
+            None, user=self.user,
+            status=(UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES),
+            omit_duplicates=True, has_patch=True).count()
+
 
 class BugListingPortletInfoView(LaunchpadView, BugsInfoMixin):
     """Portlet containing available bug listings without stats."""
@@ -1858,7 +1868,8 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 
 def get_buglisting_search_filter_url(
-        assignee=None, importance=None, status=None, status_upstream=None):
+        assignee=None, importance=None, status=None, status_upstream=None,
+        has_patches=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -1870,6 +1881,8 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.status', status))
     if status_upstream is not None:
         search_params.append(('field.status_upstream', status_upstream))
+    if has_patches is not None:
+        search_params.append(('field.has_patch', 'on'))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
@@ -2095,7 +2108,7 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 'nominations',
                 'subscribe',
                 )
-        elif IProject.providedBy(bug_target):
+        elif IProjectGroup.providedBy(bug_target):
             return ()
         else:
             return ()
@@ -2312,6 +2325,16 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             if has_patch:
                 data["attachmenttype"] = BugAttachmentType.PATCH
 
+            has_branches = data.get('has_branches', True)
+            has_no_branches = data.get('has_no_branches', True)
+            if has_branches and not has_no_branches:
+                data['linked_branches'] = BugBranchSearch.BUGS_WITH_BRANCHES
+            elif not has_branches and has_no_branches:
+                data['linked_branches'] = (
+                    BugBranchSearch.BUGS_WITHOUT_BRANCHES)
+            else:
+                data['linked_branches'] = BugBranchSearch.ALL
+
             # Filter appropriately if the user wants to restrict the
             # search to only bugs with no package information.
             has_no_package = data.pop("has_no_package", False)
@@ -2489,14 +2512,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-
         return helpers.shortlist(widget_values, longest_expected=10)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
         return self.getWidgetValues(
             vocabulary=BugTaskStatusSearchDisplay,
-            default_values=UNRESOLVED_BUGTASK_STATUSES)
+            default_values=DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY)
 
     def getImportanceWidgetValues(self):
         """Return data used to render the Importance checkboxes."""
@@ -2572,7 +2594,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Should the upstream status filtering widgets be shown?"""
         return self.isUpstreamProduct or not (
             IProduct.providedBy(self.context) or
-            IProject.providedBy(self.context))
+            IProjectGroup.providedBy(self.context))
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
@@ -2703,9 +2725,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def _projectContext(self):
         """Is this page being viewed in a project context?
 
-        Return the IProject if yes, otherwise return None.
+        Return the IProjectGroup if yes, otherwise return None.
         """
-        return IProject(self.context, None)
+        return IProjectGroup(self.context, None)
 
     def _personContext(self):
         """Is this page being viewed in a person context?
@@ -2876,7 +2898,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
             search_params.setProductSeries(self.context)
         elif IProduct.providedBy(self.context):
             search_params.setProduct(self.context)
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             search_params.setProject(self.context)
         elif (ISourcePackage.providedBy(self.context) or
               IDistributionSourcePackage.providedBy(self.context)):

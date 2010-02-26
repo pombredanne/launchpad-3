@@ -425,11 +425,13 @@ class BranchView(LaunchpadView, FeedsMixin):
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
+    @property
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
-        return (self.user is not None and
-                self.user.inTeam(self.context.owner) and
-                self.context.branch_type == BranchType.HOSTED)
+        branch = self.context
+        if branch.branch_type != BranchType.HOSTED:
+            return False
+        return check_permission('launchpad.Edit', branch)
 
     def user_can_download(self):
         """Whether the user can download this branch."""
@@ -512,7 +514,9 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     def iconForCodeImportResultStatus(self, status):
         """The icon to represent the `CodeImportResultStatus` `status`."""
-        if status in CodeImportResultStatus.successes:
+        if status == CodeImportResultStatus.SUCCESS_PARTIAL:
+            return "/@@/yes-gray"
+        elif status in CodeImportResultStatus.successes:
             return "/@@/yes"
         else:
             return "/@@/no"
@@ -1185,8 +1189,10 @@ class RegisterProposalSchema(Interface):
             ' will not be shown in the diff.)'))
 
     comment = Text(
-        title=_('Initial Comment'), required=False,
-        description=_('Describe your change.'))
+        title=_('Description of the Change'), required=False,
+        description=_('Describe what changes your branch introduces, '
+                      'what bugs it fixes, or what features it implements. '
+                      'Ideally include rationale and how to test.'))
 
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
@@ -1256,7 +1262,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 registrant=registrant, target_branch=target_branch,
                 prerequisite_branch=prerequisite_branch,
                 needs_review=data['needs_review'],
-                initial_comment=data.get('comment'),
+                description=data.get('comment'),
                 review_requests=review_requests,
                 commit_message=data.get('commit_message'))
             self.next_url = canonical_url(proposal)

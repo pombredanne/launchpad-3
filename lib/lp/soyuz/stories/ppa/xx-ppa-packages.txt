@@ -140,8 +140,8 @@ published, this will be indicated to the viewer:
     >>> print pmount_i386_pub.displayname
     pmount 0.1-1 in warty i386
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-    >>> pmount_i386_pub.secure_record.status = PackagePublishingStatus.PENDING
-    >>> pmount_i386_pub.secure_record.datepublished = None
+    >>> pmount_i386_pub.status = PackagePublishingStatus.PENDING
+    >>> pmount_i386_pub.datepublished = None
     >>> transaction.commit()
     >>> logout()
 
@@ -250,12 +250,12 @@ for iceweasel before marking it as superseded.
     ...     iceweasel_pub.getBuilds()[0], 'bar-bin')
     >>> pub_bins = test_publisher.publishBinaryInArchive(
     ...     bpr, cprov.archive, status=PackagePublishingStatus.PUBLISHED)
-    >>> iceweasel_pub.secure_record.status = (
+    >>> iceweasel_pub.status = (
     ...     PackagePublishingStatus.SUPERSEDED)
     >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount')[0]
-    >>> pmount_pub.secure_record.status = PackagePublishingStatus.DELETED
-    >>> pmount_pub.secure_record.removed_by = cprov
-    >>> pmount_pub.secure_record.removal_comment = 'nhack !'
+    >>> pmount_pub.status = PackagePublishingStatus.DELETED
+    >>> pmount_pub.removed_by = cprov
+    >>> pmount_pub.removal_comment = 'nhack !'
     >>> logout()
     >>> transaction.commit()
     >>> from canonical.database.sqlbase import flush_database_updates

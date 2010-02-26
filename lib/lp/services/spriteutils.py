@@ -112,6 +112,10 @@ class SpriteUtil:
                 if parameters['sprite-ref'] == group_name:
                     filename = self._getSpriteImagePath(
                         rule, url_prefix_substitutions)
+                    if filename == '':
+                        raise AssertionError(
+                            "Missing background-image url for %s css style"
+                            % rule.selectorText)
                     self.sprite_info.append(
                         dict(filename=filename, rule=rule))
 
@@ -155,7 +159,12 @@ class SpriteUtil:
         total_sprite_height = 0
         for sprite in self.sprite_info:
             abs_filename = os.path.join(css_dir, sprite['filename'])
-            sprite_images[sprite['filename']] = Image.open(abs_filename)
+            try:
+                sprite_images[sprite['filename']] = Image.open(abs_filename)
+            except IOError:
+                print >> sys.stderr, "Error opening '%s' for %s css rule" % (
+                    abs_filename, sprite['rule'].selectorText)
+                raise
             width, height = sprite_images[sprite['filename']].size
             max_sprite_width = max(width, max_sprite_width)
             total_sprite_height += height

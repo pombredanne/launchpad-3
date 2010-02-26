@@ -55,4 +55,6 @@
         factory="lp.translations.browser.language.LanguageSetBreadcrumb"
         permission="zope.Public"/>
 
+    <include package=".browser"/>
+
 </configure>

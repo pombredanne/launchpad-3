@@ -666,8 +666,27 @@
                     addChange
                     markAsDuplicate
                     linkHWSubmission
-                    unlinkHWSubmission"
-                set_attributes="datecreated date_last_updated name title description                                                                                                                 ownerID owner duplicateof communityscore                                                                                                                 communitytimestamp hits hitstimestamp activityscore                                                                                                                 activitytimestamp activity initial_message                                                                                                                 security_related tags who_made_private date_made_private"/>
+                    unlinkHWSubmission
+                    linkAttachment"
+                set_attributes="
+                    activity initial_message
+                    activityscore
+                    activitytimestamp
+                    communityscore
+                    communitytimestamp
+                    date_last_updated
+                    date_made_private
+                    datecreated
+                    duplicateof
+                    hits
+                    hitstimestamp
+                    name
+                    owner
+                    ownerID
+                    security_related
+                    tags
+                    title description
+                    who_made_private"/>
             <require
                 permission="launchpad.AnyPerson"
                 attributes="
@@ -926,4 +945,9 @@
         <allow
             interface="lp.bugs.interfaces.apportjob.IProcessApportBlobJobSource"/>
     </securedutility>
+
+    <!-- FileBugData -->
+    <class class="lp.bugs.model.bug.FileBugData">
+        <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
+    </class>
 </configure>

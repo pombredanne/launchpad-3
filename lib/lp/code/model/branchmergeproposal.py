@@ -114,6 +114,8 @@ class BranchMergeProposal(SQLBase):
     prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
+    description = StringCol(default=None)
+
     whiteboard = StringCol(default=None)
 
     queue_status = EnumCol(
@@ -206,17 +208,6 @@ class BranchMergeProposal(SQLBase):
     def target(self):
         """See `IHasBranchTarget`."""
         return self.source_branch.target
-
-    @property
-    def root_comment(self):
-        return CodeReviewComment.selectOne("""
-            CodeReviewMessage.id in (
-                SELECT CodeReviewMessage.id
-                    FROM CodeReviewMessage, Message
-                    WHERE CodeReviewMessage.branch_merge_proposal = %d AND
-                          CodeReviewMessage.message = Message.id
-                    ORDER BY Message.datecreated LIMIT 1)
-            """ % self.id)
 
     root_message_id = StringCol(default=None)
 
@@ -517,7 +508,7 @@ class BranchMergeProposal(SQLBase):
             registrant=registrant,
             target_branch=self.target_branch,
             prerequisite_branch=self.prerequisite_branch,
-            whiteboard=self.whiteboard,
+            description=self.description,
             needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive

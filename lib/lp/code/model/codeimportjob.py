@@ -102,7 +102,7 @@ class CodeImportJobSet(object):
         except SQLObjectNotFound:
             return None
 
-    def getJobForMachine(self, hostname):
+    def getJobForMachine(self, hostname, worker_limit):
         """See `ICodeImportJobSet`."""
         job_workflow = getUtility(ICodeImportJobWorkflow)
         for job in self.getReclaimableJobs():
@@ -111,7 +111,7 @@ class CodeImportJobSet(object):
         if machine is None:
             machine = getUtility(ICodeImportMachineSet).new(
                 hostname, CodeImportMachineState.ONLINE)
-        elif not machine.shouldLookForJob():
+        elif not machine.shouldLookForJob(worker_limit):
             return None
         job = CodeImportJob.selectOne(
             """id IN (SELECT id FROM CodeImportJob
@@ -286,7 +286,10 @@ class CodeImportJobWorkflow:
                 dict(review_status=CodeImportReviewStatus.FAILING), None)
         # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
-            self.newJob(code_import)
+            extra = {}
+            if status == CodeImportResultStatus.SUCCESS_PARTIAL:
+                extra['date_due'] = UTC_NOW
+            self.newJob(code_import, **extra)
         # If the status was successful, update date_last_successful.
         if status in [CodeImportResultStatus.SUCCESS,
                       CodeImportResultStatus.SUCCESS_NOCHANGE]:

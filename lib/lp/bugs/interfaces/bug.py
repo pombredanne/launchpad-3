@@ -16,7 +16,7 @@ __all__ = [
     'IBugDelta',
     'IBugSet',
     'IFrontPageBugAddForm',
-    'IProjectBugAddForm',
+    'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
     'UserCannotUnsubscribePerson',
@@ -513,6 +513,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         :is_patch: A boolean.
         """
 
+    def linkAttachment(owner, file_alias, comment, is_patch=False,
+                       description=None):
+        """Link an `ILibraryFileAlias` to this bug.
+
+        :owner: An IPerson.
+        :file_alias: The `ILibraryFileAlias` to link to this bug.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
     def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
@@ -891,8 +903,8 @@ class IBugAddForm(IBug):
         required=True, default=False)
 
 
-class IProjectBugAddForm(IBugAddForm):
-    """Create a bug for an IProject."""
+class IProjectGroupBugAddForm(IBugAddForm):
+    """Create a bug for an IProjectGroup."""
     product = Choice(
         title=_("Project"), required=True,
         vocabulary="ProjectProductsUsingMalone")
@@ -1019,6 +1031,19 @@ class IBugSet(Interface):
         # XXX 2010-01-08 gmb bug=505850:
         #     Note, this method should go away when we have a proper
         #     permissions system for scripts.
+
+
+class IFileBugData(Interface):
+    """A class containing extra data to be used when filing a bug."""
+
+    initial_summary = Attribute("The initial summary for the bug.")
+    private = Attribute("Whether the bug should be private.")
+    extra_description = Attribute("A longer description of the bug.")
+    initial_tags = Attribute("The initial tags for the bug.")
+    subscribers = Attribute("The initial subscribers for the bug.")
+    comments = Attribute("Comments to add to the bug.")
+    attachments = Attribute("Attachments to add to the bug.")
+    hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
 
 
 class InvalidBugTargetType(Exception):

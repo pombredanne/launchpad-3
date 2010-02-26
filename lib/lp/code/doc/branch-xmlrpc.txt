@@ -417,8 +417,8 @@ Launchpad will still resolve the branch even if it doesn't exist:
     >>> results = branchset_api.resolve_lp_path('~mark/+junk/doesntexist')
     >>> for url in results['urls']:
     ...     print url
-    bzr+ssh://bazaar.launchpad.dev/~mark/+junk/doesntexist
-    http://bazaar.launchpad.dev/~mark/+junk/doesntexist
+    bzr+ssh://bazaar.launchpad.dev/~mark/%2Bjunk/doesntexist
+    http://bazaar.launchpad.dev/~mark/%2Bjunk/doesntexist
 
 
 But if the project or the user doesn't exist, Launchpad will return a fault:

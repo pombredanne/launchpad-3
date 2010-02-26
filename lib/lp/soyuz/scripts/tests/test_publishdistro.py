@@ -291,7 +291,7 @@ class TestPublishDistro(TestNativePublishingBase):
         self.prepareBreezyAutotest()
         pub_binaries = self.getPubBinaries(format=BinaryPackageFormat.DDEB)
         for binary in pub_binaries:
-            binary.secure_record.archive = debug_archive
+            binary.archive = debug_archive
 
         # Commit setup changes, so the script can operate on them.
         self.layer.txn.commit()
@@ -307,6 +307,48 @@ class TestPublishDistro(TestNativePublishingBase):
             repo_path, 'dists/breezy-autotest/main/binary-i386/Packages')
         self.assertEqual(
             open(debug_index_path).readlines()[0], 'Package: foo-bin\n')
+
+    def testPublishCopyArchive(self):
+        """Run publish-distro in copy archive mode.
+
+        It should only publish copy archives.
+        """
+        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        copy_archive_name = 'test-copy-publish'
+
+        # The COPY repository path is not created yet.
+        repo_path = os.path.join(
+            config.archivepublisher.root,
+            ubuntutest.name + '-' + copy_archive_name,
+            ubuntutest.name)
+        self.assertNotExists(repo_path)
+
+        copy_archive = getUtility(IArchiveSet).new(
+            distribution=ubuntutest, owner=cprov, name=copy_archive_name,
+            purpose=ArchivePurpose.COPY, enabled=True)
+        # Save some test CPU cycles by avoiding logging in as the user
+        # necessary to alter the publish flag.
+        removeSecurityProxy(copy_archive).publish = True
+
+        # Publish something.
+        pub_source =  self.getPubSource(
+            sourcename='baz', filecontent='baz', archive=copy_archive)
+
+        # Try a plain PPA run, to ensure the copy archive is not published.
+        self.runPublishDistro(['--ppa'])
+
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+
+        # Now publish the copy archives and make sure they are really
+        # published.
+        self.runPublishDistro(['--copy-archive'])
+
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+
+        # Make sure that the files were published in the right place.
+        pool_path = os.path.join(repo_path, 'pool/main/b/baz/baz_666.dsc')
+        self.assertExists(pool_path)
 
     def testRunWithEmptySuites(self):
         """Try a publish-distro run on empty suites in careful_apt mode
@@ -347,7 +389,8 @@ class TestPublishDistro(TestNativePublishingBase):
         """Test that some command line options are mutually exclusive."""
         self.assertRaises(
             LaunchpadScriptFailure,
-            self.runPublishDistro, ['--ppa', '--partner', '--primary-debug'])
+            self.runPublishDistro,
+            ['--ppa', '--partner', '--primary-debug', '--copy-archive'])
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro, ['--ppa', '--partner'])
@@ -359,10 +402,19 @@ class TestPublishDistro(TestNativePublishingBase):
             self.runPublishDistro, ['--ppa', '--primary-debug'])
         self.assertRaises(
             LaunchpadScriptFailure,
+            self.runPublishDistro, ['--ppa', '--copy-archive'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
             self.runPublishDistro, ['--partner', '--private-ppa'])
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro, ['--partner', '--primary-debug'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--partner', '--copy-archive'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--primary-debug', '--copy-archive'])
 
 
 def test_suite():

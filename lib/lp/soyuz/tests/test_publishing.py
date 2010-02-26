@@ -19,8 +19,7 @@ from lp.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory,
-    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -35,6 +34,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingStatus)
 from canonical.launchpad.scripts import FakeLogger
@@ -130,12 +130,20 @@ class SoyuzTestPublisher:
     def addPackageUpload(self, archive, distroseries,
                          pocket=PackagePublishingPocket.RELEASE,
                          changes_file_name="foo_666_source.changes",
-                         changes_file_content="fake changes file content"):
+                         changes_file_content="fake changes file content",
+                         upload_status=PackageUploadStatus.DONE):
         signing_key =  self.person.gpgkeys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, changes_file_name, changes_file_content, archive,
             signing_key)
-        package_upload.setDone()
+
+        status_to_method = {
+            PackageUploadStatus.DONE: 'setDone',
+            PackageUploadStatus.ACCEPTED: 'setAccepted',
+            }
+        method = getattr(package_upload, status_to_method[upload_status])
+        method()
+
         return package_upload
 
     def getPubSource(self, sourcename=None, version='666', component='main',
@@ -152,8 +160,13 @@ class SoyuzTestPublisher:
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
-                     maintainer=None, creator=None, date_uploaded=UTC_NOW):
-        """Return a mock source publishing record."""
+                     maintainer=None, creator=None, date_uploaded=UTC_NOW,
+                     spr_only=False):
+        """Return a mock source publishing record.
+
+        if spr_only is specified, the source is not published and the
+        sourcepackagerelease object is returned instead.
+        """
         if sourcename is None:
             sourcename = self.default_package_name
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
@@ -194,11 +207,19 @@ class SoyuzTestPublisher:
             archive=archive, dateuploaded=date_uploaded)
 
         changes_file_name = "%s_%s_source.changes" % (sourcename, version)
+        if spr_only:
+            upload_status = PackageUploadStatus.ACCEPTED
+        else:
+            upload_status = PackageUploadStatus.DONE
         package_upload = self.addPackageUpload(
             archive, distroseries, pocket,
             changes_file_name=changes_file_name,
-            changes_file_content=changes_file_content)
+            changes_file_content=changes_file_content,
+            upload_status=upload_status)
         package_upload.addSource(spr)
+
+        if spr_only:
+            return spr
 
         if filename is None:
             filename = "%s_%s.dsc" % (sourcename, version)
@@ -211,7 +232,7 @@ class SoyuzTestPublisher:
         else:
             datepublished = None
 
-        sspph = SecureSourcePackagePublishingHistory(
+        spph = SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
@@ -222,13 +243,9 @@ class SoyuzTestPublisher:
             datepublished=datepublished,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            embargo=False,
             archive=archive)
 
-
-        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
-        # of SSPPH and other useful attributes.
-        return SourcePackagePublishingHistory.get(sspph.id)
+        return spph
 
     def getPubBinaries(self, binaryname='foo-bin', summary='Foo app is great',
                        description='Well ...\nit does nothing, though',
@@ -363,9 +380,9 @@ class SoyuzTestPublisher:
         else:
             archs = distroarchseries.distroseries.architectures
 
-        secure_pub_binaries = []
+        pub_binaries = []
         for arch in archs:
-            pub = SecureBinaryPackagePublishingHistory(
+            pub = BinaryPackagePublishingHistory(
                 distroarchseries=arch,
                 binarypackagerelease=binarypackagerelease,
                 component=binarypackagerelease.component,
@@ -376,20 +393,19 @@ class SoyuzTestPublisher:
                 dateremoved=dateremoved,
                 datecreated=UTC_NOW,
                 pocket=pocket,
-                embargo=False,
                 archive=archive)
             if status == PackagePublishingStatus.PUBLISHED:
                 pub.datepublished = UTC_NOW
-            secure_pub_binaries.append(pub)
+            pub_binaries.append(pub)
 
-        return [BinaryPackagePublishingHistory.get(pub.id)
-                for pub in secure_pub_binaries]
+        return pub_binaries
 
     def _findChangesFile(self, top, name_fragment):
         """File with given name fragment in directory tree starting at top."""
         for root, dirs, files in os.walk(top, topdown=False):
             for name in files:
-                if name.endswith('.changes') and name.find(name_fragment) > -1:
+                if (name.endswith('.changes') and 
+                    name.find(name_fragment) > -1):
                     return os.path.join(root, name)
         return None
 
@@ -510,14 +526,6 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
         self.checkSourcePublication(source, status)
         self.checkBinaryPublications(binaries, status)
 
-    def getSecureSource(self, source):
-        """Return the corresponding SecureSourcePackagePublishingHistory."""
-        return SecureSourcePackagePublishingHistory.get(source.id)
-
-    def getSecureBinary(self, binary):
-        """Return the corresponding SecureBinaryPackagePublishingHistory."""
-        return SecureBinaryPackagePublishingHistory.get(binary.id)
-
     def checkPastDate(self, date, lag=None):
         """Assert given date is older than 'now'.
 
@@ -540,7 +548,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
         self.assertEqual(
             PackagePublishingStatus.PUBLISHED,
-            pub_source.secure_record.status)
+            pub_source.status)
         pool_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
@@ -551,7 +559,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_binary.publish(self.disk_pool, self.logger)
         self.assertEqual(
             PackagePublishingStatus.PUBLISHED,
-            pub_binary.secure_record.status)
+            pub_binary.status)
         pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
@@ -567,7 +575,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_binary.publish(self.disk_pool, self.logger)
         self.assertEqual(
             PackagePublishingStatus.PUBLISHED,
-            pub_binary.secure_record.status)
+            pub_binary.status)
 
         # But the DDEB isn't dumped to the repository pool/.
         pool_path = "%s/main/f/foo/foo-bin_666_all.ddeb" % self.pool_dir
@@ -737,7 +745,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
             if item is not PackagePublishingStatus.PENDING]
 
         for status in forbidden_status:
-            source.secure_record.status = status
+            source.status = status
             self.layer.commit()
             self.assertRaisesWithContent(
                 AssertionError,
