@@ -12,7 +12,9 @@ import logging
 import os.path
 
 from zope.component import getUtility
+from zope.interface import implements
 from zope.tal.talinterpreter import TALInterpreter, I18nMessageTypes
+from zope.tales.interfaces import ITALESExpression
 
 from canonical.base import base
 from canonical.config import config
@@ -31,6 +33,7 @@ class MemcacheExpr:
         [... Potentially expensive page template chunk ...]
     </div>
     """
+    implements(ITALESExpression)
     def __init__(self, name, expr, engine):
         """expr is in the format "visibility, 42 units".
 

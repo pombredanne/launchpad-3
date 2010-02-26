@@ -1,0 +1,60 @@
+Memcache with TALES
+===================
+
+We have extended TALES with a cache: expression to allow chunks of
+rendered page templates to be cached in Memcached.
+
+    >>> from textwrap import dedent
+    >>> from zope.pagetemplate.pagetemplate import PageTemplate
+
+    >>> class TestPageTemplate(PageTemplate):
+    ...     _num_instances = 0
+    ...     def __init__(self, source):
+    ...         super(TestPageTemplate, self).__init__()
+    ...         TestPageTemplate._num_instances += 1
+    ...         self._my_instance_num = TestPageTemplate._num_instances
+    ...         self.pt_edit(source, 'text/html')
+    ...     def pt_source_file(self):
+    ...         return 'fake/test_%d.pt' % self._my_instance_num
+
+
+    >>> def clear_memcache():
+    ...     from lp.services.memcache.interfaces import IMemcacheClient
+    ...     getUtility(IMemcacheClient).flush_all() # Only do this in tests!
+
+
+    >>> template = TestPageTemplate(dedent("""\
+    ...     <div tal:content="cache:public,1 hour">
+    ...         <span tal:content="param">placeholder</span>
+    ...     </div>"""))
+
+
+The first time we render the page template, there is no information
+in the cache. The cachable section is interpreted and stored in the cache
+for next time.
+
+    >>> print template(param='first')
+    <div>
+        <span>first</span>
+    </div>
+
+
+The second time we render the page template, the cached information
+is used. We prove this here by changing our parameters, which would
+cause this template to render differently.
+
+    >>> print template(param='second')
+    <div>
+        <span>first</span>
+    </div>
+
+
+If we clear the cache, it will be rendered as expected.
+
+    >>> clear_memcache()
+    >>> print template(param='third')
+    <div>
+        <span>third</span>
+    </div>
+
+
