@@ -421,7 +421,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return a source package in this distro series by name.
 
         The name given may be a string or an ISourcePackageName-providing
-        object.
+        object. The source package may not be published in the distro series.
         """
 
     def getTranslatableSourcePackages():
@@ -516,7 +516,8 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getBinaryPackage(name):
         """Return a DistroSeriesBinaryPackage for this name.
 
-        The name given may be an IBinaryPackageName or a string.
+        The name given may be an IBinaryPackageName or a string.  The
+        binary package may not be published in the distro series.
         """
 
     def getSourcePackageRelease(sourcepackagerelease):

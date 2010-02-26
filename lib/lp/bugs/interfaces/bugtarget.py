@@ -61,6 +61,8 @@ class IHasBugs(Interface):
         description=_("The list of bug tags defined as official."),
         value_type=Tag(),
         readonly=True))
+    max_bug_heat = Attribute(
+        "The current highest bug heat value for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(
@@ -179,7 +181,7 @@ class IHasBugs(Interface):
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False):
+                    hardware_is_linked_to_bug=False, linked_branches=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -218,6 +220,9 @@ class IHasBugs(Interface):
             :statuses: Only bugs with these statuses will be counted. If
                        None, all statuses will be included.
         """
+
+    def setMaxBugHeat(heat):
+        """Set the max_bug_heat for this context."""
 
 
 class IBugTarget(IHasBugs):

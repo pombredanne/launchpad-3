@@ -33,7 +33,9 @@ __all__ = [
     'BugTaskTextView',
     'BugTaskView',
     'BugTasksAndNominationsView',
+    'bugtask_heat_html',
     'BugsBugTaskSearchListingView',
+    'calculate_heat_display',
     'NominationsReviewTableBatchNavigatorView',
     'TextualBugTaskSearchListingView',
     'get_buglisting_search_filter_url',
@@ -49,6 +51,7 @@ import re
 from simplejson import dumps
 import urllib
 from operator import attrgetter, itemgetter
+from math import floor, log
 
 from zope import component
 from zope.app.form import CustomWidgetFactory
@@ -103,8 +106,9 @@ from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, BugTaskStatusSearchDisplay, IBugTask, IBugTaskSearch,
+    BugBranchSearch, BugTagsSearchCombinator, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay,
+    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY, IBugTask, IBugTaskSearch,
     IBugTaskSet, ICreateQuestionFromBugTaskForm, IDistroBugTask,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
@@ -1079,10 +1083,32 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        view = getMultiAdapter(
-            (self.context.bug, self.request),
-            name='+bug-heat')
-        return view()
+        return bugtask_heat_html(self.context)
+
+
+def calculate_heat_display(heat, max_bug_heat):
+    """Calculate the number of heat 'flames' to display."""
+    heat = float(heat)
+    max_bug_heat = float(max_bug_heat)
+    if heat / max_bug_heat < 0.33333:
+        return 0
+    if heat / max_bug_heat < 0.66666:
+        return int(floor((heat / max_bug_heat) * 4))
+    else:
+        return int(floor((log(heat) / log(max_bug_heat)) * 4))
+
+
+def bugtask_heat_html(bugtask):
+    """Render the HTML representing bug heat for a given bugask."""
+    max_bug_heat = bugtask.target.max_bug_heat
+    if max_bug_heat is None:
+        max_bug_heat = 5000
+    heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
+    html = (
+        '<img src="/@@/bug-heat-%(ratio)i.png" '
+        'alt="%(ratio)i out of 4 heat flames"  title="Heat: %(heat)i" />'
+        % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
+    return html
 
 
 class BugTaskPortletView:
@@ -1966,10 +1992,7 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        view = getMultiAdapter(
-            (self.bugtask.bug, self.request),
-            name='+bug-heat')
-        return view()
+        return bugtask_heat_html(self.bugtask)
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -2324,6 +2347,16 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             if has_patch:
                 data["attachmenttype"] = BugAttachmentType.PATCH
 
+            has_branches = data.get('has_branches', True)
+            has_no_branches = data.get('has_no_branches', True)
+            if has_branches and not has_no_branches:
+                data['linked_branches'] = BugBranchSearch.BUGS_WITH_BRANCHES
+            elif not has_branches and has_no_branches:
+                data['linked_branches'] = (
+                    BugBranchSearch.BUGS_WITHOUT_BRANCHES)
+            else:
+                data['linked_branches'] = BugBranchSearch.ALL
+
             # Filter appropriately if the user wants to restrict the
             # search to only bugs with no package information.
             has_no_package = data.pop("has_no_package", False)
@@ -2501,14 +2534,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-
         return helpers.shortlist(widget_values, longest_expected=10)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
         return self.getWidgetValues(
             vocabulary=BugTaskStatusSearchDisplay,
-            default_values=UNRESOLVED_BUGTASK_STATUSES)
+            default_values=DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY)
 
     def getImportanceWidgetValues(self):
         """Return data used to render the Importance checkboxes."""
