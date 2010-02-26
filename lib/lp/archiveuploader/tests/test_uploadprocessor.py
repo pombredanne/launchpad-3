@@ -548,6 +548,22 @@ class TestUploadProcessor(TestUploadProcessorBase):
             name="bar")
         queue_item.setDone()
 
+        # Upload and accept a binary for the primary archive source.
+        shutil.rmtree(upload_dir)
+        self.options.context = 'buildd'
+        self.options.buildid = bar_original_build.id
+        self.layer.txn.commit()
+        upload_dir = self.queueUpload("bar_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.is_rejected, False)
+        bar_bin_pubs = self._publishPackage('bar', '1.0-1', source=False)
+        # Mangle its publishing component to "restricted" so we can check
+        # the copy archive ancestry override later.
+        restricted = getUtility(IComponentSet)["restricted"]
+        for pub in bar_bin_pubs:
+            pub.secure_record.component = restricted
+
         # Create a COPY archive for building in non-virtual builds.
         uploader = getUtility(IPersonSet).getByName('name16')
         copy_archive = getUtility(IArchiveSet).new(
@@ -585,6 +601,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             queue_items.count(), 1,
             "Binary upload was not accepted when it should have been.")
+
+        # The copy archive binary published component should have been
+        # inherited from the main archive's.
+        copy_bin_pubs = queue_items[0].realiseUpload()
+        for pub in copy_bin_pubs:
+            self.assertEqual(pub.component.name, restricted.name)
 
     def testCopyArchiveUploadToCurrentDistro(self):
         """Check binary copy archive uploads to RELEASE pockets.
