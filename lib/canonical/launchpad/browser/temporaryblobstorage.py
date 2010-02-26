@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'TemporaryBlobStorageAddView',
+    'TemporaryBlobStorageNavigation',
+    'TemporaryBlobStorageURL',
     ]
 
 from zope.component import getUtility
@@ -83,22 +85,6 @@ class TemporaryBlobStorageURL:
     def path(self):
         """Return the path component of the URL."""
         return u'temporary_blobs/%s' % self.context.uuid
-
-
-class TemporaryStorageManagerURL:
-    """Bug URL creation rules."""
-    implements(ICanonicalUrlData)
-
-    inside = None
-    rootsite = None
-
-    def __init__(self, context):
-        self.context = context
-
-    @property
-    def path(self):
-        """Return the path component of the URL."""
-        return u'temporary_blobs'
 
 
 class TemporaryBlobStorageNavigation(GetitemNavigation):
