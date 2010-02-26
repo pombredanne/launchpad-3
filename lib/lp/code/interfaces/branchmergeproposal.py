@@ -133,7 +133,7 @@ class IBranchMergeProposal(IPrivacy):
         Text(
             title=_(
                 "The revision id that has been approved by the reviewer.")),
-        exported_as='reviewed_revno')
+        exported_as='reviewed_revid')
 
     commit_message = exported(
         Summary(
@@ -159,7 +159,7 @@ class IBranchMergeProposal(IPrivacy):
             required=False,
             description=_("The revision id that has been queued for "
                           "landing.")),
-        exported_as='queued_revno')
+        exported_as='queued_revid')
 
     merged_revno = exported(
         Int(
