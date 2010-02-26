@@ -13,24 +13,16 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import syncUpdate
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.testing.faketransaction import FakeTransaction
 from lp.translations.scripts.copy_distroseries_translations import (
     copy_distroseries_translations)
 
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class MockTransactionManager:
-    def begin(self):
-        pass
-    def commit(self):
-        pass
-    def abort(self):
-        pass
-
-
 class TestCopying(TestCase):
     layer = LaunchpadZopelessLayer
-    txn = MockTransactionManager()
+    txn = FakeTransaction()
 
     def test_flagsHandling(self):
         """Flags are correctly restored, no matter what their values."""

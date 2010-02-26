@@ -42,12 +42,12 @@ Branch merge proposals can be created through the API.
     private: False
     queue_position: None
     queue_status: u'Needs review'
-    queued_revno: None
+    queued_revid: None
     queuer_link: None
     registrant_link: u'http://api.launchpad.dev/beta/~person-name...'
     resource_type_link:
         u'http://api.launchpad.dev/beta/#branch_merge_proposal'
-    reviewed_revno: None
+    reviewed_revid: None
     reviewer_link: None
     self_link: u'http://api.launchpad.dev/beta/~.../+merge/...'
     source_branch_link: u'http://api.launchpad.dev/beta/~...'
@@ -136,11 +136,11 @@ We use the webservice as an unrelated, unprivileged user.
     private: False
     queue_position: None
     queue_status: u'Work in progress'
-    queued_revno: None
+    queued_revid: None
     queuer_link: None
     registrant_link: u'http://.../~person-name...'
     resource_type_link: u'http://.../#branch_merge_proposal'
-    reviewed_revno: None
+    reviewed_revid: None
     reviewer_link: None
     self_link: u'http://.../~source/fooix/fix-it/+merge/...'
     source_branch_link: u'http://.../~source/fooix/fix-it'
@@ -259,13 +259,13 @@ proposal status to "Approved" as well.
 
     >>> _unused = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'setStatus',
-    ...     status=u'Approved', revno=u'25')
+    ...     status=u'Approved', revid=u'25')
     >>> merge_proposal = reviewer_webservice.get(
     ...     merge_proposal['self_link']).jsonBody()
 
     >>> print merge_proposal['queue_status']
     Approved
-    >>> print merge_proposal['reviewed_revno']
+    >>> print merge_proposal['reviewed_revid']
     25
 
 However, there may have been breakage in the branch, and we need to revert back
@@ -279,7 +279,7 @@ to "Work In Progress" and not specify the revision_id.
 
     >>> print merge_proposal['queue_status']
     Work in progress
-    >>> print merge_proposal['reviewed_revno']
+    >>> print merge_proposal['reviewed_revid']
     None
 
 

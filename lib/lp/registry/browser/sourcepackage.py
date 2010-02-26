@@ -212,6 +212,22 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
             series for series in self.product.series
             if series.status != SeriesStatus.OBSOLETE
             ]
+
+        # If the product is not being changed, then the current
+        # productseries can be the default choice. Otherwise,
+        # it will not exist in the vocabulary.
+        if (self.context.productseries is not None
+            and self.context.productseries.product == self.product):
+            series_default = self.context.productseries
+            # This only happens for obsolete series, since they aren't
+            # added to the vocabulary normally.
+            if series_default not in series_list:
+                series_list.append(series_default)
+        else:
+            series_default = None
+
+        # Put the development focus at the top of the list and create
+        # the vocabulary.
         dev_focus = self.product.development_focus
         if dev_focus in series_list:
             series_list.remove(dev_focus)
@@ -222,15 +238,6 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
         dev_focus_term = SimpleTerm(
             dev_focus, dev_focus.name, "%s (Recommended)" % dev_focus.name)
         vocab_terms.insert(0, dev_focus_term)
-
-        # If the product is not being changed, then the current
-        # productseries can be the default choice. Otherwise,
-        # it will not exist in the vocabulary.
-        if (self.context.productseries is not None
-            and self.context.productseries.product == self.product):
-            series_default = self.context.productseries
-        else:
-            series_default = None
 
         productseries_choice = Choice(
             __name__='productseries',
