@@ -1,10 +1,13 @@
-= Bug branch links =
+================
+Bug branch links
+================
 
 It is possible to link bugs and branches from both the bug page and the branch
 page.
 
 
-== From the branch page ==
+From the branch page
+====================
 
 There is a "Link to a bug report" item in the actions menu that is visible
 to everybody but which links to a page restricted with the
@@ -98,7 +101,8 @@ Sample person can see it...
     No bug branch links
 
 
-== From the bug page ==
+From the bug page
+=================
 
 The action link on the bug page is "Link a related branch".  Again this
 links to a page restricted with the launchpad.AnyPerson permission.
@@ -129,7 +133,8 @@ links to a page restricted with the launchpad.AnyPerson permission.
     Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
 
 
-=== Quick branch registration ===
+Quick branch registration
+=========================
 
 You can also register a branch at the same time as registering a bug-branch
 link. Instead of entering the unique name of a branch, you can enter a URL:
@@ -182,7 +187,8 @@ No bug-branch link is registered:
     No bug branch links
 
 
-== Deleting bug branch links ==
+Deleting bug branch links
+=========================
 
 The edit view for the bug branch also now has a delete button to unlink
 the bug from the branch.
@@ -192,3 +198,23 @@ the bug from the branch.
     >>> browser.getLink(url="+delete").click()
     >>> printBugBranchLinks(browser)
     No bug branch links
+
+
+Deleting a branch with linked bugs
+==================================
+
+    >>> login('no-priv@canonical.com')
+    >>> grub = factory.makeAnyBranch()
+    >>> new_bug = factory.makeBug()
+    >>> grub_bug_link = grub.linkBug(new_bug, grub.owner)
+    >>> grub_url = canonical_url(grub)
+    >>> logout()
+
+    >>> admin_browser.open(grub_url)
+    >>> admin_browser.getLink('Delete branch').click()
+
+    >>> print find_tag_by_id(admin_browser.contents, 'deletion-items')
+    <ul ...
+    <a href="http://bugs.launchpad.dev/product-name.../+bug/..."
+    class="sprite bug-undecided">Bug #...: generic-string...</a>...
+

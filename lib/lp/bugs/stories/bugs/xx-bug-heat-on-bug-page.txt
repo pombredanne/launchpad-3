@@ -3,7 +3,5 @@
 The bug heat appears on the bug index page as four flames.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> print find_tag_by_id(anon_browser.contents, 'registration').fetch('span')[-1]
-    <span><img src="/@@/flame-bw-icon" /><img src="/@@/flame-bw-icon" /><img src="/@@/flame-bw-icon" /><img src="/@@/flame-bw-icon" /></span>
-
-
+    >>> print find_tag_by_id(anon_browser.contents, 'registration').fetch('img')[0]
+    <img src="/@@/bug-heat-0.png" alt="0 out of 4 heat flames" title="Heat: 0" />

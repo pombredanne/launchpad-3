@@ -115,6 +115,11 @@ class BaseStormOpenIDStoreTestsMixin:
         # The nonce can only be used once.
         self.assertEqual(
             self.store.useNonce('server-url', timestamp, 'salt'), True)
+        storm_store = IMasterStore(self.store.Nonce)
+        nonce = storm_store.get(
+            self.store.Nonce, (u'server-url', timestamp, u'salt'))
+        self.assertIsNot(None, nonce)
+
         self.assertEqual(
             self.store.useNonce('server-url', timestamp, 'salt'), False)
         self.assertEqual(
