@@ -184,7 +184,13 @@ class ProcessApportBlobJob(ApportJobDerived):
     def getByBlobUUID(cls, uuid):
         """See `IApportJobSource`."""
         store = IStore(ApportJob)
-        blob = store.get(TemporaryBlobStorage, uuid == uuid)
+
+        # We know there will be at most one TemporaryBlobStorage object
+        # with the UUID we're looking for since UUID is UNIQUE.
+        blob = store.find(
+            TemporaryBlobStorage,
+            TemporaryBlobStorage.uuid == uuid).one()
+
         jobs_for_blob = store.find(
             ApportJob,
             ApportJob.blob == blob,

@@ -70,9 +70,9 @@ class TemporaryBlobStorage(SQLBase):
             job_for_blob = getUtility(
                 IProcessApportBlobJobSource).getByBlobUUID(self.uuid)
         except SQLObjectNotFound:
-            return None
+            return False
 
-        if job_for_blob.job.status == JobStatus.COMPLETE:
+        if job_for_blob.job.status == JobStatus.COMPLETED:
             return True
         else:
             return False
