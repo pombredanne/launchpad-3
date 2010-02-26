@@ -308,8 +308,9 @@ class SourcePackageRemoveUpstreamView(LaunchpadFormView):
             self.context.sourcepackagename,
             self.context.distroseries)
         self.request.response.addInfoNotification(
-            'The %s was unlinked from this source package.' %
-            old_series.title)
+            'The project %s was unlinked from this source package.' %
+            old_series.product.displayname)
+
 
 class SourcePackageView:
     """A view for (distro series) source packages."""
