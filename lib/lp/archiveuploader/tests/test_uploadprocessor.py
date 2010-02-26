@@ -541,6 +541,13 @@ class TestUploadProcessor(TestUploadProcessorBase):
         bar_source_pub = self._publishPackage('bar', '1.0-1')
         [bar_original_build] = bar_source_pub.createMissingBuilds()
 
+        # Move the source from the accepted queue.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1",
+            name="bar")
+        queue_item.setDone()
+
         # Create a COPY archive for building in non-virtual builds.
         uploader = getUtility(IPersonSet).getByName('name16')
         copy_archive = getUtility(IArchiveSet).new(
@@ -567,6 +574,16 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Make sure the upload succeeded.
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
+
+        # The upload should also be auto-accepted even though there's no
+        # ancestry.  This means items should go to ACCEPTED and not NEW.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1",
+            name="bar")
+        self.assertEqual(
+            queue_items.count(), 1,
+            "Binary upload was not accepted when it should have been.")
 
     def testCopyArchiveUploadToCurrentDistro(self):
         """Check binary copy archive uploads to RELEASE pockets.
