@@ -624,6 +624,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.fullseriesname
 
     @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.distribution.max_bug_heat
+
+    @property
     def last_full_language_pack_exported(self):
         return LanguagePack.selectFirstBy(
             distroseries=self, type=LanguagePackType.FULL,

@@ -33,7 +33,9 @@ __all__ = [
     'BugTaskTextView',
     'BugTaskView',
     'BugTasksAndNominationsView',
+    'bugtask_heat_html',
     'BugsBugTaskSearchListingView',
+    'calculate_heat_display',
     'NominationsReviewTableBatchNavigatorView',
     'TextualBugTaskSearchListingView',
     'get_buglisting_search_filter_url',
@@ -49,6 +51,7 @@ import re
 from simplejson import dumps
 import urllib
 from operator import attrgetter, itemgetter
+from math import floor, log
 
 from zope import component
 from zope.app.form import CustomWidgetFactory
@@ -1080,10 +1083,35 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        view = getMultiAdapter(
-            (self.context.bug, self.request),
-            name='+bug-heat')
-        return view()
+        return bugtask_heat_html(self.context)
+
+
+def calculate_heat_display(heat, max_bug_heat):
+    """Calculate the number of heat 'flames' to display."""
+    heat = float(heat)
+    max_bug_heat = float(max_bug_heat)
+    if heat / max_bug_heat < 0.33333:
+        return 0
+    if heat / max_bug_heat < 0.66666:
+        return int(floor((heat / max_bug_heat) * 4))
+    else:
+        return int(floor((log(heat) / log(max_bug_heat)) * 4))
+
+
+def bugtask_heat_html(bugtask):
+    """Render the HTML representing bug heat for a given bugask."""
+    max_bug_heat = bugtask.target.max_bug_heat
+    if max_bug_heat is None:
+        max_bug_heat = 5000
+    heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
+    html = '<span>'
+    for flame in range(1, 5):
+        if flame <= heat_ratio:
+            html += '<img src="/@@/flame-icon" />'
+        else:
+            html += '<img src="/@@/flame-bw-icon" />'
+    html += '</span>'
+    return html
 
 
 class BugTaskPortletView:
@@ -1967,10 +1995,7 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        view = getMultiAdapter(
-            (self.bugtask.bug, self.request),
-            name='+bug-heat')
-        return view()
+        return bugtask_heat_html(self.bugtask)
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
