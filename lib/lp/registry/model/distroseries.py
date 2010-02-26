@@ -315,9 +315,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result += self.distribution.name + self.name
         return result
 
-    @property
-    def packagings(self):
-        """See `IDistroSeries`."""
+    @cachedproperty
+    def _all_packagings(self):
+        """Get an unordered list of all packagings."""
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implicitly needed to work with a
         # Packaging object.
@@ -336,14 +336,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(
                 Product,
                 ProductSeries.product == Product.id)]
-        condition = [Packaging.distroseries == self.id]
-        results = IStore(self).using(*origin).find(find_spec, *condition)
+        condition = Packaging.distroseries == self.id
+        results = IStore(self).using(*origin).find(find_spec, condition)
+        return results
+
+    @property
+    def packagings(self):
+        """See `IDistroSeries`."""
+        results = self._all_packagings
         results = results.order_by(SourcePackageName.name)
         return [
             packaging
             for (packaging, spn, product_series, product) in results]
 
-    def getPriorizedUnlinkedSourcePackages(self):
+    def getPrioritizedUnlinkedSourcePackages(self):
         """See `IDistroSeries`.
 
         The prioritization is a heuristic rule using bug heat,
@@ -368,7 +374,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                  'total_messages': total_messages}
                 for (spn, score, total_bugs, total_messages) in results]
 
-    def getPriorizedlPackagings(self):
+    def getPrioritizedlPackagings(self):
         """See `IDistroSeries`.
 
         The prioritization is a heuristic rule using the branch, bug heat,
@@ -405,7 +411,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
-        """The SQL joins and conditions to prioritise source packages."""
+        """The SQL joins and conditions to prioritize source packages."""
+        # Bugs and PO messages are heuristically scored. These queries
+        # can easily timeout so filters and weights are used to create
+        # an acceptable prioritization of packages that is fast to excecute.
+        bug_heat_filter = 200
+        po_message_weight = .5
         heat_score = ("""
             LEFT JOIN (
                 SELECT
@@ -419,18 +430,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     BugTask.sourcepackagename is not NULL
                     AND BugTask.distribution = %(distribution)s
                     AND BugTask.status in %(statuses)s
+                    AND Bug.heat > %(bug_heat_filter)s
                 GROUP BY BugTask.sourcepackagename
                 ) bugs
                 ON SourcePackageName.id = bugs.sourcepackagename
             """ % sqlvalues(
                 distribution=self.distribution,
-                statuses=UNRESOLVED_BUGTASK_STATUSES))
+                statuses=UNRESOLVED_BUGTASK_STATUSES,
+                bug_heat_filter=bug_heat_filter))
         message_score = ("""
             LEFT JOIN (
                 SELECT
                     POTemplate.sourcepackagename,
                     POTemplate.distroseries,
-                    SUM(POTemplate.messagecount) / 2 AS po_messages,
+                    SUM(POTemplate.messagecount) * %(po_message_weight)s
+                        AS po_messages,
                     SUM(POTemplate.messagecount) AS total_messages
                 FROM POTemplate
                 WHERE
@@ -442,7 +456,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ) messages
                 ON SourcePackageName.id = messages.sourcepackagename
                 AND DistroSeries.id = messages.distroseries
-            """ % sqlvalues(distroseries=self))
+            """ % sqlvalues(
+                distroseries=self,
+                po_message_weight=po_message_weight))
         joins = ("""
             SourcePackageName
             JOIN SourcePackageRelease spr
@@ -467,11 +483,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 primary=ArchivePurpose.PRIMARY))
         return (joins, conditions)
 
+    def getMostRecentlyLinkedPackagings(self):
+        """See `IDistroSeries`."""
+        results = self._all_packagings
+        # Order by creation date with a secondary ordering by sourcepackage
+        # name to ensure the ordering for test data where many packagings have
+        # identical creation dates.
+        results = results.order_by(Desc(Packaging.datecreated),
+                                   SourcePackageName.name)[:5]
+        return [
+            packaging
+            for (packaging, spn, product_series, product) in results]
+
     @property
     def supported(self):
         return self.status in [
             SeriesStatus.CURRENT,
-            SeriesStatus.SUPPORTED
+            SeriesStatus.SUPPORTED,
             ]
 
     @property
@@ -604,6 +632,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.fullseriesname
+
+    @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.distribution.max_bug_heat
 
     @property
     def last_full_language_pack_exported(self):
@@ -1145,7 +1178,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         urgency, changelog_entry, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
-        build_conflicts_indep, dateuploaded=DEFAULT):
+        build_conflicts_indep, dateuploaded=DEFAULT,
+        source_package_recipe_build=None):
         """See `IDistroSeries`."""
         return SourcePackageRelease(
             upload_distroseries=self, sourcepackagename=sourcepackagename,
@@ -1159,7 +1193,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format, dsc_binaries=dsc_binaries,
             build_conflicts=build_conflicts,
-            build_conflicts_indep=build_conflicts_indep)
+            build_conflicts_indep=build_conflicts_indep,
+            source_package_recipe_build=source_package_recipe_build)
 
     def getComponentByName(self, name):
         """See `IDistroSeries`."""
@@ -1345,8 +1380,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    quote(self.distribution.all_distro_archive_ids),
                    quote(text), quote_like(text))
             ).config(distinct=True)
-
-        ranked_package_caches = package_caches.order_by('rank DESC')
 
         # Create a function that will decorate the results, converting
         # them from the find_spec above into a DSBP:

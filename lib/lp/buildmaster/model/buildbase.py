@@ -14,14 +14,18 @@ import logging
 import os
 import pytz
 import subprocess
+from cStringIO import StringIO
 
 from storm.store import Store
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     clear_current_connection_cache, cursor, flush_database_updates)
+from canonical.launchpad.helpers import filenameToContentType
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus
@@ -91,6 +95,13 @@ class BuildBase:
         if self.buildlog is None:
             return None
         return self._getProxiedFileURL(self.buildlog)
+
+    @property
+    def upload_log_url(self):
+        """See `IBuildBase`."""
+        if self.upload_log is None:
+            return None
+        return self._getProxiedFileURL(self.upload_log)
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
@@ -225,7 +236,7 @@ class BuildBase:
         # also contain the information required to manually reprocess the
         # binary upload when it was the case.
         if (self.buildstate != BuildStatus.FULLYBUILT or
-            self.binarypackages.count() == 0):
+            not self.verifySuccessfulUpload()):
             logger.debug("Build %s upload failed." % self.id)
             self.buildstate = BuildStatus.FAILEDTOUPLOAD
             # Retrieve log file content.
@@ -252,8 +263,8 @@ class BuildBase:
             self.notify(extra_info=uploader_log_content)
         else:
             logger.debug(
-                "Gathered build %s completely" %
-                self.sourcepackagerelease.name)
+                "Gathered %s %d completely" % (
+                self.__class__.__name__, self.id))
 
         # Release the builder for another job.
         self.buildqueue_record.builder.cleanSlave()
@@ -354,7 +365,31 @@ class BuildBase:
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
-        self.dependencies = slave_status.get('dependencies')
+        if slave_status.get('dependencies') is not None:
+            self.dependencies = unicode(slave_status.get('dependencies'))
+        else:
+            self.dependencies = None
+
+    def storeUploadLog(self, content):
+        """See `IBuildBase`."""
+        # The given content is stored in the librarian, restricted as
+        # necessary according to the targeted archive's privacy.  The content
+        # object's 'upload_log' attribute will point to the
+        # `LibrarianFileAlias`.
+
+        assert self.upload_log is None, (
+            "Upload log information already exists and cannot be overridden.")
+
+        filename = 'upload_%s_log.txt' % self.id
+        contentType = filenameToContentType(filename)
+        file_size = len(content)
+        file_content = StringIO(content)
+        restricted = self.is_private
+
+        library_file = getUtility(ILibraryFileAliasSet).create(
+            filename, file_size, file_content, contentType=contentType,
+            restricted=restricted)
+        self.upload_log = library_file
 
     def queueBuild(self, suspended=False):
         """See `IBuildBase`"""

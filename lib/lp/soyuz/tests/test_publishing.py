@@ -34,6 +34,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingStatus)
 from canonical.launchpad.scripts import FakeLogger
@@ -129,12 +130,20 @@ class SoyuzTestPublisher:
     def addPackageUpload(self, archive, distroseries,
                          pocket=PackagePublishingPocket.RELEASE,
                          changes_file_name="foo_666_source.changes",
-                         changes_file_content="fake changes file content"):
+                         changes_file_content="fake changes file content",
+                         upload_status=PackageUploadStatus.DONE):
         signing_key =  self.person.gpgkeys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, changes_file_name, changes_file_content, archive,
             signing_key)
-        package_upload.setDone()
+
+        status_to_method = {
+            PackageUploadStatus.DONE: 'setDone',
+            PackageUploadStatus.ACCEPTED: 'setAccepted',
+            }
+        method = getattr(package_upload, status_to_method[upload_status])
+        method()
+
         return package_upload
 
     def getPubSource(self, sourcename=None, version='666', component='main',
@@ -151,8 +160,13 @@ class SoyuzTestPublisher:
                      dsc_binaries='foo-bin', build_conflicts=None,
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
-                     maintainer=None, creator=None, date_uploaded=UTC_NOW):
-        """Return a mock source publishing record."""
+                     maintainer=None, creator=None, date_uploaded=UTC_NOW,
+                     spr_only=False):
+        """Return a mock source publishing record.
+
+        if spr_only is specified, the source is not published and the
+        sourcepackagerelease object is returned instead.
+        """
         if sourcename is None:
             sourcename = self.default_package_name
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
@@ -193,11 +207,19 @@ class SoyuzTestPublisher:
             archive=archive, dateuploaded=date_uploaded)
 
         changes_file_name = "%s_%s_source.changes" % (sourcename, version)
+        if spr_only:
+            upload_status = PackageUploadStatus.ACCEPTED
+        else:
+            upload_status = PackageUploadStatus.DONE
         package_upload = self.addPackageUpload(
             archive, distroseries, pocket,
             changes_file_name=changes_file_name,
-            changes_file_content=changes_file_content)
+            changes_file_content=changes_file_content,
+            upload_status=upload_status)
         package_upload.addSource(spr)
+
+        if spr_only:
+            return spr
 
         if filename is None:
             filename = "%s_%s.dsc" % (sourcename, version)
@@ -382,7 +404,8 @@ class SoyuzTestPublisher:
         """File with given name fragment in directory tree starting at top."""
         for root, dirs, files in os.walk(top, topdown=False):
             for name in files:
-                if name.endswith('.changes') and name.find(name_fragment) > -1:
+                if (name.endswith('.changes') and 
+                    name.find(name_fragment) > -1):
                     return os.path.join(root, name)
         return None
 

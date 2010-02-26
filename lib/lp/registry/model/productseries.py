@@ -161,6 +161,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return "%s/%s" % (self.product.name, self.name)
 
     @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.product.max_bug_heat
+
+    @property
     def drivers(self):
         """See IProductSeries."""
         drivers = set()

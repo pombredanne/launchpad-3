@@ -110,10 +110,12 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 
 # XXX SteveAlexander 2005-09-22: this is imported here because there is no
@@ -549,6 +551,7 @@ class LaunchpadRootNavigation(Navigation):
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
+        '+countries': ICountrySet,
         'distros': IDistributionSet,
         '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
@@ -567,6 +570,7 @@ class LaunchpadRootNavigation(Navigation):
         'token': ILoginTokenSet,
         '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
+        'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
         '+rpconfig': IOpenIDRPConfigSet,
         'temporary_blobs': ITemporaryStorageManager,

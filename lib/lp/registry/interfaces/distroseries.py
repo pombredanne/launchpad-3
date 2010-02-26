@@ -389,7 +389,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getDistroArchSeriesByProcessor(processor):
         """Return the distroarchseries for this distroseries with the
         given architecturetag from a `IProcessor`.
-        
+
         :param processor: An `IProcessor`
         :return: An `IDistroArchSeries` or None when none was found.
         """
@@ -421,7 +421,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return a source package in this distro series by name.
 
         The name given may be a string or an ISourcePackageName-providing
-        object.
+        object. The source package may not be published in the distro series.
         """
 
     def getTranslatableSourcePackages():
@@ -429,15 +429,22 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         that can be translated.
         """
 
-    def getPriorizedUnlinkedSourcePackages():
+    def getPrioritizedUnlinkedSourcePackages():
         """Return a list of package summaries that need packaging links.
 
         A summary is a dict of package (`ISourcePackage`), total_bugs,
         and total_messages (translatable messages).
         """
 
-    def getPriorizedlPackagings():
+    def getPrioritizedlPackagings():
         """Return a list of packagings that need more upstream information."""
+
+    def getMostRecentlyLinkedPackagings():
+        """Return a list of packagings that are the most recently linked.
+
+        At most five packages are returned of those most recently linked to an
+    upstream.
+    """
 
     @operation_parameters(
         created_since_date=Datetime(
@@ -509,7 +516,8 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getBinaryPackage(name):
         """Return a DistroSeriesBinaryPackage for this name.
 
-        The name given may be an IBinaryPackageName or a string.
+        The name given may be an IBinaryPackageName or a string.  The
+        binary package may not be published in the distro series.
         """
 
     def getSourcePackageRelease(sourcepackagerelease):
@@ -600,7 +608,8 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
         dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
-        build_conflicts, build_conflicts_indep, dateuploaded=None):
+        build_conflicts, build_conflicts_indep, dateuploaded=None,
+        source_package_recipe_build=None):
         """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -633,6 +642,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
          :param dsc_binaries:  string, DSC binaries field
          :param archive: IArchive to where the upload was targeted
          :param dateuploaded: optional datetime, if omitted assumed nowUTC
+         :param source_package_recipe_build: optional SourcePackageRecipeBuild
          :return: the just creates `SourcePackageRelease`
         """
 

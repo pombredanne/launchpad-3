@@ -13,6 +13,7 @@ __all__ = [
     'BugBecameQuestionEvent',
     'BugSet',
     'BugTag',
+    'FileBugData',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]
@@ -64,8 +65,8 @@ from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
     BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
 from lp.bugs.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue,
-    UserCannotUnsubscribePerson)
+    IBug, IBugBecameQuestionEvent, IBugSet, IFileBugData,
+    InvalidDuplicateValue, UserCannotUnsubscribePerson)
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -1789,3 +1790,37 @@ class BugAffectsPerson(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     affected = BoolCol(notNull=True, default=True)
     __storm_primary__ = "bugID", "personID"
+
+
+class FileBugData:
+    """Extra data to be added to the bug."""
+    implements(IFileBugData)
+
+    def __init__(self, initial_summary=None, initial_tags=None,
+                 private=None, subscribers=None, extra_description=None,
+                 comments=None, attachments=None,
+                 hwdb_submission_keys=None):
+        if initial_tags is None:
+            initial_tags = []
+        if subscribers is None:
+            subscribers = []
+        if comments is None:
+            comments = []
+        if attachments is None:
+            attachments = []
+        if hwdb_submission_keys is None:
+            hwdb_submission_keys = []
+
+        self.initial_summary = initial_summary
+        self.private = private
+        self.extra_description = extra_description
+        self.initial_tags = initial_tags
+        self.subscribers = subscribers
+        self.comments = comments
+        self.attachments = attachments
+        self.hwdb_submission_keys = hwdb_submission_keys
+
+    def asDict(self):
+        """Return the FileBugData instance as a dict."""
+        return self.__dict__.copy()
+
