@@ -13,6 +13,7 @@ __all__ = [
     'BugBecameQuestionEvent',
     'BugSet',
     'BugTag',
+    'FileBugData',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]

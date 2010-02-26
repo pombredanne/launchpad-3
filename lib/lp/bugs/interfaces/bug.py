@@ -15,6 +15,7 @@ __all__ = [
     'IBugBecameQuestionEvent',
     'IBugDelta',
     'IBugSet',
+    'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
