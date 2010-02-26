@@ -529,6 +529,10 @@
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="canonical.launchpad.subscribers.karma.branch_created"/>
+  <subscriber
+      for="lp.code.interfaces.branch.IBranch
+           lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.email.queue_tip_changed_email_jobs"/>
 
   <!-- Temporarily disabling queues
        <browser:page

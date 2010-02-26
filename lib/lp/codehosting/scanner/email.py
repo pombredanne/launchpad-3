@@ -52,8 +52,7 @@ def send_removed_revision_emails(revisions_removed):
         body=contents, perform_diff=False, subject=subject)
 
 
-@adapter(events.TipChanged)
-def queue_tip_changed_email_jobs(tip_changed):
+def queue_tip_changed_email_jobs(object, tip_changed):
     if not subscribers_want_notification(tip_changed.db_branch):
         return
     if tip_changed.initial_scan:
