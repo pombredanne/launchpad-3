@@ -180,7 +180,7 @@ Fireox does not have any subscribers.
 
 Mozilla is the parent of Fireox.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> print firefox.parent_subscription_target.displayname
     the Mozilla Project

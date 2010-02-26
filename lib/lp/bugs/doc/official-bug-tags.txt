@@ -208,7 +208,7 @@ Product series gets the tags of the parent product.
 Project series gets the union of all the tags available for its products.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
     >>> thunderbird.official_bug_tags = [u'baz']
     >>> logout()

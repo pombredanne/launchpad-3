@@ -378,7 +378,7 @@ a project.
 
     >>> from lp.registry.tests.test_project_milestone import (
     ...     ProjectMilestoneTest)
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> login('foo.bar@canonical.com')
     >>> test_helper = ProjectMilestoneTest(helper_only=True)
     >>> test_helper.setUpProjectMilestoneTests()

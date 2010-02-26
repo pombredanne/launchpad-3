@@ -131,7 +131,7 @@ project.all_milestones returns all milestones for this project. No product
 belonging to the Gnome project has any milestones, hence Gnome itself has
 neither any milestones.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> gnome = getUtility(IProjectGroupSet)['gnome']
     >>> for product in gnome.products:
     ...     print '%s %s' % (

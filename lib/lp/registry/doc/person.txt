@@ -1419,7 +1419,7 @@ Now Celso is a bug contributor in Launchpad.
 
 Celso is a bug contributer in the context of the `firefox` product.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> cprov.isBugContributorInTarget(user=foobar, target=firefox)
     True
 

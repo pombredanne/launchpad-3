@@ -524,7 +524,7 @@ The list of selectable projects. The results are ordered by displayname.
 
   The ProjectVocabulary does not list inactive projects.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> moz_project = getUtility(IProjectGroupSet)['mozilla']
     >>> moz_project in project_vocabulary
     True

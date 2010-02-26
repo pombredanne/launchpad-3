@@ -160,7 +160,7 @@ In order to initialize the widget with a value, setRenderedValue() is
 used. Passing a product to it will select the 'One project' radio
 button, as well as displaying the product name in the project widget.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> widget = ProjectScopeWidget(
     ...     scope_field, scope_field.vocabulary, empty_request)
     >>> projectgroups = getUtility(IProjectGroupSet)
