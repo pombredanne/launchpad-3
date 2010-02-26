@@ -15,6 +15,8 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 
+from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
+
 
 class BugHeatConstants:
 
@@ -63,8 +65,16 @@ class BugHeatCalculator:
             len(direct_subscribers) + len(subscribers_from_dupes))
         return subscriber_count * BugHeatConstants.SUBSCRIBER
 
+    def _bugIsComplete(self):
+        """Are all the tasks for this bug resolved?"""
+        return all([(task.status in RESOLVED_BUGTASK_STATUSES)
+                    for task in self.bug.bugtasks])
+
     def getBugHeat(self):
         """Return the total heat for the current bug."""
+        if self._bugIsComplete():
+            return 0
+
         total_heat = sum([
             self._getHeatFromAffectedUsers(),
             self._getHeatFromDuplicates(),
