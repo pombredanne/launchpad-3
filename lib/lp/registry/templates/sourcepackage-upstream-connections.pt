@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div tal:define="series context/productseries">
+<div id="upstreams" tal:define="series context/productseries">
   <dl>
     <dd>
       <tal:has_pg condition="series/product/project">
@@ -23,12 +23,12 @@
   </dl>
 
   <style>
-    #upstreams dd {
+    #upstream-fields dd {
       margin: 0;
       padding: 0;
     }
   </style>
-  <div id="upstreams" class="two-column-list">
+  <div id="upstream-fields" class="two-column-list">
     <dl>
       <dd title="Bug supervisor">
         Bug supervisor:
