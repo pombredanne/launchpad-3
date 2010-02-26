@@ -58,6 +58,7 @@ def clear_memcache():
 
 
 def memcacheSetUp(test):
+    setUp(test)
     test.globs['TestPageTemplate'] = TestPageTemplate
     test.globs['dedent'] = dedent
     test.globs['clear_memcache'] = clear_memcache
