@@ -457,7 +457,6 @@ list.
 
     >>> config_data = config.pop('default-batch-size')
 
-
 If the team has no mailing list, then the archive and subscribers
 links are not present.
 
