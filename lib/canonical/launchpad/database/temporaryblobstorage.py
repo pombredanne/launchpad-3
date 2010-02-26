@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces import (
     BlobTooLarge,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.database.librarian import LibraryFileAlias
 
 from lp.services.job.interfaces.job import JobStatus
 
@@ -130,5 +131,8 @@ class TemporaryStorageManager:
         """See `ITemporaryStorageManager`."""
         # Return the 50 most recent blobs.
         store = IStore(TemporaryBlobStorage)
-        return store.find(TemporaryBlobStorage).order_by(
-            TemporaryBlobStorage.date_created)[:50]
+        return store.find(
+            TemporaryBlobStorage,
+            TemporaryBlobStorage.file_alias == LibraryFileAlias.id,
+            LibraryFileAlias.expires > datetime.utcnow().replace(tzinfo=utc)
+            ).order_by(TemporaryBlobStorage.date_created)

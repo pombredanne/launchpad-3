@@ -20,7 +20,8 @@ from canonical.launchpad import _
 from lazr.restful.declarations import (
     collection_default_content, exported,
     export_as_webservice_collection, export_as_webservice_entry,
-    export_read_operation, operation_parameters, REQUEST_USER)
+    export_read_operation, operation_parameters, rename_parameters_as,
+    REQUEST_USER)
 from lazr.restful.interface import copy_field
 
 
@@ -63,6 +64,7 @@ class ITemporaryStorageManager(Interface):
         config.launchpad.default_blob_expiry
         """
 
+    @rename_parameters_as(uuid='token')
     @operation_parameters(uuid=copy_field(ITemporaryBlobStorage['uuid']))
     @export_read_operation()
     def fetch(uuid):
@@ -73,4 +75,8 @@ class ITemporaryStorageManager(Interface):
 
     @collection_default_content()
     def default_temporary_blob_storage_list():
-        """Return the default list of ITemporaryBlobStorage objects."""
+        """Return the default list of `ITemporaryBlobStorage` objects.
+
+        :returns: All the the `ITemporaryBlobStorage` blobs whose file
+                  aliases have not expired.
+        """

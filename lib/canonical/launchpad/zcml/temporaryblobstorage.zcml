@@ -45,11 +45,11 @@
       for="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryBlobStorage"
       urldata="canonical.launchpad.browser.temporaryblobstorage.TemporaryBlobStorageURL"
       parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
-      path_expression="string:temporary_blobs/${uuid}"
+      path_expression="string:temporary-blobs/${uuid}"
       />
 
   <browser:url
       for="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager"
-      path_expression="string:temporary_blobs"
+      path_expression="string:temporary-blobs"
       parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
 </configure>

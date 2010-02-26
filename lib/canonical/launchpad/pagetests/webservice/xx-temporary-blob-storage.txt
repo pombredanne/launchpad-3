@@ -2,10 +2,10 @@ The set of temporary blobs
 ==========================
 
 The set of temporary blobs in Launchpad is represented by the collection
-found at /temporary_blobs. By default it lists the 50 most recently
-uploaded blobs.
+found at /temporary-blobs. The collection contains all the temporary
+blobs whose file aliases have not expired.
 
-    >>> temporary_blobs = webservice.get('/temporary_blobs').jsonBody()
+    >>> temporary_blobs = webservice.get('/temporary-blobs').jsonBody()
     >>> len(temporary_blobs['entries'])
     0
 
@@ -20,7 +20,7 @@ set.
     >>> blob_token = getUtility(ITemporaryStorageManager).new("some data")
     >>> logout()
 
-    >>> temporary_blobs = webservice.get('/temporary_blobs').jsonBody()
+    >>> temporary_blobs = webservice.get('/temporary-blobs').jsonBody()
     >>> len(temporary_blobs['entries'])
     1
 
@@ -35,7 +35,7 @@ referred to in the UI.
 
 It's possible to fetch a blob directly using its token.
 
-    >>> blob_link = '/temporary_blobs/' + blob_token
+    >>> blob_link = '/temporary-blobs/' + blob_token
     >>> blob = webservice.get(blob_link).jsonBody()
     >>> blob['token'] == blob_token
     True
@@ -44,7 +44,7 @@ It's also possible to fetch the blob by calling temporary_blobs.fetch()
 and passing it a token.
 
     >>> blob = webservice.named_get(
-    ...     '/temporary_blobs', 'fetch', uuid=blob_token).jsonBody()
+    ...     '/temporary-blobs', 'fetch', token=blob_token).jsonBody()
     >>> blob['token'] == blob_token
     True
 
@@ -65,8 +65,8 @@ hasn't been processed because no job was created to process it.
     ...     blob['self_link'], 'hasBeenProcessed').jsonBody()
     False
 
-Once the blob has been processed, its has_been_processed attribute will
-be True.
+Once the blob has been processed, its hasBeenProcessed() method will
+return True.
 
     >>> from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
     >>> login('foo.bar@canonical.com')

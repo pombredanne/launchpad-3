@@ -84,7 +84,7 @@ class TemporaryBlobStorageURL:
     @property
     def path(self):
         """Return the path component of the URL."""
-        return u'temporary_blobs/%s' % self.context.uuid
+        return u'temporary-blobs/%s' % self.context.uuid
 
 
 class TemporaryBlobStorageNavigation(GetitemNavigation):
