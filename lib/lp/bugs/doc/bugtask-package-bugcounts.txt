@@ -79,7 +79,7 @@ If we mark the bug as critical, the open_critical count will increase.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> [ubuntu_firefox_bugtask] = bug.bugtasks
     >>> ubuntu_firefox_bugtask.transitionToImportance(
     ...     BugTaskImportance.CRITICAL, getUtility(ILaunchBag).user)

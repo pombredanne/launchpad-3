@@ -126,7 +126,7 @@ Driver accept a bug task:
 
 Change a bug task's importance:
 
-    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> bugtask.transitionToImportance(
     ...     BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
     >>> for importance in BugTaskImportance.items:

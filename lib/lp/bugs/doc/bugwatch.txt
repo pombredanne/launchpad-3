@@ -335,7 +335,7 @@ Passing it a new Malone importance will fire off an event, which our
 event listener will pick up. We reset the `lastchanged` field of the bug
 watch so that we can demonstrate how it gets updated.
 
-    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> debian_bugwatch.lastchanged = old_lastchanged
     >>> old_remote_importance = debian_bugwatch.remote_importance
 

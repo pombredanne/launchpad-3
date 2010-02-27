@@ -9,7 +9,7 @@ the specified email address.
 The BugTrackerType enumeration defines an EMAILADDRESS bug tracker
 type.
 
-    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> BugTrackerType.EMAILADDRESS.title
     'Email Address'
 

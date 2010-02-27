@@ -423,7 +423,7 @@ from a bug task.
 We don't yet support updating the importance for Bugzilla bugs, so let's set it
 to some bogus value, to see that it gets set to UNKNOWN.
 
-    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> thunderbird_task.transitionToImportance(
     ...     BugTaskImportance.HIGH,
     ...     thunderbird_task.pillar.owner)

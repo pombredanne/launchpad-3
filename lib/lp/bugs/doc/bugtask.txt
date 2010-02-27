@@ -870,7 +870,7 @@ The private bugs will be invisible to No Privileges Person in the search
 results:
 
     >>> from canonical.launchpad.searchbuilder import any
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_NEW, STATUS_CONFIRMED),
     ...     orderby="id", user=mr_no_privs)

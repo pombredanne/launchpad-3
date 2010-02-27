@@ -174,7 +174,7 @@ Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just
 created in its last_error_type field.
 
-    >>> from canonical.launchpad.interfaces import BugWatchErrorType
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchErrorType
     >>> example_bugwatch.last_error_type == BugWatchErrorType.TIMEOUT
     True
 

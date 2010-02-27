@@ -2827,11 +2827,11 @@ possible).
 To demonstrate this we need to set up some example objects. Firstly,
 we'll create a new bug on firefox and link it to a remote bug.
 
-    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugWatchSet, IProductSet)
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
