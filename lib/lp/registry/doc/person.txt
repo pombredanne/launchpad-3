@@ -1220,7 +1220,7 @@ Person.languages.
 
 To add new languages we use Person.addLanguage().
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> languageset = getUtility(ILanguageSet)
     >>> carlos.addLanguage(languageset['pt_BR'])
     >>> [lang.code for lang in carlos.languages]

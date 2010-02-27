@@ -83,7 +83,7 @@ The status parameter can also take a list of statuses.
 The language parameter can be used to select only questions written in a
 particular language.
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> for t in question_set.searchQuestions(language=spanish):
     ...     print t.title.encode('us-ascii', 'backslashreplace')

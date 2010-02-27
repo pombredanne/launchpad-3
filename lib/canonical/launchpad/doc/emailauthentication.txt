@@ -112,7 +112,7 @@ message.
     ...     '\n'.join(msg_lines), _class=SignedMessage)
     >>> msg.parsed_string = msg.as_string()
 
-    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> getUtility(IGPGHandler).getVerifiedSignature(
     ...     msg.signedContent, msg.signature)
     Traceback (most recent call last):

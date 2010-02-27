@@ -70,7 +70,7 @@ It is possible to create question in another language than English. One
 just need to pass the language in which the question is written in the
 language parameter.
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> french = getUtility(ILanguageSet)['fr']
     >>> question = target.newQuestion(sample_person, "De l'aide S.V.P.",
     ...     "Pouvez-vous m'aider?", language=french,

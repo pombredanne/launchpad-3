@@ -216,16 +216,16 @@ policy in process-upload.py.
 
 So, load the GPG key:
 
-  >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-  >>> from canonical.launchpad.interfaces import IGPGHandler
-  >>> from zope.component import getUtility
-  >>> gpg_handler = getUtility(IGPGHandler)
-  >>> key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
-  >>> key_data = open(key_path).read()
-  >>> key = gpg_handler.importPublicKey(key_data)
-  >>> assert key is not None
-  >>> key.fingerprint
-  '33C0A61893A5DC5EB325B29E415A12CAC2F30234'
+    >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> from zope.component import getUtility
+    >>> gpg_handler = getUtility(IGPGHandler)
+    >>> key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
+    >>> key_data = open(key_path).read()
+    >>> key = gpg_handler.importPublicKey(key_data)
+    >>> assert key is not None
+    >>> key.fingerprint
+    '33C0A61893A5DC5EB325B29E415A12CAC2F30234'
 
 
 Create the katie user and register it in a team that is allowed to

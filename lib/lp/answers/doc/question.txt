@@ -223,7 +223,7 @@ question target are part of the indirect subscribers list.
     >>> [person.displayname
     ...     for person in firefox_question.getIndirectRecipients()]
     []
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> english = getUtility(ILanguageSet)['en']
     >>> no_priv.addLanguage(english)
     >>> firefox.addAnswerContact(no_priv)

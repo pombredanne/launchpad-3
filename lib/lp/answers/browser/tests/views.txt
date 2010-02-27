@@ -632,7 +632,7 @@ Note also that the vocabulary will always contain the current question's
 language in the vocabulary, even if this language would not be selected
 by the previous rules.
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> afar = getUtility(ILanguageSet)['aa_DJ']
     >>> question_three.language = afar
     >>> vocab = QuestionLanguageVocabularyFactory(view)(question_three)

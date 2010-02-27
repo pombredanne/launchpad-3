@@ -152,7 +152,7 @@ It is possible to filter questions by the language they were written
 in . One or a list of ILanguage object should be passed in the
 language parameter to specify the language filter.
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> english = getUtility(ILanguageSet)['en']
 

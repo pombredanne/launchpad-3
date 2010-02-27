@@ -878,7 +878,7 @@ receive notifications related to it.
     >>> sorted([lang.code for lang in ubuntu.getSupportedLanguages()])
     [u'en', u'pt_BR']
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> login('test@canonical.com')
     >>> pt_BR_question = ubuntu.newQuestion(
     ...     sample_person, title=(
