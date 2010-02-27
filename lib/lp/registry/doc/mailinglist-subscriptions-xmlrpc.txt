@@ -141,7 +141,8 @@ discarded.
 Similarly, email addresses with an unvalidated status are not considered
 registered either.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> emailset = getUtility(IEmailAddressSet)
     >>> new_address = emailset.new(
     ...     'frederick@example.com', fred, account=fred.account)

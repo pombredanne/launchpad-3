@@ -75,7 +75,8 @@ Since he didn't have a Launchpad account before, he doesn't have a
 preferred e-mail address, and the one that is associated with his
 account is marked as NEW, since we don't know whether it's valid.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> reporter_email_addresses = getUtility(IEmailAddressSet).getByPerson(
     ...     bug.owner)
     >>> for email_address in reporter_email_addresses:

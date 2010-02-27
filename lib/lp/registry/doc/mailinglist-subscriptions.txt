@@ -125,7 +125,8 @@ they've confirmed with Launchpad.
 However, should Anne register a new, but not-validated email address, she may
 not post from it.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> address_set = getUtility(IEmailAddressSet)
     >>> alternative = address_set.new(
     ...     'anne.x.person@example.net', anne, account=anne.account)

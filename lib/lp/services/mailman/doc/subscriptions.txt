@@ -107,7 +107,8 @@ before she can validate this address, subscriptions for the list are
 synchronized with Mailman.  Anne's non-validated address does not appear in
 the membership list, either as an enabled or disabled address.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> login('admin@canonical.com')
     >>> email_set = getUtility(IEmailAddressSet)
     >>> email = email_set.new(
