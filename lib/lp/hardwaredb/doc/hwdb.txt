@@ -119,7 +119,7 @@ The system fingerprint is stored in a separate table, HWSystemFingerprint.
 IHWSystemFingerPrintSet.createFingerprint creates a new row in this table.
 
     >>> from storm.store import Store
-    >>> from canonical.launchpad.interfaces import IHWSystemFingerprintSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSystemFingerprintSet
     >>> hw_fingerprint_set = getUtility(IHWSystemFingerprintSet)
     >>> fp = hw_fingerprint_set.createFingerprint(u'IBM T41')
     >>> fp.fingerprint

@@ -382,7 +382,7 @@ we may have Person objects which are, in fact, teams. To find out
 whether a given object is a person or a team we can use the isTeam()
 method of IPerson or check if the object provides the ITeam interface.
 
-    >>> from canonical.launchpad.interfaces import ITeam
+    >>> from lp.registry.interfaces.team import ITeam
     >>> ddaa = personset.getByName('ddaa')
     >>> ddaa.isTeam()
     False

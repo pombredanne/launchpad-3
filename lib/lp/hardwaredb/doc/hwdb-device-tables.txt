@@ -9,7 +9,7 @@ vendor and product names. They also link devices to drivers.
 HWVendorName is a simple list of vendor names. A new entry is created by
 IHWVendorNameSet.create().
 
-    >>> from canonical.launchpad.interfaces import IHWVendorNameSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWVendorNameSet
     >>> vendor_name_set = getUtility(IHWVendorNameSet)
     >>> intel_name = vendor_name_set.create(name='Intel')
     >>> print intel_name.name
@@ -1719,13 +1719,13 @@ too.
 
 We need a submission to which we can link HWSubmissionDevice entries.
 
-    >>> from canonical.launchpad.interfaces import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> sample_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'test_submission_id_1')
 
 A HWSubmissionDevice record for a system does not have any parent...
 
-    >>> from canonical.launchpad.interfaces import IHWSubmissionDeviceSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionDeviceSet
     >>> submission_device_set = getUtility(IHWSubmissionDeviceSet)
     >>> submitted_tuffbook_2600 = submission_device_set.create(
     ...     device_driver_link=tuffbook_2600_device_driver_link,

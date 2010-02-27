@@ -46,7 +46,7 @@ The POST data consists of the following fields:
 
 The request created an entry in the HWDBSubmissions table.
 
-    >>> from canonical.launchpad.interfaces import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import import IHWSubmissionSet
     >>> submission_set = getUtility(IHWSubmissionSet)
     >>> submission = submission_set.getBySubmissionKey(u'unique-id-1')
     >>> submission.date_created, submission.format.name

@@ -119,10 +119,11 @@ products (Project classes :-)). Tomcat is part of the Apache project, so:
 There is a utility which we can use to see all current mentorship offers
 across the whole system.
 
-    >>> from canonical.launchpad.interfaces import IMentoringOfferSet
+    >>> from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
     >>> mm = getUtility(IMentoringOfferSet)
     >>> print mm.mentoring_offers.count()
     2
+
 
 == Mentoring lists do not include private items ==
 

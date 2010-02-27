@@ -152,7 +152,7 @@ addMember returns a tuple with True plus the new membership status.
     >>> t3.addMember(
     ...     salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
     (True, <DBItem TeamMembershipStatus.ADMIN...)
-    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> flush_database_updates()
     >>> membership = membershipset.getByPersonAndTeam(salgado, t3)
