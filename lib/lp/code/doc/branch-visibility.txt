@@ -88,7 +88,7 @@ The owners of the branch always have visiblity of their own branches.
 
 Check the configuration of the AccessBranch authorization.
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> print getUtility(ILaunchBag).user.displayname
     Sample Person
     >>> getUtility(ILaunchBag).user == no_priv_person

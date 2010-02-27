@@ -237,7 +237,7 @@ A private bug, as an anonymous user! (We'll temporarily subscribe to the bug,
 to ensure that at least one person has the perms to edit it while it's set
 private.)
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> current_user = getUtility(ILaunchBag).user
     >>> subscription = distro_series_task.bug.subscribe(
     ...     current_user, current_user)

@@ -66,7 +66,7 @@ Shuttleworth are both subscribed to the bug.
 If the bug were not reported as security-related, only Foo Bar would
 have been subscribed:
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
     >>> params = CreateBugParams(

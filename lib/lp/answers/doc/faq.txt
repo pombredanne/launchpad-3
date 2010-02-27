@@ -30,7 +30,7 @@ contacts.)
 
     >>> login('test@canonical.com')
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> sample_person = getUtility(ILaunchBag).user
     >>> print firefox.owner.displayname
     Sample Person

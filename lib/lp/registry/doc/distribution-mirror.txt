@@ -138,7 +138,8 @@ We also have a property which returns all unofficial mirrors.
 It's possible to retrieve a mirror by its name:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IDistributionMirror
+    >>> from lp.registry.interfaces.distributionmirror import (
+    ...     IDistributionMirror)
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
     True

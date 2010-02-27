@@ -46,7 +46,7 @@ Pick the first release from the set.
 
 Add a file alias to the productrelease.
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> login("foo.bar@canonical.com")
     >>> from datetime import datetime

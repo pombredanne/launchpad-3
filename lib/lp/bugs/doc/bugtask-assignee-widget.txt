@@ -81,7 +81,7 @@ The widget has valid input:
 
 The input value is the current user:
 
-  >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
   >>> widget.getInputValue() == getUtility(ILaunchBag).user
   True
 

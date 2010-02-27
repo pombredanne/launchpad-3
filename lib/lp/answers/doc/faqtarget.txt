@@ -24,7 +24,7 @@ That method is only available to a user who has 'launchpad.Moderate' on
 the target.
 
     >>> login('no-priv@canonical.com')
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> check_permission('launchpad.Moderate', target)
     False

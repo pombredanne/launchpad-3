@@ -173,7 +173,7 @@ decline() method. Only users with launchpad.Driver permission on the
 nomination can approve or decline it.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> current_user = getUtility(ILaunchBag).user
 
