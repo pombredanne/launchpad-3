@@ -24,7 +24,7 @@ from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
-from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot)
@@ -64,7 +64,7 @@ class IProjectGroupPublic(
     IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
     IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
     IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
-    IKarmaContext, IPillar, IRootContext):
+    IKarmaContext, IPillar, IRootContext, IHasOfficialBugTags):
     """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)
