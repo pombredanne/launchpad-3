@@ -179,7 +179,7 @@ Accept a distro series task.
 
     >>> debian_woody_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
-    >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroSeriesBugTask
     >>> old_bugtask = Snapshot(
     ...     debian_woody_task, providing=IDistroSeriesBugTask)
     >>> debian_woody_task.transitionToStatus(
@@ -191,7 +191,7 @@ Accept a productseries task.
 
     >>> evolution_trunk_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
-    >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
+    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
     >>> old_bugtask = Snapshot(
     ...     evolution_trunk_task, providing=IProductSeriesBugTask)
     >>> evolution_trunk_task.transitionToStatus(

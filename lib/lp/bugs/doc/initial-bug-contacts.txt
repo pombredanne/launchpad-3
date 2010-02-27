@@ -118,7 +118,7 @@ when a subscriber to the new package is already subscribed to the bug:
     >>> import transaction
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
     >>> from lp.services.mail import stub
 
     >>> daf = personset.getByName("daf")
@@ -320,7 +320,7 @@ Let's make Foo Bar a bug supervisor for upstream firefox:
 Then we'll reassign bug #2 in Ubuntu to be in Firefox, noting that Foo
 Bar gets subscribed to the bug in the process:
 
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
 
     >>> bug_two_in_ubuntu = getUtility(IBugTaskSet).get(3)
     >>> print bug_two_in_ubuntu.bug.id

@@ -57,7 +57,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> upstream_task.product == evolution
     True
 
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
     >>> IUpstreamBugTask.providedBy(upstream_task)
     True
 
@@ -70,7 +70,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> distro_task.distribution == ubuntu
     True
 
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
     >>> IDistroBugTask.providedBy(distro_task)
     True
 
@@ -84,7 +84,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> distro_series_task.distroseries == warty
     True
 
-    >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroSeriesBugTask
     >>> IDistroSeriesBugTask.providedBy(distro_series_task)
     True
 
@@ -118,7 +118,7 @@ list.
 
   * a product series
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
+    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
 
     >>> firefox = productset['firefox']
     >>> firefox_1_0 = firefox.getSeries("1.0")

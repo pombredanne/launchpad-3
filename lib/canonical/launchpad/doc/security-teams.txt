@@ -221,7 +221,7 @@ contact for thunderbird to see how this works.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
 
     >>> old_state = Snapshot(bug_in_evolution, providing=IUpstreamBugTask)
     >>> bug_in_evolution.product = thunderbird
