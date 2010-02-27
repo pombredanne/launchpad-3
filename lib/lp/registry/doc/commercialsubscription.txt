@@ -213,7 +213,7 @@ Make the subscription no longer active.
 The qualifies_for_free_hosting attribute is False
 if the product has License.OTHER_PROPRIETARY.
 
-    >>> from canonical.launchpad.interfaces import License
+    >>> from lp.registry.interfaces.product import License
     >>> bzr.licenses = [License.OTHER_PROPRIETARY]
     >>> bzr.qualifies_for_free_hosting
     False

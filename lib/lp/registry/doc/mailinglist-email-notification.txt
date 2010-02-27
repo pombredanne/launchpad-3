@@ -215,7 +215,7 @@ Notification messages are not sent out when a list is reactivated.
 
     # Fully rebuild our list from the ground up.
     >>> renewed_list.deactivate()
-    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
     >>> renewed_list.transitionToStatus(MailingListStatus.INACTIVE)
     >>> renewed_list.reactivate()
     >>> renewed_list.startConstructing()

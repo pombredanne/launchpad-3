@@ -753,16 +753,16 @@ Verify that the view is a DistributionMirrorsView:
 We want to make sure that the view._sum_throughput method knows about all
 the possible mirror speeds.
 
-  >>> from canonical.launchpad.interfaces import MirrorSpeed
-  >>> class MockMirror:
-  ...     speed = None
-  >>> mirrors = []
-  >>> for speed in MirrorSpeed.items:
-  ...     a = MockMirror()
-  ...     a.speed = speed
-  ...     mirrors.append(a)
-  >>> print view._sum_throughput(mirrors)
-  37 Gbps
+    >>> from lp.registry.interfaces.distributionmirror import MirrorSpeed
+    >>> class MockMirror:
+    ...     speed = None
+    >>> mirrors = []
+    >>> for speed in MirrorSpeed.items:
+    ...     a = MockMirror()
+    ...     a.speed = speed
+    ...     mirrors.append(a)
+    >>> print view._sum_throughput(mirrors)
+    37 Gbps
 
 
 Changing mirror owners

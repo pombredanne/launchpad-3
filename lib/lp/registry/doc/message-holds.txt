@@ -299,7 +299,7 @@ Here are some helper functions.
 
 Here are all the messages pending approval...
 
-    >>> from canonical.launchpad.interfaces import PostedMessageStatus
+    >>> from lp.registry.interfaces.mailinglist import PostedMessageStatus
     >>> print_messages(PostedMessageStatus.APPROVAL_PENDING)
     <first-post> test-one My first test
 

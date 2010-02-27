@@ -380,7 +380,7 @@ Dirk) who have no other indirect membership in the superteam will be
 unsubscribed from the superteam's mailing list.
 
     >>> dirk.leave(team_two)
-    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> team_one.setMembershipData(team_three,
     ...     TeamMembershipStatus.DEACTIVATED, salgado)
     >>> transaction.commit()
@@ -807,7 +807,7 @@ list are dropped.
     # Deactivation isn't complete until the list's status is transitioned to
     # INACTIVE.
     >>> list_one.deactivate()
-    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
     >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
     >>> transaction.commit()
 

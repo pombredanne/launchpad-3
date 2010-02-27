@@ -19,11 +19,10 @@ OpenPGP Signature Verification
     >>> bag.user.name
     u'name12'
 
-    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> from canonical.launchpad.interfaces.gpghandler import (
+    ...     IGPGHandler, GPGVerificationError)
     >>> from zope.component import getUtility
     >>> gpghandler = getUtility(IGPGHandler)
-
-    >>> from canonical.launchpad.interfaces import GPGVerificationError
 
 The text below was "clear signed" by 0xDFD20543 master key:
 

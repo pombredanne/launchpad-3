@@ -1,17 +1,17 @@
 
 Imports and setup of stub keyserver:
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import LoginTokenType
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, ILoginTokenSet)
-  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.logintoken import (
+    ...     ILoginTokenSet, LoginTokenType)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
 
-  >>> tokenset = getUtility(ILoginTokenSet)
-  >>> z = ZecaTestSetup()
-  >>> z.setUp()
+    >>> tokenset = getUtility(ILoginTokenSet)
+    >>> z = ZecaTestSetup()
+    >>> z.setUp()
 
 The following keys are used in these tests:
 

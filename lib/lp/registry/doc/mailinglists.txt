@@ -79,7 +79,7 @@ neither and thus may not create a list for team_two.
 
 However, if we make Anne a team owner, she can create the mailing list.
 
-    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> login('foo.bar@canonical.com')
     >>> bart = factory.makePersonByName('Bart')
     >>> ignored = team_two.addMember(

@@ -499,21 +499,24 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
- >>> from canonical.launchpad.interfaces import SpecificationDefinitionStatus
- >>> login('mark@example.com')
- >>> for spec in kubuntu.specifications():
- ...     # Do this here, otherwise, the change will be flush before
- ...     # updateLifecycleStatus() acts and an IntegrityError will be
- ...     # raised.
- ...     owner = spec.owner
- ...     if spec.name in ['cluster-installation', 'revu']:
- ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
- ...     if spec.name in ['krunch-desktop-plan']:
- ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
- ...     shim = spec.updateLifecycleStatus(owner)
- >>> for spec in kubuntu.valid_specifications:
- ...     print spec.name
- kde-desktopfile-langpacks
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     SpecificationDefinitionStatus)
+    >>> login('mark@example.com')
+    >>> OBSOLETE = SpecificationDefinitionStatus.OBSOLETE
+    >>> SUPERSEDED = SpecificationDefinitionStatus.SUPERSEDED
+    >>> for spec in kubuntu.specifications():
+    ...     # Do this here, otherwise, the change will be flush before
+    ...     # updateLifecycleStatus() acts and an IntegrityError will be
+    ...     # raised.
+    ...     owner = spec.owner
+    ...     if spec.name in ['cluster-installation', 'revu']:
+    ...         spec.definition_status = OBSOLETE
+    ...     if spec.name in ['krunch-desktop-plan']:
+    ...         spec.definition_status = SUPERSEDED
+    ...     shim = spec.updateLifecycleStatus(owner)
+    >>> for spec in kubuntu.valid_specifications:
+    ...     print spec.name
+    kde-desktopfile-langpacks
 
 
 == Milestones ==

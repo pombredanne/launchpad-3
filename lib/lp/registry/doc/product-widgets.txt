@@ -216,7 +216,7 @@ Choosing a License
 
 A custom widget is used to display a link to the license policy.
 
-    >>> from canonical.launchpad.interfaces import License
+    >>> from lp.registry.interfaces.product import License
     >>> from canonical.widgets.product import LicenseWidget
 
     >>> form = {'field.licenses': []}
