@@ -22,8 +22,8 @@ package, but the bugs they reference may be filed on the generic
 distribution package.
 
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IDistributionSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('no-priv@canonical.com')
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

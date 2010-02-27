@@ -24,8 +24,9 @@ It's possible to make a direct permission enquiry using the method
 'checkAuthenticated'.  The "Ubuntu Team" has a few permissions set in
 the sample data that we can check.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IComponentSet, IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> main_component = getUtility(IComponentSet)['main']

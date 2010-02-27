@@ -10,14 +10,16 @@ object via a BinaryPackageFile or SourcePackageReleaseFile.
 SourcePackageReleaseFile or BinaryPackageFile are available via the
 'files' attribute on its parent.
 
- >>> from canonical.launchpad.webapp.testing import verifyObject
- >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from zope.component import getUtility
 
- >>> from canonical.launchpad.interfaces import (
- ...    IDistributionSet, ILibraryFileAlias,
- ...    ISourcePackageReleaseFile, IBinaryPackageFile)
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...    ILibraryFileAlias)
+    >>> from canonical.launchpad.interfaces.files import (
+    ...    ISourcePackageReleaseFile, IBinaryPackageFile)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
- >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+    >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
 
 
 == Source Files ==

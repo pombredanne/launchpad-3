@@ -4,7 +4,7 @@ BinaryPackageRelease stores unique versions of binarypackagenames
 across build records.
 
    >>> from canonical.launchpad.database import BinaryPackageRelease
-   >>> from canonical.launchpad.interfaces import (
+   >>> from lp.soyuz.interfaces.binarypackagerelease import (
    ...       IBinaryPackageRelease, IBinaryPackageReleaseSet)
    >>> from canonical.launchpad.webapp.testing import verifyObject
 
@@ -28,12 +28,12 @@ Useful properties:
 Retrieve the respective DistributionSourcePackageRelease, which allow
 us to easily link to a source reference published in the web-ui.
 
-   >>> from canonical.launchpad.interfaces import (
-   ...     IDistributionSourcePackageRelease)
-   >>> verifyObject(
-   ...    IDistributionSourcePackageRelease,
-   ...    firefox_bin_release.distributionsourcepackagerelease)
-   True
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    ...     IDistributionSourcePackageRelease)
+    >>> verifyObject(
+    ...    IDistributionSourcePackageRelease,
+    ...    firefox_bin_release.distributionsourcepackagerelease)
+    True
 
 The 'is_new' property tells us whether or not this
 BinaryPackageRelease has ever been published for the DistroArchSeries

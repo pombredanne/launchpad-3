@@ -231,22 +231,24 @@ So, load the GPG key:
 Create the katie user and register it in a team that is allowed to
 do uploads:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IEmailAddressSet, PersonCreationRationale, IGPGKeySet,
-  ...     GPGKeyAlgorithm)
-  >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
-  >>> user = getUtility(IPersonSet).ensurePerson(
-  ...     address, name, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-  >>> assert user is not None
-  >>> email = getUtility(IEmailAddressSet).getByEmail(address)
-  >>> user.validateAndEnsurePreferredEmail(email)
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet, PersonCreationRationale)
+    >>> from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
+    >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
+    >>> user = getUtility(IPersonSet).ensurePerson(
+    ...     address, name, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    >>> assert user is not None
+    >>> email = getUtility(IEmailAddressSet).getByEmail(address)
+    >>> user.validateAndEnsurePreferredEmail(email)
 
-  >>> uploader_team = getUtility(IPersonSet).getByName("ubuntu-team")
-  >>> assert uploader_team is not None
+    >>> uploader_team = getUtility(IPersonSet).getByName("ubuntu-team")
+    >>> assert uploader_team is not None
 
-  >>> login("foo.bar@canonical.com")
-  >>> uploader_team.addMember(user, reviewer=uploader_team.teamowner)
-  >>> login("test@canonical.com")
+    >>> login("foo.bar@canonical.com")
+    >>> uploader_team.addMember(user, reviewer=uploader_team.teamowner)
+    >>> login("test@canonical.com")
 
 
 Assign the loaded GPG key to the katie user.

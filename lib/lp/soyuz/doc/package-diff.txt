@@ -12,8 +12,8 @@ packages and will be performed frequently by our infrastructure.
 First we have to retrieve a SourcePackageRelease from the sampledata,
 let's use 'pmount' sources.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')

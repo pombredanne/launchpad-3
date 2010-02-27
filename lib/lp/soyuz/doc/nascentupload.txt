@@ -17,20 +17,21 @@ This test normally runs as the "uploader" db user but it does not have
 permission to add a new ComponentSelection, so we temporarily switch to
 "launchpad" to handle this.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IComponentSet, IDistributionSet)
-  >>> from canonical.launchpad.database import ComponentSelection
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> hoary = ubuntu['hoary']
-  >>> hoary.status = SeriesStatus.DEVELOPMENT
-  >>> universe = getUtility(IComponentSet)['universe']
-  >>> from canonical.testing import LaunchpadZopelessLayer
-  >>> from canonical.database.sqlbase import commit
-  >>> commit()
-  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
-  >>> commit()
-  >>> LaunchpadZopelessLayer.switchDbUser('uploader')
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from canonical.launchpad.database import ComponentSelection
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> hoary.status = SeriesStatus.DEVELOPMENT
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> trash = ComponentSelection(distroseries=hoary, component=universe)
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 A NascentUpload is a collection of files in a directory. They
 represent what may turn out to be an acceptable upload to a launchpad
@@ -822,22 +823,22 @@ Import the test keys again since the transaction was aborted before.
 When using 'insecure' policy, NascentUpload instace stores the DSC
 sigining key reference as an IGPGKey:
 
-  >>> bar_ok = NascentUpload(
-  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     insecure_policy, mock_logger_quiet)
-  >>> bar_ok.process()
-  >>> bar_ok.is_rejected
-  False
+    >>> bar_ok = NascentUpload(
+    ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+    ...     insecure_policy, mock_logger_quiet)
+    >>> bar_ok.process()
+    >>> bar_ok.is_rejected
+    False
 
-  >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import (
-  ...    IGPGKey, IPersonSet)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.gpg import IGPGKey
 
-  >>> verifyObject(IGPGKey, bar_ok.changes.dsc.signingkey)
-  True
+    >>> verifyObject(IGPGKey, bar_ok.changes.dsc.signingkey)
+    True
 
-  >>> verifyObject(IGPGKey, bar_ok.changes.signingkey)
-  True
+    >>> verifyObject(IGPGKey, bar_ok.changes.signingkey)
+    True
 
 The second key of name16 person is used to sign uploads (the first gpgkey
 record is a placeholder one, we used the second key):
@@ -906,8 +907,9 @@ an ArchivePermission record to permit him to upload "bar" specifically.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, ISourcePackageNameSet)
+    >>> from lp.soyuz.interfaces.archive import ArchivePermissionType
+    >>> from  lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> bar_name = getUtility(ISourcePackageNameSet).getOrCreateByName("bar")
     >>> discard = ArchivePermission(
     ...     archive=ubuntu.main_archive, person=name16,

@@ -26,12 +26,16 @@ to make sure verifyObject will work.
 Verify if the object follows its interface contracts:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageRelease, IDistroSeries,
-    ...     ISourcePackagePublishingHistory,
-    ...     IBinaryPackagePublishingHistory,
-    ...     ISourcePackage,
+    >>> from lp.registry.interfaces.distroseries import IDistroSeries
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import (
+    ...     ISourcePackageRelease)
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     ...     IDistributionSourcePackageRelease)
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     ISourcePackagePublishingHistory,
+    ...     IBinaryPackagePublishingHistory)
+
 
     >>> verifyObject(ISourcePackagePublishingHistory, spph)
     True
@@ -293,10 +297,9 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
 Stanza generation
 =================
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     IArchiveSafePublisher,
     ...     IBinaryPackagePublishingHistory,
-    ...     ISourcePackageFilePublishing,
     ...     ISecureSourcePackagePublishingHistory,
     ...     ISecureBinaryPackagePublishingHistory)
 
@@ -921,7 +924,7 @@ Binary and Binary File Publishing
 Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and ISecureBinaryPackagePublishingHistory
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     IBinaryPackageFilePublishing)
 
     >>> bpph = BinaryPackagePublishingHistory.get(15)
@@ -1474,8 +1477,8 @@ All references related with the given set of source publications are
 fetch in a fixed number of queries (3) instead of varying according
 the size of the set (3 * N).
 
-     >>> from lp.soyuz.adapters.archivesourcepublication import (
-     ...     ArchiveSourcePublications)
+    >>> from lp.soyuz.adapters.archivesourcepublication import (
+    ...     ArchiveSourcePublications)
 
 We will use all published sources in Celso's PPA as our initial set.
 

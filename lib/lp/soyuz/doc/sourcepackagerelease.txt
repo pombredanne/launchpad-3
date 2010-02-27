@@ -128,8 +128,8 @@ Check ISourcePackageRelease.override() behaviour:
    >>> spr.component.name, spr.section.name
    (u'main', u'editors')
 
-   >>> from canonical.launchpad.interfaces import (
-   ...     IComponentSet, ISectionSet)
+   >>> from lp.soyuz.interfaces.component import IComponentSet
+   >>> from lp.soyuz.inderfaces.section import ISectionSet
    >>> new_comp = getUtility(IComponentSet)['universe']
    >>> new_sec = getUtility(ISectionSet)['mail']
 

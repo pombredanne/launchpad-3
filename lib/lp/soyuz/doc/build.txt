@@ -793,16 +793,16 @@ The default set of builds with no user specified excludes private builds:
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
     RELEASE
-    
+
     >>> bob_builds.count()
     13
 
 If we include an admin user, we can see all the builds.  Here, we get
 three additional private builds for cprov:
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> bob_builds = bob.getBuildRecords(user=admin)
@@ -817,7 +817,7 @@ three additional private builds for cprov:
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
         RELEASE
-    
+
     >>> bob_builds.count()
     16
 
@@ -1451,10 +1451,10 @@ being returned.
 
 == Getting the build records for a particular builder ==
 
-The getBuildsForBuilder method returns all the builds for the 
+The getBuildsForBuilder method returns all the builds for the
 specified builder ID, ordered from most-recently built.
 
-    Create some source packages with which to test the 
+    Create some source packages with which to test the
     getBuildsForBuilder method:
 
     >>> src_pkg_earlier = test_publisher.getPubSource(
@@ -1464,7 +1464,7 @@ specified builder ID, ordered from most-recently built.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='laterbuildsrc',
     ...     architecturehintlist='hppa i386')
-    
+
     Create the builds based on the source packages, with the builds
     for 'earlierbuildsrc' built one day before the 'laterbuildsrc':
 
@@ -1479,10 +1479,10 @@ specified builder ID, ordered from most-recently built.
     >>> later_builds = src_pkg_later.createMissingBuilds()
     >>> for build in later_builds:
     ...     build.datebuilt = eg_build_date
-    
+
     Ensure that the i386 builds are created by the 'frog' builder,
     while the hppa builds are created by 'bob' the builder:
-    
+
     >>> builds = earlier_builds + later_builds
     >>> for build in builds:
     ...     if build.processor.name == u'386':
@@ -1492,7 +1492,7 @@ specified builder ID, ordered from most-recently built.
 
     A call to getBuildsForBuilder returns only those builds that were
     built by the specified builder, ordered by datebuilt DESC:
-    
+
     >>> frog_builds = getUtility(IBuildSet).getBuildsForBuilder(
     ...     frog_builder.id)
     >>> print_build_details(frog_builds)

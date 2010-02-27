@@ -57,19 +57,21 @@ For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it. Also adjust 'changeslist'
 address and allow uploads to universe:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IComponentSet, IDistributionSet,
-  ...     ILibraryFileAliasSet)
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> hoary = ubuntu['hoary']
-  >>> hoary.status = SeriesStatus.DEVELOPMENT
-  >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
-  >>> from canonical.launchpad.database import ComponentSelection
-  >>> universe = getUtility(IComponentSet)['universe']
-  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
-  >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
-  >>> trash = hoary['i386'].addOrUpdateChroot(fake_chroot)
-  >>> trash = hoary['hppa'].addOrUpdateChroot(fake_chroot)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> hoary.status = SeriesStatus.DEVELOPMENT
+    >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
+    >>> from canonical.launchpad.database import ComponentSelection
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> trash = ComponentSelection(distroseries=hoary, component=universe)
+    >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+    >>> trash = hoary['i386'].addOrUpdateChroot(fake_chroot)
+    >>> trash = hoary['hppa'].addOrUpdateChroot(fake_chroot)
 
 NEW source upload to RELEASE pocket via 'sync' policy (it presents
 the same behaviour than using insecure policy, apart from allowing

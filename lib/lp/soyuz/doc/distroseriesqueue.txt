@@ -51,16 +51,16 @@ Since we landed correct security adapters for PackageUpload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
-  >>> from canonical.launchpad.ftests import login
-  >>> login("foo.bar@canonical.com")
+    >>> from canonical.launchpad.ftests import login
+    >>> login("foo.bar@canonical.com")
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, IDistributionSet)
-  >>> from canonical.launchpad.database import ComponentSelection
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> hoary = ubuntu['hoary']
-  >>> universe = getUtility(IComponentSet)['universe']
-  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from canonical.launchpad.database import ComponentSelection
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> universe = getUtility(IComponentSet)['universe']
+    >>> trash = ComponentSelection(distroseries=hoary, component=universe)
 
 Construct an upload.
 
@@ -259,40 +259,40 @@ done by someone else.
 
 Let's process a new upload:
 
-  >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntu', distroseries='hoary')
+    >>> insecure_policy = getPolicy(
+    ...     name='insecure', distro='ubuntu', distroseries='hoary')
 
-  >>> bar_ok = NascentUpload(
-  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     insecure_policy, mock_logger_quiet)
-  >>> bar_ok.process()
-  >>> success = bar_ok.do_accept()
-  >>> success
-  True
+    >>> bar_ok = NascentUpload(
+    ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+    ...     insecure_policy, mock_logger_quiet)
+    >>> bar_ok.process()
+    >>> success = bar_ok.do_accept()
+    >>> success
+    True
 
-  >>> signed_queue = bar_ok.queue_root
+    >>> signed_queue = bar_ok.queue_root
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPackageUpload, IGPGKey)
+    >>> from lp.soyuz.interfaces.queue import IPackageUpload
+    >>> from lp.registry.interfaces.gpg import IGPGKey
 
-  >>> verifyObject(IPackageUpload, signed_queue)
-  True
+    >>> verifyObject(IPackageUpload, signed_queue)
+    True
 
-  >>> verifyObject(IGPGKey, signed_queue.signing_key)
-  True
+    >>> verifyObject(IGPGKey, signed_queue.signing_key)
+    True
 
-Let's check the IPerson entities related to this source upload:
+    Let's check the IPerson entities related to this source upload:
 
-  >>> signed_src = signed_queue.sources[0].sourcepackagerelease
+    >>> signed_src = signed_queue.sources[0].sourcepackagerelease
 
-  >>> signed_src.creator.displayname
-  u'Daniel Silverstone'
+    >>> signed_src.creator.displayname
+    u'Daniel Silverstone'
 
-  >>> signed_src.maintainer.displayname
-  u'Launchpad team'
+    >>> signed_src.maintainer.displayname
+    u'Launchpad team'
 
-  >>> signed_queue.signing_key.owner.displayname
-  u'Foo Bar'
+    >>> signed_queue.signing_key.owner.displayname
+    u'Foo Bar'
 
 Based on this information we can conclude that source 'bar' is
 maintained by 'Launchpad Team', was modified by 'Daniel Silverstone'
@@ -512,9 +512,8 @@ don't raise any exception):
 
 Check forbidden approval of not selected Section:
 
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, ISectionSet)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.soyuz.interfaces.section import ISectionSet
 
 Retrieve mozilla-firefox Upload:
 

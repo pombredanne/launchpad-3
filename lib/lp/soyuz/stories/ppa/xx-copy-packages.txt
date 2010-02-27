@@ -108,8 +108,9 @@ for packages. This is certainly not part of the doctest story.
     >>> from canonical.launchpad.ftests import login, logout
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILibraryFileAliasSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
     >>> from lp.soyuz.model.processor import ProcessorFamily
 
     >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]

@@ -77,17 +77,17 @@ Policies can make decisions based on whether or not they want to
 approve an upload automatically (I.E. move it straight to ACCEPTED
 instead of UNAPPROVED)
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IDistributionSet)
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> hoary = ubuntu['hoary']
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
 
-  >>> class FakeUpload:
-  ...   def __init__(self, ppa=False):
-  ...       self.is_ppa = ppa
+    >>> class FakeUpload:
+    ...   def __init__(self, ppa=False):
+    ...       self.is_ppa = ppa
 
-  >>> print hoary.status.name
-  DEVELOPMENT
+    >>> print hoary.status.name
+    DEVELOPMENT
 
 Uploads to the RELEASE pocket of not FROZEN distroseries are approved
 by the insecure policy:

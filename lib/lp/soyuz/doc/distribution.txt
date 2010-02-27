@@ -13,10 +13,12 @@ of Source/BinaryPackageName instances published within this
 distribution:
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageName)
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageName, IBinaryPackageName,
-    ...     PackagePublishingStatus)
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.interfaces.interfaces.binarypackagename import (
+    ...     IBinaryPackageName)
 
     >>> distroset = getUtility(IDistributionSet)
     >>> gentoo = distroset.getByName("gentoo")
@@ -129,7 +131,7 @@ addition to PUBLISHED ones:
 It also works if we look for a package name which is the name of both
 binary and source packages but for which only the source is published:
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> source_name, bin_name = debian.guessPackageNames('alsa-utils')

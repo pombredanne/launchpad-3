@@ -13,8 +13,8 @@ Let's prepare a few things we'll need for the subsequent tests.
     ...     IPackageCopyRequest, IPackageCopyRequestSet, PackageCopyStatus)
     >>> from lp.soyuz.interfaces.archive import (
     ...     ArchivePurpose, IArchiveSet)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IDistributionSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
 In order to instantiate a package copy request we require a source and
