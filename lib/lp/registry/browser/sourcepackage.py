@@ -291,8 +291,8 @@ class SourcePackageRemoveUpstreamView(LaunchpadFormView):
 
     schema = Interface
     field_names = []
-    title = 'Unlink an upstream project'
-    page_title = title
+    label = 'Unlink an upstream project'
+    page_title = label
 
     @property
     def cancel_url(self):
