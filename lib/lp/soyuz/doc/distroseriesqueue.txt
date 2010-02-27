@@ -82,11 +82,10 @@ Now the upload is in the queue, it'll likely be there as NEW because that's
 what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...      QueueInconsistentStateError)
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+    >>> from lp.soyuz.interfaces.queue import (
+    ...      PackageUploadStatus, QueueInconsistentStateError)
 
-  >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
+    >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
 Use state-machine method provided by PackageUpload to ACCEPT an
 upload. If some designed check according the request state do not
@@ -116,13 +115,13 @@ XXX cprov 20051209: need to build a broken upload to test it properly
 
 Confirm we can now find ed published in hoary.
 
-  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-  >>> for release in SourcePackagePublishingHistory.selectBy(
-  ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
-  ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
-  ...         print release.sourcepackagerelease.version
-  0.2-20
+    >>> from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> for release in SourcePackagePublishingHistory.selectBy(
+    ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
+    ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
+    ...         print release.sourcepackagerelease.version
+    0.2-20
 
 
 Check IPackageUploadSet behaviour:
@@ -166,20 +165,20 @@ Counter, optionally by status (informally named "queue") and or distroseries:
 Retrieve some data from DB to play more with counter.
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
-  >>> breezy_autotest = distro['breezy-autotest']
+    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+    >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> breezy_autotest = distro['breezy-autotest']
 
-  >>> qset.count(distroseries=breezy_autotest)
-  13
+    >>> qset.count(distroseries=breezy_autotest)
+    13
 
-  >>> qset.count(status=PackageUploadStatus.ACCEPTED,
-  ...            distroseries=breezy_autotest)
-  0
+    >>> qset.count(status=PackageUploadStatus.ACCEPTED,
+    ...            distroseries=breezy_autotest)
+    0
 
-  >>> qset.count(status=PackageUploadStatus.DONE,
-  ...            distroseries=hoary)
-  1
+    >>> qset.count(status=PackageUploadStatus.DONE,
+    ...            distroseries=hoary)
+    1
 
 
 Check the behaviour of @cachedproperty  attributes:
@@ -854,7 +853,7 @@ Similarly for binaries:
     ...     binary_package.priority.title)
     main/base/Important
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPriority
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
     ...     new_section=web,

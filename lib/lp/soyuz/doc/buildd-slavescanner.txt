@@ -545,7 +545,7 @@ Create a mock slave so the builder gets the right responses for this test.
 Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> build.buildstate = BuildStatus.FULLYBUILT
 
 Now the updateBuild should recognize this build record as a
@@ -853,7 +853,7 @@ need to tweak the status of the current publication directly, as a
 permissive database user.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = build.sourcepackagerelease
@@ -1406,7 +1406,7 @@ Make a build in the updates pocket:
 Change the distroseries status for testing. FROZEN allows building in
 all pockets:
 
-    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> hoary_i386.distroseries.status = SeriesStatus.FROZEN
 
 Now we can start a build in other pockets, and see what archives are

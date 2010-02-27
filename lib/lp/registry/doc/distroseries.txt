@@ -165,26 +165,26 @@ canUploadToPocket method helps us to decide if an upload is allowed or
 not, according the distroseries status and the upload target pocket.
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-   >>> breezy_autotest = ubuntu['breezy-autotest']
-   >>> hoary = ubuntu['hoary']
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> breezy_autotest = ubuntu['breezy-autotest']
+    >>> hoary = ubuntu['hoary']
 
-   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-   >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
-   >>> warty.status.name
-   'CURRENT'
-   >>> warty.canUploadToPocket(PackagePublishingPocket.RELEASE)
-   False
-   >>> warty.canUploadToPocket(PackagePublishingPocket.SECURITY)
-   True
+    >>> warty.status.name
+    'CURRENT'
+    >>> warty.canUploadToPocket(PackagePublishingPocket.RELEASE)
+    False
+    >>> warty.canUploadToPocket(PackagePublishingPocket.SECURITY)
+    True
 
-   >>> breezy_autotest.status.name
-   'EXPERIMENTAL'
-   >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.RELEASE)
-   True
-   >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.SECURITY)
-   False
+    >>> breezy_autotest.status.name
+    'EXPERIMENTAL'
+    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.RELEASE)
+    True
+    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.SECURITY)
+    False
 
 The FROZEN status is special.  Uploads are allowed for all pockets as
 the upload will have to wait for manual approval anyway:

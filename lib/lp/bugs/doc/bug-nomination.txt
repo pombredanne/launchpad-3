@@ -640,7 +640,7 @@ Nominating a bug for an obsolete distroseries raises a
 NominationSeriesObsoleteError. Let's make a new obsolete distroseries
 to demonstrate.
 
-    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu_edgy = factory.makeDistroRelease(

@@ -238,7 +238,7 @@ nominated_for parameter.
     >>> print list(BugNomination.selectBy(distroseries=warty))
     []
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> nominated_for_warty = BugTaskSearchParams(
     ...     user=None, nominated_for=warty)
     >>> list(ubuntu.searchTasks(nominated_for_warty))
@@ -431,7 +431,7 @@ comments will produce eight found bug tasks (three for bug 1, five for bug 2).
 If No Privileges Person reports a bug and does not comment on it, that bug
 will not be included in the results returned by the bug commenter search.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -547,7 +547,7 @@ It starts off with no bugs:
 
 We can file a bug against it and see that show up in a search:
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> bug = cdrkit.createBug(
     ...     CreateBugParams(owner=no_priv, title='Bug to be fixed in trunk',
     ...                     comment='Something'))

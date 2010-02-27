@@ -1,8 +1,9 @@
 = Setting Bug Statuses =
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IPersonSet, IProductSet)
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> nopriv_user = getUtility(IPersonSet).getByName('no-priv')

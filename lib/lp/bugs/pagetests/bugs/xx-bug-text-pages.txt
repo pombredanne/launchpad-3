@@ -16,7 +16,7 @@ We'll start by adding some attachments to the bug:
     >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
     >>> bug = Bug.get(1)
     >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
-    >>> a1 = bug.addAttachment(mark, content, "comment for file a", 
+    >>> a1 = bug.addAttachment(mark, content, "comment for file a",
     ...     "file_a.txt", content_type="text/html")
     >>> content = StringIO.StringIO("do we need to")
     >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
@@ -25,7 +25,7 @@ We'll start by adding some attachments to the bug:
 
 Next, we'll cycle through all statuses so the dates are present:
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> t0 = bug.bugtasks[0]
     >>> t0.transitionToStatus(BugTaskStatus.INCOMPLETE, mark)
     >>> t0.transitionToStatus(BugTaskStatus.CONFIRMED, mark)

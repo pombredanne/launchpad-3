@@ -51,7 +51,7 @@ Only its datecreated value will be set. All other dates will be None.
 The bug status cannot be set directly, but the value can be retrieved
 directly.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
 
     >>> ubuntu_firefox_task.status = BugTaskStatus.CONFIRMED
     Traceback (most recent call last):

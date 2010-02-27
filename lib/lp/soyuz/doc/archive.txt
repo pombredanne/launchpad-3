@@ -281,7 +281,7 @@ This lookup also supports optional filters:
  * 'version': exact version string matching;
  * 'status': a item or a list of PackagePublishingStatus.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
     >>> active_status = [PackagePublishingStatus.PENDING,
     ...                  PackagePublishingStatus.PUBLISHED]

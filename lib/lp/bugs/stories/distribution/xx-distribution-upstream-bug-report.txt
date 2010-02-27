@@ -10,7 +10,7 @@ linux-source with a firefox task, and we add a tomcat task against
 pre-existing linux-source bug 10. We transition the Ubuntu tasks to
 TRIAGED to ensure that they are picked up by the report.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from lp.bugs.tests.bug import (

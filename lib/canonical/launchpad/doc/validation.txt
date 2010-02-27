@@ -58,7 +58,7 @@ It's not allowed even if the sourcepackage has been published in a
 PPA.
 
     >>> from lp.soyuz.tests.ppa import publishToPPA
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> publishToPPA(
     ...     person_name='cprov',
     ...     sourcepackage_name='foobar',
@@ -86,7 +86,8 @@ We can't add a task on just the distribution, because it doesn't
 make sense to have tasks open on just the distribution and also packages
 in that distribution on the same bug.
 
-    >>> from canonical.launchpad.interfaces import validate_new_distrotask
+    >>> from canonical.launchpad.interfaces.validation import (
+    ...     validate_new_distrotask)
     >>> validate_new_distrotask(bug_two, debian, None)
     Traceback (most recent call last):
       ...

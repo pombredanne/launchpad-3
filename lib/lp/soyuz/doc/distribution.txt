@@ -378,7 +378,7 @@ source to another location within the PPA.
 Publishing the record will exclude Celso's PPA from pending-publication
 state:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> src_pub.secure_record.status = PackagePublishingStatus.PUBLISHED
     >>> syncUpdate(src_pub.secure_record)
 

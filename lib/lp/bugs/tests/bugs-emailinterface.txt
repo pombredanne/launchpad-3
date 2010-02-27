@@ -1377,7 +1377,7 @@ Bug supervisors can set some restricted statuses:
 
 Everyone else gets an explanatory error message:
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
 
     >>> commit()

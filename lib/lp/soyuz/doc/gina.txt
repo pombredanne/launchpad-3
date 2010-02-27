@@ -210,7 +210,7 @@ Check if the changelog message was stored correcly:
     <BLANKLINE>
      -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
 
-    >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+    >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
 
@@ -540,7 +540,7 @@ because, of course, there may be multiple rows published for that package --
 that's what overrides actually do.
 
     >>> from canonical.database.sqlbase import sqlvalues
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> x11_pub = SSPPH.select("""sourcepackagerelease = %s
     ...                           AND distroseries = %s
     ...                           AND status in (%s, %s)""" %

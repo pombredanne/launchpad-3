@@ -101,12 +101,12 @@ Display the current firefox component and section:
 
 Fetch brand new component, section and priority:
 
-   >>> from canonical.launchpad.interfaces import (
-   ...     IComponentSet, ISectionSet)
-   >>> from canonical.launchpad.interfaces import PackagePublishingPriority
-   >>> new_comp = getUtility(IComponentSet)['universe']
-   >>> new_sec = getUtility(ISectionSet)['mail']
-   >>> new_priority = PackagePublishingPriority.IMPORTANT
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.section import ISectionSet
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPriority
+    >>> new_comp = getUtility(IComponentSet)['universe']
+    >>> new_sec = getUtility(ISectionSet)['mail']
+    >>> new_priority = PackagePublishingPriority.IMPORTANT
 
 Override the current firefox with new component/section/priority:
 

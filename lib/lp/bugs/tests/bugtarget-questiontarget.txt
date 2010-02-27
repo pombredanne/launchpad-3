@@ -32,7 +32,7 @@ create a a new bug on the bugtarget. It will be converted to a
 question.
 
     >>> login('no-priv@canonical.com')
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bug = filebug(bugtarget, "Print is broken", status=BugTaskStatus.NEW)
 
 

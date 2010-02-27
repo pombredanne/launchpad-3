@@ -25,7 +25,7 @@ Create a bug:
 
     >>> from lazr.lifecycle.event import (
     ...     ObjectCreatedEvent, ObjectModifiedEvent)
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> params = CreateBugParams(
     ...     comment=u"Give me some karma!", title=u"New Bug", owner=foo_bar)

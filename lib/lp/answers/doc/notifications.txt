@@ -218,7 +218,7 @@ After receiving that notification, Foo Bar unassigned himself:
 If we create a bug from the question, it will be reported as a
 bug that has been linked to it:
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
 
     >>> login('no-priv@canonical.com')
     >>> unmodified_question = Snapshot(

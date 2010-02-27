@@ -150,11 +150,13 @@ Abort transaction to avoid error propagation of the new attributes:
 Verify the creation of a new ISourcePackageRelease based on the
 IDistroSeries API:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
-  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 
-  >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+    >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
 All the arguments to create an ISourcePackageRelease are obtained when
 processing a source upload, see more details in nascentupload.txt.

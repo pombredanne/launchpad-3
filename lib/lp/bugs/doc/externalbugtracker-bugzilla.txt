@@ -455,7 +455,7 @@ If we change the bugtask status, it will be updated again even though
 the remote status hasn't changed. This can happen if we change the
 status mapping.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> thunderbird_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED,
     ...     getUtility(IPersonSet).getByName('no-priv'))

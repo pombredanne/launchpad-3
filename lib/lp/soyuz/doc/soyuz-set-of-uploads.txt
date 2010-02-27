@@ -149,22 +149,22 @@ And then we need a way to process the uploads from the queue
 
 And we need a way to process the accepted queue
 
-  >>> from zope.component import getUtility
+    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> from canonical.launchpad.ftests import login
-  >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.ftests import syncUpdate
 
-  >>> login("foo.bar@canonical.com")
+    >>> login("foo.bar@canonical.com")
 
-  >>> def process_accepted(distro):
-  ...     distribution = getUtility(IDistributionSet)[distro]
-  ...     for series in distribution.series:
-  ...         items = series.getQueueItems(
-  ...            status=PackageUploadStatus.ACCEPTED)
-  ...         for item in items:
-  ...             item.realiseUpload()
-  ...             syncUpdate(item)
+    >>> def process_accepted(distro):
+    ...     distribution = getUtility(IDistributionSet)[distro]
+    ...     for series in distribution.series:
+    ...         items = series.getQueueItems(
+    ...            status=PackageUploadStatus.ACCEPTED)
+    ...         for item in items:
+    ...             item.realiseUpload()
+    ...             syncUpdate(item)
 
 
 If an upload of ours ends up in the NEW queue, we need a way to process
@@ -187,41 +187,42 @@ it into the accepted queue
 Finally, as a very simplistic publishing process, we may need to punt any
 given upload into the published state, so here's a very simplistic publisher
 
-  >>> from canonical.launchpad.database import (
-  ...     SourcePackagePublishingHistory as SPPH,
-  ...     BinaryPackagePublishingHistory as BPPH)
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus as PPS
-  >>> from canonical.database.constants import UTC_NOW
-  >>> def simple_publish(distro):
-  ...     srcs_to_publish = SPPH.select("""
-  ...         SourcePackagePublishingHistory.distroseries = DistroSeries.id
-  ...     AND DistroSeries.distribution = Distribution.id
-  ...     AND Distribution.name = '%s'
-  ...     AND SourcePackagePublishingHistory.status = 1""" % distro,
-  ...         clauseTables=['DistroSeries', 'Distribution'])
-  ...     bins_to_publish = BPPH.select("""
-  ...         BinaryPackagePublishingHistory.distroarchseries =
-  ...             DistroArchSeries.id
-  ...     AND DistroArchSeries.distroseries = DistroSeries.id
-  ...     AND DistroSeries.distribution = Distribution.id
-  ...     AND Distribution.name = '%s'
-  ...     AND BinaryPackagePublishingHistory.status = 1""" % distro,
-  ...         clauseTables=['DistroArchSeries', 'DistroSeries',
-  ...                       'Distribution'])
-  ...     published_one = False
-  ...     for src in srcs_to_publish:
-  ...         sec_src = src.secure_record
-  ...         sec_src.status = PPS.PUBLISHED
-  ...         sec_src.datepublished = UTC_NOW
-  ...         syncUpdate(sec_src)
-  ...         published_one = True
-  ...     for bin in bins_to_publish:
-  ...         sec_bin = bin.secure_record
-  ...         sec_bin.status = PPS.PUBLISHED
-  ...         sec_bin.datepublished = UTC_NOW
-  ...         syncUpdate(sec_bin)
-  ...         published_one = True
-  ...     return published_one
+    >>> from canonical.launchpad.database import (
+    ...     SourcePackagePublishingHistory as SPPH,
+    ...     BinaryPackagePublishingHistory as BPPH)
+    >>> from canonical.launchpad.interfaces import (
+    ...     PackagePublishingStatus as PPS)
+    >>> from canonical.database.constants import UTC_NOW
+    >>> def simple_publish(distro):
+    ...     srcs_to_publish = SPPH.select("""
+    ...         SourcePackagePublishingHistory.distroseries = DistroSeries.id
+    ...     AND DistroSeries.distribution = Distribution.id
+    ...     AND Distribution.name = '%s'
+    ...     AND SourcePackagePublishingHistory.status = 1""" % distro,
+    ...         clauseTables=['DistroSeries', 'Distribution'])
+    ...     bins_to_publish = BPPH.select("""
+    ...         BinaryPackagePublishingHistory.distroarchseries =
+    ...             DistroArchSeries.id
+    ...     AND DistroArchSeries.distroseries = DistroSeries.id
+    ...     AND DistroSeries.distribution = Distribution.id
+    ...     AND Distribution.name = '%s'
+    ...     AND BinaryPackagePublishingHistory.status = 1""" % distro,
+    ...         clauseTables=['DistroArchSeries', 'DistroSeries',
+    ...                       'Distribution'])
+    ...     published_one = False
+    ...     for src in srcs_to_publish:
+    ...         sec_src = src.secure_record
+    ...         sec_src.status = PPS.PUBLISHED
+    ...         sec_src.datepublished = UTC_NOW
+    ...         syncUpdate(sec_src)
+    ...         published_one = True
+    ...     for bin in bins_to_publish:
+    ...         sec_bin = bin.secure_record
+    ...         sec_bin.status = PPS.PUBLISHED
+    ...         sec_bin.datepublished = UTC_NOW
+    ...         syncUpdate(sec_bin)
+    ...         published_one = True
+    ...     return published_one
 
 
 We'll be doing a lot of uploads with sanity checks, and expect them to succeed.
@@ -503,9 +504,9 @@ And its binary:
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.launchpad.interfaces import SeriesStatus
-  >>> breezy.status = SeriesStatus.CURRENT
-  >>> LaunchpadZopelessLayer.txn.commit()
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> breezy.status = SeriesStatus.CURRENT
+    >>> LaunchpadZopelessLayer.txn.commit()
 
 Since we are using 'sync' policy in the following tests the packages
 are auto-approved, however, in the real environment the 'insecure'
@@ -626,7 +627,7 @@ Check there's a SourcePackageRelease with no build.
   >>> from lp.registry.model.sourcepackagename import SourcePackageName
   >>> from canonical.launchpad.database import SourcePackageRelease, Build
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-  >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from lp.soyuz.interfaces.build import BuildStatus
   >>> spn = SourcePackageName.selectOneBy(name="baz")
   >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   >>> spr_id = spr.id

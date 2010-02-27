@@ -463,7 +463,7 @@ Assigned bugs do not display when their status is not INPROGRESS.
 The assigned bug is displayed in the "Working on..." section when
 its status is in INPROGRESS.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bug.bugtasks[0].transitionToStatus(BugTaskStatus.INPROGRESS, user)
 
     # Create a new view because we're testing some cached properties.

@@ -493,13 +493,13 @@ The upload will be rejected.
 We rely on process-upload transaction rollback to not store bogus
 queue entry in the database.
 
-  >>> print ed_src_dup.queue_root.status.name
-  REJECTED
+    >>> print ed_src_dup.queue_root.status.name
+    REJECTED
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> hoary.getQueueItems(
-  ...     status=PackageUploadStatus.REJECTED, name="ed").count()
-  1
+    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+    >>> hoary.getQueueItems(
+    ...     status=PackageUploadStatus.REJECTED, name="ed").count()
+    1
 
 
 === Building From ACCEPTED queue ===

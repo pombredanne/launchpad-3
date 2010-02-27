@@ -415,13 +415,13 @@ in the main archive, the important differences are:
    when PPA users upload unchanged source packages).
 
     >>> from lp.registry.interfaces.person import IPersonSet
-  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-  >>> from canonical.launchpad.interfaces import BuildStatus
-  >>> failed_candidate = cprov.archive.getBuildRecords(
-  ...     build_state=BuildStatus.FAILEDTOBUILD, name='cdrkit')[0]
+    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> failed_candidate = cprov.archive.getBuildRecords(
+    ...     build_state=BuildStatus.FAILEDTOBUILD, name='cdrkit')[0]
 
-  >>> failed_candidate.notify()
+    >>> failed_candidate.notify()
 
 Was this package copied?
 

@@ -168,11 +168,11 @@ Cleanup the mess:
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=PackageUploadStatus.ACCEPTED)[0]
-  >>> queue_item.customfiles[0].libraryfilealias.filename
-  u'translations_main_20060728.tar.gz'
+    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
+    >>> queue_item = breezy_autotest.getQueueItems(
+    ...      status=PackageUploadStatus.ACCEPTED)[0]
+    >>> queue_item.customfiles[0].libraryfilealias.filename
+    u'translations_main_20060728.tar.gz'
 
 Do the publish, i.e process the CustomUpload decompressing and writing
 the tarball contents in the archive, collect and check debug message:

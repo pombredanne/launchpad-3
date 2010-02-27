@@ -169,7 +169,7 @@ distribution's bugtasks that are nominated for this release, with a
 widget set up for accepting/declining the nomination. The widet is only
 set up if the user has permission to approve the nomination.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> login("no-priv@canonical.com")
     >>> no_priv = getUtility(ILaunchBag).user
     >>> ubuntu_bug = ubuntu.createBug(CreateBugParams(
