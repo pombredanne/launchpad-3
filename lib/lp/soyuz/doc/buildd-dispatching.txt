@@ -30,7 +30,8 @@ Setup a suitable chroot for Hoary i386:
     >>> alias_id = librarian_client.addFile(
     ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
 
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 

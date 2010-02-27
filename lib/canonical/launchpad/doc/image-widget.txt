@@ -74,7 +74,8 @@ other radio button allows the user to upload a new image.
 If we set any random file as salgado's logo, we'll see it there, as
 well as an option to delete the image that was just uploaded.
 
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
     >>> login('guilherme.salgado@canonical.com')
     >>> logo = getUtility(ILibraryFileAliasSet)[53]
     >>> salgado.logo = logo

@@ -856,7 +856,8 @@ First, let's print the currently published files in cprov's PPA:
 Now we will emulate a duplicated reference to the same 'orig.tar.gz',
 upstream tarball, as if it was part of two different SourcePackageRelease.
 
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
     >>> huge_firefox_orig_file = getUtility(ILibraryFileAliasSet)[3]
     >>> cprov_cdrkit_src = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0]

@@ -18,7 +18,8 @@ which are all needed for successful operation of notify().
 Set up some library files for the netapplet source package.  These are not
 already present in the sample data.
 
-  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
   >>> from lp.archiveuploader.tests import datadir, mock_logger
   >>> import os
   >>> netapplet_spr = netapplet_upload.sources[0].sourcepackagerelease
