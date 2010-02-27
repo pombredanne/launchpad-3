@@ -503,8 +503,8 @@ the bug are copied to the question.
 
     >>> from datetime import datetime
     >>> from pytz import UTC
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IBugSet, IProductSet)
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 
     >>> now = datetime.now(UTC)
 

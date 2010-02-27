@@ -98,8 +98,8 @@ possibilities for the user.
     # be the question owner and Sample Person who will play the role of
     # answer contact. Foo Bar is used to change the status of the
     # question.
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('no-priv@canonical.com')
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')

@@ -9,8 +9,10 @@ Distributions and DistributionSourcePackages.
     >>> login('test@canonical.com')
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet, IPersonSet, IQuestionTarget)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.answers.interfaces.questiontarget import IQuestionTarget
 
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> verifyObject(IQuestionTarget, firefox)

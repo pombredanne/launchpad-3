@@ -4,8 +4,8 @@ Several views are used to handle the various operations on a question.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> question_three = ubuntu.getQuestion(3)
     >>> firefox = getUtility(IProductSet).getByName('firefox')

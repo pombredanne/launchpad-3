@@ -79,8 +79,8 @@ It returns None when there is FAQ with that ID in the context:
 It also returns None when using the ID of a FAQ that isn't in the
 requested collection:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu != collection
     True

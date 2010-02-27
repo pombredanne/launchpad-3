@@ -78,7 +78,8 @@ contains in short format the reason for the user to be contacted.
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet, IPersonSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
     >>> ubuntu.addAnswerContact(ubuntu_team)

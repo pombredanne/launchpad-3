@@ -114,8 +114,8 @@ It also returns None when asking an ID for a FAQ that isn't in the
 requested target:
 
     # Create a FAQ on Ubuntu.
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu != target
     True

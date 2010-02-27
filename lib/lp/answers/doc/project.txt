@@ -5,8 +5,9 @@ Launchpad also provides the IQuestionCollection and
 ISearchableByQuestionOwner interfaces.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProjectGroupSet, ISearchableByQuestionOwner, IQuestionCollection)
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> from lp.answers.interfaces.questioncollection import (
+    ...     IQuestionCollection, ISearchableByQuestionOwner)
 
     >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> verifyObject(IQuestionCollection, mozilla_project)
@@ -45,7 +46,7 @@ possible questions.
 Questions can be searched by all the standard searchQuestions() parameters
 (consult questiontarget.txt for the full details.)
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.answers.interfaces.questionenums import (
     ...     QuestionStatus, QuestionSort)
     >>> for question in mozilla_project.searchQuestions(
     ...     owner=sample_person, status=QuestionStatus.OPEN,

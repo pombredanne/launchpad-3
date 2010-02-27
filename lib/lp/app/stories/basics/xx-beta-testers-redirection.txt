@@ -203,8 +203,9 @@ notification to disable beta redirection is displayed.
 Add Foo Bar to the beta team.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')

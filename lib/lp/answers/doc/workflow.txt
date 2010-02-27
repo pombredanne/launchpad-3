@@ -39,8 +39,9 @@ the Ubuntu Team that owns the distribution.
 
     >>> login('no-priv@canonical.com')
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILanguageSet, IPersonSet)
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')

@@ -168,8 +168,9 @@ Create recent questions on a number of projects.
 
     >>> from lp.answers.testing import (
     ...     QuestionFactory)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag, IProductSet)
+    >>> from canonical.launchpad.webapp.interfaces ILaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
