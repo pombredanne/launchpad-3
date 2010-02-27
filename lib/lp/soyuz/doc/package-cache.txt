@@ -613,13 +613,14 @@ The DistroSeriesBinaryPackage and DistroArchSeriesBinaryPackage
 objects uses a DistroSeriesPackageCache record to present summary and
 description for the context binary package.
 
-  >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
-  >>> foobar_name = getUtility(IBinaryPackageNameSet).queryByName('foobar')
+    >>> from lp.soyuz.interfaces.binarypackagename import (
+    ...     IBinaryPackageNameSet)
+    >>> foobar_name = getUtility(IBinaryPackageNameSet).queryByName('foobar')
 
-  >>> primary_cache = DistroSeriesPackageCache(
-  ...     archive=ubuntu.main_archive, distroseries=warty,
-  ...     binarypackagename=foobar_name, summary='main foobar',
-  ...     description='main foobar description')
+    >>> primary_cache = DistroSeriesPackageCache(
+    ...     archive=ubuntu.main_archive, distroseries=warty,
+    ...     binarypackagename=foobar_name, summary='main foobar',
+    ...     description='main foobar description')
 
 The DistroSeriesBinaryPackage.
 

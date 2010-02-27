@@ -602,7 +602,7 @@ getPublishedBinaries().
 Now we override the first binary publication, the hppa one, to
 component 'universe'.
 
-    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> universe = getUtility(IComponentSet)['universe']
 
     >>> first_binary = copied_source.getPublishedBinaries()[0]

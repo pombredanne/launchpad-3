@@ -716,7 +716,7 @@ are returned.
 
 It is also possible to search for a distroseries and architecture.
 
-    >>> from canonical.launchpad.interfaces import IProcessorFamilySet
+    >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
     >>> amd64 = getUtility(IProcessorFamilySet).getByName('amd64')
     >>> warty_amd64 = factory.makeDistroArchSeries(
     ...     distroseries=warty, architecturetag='amd64',

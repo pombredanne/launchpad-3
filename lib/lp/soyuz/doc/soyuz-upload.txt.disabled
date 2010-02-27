@@ -270,12 +270,12 @@ a different process.
 Include non-free in the database. This will be done by the
 NascentUpload in the 'sync' policy in the future.
 
-  >>> from canonical.launchpad.interfaces import IComponentSet
-  >>> component_set = getUtility(IComponentSet)
-  >>> non_free = component_set.new("non-free")
-  >>> contrib = component_set.new("contrib")
-  >>> import transaction
-  >>> transaction.commit()
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> component_set = getUtility(IComponentSet)
+    >>> non_free = component_set.new("non-free")
+    >>> contrib = component_set.new("contrib")
+    >>> import transaction
+    >>> transaction.commit()
 
 Now we are ready to process the uploaded packages.
 This is done by running process-upload.py on each upload directory.

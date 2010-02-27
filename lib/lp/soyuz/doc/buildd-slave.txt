@@ -74,7 +74,7 @@ Initialise the BuildMaster with all available distroarchseries.
 Because the sampledata builders are busy we issue and warning stating
 that.
 
-    >>> from canonical.launchpad.interfaces import IDistroArchSeriesSet
+    >>> from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
     >>> all_architectures = sorted(
     ...     getUtility(IDistroArchSeriesSet),
     ...     key=lambda dar: (dar.distroseries.distribution.name,

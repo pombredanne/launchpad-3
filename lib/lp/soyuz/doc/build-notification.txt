@@ -15,9 +15,9 @@ The report is based on the emailtemplate/build-notification.txt.
 All build states are supported by the current implementation, however
 only failures should be reported this time.
 
-  >>> from canonical.launchpad.interfaces import IBuildSet
-  >>> from lp.testing.mail_helpers import pop_notifications
-  >>> buildset = getUtility(IBuildSet)
+    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.testing.mail_helpers import pop_notifications
+    >>> buildset = getUtility(IBuildSet)
 
 To avoid consequences of modified sampledata, specially if we add
 more builds for test we are going to pick a specific build record

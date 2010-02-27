@@ -13,8 +13,8 @@ As soon as a build job is processed succesfully (dispatched &
 collected) the BuildQueue record representing it is removed.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IBuildQueue
-    >>> from canonical.launchpad.interfaces import IBuildQueueSet
+    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueue
+    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
 Get an instance of Builder from the current sampledata using the
 IBuildQueueSet zope utility. The zope utility itself will be
@@ -267,7 +267,7 @@ after other packages in the queue. First we need to create a fake
 language pack build.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import ISectionSet
+    >>> from lp.soyuz.interfaces.section import ISectionSet
     >>> section_set = getUtility(ISectionSet)
     >>> [transl_section] = [s for s in section_set
     ...     if s.name == u'translations']

@@ -10,10 +10,10 @@ set of supporting sample data.  It has rows in distribution, distroseries,
 sourcepackagerelease, person and a librarian entry for the changes file 
 which are all needed for successful operation of notify().
 
-  >>> from canonical.launchpad.interfaces import IPackageUploadSet
-  >>> netapplet_upload = getUtility(IPackageUploadSet)[3]
-  >>> print netapplet_upload.displayname
-  netapplet
+    >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
+    >>> netapplet_upload = getUtility(IPackageUploadSet)[3]
+    >>> print netapplet_upload.displayname
+    netapplet
 
 Set up some library files for the netapplet source package.  These are not
 already present in the sample data.

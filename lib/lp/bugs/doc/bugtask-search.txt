@@ -532,7 +532,7 @@ Bugs may also be targeted to partner packages.  First turn "cdrkit" into
 a partner package:
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> proxied_cdrkit = ubuntu.getSourcePackage("cdrkit")
     >>> cdrkit = removeSecurityProxy(proxied_cdrkit)
     >>> cdrkit.component = getUtility(IComponentSet)['partner']

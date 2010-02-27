@@ -68,7 +68,8 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
   >>> firefox_parsed_depends = firefox_view.builddepends
 
   >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
+  >>> from canonical.launchpad.interfaces.packagerelationship import (
+  ...     IPackageRelationshipSet)
   >>> verifyObject(IPackageRelationshipSet, firefox_parsed_depends)
   True
 

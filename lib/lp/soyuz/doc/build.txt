@@ -343,8 +343,10 @@ it won't interfere in the next tests.
 Initialize all the required arguments to create a binary package for a
 given build record entry.
 
-    >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
-    >>> binarypackagename = getUtility(IBinaryPackageNameSet).ensure('demo').id
+    >>> from lp.soyuz.interfaces.binarypackagename import (
+    ...     IBinaryPackageNameSet)
+    >>> binarypackagename = getUtility(
+    ...     IBinaryPackageNameSet).ensure('demo').id
     >>> version = '0.0.1-demo'
     >>> summary = 'Summmmmmmmary'
     >>> description = 'Descripppppppption'
@@ -380,7 +382,8 @@ Invoke createBinaryPackageRelease with all required arguments.
     ...     pre_depends, enhances, breaks, essential, installedsize,
     ...     architecturespecific)
 
-    >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
+    >>> from lp.soyuz.interfaces.binarypackagerelease import (
+    ...     IBinaryPackageRelease)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IBinaryPackageRelease, bin)
     True

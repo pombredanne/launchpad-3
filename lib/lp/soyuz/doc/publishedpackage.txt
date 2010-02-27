@@ -4,7 +4,7 @@ This database view gives us information on which packages are published in
 which distributions.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPublishedPackageSet
+    >>> from lp.soyuz.interfaces.publishedpackage import IPublishedPackageSet
     >>> pp_set = getUtility(IPublishedPackageSet)
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -27,6 +27,7 @@ is published twice in two architectures it is only returned once.
     mozilla-firefox
     mozilla-firefox-data
 
-    >>> from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
+    >>> from lp.soyuz.interfaces.distroseriesbinarypackage import (
+    ...     IDistroSeriesBinaryPackage)
     >>> verifyObject(IDistroSeriesBinaryPackage, ff_drspr.meta_binaries[0])
     True

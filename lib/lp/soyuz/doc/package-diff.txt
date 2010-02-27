@@ -33,7 +33,7 @@ Requesting a diff from pmount_0.1-1 to pmount_0.1-2.
 
 Let's inspect the PackageDiff record created.
 
-    >>> from canonical.launchpad.interfaces import IPackageDiff
+    >>> from lp.soyuz.interfaces.packagediff import IPackageDiff
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> verifyObject(IPackageDiff, package_diff)
@@ -54,7 +54,8 @@ Its main attributes are:
  * 'from_source', which maps to a `ISourcePackageRelease`, the base
    source used in the diff.
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageRelease
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import (
+    ...     ISourcePackageRelease)
     >>> verifyObject(ISourcePackageRelease, package_diff.from_source)
     True
 
@@ -64,7 +65,6 @@ Its main attributes are:
  * 'to_source', which maps to a `ISourcePackageRelease`, the result
    source used in the diff.
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageRelease
     >>> verifyObject(ISourcePackageRelease, package_diff.to_source)
     True
 
@@ -116,7 +116,7 @@ chroot in hoary in order to be able to accept the NEW packages.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from canonical.launchpad.database import LibraryFileAlias
 
     >>> hoary = ubuntu.getSeries('hoary')
@@ -410,7 +410,7 @@ PackageDiffs attached to specific SourcePackageReleases.
 Using the utility it's possible to iterate over all PackageDiff
 stored.
 
-    >>> from canonical.launchpad.interfaces import IPackageDiffSet
+    >>> from lp.soyuz.interfaces.packagediff import IPackageDiffSet
     >>> packagediff_set = getUtility(IPackageDiffSet)
 
     >>> def print_diffs(diff_set):
