@@ -33,7 +33,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from lp.bugs.interfaces.bugattachment import IBugAttachment
-from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatch
@@ -587,7 +586,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """Create an INullBugTask and return it for the given parameters."""
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @call_with(owner=REQUEST_USER)
     @export_factory_operation(Interface, [])
     def addNomination(owner, target):
@@ -601,7 +600,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @export_read_operation()
     def canBeNominatedFor(target):
         """Can this bug nominated for this target?
@@ -612,7 +611,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @operation_returns_entry(Interface)
     @export_read_operation()
     def getNominationFor(target):
@@ -625,7 +624,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     @operation_parameters(
         target=Reference(
-            schema=IBugTarget, title=_('Target'), required=False),
+            schema=Interface, title=_('Target'), required=False),
         nominations=List(
             title=_("Nominations to search through."),
             value_type=Reference(schema=Interface), # IBugNomination
@@ -895,7 +894,7 @@ class IFrontPageBugAddForm(IBugAddForm):
     """Create a bug for any bug target."""
 
     bugtarget = Reference(
-        schema=IBugTarget, title=_("Where did you find the bug?"),
+        schema=Interface, title=_("Where did you find the bug?"),
         required=True)
 
 
