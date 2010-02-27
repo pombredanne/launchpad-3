@@ -5,7 +5,7 @@ located on all pages. The search is performed and displayed by the
 LaunchpadSearchView.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.webapp.webapp.interfaces import (
+    >>> from canonical.launchpad.webapp.interfaces import (
     ...     ILaunchpadRoot)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 

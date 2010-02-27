@@ -204,7 +204,8 @@ the getDirectRecipients() method.
 That method returns an INotificationRecipientSet, containing the direct
 subscribers along the rationale for contacting them:
 
-    >>> from canonical.launchpad.interfaces import INotificationRecipientSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     INotificationRecipientSet)
     >>> verifyObject(INotificationRecipientSet, subscribers)
     True
     >>> [person.displayname for person in subscribers]

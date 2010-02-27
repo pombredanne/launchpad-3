@@ -185,7 +185,8 @@ If a comment made by the same user is strictly identical to its previous
 comment in sequence, it will be omitted. Let's add some comments and
 attachments to a bug to see this in action:
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> import StringIO
     >>> user = getUtility(ILaunchBag).user
     >>> different_user = getUtility(IPersonSet).getByName('name16')

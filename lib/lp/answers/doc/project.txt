@@ -20,7 +20,8 @@ This means that it is possible to search for all questions filed against
 products in a project using the project searchQuestions() method.
 
     # Add a question to thunderbird.
-    >>> from canonical.launchpad.interfaces import ILaunchBag, IProductSet
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login('test@canonical.com')
     >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
     >>> sample_person = getUtility(ILaunchBag).user

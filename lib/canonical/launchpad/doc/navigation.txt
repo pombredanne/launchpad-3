@@ -291,7 +291,7 @@ tried.
 Let's create a subclass of ThingSetNavigation, and add a 'stepto'.
 
     >>> from canonical.launchpad.webapp import stepto
-    >>> from canonical.launchpad.webapp.webapp.interfaces import NotFoundError
+    >>> from canonical.launchpad.webapp.interfaces import NotFoundError
 
     >>> class ThingSetNavigation2(ThingSetNavigation):
     ...

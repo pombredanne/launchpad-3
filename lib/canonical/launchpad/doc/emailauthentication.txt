@@ -36,7 +36,8 @@ We can check that the user really got authenticated by looking at the
 user in the launch bag:
 
     >>> import email
-    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> launchbag = getUtility(ILaunchBag)
     >>> name, addr = email.Utils.parseaddr(msg['From'])

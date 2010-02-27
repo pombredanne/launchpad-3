@@ -19,14 +19,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-# XXX kiko 2007-02-08:
-# These import shims are actually necessary if we don't go over the
-# entire codebase and fix where the import should come from.
-from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, ILaunchBag, ILaunchpadRoot, IOpenLaunchBag,
-    NotFoundError, UnexpectedFormData, UnsafeFormGetSubmissionError)
-
-
 __all__ = [
     'IAging',
     'IAppFrontPageSearchForm',

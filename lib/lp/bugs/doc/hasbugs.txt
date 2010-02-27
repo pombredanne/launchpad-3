@@ -7,7 +7,8 @@ searching through the list of bugs.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IHasBugs, IDistributionSet
+    >>> from canonical.launchpad.interfaces.launchpad import IHasBugs
+    >>> from lp.registry.interfaces.distribution IDistributionSet
     >>> distroset = getUtility(IDistributionSet)
     >>> debian = distroset.getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")

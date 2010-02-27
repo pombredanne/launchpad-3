@@ -184,7 +184,7 @@ normal way to do this.  Normally, we'd just say
 But, here, I want to test the variant of the zcml directive that specifes
 an adapter.
 
-    >>> from canonical.launchpad.webapp.webapp.interfaces import (
+    >>> from canonical.launchpad.webapp.interfaces import (
     ...     ILaunchpadRoot)
     >>> class CountrySetUrl:
     ...

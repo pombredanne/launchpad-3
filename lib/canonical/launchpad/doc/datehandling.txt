@@ -43,7 +43,7 @@ Then let's create a bunch of sample dates to work with:
 An IBugTask extends the interface IHasDateCreated. IHasDateCreated can be
 adapted to IAging:
 
-    >>> from canonical.launchpad.interfaces import IAging
+    >>> from canonical.launchpad.interfaces.launchpad import IAging
     >>> bt.datecreated = one_minute_ago
     >>> aging_bug = IAging(bt)
 
