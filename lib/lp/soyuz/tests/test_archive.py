@@ -18,13 +18,9 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
-<<<<<<< TREE
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-=======
 from lp.soyuz.interfaces.archive import (
     IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
->>>>>>> MERGE-SOURCE
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -566,17 +562,12 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
         self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
 
 
-<<<<<<< TREE
 class TestARMBuildsAllowed(TestCaseWithFactory):
     """Ensure that ARM builds can be allowed and disallowed correctly."""
-=======
-class TestArchivePrivacySwitching(TestCaseWithFactory):
->>>>>>> MERGE-SOURCE
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-<<<<<<< TREE
         """Setup an archive with relevant publications."""
         super(TestARMBuildsAllowed, self).setUp()
         self.publisher = SoyuzTestPublisher()
@@ -587,22 +578,22 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
 
     def test_default(self):
         """By default, ARM builds are not allowed."""
-        self.assertEquals(0, 
+        self.assertEquals(0,
             self.archive_arch_set.getByArchive(self.archive, self.arm).count())
         self.assertFalse(self.archive.arm_builds_allowed)
 
     def test_get_uses_archivearch(self):
-        """Adding an entry to ArchiveArch for ARM and an archive will 
+        """Adding an entry to ArchiveArch for ARM and an archive will
         enable arm_builds_allowed for that archive."""
         self.assertFalse(self.archive.arm_builds_allowed)
         self.archive_arch_set.new(self.archive, self.arm)
         self.assertTrue(self.archive.arm_builds_allowed)
 
     def test_get_uses_arm_only(self):
-        """Adding an entry to ArchiveArch for something other than ARM 
+        """Adding an entry to ArchiveArch for something other than ARM
         does not enable arm_builds_allowed for that archive."""
         self.assertFalse(self.archive.arm_builds_allowed)
-        self.archive_arch_set.new(self.archive, 
+        self.archive_arch_set.new(self.archive,
             getUtility(IProcessorFamilySet).getByName('amd64'))
         self.assertFalse(self.archive.arm_builds_allowed)
 
@@ -616,11 +607,16 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
             allowed_restricted_families[0].processorfamily)
         self.assertTrue(self.archive.arm_builds_allowed)
         self.archive.arm_builds_allowed = False
-        self.assertEquals(0, 
+        self.assertEquals(0,
             self.archive_arch_set.getByArchive(self.archive, self.arm).count())
         self.assertFalse(self.archive.arm_builds_allowed)
 
-=======
+
+class TestArchivePrivacySwitching(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
         """Create a public and a private PPA."""
         super(TestArchivePrivacySwitching, self).setUp()
         self.public_ppa = self.factory.makeArchive()
@@ -660,7 +656,7 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
 
         self.assertRaises(
             CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
->>>>>>> MERGE-SOURCE
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

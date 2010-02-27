@@ -743,13 +743,8 @@ Create a private PPA for Celso with a private source publication.
     ...     private=True, owner=cprov, distribution=ubuntu_db, name="p3a",
     ...     description="packages to help my friends.")
     >>> private_publication = test_publisher.createSource(
-<<<<<<< TREE
-    ...     cprov.archive, 'foocomm', '1.0-1')
-    >>> private_publication.status = (
-=======
     ...     cprov_private_ppa_db, 'foocomm', '1.0-1')
-    >>> private_publication.secure_record.status = (
->>>>>>> MERGE-SOURCE
+    >>> private_publication.status = (
     ...     PackagePublishingStatus.PUBLISHED)
 
     >>> logout()
@@ -919,13 +914,8 @@ version.
 
     >>> login('foo.bar@canonical.com')
     >>> subsequent_version = test_publisher.createSource(
-<<<<<<< TREE
-    ...     cprov.archive, 'foocomm', '1.0-2')
-    >>> subsequent_version.status = (
-=======
     ...     cprov_private_ppa_db, 'foocomm', '1.0-2')
-    >>> subsequent_version.secure_record.status = (
->>>>>>> MERGE-SOURCE
+    >>> subsequent_version.status = (
     ...     PackagePublishingStatus.PUBLISHED)
     >>> logout()
 

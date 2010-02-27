@@ -324,10 +324,9 @@ patch_reference_property(
 
 IBuildBase['buildstate'].vocabulary = BuildStatus
 
-<<<<<<< TREE
 patch_reference_property(
     ISourcePackageRelease, 'source_package_recipe_build', ISourcePackageRecipeBuild)
-=======
+
 # IHasBugs
 patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'assignee', IPerson)
@@ -375,4 +374,3 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
->>>>>>> MERGE-SOURCE

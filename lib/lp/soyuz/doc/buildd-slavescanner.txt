@@ -880,20 +880,13 @@ published yet, it will be temporarily skipped until the source is
 published.  We need to tweak the status of the publishing record again
 to demonstrate this, and also make the archive private:
 
-<<<<<<< TREE
-    >>> build = getUtility(IBuildSet).getByQueueEntry(new_candidate)
-    >>> source = build.sourcepackagerelease
-    >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication
-=======
 XXX Michael Nelson 2010-02-19 bug=394276 Please let's put some time
 aside to convert these to unit-tests.
 
     >>> naked_build = removeSecurityProxy(
     ...     getUtility(IBuildSet).getByQueueEntry(new_candidate))
     >>> original_archive = naked_build.archive
-    >>> secure_pub = naked_build.current_source_publication.secure_record
->>>>>>> MERGE-SOURCE
+    >>> secure_pub = naked_build.current_source_publication
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> private_ppa = factory.makeArchive(private=True)
@@ -932,14 +925,8 @@ superseded.  We can supersede this publication which will have the effect of
 making the build be superseded and no candidate is returned.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-<<<<<<< TREE
-    >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication
-=======
-    >>> secure_pub = naked_build.current_source_publication.secure_record
+    >>> secure_pub = naked_build.current_source_publication
     >>> secure_pub.status = PackagePublishingStatus.DELETED
-    >>> secure_pub = naked_build.current_source_publication.secure_record
->>>>>>> MERGE-SOURCE
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
