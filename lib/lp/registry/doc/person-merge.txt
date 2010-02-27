@@ -109,7 +109,7 @@ transferred to Sample Person.
     # a person's preferred email.
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     EmailAddressStatus)
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
     >>> email = IMasterObject(marilize.preferredemail)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> email.destroySelf()

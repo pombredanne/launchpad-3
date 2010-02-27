@@ -62,7 +62,7 @@ Inactive and suspended users are invalid; the homepage content is escaped
 HTML.
 
     >>> from canonical.launchpad.interfaces.account import AccountStatus
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
 
     # Only admins can change an account.
     >>> admin_user = person_set.getByName('name16')

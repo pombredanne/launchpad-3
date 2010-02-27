@@ -950,7 +950,7 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     ...     bad_user, TeamMembershipStatus.APPROVED, reviewer)
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
     >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
     >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
     >>> removeSecurityProxy(bad_user)._preferredemail_cached = None

@@ -80,7 +80,7 @@ stored. The password is not reset.
 A user with a DEACTIVATED account does not have a password--he must use
 the +resetpassword view to set his account to ACTIVE and add a password.
 
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
     >>> former_user = IMasterObject(
     ...     person_set.getByEmail('former-user@canonical.com'))
     >>> former_user.name

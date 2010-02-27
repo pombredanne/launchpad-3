@@ -16,7 +16,7 @@ https://launchpad.net/malone/+bug/49891)
 
     >>> login("test@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
     >>> firefox = IMasterObject(getUtility(IProductSet).getByName("firefox"))
     >>> sample_person = IMasterObject(
     ...     getUtility(IPersonSet).getByName("name12"))
