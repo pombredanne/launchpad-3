@@ -20,7 +20,7 @@ personal standing in Launchpad is unknown.
 When the message is initially held for approval, a message object is
 first created.
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> message_set = getUtility(IMessageSet)
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com
@@ -36,7 +36,7 @@ Then this message is inserted into the approval queue.
 
     >>> held_message = list_one.holdMessage(message)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IMessageApproval
+    >>> from lp.registry.interfaces.mailinglist import IMessageSetApproval
     >>> verifyObject(IMessageApproval, held_message)
     True
 
@@ -282,7 +282,7 @@ that list too.
 
 Here are some helper functions.
 
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageSetApprovalSet
     >>> hold_set = getUtility(IMessageApprovalSet)
     >>> from operator import attrgetter
     >>> def print_hold(message_hold):

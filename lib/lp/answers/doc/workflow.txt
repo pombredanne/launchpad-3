@@ -723,7 +723,7 @@ back to OPEN after having been rejected.
 In all the workflow methods, it is possible to pass an IMessage instead of
 a string.
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> login('test@canonical.com')
     >>> messageset = getUtility(IMessageSet)
     >>> question = ubuntu.newQuestion(**new_question_args)

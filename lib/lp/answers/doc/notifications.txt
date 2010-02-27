@@ -437,7 +437,7 @@ Notification received by the owner:
 display.)
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> email_msg = getUtility(IMessageSet).fromText(
     ...     subject=(
     ...         "Re: [Question %d]: Installer doesn't work on "

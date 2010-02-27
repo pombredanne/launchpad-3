@@ -485,7 +485,7 @@ To demonstrate this method, we'll create a comment to push.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> message = getUtility(IMessageSet).fromText(
     ...     "A subject", "An example comment to push.", poster)
 
