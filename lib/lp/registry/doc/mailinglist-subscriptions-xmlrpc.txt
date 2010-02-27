@@ -186,7 +186,7 @@ By default, Launchpad members have an unknown, and thus not good, standing.
 Anne is a bad person and the Launchpad administrator assigns her a poor
 standing.
 
-    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> from lp.registry.interfaces.person import PersonalStanding
     >>> anne.personal_standing = PersonalStanding.POOR
     >>> transaction.commit()
 

@@ -325,7 +325,7 @@ value is available.
 A Launchpad administrator may change a person's standing, and may give a
 reason for the change.
 
-    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> from lp.registry.interfaces.person import PersonalStanding
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> lifeless.personal_standing_reason = 'Such a cool guy!'
     >>> from canonical.launchpad.ftests import syncUpdate
@@ -1265,7 +1265,7 @@ on certain criteria:
 First, Carlos does not have any completed specifications assigned to
 him:
 
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
     >>> carlos.specifications(filter=[
     ...     SpecificationFilter.ASSIGNEE,
     ...     SpecificationFilter.COMPLETE]).count()

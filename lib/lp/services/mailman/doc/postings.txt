@@ -695,7 +695,7 @@ have their posts held for moderation.
 However, a Launchpad member in good standing is allowed to post to any mailing
 list.
 
-    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> from lp.registry.interfaces.person import PersonalStanding
     >>> login('admin@canonical.com')
     >>> bart.personal_standing = PersonalStanding.GOOD
     >>> transaction.commit()

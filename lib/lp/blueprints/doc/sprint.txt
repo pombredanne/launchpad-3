@@ -69,7 +69,8 @@ approved, not ones where the only specs are proposed.  So, we'll change
 the specs related to the Ubuntu "futurista" sprint to "proposed", and
 then check the coming sprints and all sprints.
 
-    >>> from canonical.launchpad.interfaces import SprintSpecificationStatus
+    >>> from lp.blueprints.interfaces.sprintspecification import (
+    ...     SprintSpecificationStatus)
 
 We're directly using the database classes here, bypassing the security
 proxies because this is just set-up for the next step, it's not the exact
@@ -102,9 +103,9 @@ related to a sprint.
 Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
- >>> ubz = sprintset["ubz"]
+    >>> ubz = sprintset["ubz"]
 
- >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
 
 
 First, there should be no informational specs for ubz:

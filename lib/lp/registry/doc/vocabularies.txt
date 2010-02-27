@@ -257,7 +257,7 @@ All the teams the person is an active member of.
 The PersonActiveMembership vocabulary only shows teams where the
 membership is public.
 
-    >>> from canonical.launchpad.interfaces import PersonVisibility
+    >>> from lp.registry.interfaces.person import PersonVisibility
     >>> otherteam = person_set.getByName('otherteam')
     >>> ignored = otherteam.addMember(foo_bar, foo_bar)
     >>> otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
@@ -648,7 +648,7 @@ anything, as we only match against the beginning of an email address.
 
 A person with a single and unvalidated email address can be merged.
 
-    >>> from canonical.launchpad.interfaces import PersonCreationRationale
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> fooperson, email = person_set.createPersonAndEmail(
     ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
     ...     name='foobaz', displayname='foo baz')

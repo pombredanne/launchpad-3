@@ -435,7 +435,7 @@ informational.
 
  >>> kubuntu = distroset.getByName("kubuntu")
 
- >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
 
 First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:

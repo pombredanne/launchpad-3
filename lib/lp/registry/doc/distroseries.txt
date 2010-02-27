@@ -964,7 +964,7 @@ informational.
     >>> distroset = getUtility(IDistributionSet)
     >>> kubuntu = distroset.getByName("kubuntu")
     >>> krunch = kubuntu.getSeries("krunch")
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
 
 First, there should be one informational specs for krunch:
 
