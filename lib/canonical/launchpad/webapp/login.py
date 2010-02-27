@@ -260,50 +260,61 @@ class OpenIDCallbackView(OpenIDLogin):
         logInPrincipal(
             self.request, loginsource.getPrincipalByLogin(email), email)
 
+    def _createAccount(self, openid_identifier):
+        # Here we assume the OP sent us the user's email address and
+        # full name in the response. Note we can only do that because
+        # we used a fixed OP (login.launchpad.net) that includes the
+        # user's email address and full name in the response when
+        # asked to.  Once we start using other OPs we won't be able to
+        # make this assumption here as they might not include what we
+        # want in the response.
+        sreg_response = sreg.SRegResponse.fromSuccessResponse(
+            self.openid_response)
+        assert sreg_response is not None, (
+            "OP didn't include an sreg extension in the response.")
+        email_address = sreg_response.get('email')
+        full_name = sreg_response.get('fullname')
+        assert email_address is not None and full_name is not None, (
+            "No email address or full name found in sreg response; "
+            "can't create a new account for this identity URL.")
+        account, email = getUtility(IAccountSet).createAccountAndEmail(
+            email_address,
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+            full_name,
+            password=None,
+            openid_identifier=openid_identifier)
+        return account
+
     def render(self):
         if self.openid_response.status == SUCCESS:
             identifier = self.openid_response.identity_url.split('/')[-1]
             account_set = getUtility(IAccountSet)
-            try:
-                account = account_set.getByOpenIDIdentifier(identifier)
-            except LookupError:
-                # Here we assume the OP sent us the user's email address and
-                # full name in the response. Note we can only do that because
-                # we used a fixed OP (login.launchpad.net) that includes the
-                # user's email address and full name in the response when
-                # asked to.  Once we start using other OPs we won't be able to
-                # make this assumption here as they might not include what we
-                # want in the response.
-                sreg_response = sreg.SRegResponse.fromSuccessResponse(
-                    self.openid_response)
-                assert sreg_response is not None, (
-                    "OP didn't include an sreg extension in the response.")
-                email_address = sreg_response.get('email')
-                full_name = sreg_response.get('fullname')
-                assert email_address is not None and full_name is not None, (
-                    "No email address or full name found in sreg response; "
-                    "can't create a new account for this identity URL.")
-                account, email = account_set.createAccountAndEmail(
-                    email_address,
-                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-                    full_name,
-                    password=None,
-                    openid_identifier=identifier)
-
-            if account.status == AccountStatus.SUSPENDED:
-                return self.suspended_account_template()
-            # XXX: salgado, 2010-02-15, bug=527921: Force the use of the
-            # master database to make sure a lagged slave doesn't fool us into
-            # creating a Person when one already exists. This was done without
-            # proof that it will fix the bug, but if it works we may decide to
-            # move it to lp.registry.model.person.person_from_account() or
-            # just catch the error raised by createPerson() and move on.
+            should_update_last_write = False
+            # Force the use of the master database to make sure a lagged slave
+            # doesn't fool us into creating a Person/Account when one already
+            # exists.
             with MasterDatabasePolicy():
-                person = IPerson(account, None)
-            if person is None:
-                removeSecurityProxy(account).createPerson(
-                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+                try:
+                    account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                        identifier)
+                except LookupError:
+                    account = self._createAccount(identifier)
+                    should_update_last_write = True
+
+                if account.status == AccountStatus.SUSPENDED:
+                    return self.suspended_account_template()
+                if IPerson(account, None) is None:
+                    removeSecurityProxy(account).createPerson(
+                        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+                    should_update_last_write = True
+
             self.login(account)
+            if should_update_last_write:
+                # This is a GET request but we changed the database, so update
+                # session_data['last_write'] to make sure further requests use
+                # the master DB and thus see the changes we've just made.
+                session_data = ISession(self.request)['lp.dbpolicy']
+                session_data['last_write'] = datetime.utcnow()
             target = self.request.form.get('starting_url')
             if target is None:
                 target = self.getApplicationURL()
