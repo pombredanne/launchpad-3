@@ -400,7 +400,8 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="description displayname publish"/>
+            set_attributes="description displayname arm_builds_allowed
+			                publish"/>
         <require
             permission="launchpad.Commercial"
             set_attributes="authorized_size buildd_secret
