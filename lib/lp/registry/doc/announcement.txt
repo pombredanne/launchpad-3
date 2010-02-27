@@ -30,7 +30,8 @@ For the moment, this is only available to beta testers.
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
     >>> ignored = beta.addMember(mark, mark)
     >>> from canonical.database.sqlbase import flush_database_updates

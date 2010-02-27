@@ -69,7 +69,8 @@ All the distributions that use Malone as their main bug tracker.
     gentoo Gentoo Gentoo
     ubuntu Ubuntu Ubuntu
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in using_malone_vocabulary
     True

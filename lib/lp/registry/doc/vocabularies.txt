@@ -1343,7 +1343,8 @@ _clauseTables).
     thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Product)
     ubuntu          Ubuntu               Ubuntu Linux (Distribution)
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in featured_project_vocabulary
     True

@@ -10,7 +10,8 @@ Create a member of the registry team that is not a member of the admins
 team.
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set = getUtility(IPersonSet)
     >>> registry_expert = factory.makePerson()

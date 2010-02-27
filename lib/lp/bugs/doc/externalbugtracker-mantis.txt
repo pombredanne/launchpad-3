@@ -57,7 +57,8 @@ Tracker:
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1550',

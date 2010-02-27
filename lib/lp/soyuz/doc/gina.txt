@@ -37,7 +37,8 @@ Create a distribution release and an arch release for breezy:
 
     >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
     >>> hoary = ubuntu.getSeries("hoary")

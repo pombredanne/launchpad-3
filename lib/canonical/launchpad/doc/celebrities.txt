@@ -7,7 +7,8 @@ database, which we want to give easy access to in the code. To this end,
 there is an ILaunchpadCelebrities utility available that gives access
 to these well-known objects through attributes.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.registry.interfaces.person import IPerson, IPersonSet
     >>> celebs = getUtility(ILaunchpadCelebrities)

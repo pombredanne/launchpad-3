@@ -19,7 +19,8 @@ checkwatches will try to get an ExternalBugTracker with which to update
 the watch.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> from canonical.testing import LaunchpadZopelessLayer
 

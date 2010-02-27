@@ -345,7 +345,8 @@ incomplete source is uploaded).
 A distribution can specify if it uses Malone, Rosetta, or Answers
 officially. Ubuntu uses all of them:
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.official_malone

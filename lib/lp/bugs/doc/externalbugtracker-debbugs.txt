@@ -348,7 +348,8 @@ DebBugs implements all of these.
 
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug = getUtility(IBugSet).get(4)

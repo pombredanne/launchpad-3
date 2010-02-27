@@ -53,7 +53,8 @@ Tracker:
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
     >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities)
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
