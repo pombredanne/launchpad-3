@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
+    'BugBranchSearch',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
@@ -16,6 +17,7 @@ __all__ = [
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
+    'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
@@ -272,6 +274,20 @@ class BugTaskStatusSearchDisplay(DBEnumeratedType):
     use_template(BugTaskStatusSearch, exclude=('INCOMPLETE'))
 
 
+class BugBranchSearch(EnumeratedType):
+    """Bug branch search option.
+
+    The possible values to search for bugs having branches attached
+    or not having branches attched.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BRANCHES = Item("Show only Bugs with linked Branches")
+
+    BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
+
+
 # XXX: Brad Bollenbach 2005-12-02 bugs=5320:
 # In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
 # semantics of our current reports would break if it were added to the
@@ -304,6 +320,11 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
     BugTaskStatusSearch.TRIAGED,
     BugTaskStatusSearch.INPROGRESS,
     BugTaskStatusSearch.FIXCOMMITTED)
+
+DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
+    BugTaskStatusSearchDisplay.items.mapping[item.value]
+    for item in DEFAULT_SEARCH_BUGTASK_STATUSES
+    ]
 
 class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
@@ -793,6 +814,12 @@ class IBugTaskSearchBase(Interface):
         required=False)
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
+    has_branches = Bool(
+        title=_('Show only bugs with linked branches'), required=False,
+        default=True)
+    has_no_branches = Bool(
+        title=_('Show only bugs without linked branches'), required=False,
+        default=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -983,7 +1010,8 @@ class BugTaskSearchParams:
                  hardware_owner_is_bug_reporter=None,
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
-                 hardware_is_linked_to_bug=False
+                 hardware_is_linked_to_bug=False,
+                 linked_branches=None
                  ):
 
         self.bug = bug
@@ -1027,6 +1055,7 @@ class BugTaskSearchParams:
         self.hardware_owner_is_subscribed_to_bug = (
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
+        self.linked_branches = linked_branches
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1099,7 +1128,7 @@ class BugTaskSearchParams:
                        hardware_owner_is_bug_reporter=None,
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
-                       hardware_is_linked_to_bug=False):
+                       hardware_is_linked_to_bug=False, linked_branches=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1166,6 +1195,7 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
+        search_params.linked_branches=linked_branches
 
         return search_params
 

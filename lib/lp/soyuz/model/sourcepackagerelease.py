@@ -38,7 +38,7 @@ from lp.translations.interfaces.translationimportqueue import (
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested, PackageDiffStatus)
@@ -265,7 +265,7 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def published_archives(self):
-        """See `ISourcePacakgeRelease`."""
+        """See `ISourcePackageRelease`."""
         archives = set(
             pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))

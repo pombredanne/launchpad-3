@@ -44,12 +44,20 @@ class CodeReviewDisplayComment:
 
     delegates(ICodeReviewComment, 'comment')
 
-    def __init__(self, comment):
+    def __init__(self, comment, from_superseded=False):
         self.comment = comment
         self.has_body = bool(self.comment.message_body)
         self.has_footer = self.comment.vote is not None
         # The date attribute is used to sort the comments in the conversation.
         self.date = self.comment.message.datecreated
+        self.from_superseded = from_superseded
+
+    @property
+    def extra_css_class(self):
+        if self.from_superseded:
+            return 'from-superseded'
+        else:
+            return ''
 
 
 class CodeReviewCommentPrimaryContext:

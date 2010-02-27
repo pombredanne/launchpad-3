@@ -80,3 +80,24 @@ series, we can create structural bug subscriptions.
     Subscribe to Bugs in The Warty Warthog Release
 
 
+Upstream packaging portlet
+--------------------------
+
+The distroseries page contains a portlet with information on the
+upstream packaging.
+
+    >>> # Note that warty's sourcecount is stale in sample data
+    >>> # which causes -2 need linking.
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'series-packaging'))
+    Upstream packaging
+    5 source packages are linked to registered upstream projects.
+    -2 need linking.
+    Recently linked to upstream:
+    alsa-utils linked...
+    a52dec linked...
+    evolution linked...
+    mozilla-firefox linked...
+    netapplet linked 2005-07-05
+    Needs upstream links  All upstream links

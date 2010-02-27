@@ -55,13 +55,13 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
-    BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
-    IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
-    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskImportance, UserCannotEditBugTaskMilestone,
-    UserCannotEditBugTaskStatus)
+    BUG_SUPERVISOR_BUGTASK_STATUSES, BugBranchSearch, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
+    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
+    IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
+    IUpstreamBugTask, IllegalTarget, RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES, UserCannotEditBugTaskImportance,
+    UserCannotEditBugTaskMilestone, UserCannotEditBugTaskStatus)
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -70,11 +70,11 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.milestone import IProjectMilestone
+from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
@@ -1479,7 +1479,7 @@ class BugTaskSet:
             extra_clauses.append(self._buildStatusClause(params.status))
 
         if params.milestone:
-            if IProjectMilestone.providedBy(params.milestone):
+            if IProjectGroupMilestone.providedBy(params.milestone):
                 where_cond = """
                     IN (SELECT Milestone.id
                         FROM Milestone, Product
@@ -1672,6 +1672,21 @@ class BugTaskSet:
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
 
+        if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+            extra_clauses.append(
+                """EXISTS (
+                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                """)
+        elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
+            extra_clauses.append(
+                """NOT EXISTS (
+                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                """)
+        else:
+            # If no branch specific search restriction is specified,
+            # we don't need to add any clause.
+            pass
+
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
@@ -1844,7 +1859,7 @@ class BugTaskSet:
         params.hardware_product_id are all not None.
         """
         # Avoid cyclic imports.
-        from canonical.launchpad.database.hwdb import (
+        from lp.hardwaredb.model.hwdb import (
             HWSubmission, HWSubmissionBug, HWSubmissionDevice,
             _userCanAccessSubmissionStormClause,
             make_submission_device_statistics_clause)
@@ -2171,7 +2186,7 @@ class BugTaskSet:
             be either a Distribution, DistroSeries, Product, or ProductSeries.
             If target is None, the clause joins BugTask to all the supported
             BugTarget tables.
-        :raises NotImplementedError: If the target is an IProject,
+        :raises NotImplementedError: If the target is an IProjectGroup,
             ISourcePackage, or an IDistributionSourcePackage.
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
@@ -2225,7 +2240,7 @@ class BugTaskSet:
             target_clause = "target.product_pillar = %s" % sqlvalues(target)
         elif IProductSeries.providedBy(target):
             target_clause = "BugTask.productseries = %s" % sqlvalues(target)
-        elif (IProject.providedBy(target)
+        elif (IProjectGroup.providedBy(target)
               or ISourcePackage.providedBy(target)
               or IDistributionSourcePackage.providedBy(target)):
             raise NotImplementedError(
