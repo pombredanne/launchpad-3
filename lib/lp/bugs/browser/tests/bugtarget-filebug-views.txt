@@ -120,7 +120,8 @@ The first inline part will be appended to the bug description.
     ... """
 
     >>> import transaction
-    >>> from canonical.launchpad.interfaces import ITemporaryStorageManager
+    >>> from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ...     ITemporaryStorageManager)
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
 
 We need to commit the transaction since the data will be stored in the

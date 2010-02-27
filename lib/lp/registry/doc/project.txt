@@ -196,7 +196,7 @@ and all valid specifications via the valid_specifications property:
 
 An IProjectGroupSeries object can be retrieved by IProjectGroup.getSeries.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSeries
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSeries
     >>> mozilla_series_1_0 = mozilla.getSeries('1.0')
     >>> mozilla_series_1_0
     <lp.registry.model.project.ProjectSeries object at...

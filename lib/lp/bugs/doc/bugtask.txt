@@ -105,8 +105,10 @@ The created bugtasks are guaranteed to implement the correct interface.
 
 == Bug Task Targets ==
 
-    >>> from lp.registry.model.distributionsourcepackage import DistributionSourcePackage
-    >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
+    >>> from lp.registry.model.distributionsourcepackage import (
+    ...     DistributionSourcePackage)
+    >>> from lp.registry.interfaces.distributionsourcepackage import (
+    ...     IDistributionSourcePackage)
 
 The "target" of an IBugTask can be one of the items in the following
 list.

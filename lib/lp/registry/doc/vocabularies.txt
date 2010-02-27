@@ -351,7 +351,7 @@ not have any milestones, a MilestoneVocabulary is empty...
     >>> len(milestones)
     0
 
-    >>> from canonical.launchpad.interfaces import IMaloneApplication
+    >>> from lp.bugs.interfaces.malone import IMaloneApplication
     >>> malone = getUtility(IMaloneApplication)
     >>> milestones = get_naked_vocab(malone, 'Milestone')
     >>> len(milestones)
@@ -680,7 +680,8 @@ Any person that's already merged is not part of this vocabulary:
 A person whose account_status is any of the statuses of
 INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
 
-    >>> from canonical.launchpad.interfaces import INACTIVE_ACCOUNT_STATUSES
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     INACTIVE_ACCOUNT_STATUSES)
     >>> naked_cprov.merged = None
     >>> checked_count = 0
     >>> for status in INACTIVE_ACCOUNT_STATUSES:

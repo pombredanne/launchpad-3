@@ -23,7 +23,7 @@ IMailHandler. The name of the utility is the domain that's handled.
 Let's create some utilities which keep track of which mails they
 handle, and register them for some domains:
 
-    >>> from canonical.launchpad.interfaces import IMailHandler
+    >>> from canonical.launchpad.interfaces.mail import IMailHandler
     >>> from zope.interface import implements
     >>> class MockHandler:
     ...     implements(IMailHandler)

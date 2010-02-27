@@ -172,7 +172,8 @@ with the user in the From address.
 
 An unsigned email:
 
-    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> from canonical.launchpad.interfaces.mail import (
+    ...     IWeaklyAuthenticatedPrincipal)
     >>> msg = read_test_message('unsigned_multipart.txt')
     >>> principal = authenticateEmail(msg)
     >>> IWeaklyAuthenticatedPrincipal.providedBy(principal)

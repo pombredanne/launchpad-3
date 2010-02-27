@@ -147,7 +147,7 @@ We also have OAuthRequestTokenSet.getByKey(), which allows us to get a
 request token with the given key regardless of the consumer associated
 with it.
 
-    >>> from canonical.launchpad.interfaces import IOAuthRequestTokenSet
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthRequestTokenSet
     >>> token_set = getUtility(IOAuthRequestTokenSet)
     >>> token_set.getByKey(request_token.key) == request_token
     True

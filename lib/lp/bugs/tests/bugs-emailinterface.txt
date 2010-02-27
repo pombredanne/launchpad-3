@@ -322,7 +322,8 @@ associated with the authenticated Person in Launchpad, the principal
 will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
 principal with that.
 
-    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> from canonical.launchpad.interfaces.mail import (
+    ...     IWeaklyAuthenticatedPrincipal)
     >>> from zope.interface import directlyProvides, directlyProvidedBy
     >>> from zope.security.management import queryInteraction
     >>> participations = queryInteraction().participations

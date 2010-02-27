@@ -11,7 +11,8 @@ The GoogleSearchService implements the ISearchService interface.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import ISearchService
+    >>> from canonical.launchpad.interfaces.searchservice import (
+    ...     ISearchService)
 
     >>> google_search = getUtility(ISearchService)
     >>> verifyObject(ISearchService, google_search)
@@ -26,7 +27,8 @@ The search method accepts a string argument of terms and an optional int
 argument of start. The terms are the same as the text that would be
 entered in Google search form; the terms should not be escaped.
 
-    >>> from canonical.launchpad.interfaces import ISearchResults
+    >>> from canonical.launchpad.interfaces.searchservice import (
+    ...     ISearchResults)
 
     >>> first_page_matches = google_search.search(terms='bug')
     >>> first_page_matches
@@ -112,7 +114,7 @@ The PageMatch object represents a single result from a search result
 set. It is created by passing a title, url, and a summary. It is
 an implementation of ISearchResult.
 
-    >>> from canonical.launchpad.interfaces import ISearchResult
+    >>> from canonical.launchpad.interfaces.searchservice import ISearchResult
     >>> from canonical.launchpad.utilities.searchservice import PageMatch
 
     >>> page_match = PageMatch(

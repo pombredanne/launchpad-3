@@ -27,7 +27,7 @@ lib/canonical/launchpad/testing/mail.py.
 
 Let's look at the one we use in tests:
 
-    >>> from canonical.launchpad.interfaces import IMailBox
+    >>> from canonical.launchpad.interfaces.mail import IMailBox
     >>> mailbox = getUtility(IMailBox)
 
 Now it's empty, so let's add some mails to it by using simple_sendmail:
@@ -35,13 +35,13 @@ Now it's empty, so let's add some mails to it by using simple_sendmail:
     >>> import transaction
     >>> from canonical.launchpad.mail import simple_sendmail
     >>> msgid = simple_sendmail('test@canonical.com',
-    ...                         '123@bugs.canonical.com', 
+    ...                         '123@bugs.canonical.com',
     ...                         'Hello',
     ...                         'bla bla bla',
     ...                         headers={'Message-ID': '<test1>'})
     >>> transaction.commit()
     >>> msgid = simple_sendmail('test@canonical.com',
-    ...                         '456@bugs.canonical.com', 
+    ...                         '456@bugs.canonical.com',
     ...                         'Hello',
     ...                         'bla bla bla',
     ...                         headers={'Message-ID': '<test2>'})
@@ -64,7 +64,7 @@ before:
 
     >>> mails = list(mailbox.items())
     >>> len(mails)
-    2 
+    2
     >>> id, raw_mail = mails[0]
     >>> import email
     >>> mail = email.message_from_string(raw_mail)

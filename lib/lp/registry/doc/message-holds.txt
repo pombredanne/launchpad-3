@@ -44,7 +44,7 @@ We can get some useful details about this held message by adapting it to the
 IHeldMessageDetails interface.
 
     >>> from zope.component import getAdapter
-    >>> from canonical.launchpad.interfaces import IHeldMessageDetails
+    >>> from lp.registry.interfaces.mailinglist import IHeldMessageDetails
     >>> details = getAdapter(held_message, IHeldMessageDetails)
     >>> print details.message_id
     <first-post>

@@ -92,7 +92,7 @@ by getInputValue().
 
     >>> form = {'field.scope': 'project',
     ...         'field.scope.target': 'mozilla'}
-    >>> from canonical.launchpad.interfaces import IProjectGroup
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
     >>> widget = ProjectScopeWidget(
     ...     scope_field, scope_field.vocabulary,
     ...     LaunchpadTestRequest(form=form))
