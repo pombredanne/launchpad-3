@@ -4,7 +4,7 @@ The state of a question is tracked through its status attribute.
 Six statuses are used to model a question lifecycle. These are defined
 in the QuestionStatus enumeration.
 
-    >>> from canonical.launchpad.interfaces import QuestionStatus
+    >>> from lp.answers.interfaces.questionenums import QuestionStatus
     >>> print "\n".join([status.name for status in QuestionStatus.items])
     OPEN
     NEEDSINFO
@@ -16,7 +16,7 @@ in the QuestionStatus enumeration.
 Status change occurs in consequence of a user action. The possible
 actions are defined in the QuestionAction enumeration.
 
-    >>> from canonical.launchpad.interfaces import QuestionAction
+    >>> from lp.answers.interfaces.questionenums import QuestionAction
     >>> print "\n".join([status.name for status in QuestionAction.items])
     REQUESTINFO
     GIVEINFO

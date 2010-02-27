@@ -19,7 +19,7 @@ somebody are subject to expiration.
     # Sanity check in case somebody modifies the question sampledata and
     # forget to update this script.
     >>> from lp.answers.model.question import Question
-    >>> from canonical.launchpad.interfaces import QuestionStatus
+    >>> from lp.answers.interfaces.questionenums import QuestionStatus
     >>> Question.select('status IN (%i,%i)' % (
     ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
     9
