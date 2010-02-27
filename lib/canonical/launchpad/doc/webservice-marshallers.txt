@@ -16,7 +16,8 @@ application root.
 
     >>> from canonical.launchpad.systemhomes import WebServiceApplication
     >>> root = WebServiceApplication()
-    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> from canonical.launchpad.webapp.webapp.interfaces import (
+    ...     IOpenLaunchBag)
     >>> getUtility(IOpenLaunchBag).add(root)
 
 
