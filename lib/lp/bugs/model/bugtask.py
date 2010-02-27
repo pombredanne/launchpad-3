@@ -16,6 +16,7 @@ __all__ = [
     'NullBugTask',
     'bugtask_sort_key',
     'get_bug_privacy_filter',
+    'get_related_bugtasks_search_params',
     'search_value_to_where_condition']
 
 
@@ -61,9 +62,10 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
     ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
     IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
-    IUpstreamBugTask, IllegalTarget, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES, UserCannotEditBugTaskImportance,
-    UserCannotEditBugTaskMilestone, UserCannotEditBugTaskStatus)
+    IUpstreamBugTask, IllegalRelatedBugTasksParams, IllegalTarget,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UserCannotEditBugTaskImportance, UserCannotEditBugTaskMilestone,
+    UserCannotEditBugTaskStatus)
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -84,7 +86,8 @@ from lp.registry.interfaces.sourcepackagename import (
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    IPerson, validate_person_not_private_membership,
+    validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
@@ -139,6 +142,48 @@ def bugtask_sort_key(bugtask):
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
         distroseries_name, sourcepackage_name)
+
+def get_related_bugtasks_search_params(user, context, **kwargs):
+    """Returns a list of `BugTaskSearchParams` which can be used to
+    search for all tasks related to a user given by `context`.
+
+    Which tasks are related to a user?
+      * the user has to be either assignee or owner of this tasks
+        OR
+      * the user has to be subscriber or commenter to the underlying bug
+        OR
+      * the user is reporter of the underlying bug, but this condition
+        is automatically fulfilled by the first one as each new bug
+        always get one task owned by the bug reporter
+    """
+    assert IPerson.providedBy(context), "Context argument needs to be IPerson"
+    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter')
+    search_params = []
+    for key in relevant_fields:
+        # all these parameter default to None
+        user_param = kwargs.get(key)
+        if user_param is None or user_param == context:
+            # we are only creating a `BugTaskSearchParams` object if
+            # the field is None or equal to the context
+            arguments = kwargs.copy()
+            arguments[key] = context
+            if key == 'owner':
+                # Specify both owner and bug_reporter to try to
+                # prevent the same bug (but different tasks)
+                # being displayed.
+                # see `PersonRelatedBugTaskSearchListingView.searchUnbatched`
+                arguments['bug_reporter'] = context
+            search_params.append(
+                BugTaskSearchParams.fromSearchForm(user, **arguments))
+    if len(search_params) == 0:
+        # unable to search for related tasks to user_context because user
+        # modified the query in an invalid way by overwriting all user
+        # related parameters
+        raise IllegalRelatedBugTasksParams(
+            ('Cannot search for related tasks to \'%s\', at least one '
+             'of these parameter has to be empty: %s'
+                %(context.name, ", ".join(relevant_fields))))
+    return search_params
 
 
 class BugTaskDelta:

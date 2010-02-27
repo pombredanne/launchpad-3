@@ -4,22 +4,24 @@
 """Test the expire-ppa-binaries.py script. """
 
 import pytz
-import unittest
 
 from datetime import datetime, timedelta
+
+import unittest
 
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.scripts import QuietFakeLogger
 from lp.soyuz.scripts.expire_ppa_binaries import PPABinaryExpirer
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.testing import TestCaseWithFactory
 
 
-class TestPPABinaryExpiry(unittest.TestCase):
+class TestPPABinaryExpiry(TestCaseWithFactory):
     """Test the expire-ppa-binaries.py script."""
 
     layer = LaunchpadZopelessLayer
@@ -41,6 +43,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
 
     def setUp(self):
         """Set up some test publications."""
+        super(TestPPABinaryExpiry, self).setUp()
         # Configure the test publisher.
         self.layer.switchDbUser("launchpad")
         self.stp = SoyuzTestPublisher()
@@ -52,10 +55,8 @@ class TestPPABinaryExpiry(unittest.TestCase):
         self.over_threshold_date = self.now - timedelta(days=31)
 
         # Prepare two PPAs for the tests to use.
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        self.ppa = cprov.archive
-        mark = getUtility(IPersonSet).getByName('mark')
-        self.ppa2 = mark.archive
+        self.ppa = self.factory.makeArchive()
+        self.ppa2 = self.factory.makeArchive()
 
     def getScript(self, test_args=None):
         """Return a PPABinaryExpirer instance."""
@@ -209,9 +210,9 @@ class TestPPABinaryExpiry(unittest.TestCase):
 
     def testBlacklistingWorks(self):
         """Test that blacklisted PPAs are not expired."""
-        source, binary = self._setUpExpirablePublications()
+        source, binary = self._setUpExpirablePublications(archive=self.ppa)
         script = self.getScript()
-        script.blacklist = ["cprov",]
+        script.blacklist = [self.ppa.owner.name, ]
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
         script.main()
