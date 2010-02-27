@@ -130,7 +130,8 @@ the membership list, either as an enabled or disabled address.
 
 Once Anne validates her address though, she may post from it.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
     >>> logout()

@@ -276,7 +276,8 @@ Launchpad.
 This is true even if by dumb luck the address actually gets registered in
 Launchpad.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
     >>> new_address = emailset.new(
     ...     config.mailman.archive_address, fred,
     ...     EmailAddressStatus.VALIDATED, account=fred.account)

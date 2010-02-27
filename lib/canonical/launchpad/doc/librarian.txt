@@ -11,7 +11,7 @@ We can create LibraryFileAliases using the ILibraryFileAliasSet utility.
 This name is a mouthful, but is consistent with the rest of our naming.
 
     >>> lfas = getUtility(ILibraryFileAliasSet)
-    >>> from canonical.launchpad.interfaces import NEVER_EXPIRES
+    >>> from canonical.launchpad.interfaces.librarian import NEVER_EXPIRES
     >>> alias = lfas.create(
     ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
     ...     )

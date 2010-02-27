@@ -286,7 +286,8 @@ Lets add a new email address to the account:
 The account is still not valid because it has no preferred email.
 Setting the email to preferred fixes this:
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
     >>> email.status = EmailAddressStatus.PREFERRED
     >>> account.is_valid
     True

@@ -47,7 +47,8 @@ validate her alternative address.
     >>> from lp.registry.tests.mailinglists_helper import (
     ...     get_alternative_email)
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
 
     >>> login('admin@canonical.com')
     >>> anne = factory.makePersonByName('Anne')

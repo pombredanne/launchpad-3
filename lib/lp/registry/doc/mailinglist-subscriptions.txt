@@ -140,7 +140,8 @@ not post from it.
 
 Once Anne validates her new address, she can post from it.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
     >>> alternative.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
 
