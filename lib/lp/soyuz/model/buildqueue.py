@@ -506,6 +506,9 @@ class BuildQueueSet(object):
         result_set = store.find(
             BuildQueue,
             BuildQueue.job == Job.id,
+            # XXX Michael Nelson 2010-02-22 bug=499421
+            # Avoid corrupt build jobs where the builder is None.
+            BuildQueue.builder != None,
             # status is a property. Let's use _status.
             Job._status == JobStatus.RUNNING,
             Job.date_started != None)

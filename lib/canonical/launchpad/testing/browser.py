@@ -30,6 +30,9 @@ import transaction
 
 from zope.testbrowser.browser import Browser as _Browser
 
+from canonical.launchpad.testing.pages import (
+    extract_text, find_main_content, find_tag_by_id, get_feedback_messages)
+
 
 class SocketClosingOnErrorHandler(urllib2.BaseHandler):
     """A handler that ensures that the socket gets closed on errors.
@@ -56,10 +59,10 @@ _live_browser_set = set()
 
 
 class Browser(_Browser):
-    """A browser subsclass that knows about basic auth."""
+    """A browser subclass that knows about basic auth."""
 
-    def __init__(self, auth=None):
-        super(Browser, self).__init__()
+    def __init__(self, auth=None, mech_browser=None):
+        super(Browser, self).__init__(mech_browser=mech_browser)
         # We have to add the error handler to the mechanize browser underlying
         # the Zope browser, because it's the former that's actually doing all
         # the work.
@@ -95,6 +98,11 @@ class Browser(_Browser):
 def setUp(test):
     """Set up appserver tests."""
     test.globs['Browser'] = Browser
+    test.globs['browser'] = Browser()
+    test.globs['find_tag_by_id'] = find_tag_by_id
+    test.globs['find_main_content'] = find_main_content
+    test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['extract_text'] = extract_text
 
 
 def tearDown(test):

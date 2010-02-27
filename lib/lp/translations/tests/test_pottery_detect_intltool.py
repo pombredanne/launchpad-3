@@ -2,9 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-import shutil
 import tarfile
-import tempfile
 import unittest
 
 from StringIO import StringIO
@@ -12,9 +10,10 @@ from textwrap import dedent
 
 from bzrlib.bzrdir import BzrDir
 from canonical.launchpad.scripts.tests import run_script
-from lp.translations.pottery.detect_intltool import (
+from lp.translations.pottery.detect_intltool import is_intltool_structure
+from lp.translations.pottery.buildd import (
     ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in,
-    get_translation_domain, is_intltool_structure)
+    generate_pot, generate_pots, get_translation_domain)
 from lp.testing import TestCase
 
 
@@ -163,16 +162,79 @@ class TestDetectIntltool(TestCase, SetupTestPackageMixin):
             "domainname-in42",
             get_translation_domain("po"))
 
-    def test_pottery_check_intltool_script(self):
+
+class TestGenerateTemplates(TestCase, SetupTestPackageMixin):
+
+    def test_generate_pot(self):
+        # Generate a given PO template.
+        self.prepare_package("intltool_full_ok")
+        self.assertTrue(
+            generate_pot("./po-module1", "module1"),
+            "PO template generation failed.")
+        expected_path = "./po-module1/module1.pot"
+        self.assertTrue(
+            os.access(expected_path, os.F_OK),
+            "Generated PO template '%s' not found." % expected_path)
+
+    def test_generate_pot_no_domain(self):
+        # Generate a generic PO template.
+        self.prepare_package("intltool_full_ok")
+        self.assertTrue(
+            generate_pot("./po-module1", None),
+            "PO template generation failed.")
+        expected_path = "./po-module1/messages.pot"
+        self.assertTrue(
+            os.access(expected_path, os.F_OK),
+            "Generated PO template '%s' not found." % expected_path)
+
+    def test_generate_pot_empty_domain(self):
+        # Generate a generic PO template.
+        self.prepare_package("intltool_full_ok")
+        self.assertTrue(
+            generate_pot("./po-module1", ""),
+            "PO template generation failed.")
+        expected_path = "./po-module1/messages.pot"
+        self.assertTrue(
+            os.access(expected_path, os.F_OK),
+            "Generated PO template '%s' not found." % expected_path)
+
+    def test_generate_pot_not_intltool(self):
+        # Fail when not an intltool setup.
+        self.prepare_package("intltool_full_ok")
+        # Cripple the setup.
+        os.remove("./po-module1/POTFILES.in")
+        self.assertFalse(
+            generate_pot("./po-module1", "nothing"),
+            "PO template generation should have failed.")
+        not_expected_path = "./po-module1/nothing.pot"
+        self.assertFalse(
+            os.access(not_expected_path, os.F_OK),
+            "Not expected PO template '%s' generated." % not_expected_path)
+
+    def test_generate_pots(self):
+        # Generate all PO templates in the package.
+        self.prepare_package("intltool_full_ok")
+        expected_paths = [
+            './po-module1/packagename-module1.pot',
+            './po-module2/packagename-module2.pot',
+            ]
+        pots_list = generate_pots()
+        self.assertEqual(expected_paths, pots_list)
+        for expected_path in expected_paths:
+            self.assertTrue(
+                os.access(expected_path, os.F_OK),
+                "Generated PO template '%s' not found." % expected_path)
+
+    def test_pottery_generate_intltool_script(self):
         # Let the script run to see it works fine.
         self.prepare_package("intltool_full_ok")
 
         return_code, stdout, stderr = run_script(
-            'scripts/rosetta/pottery-check-intltool.py', [])
+            'scripts/rosetta/pottery-generate-intltool.py', [])
 
         self.assertEqual(dedent("""\
-            ./po-module1 (packagename-module1)
-            ./po-module2 (packagename-module2)
+            ./po-module1/packagename-module1.pot
+            ./po-module2/packagename-module2.pot
             """), stdout)
 
 

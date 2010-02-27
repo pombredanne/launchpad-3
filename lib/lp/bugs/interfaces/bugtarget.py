@@ -174,7 +174,7 @@ class IHasBugs(Interface):
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False):
+                    hardware_is_linked_to_bug=False, linked_branches=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
