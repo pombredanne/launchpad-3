@@ -6,8 +6,8 @@ __metaclass__ = type
 
 import os.path
 import sys
-from subprocess import call
 
+from lp.translations.pottery.buildd import generate_pots
 
 class GenerateTranslationTemplates:
     """Script to generate translation templates from a branch."""
@@ -45,7 +45,10 @@ class GenerateTranslationTemplates:
     def generate(self):
         """Do It.  Generate templates."""
         self._getBranch()
-        # XXX JeroenVermeulen 2010-01-19 bug=509557: Actual payload goes here.
+        pots = generate_pots(self.branch_dir)
+        print "\n".join(
+            [os.path.normpath(os.path.join(self.branch_dir, potpath))
+                for potpath in pots])
         return 0
 
 

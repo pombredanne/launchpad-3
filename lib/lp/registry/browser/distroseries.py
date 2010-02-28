@@ -337,25 +337,22 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
         """The number of linked packagings for this distroseries."""
         return len(self.context.packagings)
 
-    @cachedproperty
-    def _unlinked_packages(self):
-        """Get a prioritized list of unlinked source packages."""
-        return self.context.getPrioritizedUnlinkedSourcePackages()
-
     @property
     def num_unlinked_packages(self):
         """The number of unlinked packagings for this distroseries."""
-        return len(self._unlinked_packages)
+        return self.context.sourcecount - self.num_linked_packages
 
     @cachedproperty
     def recently_linked(self):
         """Return the packages that were most recently linked upstream."""
         return self.context.getMostRecentlyLinkedPackagings()
 
-    @property
+    @cachedproperty
     def needs_linking(self):
-        """Return a list of 10 packages most in need of upstream linking."""
-        return self._unlinked_packages[:10]
+        """Return a list of 10 packages most in need of upstream linking.""" 
+        # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
+        # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        return None
 
     milestone_can_release = False
 

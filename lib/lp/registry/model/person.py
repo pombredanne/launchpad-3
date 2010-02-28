@@ -84,7 +84,7 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.model.hasbranches import (
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+    BugTaskSearchParams, IBugTaskSet, IllegalRelatedBugTasksParams)
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConductSet)
@@ -128,7 +128,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtask import (
+    BugTask, get_related_bugtasks_search_params)
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
@@ -838,6 +839,21 @@ class Person(
 
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
+        if search_params is None and len(args) == 0:
+            # this method is called via webapi directly
+            # calling this method on a Person object directly via the
+            # webservice API means searching for user related tasks
+            user = kwargs.pop('user')
+            try:
+                search_params = get_related_bugtasks_search_params(
+                    user, self, **kwargs)
+            except IllegalRelatedBugTasksParams, e:
+                # dirty hack, marking an exception with a HTTP error
+                # only works if the exception is raised in the exported
+                # method, see docstring of
+                # `lazr.restful.declarations.webservice_error()`
+                raise e
+            return getUtility(IBugTaskSet).search(*search_params)
         if len(kwargs) > 0:
             # if keyword arguments are supplied, use the deault
             # implementation in HasBugsBase.

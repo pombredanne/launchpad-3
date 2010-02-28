@@ -31,6 +31,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
@@ -258,9 +259,8 @@ class SoyuzTestPublisher:
                        pocket=PackagePublishingPocket.RELEASE,
                        format=BinaryPackageFormat.DEB,
                        scheduleddeletiondate=None, dateremoved=None,
-                       distroseries=None,
-                       archive=None,
-                       pub_source=None):
+                       distroseries=None, archive=None,
+                       pub_source=None, builder=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -279,6 +279,7 @@ class SoyuzTestPublisher:
         builds = pub_source.createMissingBuilds()
         published_binaries = []
         for build in builds:
+            build.builder = builder
             binarypackagerelease = self.uploadBinaryForBuild(
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
@@ -860,6 +861,104 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         self.copyAndCheck(
             binary, binary.distroarchseries.distroseries, 'universe')
 
+
+class BuildRecordCreationTests(TestNativePublishingBase):
+    """Test the creation of build records."""
+
+    def setUp(self):
+        super(BuildRecordCreationTests, self).setUp()
+        self.distro = self.factory.makeDistribution()
+        self.distroseries = self.factory.makeDistroSeries(
+            distribution=self.distro, name="crazy")
+        self.archive = self.factory.makeArchive()
+        self.avr_family = self.factory.makeProcessorFamily(
+            name="avr", restricted=True)
+        self.factory.makeProcessor(self.avr_family, "avr2001")
+        self.avr_distroarch = self.factory.makeDistroArchSeries(
+            architecturetag='avr', processorfamily=self.avr_family,
+            distroseries=self.distroseries, supports_virtualized=True)
+        self.sparc_family = self.factory.makeProcessorFamily(name="sparc",
+            restricted=False)
+        self.factory.makeProcessor(self.sparc_family, "sparc64")
+        self.sparc_distroarch = self.factory.makeDistroArchSeries(
+            architecturetag='sparc', processorfamily=self.sparc_family,
+            distroseries=self.distroseries, supports_virtualized=True)
+        self.distroseries.nominatedarchindep = self.sparc_distroarch
+        self.addFakeChroots(self.distroseries)
+
+    def getPubSource(self, architecturehintlist):
+        """Return a mock source package publishing record for the archive 
+        and architecture used in this testcase.
+
+        :param architecturehintlist: Architecture hint list (e.g. "i386 amd64")
+        """
+        return super(BuildRecordCreationTests, self).getPubSource(
+            archive=self.archive, distroseries=self.distroseries,
+            architecturehintlist=architecturehintlist)
+
+    def test__getAllowedArchitectures_restricted(self):
+        """Test _getAllowedArchitectures doesn't return unrestricted
+        archs.
+
+        For a normal archive, only unrestricted architectures should
+        be used.
+        """
+        available_archs = [self.sparc_distroarch, self.avr_distroarch]
+        pubrec = self.getPubSource(architecturehintlist='any')
+        self.assertEquals([self.sparc_distroarch],
+            pubrec._getAllowedArchitectures(available_archs))
+
+    def test__getAllowedArchitectures_restricted_override(self):
+        """Test _getAllowedArchitectures honors overrides of restricted archs.
+
+        Restricted architectures should only be allowed if there is 
+        an explicit ArchiveArch association with the archive.
+        """
+        available_archs = [self.sparc_distroarch, self.avr_distroarch]
+        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        pubrec = self.getPubSource(architecturehintlist='any')
+        self.assertEquals([self.sparc_distroarch, self.avr_distroarch], 
+            pubrec._getAllowedArchitectures(available_archs))
+
+    def test_createMissingBuilds_restricts_any(self):
+        """createMissingBuilds() should limit builds targeted at 'any'
+        architecture to those allowed for the archive.
+        """
+        pubrec = self.getPubSource(architecturehintlist='any')
+        builds = pubrec.createMissingBuilds()
+        self.assertEquals(1, len(builds))
+        self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
+
+    def test_createMissingBuilds_restricts_explicitlist(self):
+        """createMissingBuilds() should limit builds targeted at a 
+        variety of architectures architecture to those allowed for the archive.
+        """
+        pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
+        builds = pubrec.createMissingBuilds()
+        self.assertEquals(1, len(builds))
+        self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
+
+    def test_createMissingBuilds_restricts_all(self):
+        """createMissingBuilds() should limit builds targeted at 'all'
+        architectures to the nominated independent architecture, 
+        if that is allowed for the archive.
+        """
+        pubrec = self.getPubSource(architecturehintlist='all')
+        builds = pubrec.createMissingBuilds()
+        self.assertEquals(1, len(builds))
+        self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
+
+    def test_createMissingBuilds_restrict_override(self):
+        """createMissingBuilds() should limit builds targeted at 'any'
+        architecture to architectures that are unrestricted or 
+        explicitly associated with the archive.
+        """
+        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        pubrec = self.getPubSource(architecturehintlist='any')
+        builds = pubrec.createMissingBuilds()
+        self.assertEquals(2, len(builds))
+        self.assertEquals(self.avr_distroarch, builds[0].distroarchseries)
+        self.assertEquals(self.sparc_distroarch, builds[1].distroarchseries)
 
 
 def test_suite():
