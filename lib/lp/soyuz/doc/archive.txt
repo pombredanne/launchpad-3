@@ -1835,6 +1835,7 @@ last item (Mark's PPA) will now be excluded as the results are
 limited to 5 items.
 
     >>> create_activity(cprov_archive, 20)
+    >>> transaction.commit()
     >>> print_most_active_ppas()
     PPA for Celso Providelo 20
     PPA for Foo Bar 10
