@@ -12,7 +12,7 @@ bugtask_heat_html is used to render the flames.
     >>> def print_flames(bugtask):
     ...     html = bugtask_heat_html(bugtask)
     ...     soup = BeautifulSoup(html)
-    ...     for img in soup.contents:
+    ...     for img in soup.span.contents:
     ...         print img['src']
     ...         print img['alt']
     ...         print img['title']
@@ -81,3 +81,14 @@ Heat values higher than two thirds of the maximum heat are scaled upwards.
     >>> print calculate_heat_display(800.0, 1000.0)
     3
 
+A max heat value of 1 works too, because we don't divide by
+log(max_heat) in this case.
+
+    >>> print calculate_heat_display(1, 1)
+    4
+
+Even if the max heat value is smaller than the heat value itself,
+calculate_heat_display() does not return a value greater than 4.
+
+    >>> print calculate_heat_display(2000, 1000)
+    4
