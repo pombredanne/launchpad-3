@@ -1090,6 +1090,8 @@ def calculate_heat_display(heat, max_bug_heat):
     """Calculate the number of heat 'flames' to display."""
     heat = float(heat)
     max_bug_heat = float(max_bug_heat)
+    if max_bug_heat == 0:
+        return 0
     if heat / max_bug_heat < 0.33333:
         return 0
     if heat / max_bug_heat < 0.66666:
