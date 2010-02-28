@@ -100,6 +100,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.person import Person, ValidPersonCache
@@ -876,9 +877,13 @@ class Bug(SQLBase):
             distroseries=distro_series,
             sourcepackagename=source_package_name)
 
-        # When a new task is added, the bug's heat becomes relevant to the
-        # target's max_bug_heat.
-        target.recalculateMaxBugHeat()
+        if (IDistribution.providedBy(target)
+            or IProduct.providedBy(target)
+            or IProjectGroup.providedBy(target)
+            or IDistributionSourcePackage.providedBy(target)):
+            # When a new task is added, if the target has max_heat the bug's
+            # heat becomes relevant to the target's max_bug_heat.
+            target.recalculateMaxBugHeat()
 
         return new_task
 
