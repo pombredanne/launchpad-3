@@ -8,6 +8,9 @@ __all__ = [
     'BugHeatCalculator',
     ]
 
+from datetime import datetime
+
+from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 
 class BugHeatConstants:
 
@@ -56,8 +59,16 @@ class BugHeatCalculator:
             len(direct_subscribers) + len(subscribers_from_dupes))
         return subscriber_count * BugHeatConstants.SUBSCRIBER
 
+    def _bugIsComplete(self):
+        """Are all the tasks for this bug resolved?"""
+        return all([(task.status in RESOLVED_BUGTASK_STATUSES)
+                    for task in self.bug.bugtasks])
+
     def getBugHeat(self):
         """Return the total heat for the current bug."""
+        if self._bugIsComplete():
+            return 0
+
         total_heat = sum([
             self._getHeatFromAffectedUsers(),
             self._getHeatFromDuplicates(),
@@ -65,6 +76,13 @@ class BugHeatCalculator:
             self._getHeatFromSecurity(),
             self._getHeatFromSubscribers(),
             ])
+
+        # Bugs decay over time. Every month the bug isn't touched its heat
+        # decreases by 10%.
+        months = (
+            datetime.utcnow() -
+            self.bug.date_last_updated.replace(tzinfo=None)).days / 30
+        total_heat = int(total_heat * (0.9 ** months))
 
         return total_heat
 
