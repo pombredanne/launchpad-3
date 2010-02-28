@@ -31,6 +31,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
@@ -178,6 +179,10 @@ class HasBugsBase:
             return self.product.recalculateMaxBugHeat()
         if IDistroSeries.providedBy(self):
             return self.distribution.recalculateMaxBugHeat()
+        if ISourcePackage.providedBy(self):
+            # Should only happen for nominations, so we can safely skip
+            # recalculating max_heat.
+            return
 
         if IDistribution.providedBy(self):
             sql = """SELECT Bug.heat

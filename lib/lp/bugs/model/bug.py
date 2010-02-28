@@ -877,13 +877,9 @@ class Bug(SQLBase):
             distroseries=distro_series,
             sourcepackagename=source_package_name)
 
-        if (IDistribution.providedBy(target)
-            or IProduct.providedBy(target)
-            or IProjectGroup.providedBy(target)
-            or IDistributionSourcePackage.providedBy(target)):
-            # When a new task is added, if the target has max_heat the bug's
-            # heat becomes relevant to the target's max_bug_heat.
-            target.recalculateMaxBugHeat()
+        # When a new task is added the bug's heat becomes relevant to the
+        # target's max_bug_heat.
+        target.recalculateMaxBugHeat()
 
         return new_task
 
