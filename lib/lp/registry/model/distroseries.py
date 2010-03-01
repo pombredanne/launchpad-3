@@ -411,6 +411,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def _current_sourcepackage_joins_and_conditions(self):
         """The SQL joins and conditions to prioritize source packages."""
+        # Bugs and PO messages are heuristically scored. These queries
+        # can easily timeout so filters and weights are used to create
+        # an acceptable prioritization of packages that is fast to excecute.
+        bug_heat_filter = 200
+        po_message_weight = .5
         heat_score = ("""
             LEFT JOIN (
                 SELECT
@@ -424,18 +429,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     BugTask.sourcepackagename is not NULL
                     AND BugTask.distribution = %(distribution)s
                     AND BugTask.status in %(statuses)s
+                    AND Bug.heat > %(bug_heat_filter)s
                 GROUP BY BugTask.sourcepackagename
                 ) bugs
                 ON SourcePackageName.id = bugs.sourcepackagename
             """ % sqlvalues(
                 distribution=self.distribution,
-                statuses=UNRESOLVED_BUGTASK_STATUSES))
+                statuses=UNRESOLVED_BUGTASK_STATUSES,
+                bug_heat_filter=bug_heat_filter))
         message_score = ("""
             LEFT JOIN (
                 SELECT
                     POTemplate.sourcepackagename,
                     POTemplate.distroseries,
-                    SUM(POTemplate.messagecount) / 2 AS po_messages,
+                    SUM(POTemplate.messagecount) * %(po_message_weight)s
+                        AS po_messages,
                     SUM(POTemplate.messagecount) AS total_messages
                 FROM POTemplate
                 WHERE
@@ -447,7 +455,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ) messages
                 ON SourcePackageName.id = messages.sourcepackagename
                 AND DistroSeries.id = messages.distroseries
-            """ % sqlvalues(distroseries=self))
+            """ % sqlvalues(
+                distroseries=self,
+                po_message_weight=po_message_weight))
         joins = ("""
             SourcePackageName
             JOIN SourcePackageRelease spr

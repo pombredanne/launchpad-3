@@ -86,31 +86,31 @@ If the archive is private, its score is boosted by 10000:
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build = getUtility(IBuildSet).getByQueueEntry(bq0)
-    >>> build.archive.buildd_secret = "secret"
-    >>> build.archive.private = True
-    >>> bq0.score()
-    >>> bq0.lastscore
+    >>> private_ppa = factory.makeArchive()
+    >>> private_ppa.buildd_secret = "secret"
+    >>> private_ppa.private = True
+    >>> bq1 = setUpBuildQueueEntry(archive=private_ppa)
+    >>> bq1.score()
+    >>> bq1.lastscore
     12515
 
 The archive can also have a delta applied to all its build scores.  Setting
 IArchive.relative_build_score to boost by 100 changes the lastscore value
 appropriately.
 
-    >>> build.archive.relative_build_score = 100
-    >>> bq0.score()
-    >>> bq0.lastscore
+    >>> private_ppa.relative_build_score = 100
+    >>> bq1.score()
+    >>> bq1.lastscore
     12615
 
 The delta can also be negative.
 
-    >>> build.archive.relative_build_score = -100
-    >>> bq0.score()
-    >>> bq0.lastscore
+    >>> private_ppa.relative_build_score = -100
+    >>> bq1.score()
+    >>> bq1.lastscore
     12415
 
-    >>> build.archive.relative_build_score = 0
+    >>> private_ppa.relative_build_score = 0
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
 
@@ -260,6 +260,7 @@ they were created.
     ...     name='test-rebuild')
 
     >>> bqc = setUpBuildQueueEntry(archive=copy)
+    >>> from lp.soyuz.interfaces.build import IBuildSet
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqc)
     >>> bqc.score()
     >>> bqc.lastscore

@@ -417,9 +417,10 @@ class JobScheduler:
     branches.
     """
 
-    def __init__(self, branch_puller_endpoint, logger):
+    def __init__(self, branch_puller_endpoint, logger, branch_type_names):
         self.branch_puller_endpoint = branch_puller_endpoint
         self.logger = logger
+        self.branch_type_names = branch_type_names
         self.actualLock = None
         self.name = 'branch-puller'
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
@@ -455,7 +456,7 @@ class JobScheduler:
 
     def _poll(self):
         deferred = self.branch_puller_endpoint.callRemote(
-            'acquireBranchToPull')
+            'acquireBranchToPull', self.branch_type_names)
         deferred.addCallback(self._turnJobTupleIntoTask)
         return deferred
 

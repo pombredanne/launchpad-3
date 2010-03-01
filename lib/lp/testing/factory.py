@@ -93,7 +93,7 @@ from lp.code.enums import (
     BranchType, CodeImportMachineState, CodeImportReviewStatus,
     CodeImportResultStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
-from lp.code.interfaces.branch import UnknownBranchTypeError
+from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -145,7 +145,7 @@ DIFF = """\
 @@ -121,6 +121,10 @@
                  'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
               ernqbayl=Gehr))
- 
+
 +    unf_pbasyvpgf = Obby(
 +        gvgyr=_('Unf pbasyvpgf'), ernqbayl=Gehr,
 +        qrfpevcgvba=_('Gur cerivrjrq zretr cebqhprf pbasyvpgf.'))
@@ -1558,7 +1558,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IComponentSet).ensure(name)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
-                    purpose=None, enabled=True):
+                    purpose=None, enabled=True, private=False,
+                    virtualized=True, description=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1567,7 +1568,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             makePerson().
         :param name: Name of the archive, defaults to a random string.
         :param purpose: Supply ArchivePurpose, defaults to PPA.
-        :param enabled: Whether the archive should be enabled.
+        :param enabled: Whether the archive is enabled.
+        :param private: Whether the archive is created private.
+        :param virtualized: Whether the archive is virtualized.
+        :param description: A description of the archive.
         """
         if distribution is None:
             distribution = self.makeDistribution()
@@ -1586,9 +1590,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         if purpose == ArchivePurpose.PRIMARY:
             return distribution.main_archive
 
-        return getUtility(IArchiveSet).new(
+        archive = getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name, enabled=enabled)
+            distribution=distribution, name=name, enabled=enabled,
+            require_virtualized=virtualized, description=description)
+
+        if private:
+            archive.private = True
+            archive.buildd_secret = "sekrit"
+
+        return archive
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,

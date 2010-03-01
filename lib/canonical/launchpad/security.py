@@ -295,7 +295,7 @@ class EditOAuthAccessToken(AuthorizationBase):
     usedfor = IOAuthAccessToken
 
     def checkAuthenticated(self, user):
-        return self.obj.person == user or user.in_admin
+        return self.obj.person == user.person or user.in_admin
 
 
 class EditOAuthRequestToken(EditOAuthAccessToken):

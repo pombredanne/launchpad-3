@@ -18,6 +18,7 @@ from zope.component import adapter, getSiteManager
 from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
+from lp.code.errors import UnknownBranchTypeError
 from lp.code.model.branchnamespace import BranchNamespaceSet
 from lp.code.model.branchtarget import (
     PackageBranchTarget, ProductBranchTarget)
@@ -442,11 +443,20 @@ class FakeBranchPuller:
         self._branch_set = branch_set
         self._script_activity_set = script_activity_set
 
-    def acquireBranchToPull(self):
+    def acquireBranchToPull(self, branch_type_names):
+        if not branch_type_names:
+            branch_type_names = 'HOSTED', 'MIRRORED', 'IMPORTED'
+        branch_types = []
+        for branch_type_name in branch_type_names:
+            try:
+                branch_types.append(BranchType.items[branch_type_name])
+            except KeyError:
+                raise UnknownBranchTypeError(
+                    'Unknown branch type: %r' % (branch_type_name,))
         branches = sorted(
             [branch for branch in self._branch_set
              if branch.next_mirror_time is not None
-             and branch.branch_type != BranchType.REMOTE],
+             and branch.branch_type in branch_types],
             key=operator.attrgetter('next_mirror_time'))
         if branches:
             branch = branches[-1]
