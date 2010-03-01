@@ -43,5 +43,5 @@ class ICodeImportScheduler(Interface):
     def updateHeartbeat(job_id, log_tail):
         """XXX."""
 
-    def finishJobID(job_id, status, log_file_alias_id):
+    def finishJobID(job_id, status_name, log_file_alias_url):
         """XXX."""

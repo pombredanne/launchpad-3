@@ -20,19 +20,16 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import begin, commit, rollback
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.librarian.interfaces import IFileUploadClient
 from canonical.launchpad.webapp.interaction import Participation
-from canonical.launchpad.webapp import canonical_url
 from canonical.twistedsupport import defer_to_thread
 from canonical.twistedsupport.loggingsupport import (
     log_oops_from_failure)
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
 from lp.code.enums import CodeImportResultStatus
-from lp.code.interfaces.codeimportjob import (
-    ICodeImportJobSet, ICodeImportJobWorkflow)
-from lp.codehosting.codeimport.worker import (
-    CodeImportSourceDetails, CodeImportWorkerExitCode)
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
+from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
 from lp.testing import login, logout, ANONYMOUS
 
 
@@ -171,119 +168,93 @@ class CodeImportWorkerMonitor:
     path_to_script = os.path.join(
         config.root, 'scripts', 'code-import-worker.py')
 
-    def __init__(self, job_id, logger):
+    def __init__(self, job_id, logger, codeimport_endpoint):
         """Construct an instance.
 
         :param job_id: The ID of the CodeImportJob we are to work on.
         :param logger: A `Logger` object.
         """
-        self._logger = logger
         self._job_id = job_id
+        self._logger = logger
+        self.codeimport_endpoint = codeimport_endpoint
         self._call_finish_job = True
         self._log_file = tempfile.TemporaryFile()
-        self._source_details = None
-        self._code_import_id = None
         self._branch_url = None
 
     def _logOopsFromFailure(self, failure):
         request = log_oops_from_failure(
-            failure, code_import_job_id=self._job_id,
-            code_import_id=self._code_import_id, URL=self._branch_url)
+            failure, code_import_job_id=self._job_id, URL=self._branch_url)
         self._logger.info(
             "Logged OOPS id %s: %s: %s",
             request.oopsid, failure.type.__name__, failure.value)
 
-    def getJob(self):
-        """Fetch the `CodeImportJob` object we are working on from the DB.
+    def _trap_nosuchcodeimportjob(self, failure):
+        # XXX if ...
+        raise ExitQuietly
 
-        Only call this from defer_to_thread-ed methods!
-
-        :raises ExitQuietly: if the job is not found.
-        """
-        job = getUtility(ICodeImportJobSet).getById(self._job_id)
-        if job is None:
+    def getWorkerArguments(self):
+        """Get XXX for the job we are working on."""
+        deferred = self.codeimport_endpoint.callRemote(
+            'getImportDataForJobID', self._job_id)
+        def _cb(result):
+            code_import_arguments, branch_url, log_file_name = result
+            self._branch_url = branch_url
+            self._log_file_name = log_file_name
             self._logger.info(
-                "Job %d not found, exiting quietly.", self._job_id)
-            self._call_finish_job = False
-            raise ExitQuietly
-        else:
-            return job
+                'Found source details: %s', code_import_arguments)
+            return code_import_arguments
+        return deferred.addCallback(_cb, self._trap_nosuchcodeimportjob)
 
-    @defer_to_thread
-    @read_only_transaction
-    def getSourceDetails(self):
-        """Get a `CodeImportSourceDetails` for the job we are working on."""
-        # XXX Becomes a call on to `getSourceDetailsForJobID` or similar.
-        code_import = self.getJob().code_import
-        source_details = CodeImportSourceDetails.fromCodeImport(code_import)
-        self._logger.info(
-            'Found source details: %s', source_details.asArguments())
-        self._branch_url = canonical_url(code_import.branch)
-        self._code_import_id = code_import.id
-        return source_details
-
-    @defer_to_thread
-    @writing_transaction
     def updateHeartbeat(self, tail):
         """Call the updateHeartbeat method for the job we are working on."""
-        # XXX Becomes a call on to `updateHeartbeat` or similar.
         self._logger.debug("Updating heartbeat.")
-        getUtility(ICodeImportJobWorkflow).updateHeartbeat(
-            self.getJob(), tail)
+        deferred = self.codeimport_endpoint.callRemote(
+            'updateHeartbeat', self._job_id, tail)
+        return deferred.addErrback(self._trap_nosuchcodeimportjob)
 
     def _createLibrarianFileAlias(self, name, size, file, contentType):
-        """Call `ILibraryFileAliasSet.create` with the given parameters.
+        """Call `IFileUploadClient.remoteAddFile` with the given parameters.
 
-        This is a separate method that exists only to be patched in
-        tests.
+        This is a separate method that exists only to be patched in tests.
         """
-        # XXX Need to use IFileUploadClient['remoteAddFile']
-        return getUtility(ILibraryFileAliasSet).create(
+        # This blocks, but never mind: nothing else is going on in the process
+        # by this point.
+        return getUtility(IFileUploadClient).remoteAddFile(
             name, size, file, contentType)
 
-    @defer_to_thread
-    @writing_transaction
     def finishJob(self, status):
         """Call the finishJob method for the job we are working on.
 
         This method uploads the log file to the librarian first.
         """
-        # XXX Mostly becomes a call to a finishJob(job_id, status,
-        # log_file_alias_id) XML-RPC method.  Requires some fun to keep nice
-        # names for the uploaded log.
-        job = self.getJob()
         log_file_size = self._log_file.tell()
         if log_file_size > 0:
             self._log_file.seek(0)
-            branch = job.code_import.branch
-            log_file_name = '%s-%s-%s-log.txt' % (
-                branch.owner.name, branch.product.name, branch.name)
             try:
-                log_file_alias = self._createLibrarianFileAlias(
-                    log_file_name, log_file_size, self._log_file,
+                log_file_alias_url = self._createLibrarianFileAlias(
+                    self._log_file_name, log_file_size, self._log_file,
                     'text/plain')
                 self._logger.info(
-                    "Uploaded logs to librarian %s.", log_file_alias.getURL())
+                    "Uploaded logs to librarian %s.", log_file_alias_url)
             except:
                 self._logger.error("Upload to librarian failed.")
                 self._logOopsFromFailure(failure.Failure())
-                log_file_alias = None
+                log_file_alias_url = ''
         else:
-            log_file_alias = None
-        getUtility(ICodeImportJobWorkflow).finishJob(
-            job, status, log_file_alias)
+            log_file_alias_url = ''
+        return self.codeimport_endpoint.callRemote(
+            'finishJobID', self._job_id, status.name, log_file_alias_url)
 
     def _makeProcessProtocol(self, deferred):
         """Make an `CodeImportWorkerMonitorProtocol` for a subprocess."""
         return CodeImportWorkerMonitorProtocol(deferred, self, self._log_file)
 
-    def _launchProcess(self, source_details):
+    def _launchProcess(self, worker_arguments):
         """Launch the code-import-worker.py child process."""
         deferred = defer.Deferred()
         protocol = self._makeProcessProtocol(deferred)
         interpreter = '%s/bin/py' % config.root
-        command = [interpreter, self.path_to_script]
-        command.extend(source_details.asArguments())
+        command = [interpreter, self.path_to_script] + worker_arguments
         self._logger.info(
             "Launching worker child process %s.", command)
         reactor.spawnProcess(
@@ -292,7 +263,7 @@ class CodeImportWorkerMonitor:
 
     def run(self):
         """Perform the import."""
-        return self.getSourceDetails().addCallback(
+        return self.getWorkerArguments().addCallback(
             self._launchProcess).addBoth(
             self.callFinishJob).addErrback(
             self._silenceQuietExit)

@@ -17,6 +17,7 @@ from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.launchpad.xmlrpc.helpers import return_fault
 
+from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
 from lp.code.interfaces.codeimportscheduler import ICodeImportScheduler
@@ -64,12 +65,15 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         return 0
 
     @return_fault
-    def finishJobID(self, job_id, status, log_file_alias_id):
+    def finishJobID(self, job_id, status_name, log_file_alias_url):
         """See `ICodeImportScheduler`."""
         job = self._getJob(job_id)
+        status = CodeImportResultStatus.items[status_name]
         workflow = removeSecurityProxy(getUtility(ICodeImportJobWorkflow))
-        if log_file_alias_id:
+        if log_file_alias_url:
             library_file_alias_set = getUtility(ILibraryFileAliasSet)
+            # XXX this is so terrible:
+            log_file_alias_id = int(log_file_alias_url.split('/')[-2])
             log_file_alias = library_file_alias_set[log_file_alias_id]
         else:
             log_file_alias = None

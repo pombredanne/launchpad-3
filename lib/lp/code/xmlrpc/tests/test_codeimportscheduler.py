@@ -99,7 +99,7 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         code_import_job = self.makeCodeImportJob(running=True)
         code_import = code_import_job.code_import
         self.api.finishJobID(
-            code_import_job.id, CodeImportResultStatus.SUCCESS, 0)
+            code_import_job.id, CodeImportResultStatus.SUCCESS.name, '')
         # finishJob does many things, we just check one of them: setting
         # date_last_successful in the case of success.
         self.assertSqlAttributeEqualsDate(
@@ -110,16 +110,17 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         code_import = code_import_job.code_import
         log_file_alias = self.factory.makeLibraryFileAlias()
         self.api.finishJobID(
-            code_import_job.id, CodeImportResultStatus.SUCCESS,
-            log_file_alias.id)
+            code_import_job.id, CodeImportResultStatus.SUCCESS.name,
+            log_file_alias.http_url)
         self.assertEqual(
             log_file_alias, code_import.results[-1].log_file)
 
     def test_finishJobID_not_found(self):
-        fault = self.api.finishJobID(-1, '', 0)
+        fault = self.api.finishJobID(
+            -1, CodeImportResultStatus.SUCCESS.name, '')
         self.assertTrue(
             isinstance(fault, xmlrpclib.Fault),
-            "finishJobID(-1, '', 0) returned %r, not a Fault."
+            "finishJobID(-1, 'SUCCESS', 0) returned %r, not a Fault."
             % (fault,))
         self.assertEqual(NoSuchCodeImportJob, fault.__class__)
 
