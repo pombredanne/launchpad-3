@@ -466,8 +466,8 @@ review.
     >>> from lp.code.enums import BranchMergeProposalStatus
     >>> fixit_proposal.requestReview()
     >>> proposal = factory.makeBranchMergeProposal(
-    ...     product=blob, set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
-    >>> proposal.source_branch.owner.name = 'target'
+    ...     product=blob, set_state=BranchMergeProposalStatus.NEEDS_REVIEW,
+    ...     registrant=target_owner)
     >>> proposal.source_branch.name = 'baz'
     >>> logout()
 
