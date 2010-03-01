@@ -1474,7 +1474,7 @@ COPY archives use a URL format of <distro-name>-<archive-name>:
     >>> print copy_target.archive.is_copy
     True
     >>> print copy_target.archive.archive_url
-    http://rebuild-test.internal/ubuntu-my-copy-archive
+    http://rebuild-test.internal/ubuntu-my-copy-archive/ubuntu
 
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
