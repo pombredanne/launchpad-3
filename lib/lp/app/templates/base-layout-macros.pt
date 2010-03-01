@@ -187,6 +187,18 @@
             tal:attributes="src string:${lp_js}/client/client.js"></script>
 
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branch.bugspeclinks.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branch.status.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/popupdiff.js">
+      </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branch.subscription.js">
+    </script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/code/branchmergeproposal.status.js">
     </script>
     <script type="text/javascript"
