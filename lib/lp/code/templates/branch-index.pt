@@ -38,7 +38,7 @@
             tal:attributes="src string:${lp_js}/code/popupdiff.js">
       </script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/subscription.js">
+            tal:attributes="src string:${lp_js}/code/branch.subscription.js">
     </script>
   </tal:devmode>
   <script type="text/javascript"
