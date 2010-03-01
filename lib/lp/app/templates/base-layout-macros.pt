@@ -193,7 +193,7 @@
             tal:attributes="src string:${lp_js}/code/branch.status.js">
     </script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/popupdiff.js">
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.diff.js">
       </script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/code/branch.subscription.js">
