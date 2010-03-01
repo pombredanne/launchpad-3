@@ -263,9 +263,8 @@ class SoyuzTestPublisher:
                        pocket=PackagePublishingPocket.RELEASE,
                        format=BinaryPackageFormat.DEB,
                        scheduleddeletiondate=None, dateremoved=None,
-                       distroseries=None,
-                       archive=None,
-                       pub_source=None):
+                       distroseries=None, archive=None,
+                       pub_source=None, builder=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -284,6 +283,7 @@ class SoyuzTestPublisher:
         builds = pub_source.createMissingBuilds()
         published_binaries = []
         for build in builds:
+            build.builder = builder
             binarypackagerelease = self.uploadBinaryForBuild(
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,

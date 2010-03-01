@@ -14,6 +14,7 @@ __all__ = [
     'ArchiveNotPrivate',
     'ArchivePurpose',
     'CannotCopy',
+    'CannotSwitchPrivacy',
     'ComponentNotFound',
     'DistroSeriesNotFound',
     'IArchive',
@@ -76,6 +77,12 @@ class ArchiveDependencyError(Exception):
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
     webservice_error(400) #Bad request.
+
+
+class CannotSwitchPrivacy(Exception):
+    """Raised when switching the privacy of an archive that has
+    publishing records."""
+    webservice_error(400) # Bad request.
 
 
 class PocketNotFound(Exception):
@@ -151,7 +158,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         Bool(
             title=_("Private"), required=False,
             description=_(
-                "Whether the archive is private to the owner or not.")))
+                "Whether the archive is private to the owner or not. "
+                "This can only be changed if the archive has not had "
+                "any sources published.")))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,

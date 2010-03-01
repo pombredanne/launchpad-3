@@ -108,6 +108,13 @@ class IDistroArchSeries(IHasOwner):
             Interface, # Really IArchive, circular import fixed below.
             title=_('Main Archive'),
             description=_("The main archive of the distroarchseries.")))
+    chroot_url = exported(
+        TextLine(
+            title=_("Build chroot URL"),
+            description=_(
+                "The URL to the current build chroot for this "
+                "distroarchseries."),
+            readonly=True))
 
     def updatePackageCount():
         """Update the cached binary package count for this distro arch

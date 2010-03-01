@@ -103,7 +103,10 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
         self.assertEqual('joesppa', build.archive.name)
 
 
-class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
+class TestFindBuildCandidatePPABase(TestFindBuildCandidateBase):
+
+    ppa_joe_private = False
+    ppa_jim_private = False
 
     def _setBuildsBuildingForArch(self, builds_list, num_builds,
                                   archtag="i386"):
@@ -121,11 +124,13 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
 
     def setUp(self):
         """Publish some builds for the test archive."""
-        super(TestFindBuildCandidatePPA, self).setUp()
+        super(TestFindBuildCandidatePPABase, self).setUp()
 
         # Create two PPAs and add some builds to each.
-        self.ppa_joe = self.factory.makeArchive(name="joesppa")
-        self.ppa_jim = self.factory.makeArchive(name="jimsppa")
+        self.ppa_joe = self.factory.makeArchive(
+            name="joesppa", private=self.ppa_joe_private)
+        self.ppa_jim = self.factory.makeArchive(
+            name="jimsppa", private=self.ppa_jim_private)
 
         self.joe_builds = []
         self.joe_builds.extend(
@@ -168,6 +173,9 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         num_free_builders = len(self.builders) - num_active_builders
         self.assertEqual(num_free_builders, 2)
 
+
+class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
+
     def test_findBuildCandidate_first_build_started(self):
         # A PPA cannot start a build if it would use 80% or more of the
         # builders.
@@ -183,11 +191,14 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
 
+
+class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPABase):
+
+    ppa_joe_private = True
+
     def test_findBuildCandidate_for_private_ppa(self):
         # If a ppa is private it will be able to have parallel builds
         # for the one architecture.
-        self.ppa_joe.private = True
-        self.ppa_joe.buildd_secret = 'sekrit'
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
