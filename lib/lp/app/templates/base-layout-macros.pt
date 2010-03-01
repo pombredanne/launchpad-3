@@ -187,10 +187,11 @@
             tal:attributes="src string:${lp_js}/client/client.js"></script>
 
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branchmergeproposal.js">
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.status.js">
     </script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/code/codereview.js"></script>
+
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/comment.js"></script>
     <script type="text/javascript"
