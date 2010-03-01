@@ -334,9 +334,10 @@ class Archive(SQLBase):
                     (self.owner.name, self.name, self.distribution.name)))
 
         if self.is_copy:
-            return urlappend(
+            url = urlappend(
                 config.archivepublisher.copy_base_url,
                 self.distribution.name + '-' + self.name)
+            return urlappend(url, self.distribution.name)
 
         try:
             postfix = archive_postfixes[self.purpose]
