@@ -17,6 +17,7 @@ from zope.interface import implements
 from sqlobject import (
     AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound)
 from storm.expr import And, In, SQL
+from storm.locals import Int
 from storm.store import Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
@@ -121,6 +122,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    max_bug_heat = Int()
 
     # convenient joins
 
