@@ -43,19 +43,32 @@ The real file is much bigger than the test file.
     >>> len(wadl) > len(test_wadl)
     True
 
-The WADL we received is keyed to the 'devel' version of the web service.
+The WADL we received is keyed to the 'devel' version of the web
+service. This version will always be present.
 
     >>> 'http://api.launchpad.dev/devel/' in wadl
     True
 
 If we retrieve the WADL for the '1.0' version of the web service,
-we'll get a document keyed to the '1.0' version.
+we'll get a document keyed to the '1.0' version. The '1.0' version
+will be deprecated along with the Lucid release of Ubuntu.
 
     >>> wadl_10 = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml', api_version='1.0').body
     >>> wadl_10 = wadl_10.decode('UTF-8')
 
     >>> 'http://api.launchpad.dev/1.0/' in wadl_10
+    True
+
+If we retrieve the WADL for the 'beta' version of the web service,
+we'll get a document keyed to the 'beta' version. The '1.0' version
+will be deprecated along with the Karmic release of Ubuntu.
+
+    >>> wadl_beta = webservice.get(
+    ...     '/', 'application/vd.sun.wadl+xml', api_version='beta').body
+    >>> wadl_beta = wadl_10.decode('UTF-8')
+
+    >>> 'http://api.launchpad.dev/beta/' in wadl_beta
     True
 
 We don't need the cache anymore, so we'll reinstate the testing

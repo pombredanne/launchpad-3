@@ -26,7 +26,7 @@ from canonical.launchpad.systemhomes import WebServiceApplication
 from lazr.restful.interfaces import IWebServiceConfiguration
 
 def main(path_template):
-    WebServiceApplication.cached_wadl = {} # do not use cached file version
+    WebServiceApplication.cached_wadl = None # do not use cached file version
     execute_zcml_for_scripts()
     config = getUtility(IWebServiceConfiguration)
 
@@ -35,7 +35,6 @@ def main(path_template):
     # representation.
     for version in config.active_versions:
         url = urlparse.urljoin(allvhosts.configs['api'].rooturl, version)
-        print "URL: " + url
         request = WebServiceTestRequest(version=version, environ={
             'SERVER_URL': url,
             'HTTP_HOST': allvhosts.configs['api'].hostname,
