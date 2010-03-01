@@ -76,7 +76,8 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     cp $OVERRIDEROOT/override.* $INDICES
 fi
 
-# Timestamp our trace file.
+# Timestamp our trace file to track when the last archive publisher run took
+# place.
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     date -u > "$TRACEFILE"
 fi
