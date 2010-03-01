@@ -8,15 +8,16 @@ arrangement or through a grant that applies to everyone.
     >>> from datetime import datetime
     >>> import pytz
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.entitlement import (
     ...     EntitlementQuota, EntitlementState, EntitlementType,
-    ...     IEntitlement, IEntitlementSet, IPersonSet)
+    ...     IEntitlement, IEntitlementSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
 
 The logged in user must be an admin in order to change the quota.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> login("foo.bar@canonical.com")
     >>> foobar = getUtility(ILaunchBag).user

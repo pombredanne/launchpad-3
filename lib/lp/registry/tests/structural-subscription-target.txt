@@ -4,7 +4,7 @@ Structural subscriptions allow users to subscribe to notifications about
 new items and changes to existing items for a Launchpad structure such as
 Product, Project, Distribution, Milestone and series.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.structuralsubscription import (
     ...     IStructuralSubscriptionTarget)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IStructuralSubscriptionTarget, target)
@@ -153,7 +153,7 @@ notification level for bugs is set to NOTHING.
     ...               subscription.bug_notification_level.name,
     ...               subscription.blueprint_notification_level.name)
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.structuralsubscription import (
     ...     BlueprintNotificationLevel)
 
     >>> subscription = target.addBugSubscription(foobar, foobar)

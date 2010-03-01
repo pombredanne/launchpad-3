@@ -5,7 +5,7 @@ which does not qualify for free hosting, has an unexpired subscription.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.product import (
     ...     ICommercialSubscription, IProductSet)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login('no-priv@canonical.com')

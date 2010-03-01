@@ -7,9 +7,10 @@ not Launchpad users.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IProductSet, IEmailAddressSet,
-    ...     IHasStanding)
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
+    >>> from lp.registry.interfaces.person import (
+    ...     IHasStanding, IPerson, IPersonSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
 
@@ -79,8 +80,9 @@ Because the comment will be displayed verbatim in a web page, it must
 start with the word "when" followed by a description of the action that
 caused the entry to be created.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, PersonCreationRationale)
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
@@ -1115,8 +1117,9 @@ project groups and projects.
 
     >>> login(ANONYMOUS)
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistribution, IProjectGroup, IProduct)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup IProjectGroup
 
     >>> def print_pillar(pillarname):
     ...     pillar = pillarname.pillar

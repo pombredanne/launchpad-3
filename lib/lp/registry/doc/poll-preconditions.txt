@@ -5,24 +5,25 @@ There's some preconditions that we need to meet to vote in polls and remove
 options from them, Not meeting these preconditions is a programming error and
 should be threated as so.
 
-  >>> from datetime import timedelta
-  >>> from zope.component import getUtility
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.ftests import login
-  >>> from canonical.launchpad.interfaces import IPersonSet, IPollSet
+    >>> from datetime import timedelta
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.poll import IPollSet
 
-  >>> ubuntu_team = getUtility(IPersonSet).get(17)
-  >>> ubuntu_team_member = getUtility(IPersonSet).get(1)
-  >>> ubuntu_team_nonmember = getUtility(IPersonSet).get(12)
+    >>> ubuntu_team = getUtility(IPersonSet).get(17)
+    >>> ubuntu_team_member = getUtility(IPersonSet).get(1)
+    >>> ubuntu_team_nonmember = getUtility(IPersonSet).get(12)
 
-  >>> pollset = getUtility(IPollSet)
-  >>> director_election = pollset.getByTeamAndName(ubuntu_team,
-  ...                                              'director-2004')
-  >>> director_options = director_election.getActiveOptions()
-  >>> leader_election = pollset.getByTeamAndName(ubuntu_team, 'leader-2004')
-  >>> leader_options = leader_election.getActiveOptions()
-  >>> opendate = leader_election.dateopens
-  >>> onesec = timedelta(seconds=1)
+    >>> pollset = getUtility(IPollSet)
+    >>> director_election = pollset.getByTeamAndName(ubuntu_team,
+    ...                                              'director-2004')
+    >>> director_options = director_election.getActiveOptions()
+    >>> leader_election = pollset.getByTeamAndName(ubuntu_team, 'leader-2004')
+    >>> leader_options = leader_election.getActiveOptions()
+    >>> opendate = leader_election.dateopens
+    >>> onesec = timedelta(seconds=1)
 
 
 If the poll is already opened, it's impossible to remove an option.

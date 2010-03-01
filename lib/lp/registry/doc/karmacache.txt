@@ -10,12 +10,13 @@ which runs daily. The script does that by using the IKarmaCacheManager API.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.model.karma import KarmaCategory
-    >>> from canonical.launchpad.interfaces import (
-    ...     IKarmaCacheManager, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.karma  import IKarmaCacheManager
     >>> from canonical.testing import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('karma')
     >>> karmacachemanager = getUtility(IKarmaCacheManager)
+
 
 == Creating new KarmaCache entries ==
 

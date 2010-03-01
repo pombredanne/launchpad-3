@@ -12,9 +12,10 @@ First of all, create some teams:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.teammembership import (
     ...     TeamSubscriptionPolicy, TeamMembershipStatus,
     ...     TeamMembershipRenewalPolicy)
+
 
 XXX: This doctest needs a lot of cleanups!
 -- Guilherme Salgado, 2006-12-15

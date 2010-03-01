@@ -6,8 +6,10 @@ distroseries, milestone or a combination of sourcepackagename and
 distribution.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, IProductSet,
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.registry.model.structuralsubscription import (
     ...    StructuralSubscription)
@@ -84,7 +86,7 @@ When notifying subscribers of bug activity, both subscribers to the
 target and to the target's parent are notified.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.model.structuralsubscription import (
     ...     BlueprintNotificationLevel, BugNotificationLevel)
     >>> from canonical.launchpad.mailnotification import (
     ...     BugNotificationRecipients)
@@ -262,4 +264,3 @@ can be used to refer to them in display.
     package
     >>> print ff_milestone.target_type_display
     milestone
-    

@@ -8,23 +8,24 @@ like the 'Gnome Team' and the 'Ubuntu Team'. These teams often have leaders
 whose ellection depends on the vote of all members, and this is one of the
 reasons why we teams can have polls attached to them.
 
-  >>> import pytz
-  >>> from datetime import datetime, timedelta
-  >>> from zope.component import getUtility
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.ftests import login
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IPollSubset, PollAlgorithm, PollSecrecy)
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.poll import (
+    ...     IPollSubset, PollAlgorithm, PollSecrecy)
 
-  >>> team = getUtility(IPersonSet).getByName('ubuntu-team')
-  >>> member = getUtility(IPersonSet).getByName('stevea')
-  >>> member2 = getUtility(IPersonSet).getByName('jdub')
-  >>> member3 = getUtility(IPersonSet).getByName('kamion')
-  >>> member4 = getUtility(IPersonSet).getByName('name16')
-  >>> member5 = getUtility(IPersonSet).getByName('limi')
-  >>> nonmember = getUtility(IPersonSet).getByName('justdave')
-  >>> now = datetime.now(pytz.timezone('UTC'))
-  >>> onesec = timedelta(seconds=1)
+    >>> team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> member = getUtility(IPersonSet).getByName('stevea')
+    >>> member2 = getUtility(IPersonSet).getByName('jdub')
+    >>> member3 = getUtility(IPersonSet).getByName('kamion')
+    >>> member4 = getUtility(IPersonSet).getByName('name16')
+    >>> member5 = getUtility(IPersonSet).getByName('limi')
+    >>> nonmember = getUtility(IPersonSet).getByName('justdave')
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> onesec = timedelta(seconds=1)
 
 We need to login with one of the administrators of the team named 
 'ubuntu-team' to be able to create/edit polls.

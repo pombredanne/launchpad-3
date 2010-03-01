@@ -93,8 +93,9 @@ such team pages read-only.
 
     # Approval of mailing lists is not yet exposed through the web.
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     MailingListStatus, ILaunchpadCelebrities)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
     >>> from lp.registry.model.mailinglist import MailingListSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')

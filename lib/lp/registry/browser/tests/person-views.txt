@@ -407,7 +407,7 @@ that are not in progress.
 Assigned specifications that do not display when they are not in an
 in progress state.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.blueprints.interfaces.specification import (
     ... SpecificationImplementationStatus)
 
     >>> login(user.preferredemail.email)
@@ -427,7 +427,7 @@ The specification is displayed only when it is in a in progress state
 list of specifications is a link to show all the specifications that
 the user is working on.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.blueprints.interfaces.specification import (
     ... SpecificationDefinitionStatus)
 
     >>> spec.definition_status = SpecificationDefinitionStatus.APPROVED

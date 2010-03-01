@@ -63,8 +63,9 @@ have a SourcePackageName object for it.
 
     >>> from lp.registry.model.sourcepackagename import (
     ...                                          SourcePackageName)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSourcePackage,
+    >>> from lp.registry.interfaces.distributionsourcepackage import (
+    ...     IDistributionSourcePackage)
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     ...     IDistributionSourcePackageRelease)
 
     >>> evo = SourcePackageName.byName("evolution")
@@ -345,7 +346,7 @@ incomplete source is uploaded).
 A distribution can specify if it uses Malone, Rosetta, or Answers
 officially. Ubuntu uses all of them:
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

@@ -1,8 +1,10 @@
 = Registry vocabularies =
 
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectGroupSet)
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
@@ -50,8 +52,10 @@ Mailing lists are not active when they are first registered.
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
     >>> carlos = personset.getByName('carlos')
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, MailingListStatus, TeamSubscriptionPolicy)
+    >>> from canonical.launchpad.interfaces.mailinglist import (
+    ...     IMailingListSet, MailingListStatus)
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     TeamSubscriptionPolicy)
     >>> team_one = personset.newTeam(
     ...     ddaa, 'bass-players', 'Bass Players',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
@@ -1344,7 +1348,7 @@ _clauseTables).
     thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Product)
     ubuntu          Ubuntu               Ubuntu Linux (Distribution)
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in featured_project_vocabulary
