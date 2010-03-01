@@ -5,17 +5,6 @@ When the product is not linked to a source package in Ubuntu the
 +portlet-packages will show suggestions on potential matches and ask
 the user to make the connection.
 
-    >>> import sys
-    >>> import pdb
-    >>> def stop():
-    ...     # Temporarily restore the real stdout.
-    ...     old_stdout = sys.stdout
-    ...     sys.stdout = sys.__stdout__
-    ...     try:
-    ...         pdb.set_trace()
-    ...     finally:
-    ...         sys.stdout = old_stdout
-
 Create a helper to update the distribution source package cache, which
 does not happen automatically.
 
