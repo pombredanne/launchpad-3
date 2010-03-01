@@ -1005,6 +1005,8 @@ class ProductPackagesPortletView(LaunchpadFormView):
         self.suggestions = []
         vocab_terms = []
         for package in source_packages:
+            if package.upstream_product is not None:
+                continue
             self.suggestions.append(package)
             item_url = canonical_url(package)
             description = """<a href="%s">%s</a>""" % (
@@ -1013,12 +1015,12 @@ class ProductPackagesPortletView(LaunchpadFormView):
         vocabulary = SimpleVocabulary(vocab_terms)
         self.form_fields = form.Fields(
             Choice(__name__='distributionsourcepackage',
-                   title=_('Registered upstream project'),
+                   title=_('Ubuntu packages'),
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
 
-    @action(_('Link to Ubuntu Package'), name='link')
+    @action(_('Link to this Ubuntu Package'), name='link')
     def link(self, action, data):
         product = self.context
         dsp = data.get('distributionsourcepackage')
