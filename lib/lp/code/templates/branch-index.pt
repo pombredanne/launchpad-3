@@ -29,7 +29,7 @@
   </style>
   <tal:devmode condition="devmode">
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branchlinks.js">
+            tal:attributes="src string:${lp_js}/code/branch.bugspeclinks.js">
     </script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/code/branchstatus.js">
