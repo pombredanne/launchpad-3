@@ -16,6 +16,7 @@ __all__ = [
     'NullBugTask',
     'bugtask_sort_key',
     'get_bug_privacy_filter',
+    'get_related_bugtasks_search_params',
     'search_value_to_where_condition']
 
 
@@ -49,6 +50,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.interfaces.lpstorm import IStore
+
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from lp.bugs.interfaces.bug import IBugSet
@@ -59,9 +62,10 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
     ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
     IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
-    IUpstreamBugTask, IllegalTarget, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES, UserCannotEditBugTaskImportance,
-    UserCannotEditBugTaskMilestone, UserCannotEditBugTaskStatus)
+    IUpstreamBugTask, IllegalRelatedBugTasksParams, IllegalTarget,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UserCannotEditBugTaskImportance, UserCannotEditBugTaskMilestone,
+    UserCannotEditBugTaskStatus)
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -82,7 +86,8 @@ from lp.registry.interfaces.sourcepackagename import (
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    IPerson, validate_person_not_private_membership,
+    validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
@@ -137,6 +142,48 @@ def bugtask_sort_key(bugtask):
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
         distroseries_name, sourcepackage_name)
+
+def get_related_bugtasks_search_params(user, context, **kwargs):
+    """Returns a list of `BugTaskSearchParams` which can be used to
+    search for all tasks related to a user given by `context`.
+
+    Which tasks are related to a user?
+      * the user has to be either assignee or owner of this tasks
+        OR
+      * the user has to be subscriber or commenter to the underlying bug
+        OR
+      * the user is reporter of the underlying bug, but this condition
+        is automatically fulfilled by the first one as each new bug
+        always get one task owned by the bug reporter
+    """
+    assert IPerson.providedBy(context), "Context argument needs to be IPerson"
+    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter')
+    search_params = []
+    for key in relevant_fields:
+        # all these parameter default to None
+        user_param = kwargs.get(key)
+        if user_param is None or user_param == context:
+            # we are only creating a `BugTaskSearchParams` object if
+            # the field is None or equal to the context
+            arguments = kwargs.copy()
+            arguments[key] = context
+            if key == 'owner':
+                # Specify both owner and bug_reporter to try to
+                # prevent the same bug (but different tasks)
+                # being displayed.
+                # see `PersonRelatedBugTaskSearchListingView.searchUnbatched`
+                arguments['bug_reporter'] = context
+            search_params.append(
+                BugTaskSearchParams.fromSearchForm(user, **arguments))
+    if len(search_params) == 0:
+        # unable to search for related tasks to user_context because user
+        # modified the query in an invalid way by overwriting all user
+        # related parameters
+        raise IllegalRelatedBugTasksParams(
+            ('Cannot search for related tasks to \'%s\', at least one '
+             'of these parameter has to be empty: %s'
+                %(context.name, ", ".join(relevant_fields))))
+    return search_params
 
 
 class BugTaskDelta:
@@ -1321,35 +1368,38 @@ class BugTaskSet:
 
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
-        # Need to import Bug locally, to avoid circular imports.
+        # Import locally to avoid circular imports.
+        from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
-        bugtask_ids = [bugtask.id for bugtask in bugtasks]
-        bugs_with_mentoring_offers = list(Bug.select(
-            """id IN (SELECT MentoringOffer.bug
-                      FROM MentoringOffer, BugTask
-                      WHERE MentoringOffer.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_specifications = list(Bug.select(
-            """id IN (SELECT SpecificationBug.bug
-                      FROM SpecificationBug, BugTask
-                      WHERE SpecificationBug.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_branches = list(Bug.select(
-            """id IN (SELECT BugBranch.bug
-                      FROM BugBranch, BugTask
-                      WHERE BugBranch.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_patches = list(Bug.select(
-            """latest_patch_uploaded IS NOT NULL"""))
+        from lp.bugs.model.bugbranch import BugBranch
+        from lp.registry.model.mentoringoffer import MentoringOffer
+
+        bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
+        bug_ids_with_mentoring_offers = set(IStore(MentoringOffer).find(
+                MentoringOffer.bugID, In(MentoringOffer.bugID, bug_ids)))
+        bug_ids_with_specifications = set(IStore(SpecificationBug).find(
+                SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
+        bug_ids_with_branches = set(IStore(BugBranch).find(
+                BugBranch.bugID, In(BugBranch.bugID, bug_ids)))
+
+        # Cache all bugs at once to avoid one query per bugtask. We
+        # could rely on the Storm cache, but this is explicit.
+        bugs = dict(IStore(Bug).find((Bug.id, Bug), In(Bug.id, bug_ids)))
+
         badge_properties = {}
         for bugtask in bugtasks:
+            bug = bugs[bugtask.bugID]
             badge_properties[bugtask] = {
                 'has_mentoring_offer':
-                    bugtask.bug in bugs_with_mentoring_offers,
-                'has_specification': bugtask.bug in bugs_with_specifications,
-                'has_branch': bugtask.bug in bugs_with_branches,
-                'has_patch': bugtask.bug in bugs_with_patches,
+                    bug.id in bug_ids_with_mentoring_offers,
+                'has_specification':
+                    bug.id in bug_ids_with_specifications,
+                'has_branch':
+                    bug.id in bug_ids_with_branches,
+                'has_patch':
+                    bug.latest_patch_uploaded is not None,
                 }
+
         return badge_properties
 
     def getMultiple(self, task_ids):

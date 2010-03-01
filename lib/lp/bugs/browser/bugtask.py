@@ -141,7 +141,7 @@ from canonical.launchpad import helpers
 from lp.bugs.browser.bug import BugContextMenu, BugViewMixin, BugTextView
 from lp.bugs.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
-    BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
+    BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
@@ -1094,10 +1094,13 @@ def calculate_heat_display(heat, max_bug_heat):
         return 0
     if heat / max_bug_heat < 0.33333:
         return 0
-    if heat / max_bug_heat < 0.66666:
+    if heat / max_bug_heat < 0.66666 or max_bug_heat < 2:
         return int(floor((heat / max_bug_heat) * 4))
     else:
-        return int(floor((log(heat) / log(max_bug_heat)) * 4))
+        heat_index = int(floor((log(heat) / log(max_bug_heat)) * 4))
+        # ensure that we never return a value > 4, even if
+        # max_bug_heat is outdated.
+        return min(heat_index, 4)
 
 
 def bugtask_heat_html(bugtask):
@@ -1107,8 +1110,9 @@ def bugtask_heat_html(bugtask):
         max_bug_heat = 5000
     heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
     html = (
-        '<img src="/@@/bug-heat-%(ratio)i.png" '
+        '<span><img src="/@@/bug-heat-%(ratio)i.png" '
         'alt="%(ratio)i out of 4 heat flames"  title="Heat: %(heat)i" />'
+        '</span>'
         % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
     return html
 
@@ -2164,7 +2168,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
         BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
         )
 
     # These widgets are customised so as to keep the presentation of this view

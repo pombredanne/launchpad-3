@@ -13,6 +13,18 @@ operation:
     >>> print current_series['self_link']
     http://.../ubuntu/hoary
 
+We'll first set up a buildd chroot, so we can check that its URL is
+exposed.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> hoary = getUtility(IDistributionSet)['ubuntu'].getSeries('hoary')
+    >>> chroot = factory.makeLibraryFileAlias()
+    >>> unused = hoary.getDistroArchSeries('i386').addOrUpdateChroot(chroot)
+    >>> logout()
+
     >>> distroarchseries = webservice.named_get(
     ...     current_series['self_link'], 'getDistroArchSeries',
     ...     archtag='i386').jsonBody()
@@ -22,6 +34,7 @@ For a distroarchseries we publish a subset of its attributes.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(distroarchseries)
     architecture_tag: u'i386'
+    chroot_url: u'http://localhost:58000/.../filename...'
     display_name: u'Ubuntu Hoary i386'
     distroseries_link: u'http://.../ubuntu/hoary'
     is_nominated_arch_indep: True

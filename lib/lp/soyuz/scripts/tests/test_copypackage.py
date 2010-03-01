@@ -1225,7 +1225,7 @@ class CopyPackageScriptTestCase(unittest.TestCase):
         self.assertEqual(num_bin_pub + 4, num_bin_pub_after)
 
 
-class CopyPackageTestCase(TestCase):
+class CopyPackageTestCase(TestCaseWithFactory):
     """Test the CopyPackageHelper class."""
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
@@ -2148,30 +2148,31 @@ class CopyPackageTestCase(TestCase):
     def testCopyFromPrivateToPublicPPAs(self):
         """Copies from private to public archives are allowed."""
         # Set up a private PPA.
-        cprov = getUtility(IPersonSet).getByName("cprov")
-        cprov.archive.buildd_secret = "secret"
-        cprov.archive.private = True
+        joe = self.factory.makePerson(name="joe")
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        joe_private_ppa = self.factory.makeArchive(
+            owner=joe, name='ppa', private=True,
+            distribution=ubuntu)
 
         # Create a source and binary private publication.
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher = self.getTestPublisher(hoary)
         ppa_source = test_publisher.getPubSource(
-            archive=cprov.archive, version='1.0', distroseries=hoary)
+            archive=joe_private_ppa, version='1.0', distroseries=hoary)
         ppa_binaries = test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=hoary)
         self.layer.txn.commit()
 
         # Run the copy package script storing the logged information.
         copy_helper = self.getCopier(
-            sourcename='foo', from_ppa='cprov', include_binaries=True,
-            from_suite='hoary', to_suite='hoary')
+            sourcename='foo', from_ppa='joe',
+            include_binaries=True, from_suite='hoary', to_suite='hoary')
         copied = copy_helper.mainTask()
 
         # The private files are copied via a delayed-copy request.
         self.assertEqual(len(copied), 1)
         self.assertEqual(
-            ['INFO: FROM: cprov: hoary-RELEASE',
+            ['INFO: FROM: joe: hoary-RELEASE',
              'INFO: TO: Primary Archive for Ubuntu Linux: hoary-RELEASE',
              'INFO: Copy candidates:',
              'INFO: \tfoo 1.0 in hoary',
@@ -2186,23 +2187,24 @@ class CopyPackageTestCase(TestCase):
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
         # Set up a private PPA.
-        cprov = getUtility(IPersonSet).getByName("cprov")
-        cprov.archive.buildd_secret = "secret"
-        cprov.archive.private = True
+        joe = self.factory.makePerson(name="joe")
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        joe_private_ppa = self.factory.makeArchive(
+            owner=joe, name='ppa', private=True,
+            distribution=ubuntu)
 
         # Setup a SoyuzTestPublisher object, so we can create publication
         # to be unembargoed.
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         warty = ubuntu.getSeries('warty')
         test_publisher = self.getTestPublisher(warty)
 
         # Create a source and binary pair to be unembargoed from the PPA.
         ppa_source = test_publisher.getPubSource(
-            archive=cprov.archive, version='1.1',
+            archive=joe_private_ppa, version='1.1',
             distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
         other_source = test_publisher.getPubSource(
-            archive=cprov.archive, version='1.1',
+            archive=joe_private_ppa, version='1.1',
             sourcename="sourcefordiff", distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
         test_publisher.addFakeChroots(warty)
@@ -2214,7 +2216,7 @@ class CopyPackageTestCase(TestCase):
         sourcepackagerelease = other_source.sourcepackagerelease
         diff_file = test_publisher.addMockFile("diff_file", restricted=True)
         package_diff = sourcepackagerelease.requestDiffTo(
-            cprov, ppa_source.sourcepackagerelease)
+            joe, ppa_source.sourcepackagerelease)
         package_diff.diff_content = diff_file
 
         # Prepare a *restricted* buildlog file for the Build instances.
@@ -2245,7 +2247,7 @@ class CopyPackageTestCase(TestCase):
 
         # Now we can invoke the unembargo script and check its results.
         test_args = [
-            "--ppa", "cprov",
+            "--ppa", "joe",
             "--ppa-name", "ppa",
             "-s", "%s" % ppa_source.distroseries.name + "-security",
             "foo"

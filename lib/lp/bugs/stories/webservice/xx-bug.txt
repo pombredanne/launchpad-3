@@ -684,7 +684,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
     ...
     Location: http://.../bugs/.../nominations/...
     ...
-  
+
     >>> nominations = webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
     >>> pprint_collection(nominations)
@@ -707,7 +707,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
 John cannot approve or decline the nomination.
 
     >>> nom_url = nominations['entries'][0]['self_link']
-    
+
     >>> print john_webservice.named_get(nom_url, 'canApprove').jsonBody()
     False
 
@@ -723,9 +723,9 @@ John cannot approve or decline the nomination.
     >>> logout()
 
 Eric, however, can and does decline the nomination.
-    
+
     >>> eric_webservice = webservice_for_person(
-    ...     eric, permission=OAuthPermission.WRITE_PRIVATE)    
+    ...     eric, permission=OAuthPermission.WRITE_PRIVATE)
     >>> print eric_webservice.named_post(nom_url, 'decline')
     HTTP/1.1 200 Ok...
 
@@ -1651,6 +1651,76 @@ a given device.
     >>> for bugtask in bugtasks:
     ...     print bugtask['self_link']
     http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
+
+
+User related bug tasks
+~~~~~~~~~~~~~~~~~~~~~~
+
+Calling searchTasks() on a Person object returns a collection of tasks
+related to this person.
+
+First create some sample data
+
+    >>> login('foo.bar@canonical.com')
+    >>> testuser1 = factory.makePerson(name='testuser1')
+    >>> testuser2 = factory.makePerson(name='testuser2')
+    >>> testuser3 = factory.makePerson(name='testuser3')
+    >>> testbug1 = factory.makeBug(owner=testuser1)
+    >>> testbug2 = factory.makeBug(owner=testuser1)
+    >>> subscription = testbug2.subscribe(testuser2, testuser2)
+    >>> logout()
+
+There are two tasks related to `testuser1`, the initial tasks of both
+bugs:
+
+    >>> related = webservice.named_get(
+    ...     '/~testuser1', 'searchTasks'
+    ...     ).jsonBody()
+    >>> pprint_collection(related)
+    start: 0
+    total_size: 2
+    ---
+    ...
+    owner_link: u'http://api.launchpad.dev/beta/~testuser1'
+    ...
+    ---
+    ...
+    owner_link: u'http://api.launchpad.dev/beta/~testuser1'
+    ...
+
+`testuser2` is subscribed to `testbugs2`, so this bug is related to this
+user:
+
+    >>> related = webservice.named_get(
+    ...     '/~testuser2', 'searchTasks'
+    ...     ).jsonBody()
+    >>> len(related['entries']) == 1
+    True
+    >>> int(related['entries'][0]['bug_link'].split('/')[-1]) == testbug2.id
+    True
+
+`testuser3` is not active, so the collection of related tasks to him is
+empty:
+
+    >>> related = webservice.named_get(
+    ...     '/~testuser3', 'searchTasks'
+    ...     ).jsonBody()
+    >>> pprint_collection(related)
+    start: None
+    total_size: 0
+    ---
+
+You are not allowed to overwrite all user related parameter in the same
+query, because in this case this bug will no be related to the person
+anymore. In this case a `400 Bad Request`-Error will be returned
+
+    >>> name12 = webservice.get("/~name12").jsonBody()
+    >>> print webservice.named_get(
+    ...     '/~name16', 'searchTasks', assignee=name12['self_link'],
+    ...     owner=name12['self_link'], bug_subscriber=name12['self_link'],
+    ...     bug_commenter=name12['self_link']
+    ...     )
+    HTTP/1.1 400 Bad Request...
 
 
 Affected users
