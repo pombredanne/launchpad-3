@@ -196,7 +196,7 @@ commercial-compat.sh || true
 
 # Timestamp our trace file.
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
-    date -u > "$FILE"
+    date -u > "$TRACEFILE"
 fi
 
 # Skip long-running processes when doing a quick security run.

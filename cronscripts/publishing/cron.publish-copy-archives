@@ -78,5 +78,5 @@ fi
 
 # Timestamp our trace file.
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
-    date -u > "$FILE"
+    date -u > "$TRACEFILE"
 fi
