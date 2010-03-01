@@ -28,8 +28,10 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
 BZR_VERSION_INFO = bzr-version-info.py
 
-WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
-API_INDEX = lib/canonical/launchpad/apidoc/index.html
+APIDOC_DIR = lib/canonical/launchpad/apidoc
+WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
+DEVEL_WADL_FILE = $(APIDOC_DIR)/wadl-$(LPCONFIG)-devel.xml
+API_INDEX = $(APIDOC_DIR)/index.html
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -44,12 +46,14 @@ newsampledata:
 hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(WADL_FILE): $(BZR_VERSION_INFO)
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@.tmp
-	mv $@.tmp $@
+$(DEVEL_WADL_FILE): $(BZR_VERSION_INFO)
+	mkdir $(APIDOC_DIR).tmp
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py "$(WADL_TEMPLATE)"
+	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
+	rmdir $(APIDOC_DIR).tmp
 
-$(API_INDEX): $(WADL_FILE)
-	bin/apiindex $(WADL_FILE) > $@.tmp
+$(API_INDEX): $(DEVEL_WADL_FILE)
+	bin/apiindex $(DEVEL_WADL_FILE) > $@.tmp
 	mv $@.tmp $@
 
 apidoc: compile $(API_INDEX)
@@ -240,7 +244,7 @@ sync_branches: pull_branches scan_branches mpcreationjobs
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
 
-support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
+support_files: $(DEVEL_WADL_FILE) $(BZR_VERSION_INFO)
 
 # Intended for use on developer machines
 start: inplace stop support_files initscript-start
@@ -309,7 +313,7 @@ clean: clean_js
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	$(RM) $(WADL_FILE) $(API_INDEX)
+	$(RM) $(APIDOC_DIR/wadl*.xml) $(API_INDEX)
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py
 	$(RM) -rf \
