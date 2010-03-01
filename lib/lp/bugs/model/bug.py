@@ -100,6 +100,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.person import Person, ValidPersonCache
@@ -876,6 +877,10 @@ class Bug(SQLBase):
             distroseries=distro_series,
             sourcepackagename=source_package_name)
 
+        # When a new task is added the bug's heat becomes relevant to the
+        # target's max_bug_heat.
+        target.recalculateMaxBugHeat()
+
         return new_task
 
     def addWatch(self, bugtracker, remotebug, owner):
@@ -1529,6 +1534,8 @@ class Bug(SQLBase):
     def setHeat(self, heat):
         """See `IBug`."""
         self.heat = heat
+        for task in self.bugtasks:
+            task.target.recalculateMaxBugHeat()
 
 
 class BugSet:

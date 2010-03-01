@@ -969,6 +969,9 @@ class BugTask(SQLBase, BugTaskMixin):
         enforced implicitly by the code in
         lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
         """
+
+        target_before_change = self.target
+
         if (self.milestone is not None and
             self.milestone.target != target):
             # If the milestone for this bugtask is set, we
@@ -992,6 +995,12 @@ class BugTask(SQLBase, BugTaskMixin):
                 raise IllegalTarget(
                     "Distribution bug tasks may only be re-targeted "
                     "to a package in the same distribution.")
+
+        # After the target has changed, we need to recalculate the maximum bug
+        # heat for the new and old targets.
+        if self.target != target_before_change:
+            target_before_change.recalculateMaxBugHeat()
+            self.target.recalculateMaxBugHeat()
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
