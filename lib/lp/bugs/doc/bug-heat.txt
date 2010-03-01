@@ -44,6 +44,14 @@ Before update_bug_heat is called, bug 1 will have no heat.
     >>> bug_1.heat
     0
 
+We touch bug 1 to make sure its date_last_updated is recent enough (bug heat
+decays over time).
+
+    >>> new_comment = bug_1.newMessage(
+    ...     owner=bug_1.owner, subject="...", content="...")
+    >>> import transaction ; transaction.commit()
+    >>> bug_1 = getUtility(IBugSet).get(1)
+
     >>> update_bug_heat(chunk_size=1)
     DEBUG Updating 1 Bugs (starting id: ...)
     ...

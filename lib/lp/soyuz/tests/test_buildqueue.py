@@ -177,6 +177,19 @@ class TestBuildQueueSet(TestCaseWithFactory):
         buildqueue = BuildQueue(job=job.id)
         self.assertEquals(buildqueue, self.buildqueueset.getByJob(job))
 
+    def test_getActiveBuildJobs_no_builder_bug499421(self):
+        # An active build queue item that does not have a builder will
+        # not be included in the results and so will not block the
+        # buildd-manager.
+        active_jobs = self.buildqueueset.getActiveBuildJobs()
+        self.assertEqual(1, active_jobs.count())
+        active_job = active_jobs[0]
+        active_job.builder = None
+        self.assertTrue(
+            self.buildqueueset.getActiveBuildJobs().is_empty(),
+            "An active build job must have a builder.")
+
+
 
 class TestBuildQueueBase(TestCaseWithFactory):
     """Setup the test publisher and some builders."""
@@ -248,7 +261,10 @@ class TestBuildQueueBase(TestCaseWithFactory):
 
         # hppa native
         self.builders[(self.hppa_proc.id, False)] = [
-            self.h5, self.h6, self.h7]
+            self.h5,
+            self.h6,
+            self.h7,
+            ]
         # hppa virtual
         self.builders[(self.hppa_proc.id, True)] = [
             self.h1, self.h2, self.h3, self.h4]
@@ -479,7 +495,9 @@ class TestBuilderData(SingleArchBuildsBase):
 class TestMinTimeToNextBuilder(SingleArchBuildsBase):
     """Test estimated time-to-builder with builds targetting a single
     processor."""
-    def test_min_time_to_next_builder(self):
+    # XXX Michael Nelson 20100223 bug=525329
+    # This is still failing spuriously.
+    def disabled_test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
         # Test the estimation of the minimum time until a builder becomes
@@ -666,7 +684,9 @@ class MultiArchBuildsBase(TestBuildQueueBase):
 
 class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     """Test estimated time-to-builder with builds and multiple processors."""
-    def test_min_time_to_next_builder(self):
+    # XXX Michael Nelson 20100223 bug=525329
+    # This is still failing spuriously.
+    def disabled_test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
         # One of four builders for the 'apg' build is immediately available.
