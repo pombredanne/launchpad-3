@@ -11,12 +11,14 @@ import xmlrpclib
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.launchpad.testing.codeimporthelpers import make_running_import
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.code.enums import CodeImportResultStatus
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.code.xmlrpc.codeimportscheduler import CodeImportSchedulerAPI
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
@@ -74,6 +76,38 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         self.assertTrue(
             isinstance(fault, xmlrpclib.Fault),
             "getImportDataForJobID(-1) returned %r, not a Fault."
+            % (fault,))
+        self.assertEqual(NoSuchCodeImportJob, fault.__class__)
+
+    def test_updateHeartbeat(self):
+        code_import_job = self.makeCodeImportJob(running=True)
+        log_tail = self.factory.getUniqueString()
+        self.api.updateHeartbeat(code_import_job.id, log_tail)
+        self.assertSqlAttributeEqualsDate(
+            code_import_job, 'heartbeat', UTC_NOW)
+        self.assertEqual(log_tail, code_import_job.logtail)
+
+    def test_updateHeartbeat_not_found(self):
+        fault = self.api.updateHeartbeat(-1, '')
+        self.assertTrue(
+            isinstance(fault, xmlrpclib.Fault),
+            "updateHeartbeat(-1, '') returned %r, not a Fault."
+            % (fault,))
+        self.assertEqual(NoSuchCodeImportJob, fault.__class__)
+
+    def test_finishJobID(self):
+        code_import_job = self.makeCodeImportJob(running=True)
+        code_import = code_import_job.code_import
+        self.api.finishJobID(
+            code_import_job.id, CodeImportResultStatus.SUCCESS, 0)
+        self.assertSqlAttributeEqualsDate(
+            code_import, 'date_last_successful', UTC_NOW)
+
+    def test_finishJobID_not_found(self):
+        fault = self.api.finishJobID(-1, '', 0)
+        self.assertTrue(
+            isinstance(fault, xmlrpclib.Fault),
+            "finishJobID(-1, '', 0) returned %r, not a Fault."
             % (fault,))
         self.assertEqual(NoSuchCodeImportJob, fault.__class__)
 

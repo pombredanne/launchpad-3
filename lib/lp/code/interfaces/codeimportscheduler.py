@@ -40,8 +40,8 @@ class ICodeImportScheduler(Interface):
     def getImportDataForJobID(job_id):
         """XXX."""
 
-    ## def updateHeartbeat(job_id, log_tail):
-    ##     """XXX."""
+    def updateHeartbeat(job_id, log_tail):
+        """XXX."""
 
-    ## def finishJobID(job_id, status, log_file_alias_id):
-    ##     """XXX."""
+    def finishJobID(job_id, status, log_file_alias_id):
+        """XXX."""
