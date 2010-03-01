@@ -313,7 +313,11 @@ clean: clean_js
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	$(RM) $(APIDOC_DIR/wadl*.xml) $(API_INDEX)
+	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml \
+	    $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak
+	$(RM) $(APIDOC_DIR)/wadl*.xml $(API_INDEX)
+	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak \
+	    $(APIDOC_DIR)/wadl-testrunner-devel.xml
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py
 	$(RM) -rf \
