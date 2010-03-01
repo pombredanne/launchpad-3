@@ -66,7 +66,7 @@ will be deprecated along with the Karmic release of Ubuntu.
 
     >>> wadl_beta = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml', api_version='beta').body
-    >>> wadl_beta = wadl_10.decode('UTF-8')
+    >>> wadl_beta = wadl_beta.decode('UTF-8')
 
     >>> 'http://api.launchpad.dev/beta/' in wadl_beta
     True
