@@ -12,6 +12,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.launchpad.xmlrpc.helpers import return_fault
@@ -66,3 +67,10 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
     def finishJobID(self, job_id, status, log_file_alias_id):
         """See `ICodeImportScheduler`."""
         job = self._getJob(job_id)
+        workflow = removeSecurityProxy(getUtility(ICodeImportJobWorkflow))
+        if log_file_alias_id:
+            library_file_alias_set = getUtility(ILibraryFileAliasSet)
+            log_file_alias = library_file_alias_set[log_file_alias_id]
+        else:
+            log_file_alias = None
+        workflow.finishJob(job, status, log_file_alias)

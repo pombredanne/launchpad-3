@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.launchpad.testing.codeimporthelpers import make_running_import
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.code.enums import CodeImportResultStatus
 from lp.code.model.codeimportjob import CodeImportJob
@@ -27,7 +27,7 @@ from lp.testing import run_with_login, TestCaseWithFactory
 
 class TestCodeImportSchedulerAPI(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -100,8 +100,20 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         code_import = code_import_job.code_import
         self.api.finishJobID(
             code_import_job.id, CodeImportResultStatus.SUCCESS, 0)
+        # finishJob does many things, we just check one of them: setting
+        # date_last_successful in the case of success.
         self.assertSqlAttributeEqualsDate(
             code_import, 'date_last_successful', UTC_NOW)
+
+    def test_finishJobID_with_log_file(self):
+        code_import_job = self.makeCodeImportJob(running=True)
+        code_import = code_import_job.code_import
+        log_file_alias = self.factory.makeLibraryFileAlias()
+        self.api.finishJobID(
+            code_import_job.id, CodeImportResultStatus.SUCCESS,
+            log_file_alias.id)
+        self.assertEqual(
+            log_file_alias, code_import.results[-1].log_file)
 
     def test_finishJobID_not_found(self):
         fault = self.api.finishJobID(-1, '', 0)
