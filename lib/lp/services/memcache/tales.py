@@ -68,7 +68,10 @@ class MemcacheExpr:
         self._s = expr
 
         if ',' in expr:
-            self.visibility, max_age = (s.strip() for s in expr.split(','))
+            try:
+                self.visibility, max_age = (s.strip() for s in expr.split(','))
+            except ValueError:
+                raise SyntaxError("Too many arguments in cache: expression")
         else:
             self.visibility = expr.strip()
             max_age = None
@@ -79,22 +82,26 @@ class MemcacheExpr:
         if max_age is None:
             self.max_age = 0
         else:
-            value, unit = max_age.split(' ')
+            try:
+                value, unit = max_age.split(' ')
+            except ValueError:
+                raise SyntaxError(
+                    "Unparsable age %s in cache: expression"
+                    % repr(self.max_age))
             value = float(value)
-            if unit[0] == 's':
+            if unit[-1] == 's':
+                unit = unit[:-1]
+            if unit == 'second':
                 pass
-            elif unit[0] == 'm':
+            elif unit == 'minute':
                 value *= 60
-            elif unit[0] == 'h':
+            elif unit == 'hour':
                 value *= 60 * 60
-            elif unit[0] == 'd':
+            elif unit == 'day':
                 value *= 24 * 60 * 60
             else:
                 raise AssertionError("Unknown unit %s" % unit)
             self.max_age = int(value)
-
-    _valid_key_characters = ''.join(
-        chr(i) for i in range(33, 127) if i != ord(':'))
 
     # For use with str.translate to sanitize keys. No control characters
     # allowed, and we skip ':' too since it is a magic separator.
@@ -232,9 +239,6 @@ class MemcacheHit:
     """
     def __init__(self, value):
         self.value = value
-
-    def __unicode__(self):
-        return self.value
 
 
 # Oh my bleeding eyes! Monkey patching & cargo culting seems the sanest

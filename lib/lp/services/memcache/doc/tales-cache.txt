@@ -164,7 +164,7 @@ Cached chunks can contain other cached chunks, useful for specifying
 different timeouts of different visibilities.
 
     >>> template = TestPageTemplate(dedent("""\
-    ...     <body tal:content="cache:private,25 secs" tal:omit-tag="">
+    ...     <body tal:content="cache:private,25 seconds" tal:omit-tag="">
     ...         This bit is private to <span tal:replace="username" />
     ...         and cached up to 25 seconds, but contains
     ...         <span tal:content="cache:public,3 days" tal:omit-tag="">
