@@ -34,7 +34,6 @@ from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.utilities.pluralforms import make_friendly_plural_forms
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
