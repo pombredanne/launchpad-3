@@ -15,7 +15,6 @@ from zope.component import getUtility
 from zope.event import notify
 
 from lp.codehosting.scanner import events
-from lp.codehosting.scanner.fixture import make_zope_event_fixture
 from lp.codehosting.scanner import mergedetection
 from lp.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)

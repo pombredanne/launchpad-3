@@ -33,9 +33,7 @@ from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchmergeproposaljob import IUpdatePreviewDiffJobSource
 from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
 from lp.codehosting.scanner.bzrsync import (
-    BzrSync, InvalidStackedBranchURL, schedule_diff_updates,
-    schedule_translation_upload)
-from lp.codehosting.scanner.fixture import make_zope_event_fixture
+    BzrSync, InvalidStackedBranchURL)
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 

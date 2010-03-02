@@ -11,11 +11,10 @@ __all__ = [
 import urlparse
 
 from bzrlib.errors import InvalidBugStatus
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 
-from lp.codehosting.scanner import events
 from canonical.launchpad.interfaces import (
-    IBugBranchSet, IBugSet, ILaunchpadCelebrities, NotFoundError)
+    IBugSet, ILaunchpadCelebrities, NotFoundError)
 
 
 class BugBranchLinker:

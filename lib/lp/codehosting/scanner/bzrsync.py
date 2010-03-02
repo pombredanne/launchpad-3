@@ -18,7 +18,7 @@ import logging
 import pytz
 import transaction
 
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 from zope.event import notify
 
 from bzrlib.branch import BzrBranchFormat4

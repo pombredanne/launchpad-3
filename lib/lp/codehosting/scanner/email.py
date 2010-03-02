@@ -9,13 +9,12 @@ __all__ = [
     'queue_tip_changed_email_jobs',
     ]
 
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 
 from canonical.config import config
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchjob import (
     IRevisionsAddedJobSource, IRevisionMailJobSource)
-from lp.codehosting.scanner import events
 
 
 def subscribers_want_notification(db_branch):
