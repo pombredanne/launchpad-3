@@ -18,12 +18,10 @@
       <a tal:content="series/name"
           tal:attributes="href series/fmt:url" />
       <span tal:condition="request/annotations/show_edit_buttons | nothing">
-        <a class="sprite edit"
-            tal:attributes="href context/menu:overview/edit_packaging/fmt:url"
-          ></a>
-        <a class="sprite remove"
-            tal:attributes="href context/menu:overview/remove_packaging/fmt:url"
-          ></a>
+        <a tal:replace="
+          structure context/menu:overview/edit_packaging/fmt:icon" />
+        <a tal:replace="
+          structure context/menu:overview/remove_packaging/fmt:icon " />
       </span>
     </dd>
   </dl>

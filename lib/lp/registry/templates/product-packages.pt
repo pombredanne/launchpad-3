@@ -76,9 +76,7 @@
                 tal:attributes="action request/URL;
                                 id form_id">
                 <tal:hidden replace="structure field" />
-                <a class="sprite remove"
-                   tal:attributes="href packaging/sourcepackage/menu:overview/remove_packaging/fmt:url"
-                  ></a>
+                <a tal:replace="structure packaging/sourcepackage/menu:overview/remove_packaging/fmt:icon" />
               </form>
             </td>
           </tal:packaging_field>
