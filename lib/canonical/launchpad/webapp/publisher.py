@@ -500,10 +500,6 @@ def canonical_url(
         root_url = allvhosts.configs[rootsite].rooturl
     else:
         root_url = request.getRootURL(rootsite)
-        if rootsite == 'api' and WebServiceLayer.providedBy(request):
-            # This is a versioned web service request. The URL should
-            # incorporate the version.
-            root_url += request.version + '/'
 
     path = u'/'.join(reversed(urlparts))
     if ((path_only_if_possible and
