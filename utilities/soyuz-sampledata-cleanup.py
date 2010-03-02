@@ -466,7 +466,7 @@ def main(argv):
             })
 
     if gave_email:
-        attach_pgp_keys(options, person, log)
+        attach_gpg_keys(options, person, log)
        
     if options.dry_run:
         txn.abort()
