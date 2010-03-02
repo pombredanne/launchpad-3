@@ -89,7 +89,6 @@ class BugBranchLinker:
                     registrant=getUtility(ILaunchpadCelebrities).janitor)
 
 
-@adapter(events.NewRevision)
 def got_new_revision(new_revision):
     if new_revision.isMainline():
         linker = BugBranchLinker(new_revision.db_branch)

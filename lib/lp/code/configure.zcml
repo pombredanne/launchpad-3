@@ -537,6 +537,9 @@
       for="lp.code.interfaces.branch.IBranch
            lp.codehosting.scanner.events.IRevisionsRemoved"
       handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.INewRevision"
+      handler="lp.codehosting.scanner.buglinks.got_new_revision"/>
 
   <!-- Temporarily disabling queues
        <browser:page

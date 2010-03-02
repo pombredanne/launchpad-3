@@ -28,8 +28,14 @@ class ScannerEvent(ObjectEvent):
         self.bzr_branch = bzr_branch
 
 
+class INewRevision(IObjectEvent):
+    """A new revision has been found in the branch."""
+
+
 class NewRevision(ScannerEvent):
     """A new revision has been found in the branch."""
+
+    implements(INewRevision)
 
     def __init__(self, db_branch, bzr_branch, db_revision, bzr_revision,
                  revno):
