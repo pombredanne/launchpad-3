@@ -26,7 +26,7 @@ def subscribers_want_notification(db_branch):
     return subscriptions.count() > 0
 
 
-def send_removed_revision_emails(object, revisions_removed):
+def send_removed_revision_emails(revisions_removed):
     """Notify subscribers of removed revisions.
 
     When the history is shortened, we send an email that says this.
@@ -51,7 +51,7 @@ def send_removed_revision_emails(object, revisions_removed):
         body=contents, perform_diff=False, subject=subject)
 
 
-def queue_tip_changed_email_jobs(object, tip_changed):
+def queue_tip_changed_email_jobs(tip_changed):
     if not subscribers_want_notification(tip_changed.db_branch):
         return
     if tip_changed.initial_scan:
