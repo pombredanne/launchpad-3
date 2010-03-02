@@ -476,8 +476,14 @@ class LoginStatus:
         if full_url.endswith('/'):
             full_url = full_url[:-1]
         logout_url_end = '/+logout'
+        openid_callback_url_end = '/+openid-callback'
         if full_url.endswith(logout_url_end):
             full_url = full_url[:-len(logout_url_end)]
+        elif full_url.endswith(openid_callback_url_end):
+            full_url = full_url[:-len(openid_callback_url_end)]
+        else:
+            # No need to remove anything from full_url.
+            pass
         return '%s/+login%s' % (full_url, query_string)
 
 
