@@ -470,15 +470,6 @@ def main(argv):
     person = create_ppa_user(user_name, options, admin, log)
 
     gave_email = (options.email != default_email)
-    print dedent("""
-        Now start your local Launchpad with "make run" and log into
-        https://launchpad.dev/ as "%(email)s" with "test" as the password.
-        Your user name will be %(user_name)s."""
-        % {
-            'email': options.email,
-            'user_name': user_name,
-            })
-
     if gave_email:
         attach_gpg_keys(options, person, log)
        
@@ -488,6 +479,16 @@ def main(argv):
         txn.commit()
 
     log.info("Done.")
+
+    print dedent("""
+        Now start your local Launchpad with "make run" and log into
+        https://launchpad.dev/ as "%(email)s" with "test" as the password.
+        Your user name will be %(user_name)s."""
+        % {
+            'email': options.email,
+            'user_name': user_name,
+            })
+
 
 if __name__ == "__main__":
     main(sys.argv)
