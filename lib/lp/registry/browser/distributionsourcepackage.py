@@ -408,16 +408,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         for distroseries in self.active_series:
             # The first row for each series is the "title" row.
             packaging = packages_by_series[distroseries].direct_packaging
-            if packaging is None:
-                delete_packaging_form_id = None
-                hidden_packaging_field = None
-            else:
-                delete_packaging_form_id = "delete_%s_%s_%s" % (
-                    packaging.distroseries.name,
-                    packaging.productseries.product.name,
-                    packaging.productseries.name)
-                hidden_packaging_field = self._renderHiddenPackagingField(
-                    packaging)
             package = packages_by_series[distroseries]
             title_row = {
                 'blank_row': False,
@@ -426,8 +416,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                 'distroseries': distroseries,
                 'series_package': package,
                 'packaging': packaging,
-                'hidden_packaging_field': hidden_packaging_field,
-                'delete_packaging_form_id': delete_packaging_form_id,
                 }
             rows.append(title_row)
 

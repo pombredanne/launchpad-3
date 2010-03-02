@@ -58,13 +58,6 @@ class PackagingDeleteView(LaunchpadFormView):
         return '<input type="hidden" name="field.packaging" value="%s" />' % (
             vocabulary.getTerm(packaging).token)
 
-    def renderDeletePackagingAction(self):
-        """Render a submit input for the delete_packaging_action."""
-        assert self.can_delete_packaging, 'User cannot delete Packaging.'
-        return ('<input type="image" value="Delete Link" '
-                'src="/@@/remove" title="Delete upsteam link" '
-                'name="%s"/>' % self.delete_packaging_action.__name__)
-
     def handleDeletePackagingError(self, action, data, errors):
         """Handle errors on package link deletion.
 

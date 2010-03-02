@@ -69,14 +69,16 @@
               <tal:currentrelease
                 replace="packaging/sourcepackage/currentrelease/version|nothing">
                   2.3.4-1
-              </tal:currentrelease>       
+              </tal:currentrelease>
             </td>
             <td tal:condition="view/can_delete_packaging">
               <form style="display: inline" method="post"
                 tal:attributes="action request/URL;
                                 id form_id">
                 <tal:hidden replace="structure field" />
-                <tal:action replace="structure view/renderDeletePackagingAction" />
+                <a class="sprite remove"
+                   tal:attributes="href packaging/sourcepackage/menu:overview/remove_packaging/fmt:url"
+                  ></a>
               </form>
             </td>
           </tal:packaging_field>

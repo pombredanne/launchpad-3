@@ -49,8 +49,10 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, custom_widget, GetitemNavigation,
-    LaunchpadFormView, Link, redirection, StandardLaunchpadFacets, stepto)
+    ApplicationMenu, GetitemNavigation, Link, redirection,
+    StandardLaunchpadFacets, stepto)
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadFormView, ReturnToReferrerMixin)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -147,7 +149,7 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
         return Link('+gethelp', 'Help and support options', icon='info')
 
 
-class SourcePackageChangeUpstreamStepOne(StepView):
+class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
     """A view to set the `IProductSeries` of a sourcepackage."""
     schema = Interface
     _field_names = []
@@ -171,9 +173,8 @@ class SourcePackageChangeUpstreamStepOne(StepView):
             IProductSeries['product'], default=default)
         self.form_fields += Fields(product_field)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    # Override ReturnToReferrerMixin.next_url.
+    next_url = None
 
     def main_action(self, data):
         """See `MultiStepView`."""
@@ -181,7 +182,7 @@ class SourcePackageChangeUpstreamStepOne(StepView):
         self.request.form['product'] = data['product']
 
 
-class SourcePackageChangeUpstreamStepTwo(StepView):
+class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
     """A view to set the `IProductSeries` of a sourcepackage."""
     schema = IProductSeries
     _field_names = ['product']
@@ -199,10 +200,6 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
     # to continue passing the variable in the form.
     custom_widget('product', DropdownWidget, visible=False)
     custom_widget('productseries', LaunchpadRadioWidget)
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
 
     def setUpFields(self):
         super(SourcePackageChangeUpstreamStepTwo, self).setUpFields()
@@ -265,12 +262,16 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
             Fields(display_product_field, productseries_choice)
             + self.form_fields)
 
+    # Override ReturnToReferrerMixin.next_url until the main_action()
+    # is called.
+    next_url = None
+
     main_action_label = u'Change'
     def main_action(self, data):
         productseries = data['productseries']
         # Because it is part of a multistep view, the next_url can't
         # be set until the action is called, or it will skip the step.
-        self.next_url = canonical_url(self.context)
+        self.next_url = self._return_url
         if self.context.productseries == productseries:
             # There is nothing to do.
             return
@@ -286,19 +287,14 @@ class SourcePackageChangeUpstreamView(MultiStepView):
     first_step = SourcePackageChangeUpstreamStepOne
 
 
-class SourcePackageRemoveUpstreamView(LaunchpadFormView):
+class SourcePackageRemoveUpstreamView(ReturnToReferrerMixin,
+                                      LaunchpadFormView):
     """A view for removing the link to an upstream package."""
 
     schema = Interface
     field_names = []
     label = 'Unlink an upstream project'
     page_title = label
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-    next_url = cancel_url
 
     @action('Unlink')
     def unlink(self, action, data):

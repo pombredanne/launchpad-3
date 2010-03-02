@@ -95,13 +95,15 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, sorted_version_numbers,
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, Navigation, sorted_version_numbers, StandardLaunchpadFacets,
     stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
+    ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
@@ -1302,27 +1304,6 @@ class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
         # supervisor.
         self.validate_private_bugs(data)
 
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        # The referer header we want is only available before the view's
-        # form submits to itself. This field is a hidden input in the form.
-        referrer = self.request.form.get('next_url')
-        if referrer is None:
-            referrer = self.request.getHeader('referer')
-
-        if (referrer is not None
-            and referrer.startswith(self.request.getApplicationURL())):
-            return referrer
-        else:
-            return canonical_url(self.context)
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return self.next_url
-
-
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
 
@@ -1613,7 +1594,7 @@ class ProjectAddStepOne(StepView):
         self.request.form['summary'] = data['summary']
 
 
-class ProjectAddStepTwo(StepView, ProductLicenseMixin):
+class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
