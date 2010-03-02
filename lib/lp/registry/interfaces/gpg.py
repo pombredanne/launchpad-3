@@ -27,9 +27,9 @@ from canonical.launchpad import _
 from lp.registry.interfaces.role import IHasOwner
 from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_entry, REQUEST_USER)
+    call_with, collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
 
 
 def valid_fingerprint(fingerprint):
@@ -94,6 +94,9 @@ class GPGKeyAlgorithm(DBEnumeratedType):
 
 class IGPGKey(IHasOwner):
     """OpenPGP support"""
+
+    export_as_webservice_entry()
+
     id = Int(title=_("Database id"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
@@ -115,7 +118,7 @@ class IGPGKey(IHasOwner):
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
 
-    export_as_webservice_entry()
+    export_as_webservice_collection(IGPGKey)
 
     @call_with(ownerID=REQUEST_USER)
     @operation_parameters(
@@ -146,9 +149,9 @@ class IGPGKeySet(Interface):
         inactive ones.
         """
 
-    @call_with(ownerid=REQUEST_USER)
     @operation_parameters()
     @export_read_operation()
+    @collection_default_content()
     def getGPGKeys(ownerid=None, active=True):
         """Return OpenPGP keys ordered by id.
 
