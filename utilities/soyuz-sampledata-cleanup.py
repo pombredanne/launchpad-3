@@ -23,9 +23,9 @@ __metaclass__ = type
 import _pythonpath
 
 from optparse import OptionParser
-from os import getenv
 import re
-import os.path
+import os
+import subprocess
 import sys
 from textwrap import dedent
 import transaction
@@ -44,6 +44,7 @@ from canonical.lp import initZopeless
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -52,6 +53,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.soyuz.interfaces.component import IComponentSet
@@ -62,6 +64,10 @@ from lp.soyuz.interfaces.sourcepackageformat import (
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
 from lp.testing.factory import LaunchpadObjectFactory
+
+
+user_name = 'ppa-user'
+default_email = '%s@example.com' % user_name
 
 
 class DoNotRunOnProduction(Exception):
@@ -95,7 +101,7 @@ def check_preconditions(options):
     # For some configs it's just absolutely clear this script shouldn't
     # run.  Don't even accept --force there.
     forbidden_configs = re.compile('(edge|lpnet|production)')
-    current_config = getenv('LPCONFIG', 'an unknown config')
+    current_config = os.getenv('LPCONFIG', 'an unknown config')
     if forbidden_configs.match(current_config):
         raise DoNotRunOnProduction(
             "I won't delete Ubuntu data on %s and you can't --force me."
@@ -108,7 +114,7 @@ def parse_args(arguments):
     :return: (options, args, logger)
     """
     parser = OptionParser(
-        description="Set up fresh Ubuntu series and ppa-user identity.")
+        description="Set up fresh Ubuntu series and %s identity." % user_name)
     parser.add_option('-f', '--force', action='store_true', dest='force',
         help="DANGEROUS: run even if the database looks production-like.")
     parser.add_option('-n', '--dry-run', action='store_true', dest='dry_run',
@@ -116,8 +122,10 @@ def parse_args(arguments):
     parser.add_option('-A', '--amd64', action='store_true', dest='amd64',
         help="Support amd64 architecture.")
     parser.add_option('-e', '--email', action='store', dest='email',
-        default='ppa-user@example.com',
-        help="Email address to use for ppa-user.  Should match your GPG key.")
+        default=default_email,
+        help=(
+            "Email address to use for %s.  Should match your GPG key."
+            % user_name))
 
     logger_options(parser)
 
@@ -355,7 +363,8 @@ def create_ppa_user(username, options, approver, log):
 
     store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
-    log.info("Creating ppa-user with email address '%s'." % options.email)
+    log.info("Creating %s with email address '%s'." % (
+        user_name, options.email))
 
     person = get_person_set().getByName(username)
     if person is None:
@@ -370,6 +379,63 @@ def create_ppa_user(username, options, approver, log):
 
     sign_code_of_conduct(person, log)
     get_person_set().getByName('ubuntu-team').addMember(person, approver)
+
+    return person
+
+
+def parse_fingerprints(gpg_output):
+    """Find key fingerprints in "gpg --fingerprint <email>" output."""
+    line_prefix = re.compile('\s*Key fingerprint\s*=\s*')
+    return [
+        ''.join(re.sub(line_prefix, '', line).split())
+        for line in gpg_output.splitlines()
+        if line_prefix.match(line)
+        ]
+
+
+def add_gpg_key(person, fingerprint, log):
+    """Add the GPG key with the given fingerprint to `person`."""
+    log.info("Adding GPG key %s" % fingerprint)
+    gpghandler = getUtility(IGPGHandler)
+    key = gpghandler.retrieveKey(fingerprint)
+
+    gpgkeyset = getUtility(IGPGKeySet)
+    if gpgkeyset.getByFingerprint(fingerprint) is not None:
+        # We already have this key.
+        return
+
+    algorithm = GPGKeyAlgorithm.items[key.algorithm]
+    can_encrypt = True
+    lpkey = gpgkeyset.new(
+        person.id, key.keyid, fingerprint, key.keysize, algorithm,
+        active=True, can_encrypt=can_encrypt)
+    Store.of(person).add(lpkey)
+    log.info("Created Launchpad key %s" % lpkey.displayname)
+
+
+def attach_gpg_keys(options, person, log):
+    """Attach the selected GPG key to `person`."""
+    log.info("Looking for GPG keys.")
+
+    # Need to override GNUPGHOME or we'll get a dummy GPG in a temp
+    # directory, which won't find any keys.
+    env = os.environ.copy()
+    if 'GNUPGHOME' in env:
+        del env['GNUPGHOME']
+    pipe = subprocess.Popen(
+        ['gpg', '--fingerprint', options.email], env=env,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = pipe.communicate()
+    if stderr != '':
+        log.error(stderr)
+    if pipe.returncode != 0:
+        raise Exception("GPG error.")
+
+    fingerprints = parse_fingerprints(stdout)
+    if len(fingerprints) == 0:
+        log.warn("No GPG key fingerprints found!")
+    for fingerprint in fingerprints:
+        add_gpg_key(person, fingerprint, log)
 
 
 def main(argv):
@@ -387,27 +453,27 @@ def main(argv):
     populate(ubuntu, 'hoary', 'ubuntu-team', options, log)
 
     admin = get_person_set().getByName('name16')
-    create_ppa_user('ppa-user', options, admin, log)
+    person = create_ppa_user(user_name, options, admin, log)
 
+    gave_email = (options.email != default_email)
+    print dedent("""
+        Now start your local Launchpad with "make run" and log into
+        https://launchpad.dev/ as "%(email)s" with "test" as the password.
+        Your user name will be %(user_name)s."""
+        % {
+            'email': options.email,
+            'user_name': user_name,
+            })
+
+    if gave_email:
+        attach_pgp_keys(options, person, log)
+       
     if options.dry_run:
         txn.abort()
     else:
         txn.commit()
 
     log.info("Done.")
-
-    print dedent("""
-        Now start your local Launchpad with "make run" and log into
-        https://launchpad.dev/ as "%(email)s" with "test" as the password.
-        Your user name will be ppa-user.
-
-        Obtain your GPG key fingerprint with gpg --fingerprint %(email)s
-        and register it at https://launchpad.dev/~ppa-user/+editpgpkeys
-
-        You will then be able to create PPAs, make uploads signed with
-        your own GPG key, etc.
-        """ % {'email': options.email})
-
 
 if __name__ == "__main__":
     main(sys.argv)
