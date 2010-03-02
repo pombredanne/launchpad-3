@@ -29,7 +29,7 @@ class MemcacheExpr:
     This namespace is exclusively used in tal:content directives.
     The only sensible way of using this is the following syntax:
 
-    <div tal:content="cache:1h public">
+    <div tal:content="cache:public, 1 hour">
         [... Potentially expensive page template chunk ...]
     </div>
     """
