@@ -533,6 +533,12 @@
       for="lp.codehosting.scanner.events.ITipChanged"
       handler="lp.codehosting.scanner.email.queue_tip_changed_email_jobs"/>
   <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.schedule_diff_updates"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.schedule_translation_upload"/>
+  <subscriber
       for="lp.codehosting.scanner.events.IRevisionsRemoved"
       handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
   <subscriber
