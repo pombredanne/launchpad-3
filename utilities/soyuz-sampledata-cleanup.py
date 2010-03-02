@@ -450,9 +450,14 @@ def attach_gpg_keys(options, person, log):
 
 def create_ppa(distribution, person, name):
     """Create a PPA for `person`."""
-    LaunchpadObjectFactory().makeArchive(
+    ppa = LaunchpadObjectFactory().makeArchive(
         distribution=distribution, owner=person, name=name, virtualized=False,
         description="Automatically created test PPA.")
+
+    series_name = distribution.currentseries.name
+    ppa.external_dependencies = (
+        "deb http://archive.ubuntu.com/ubuntu %s "
+        "main restricted universe multiverse\n") % series_name
 
 
 def main(argv):
