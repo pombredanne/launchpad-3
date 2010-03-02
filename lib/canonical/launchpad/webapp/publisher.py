@@ -494,12 +494,20 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
+    #from canonical.launchpad.webapp.servers import WebServiceTestRequest
+    #if isinstance(request, WebServiceTestRequest):
+    #    import pdb; pdb.set_trace()
+
     if request is None:
         if rootsite is None:
             rootsite = 'mainsite'
         root_url = allvhosts.configs[rootsite].rooturl
     else:
         root_url = request.getRootURL(rootsite)
+        if rootsite == 'api' and WebServiceLayer.providedBy(request):
+            # This is a versioned web service request. The URL should
+            # incorporate the version.
+            root_url += request.version + '/'
 
     path = u'/'.join(reversed(urlparts))
     if ((path_only_if_possible and

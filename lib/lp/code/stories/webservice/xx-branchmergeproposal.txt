@@ -7,13 +7,19 @@ Branch merge proposals can be created through the API.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> login('admin@canonical.com')
     >>> target = factory.makeBranch()
-    >>> target_url = str(canonical_url(target, rootsite='api'))
+    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
+    >>> request = WebServiceTestRequest(version="beta")
+    >>> target_url = str(canonical_url(
+    ...     target, request=request, rootsite='api'))
     >>> source = factory.makeBranchTargetBranch(target.target)
-    >>> source_url = str(canonical_url(source, rootsite='api'))
+    >>> source_url = str(
+    ...     canonical_url(source, request=request, rootsite='api'))
     >>> prerequisite = factory.makeBranchTargetBranch(target.target)
-    >>> prerequisite_url = canonical_url(prerequisite, rootsite='api')
+    >>> prerequisite_url = canonical_url(
+    ...     prerequisite, request=request, rootsite='api')
     >>> registrant = source.registrant
-    >>> reviewer_url = canonical_url(factory.makePerson(), rootsite='api')
+    >>> reviewer_url = canonical_url(
+    ...     factory.makePerson(), request=request, rootsite='api')
     >>> logout()
     >>> registrant_webservice = webservice_for_person(
     ...     registrant, permission=OAuthPermission.WRITE_PUBLIC)
@@ -109,7 +115,8 @@ Branch merge proposals can be fetched through the API.
     ...     vote=CodeReviewVote.ABSTAIN, parent=comment,
     ...     merge_proposal=fixit_proposal)
 
-    >>> proposal_url = canonical_url(fixit_proposal, rootsite='api')
+    >>> proposal_url = canonical_url(
+    ...     fixit_proposal, request=request, rootsite='api')
     >>> new_person = factory.makePerson()
     >>> target_owner = fixit_proposal.target_branch.owner
     >>> logout()
