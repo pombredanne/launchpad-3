@@ -94,7 +94,7 @@ Watermark and breadcrumbs.
               <div class="yui-b" dir="ltr">
                 <div>
                   <h2>Heading</h2>
-                  <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
+                  <ol class="breadcrumbs">
     ...
 
 Top portlet.
@@ -190,7 +190,7 @@ Main content.
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
-                  <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
+                  <ol class="breadcrumbs">
     <BLANKLINE>
     </ol>
     <BLANKLINE>
@@ -218,14 +218,13 @@ Global search.
 
     >>> print html
     <!DOCTYPE html ...
-    ...
-          <form id="globalsearch" method="get"
-                accept-charset="UTF-8"
-                class="sprite-after search-icon"
-                action="http://launchpad.dev/+search">
-            <input type="search" id="search-text" name="field.text" />
-          </form>
-        </div>
+      <form id="globalsearch" method="get"
+            accept-charset="UTF-8"
+            action="http://launchpad.dev/+search">
+        <input type="search" id="search-text" name="field.text" />
+        <input type="submit" value="" class="icon-only sprite search-icon" />
+      </form>
+    </div>
     ...
 
 Footer.
@@ -310,7 +309,7 @@ Main content.
               <div class="yui-b" dir="ltr">
                 <div>
     <BLANKLINE>
-                  <ol class="breadcrumbs" xmlns="http://www.w3.org/1999/xhtml">
+                  <ol class="breadcrumbs">
     <BLANKLINE>
     </ol>
     ...

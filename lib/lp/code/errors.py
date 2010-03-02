@@ -11,6 +11,8 @@ __all__ = [
     'ClaimReviewFailed',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
+    'UnknownBranchTypeError',
+    'UserHasExistingReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
 ]
@@ -43,6 +45,10 @@ class ReviewNotPending(Exception):
     """The requested review is not in a pending state."""
 
 
+class UserHasExistingReview(Exception):
+    """The user has an existing review."""
+
+
 class UserNotBranchReviewer(Exception):
     """The user who attempted to review the merge proposal isn't a reviewer.
 
@@ -54,3 +60,7 @@ class UserNotBranchReviewer(Exception):
 
 class WrongBranchMergeProposal(Exception):
     """The comment requested is not associated with this merge proposal."""
+
+
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""

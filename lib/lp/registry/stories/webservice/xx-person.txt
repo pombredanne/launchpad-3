@@ -20,12 +20,15 @@ for teams (as they're defined in the ITeam interface).
     homepage_content: None
     invited_members_collection_link: u'http://.../~salgado/invited_members'
     irc_nicknames_collection_link: u'http://.../~salgado/irc_nicknames'
+    is_probationary: True
     is_team: False
+    is_ubuntu_coc_signer: False
     is_valid: True
     jabber_ids_collection_link: u'http://.../~salgado/jabber_ids'
     karma: 0
     languages_collection_link: u'http://.../~salgado/languages'
     latitude: None
+    logo_link: u'http://.../~salgado/logo'
     longitude: None
     mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
     members_collection_link: u'http://.../~salgado/members'
@@ -64,12 +67,15 @@ for teams (as they're defined in the ITeam interface).
     homepage_content: None
     invited_members_collection_link: u'http://.../~ubuntu-team/invited_members'
     irc_nicknames_collection_link: u'http://.../~ubuntu-team/irc_nicknames'
+    is_probationary: False
     is_team: True
+    is_ubuntu_coc_signer: False
     is_valid: True
     jabber_ids_collection_link: u'http://.../~ubuntu-team/jabber_ids'
     karma: 0
     languages_collection_link: u'http://.../~ubuntu-team/languages'
     latitude: None
+    logo_link: u'http://.../~ubuntu-team/logo'
     longitude: None
     mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
     members_collection_link: u'http://.../~ubuntu-team/members'

@@ -12,6 +12,7 @@ __all__ = [
 import gettextpo
 import datetime
 import os
+import posixpath
 import pytz
 from zope.component import getUtility
 from zope.interface import implements
@@ -314,9 +315,14 @@ class TranslationImporter:
                 return True
         return False
 
+    def isHidden(self, path):
+        """See `ITranslationImporter`."""
+        normalized_path = posixpath.normpath(path)
+        return normalized_path.startswith('.') or '/.' in normalized_path
+
     def isTranslationName(self, path):
         """See `ITranslationImporter`."""
-        base_name, suffix = os.path.splitext(path)
+        base_name, suffix = posixpath.splitext(path)
         if suffix not in self.supported_file_extensions:
             return False
         for importer_suffix in self.template_suffixes:
@@ -758,21 +764,18 @@ class POFileImporter(FileImporter):
             return None
 
         personset = getUtility(IPersonSet)
-        person = personset.getByEmail(email)
 
-        if person is None:
-            # We create a new person, without a password.
-            comment = 'when importing the %s translation of %s' % (
-                self.pofile.language.displayname, self.potemplate.displayname)
+        # We may have to create a new person.  If we do, this is the
+        # rationale.
+        comment = 'when importing the %s translation of %s' % (
+            self.pofile.language.displayname, self.potemplate.displayname)
+        rationale = PersonCreationRationale.POFILEIMPORT
 
-            try:
-                person, dummy = personset.createPersonAndEmail(
-                    email, PersonCreationRationale.POFILEIMPORT,
-                    displayname=name, comment=comment)
-            except InvalidEmailAddress:
-                return None
-
-        return person
+        try:
+            return personset.ensurePerson(
+                email, displayname=name, rationale=rationale, comment=comment)
+        except InvalidEmailAddress:
+            return None
 
     def importMessage(self, message):
         """See FileImporter."""

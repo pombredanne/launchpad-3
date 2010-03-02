@@ -66,6 +66,19 @@ def getPubConfig(archive):
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot, archive.distribution.name + '-debug')
         update_pub_config(pubconf)
+    elif archive.is_copy:
+        pubconf.distroroot = config.archivepublisher.root
+        pubconf.archiveroot = os.path.join(
+            pubconf.distroroot,
+            archive.distribution.name + '-' + archive.name,
+            archive.distribution.name)
+        # Multiple copy archives can exist on the same machine so the
+        # temp areas need to be unique also.
+        pubconf.temproot = pubconf.archiveroot + '-temp'
+        update_pub_config(pubconf)
+        pubconf.overrideroot = pubconf.archiveroot + '-overrides'
+        pubconf.cacheroot = pubconf.archiveroot + '-cache'
+        pubconf.miscroot = pubconf.archiveroot + '-misc'
     else:
         raise AssertionError(
             "Unknown archive purpose %s when getting publisher config.",

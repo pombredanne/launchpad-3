@@ -46,7 +46,7 @@ from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
 from canonical.launchpad.fields import DuplicateBug
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -78,6 +78,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
@@ -99,7 +100,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person
+from lp.registry.model.person import Person, ValidPersonCache
 from lp.registry.model.pillar import pillar_sort_key
 
 
@@ -226,7 +227,7 @@ class Bug(SQLBase):
                            prejoins=['owner'],
                            orderBy=['datecreated', 'id'])
     bug_messages = SQLMultipleJoin(
-        'BugMessage', joinColumn='bug',orderBy='id')
+        'BugMessage', joinColumn='bug', orderBy='id')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
@@ -255,6 +256,7 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
+    heat = IntCol(notNull=True, default=0)
 
     @property
     def comment_count(self):
@@ -445,10 +447,13 @@ class Bug(SQLBase):
     @property
     def has_patches(self):
         """See `IBug`."""
-        for attachment in self.attachments:
-            if attachment.is_patch:
-                return True
-        return False
+        store = IStore(BugAttachment)
+        results = store.find(
+            BugAttachment,
+            BugAttachment.bug == self,
+            BugAttachment.type == BugAttachmentType.PATCH)
+
+        return not results.is_empty()
 
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
@@ -525,7 +530,6 @@ class Bug(SQLBase):
         # the same time as retrieving the bug subscriptions (as a left
         # join). However, this ran slowly (far from optimal query
         # plan), so we're doing it as two queries now.
-        from lp.registry.model.person import Person, ValidPersonCache
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
@@ -548,7 +552,6 @@ class Bug(SQLBase):
         the relevant subscribers and rationales will be registered on
         it.
         """
-        from lp.registry.model.person import Person
         subscribers = list(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -609,7 +612,6 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        from lp.registry.model.person import Person
         dupe_subscribers = set(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -964,7 +966,7 @@ class Bug(SQLBase):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
-    completeness_clause =  """
+    completeness_clause = """
         BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
 
     def canBeAQuestion(self):
@@ -1104,7 +1106,6 @@ class Bug(SQLBase):
         # Since we can't prejoin, cache all people at once so we don't
         # have to do it while rendering, which is a big deal for bugs
         # with a million comments.
-        from lp.registry.model.person import Person
         owner_ids = set()
         for chunk in chunks:
             if chunk.message.ownerID:
@@ -1322,8 +1323,7 @@ class Bug(SQLBase):
         """Get the tags as a sorted list of strings."""
         tags = [
             bugtag.tag
-            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')
-            ]
+            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')]
         return tags
 
     def _setTags(self, tags):
@@ -1476,6 +1476,10 @@ class Bug(SQLBase):
             BugSubscription.person == person)
 
         return not subscriptions_from_dupes.is_empty()
+
+    def setHeat(self, heat):
+        """See `IBug`."""
+        self.heat = heat
 
 
 class BugSet:
@@ -1717,11 +1721,17 @@ class BugSet:
         return bugs
 
     def getByNumbers(self, bug_numbers):
-        """see `IBugSet`."""
+        """See `IBugSet`."""
         if bug_numbers is None or len(bug_numbers) < 1:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set.order_by('id')
+
+    def dangerousGetAllBugs(self):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        result_set = store.find(Bug)
         return result_set.order_by('id')
 
 

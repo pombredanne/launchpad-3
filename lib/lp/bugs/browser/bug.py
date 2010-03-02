@@ -10,6 +10,7 @@ __all__ = [
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
+    'BugHeatView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
@@ -22,11 +23,13 @@ __all__ = [
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
     'MaloneView',
+    'MAX_HEAT',
     ]
 
 from datetime import datetime, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
+from math import floor
 import re
 
 import pytz
@@ -74,6 +77,10 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 
+# Constant for the maximum bug heat we'll use for converting
+# IBug.heat to ratio. In the future this should come from the DB.
+# The value must be a float
+MAX_HEAT = 5000.0
 
 class BugNavigation(Navigation):
     """Navigation for the `IBug`."""
@@ -213,12 +220,17 @@ class BugContextMenu(ContextMenu):
         else:
             text = 'Subscribe'
             icon = 'add'
-        return Link('+subscribe', text, icon=icon)
+        return Link('+subscribe', text, icon=icon, summary=(
+                'When you are subscribed, Launchpad will email you each time '
+                'this bug changes'))
 
     def addsubscriber(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
-        return Link('+addsubscriber', text, icon='add')
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this bugs '
+                'changes'))
 
     def nominate(self):
         """Return the 'Target/Nominate for release' Link."""
@@ -957,3 +969,16 @@ def bug_description_xhtml_representation(context, field, request):
         html    = formatter(nomail).text_to_html()
         return html.encode('utf-8')
     return renderer
+
+
+class BugHeatView(LaunchpadView):
+    """View for rendering the graphical (HTML) representation of bug heat."""
+
+    def __call__(self):
+        """Render the bug heat representation."""
+        heat_ratio = floor((self.context.heat / MAX_HEAT) * 4)
+        html = (
+            '<img src="/@@/bug-heat-%(ratio)i.png" '
+            'alt="%(ratio)i out of 4 heat flames"  title="Heat: %(heat)i" />'
+            % {'ratio': heat_ratio, 'heat': self.context.heat})
+        return html

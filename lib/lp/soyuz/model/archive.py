@@ -55,9 +55,10 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, CannotCopy, DistroSeriesNotFound, IArchive, IArchiveSet,
-    IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
+    DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
+    InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
+    PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -112,10 +113,19 @@ class Archive(SQLBase):
         If the owner of the archive is private, then the archive cannot be
         made public.
         """
-        if not value:
-            # The archive is transitioning from public to private.
+        if value is False:
+            # The archive is transitioning from private to public.
             assert self.owner.visibility != PersonVisibility.PRIVATE, (
                 "Private teams may not have public PPAs.")
+
+        # If the privacy is being changed ensure there are no sources
+        # published.
+        sources_count = self.getPublishedSources().count()
+        if sources_count > 0:
+            raise CannotSwitchPrivacy(
+                "This archive has had %d sources published and therefore "
+                "cannot have its privacy switched." % sources_count)
+
         return value
 
     name = StringCol(
@@ -287,6 +297,12 @@ class Archive(SQLBase):
             return urlappend(
                 url, "/".join(
                     (self.owner.name, self.name, self.distribution.name)))
+
+        if self.is_copy:
+            url = urlappend(
+                config.archivepublisher.copy_base_url,
+                self.distribution.name + '-' + self.name)
+            return urlappend(url, self.distribution.name)
 
         try:
             postfix = archive_postfixes[self.purpose]
@@ -1096,17 +1112,8 @@ class Archive(SQLBase):
                     to_series=None, include_binaries=False):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
-        sources = []
-        for name in source_names:
-            # Check to see if the source package exists, and raise a useful
-            # error if it doesn't.
-            getUtility(ISourcePackageNameSet)[name]
-            # Grabbing the item at index 0 ensures it's the most recent
-            # publication.
-            sources.append(
-                from_archive.getPublishedSources(
-                    name=name, exact_match=True)[0])
-
+        sources = self._collectLatestPublishedSources(
+            from_archive, source_names)
         self._copySources(sources, to_pocket, to_series, include_binaries)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
@@ -1120,6 +1127,28 @@ class Archive(SQLBase):
             name=source_name, version=version, exact_match=True)[0]
 
         self._copySources([source], to_pocket, to_series, include_binaries)
+
+    def _collectLatestPublishedSources(self, from_archive, source_names):
+        """Private helper to collect the latest published sources for an
+        archive.
+
+        :raises NoSuchSourcePackageName: If any of the source_names do not
+            exist.
+        """
+        sources = []
+        for name in source_names:
+            # Check to see if the source package exists. This will raise
+            # a NoSuchSourcePackageName exception if the source package
+            # doesn't exist.
+            getUtility(ISourcePackageNameSet)[name]
+            # Grabbing the item at index 0 ensures it's the most recent
+            # publication.
+            published_sources = from_archive.getPublishedSources(
+                name=name, exact_match=True,
+                status=PackagePublishingStatus.PUBLISHED)
+            if published_sources.count() > 0:
+                sources.append(published_sources[0])
+        return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False):
@@ -1232,7 +1261,7 @@ class Archive(SQLBase):
             extra_exprs.append(Build.buildstate == build_status)
 
         result_set = store.find(
-            SourcePackageRelease, 
+            SourcePackageRelease,
             Build.sourcepackagereleaseID == SourcePackageRelease.id,
             Build.archive == self,
             *extra_exprs)

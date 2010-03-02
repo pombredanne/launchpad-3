@@ -29,6 +29,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.soyuz.interfaces.build import IBuild
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
@@ -41,6 +42,7 @@ from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
+from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
@@ -50,7 +52,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
 from lp.registry.interfaces.entitlement import IEntitlement
-from canonical.launchpad.interfaces.hwdb import (
+from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
     IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
@@ -62,13 +64,13 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
-    IMilestone, IProjectMilestone)
+    IMilestone, IProjectGroupMilestone)
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken, IOAuthRequestToken)
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
 from lp.translations.interfaces.pofile import IPOFile
-from lp.translations.interfaces.potemplate import (
-    IPOTemplate, IPOTemplateSubset)
+from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingEdit,
     ISourcePackagePublishingHistory)
@@ -84,7 +86,8 @@ from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFile)
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject, IProjectSet
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup, IProjectGroupSet)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -116,6 +119,7 @@ from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.services.worlddata.interfaces.country import ICountry
 
 
 class AuthorizationBase:
@@ -171,6 +175,19 @@ class ViewByLoggedInUser(AuthorizationBase):
         return True
 
 
+class AnonymousAuthorization(AuthorizationBase):
+    """Allow any authenticated and unauthenticated user access."""
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """Any unauthorized user can see this object."""
+        return True
+
+    def checkAuthenticated(self, user):
+        """Any authorized user can see this object."""
+        return True
+
+
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = Interface
@@ -212,11 +229,11 @@ class ReviewProductSet(ReviewByRegistryExpertsOrAdmins):
 
 
 class ReviewProject(ReviewByRegistryExpertsOrAdmins):
-    usedfor = IProject
+    usedfor = IProjectGroup
 
 
 class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
-    usedfor = IProjectSet
+    usedfor = IProjectGroupSet
 
 
 class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
@@ -280,7 +297,7 @@ class EditOAuthAccessToken(AuthorizationBase):
     usedfor = IOAuthAccessToken
 
     def checkAuthenticated(self, user):
-        return self.obj.person == user or user.in_admin
+        return self.obj.person == user.person or user.in_admin
 
 
 class EditOAuthRequestToken(EditOAuthAccessToken):
@@ -343,6 +360,11 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
                 user.inTeam(self.obj.distribution.mirror_admin))
 
 
+class ViewDistributionMirror(AnonymousAuthorization):
+    """Anyone can view an IDistributionMirror."""
+    usedfor = IDistributionMirror
+
+
 class EditSpecificationBranch(AuthorizationBase):
 
     usedfor = ISpecificationBranch
@@ -386,7 +408,7 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
         return (user.in_admin or
                 user.isOwner(self.obj.target) or
                 user.isOneOf(
-                    self.obj, ['owner','drafter', 'assignee', 'approver']))
+                    self.obj, ['owner', 'drafter', 'assignee', 'approver']))
 
 
 class AdminSpecification(AuthorizationBase):
@@ -482,6 +504,21 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         return user.in_admin or user.in_rosetta_experts
 
 
+class AdminProjectTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProjectGroup
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProjectGroup` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or owner is
+        able to change translation settings for a project group.
+        """
+        return (user.isOwner(self.obj) or
+                user.in_rosetta_experts or
+                user.in_admin)
+
+
 class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProduct
@@ -507,10 +544,10 @@ class AdminSeriesByVCSImports(AuthorizationBase):
 
 class EditProjectMilestoneNever(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = IProjectMilestone
+    usedfor = IProjectGroupMilestone
 
     def checkAuthenticated(self, user):
-        """IProjectMilestone is a fake content object."""
+        """IProjectGroupMilestone is a fake content object."""
         return False
 
 
@@ -799,6 +836,16 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.in_admin)
 
 
+class ViewDistroSeries(AnonymousAuthorization):
+    """Anyone can view a DistroSeries."""
+    usedfor = IDistroSeries
+
+
+class ViewCountry(AnonymousAuthorization):
+    """Anyone can view a Country."""
+    usedfor = ICountry
+
+
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
 
@@ -814,24 +861,9 @@ class SeriesDrivers(AuthorizationBase):
                 user.in_admin)
 
 
-class ViewProductSeries(AuthorizationBase):
+class ViewProductSeries(AnonymousAuthorization):
 
     usedfor = IProductSeries
-    permision = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return True
-
-    def checkAuthenticated(self, user):
-        """See `IAuthorization.checkAuthenticated`.
-
-        :return: True or False.
-        """
-        return True
 
 
 class EditProductSeries(EditByOwnersOrAdmins):
@@ -979,6 +1011,16 @@ class EditBugAttachment(
             self, bugattachment.bug)
 
 
+class ViewBugSubscription(AnonymousAuthorization):
+
+    usedfor = IBugSubscription
+
+
+class ViewBugMessage(AnonymousAuthorization):
+
+    usedfor = IMessage
+
+
 class ViewAnnouncement(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IAnnouncement
@@ -1086,8 +1128,7 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
-                                    EditDistributionByDistroOwnersOrAdmins):
+class AdminDistributionTranslations(AuthorizationBase):
     """Class for deciding who can administer distribution translations.
 
     This class is used for `launchpad.TranslationsAdmin` privilege on
@@ -1101,9 +1142,9 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
     def checkAuthenticated(self, user):
         """Is the user able to manage `IDistribution` translations settings?
 
-        Any Launchpad/Launchpad Translations administrator or people allowed
-        to edit distribution details are able to change translation settings
-        for a distribution.
+        Any Launchpad/Launchpad Translations administrator, translation group
+        owner or a person allowed to edit distribution details is able to
+        change translations settings for a distribution.
         """
         # Translation group owner for a distribution is also a
         # translations administrator for it.
@@ -1111,14 +1152,11 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
         if translation_group and user.inTeam(translation_group.owner):
             return True
         else:
-            return (
-                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-                EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
-                    self, user))
+            return (user.in_rosetta_experts or
+                    EditDistributionByDistroOwnersOrAdmins(
+                        self.obj).checkAuthenticated(user))
 
 
-# Please keep AdminPOTemplateSubset in sync with this, unless you
-# know exactly what you are doing.
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     """Controls administration of an `IPOTemplate`.
 
@@ -1127,6 +1165,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
 
     Product owners does not have administrative privileges.
     """
+
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplate
 
@@ -1283,23 +1322,20 @@ class EditProductRelease(EditByOwnersOrAdmins):
             self, user)
 
 
-class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+class ViewProductRelease(AnonymousAuthorization):
+
+    usedfor = IProductRelease
+
+
+class AdminTranslationImportQueueEntry(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
-            return True
-
-        # As a special case, the Ubuntu translation group owners can
-        # manage Ubuntu uploads.
-        if self.obj.isUbuntuAndIsUserTranslationGroupOwner(user.person):
-            return True
-
-        return False
+        return self.obj.canAdmin(user)
 
 
-class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
+class EditTranslationImportQueueEntry(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITranslationImportQueueEntry
 
@@ -1307,12 +1343,7 @@ class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
         """Anyone who can admin an entry, plus its owner or the owner of the
         product or distribution, can edit it.
         """
-        if AdminTranslationImportQueueEntry.checkAuthenticated(self, user):
-            return True
-        if self.obj.isUserUploaderOrOwner(user.person):
-            return True
-
-        return False
+        return self.obj.canEdit(user)
 
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
@@ -1619,33 +1650,6 @@ class AdminBranch(AuthorizationBase):
                 user.in_bazaar_experts)
 
 
-# Please keep this in sync with AdminPOTemplateDetails. Note that
-# this permission controls access to browsing into individual
-# potemplates, but it's on a different object (POTemplateSubset)
-# from AdminPOTemplateDetails, even though it looks almost identical
-class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
-    """Controls administration of an `IPOTemplateSubset`.
-
-    Allow all persons that can also administer the translations to
-    which this template belongs to and also translation group owners.
-
-    Product owners does not have administrative privileges.
-    """
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IPOTemplateSubset
-
-    def checkAuthenticated(self, user):
-        template_set = self.obj
-        if template_set.distroseries is not None:
-            distribution = template_set.distroseries.distribution
-            return (
-                AdminDistributionTranslations(
-                    distribution).checkAuthenticated(user))
-        else:
-            # Template is on a product.
-            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user)
-
-
 class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
@@ -1655,6 +1659,7 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         Distribution managers can also manage IDistroSeries
         """
+
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
 
@@ -1713,6 +1718,29 @@ class BranchMergeProposalView(AuthorizationBase):
         return (AccessBranch(self.obj.source_branch).checkUnauthenticated()
                 and
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
+
+
+class PreviewDiffView(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IPreviewDiff
+
+    @property
+    def bmp_view(self):
+        return BranchMergeProposalView(self.obj.branch_merge_proposal)
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the preview diff?
+
+        The user can see a preview diff if they can see the merge proposal.
+        """
+        return self.bmp_view.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        """Is anyone able to view the branch merge proposal?
+
+        The user can see a preview diff if they can see the merge proposal.
+        """
+        return self.bmp_view.checkUnauthenticated()
 
 
 class CodeReviewVoteReferenceEdit(AuthorizationBase):

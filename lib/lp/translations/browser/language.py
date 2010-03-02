@@ -228,7 +228,7 @@ class LanguageView(TranslationsMixin, LaunchpadView):
                 break
 
             # For merged account add the target account
-            if translator_iter.merged != None:
+            if translator.merged != None:
                 translator_target = translator.merged
             else:
                 translator_target = translator

@@ -18,7 +18,8 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -513,6 +514,96 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.archive.disable()
         self.assertRaises(AssertionError, self.archive.disable)
 
+class TestCollectLatestPublishedSources(TestCaseWithFactory):
+    """Ensure that the private helper method works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestCollectLatestPublishedSources, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create an archive with some published sources. We'll store
+        # a reference to the naked archive so that we can call
+        # the private method which is not defined on the interface.
+        self.archive = self.factory.makeArchive()
+        self.naked_archive = removeSecurityProxy(self.archive)
+
+        self.pub_1 = self.publisher.getPubSource(
+            version='0.5.11~ppa1', archive=self.archive, sourcename="foo",
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.pub_2 = self.publisher.getPubSource(
+            version='0.5.11~ppa2', archive=self.archive, sourcename="foo",
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.pub_3 = self.publisher.getPubSource(
+            version='0.9', archive=self.archive, sourcename="bar",
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def test_collectLatestPublishedSources_returns_latest(self):
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual('0.5.11~ppa2', pubs[0].source_package_version)
+
+    def test_collectLatestPublishedSources_returns_published_only(self):
+        # Set the status of the latest pub to DELETED and ensure that it
+        # is not returned.
+        self.pub_2.secure_record.status = PackagePublishingStatus.DELETED
+
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+
+
+class TestArchivePrivacySwitching(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Create a public and a private PPA."""
+        super(TestArchivePrivacySwitching, self).setUp()
+        self.public_ppa = self.factory.makeArchive()
+        self.private_ppa = self.factory.makeArchive()
+        self.private_ppa.buildd_secret = 'blah'
+        self.private_ppa.private = True
+
+    def make_ppa_private(self, ppa):
+        """Helper method to privatise a ppa."""
+        ppa.private = True
+        ppa.buildd_secret = "secret"
+
+    def make_ppa_public(self, ppa):
+        """Helper method to make a PPA public (and use for assertRaises)."""
+        ppa.private = False
+        ppa.buildd_secret = ''
+
+    def test_switch_privacy_no_pubs_succeeds(self):
+        # Changing the privacy is fine if there are no publishing
+        # records.
+        self.make_ppa_private(self.public_ppa)
+        self.assertTrue(self.public_ppa.private)
+
+        self.private_ppa.private = False
+        self.assertFalse(self.private_ppa.private)
+
+    def test_switch_privacy_with_pubs_fails(self):
+        # Changing the privacy is not possible when the archive already
+        # has published sources.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        publisher.getPubSource(archive=self.public_ppa)
+        publisher.getPubSource(archive=self.private_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_private, self.public_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

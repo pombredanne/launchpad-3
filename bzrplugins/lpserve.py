@@ -92,7 +92,7 @@ class cmd_launchpad_server(Command):
         lp_server = get_lp_server(
             int(user_id), branchfs_endpoint_url,
             upload_directory, mirror_directory)
-        lp_server.setUp()
+        lp_server.start_server()
 
         old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
         try:
@@ -102,7 +102,7 @@ class cmd_launchpad_server(Command):
             self.run_server(smart_server)
         finally:
             lockdir._DEFAULT_TIMEOUT_SECONDS = old_lockdir_timeout
-            lp_server.tearDown()
+            lp_server.stop_server()
 
 
 register_command(cmd_launchpad_server)

@@ -30,6 +30,7 @@ __all__ = [
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
+    'GoogleLaunchpadFunctionalLayer',
     'GoogleServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
@@ -241,15 +242,23 @@ class BaseLayer:
     # in tearTestDown.
     disable_thread_check = False
 
+    # A flag to make services like Librarian and Memcached to persist
+    # between test runs. This flag is set in setUp() by looking at the
+    # LP_PERSISTENT_TEST_SERVICES environment variable.
+    persist_test_services = False
+
     @classmethod
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
+        BaseLayer.persist_test_services = (
+            os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
         # Kill any Memcached or Librarian left running from a previous
         # test run, or from the parent test process if the current
         # layer is being run in a subprocess.
-        kill_by_pidfile(MemcachedLayer.getPidFile())
-        LibrarianTestSetup().tearDown()
+        if not BaseLayer.persist_test_services:
+            kill_by_pidfile(MemcachedLayer.getPidFile())
+            LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
             DatabaseLayer.connect().close()
@@ -461,6 +470,9 @@ class MemcachedLayer(BaseLayer):
     def setUp(cls):
         # Create a client
         MemcachedLayer.client = memcache_client_factory()
+        if (BaseLayer.persist_test_services and
+            os.path.exists(MemcachedLayer.getPidFile())):
+            return
 
         # First, check to see if there is a memcached already running.
         # This happens when new layers are run as a subprocess.
@@ -496,16 +508,18 @@ class MemcachedLayer(BaseLayer):
 
         # Register an atexit hook just in case tearDown doesn't get
         # invoked for some perculiar reason.
-        atexit.register(kill_by_pidfile, pidfile)
+        if not BaseLayer.persist_test_services:
+            atexit.register(kill_by_pidfile, pidfile)
 
     @classmethod
     @profiled
     def tearDown(cls):
         MemcachedLayer.client.disconnect_all()
         MemcachedLayer.client = None
-        # Kill our memcached, and there is no reason to be nice about it.
-        kill_by_pidfile(MemcachedLayer.getPidFile())
-        MemcachedLayer._memcached_process = None
+        if not BaseLayer.persist_test_services:
+            # Kill our memcached, and there is no reason to be nice about it.
+            kill_by_pidfile(MemcachedLayer.getPidFile())
+            MemcachedLayer._memcached_process = None
 
     @classmethod
     @profiled
@@ -1155,8 +1169,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
         disconnect_stores()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
-                               GoogleServiceLayer):
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     @profiled
@@ -1193,6 +1206,31 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
 
         # Disconnect Storm so it doesn't get in the way of database resets
         disconnect_stores()
+
+
+class GoogleLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,
+                                     GoogleServiceLayer):
+    """Provides Google service in addition to LaunchpadFunctionalLayer."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
 
 
 
@@ -1390,7 +1428,7 @@ class MockHTTPTask:
         return self.request._orig_env
 
 
-class PageTestLayer(LaunchpadFunctionalLayer):
+class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
     """Environment for page tests.
     """
     @classmethod
@@ -1842,6 +1880,7 @@ class BaseWindmillLayer(AppServerLayer):
                 'rooturl: http://blueprints.launchpad.dev:8085/'),
             ('vhost.bugs', 'rooturl: http://bugs.launchpad.dev:8085/'),
             ('vhost.code', 'rooturl: http://code.launchpad.dev:8085/'),
+            ('vhost.testopenid', 'rooturl: http://testopenid.dev:8085/'),
             ('vhost.translations',
                 'rooturl: http://translations.launchpad.dev:8085/'))
         for site in sites:

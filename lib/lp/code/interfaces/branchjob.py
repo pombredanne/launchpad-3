@@ -13,6 +13,8 @@ __all__ = [
     'IBranchJob',
     'IBranchDiffJob',
     'IBranchDiffJobSource',
+    'IBranchScanJob',
+    'IBranchScanJobSource',
     'IBranchUpgradeJob',
     'IBranchUpgradeJobSource',
     'IReclaimBranchSpaceJob',
@@ -31,7 +33,7 @@ from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
-from lp.services.job.interfaces.job import IJob, IRunnableJob
+from lp.services.job.interfaces.job import IJob, IRunnableJob, IJobSource
 
 
 class IBranchJob(Interface):
@@ -74,26 +76,29 @@ class IBranchDiffJobSource(Interface):
         """
 
 
+class IBranchScanJob(IRunnableJob):
+    """ A job to scan branches."""
+
+
+class IBranchScanJobSource(IJobSource):
+
+    def create(branch):
+        """Scan a branch for new revisions.
+
+        :param branch: The database branch to upgrade.
+        """
+
 class IBranchUpgradeJob(IRunnableJob):
     """A job to upgrade branches with out-of-date formats."""
 
-    def run():
-        """Upgrade the branch to the format specified."""
 
-
-class IBranchUpgradeJobSource(Interface):
+class IBranchUpgradeJobSource(IJobSource):
 
     def create(branch):
         """Upgrade a branch to a more current format.
 
         :param branch: The database branch to upgrade.
         """
-
-    def iterReady():
-        """Iterate through all IBranchUpgradeJobs."""
-
-    def contextManager():
-        """Get a context for running this kind of job in."""
 
 
 class IRevisionMailJob(IRunnableJob):
@@ -174,6 +179,30 @@ class IRosettaUploadJobSource(Interface):
         :return: Any jobs for `branch` (and newer than `since`, if
             given) whose status is neither "complete" nor "failed."
         """
+
+    def providesTranslationFiles(branch):
+        """Is anyone importing translation files from this branch?
+
+        This is used to check if any product series is related to the branch
+        in order to decide if a job needs to be created.
+
+        :param branch: The `IBranch` that is being scanned.
+        :return: Boolean.
+        """
+
+    def findProductSeries(branch, force_translations_upload=False):
+        """Find `ProductSeries` that import translation files from branch.
+
+        :param branch: The `IBranch` that is being scanned.
+        :param force_translations_upload: If True, return all
+            `ProductSeries` attached to this branch regardless of their
+            import mode settings.
+        :return: a list of `IProductSeries`.
+        """
+        # XXX JeroenVermeulen 2010-01-12 bug=521095: 
+        # force_translations_upload was meant to ignore import settings
+        # for one specific ProductSeries attached to the branch, not any
+        # ProductSeries attached to the branch.
 
 
 class IReclaimBranchSpaceJob(IRunnableJob):
