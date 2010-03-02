@@ -11,9 +11,7 @@ __all__ = [
 
 from bzrlib.revision import NULL_REVISION
 
-from zope.component import adapter, getUtility
-
-from lp.codehosting.scanner import events
+from zope.component import getUtility
 
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchcollection import IAllBranches
