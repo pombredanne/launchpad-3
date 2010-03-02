@@ -13,7 +13,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from storm.locals import Or
 
-from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import ISlaveStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -75,7 +75,7 @@ class Language(SQLBase):
         Norwegian languages Nynorsk (nn) and Bokmaal (nb) are similar
         and may provide suggestions for each other.
         """
-        if self.code in ['pt_BR',]:
+        if self.code in ['pt_BR']:
             return None
         elif self.code == 'nn':
             return Language.byCode('nb')
@@ -166,7 +166,7 @@ class LanguageSet:
         language = self.getLanguageByCode(code)
 
         if language is None:
-            raise NotFoundError, code
+            raise NotFoundError(code)
 
         return language
 
@@ -255,7 +255,8 @@ class LanguageSet:
             results = None
 
         return results
-    
+
     def getAll(self):
         """See `ILanguageSet`."""
-        return ISlaveStore(Language).find(Language).order_by(Language.englishname)
+        return ISlaveStore(Language).find(Language).order_by(
+            Language.englishname)

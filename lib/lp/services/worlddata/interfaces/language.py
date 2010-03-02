@@ -19,8 +19,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from lazr.restful.declarations import (
     export_as_webservice_entry, export_as_webservice_collection,
-    collection_default_content, export_read_operation, exported,
-    operation_parameters)
+    collection_default_content, exported)
 
 
 class TextDirection(DBEnumeratedType):
@@ -134,8 +133,8 @@ class ILanguage(Interface):
 
     abbreviated_text_dir = exported(
         TextLine(
-            title=(u'The abbreviated form of the text direction, suitable for use'
-                   u' in HTML files.'),
+            title=(u'The abbreviated form of the text direction, suitable'
+                   u' for use in HTML files.'),
             required=True,
             readonly=True),
         exported_as='abbreviated_text_direction')
