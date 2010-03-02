@@ -393,9 +393,35 @@ def parse_fingerprints(gpg_output):
         ]
 
 
+def run_native_gpg(command_line, log):
+    """Run GPG using the user's real keyring."""
+    # Need to override GNUPGHOME or we'll get a dummy GPG in a temp
+    # directory, which won't find any keys.
+    env = os.environ.copy()
+    if 'GNUPGHOME' in env:
+        del env['GNUPGHOME']
+    pipe = subprocess.Popen(
+        command_line, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = pipe.communicate()
+    if stderr != '':
+        log.error(stderr)
+    if pipe.returncode != 0:
+        raise Exception('GPG error during "%s"' % ' '.join(command_line))
+
+    return stdout
+
+
 def add_gpg_key(person, fingerprint, log):
     """Add the GPG key with the given fingerprint to `person`."""
     log.info("Adding GPG key %s" % fingerprint)
+
+    command_line = [
+        'gpg',
+        '--keyserver', 'keyserver.launchpad.dev',
+        '--send-key', fingerprint
+        ]
+    run_native_gpg(command_line, log)
+
     gpghandler = getUtility(IGPGHandler)
     key = gpghandler.retrieveKey(fingerprint)
 
@@ -417,21 +443,9 @@ def attach_gpg_keys(options, person, log):
     """Attach the selected GPG key to `person`."""
     log.info("Looking for GPG keys.")
 
-    # Need to override GNUPGHOME or we'll get a dummy GPG in a temp
-    # directory, which won't find any keys.
-    env = os.environ.copy()
-    if 'GNUPGHOME' in env:
-        del env['GNUPGHOME']
-    pipe = subprocess.Popen(
-        ['gpg', '--fingerprint', options.email], env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = pipe.communicate()
-    if stderr != '':
-        log.error(stderr)
-    if pipe.returncode != 0:
-        raise Exception("GPG error.")
+    output = run_native_gpg(['gpg', '--fingerprint', options.email], log)
 
-    fingerprints = parse_fingerprints(stdout)
+    fingerprints = parse_fingerprints(output)
     if len(fingerprints) == 0:
         log.warn("No GPG key fingerprints found!")
     for fingerprint in fingerprints:
