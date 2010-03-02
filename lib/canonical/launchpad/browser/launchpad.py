@@ -87,15 +87,17 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProductSet)
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -472,8 +474,14 @@ class LoginStatus:
         if full_url.endswith('/'):
             full_url = full_url[:-1]
         logout_url_end = '/+logout'
+        openid_callback_url_end = '/+openid-callback'
         if full_url.endswith(logout_url_end):
             full_url = full_url[:-len(logout_url_end)]
+        elif full_url.endswith(openid_callback_url_end):
+            full_url = full_url[:-len(openid_callback_url_end)]
+        else:
+            # No need to remove anything from full_url.
+            pass
         return '%s/+login%s' % (full_url, query_string)
 
 
@@ -547,6 +555,7 @@ class LaunchpadRootNavigation(Navigation):
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
+        '+countries': ICountrySet,
         'distros': IDistributionSet,
         '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
@@ -557,7 +566,7 @@ class LaunchpadRootNavigation(Navigation):
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         'projects': IProductSet,
-        'projectgroups': IProjectSet,
+        'projectgroups': IProjectGroupSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
@@ -565,6 +574,7 @@ class LaunchpadRootNavigation(Navigation):
         'token': ILoginTokenSet,
         '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
+        'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
         '+rpconfig': IOpenIDRPConfigSet,
         # These three have been renamed, and no redirects done, as the old

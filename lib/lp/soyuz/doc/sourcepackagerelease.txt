@@ -265,11 +265,11 @@ the same permission on it.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov.archive.buildd_secret = 'boing'
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True)
 
     >>> private_publication = test_publisher.getPubSource(
-    ...     archive=cprov.archive)
+    ...     archive=cprov_private_ppa)
 
     >>> test_sourcepackagerelease = private_publication.sourcepackagerelease
     >>> print test_sourcepackagerelease.title

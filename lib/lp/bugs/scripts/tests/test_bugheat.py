@@ -1,4 +1,3 @@
-
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -8,11 +7,13 @@ __metaclass__ = type
 
 import unittest
 
+from datetime import datetime, timedelta
+
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.scripts.bugheat import BugHeatCalculator, BugHeatConstants
 from lp.testing import TestCaseWithFactory
-
 
 class TestBugHeatCalculator(TestCaseWithFactory):
     """Tests for the BugHeatCalculator class."""
@@ -176,6 +177,35 @@ class TestBugHeatCalculator(TestCaseWithFactory):
             expected_heat, actual_heat,
             "Expected bug heat did not match actual bug heat. "
             "Expected %s, got %s" % (expected_heat, actual_heat))
+
+    def test_getBugHeat_complete_bugs(self):
+        # Bug which are in a resolved status don't have heat at all.
+        complete_bug = self.factory.makeBug()
+        heat = BugHeatCalculator(complete_bug).getBugHeat()
+        self.assertNotEqual(
+            0, heat,
+            "Expected bug heat did not match actual bug heat. "
+            "Expected a positive value, got 0")
+        complete_bug.bugtasks[0].transitionToStatus(
+            BugTaskStatus.INVALID, complete_bug.owner)
+        heat = BugHeatCalculator(complete_bug).getBugHeat()
+        self.assertEqual(
+            0, heat,
+            "Expected bug heat did not match actual bug heat. "
+            "Expected %s, got %s" % (0, heat))
+
+    def test_getBugHeat_decay(self):
+        # Every month, a bug that wasn't touched has its heat reduced by 10%.
+        aging_bug = self.factory.makeBug()
+        fresh_heat = BugHeatCalculator(aging_bug).getBugHeat()
+        aging_bug.date_last_updated = (
+            aging_bug.date_last_updated - timedelta(days=32))
+        expected = int(fresh_heat * 0.9)
+        heat = BugHeatCalculator(aging_bug).getBugHeat()
+        self.assertEqual(
+            expected, heat,
+            "Expected bug heat did not match actual bug heat. "
+            "Expected %s, got %s" % (expected, heat))
 
 
 def test_suite():

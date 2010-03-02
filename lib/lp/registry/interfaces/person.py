@@ -49,6 +49,7 @@ from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
+
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.interface import copy_field
@@ -61,43 +62,42 @@ from lazr.restful.declarations import (
     operation_returns_entry, rename_parameters_as, webservice_error)
 from lazr.restful.fields import CollectionField, Reference
 
-from canonical.launchpad import _
-
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload,
-    is_private_membership_person, is_public_person, LogoImageUpload,
+    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
-    StrippedTextLine)
+    StrippedTextLine, is_private_membership_person, is_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
+from canonical.launchpad.interfaces.validation import (
+    validate_new_person_email, validate_new_team_email)
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
+
 from lp.app.interfaces.headings import IRootContext
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications)
+from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasMergeProposals, IHasRequestedReviews)
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
-from lp.services.worlddata.interfaces.language import ILanguage
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.location import (
     IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications)
 from lp.registry.interfaces.teammembership import (
     ITeamMembership, ITeamParticipation, TeamMembershipStatus)
-from canonical.launchpad.interfaces.validation import (
-    validate_new_team_email, validate_new_person_email)
 from lp.registry.interfaces.wikiname import IWikiName
-from lp.registry.interfaces.wikiname import IWikiName
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.worlddata.interfaces.language import ILanguage
 
 
 PRIVATE_TEAM_PREFIX = 'private-'
@@ -480,7 +480,7 @@ class IHasStanding(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy):
+                    IPrivacy, IHasBugs):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -510,14 +510,15 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             "in listings of bugs or on a person's membership table."))
     iconID = Int(title=_('Icon ID'), required=True, readonly=True)
 
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/person-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to you. Traditionally this "
-            "is a logo, a small picture or a personal mascot. It should be "
-            "no bigger than 50kb in size."))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/person-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to you. Traditionally this "
+                "is a logo, a small picture or a personal mascot. It should be "
+                "no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
 
     mugshot = exported(MugshotImageUpload(
@@ -1025,18 +1026,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
         To be used when membership changes are enacted. Only meant to be
         used between TeamMembership and Person objects.
-        """
-
-    def searchTasks(search_params, *args):
-        """Search IBugTasks with the given search parameters.
-
-        :search_params: a BugTaskSearchParams object
-        :args: any number of BugTaskSearchParams objects
-
-        If more than one BugTaskSearchParams is given, return the union of
-        IBugTasks which match any of them.
-
-        Return an iterable of matching results.
         """
 
     def getLatestMaintainedPackages():
