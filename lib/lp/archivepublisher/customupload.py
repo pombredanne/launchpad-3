@@ -131,6 +131,8 @@ class CustomUpload:
                     raise CustomUploadTarballBadSymLink(
                         self.tarfile_path, member.name, member.linkname)
 
+        return True
+
     def extract(self):
         """Extract the custom upload to a temporary directory."""
         assert self.tmpdir is None, "Have already extracted tarfile"

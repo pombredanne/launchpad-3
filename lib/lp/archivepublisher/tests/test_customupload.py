@@ -98,41 +98,54 @@ class TestTarfileVerification(unittest.TestCase):
         tar_file.addfile(info)
         return tar_file
 
+    def assertFails(self, exception, tar_file):
+        try:
+            self.assertRaises(
+                exception,
+                self.custom_processor.verifyBeforeExtracting,
+                tar_file)
+        finally:
+            tar_file.close()
+            self.tar_fileobj.close()
+
+    def assertPasses(self, tar_file):
+        try:
+            result = self.custom_processor.verifyBeforeExtracting(tar_file)
+            self.assertTrue(result)
+        finally:
+            tar_file.close()
+            self.tar_fileobj.close()
+
     def testFailsToExtractBadSymlink(self):
         """Fail if a symlink's target is outside the tmp tree."""
         tar_file = self.createTarfileWithSymlink(target="/etc/passwd")
-        self.assertRaises(
-            CustomUploadTarballBadSymLink,
-            self.custom_processor.verifyBeforeExtracting, tar_file)
+        self.assertFails(CustomUploadTarballBadSymLink, tar_file)
+        return
 
     def testFailsToExtractBadFileType(self):
         """Fail if a file in a tarfile is not a regular file or a symlink."""
         tar_file = self.createTarfileWithFile(tarfile.FIFOTYPE)
-        self.assertRaises(
-            CustomUploadTarballInvalidFileType,
-            self.custom_processor.verifyBeforeExtracting, tar_file)
+        self.assertFails(CustomUploadTarballInvalidFileType, tar_file)
 
     def testFailsToExtractBadFileLocation(self):
         """Fail if the file resolves to a path outside the tmp tree."""
         tar_file = self.createTarfileWithFile(tarfile.REGTYPE, "../outside")
-        self.assertRaises(
-            CustomUploadTarballBadFile,
-            self.custom_processor.verifyBeforeExtracting, tar_file)
+        self.assertFails(CustomUploadTarballBadFile, tar_file)
 
     def testRegularFileDoesntRaise(self):
         """Adding a normal file should pass inspection."""
         tar_file = self.createTarfileWithFile(tarfile.REGTYPE)
-        self.custom_processor.verifyBeforeExtracting(tar_file)
+        self.assertPasses(tar_file)
 
     def testDirectoryDoesntRaise(self):
         """Adding a directory should pass inspection."""
         tar_file = self.createTarfileWithFile(tarfile.DIRTYPE)
-        self.custom_processor.verifyBeforeExtracting(tar_file)
+        self.assertPasses(tar_file)
 
     def testSymlinkDoesntRaise(self):
         """Adding a symlink should pass inspection."""
         tar_file = self.createTarfileWithSymlink(target="something/blah")
-        self.custom_processor.verifyBeforeExtracting(tar_file)
+        self.assertPasses(tar_file)
 
     def test_extract(self):
         """Test that the extract method calls the verify function.
