@@ -119,8 +119,6 @@ def parse_args(arguments):
         help="DANGEROUS: run even if the database looks production-like.")
     parser.add_option('-n', '--dry-run', action='store_true', dest='dry_run',
         help="Do not commit changes.")
-    parser.add_option('-A', '--amd64', action='store_true', dest='amd64',
-        help="Support amd64 architecture.")
     parser.add_option('-e', '--email', action='store', dest='email',
         default=default_email,
         help=(
@@ -191,12 +189,6 @@ def add_architecture(distroseries, architecture_name):
         architecturetag=architecture_name)
     store.add(archseries)
 
-
-def add_architectures(distroseries, options):
-    """Add support for additional architectures as specified by options."""
-    if options.amd64:
-        add_architecture(distroseries, 'amd64')
-    
 
 def create_sections(distroseries):
     """Set up some sections for `distroseries`."""
@@ -329,7 +321,7 @@ def populate(distribution, parent_series_name, uploader_name, options, log):
 
     log.info("Configuring sections...")
     create_sections(parent_series)
-    add_architectures(parent_series, options)
+    add_architecture(parent_series, 'amd64')
 
     log.info("Configuring components and permissions...")
     uploader = get_person_set().getByName(uploader_name)
