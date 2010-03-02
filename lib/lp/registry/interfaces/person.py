@@ -86,7 +86,7 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasMergeProposals, IHasRequestedReviews)
-from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
@@ -635,12 +635,12 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         CollectionField(
             title=_("List of valid OpenPGP keys ordered by ID"),
             readonly=False, required=False,
-            value_type=Reference(schema=IGPGKeySet)))
+            value_type=Reference(schema=IGPGKey)))
     pendinggpgkeys = exported(
         CollectionField(
             title=_("Set of fingerprints pending confirmation"),
             readonly=False, required=False,
-            value_type=Reference(schema=IGPGKeySet)))
+            value_type=Reference(schema=IGPGKey)))
     inactivegpgkeys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(

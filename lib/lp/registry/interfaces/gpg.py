@@ -25,12 +25,10 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from lp.registry.interfaces.role import IHasOwner
-from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    call_with, collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
-
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_collection_of)
 
 def valid_fingerprint(fingerprint):
     """Is the fingerprint of valid form."""
@@ -118,50 +116,27 @@ class IGPGKey(IHasOwner):
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
 
-    export_as_webservice_collection(IGPGKey)
-
-    @call_with(ownerID=REQUEST_USER)
-    @operation_parameters(
-      keyid=TextLine(title=_("KeyID"), required=True),
-      fingerprint=TextLine(title=_("fingerprint"), required=True),
-      keysize=Int(title=_("KeySize"), required=True),
-      algorithm=Choice(
-            title=_("GPGKeyAlgorithm"), required=True,
-            vocabulary=DBEnumeratedType))
-    @export_write_operation()
     def new(ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=True):
         """Create a new GPGKey pointing to the given Person."""
 
-    @operation_parameters(
-      key_id=TextLine(title=_("KeyID"), required=True))
-    @export_read_operation()
     def get(key_id, default=None):
         """Return the GPGKey object for the given id.
 
         Return the given default if there's no object with the given id.
         """
-    @operation_parameters(
-      fingerprint=TextLine(title=_("fingerprint"), required=True))
-    @export_read_operation()
+
     def getByFingerprint(fingerprint, default=None):
         """Return UNIQUE result for a given Key fingerprint including
         inactive ones.
         """
 
-    @operation_parameters()
-    @export_read_operation()
-    @collection_default_content()
     def getGPGKeys(ownerid=None, active=True):
         """Return OpenPGP keys ordered by id.
 
         Optionally for a given owner and or a given status.
         """
 
-    @call_with(people=REQUEST_USER)
-    @export_read_operation(
-      #self=??? how to get the instance?
-    )
     def getGPGKeysForPeople(self, people):
         """Return OpenPGP keys for a set of people."""
 
