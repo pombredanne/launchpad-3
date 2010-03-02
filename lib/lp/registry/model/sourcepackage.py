@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import classProvides, implements
 from zope.component import getUtility
 
@@ -563,6 +562,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             include_status=[PackagePublishingStatus.PUBLISHED])
         if latest_publishing is not None:
             return latest_publishing.component
+        else:
+            return None
+
+    @property
+    def latest_published_component_name(self):
+        """See `ISourcePackage`."""
+        if self.latest_published_component is not None:
+            return self.latest_published_component.name
         else:
             return None
 
