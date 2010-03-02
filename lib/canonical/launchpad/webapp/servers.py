@@ -1279,12 +1279,8 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
     implements(canonical.launchpad.layers.WebServiceLayer)
 
     def __init__(self, body_instream=None, environ=None, version=None, **kw):
-        if version is None:
-            default_server_url = 'http://api.launchpad.dev'
-        else:
-            default_server_url = 'http://api.launchpad.dev/%s' % version
         test_environ = {
-            'SERVER_URL': default_server_url,
+            'SERVER_URL': 'http://api.launchpad.dev',
             'HTTP_HOST': 'api.launchpad.dev',
             }
         if environ is not None:

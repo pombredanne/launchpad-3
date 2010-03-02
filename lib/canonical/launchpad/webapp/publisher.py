@@ -494,10 +494,6 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    #from canonical.launchpad.webapp.servers import WebServiceTestRequest
-    #if isinstance(request, WebServiceTestRequest):
-    #    import pdb; pdb.set_trace()
-
     if request is None:
         if rootsite is None:
             rootsite = 'mainsite'
