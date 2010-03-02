@@ -72,15 +72,16 @@ class TestCustomUpload(unittest.TestCase):
 
 class TestTarfileVerification(unittest.TestCase):
 
-    tarfile_path = "/tmp/_verify_extract"
 
     def setUp(self):
-        self.custom_processor = CustomUpload(None, self.tarfile_path, None)
+        self.tarfile_path = "/tmp/_verify_extract"
+        self.tarfile_name = os.path.join(self.tarfile_path, "test_tarfile.tar")
+        self.custom_processor = CustomUpload(None, self.tarfile_name, None)
         self.custom_processor.tmpdir = "/tmp/_extract_test"
 
     def createTarfile(self):
-        tar_fileobj = cStringIO.StringIO()
-        return tarfile.open(name=None, mode="w", fileobj=tar_fileobj)
+        self.tar_fileobj = cStringIO.StringIO()
+        return tarfile.open(name=None, mode="w", fileobj=self.tar_fileobj)
 
     def createTarfileWithSymlink(self, target):
         info = tarfile.TarInfo(name="i_am_a_symlink")
@@ -132,6 +133,28 @@ class TestTarfileVerification(unittest.TestCase):
         """Adding a symlink should pass inspection."""
         tar_file = self.createTarfileWithSymlink(target="something/blah")
         self.custom_processor.verifyBeforeExtracting(tar_file)
+
+    def test_extract(self):
+        """Test that the extract method calls the verify function.
+        
+        This test is different from the previous tests in that it actually
+        pokes a fake tar file on disk.  This is slower, so it's only done
+        once, here.
+        """
+        # Make a bad tarfile and poke it into the custom processor.
+        self.custom_processor.tmpdir = None
+        try:
+            os.makedirs(self.tarfile_path)
+            tar_file = tarfile.open(self.tarfile_name, mode="w")
+            info = tarfile.TarInfo("test_file")
+            info.type = tarfile.FIFOTYPE
+            tar_file.addfile(info)
+            tar_file.close()
+            self.assertRaises(
+                CustomUploadTarballInvalidFileType,
+                self.custom_processor.extract)
+        finally:
+            shutil.rmtree(self.tarfile_path)
 
 
 def test_suite():
