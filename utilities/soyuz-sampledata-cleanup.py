@@ -444,6 +444,13 @@ def attach_gpg_keys(options, person, log):
         add_gpg_key(person, fingerprint, log)
 
 
+def create_ppa(distribution, person, name):
+    """Create a PPA for `person`."""
+    LaunchpadObjectFactory().makeArchive(
+        distribution=distribution, owner=person, name=name, virtualized=False,
+        description="Automatically created test PPA.")
+
+
 def main(argv):
     options, args, log = parse_args(argv[1:])
 
@@ -464,6 +471,8 @@ def main(argv):
     gave_email = (options.email != default_email)
     if gave_email:
         attach_gpg_keys(options, person, log)
+
+    create_ppa(ubuntu, person, 'test-ppa')
        
     if options.dry_run:
         txn.abort()
