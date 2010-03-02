@@ -202,7 +202,7 @@
             tal:attributes="src string:${lp_js}/code/branchmergeproposal.status.js">
     </script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/codereview.js"></script>
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.reviewcomment.js"></script>
 
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/comment.js"></script>
