@@ -2111,14 +2111,19 @@ class ViewSourcePackagePublishingHistory(AuthorizationBase):
     permission = "launchpad.View"
     usedfor = ISourcePackagePublishingHistory
 
+    def __init__(self, obj):
+        super(ViewSourcePackagePublishingHistory, self).__init__(obj)
+        self.view_archive = ViewArchive(obj.archive)
+
     def checkAuthenticated(self, user):
-        view_archive = ViewArchive(self.obj.archive)
-        if view_archive.checkAuthenticated(user):
+        # Defer the decision to the `IArchive` security wrapper.
+        if self.view_archive.checkAuthenticated(user):
             return True
         return user.in_admin
 
     def checkUnauthenticated(self):
-        return not self.obj.archive.private
+        # Defer the decision to the `IArchive` security wrapper.
+        return self.view_archive.checkUnauthenticated()
 
 
 class EditPublishing(AuthorizationBase):
