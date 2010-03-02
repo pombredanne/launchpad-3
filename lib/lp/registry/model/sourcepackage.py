@@ -15,6 +15,7 @@ from operator import attrgetter
 from zope.interface import classProvides, implements
 from zope.component import getUtility
 
+from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
@@ -566,7 +567,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             return None
 
     @property
-    def latest_published_component_name(self):
+    def component_name(self):
         """See `ISourcePackage`."""
         if self.latest_published_component is not None:
             return self.latest_published_component.name
