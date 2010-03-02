@@ -110,13 +110,13 @@ class CustomUpload:
         user running this process has access to.
 
         Here, we make sure that the file will extract to somewhere under
-        the tmp dir, that the file is a regular file or a symlink only, and
-        that symlinks only resolve to stuff under the tmp dir.
+        the tmp dir, that the file is a directory, regular file or a symlink
+        only, and that symlinks only resolve to stuff under the tmp dir.
         """
         for member in tar.getmembers():
             # member is a TarInfo object.
 
-            if not member.isreg() or not member.issym():
+            if not (member.isreg() or member.issym() or member.isdir()):
                 raise CustomUploadTarballInvalidFileType(
                     self.tarfile_path, member.name)
 
