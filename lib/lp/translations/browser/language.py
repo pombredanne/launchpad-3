@@ -216,9 +216,10 @@ class LanguageView(TranslationsMixin, LaunchpadView):
     @property
     def top_contributors(self):
         """
-        Get top 20 contributors for a language.
+        Get the top 20 contributors for a language.
 
-        Instead of merged account, show the merged target account.
+        If an account has been merged, the account into which it was
+        merged will be returned.
         """
         translators = []
         for translator in reversed(list(self.context.translators)):
