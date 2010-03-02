@@ -28,6 +28,9 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.model.buildqueue import BuildQueue
 
 
+UPLOADLOG_FILENAME = 'uploader.log'
+
+
 class BuildBase:
     """A mixin class providing functionality for farm jobs that build a
     package.
@@ -92,6 +95,28 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.buildlog)
 
+    def getUploadLogContent(self, root, leaf):
+        """Retrieve the upload log contents.
+
+        :param root: Root directory for the uploads
+        :param leaf: Leaf for this particular upload
+        :return: Contents of log file or message saying no log file was found.
+        """
+        # Retrieve log file content.
+        possible_locations = (
+            'failed', 'failed-to-move', 'rejected', 'accepted')
+        for location_dir in possible_locations:
+            log_filepath = os.path.join(root, location_dir, leaf,
+                UPLOADLOG_FILENAME)
+            if os.path.exists(log_filepath):
+                uploader_log_file = open(log_filepath)
+                try:
+                    return uploader_log_file.read()
+                finally:
+                    uploader_log_file.close()
+        else:
+            return 'Could not find upload log file'
+
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
         logger = logging.getLogger()
@@ -150,7 +175,7 @@ class BuildBase:
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
-        uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+        uploader_logfilename = os.path.join(upload_dir, UPLOADLOG_FILENAME)
         uploader_command = self.getUploaderCommand(
             upload_leaf, uploader_logfilename)
         logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
@@ -228,22 +253,8 @@ class BuildBase:
             self.binarypackages.count() == 0):
             logger.debug("Build %s upload failed." % self.id)
             self.buildstate = BuildStatus.FAILEDTOUPLOAD
-            # Retrieve log file content.
-            possible_locations = (
-                'failed', 'failed-to-move', 'rejected', 'accepted')
-            for location_dir in possible_locations:
-                log_filepath = os.path.join(
-                    root, location_dir, upload_leaf,
-                    'uploader.log')
-                if os.path.exists(log_filepath):
-                    uploader_log_file = open(log_filepath)
-                    try:
-                        uploader_log_content = uploader_log_file.read()
-                    finally:
-                        uploader_log_file.close()
-                    break
-            else:
-                uploader_log_content = 'Could not find upload log file'
+            uploader_log_content = self.getUploadLogContent(root,
+                upload_leaf)
             # Store the upload_log_contents in librarian so it can be
             # accessed by anyone with permission to see the build.
             self.storeUploadLog(uploader_log_content)
