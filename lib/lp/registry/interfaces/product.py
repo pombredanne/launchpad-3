@@ -60,7 +60,7 @@ from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
@@ -352,7 +352,7 @@ class IProductPublic(
             title=_('Part of'),
             required=False,
             vocabulary='Project',
-            schema=IProject,
+            schema=IProjectGroup,
             description=_(
                 'Super-project. In Launchpad, we can setup a special '
                 '"project group" that is an overarching initiative that '
@@ -721,15 +721,8 @@ class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
     export_as_webservice_entry('project')
 
 # Fix cyclic references.
-IProject['products'].value_type = Reference(IProduct)
+IProjectGroup['products'].value_type = Reference(IProduct)
 IProductRelease['product'].schema = IProduct
-
-# Patch the official_bug_tags field to make sure that it's
-# writable from the API, and not readonly like its definition
-# in IHasBugs.
-writable_obt_field = copy_field(IProduct['official_bug_tags'])
-writable_obt_field.readonly = False
-IProduct._v_attrs['official_bug_tags'] = writable_obt_field
 
 
 class IProductSet(Interface):

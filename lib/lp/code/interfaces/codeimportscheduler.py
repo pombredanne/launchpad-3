@@ -28,7 +28,7 @@ class ICodeImportScheduler(Interface):
     when they need more work to do.
     """
 
-    def getJobForMachine(hostname):
+    def getJobForMachine(hostname, worker_limit):
         """Get a job to run on the slave 'hostname'.
 
         This method selects the most appropriate job for the machine,

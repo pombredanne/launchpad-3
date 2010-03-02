@@ -268,7 +268,7 @@
     <class
         class="lp.registry.model.project.Project">
         <allow
-            interface="lp.registry.interfaces.project.IProjectPublic"/>
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow
             interface="canonical.launchpad.interfaces.IFAQCollection"/>
         <allow
@@ -277,7 +277,7 @@
             interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.registry.interfaces.project.IProjectPublic"/>
+            set_schema="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_schema="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
@@ -314,17 +314,17 @@
                 setAliases"/>
     </class>
     <adapter
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.project.IProjectSet"
+        for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
 
@@ -336,13 +336,13 @@
     <class
         class="lp.registry.model.project.ProjectSet">
         <allow
-            interface="lp.registry.interfaces.project.IProjectSet"/>
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </class>
     <securedutility
         class="lp.registry.model.project.ProjectSet"
-        provides="lp.registry.interfaces.project.IProjectSet">
+        provides="lp.registry.interfaces.projectgroup.IProjectGroupSet">
         <allow
-            interface="lp.registry.interfaces.project.IProjectSet"/>
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </securedutility>
 
     <!-- ProjectSeries -->
@@ -350,7 +350,7 @@
     <class
         class="lp.registry.model.project.ProjectSeries">
         <allow
-            interface="lp.registry.interfaces.project.IProjectSeries"/>
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupSeries"/>
     </class>
 
     <!-- DistributionSourcePackage -->
@@ -910,6 +910,8 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
+        <allow
             interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
         <require
             permission="launchpad.Edit"
@@ -949,7 +951,7 @@
     <class
         class="lp.registry.model.milestone.ProjectMilestone">
         <allow
-            interface="lp.registry.interfaces.milestone.IProjectMilestone"/>
+            interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
     <subscriber
         for="canonical.launchpad.interfaces.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"

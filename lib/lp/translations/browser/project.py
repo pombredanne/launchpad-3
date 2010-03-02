@@ -14,14 +14,14 @@ __all__ = [
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, Link, LaunchpadView)
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.browser.project import ProjectEditView
 from lp.translations.browser.translations import TranslationsMixin
 
 
 class ProjectTranslationsMenu(NavigationMenu):
 
-    usedfor = IProject
+    usedfor = IProjectGroup
     facet = 'translations'
     links = ['products', 'settings', 'overview']
 
@@ -41,7 +41,7 @@ class ProjectTranslationsMenu(NavigationMenu):
 
 
 class ProjectView(LaunchpadView):
-    """A view for `IProject` in the translations context."""
+    """A view for `IProjectGroup` in the translations context."""
 
     label = "Translatable applications"
 

@@ -712,7 +712,7 @@
         classes="
             CodeImportSetNavigation"/>
     <browser:defaultView
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+branches"
         layer="canonical.launchpad.layers.CodeLayer"/>
     <browser:page
@@ -779,14 +779,14 @@
         name="+count-summary"
         template="../templates/branch-count-summary.pt"/>
     <browser:page
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.code.browser.branchlisting.ProjectBranchesView"
         facet="branches"
         permission="zope.Public"
         name="+branches"
         template="../templates/project-branches.pt"/>
     <browser:page
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.code.browser.summary.BranchCountSummaryView"
         facet="branches"
         permission="zope.Public"
@@ -946,6 +946,11 @@
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
 
+    <browser:navigation
+        module="lp.code.browser.diff"
+        classes="
+            PreviewDiffNavigation"/>
+
     <browser:page
         name="+diff"
         for="lp.code.interfaces.diff.IPreviewDiff"
@@ -1054,6 +1059,12 @@
         for="lp.code.interfaces.diff.IPreviewDiff"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="lp.code.browser.diff.PreviewDiffFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.code.interfaces.diff.IDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.code.browser.diff.DiffFormatterAPI"
         name="fmt"
         />
 
