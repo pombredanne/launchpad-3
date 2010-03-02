@@ -540,7 +540,8 @@ class ObjectFormatterAPI:
 
     def public_private_css(self):
         """Return the CSS class that represents the object's privacy."""
-        if IPrivacy.providedBy(self._context) and self._context.private:
+        privacy = IPrivacy(self._context, None)
+        if privacy is not None and privacy.private:
             return 'private'
         else:
             return 'public'

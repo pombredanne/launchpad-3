@@ -265,6 +265,10 @@
             permission="zope.Public"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
+            provides="canonical.launchpad.interfaces.launchpad.IPrivacy"
+            factory="lp.bugs.adapters.bug.bugtask_to_privacy"/>
+        <adapter
+            for="lp.bugs.interfaces.bugtask.IBugTask"
             provides="canonical.launchpad.interfaces.IBug"
             factory="lp.bugs.model.bugtask.BugTaskToBugAdapter"/>
         <adapter
