@@ -538,6 +538,12 @@
   <subscriber
       for="lp.codehosting.scanner.events.INewRevision"
       handler="lp.codehosting.scanner.buglinks.got_new_revision"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.IScanCompleted"
+      handler="lp.codehosting.scanner.mergedetection.auto_merge_proposals"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.IScanCompleted"
+      handler="lp.codehosting.scanner.mergedetection.auto_merge_branches"/>
 
   <!-- Temporarily disabling queues
        <browser:page

@@ -107,9 +107,14 @@ class RevisionsRemoved(ScannerEvent):
         ScannerEvent.__init__(self, db_branch, bzr_branch)
         self.removed_history = removed_history
 
+class IScanCompleted(IObjectEvent):
+    """The scan has been completed and the database is up-to-date."""
+
 
 class ScanCompleted(ScannerEvent):
     """The scan has been completed and the database is up-to-date."""
+
+    implements(IScanCompleted)
 
     def __init__(self, db_branch, bzr_branch, bzr_ancestry, logger):
         """Construct a `ScanCompleted` event.

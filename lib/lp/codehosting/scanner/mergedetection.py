@@ -70,7 +70,6 @@ def merge_detected(logger, source, target, proposal=None):
             mark_branch_merged(logger, proposal.source_branch)
 
 
-@adapter(events.ScanCompleted)
 def auto_merge_branches(scan_completed):
     """Detect branches that have been merged.
 
@@ -117,7 +116,6 @@ def auto_merge_branches(scan_completed):
             merge_detected(logger, branch, db_branch)
 
 
-@adapter(events.ScanCompleted)
 def auto_merge_proposals(scan_completed):
     """Detect merged proposals."""
     db_branch = scan_completed.db_branch
