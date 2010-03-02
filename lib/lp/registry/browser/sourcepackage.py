@@ -13,6 +13,7 @@ __all__ = [
     'SourcePackageHelpView',
     'SourcePackageNavigation',
     'SourcePackageRemoveUpstreamView',
+    'SourcePackageUpstreamConnectionsView',
     'SourcePackageView',
     ]
 
@@ -57,6 +58,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
 from canonical.lazr.utils import smartquote
 
@@ -437,6 +439,7 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(SourcePackageAssociationPortletView, self).setUpFields()
+        self.request.annotations['show_edit_buttons'] = True
         # Find registered products that are similarly named to the source
         # package.
         product_vocab = getVocabularyRegistry().get(None, 'Product')
@@ -469,6 +472,10 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             'The project %s was linked to this source package.' %
             upstream.displayname)
         self.next_url = self.request.getURL()
+
+
+class SourcePackageUpstreamConnectionsView(LaunchpadView):
+    """A shared view with upstream connection info."""
 
     @property
     def has_bugtracker(self):

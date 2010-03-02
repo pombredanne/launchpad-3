@@ -1958,7 +1958,7 @@
         permission="zope.Public"
         name="+upstream-connections"
         facet="overview"
-        class="lp.registry.browser.sourcepackage.SourcePackageAssociationPortletView"
+        class="lp.registry.browser.sourcepackage.SourcePackageUpstreamConnectionsView"
         template="../templates/sourcepackage-upstream-connections.pt"/>
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

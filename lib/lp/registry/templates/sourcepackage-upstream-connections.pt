@@ -4,6 +4,10 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
+<tal:comment condition="nothing">
+  view.request.annotations['show_edit_buttons'] can be set in views
+  that include this page to display the edit and remove buttons.
+</tal:comment>
 <div id="upstreams" tal:define="series context/productseries">
   <dl>
     <dd>
@@ -13,12 +17,14 @@
       <a tal:replace="structure series/product/fmt:link" /> &rArr;
       <a tal:content="series/name"
           tal:attributes="href series/fmt:url" />
-      <a class="sprite edit"
-          tal:attributes="href context/menu:overview/edit_packaging/fmt:url"
-        ></a>
-      <a class="sprite remove"
-          tal:attributes="href context/menu:overview/remove_packaging/fmt:url"
-        ></a>
+      <span tal:condition="request/annotations/show_edit_buttons | nothing">
+        <a class="sprite edit"
+            tal:attributes="href context/menu:overview/edit_packaging/fmt:url"
+          ></a>
+        <a class="sprite remove"
+            tal:attributes="href context/menu:overview/remove_packaging/fmt:url"
+          ></a>
+      </span>
     </dd>
   </dl>
 
