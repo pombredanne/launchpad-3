@@ -340,8 +340,6 @@ class BranchMergeProposal(SQLBase):
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
             self.requestReview()
-        elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
-            self.requestReview()
         elif status == BranchMergeProposalStatus.CODE_APPROVED:
             # Other half of the edge case.  If the status is currently queued,
             # we need to dequeue, otherwise we just approve the branch.
@@ -378,6 +376,11 @@ class BranchMergeProposal(SQLBase):
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
+            # Clear out any reviewed or queued values.
+            self.reviewer = None
+            self.reviewed_revision_id = None
+            self.queuer = None
+            self.queued_revision_id = None
 
     def isMergable(self):
         """See `IBranchMergeProposal`."""

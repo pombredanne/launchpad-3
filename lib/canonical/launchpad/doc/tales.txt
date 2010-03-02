@@ -126,58 +126,63 @@ PPAs have a 'link' formatter, which returns the appropriate HTML used
 for referring to them in other pages and a 'reference' formatter which
 displays the unique ppa reference.
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <a href="/~mark/+archive/ppa"
-       class="sprite ppa-icon">PPA for Mark Shuttleworth</a>
-    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
-    ppa:mark/ppa
+    >>> login('admin@canonical.com')
+    >>> owner = factory.makePerson(name="joe", displayname="Joe Smith")
+    >>> public_ppa = factory.makeArchive(
+    ...     name='ppa', private=False, owner=owner)
+    >>> login(ANONYMOUS)
+    >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
+    <a href="/~joe/+archive/ppa"
+       class="sprite ppa-icon">PPA for Joe Smith</a>
+    >>> print test_tales("ppa/fmt:reference", ppa=public_ppa)
+    ppa:joe/ppa
 
 Disabled PPAs links use a different icon and are only linkified for
 users with launchpad.View on them.
 
-    >>> login('foo.bar@canonical.com')
-    >>> mark.archive.disable()
+    >>> login('admin@canonical.com')
+    >>> public_ppa.disable()
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <a href="/~mark/+archive/ppa" class="sprite ppa-icon-inactive">PPA
-    for Mark Shuttleworth</a>
+    >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
+    <a href="/~joe/+archive/ppa" class="sprite ppa-icon-inactive">PPA
+    for Joe Smith</a>
 
     >>> login(ANONYMOUS)
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <span class="sprite ppa-icon-inactive">PPA for Mark Shuttleworth</span>
+    >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
+    <span class="sprite ppa-icon-inactive">PPA for Joe Smith</span>
 
 Private PPAs links are not rendered for users without launchpad.View on
 them.
 
-    >>> login('foo.bar@canonical.com')
-    >>> mark.archive.enable()
-    >>> mark.archive.buildd_secret = 'x'
-    >>> mark.archive.private = True
+    >>> login('admin@canonical.com')
+    >>> private_ppa = factory.makeArchive(
+    ...     name='ppa', private=True, owner=owner)
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <a href="/~mark/+archive/ppa" class="sprite ppa-icon">PPA
-    for Mark Shuttleworth</a>
+    >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
+    <a href="/~joe/+archive/ppa" class="sprite ppa-icon">PPA
+    for Joe Smith</a>
 
     >>> login(ANONYMOUS)
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
+    >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
 
 Similarly, references to private PPAs are not rendered unless the user has
 a subscription to the PPA.
 
-    >>> login('foo.bar@canonical.com')
-    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
+    >>> ppa_user = factory.makePerson(name="jake", displayname="Jake Smith")
+    >>> login_person(ppa_user)
+    >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
 
-    >>> login('mark@example.com')
-    >>> foo = getUtility(IPersonSet).getByName('name16')
-    >>> ignore = mark.archive.newSubscription(foo, mark)
-    >>> login('foo.bar@canonical.com')
-    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
-    ppa:mark/ppa
+    >>> login_person(owner)
+    >>> ignore = private_ppa.newSubscription(ppa_user, owner)
+    >>> login_person(ppa_user)
+    >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
+    ppa:joe/ppa
 
 We also have icons for builds which may have different dimensions.
 
+    >>> login('admin@canonical.com')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
@@ -202,6 +207,24 @@ But the 'failed to build' build is 16x14:
     >>> build.buildstate = BuildStatus.FAILEDTOBUILD
     >>> print test_tales("build/image:icon", build=build)
     <img width="16" height="14"...src="/@@/build-failed" />
+
+All objects can be represented as a boolean icon.
+
+    >>> print test_tales("context/image:boolean", context=None)
+    <span class="sprite no">&nbsp;<span
+      class="invisible-link">no</span></span>
+
+    >>> print test_tales("context/image:boolean", context=False)
+    <span class="sprite no">&nbsp;<span
+      class="invisible-link">no</span></span>
+
+    >>> print test_tales("context/image:boolean", context=object())
+    <span class="sprite yes">&nbsp;<span
+      class="invisible-link">yes</span></span>
+
+    >>> print test_tales("context/image:boolean", context=True)
+    <span class="sprite yes">&nbsp;<span
+      class="invisible-link">yes</span></span>
 
 
 The fmt: namespace to get strings

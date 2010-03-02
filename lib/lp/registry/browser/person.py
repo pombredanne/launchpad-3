@@ -184,7 +184,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
+from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
@@ -196,7 +196,7 @@ from lp.soyuz.interfaces.sourcepackagerelease import (
 
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.objectreassignment import (
+from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
@@ -2581,7 +2581,7 @@ class TeamJoinMixin:
 
     @property
     def user_can_subscribe_to_list(self):
-        """Can the user subscribe to this team's mailing list?
+        """Can the prospective member subscribe to this team's mailing list?
 
         A user can subscribe to the list if the team has an active
         mailing list, and if they do not already have a subscription.
