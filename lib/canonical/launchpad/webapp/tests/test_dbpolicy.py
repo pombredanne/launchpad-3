@@ -172,7 +172,7 @@ class LayerDatabasePolicyTestCase(TestCase):
             and will meltdown when the API becomes popular.
         """
         api_prefix = getUtility(
-            IWebServiceConfiguration).service_version_uri_prefix
+            IWebServiceConfiguration).active_versions[0]
         server_url = 'http://api.launchpad.dev/%s' % api_prefix
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         setFirstLayer(request, WebServiceLayer)
@@ -185,7 +185,7 @@ class LayerDatabasePolicyTestCase(TestCase):
         can be outsourced to a slave database when possible.
         """
         api_prefix = getUtility(
-            IWebServiceConfiguration).service_version_uri_prefix
+            IWebServiceConfiguration).active_versions[0]
         server_url = 'http://api.launchpad.dev/%s' % api_prefix
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         newInteraction(request)
@@ -211,7 +211,7 @@ class LayerDatabasePolicyTestCase(TestCase):
         touch_read_only_file()
         try:
             api_prefix = getUtility(
-                IWebServiceConfiguration).service_version_uri_prefix
+                IWebServiceConfiguration).active_versions[0]
             server_url = 'http://api.launchpad.dev/%s' % api_prefix
             request = LaunchpadTestRequest(SERVER_URL=server_url)
             setFirstLayer(request, WebServiceLayer)

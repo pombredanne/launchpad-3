@@ -67,7 +67,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         self.assertEqual(False, preview.stale)
         self.assertEqual(True, self._createStalePreviewDiff().stale)
         self.assertEqual(u'conflicts', preview.conflicts)
-        self.assertEqual({'filename': (3,2)}, preview.diffstat)
+        self.assertEqual({'filename': (3, 2)}, preview.diffstat)
 
     def test_fmt_no_diff(self):
         # If there is no diff, there is no link.
@@ -157,6 +157,17 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
             '500 lines (+89/-340) 23 files modified (has conflicts)</a>'
             % canonical_url(preview),
             test_tales('preview/fmt:link', preview=preview))
+
+
+class TestDiffFormatter(TestCaseWithFactory):
+    """Test the DiffFormatterAPI class."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_url(self):
+        diff = self.factory.makeDiff()
+        self.assertEqual(
+            diff.diff_text.getURL(), test_tales('diff/fmt:url', diff=diff))
 
 
 def test_suite():

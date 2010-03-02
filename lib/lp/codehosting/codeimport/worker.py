@@ -71,20 +71,26 @@ class BazaarBranchStore:
         """
         remote_url = self._getMirrorURL(db_branch_id)
         try:
-            bzr_dir = BzrDir.open(remote_url)
+            remote_bzr_dir = BzrDir.open(remote_url)
         except NotBranchError:
             return BzrDir.create_standalone_workingtree(
                 target_path, required_format)
         # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
         # branches disabled.  Need an orderly upgrade process.
-        if False and bzr_dir.needs_format_conversion(format=required_format):
+        if False and remote_bzr_dir.needs_format_conversion(
+            format=required_format):
             try:
-                bzr_dir.root_transport.delete_tree('backup.bzr')
+                remote_bzr_dir.root_transport.delete_tree('backup.bzr')
             except NoSuchFile:
                 pass
             upgrade(remote_url, required_format)
-        bzr_dir.sprout(target_path)
-        return BzrDir.open(target_path).open_workingtree()
+        local_bzr_dir = remote_bzr_dir.sprout(target_path)
+        # Because of the way we do incremental imports, there may be revisions
+        # in the branch's repo that are not in the ancestry of the branch tip.
+        # We need to transfer them too.
+        local_bzr_dir.open_repository().fetch(
+            remote_bzr_dir.open_repository())
+        return local_bzr_dir.open_workingtree()
 
     def push(self, db_branch_id, bzr_tree, required_format):
         """Push up `bzr_tree` as the Bazaar branch for `code_import`.
@@ -101,6 +107,10 @@ class BazaarBranchStore:
             branch_to = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
         pull_result = branch_to.pull(branch_from, overwrite=True)
+        # Because of the way we do incremental imports, there may be revisions
+        # in the branch's repo that are not in the ancestry of the branch tip.
+        # We need to transfer them too.
+        branch_to.repository.fetch(branch_from.repository)
         return pull_result.old_revid != pull_result.new_revid
 
 

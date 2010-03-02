@@ -41,7 +41,6 @@ from canonical.database.sqlbase import sqlvalues
 
 from canonical.lp import initZopeless
 
-from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
@@ -83,13 +82,18 @@ def get_max_id(store, table_name):
         return max_id[0]
 
 
+def get_store(flavor=MASTER_FLAVOR):
+    """Obtain an ORM store."""
+    return getUtility(IStoreSelector).get(MAIN_STORE, flavor)
+
+
 def check_preconditions(options):
     """Try to ensure that it's safe to run.
 
     This script must not run on a production server, or anything
     remotely like it.
     """
-    store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+    store = get_store(SLAVE_FLAVOR)
 
     # Just a guess, but dev systems aren't likely to have ids this high
     # in this table.  Production data does.
@@ -181,7 +185,7 @@ def add_architecture(distroseries, architecture_name):
     # Avoid circular import.
     from lp.soyuz.model.distroarchseries import DistroArchSeries
 
-    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    store = get_store(MASTER_FLAVOR)
     family = getUtility(IProcessorFamilySet).getByName(architecture_name)
     archseries = DistroArchSeries(
         distroseries=distroseries, processorfamily=family,
@@ -353,7 +357,7 @@ def create_ppa_user(username, options, approver, log):
     # Avoid circular import.
     from lp.registry.interfaces.person import PersonCreationRationale
 
-    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    store = get_store(MASTER_FLAVOR)
 
     log.info("Creating %s with email address '%s'." % (
         user_name, options.email))

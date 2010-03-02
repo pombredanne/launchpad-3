@@ -103,14 +103,7 @@ for the entire template in the same transaction that did the import.
 To prevent this, the importer now does intermediate commits while
 recomputing statistics.
 
-    >>> class FakeTransactionManager:
-    ...     """Pretend to manage a transaction, log what happens."""
-    ...     def begin(self):
-    ...         pass
-    ...     def commit(self):
-    ...         print "Committing."
-    ...     def abort(self):
-    ...         print "Aborting."
+    >>> from lp.testing.faketransaction import FakeTransaction
 
 Attach the import to the translations import queue:
 
@@ -136,8 +129,7 @@ The entry gets approved, so it can be imported.
 Now, we tell the PO template to import from the file data it has.
 
     >>> (subject, body) = potemplate.importFromQueue(
-    ...     entry, FakeLogger(), txn=FakeTransactionManager())
-    Committing.
+    ...     entry, FakeLogger(), txn=FakeTransaction())
 
 Our request has now been serviced.
 

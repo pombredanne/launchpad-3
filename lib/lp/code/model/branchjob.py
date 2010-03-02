@@ -843,6 +843,8 @@ class RosettaUploadJob(BranchJobDerived):
                     file_path, file_name, file_type = afile[:3]
                     if file_type != 'file':
                         continue
+                    if importer.isHidden(file_path):
+                        continue
                     if importer.isTemplateName(file_name):
                         append_to = self.template_file_names
                     elif importer.isTranslationName(file_name):

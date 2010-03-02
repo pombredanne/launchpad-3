@@ -132,7 +132,7 @@ class TranslationTemplatesBuildManager(BuildManager):
         """Install packages required."""
         required_packages = [
             'bzr',
-            'intltool-debian',
+            'intltool',
             ]
         command = ['apt-get', 'install', '-y'] + required_packages
         self.runInChroot(self.home, command, as_root=True)
