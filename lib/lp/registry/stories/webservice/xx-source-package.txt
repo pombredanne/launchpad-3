@@ -33,7 +33,7 @@ distribution series.
     displayname: u'evolution in Ubuntu Hoary'
     distribution_link: u'http://.../ubuntu'
     distroseries_link: u'http://.../ubuntu/hoary'
-    component_name: u'main'
+    latest_published_component_name: u'main'
     name: u'evolution'
     official_bug_tags: []
     productseries_link: u'http://.../evolution/trunk'

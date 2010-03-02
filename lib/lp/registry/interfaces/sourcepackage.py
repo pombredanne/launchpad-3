@@ -225,7 +225,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
 
-    component_name = exported(TextLine(
+    latest_published_component_name = exported(TextLine(
         title=u'The name of the component in which the package'
                ' was last published.',
         readonly=True, required=False))

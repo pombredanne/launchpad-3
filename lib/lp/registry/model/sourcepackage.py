@@ -567,7 +567,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             return None
 
     @property
-    def component_name(self):
+    def latest_published_component_name(self):
         """See `ISourcePackage`."""
         if self.latest_published_component is not None:
             return self.latest_published_component.name
