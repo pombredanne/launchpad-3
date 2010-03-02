@@ -128,6 +128,11 @@ class Language(SQLBase):
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
+    @property
+    def translators_count(self):
+        """See `ILanguage`."""
+        return self.translators.count()
+
     def getFullCode(self, variant=None):
         """See `ILanguage`."""
         if variant:
@@ -254,4 +259,3 @@ class LanguageSet:
     def getAll(self):
         """See `ILanguageSet`."""
         return ISlaveStore(Language).find(Language).order_by(Language.englishname)
-

@@ -1,0 +1,53 @@
+Language related webservices
+====================
+
+Exporting a language
+--------------------
+
+The language information from Launchpad can be queried using
+'/+languages/CC', where CC is the language code.
+
+    >>> es = webservice.get('/+languages/es').jsonBody()
+    >>> es['resource_type_link']
+    u'http.../#language'
+    >>> print es['abbreviated_text_direction']
+    ltr
+    >>> print es['code']
+    es
+    >>> print es['english_name']
+    Spanish
+    >>> print es['plural_expression']
+    n != 1
+    >>> print es['plural_forms']
+    2
+    >>> print es['translators_count']
+    1
+    >>> print es['visible']
+    True
+
+
+Exporting a language set
+------------------------
+
+The list of all languages known by Launchpad can by obtained
+from '/+languages'.
+
+    >>> all_languages = webservice.get(
+    ...     '/+languages?ws.start=0&ws.size=10').jsonBody()
+    >>> all_languages['resource_type_link']
+        u'http.../#languages'
+    >>> all_languages['total_size'] > 0
+    True
+    >>> all_languages['start'] == 0
+    True
+    >>> print all_languages['next_collection_link']
+    http...+languages?ws.start=10&ws.size=10
+    >>> print all_languages['entries'][0]['english_name']
+    Abkhazian
+
+It also contains languages hidden in Launchpad.
+
+    >>> print all_languages['entries'][6]['english_name']
+    Afar (Djibouti)
+    >>> print all_languages['entries'][6]['visible']
+    False

@@ -79,6 +79,9 @@ class ILanguage(Interface):
         title=u'List of Person/Team that translate into this language.',
         required=True)
 
+    translators_count = exported(Int(
+        title=u"Total number of translators for this language."))
+
     translation_teams = Field(
         title=u'List of Teams that translate into this language.',
         required=True)
@@ -205,7 +208,5 @@ class ILanguageSet(Interface):
             left'.
         """
 
-    @export_read_operation()
-    @operation_parameters(text=TextLine(required=True))
     def search(text):
         """Return a result set of ILanguage that match the search."""
