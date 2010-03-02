@@ -344,7 +344,7 @@ the user reporting the error:
 == Librarian not running ==
 
 If for some reason the Librarian isn't up and running, we shouldn't
-loose any emails. All that should happen is that an error should get
+lose any emails. All that should happen is that an error should get
 logged.
 
 
