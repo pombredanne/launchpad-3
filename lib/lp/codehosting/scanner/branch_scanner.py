@@ -20,7 +20,7 @@ from lp.code.interfaces.branchscanner import IBranchScanner
 from lp.codehosting.vfs import get_scanner_server
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.scanner.fixture import (
-    Fixtures, run_with_fixture, ServerFixture)
+    run_with_fixture, ServerFixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 
@@ -89,7 +89,7 @@ class BranchScanner:
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
         server = get_scanner_server()
-        fixture = Fixtures([ServerFixture(server)])
+        fixture = ServerFixture(server)
         self.log.info('Starting branch scanning')
         branches = getUtility(IBranchScanner).getBranchesToScan()
         run_with_fixture(fixture, self.scanBranches, branches)
