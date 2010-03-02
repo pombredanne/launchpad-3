@@ -9,8 +9,8 @@ __metaclass__ = type
 
 from logging import getLogger
 from cStringIO import StringIO as cStringIO
-from email.Utils import getaddresses, parseaddr
-import email.Errors
+from email.utils import getaddresses, parseaddr
+import email.errors
 import re
 import sys
 
