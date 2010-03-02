@@ -246,6 +246,7 @@ class TestSubscription(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_got_new_revision_subscribed(self):
+        """got_new_revision is subscribed to NewRevision."""
         self.useBzrBranches()
         db_branch, tree = self.create_branch_and_tree()
         bug = self.factory.makeBug()
