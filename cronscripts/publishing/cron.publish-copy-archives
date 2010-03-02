@@ -37,7 +37,7 @@ fi
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 DISTRONAME=ubuntu
-TOUCHLIST=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
+TRACEFILE=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
 
 # Manipulate the environment.
 export GNUPGHOME
@@ -76,9 +76,8 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     cp $OVERRIDEROOT/override.* $INDICES
 fi
 
-# Touch everything you asked us to do.
+# Timestamp our trace file to track when the last archive publisher run took
+# place.
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
-    for FILE in $TOUCHLIST; do
-      touch "$FILE"
-    done
+    date -u > "$TRACEFILE"
 fi
