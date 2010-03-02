@@ -54,8 +54,8 @@ class CustomUploadBadUmask(CustomUploadError):
 class CustomUploadTarballInvalidFileType(CustomUploadError):
     """A file of type other than regular or symlink was found."""
     def __init__(self, tarfile_path, file_name):
-        message = "Tarfile %s has file %s which is not a regular file nor a "
-                  "symlink" % (tarfile_path, file_name)
+        message = ("Tarfile %s has file %s which is not a regular file, "
+                   "directory or a symlink" % (tarfile_path, file_name))
         CustomUploadError.__init__(self, message)
 
 
@@ -120,13 +120,13 @@ class CustomUpload:
                 raise CustomUploadTarballInvalidFileType(
                     self.tarfile_path, member.name)
 
-            member_path = os.path.join(self.targetdir, member.name)
+            member_path = os.path.join(self.tmpdir, member.name)
             if not os.path.realpath(member_path).startswith(self.tmpdir):
                 raise CustomUploadTarballBadFile(
                     self.tarfile_path, member.name)
 
             if member.issym():
-                target_path = os.path.join(self.targetdir, member.linkname)
+                target_path = os.path.join(self.tmpdir, member.linkname)
                 if not os.path.realpath(target_path).startswith(self.tmpdir):
                     raise CustomUploadTarballBadSymLink(
                         self.tarfile_path, member.name, member.linkname)

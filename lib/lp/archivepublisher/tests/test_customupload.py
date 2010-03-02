@@ -6,12 +6,16 @@
 __metaclass__ = type
 
 
+import cStringIO
 import os
 import shutil
+import tarfile
 import tempfile
 import unittest
 
-from lp.archivepublisher.customupload import CustomUpload
+from lp.archivepublisher.customupload import (
+    CustomUpload, CustomUploadTarballInvalidFileType,
+    CustomUploadTarballBadFile, CustomUploadTarballBadSymLink)
 
 
 class TestCustomUpload(unittest.TestCase):
@@ -64,6 +68,70 @@ class TestCustomUpload(unittest.TestCase):
         self.assertEntries(['1.2', '1.3', '1.4', 'alpha-5', 'current'])
         self.assertEqual(
             '1.4', os.readlink(os.path.join(self.test_dir, 'current')))
+
+
+class TestTarfileVerification(unittest.TestCase):
+
+    tarfile_path = "/tmp/_verify_extract"
+
+    def setUp(self):
+        self.custom_processor = CustomUpload(None, self.tarfile_path, None)
+        self.custom_processor.tmpdir = "/tmp/_extract_test"
+
+    def createTarfile(self):
+        tar_fileobj = cStringIO.StringIO()
+        return tarfile.open(name=None, mode="w", fileobj=tar_fileobj)
+
+    def createTarfileWithSymlink(self, target):
+        info = tarfile.TarInfo(name="i_am_a_symlink")
+        info.type = tarfile.SYMTYPE
+        info.linkname = target
+        tar_file = self.createTarfile()
+        tar_file.addfile(info)
+        return tar_file
+
+    def createTarfileWithFile(self, file_type, name="testfile"):
+        info = tarfile.TarInfo(name=name)
+        info.type = file_type
+        tar_file = self.createTarfile()
+        tar_file.addfile(info)
+        return tar_file
+
+    def testFailsToExtractBadSymlink(self):
+        """Fail if a symlink's target is outside the tmp tree."""
+        tar_file = self.createTarfileWithSymlink(target="/etc/passwd")
+        self.assertRaises(
+            CustomUploadTarballBadSymLink,
+            self.custom_processor.verifyBeforeExtracting, tar_file)
+
+    def testFailsToExtractBadFileType(self):
+        """Fail if a file in a tarfile is not a regular file or a symlink."""
+        tar_file = self.createTarfileWithFile(tarfile.FIFOTYPE)
+        self.assertRaises(
+            CustomUploadTarballInvalidFileType,
+            self.custom_processor.verifyBeforeExtracting, tar_file)
+
+    def testFailsToExtractBadFileLocation(self):
+        """Fail if the file resolves to a path outside the tmp tree."""
+        tar_file = self.createTarfileWithFile(tarfile.REGTYPE, "../outside")
+        self.assertRaises(
+            CustomUploadTarballBadFile,
+            self.custom_processor.verifyBeforeExtracting, tar_file)
+
+    def testRegularFileDoesntRaise(self):
+        """Adding a normal file should pass inspection."""
+        tar_file = self.createTarfileWithFile(tarfile.REGTYPE)
+        self.custom_processor.verifyBeforeExtracting(tar_file)
+
+    def testDirectoryDoesntRaise(self):
+        """Adding a directory should pass inspection."""
+        tar_file = self.createTarfileWithFile(tarfile.DIRTYPE)
+        self.custom_processor.verifyBeforeExtracting(tar_file)
+
+    def testSymlinkDoesntRaise(self):
+        """Adding a symlink should pass inspection."""
+        tar_file = self.createTarfileWithSymlink(target="something/blah")
+        self.custom_processor.verifyBeforeExtracting(tar_file)
 
 
 def test_suite():
