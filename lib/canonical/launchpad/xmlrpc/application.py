@@ -20,10 +20,10 @@ import xmlrpclib
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
-from canonical.launchpad.interfaces import (
-    IAuthServerApplication, ILaunchBag,
-    IMailingListApplication, IPrivateApplication,
-    IPrivateMaloneApplication)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.launchpad import (
+    IAuthServerApplication, IPrivateApplication, IPrivateMaloneApplication)
+from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.code.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
 from lp.code.interfaces.codeimportscheduler import (

@@ -67,8 +67,9 @@ from lp.soyuz.interfaces.build import (
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.series import SeriesStatus
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+    ILaunchpadCelebrities)
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
 from lp.soyuz.interfaces.packageset import IPackagesetSet
