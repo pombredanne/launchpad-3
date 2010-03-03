@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Tests for `IBuildBase`."""
 
 __metaclass__ = type
@@ -66,11 +68,8 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
         """If there is a log file, return its contents."""
         self.useTempDir()
         os.makedirs("accepted/myleaf")
-        f = open('accepted/myleaf/uploader.log', 'w')
-        try:
+        with open('accepted/myleaf/uploader.log', 'w') as f:
             f.write('foo')
-        finally:
-            f.close()
         build_base = BuildBase()
         self.assertEquals('foo',
             build_base.getUploadLogContent(os.getcwd(), "myleaf"))

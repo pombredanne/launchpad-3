@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=E0211,E0213
 
+from __future__ import with_statement
+
 """Common build base classes."""
 
 __metaclass__ = type
@@ -28,7 +30,7 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.model.buildqueue import BuildQueue
 
 
-UPLOADLOG_FILENAME = 'uploader.log'
+UPLOAD_LOG_FILENAME = 'uploader.log'
 
 
 class BuildBase:
@@ -107,13 +109,10 @@ class BuildBase:
             'failed', 'failed-to-move', 'rejected', 'accepted')
         for location_dir in possible_locations:
             log_filepath = os.path.join(root, location_dir, leaf,
-                UPLOADLOG_FILENAME)
+                UPLOAD_LOG_FILENAME)
             if os.path.exists(log_filepath):
-                uploader_log_file = open(log_filepath)
-                try:
+                with open(log_filepath, 'r') as uploader_log_file:
                     return uploader_log_file.read()
-                finally:
-                    uploader_log_file.close()
         else:
             return 'Could not find upload log file'
 
@@ -175,7 +174,7 @@ class BuildBase:
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
-        uploader_logfilename = os.path.join(upload_dir, UPLOADLOG_FILENAME)
+        uploader_logfilename = os.path.join(upload_dir, UPLOAD_LOG_FILENAME)
         uploader_command = self.getUploaderCommand(
             upload_leaf, uploader_logfilename)
         logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
