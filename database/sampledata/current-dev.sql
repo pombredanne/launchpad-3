@@ -2294,6 +2294,9 @@ INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_
 INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer, country_dns_mirror) VALUES (8, 1, 'canonical-archive', 'http://archive.ubuntu.com/ubuntu/', NULL, NULL, NULL, NULL, 1, 70, 225, 1, true, true, '2006-10-16 18:31:43.434567', NULL, 30, NULL, NULL, false);
 INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer, country_dns_mirror) VALUES (9, 1, 'canonical-releases', 'http://releases.ubuntu.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, '2006-10-16 18:31:43.434567', NULL, 30, NULL, NULL, false);
 INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer, country_dns_mirror) VALUES (10, 1, 'random-releases-mirror', 'http://releases.random.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, '2006-10-16 18:31:43.434567', NULL, 10, NULL, NULL, false);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer) VALUES (11, 1, 'mirror.davis.antarctica.org-archive', 'http://mirror.davis.antarctica.org/ubuntu', NULL, NULL, 'Davis Station', NULL, 1, 70, 9, 1, true, true, '2010-01-03 00:07:44.412317', NULL, 30, NULL, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer) VALUES (12, 1, 'ubuntu.mirror.tudos.de-archive', 'http://ubuntu.mirror.tudos.de/ubuntu', NULL, 'rsync://ubuntu.mirror.tudos.de/ubuntu', 'Technische Universität Dresden', NULL, 12, 110, 82, 1, true, true, '2010-01-03 01:48:02.93419', NULL, 30, NULL, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer) VALUES (13, 1, 'mirror.mawson.antarctica.org-releases', 'http://mirror.mawson.antarctica.org/ubuntu-releases', NULL, NULL, 'Mawson Station', NULL, 1, 70, 9, 2, true, true, '2010-01-03 02:05:10.424767', NULL, 30, NULL, NULL);
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
@@ -4932,7 +4935,9 @@ ALTER TABLE mirrorproberecord DISABLE TRIGGER ALL;
 
 INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (1, 6, 46, '2006-05-24 17:11:59.37369');
 INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (2, 7, 47, '2006-05-24 17:12:03.714206');
-
+INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (3, 11, 47, '2010-01-03 00:20:30.412312');
+INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (4, 12, 46, '2010-01-03 01:49:27.432231');
+INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (5, 13, 47, '2010-01-03 02:07:17.434121');
 
 ALTER TABLE mirrorproberecord ENABLE TRIGGER ALL;
 
