@@ -55,6 +55,7 @@ class TranslationGroupSetView:
 class TranslationGroupView(LaunchpadView):
 
     def __init__(self, context, request):
+        super(TranslationGroupView, self).__init__(context, request)
         self.context = context
         self.request = request
         self.translation_groups = getUtility(ITranslationGroupSet)
