@@ -46,6 +46,11 @@ Create a subscription for Team Brad to joe's archive:
 
 It is not possible to create a token for the subscribed team.
 
+    >>> joe_private_ppa.newAuthToken(teambrad)
+    Traceback (most recent call last):
+    ...
+    NoTokensForTeams: Subscription tokens can be created for individuals
+    only.
 
 But now that the subscription is there, we can create a token as Brad.
 
