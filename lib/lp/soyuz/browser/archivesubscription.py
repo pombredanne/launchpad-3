@@ -1,3 +1,4 @@
+import pdb
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -36,6 +37,7 @@ from lp.soyuz.interfaces.archiveauthtoken import (
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
@@ -284,6 +286,16 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
 
     label = "Private PPA access"
+
+    def initialize(self):
+        """Overridden to ensure we are not viewing a team rather than
+        a person.
+
+        As ITeam is an IPerson, this view will by default match both.
+        """
+        if self.context.is_team:
+            raise NotFoundError
+        super(PersonArchiveSubscriptionsView, self).initialize()
 
     @cachedproperty
     def subscriptions_with_tokens(self):
