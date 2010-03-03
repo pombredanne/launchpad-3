@@ -126,7 +126,7 @@ class MemcacheExpr:
         # We use a sanitized version in the human readable chunk of
         # the key.
         request = econtext.getValue('request')
-        url = str(request.URL) + '?' + request.get('QUERY_STRING', '')
+        url = str(request.URL) + '?' + str(request.get('QUERY_STRING', ''))
         url = url.encode('utf8') # Ensure it is a byte string.
         sanitized_url = url.translate(self._key_translate_map)
 
