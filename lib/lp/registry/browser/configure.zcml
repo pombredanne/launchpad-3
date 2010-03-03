@@ -2159,6 +2159,11 @@
         classes="
             PersonProductFacets"
         module="lp.registry.browser.personproduct"/>
-    <adapter
-        factory="lp.registry.interfaces.gpg.get_canonical_url_data_for_gpgkey"/>
+
+    <browser:url
+        for="lp.registry.interfaces.gpg.IGPGKey"
+        path_expression="string:+gpg-keys/${keyid}"
+        rootsite="api"
+        attribute_to_parent="owner" />
+
 </configure>

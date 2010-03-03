@@ -20,8 +20,10 @@ class TestCanonicalUrl(TestCaseWithFactory):
         # The canonical URL of a GPG key is ???
         person = self.factory.makePerson()
         gpgkey = self.factory.makeGPGKey(person)
-        url = canonical_url(gpgkey)
-        self.assertEqual('???', url)
+        self.assertEqual(
+            '%s/+gpg-keys/%s' % (
+                canonical_url(person, rootsite='api'), gpgkey.keyid),
+            canonical_url(gpgkey))
 
 
 def test_suite():

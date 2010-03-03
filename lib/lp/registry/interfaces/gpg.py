@@ -141,10 +141,3 @@ class IGPGKeySet(Interface):
 
     def getGPGKeysForPeople(self, people):
         """Return OpenPGP keys for a set of people."""
-
-
-@adapter(IGPGKey)
-@implementer(ICanonicalUrlData)
-def get_canonical_url_data_for_gpgkey(gpg_key):
-    """Return the `ICanonicalUrlData` for an `IGPGKey`."""
-    return ICanonicalUrlData(gpg_key.context)
