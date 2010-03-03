@@ -144,6 +144,11 @@ archive as well as some new PPAs.
     ...                                   distribution=ubuntutest)
     >>> ppa_beta = factory.makeArchive(name="beta",
     ...                                distribution=ubuntutest)
+
+The 'ppa_disabled' archive added below will be disabled at the end of this
+set-up block. 
+It will thus not be listed in the "...other untrusted versions of..." portlet.
+
     >>> ppa_disabled = factory.makeArchive(name="disabled",
     ...                                    distribution=ubuntutest)
 
@@ -192,7 +197,6 @@ archive as well as some new PPAs.
     >>> reconnect_stores('launchpad')
 
     >>> logout()
-
 
 A /$DISTRO/+source/$PACKAGE page shows an overview of a source package in
 a distribution.  There are several sections of information.

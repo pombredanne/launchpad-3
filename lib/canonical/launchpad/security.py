@@ -2106,24 +2106,13 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.in_admin
 
 
-class ViewSourcePackagePublishingHistory(AuthorizationBase):
+class ViewSourcePackagePublishingHistory(ViewArchive):
     """Restrict viewing of source publications."""
     permission = "launchpad.View"
     usedfor = ISourcePackagePublishingHistory
 
     def __init__(self, obj):
-        super(ViewSourcePackagePublishingHistory, self).__init__(obj)
-        self.view_archive = ViewArchive(obj.archive)
-
-    def checkAuthenticated(self, user):
-        # Defer the decision to the `IArchive` security wrapper.
-        if self.view_archive.checkAuthenticated(user):
-            return True
-        return user.in_admin
-
-    def checkUnauthenticated(self):
-        # Defer the decision to the `IArchive` security wrapper.
-        return self.view_archive.checkUnauthenticated()
+        super(ViewSourcePackagePublishingHistory, self).__init__(obj.archive)
 
 
 class EditPublishing(AuthorizationBase):
