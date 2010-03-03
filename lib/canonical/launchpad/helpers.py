@@ -26,8 +26,9 @@ from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IRequestPreferredLanguages, IRequestLocalLanguages)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.geoip import (
+    IRequestPreferredLanguages, IRequestLocalLanguages)
 
 
 # pylint: disable-msg=W0102

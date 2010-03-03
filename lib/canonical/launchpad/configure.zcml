@@ -76,7 +76,7 @@
 
   <!-- RDF downloadable documents -->
   <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     class="canonical.launchpad.browser.launchpad.RDFIndexView"
     name="rdf"
     template="templates/rdf-index.pt"

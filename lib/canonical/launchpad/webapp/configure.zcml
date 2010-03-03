@@ -806,7 +806,7 @@
 
     <!-- A simple view used by the page tests. -->
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+whichdb"
         permission="zope.Public"
         class="canonical.launchpad.webapp.dbpolicy.WhichDbView"
