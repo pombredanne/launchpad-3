@@ -100,6 +100,8 @@ class DistributionMirror(SQLBase):
     date_reviewed = UtcDateTimeCol(default=None)
     whiteboard = StringCol(
         notNull=False, default=None)
+    country_dns_mirror = BoolCol(
+        notNull=True, default=False)
 
     @property
     def base_url(self):

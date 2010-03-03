@@ -386,6 +386,10 @@ class IDistributionMirrorPublic(Interface):
     date_created = exported(Datetime(
         title=_('Date Created'), required=True, readonly=True,
         description=_("The date on which this mirror was registered.")))
+    country_dns_mirror = exported(Bool(
+        title=_('Country DNS Mirror'),
+        description=_('Whether this is a country mirror in DNS.'),
+        required=False, readonly=False, default=False))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
