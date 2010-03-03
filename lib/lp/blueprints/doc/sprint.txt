@@ -14,8 +14,10 @@ To find a sprint by name, use:
 The major pillars, product, distribution and project, have some properties
 which give us the sprints relevant to them.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProjectGroupSet, IDistributionSet)
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
     >>> productset = getUtility(IProductSet)
     >>> projectset = getUtility(IProjectGroupSet)
     >>> distroset = getUtility(IDistributionSet)
