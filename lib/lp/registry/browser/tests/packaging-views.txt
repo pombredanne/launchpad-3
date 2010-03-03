@@ -1,4 +1,5 @@
 Packaging views
+    irumpy hotter
 ===============
 
 Packaging links connect a sourcepackage to a distroseries and a productseries.
@@ -273,21 +274,15 @@ The +packages named view displays the packages links to the product's series.
     >>> print view.label
     Linked packages
 
-The view defines the all_packages property used by the PackagingDeleteView
-to create a vocabulary.
-
-    >>> for package in view.all_packaging:
-    ...     print package.distroseries.name, package.productseries.name
-    grumpy hotter
-    hoary hotter
-
 The view provides the series_packages property that returns a list of
 dicts. Each dict as a series and a list of packages.
 
-    >>> for series_dict in view.series_packages:
-    ...     print series_dict['series'].name
-    ...     for package in series_dict['packagings']:
-    ...         print package.distroseries.name
+    >>> def print_packages(view):
+    ...     for series_dict in view.series_packages:
+    ...         print series_dict['series'].name
+    ...         for package in series_dict['packagings']:
+    ...             print package.distroseries.name
+    >>> print_packages(view)
     cold
     hotter
       grumpy
@@ -299,7 +294,6 @@ dictionaries for the distributions and their packaging.  The list is
 sorted by distribution with Ubuntu first and the rest in alphabetic
 order.
 
-    >>> view = create_initialized_view(product, name='+packages')
     >>> for distro_dict in view.distro_packaging:
     ...     print distro_dict['distribution'].name
     ubuntu
@@ -310,10 +304,12 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
     >>> view = create_initialized_view(
     ...     product, name='+packages', principal=a_user)
-    >>> for package in view.all_packaging:
-    ...     print package.distroseries.name, package.productseries.name
-    grumpy hotter
-    hoary hotter
+    >>> print_packages(view)
+    cold
+    hotter
+      grumpy
+      hoary
+    trunk
 
     # There are links to the +remove-packaging page.
     >>> table = find_tag_by_id(view.render(), 'packages-hotter')
@@ -323,16 +319,23 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     http://launchpad.dev/ubuntu/grumpy/+source/hot/+remove-packaging
     http://launchpad.dev/ubuntu/hoary/+source/thunderbird/+remove-packaging
 
-    >>> [hoary_package] = [package for package in view.all_packaging
-    ...                     if package.distroseries.name == 'hoary']
+    >>> [hoary_package] = [
+    ...     package for series_dict in view.series_packages
+    ...     for package in series_dict['packagings']
+    ...     if package.distroseries.name == 'hoary']
     >>> form = {'field.actions.unlink': 'Unlink'}
     >>> unlink_view = create_initialized_view(
     ...     hoary_package.sourcepackage, name='+remove-packaging', form=form)
     >>> unlink_view.errors
     []
-    >>> for package in view.all_packaging:
-    ...     print package.distroseries.name, package.productseries.name
-    grumpy hotter
+
+    # The view has to be reloaded since view.series_packages is cached.
+    >>> view = create_initialized_view(product, name='+packages')
+    >>> print_packages(view)
+    cold
+    hotter
+      grumpy
+    trunk
 
 
 Distro series +packaging view

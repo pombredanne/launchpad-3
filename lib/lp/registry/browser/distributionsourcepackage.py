@@ -256,14 +256,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         return canonical_url(self.context)
 
     @property
-    def all_packaging(self):
-        """See `PackagingDeleteView`."""
-        for sourcepackage in self.context.get_distroseries_packages():
-            packaging = sourcepackage.direct_packaging
-            if packaging is not None:
-                yield packaging
-
-    @property
     def all_published_in_active_distroseries(self):
         """Return a list of publishings in each active distroseries.
 

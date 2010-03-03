@@ -904,13 +904,6 @@ class ProductPackagesView(LaunchpadView):
     label = 'Linked packages'
     page_title = label
 
-    @property
-    def all_packaging(self):
-        """See `PackagingDeleteView`."""
-        for series in self.context.series:
-            for packaging in series.packagings:
-                yield packaging
-
     @cachedproperty
     def series_packages(self):
         """A hierarchy of product series, packaging and field data.
@@ -923,9 +916,6 @@ class ProductPackagesView(LaunchpadView):
                 field: '<input type=''hidden' ...>},
                 }]
         """
-        # This method is a superset of all_packaging. While all_packaging will
-        # be called several times as data is mutated, series_packages should
-        # only be called during render().
         packaged_series = []
         for series in self.context.series:
             packagings = []
