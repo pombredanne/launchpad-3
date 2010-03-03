@@ -1,5 +1,4 @@
 Packaging views
-    irumpy hotter
 ===============
 
 Packaging links connect a sourcepackage to a distroseries and a productseries.
