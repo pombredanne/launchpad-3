@@ -224,7 +224,7 @@ class HasBugsBase:
         else:
             raise NotImplementedError
 
-        results = []
+        results = [0]
         for query in sql:
             cur = cursor()
             cur.execute(query)
