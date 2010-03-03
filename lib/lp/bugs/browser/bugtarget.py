@@ -42,8 +42,7 @@ from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
-    PersonLatestBugsFeedLink)
+    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
@@ -1197,7 +1196,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     feed_types = (
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
         )
 
     # XXX: Bjorn Tillenius 2007-02-13:

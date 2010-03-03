@@ -28,6 +28,7 @@ for teams (as they're defined in the ITeam interface).
     karma: 0
     languages_collection_link: u'http://.../~salgado/languages'
     latitude: None
+    logo_link: u'http://.../~salgado/logo'
     longitude: None
     mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
     members_collection_link: u'http://.../~salgado/members'
@@ -74,6 +75,7 @@ for teams (as they're defined in the ITeam interface).
     karma: 0
     languages_collection_link: u'http://.../~ubuntu-team/languages'
     latitude: None
+    logo_link: u'http://.../~ubuntu-team/logo'
     longitude: None
     mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
     members_collection_link: u'http://.../~ubuntu-team/members'
