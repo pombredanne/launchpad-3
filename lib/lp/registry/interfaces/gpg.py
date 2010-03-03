@@ -19,7 +19,8 @@ __all__ = [
 import re
 
 from zope.schema import Bool, Int, TextLine, Choice
-from zope.interface import Interface, Attribute
+from zope.interface import Interface, Attribute, implementer
+from zope.component import adapts
 
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -140,3 +141,9 @@ class IGPGKeySet(Interface):
     def getGPGKeysForPeople(self, people):
         """Return OpenPGP keys for a set of people."""
 
+
+@adapts(IGPGKey)
+@implementer(ICanonicalUrlData)
+def get_canonical_url_data_for_gpgkey(gpg_key):
+    """Return the `ICanonicalUrlData` for an `IGPGKey`."""
+    return ICanonicalUrlData(gpg_key.context)
