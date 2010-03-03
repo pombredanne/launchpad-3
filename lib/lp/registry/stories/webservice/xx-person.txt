@@ -151,18 +151,34 @@ traversed to, obviously.
     HTTP/1.1 404 Not Found
     ...
 
+
 === GPG keys ===
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+People have GPG keys which we can manipulate over the API.
+
+The sample person "name12" doesn't have any keys to begin with:
+
+    >>> sample_person = webservice.get("/~name12").jsonBody()
+    >>> gpgkeys = sample_person['gpgkeys_collection_link']
+    >>> print gpgkeys
+    http://.../~name12/gpgkeys
+    >>> print_self_link_of_entries(webservice.get(gpgkeys).jsonBody())
+
+Let's give "name12" a key via the back door of our internal Python APIs:
+
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
-
-    >>> gpg_user = getUtility(IPersonSet).getByName('salgado')
+    >>> gpg_user = getUtility(IPersonSet).getByName('name12')
     >>> gpg_key = factory.makeGPGKey(gpg_user)
-
     >>> logout()
+
+Now when we get the gpgkey collection for 'name12' again, the key should show
+up:
+
+    >>> print_self_link_of_entries(webservice.get(gpgkeys).jsonBody())
+    XXX
+
 
 === Team memberships ===
 
