@@ -11,10 +11,8 @@ import unittest
 
 from canonical.launchpad.windmill.testing import lpuser
 
-from windmill.authoring import WindmillTestClient
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
 def test_inline_add_milestone(client, url, name=None, suite='milestone',
@@ -61,6 +59,8 @@ def test_inline_add_milestone(client, url, name=None, suite='milestone',
     client.waits.forElement(id=u'field.name', timeout=u'8000')
     client.type(id='field.name', text=milestone_name)
     client.click(id=u'formoverlay-add-milestone')
+    client.waits.forElement(
+        xpath="//div[contains(@class, 'yui-lazr-formoverlay-errors')]/ul/li")
     client.asserts.assertTextIn(
         classname='yui-lazr-formoverlay-errors',
         validator='The name %s is already used' % milestone_name.lower())
@@ -81,13 +81,11 @@ def test_inline_add_milestone(client, url, name=None, suite='milestone',
         xpath="//*[@id='code-name']/dd", validator=code_name)
 
 
-class TestAddMilestone(TestCaseWithFactory):
+class TestAddMilestone(WindmillTestCase):
     """Test form overlay widget for adding a milestone."""
 
     layer = RegistryWindmillLayer
-
-    def setUp(self):
-        self.client = WindmillTestClient('AddMilestone')
+    suite_name = 'AddMilestone'
 
     def test_adding_milestone_on_addrelease_page(self):
         test_inline_add_milestone(

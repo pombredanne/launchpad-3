@@ -40,7 +40,7 @@ from lp.code.interfaces.revision import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -454,12 +454,12 @@ class RevisionSet:
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)
-        elif IProject.providedBy(obj):
+        elif IProjectGroup.providedBy(obj):
             origin.append(Join(Product, Branch.product == Product.id))
             conditions = And(conditions, Product.project == obj)
         else:
             raise AssertionError(
-                "obj parameter must be an IProduct or IProject: %r" % obj)
+                "Not an IProduct or IProjectGroup: %r" % obj)
 
         result_set = Store.of(obj).using(*origin).find(
             Revision, conditions)

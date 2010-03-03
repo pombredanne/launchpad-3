@@ -17,7 +17,7 @@ administrators .
     >>> priv_team = factory.makeTeam(owner=priv_owner, name="priv-team",
     ...                              visibility=PersonVisibility.PRIVATE)
     >>> login_person(priv_owner)
-    >>> priv_team.addMember(priv_member, reviewer=priv_owner)
+    >>> ignored = priv_team.addMember(priv_member, reviewer=priv_owner)
 
 The team owner can see the membership.
 
@@ -57,7 +57,7 @@ rules for viewing a private team include admins of invited teams.
     >>> pub_member = factory.makePerson(name="pub-member")
     >>> pub_team = factory.makeTeam(owner=pub_owner, name="pubteam")
     >>> login_person(pub_owner)
-    >>> pub_team.addMember(pub_member, reviewer=pub_owner)
+    >>> ignored = pub_team.addMember(pub_member, reviewer=pub_owner)
 
 At this point the public team owner cannot see the priv-team's bits.
 
@@ -67,7 +67,7 @@ At this point the public team owner cannot see the priv-team's bits.
     Unauthorized: (<Person at ... priv-team (Priv Team)>, 'name', 'launchpad.View')
 
     >>> login_person(priv_owner)
-    >>> priv_team.addMember(pub_team, reviewer=priv_owner)
+    >>> ignored = priv_team.addMember(pub_team, reviewer=priv_owner)
 
 The public team is not yet a member of the priv-team.
 

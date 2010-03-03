@@ -20,12 +20,15 @@ for teams (as they're defined in the ITeam interface).
     homepage_content: None
     invited_members_collection_link: u'http://.../~salgado/invited_members'
     irc_nicknames_collection_link: u'http://.../~salgado/irc_nicknames'
+    is_probationary: True
     is_team: False
+    is_ubuntu_coc_signer: False
     is_valid: True
     jabber_ids_collection_link: u'http://.../~salgado/jabber_ids'
     karma: 0
     languages_collection_link: u'http://.../~salgado/languages'
     latitude: None
+    logo_link: u'http://.../~salgado/logo'
     longitude: None
     mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
     members_collection_link: u'http://.../~salgado/members'
@@ -64,12 +67,15 @@ for teams (as they're defined in the ITeam interface).
     homepage_content: None
     invited_members_collection_link: u'http://.../~ubuntu-team/invited_members'
     irc_nicknames_collection_link: u'http://.../~ubuntu-team/irc_nicknames'
+    is_probationary: False
     is_team: True
+    is_ubuntu_coc_signer: False
     is_valid: True
     jabber_ids_collection_link: u'http://.../~ubuntu-team/jabber_ids'
     karma: 0
     languages_collection_link: u'http://.../~ubuntu-team/languages'
     latitude: None
+    logo_link: u'http://.../~ubuntu-team/logo'
     longitude: None
     mailing_list_auto_subscribe_policy: u'Ask me when I join a team'
     members_collection_link: u'http://.../~ubuntu-team/members'
@@ -545,7 +551,34 @@ Joining and leaving teams:
     ...     "/~landscape-developers/+member/salgado").jsonBody()['status']
     u'Deactivated'
 
-Adding an arbitrary member to a team:
+Though it is not possible through the Launchpad UI, some users of the
+REST API propose other people (as opposed to teams) as part of a
+mentoring process (Bug 498181).
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> login(ANONYMOUS)
+    >>> owner = getUtility(IPersonSet).getByName('owner')
+    >>> logout()
+    >>> owner_webservice = webservice_for_person(
+    ...     owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+    # The sample user (name12) is used to verify that it works when
+    # the new member's email address is hidden.
+    >>> print owner_webservice.named_post(
+    ...     webservice.getAbsoluteUrl('~otherteam'), 'addMember', {},
+    ...     person=webservice.getAbsoluteUrl('/~name12'),
+    ...     status='Proposed', comment='Just a test')
+    HTTP/1.1 200 Ok
+    ...
+    >>> owner_webservice.get("/~otherteam/+member/name12"
+    ...     ).jsonBody()['status']
+    u'Proposed'
+
+Adding a team as a new member will result in the membership being
+set to the Invited status.
 
     >>> print webservice.named_post(
     ...     ubuntu_team['self_link'], 'addMember', {},

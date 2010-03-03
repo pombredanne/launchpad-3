@@ -49,6 +49,7 @@ from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
+
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.interface import copy_field
@@ -61,40 +62,42 @@ from lazr.restful.declarations import (
     operation_returns_entry, rename_parameters_as, webservice_error)
 from lazr.restful.fields import CollectionField, Reference
 
-from canonical.launchpad import _
-
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload,
-    is_private_membership_person, is_public_person, LogoImageUpload,
+    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
-    StrippedTextLine)
+    StrippedTextLine, is_private_membership_person, is_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from lp.app.interfaces.headings import IRootContext
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
-from lp.registry.interfaces.irc import IIrcID
-from lp.registry.interfaces.jabber import IJabberID
-from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
+from canonical.launchpad.interfaces.validation import (
+    validate_new_person_email, validate_new_team_email)
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
+
+from lp.app.interfaces.headings import IRootContext
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications)
+from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+from lp.registry.interfaces.irc import IIrcID
+from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
     IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications)
 from lp.registry.interfaces.teammembership import (
     ITeamMembership, ITeamParticipation, TeamMembershipStatus)
-from canonical.launchpad.interfaces.validation import (
-    validate_new_team_email, validate_new_person_email)
 from lp.registry.interfaces.wikiname import IWikiName
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.worlddata.interfaces.language import ILanguage
+
 
 PRIVATE_TEAM_PREFIX = 'private-'
 
@@ -333,7 +336,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subject to approval by one of 
+        All subscriptions for this team are subject to approval by one of
         the team's administrators.
         """)
 
@@ -366,17 +369,17 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE_MEMBERSHIP = DBItem(20, """
         Private Membership
 
-        Only Launchpad admins and team members can view the 
-        membership list for this team. The team is severely restricted in the 
+        Only Launchpad admins and team members can view the
+        membership list for this team. The team is severely restricted in the
         roles it can assume.
         """)
 
     PRIVATE = DBItem(30, """
         Private
 
-        Only Launchpad admins and team members can view the membership list 
-        for this team or its name.  The team roles are restricted to 
-        subscribing to bugs, being bug supervisor, owning code branches, and 
+        Only Launchpad admins and team members can view the membership list
+        for this team or its name.  The team roles are restricted to
+        subscribing to bugs, being bug supervisor, owning code branches, and
         having a PPA.
         """)
 
@@ -475,7 +478,8 @@ class IHasStanding(Interface):
 
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation, IPrivacy):
+                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
+                    IPrivacy, IHasBugs):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -505,14 +509,15 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             "in listings of bugs or on a person's membership table."))
     iconID = Int(title=_('Icon ID'), required=True, readonly=True)
 
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/person-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to you. Traditionally this "
-            "is a logo, a small picture or a personal mascot. It should be "
-            "no bigger than 50kb in size."))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/person-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to you. Traditionally this "
+                "is a logo, a small picture or a personal mascot. It should be "
+                "no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
 
     mugshot = exported(MugshotImageUpload(
@@ -617,9 +622,11 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_ubuntu_coc_signer = Bool(
-        title=_("Signed Ubuntu Code of Conduct"),
-        readonly=True)
+    is_probationary = exported(
+        Bool(title=_("Is this a probationary user?"), readonly=True))
+    is_ubuntu_coc_signer = exported(
+	Bool(title=_("Signed Ubuntu Code of Conduct"),
+        readonly=True))
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
@@ -1012,18 +1019,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         used between TeamMembership and Person objects.
         """
 
-    def searchTasks(search_params, *args):
-        """Search IBugTasks with the given search parameters.
-
-        :search_params: a BugTaskSearchParams object
-        :args: any number of BugTaskSearchParams objects
-
-        If more than one BugTaskSearchParams is given, return the union of
-        IBugTasks which match any of them.
-
-        Return an iterable of matching results.
-        """
-
     def getLatestMaintainedPackages():
         """Return `SourcePackageRelease`s maintained by this person.
 
@@ -1409,27 +1404,36 @@ class IPersonEditRestricted(Interface):
                   may_subscribe_to_list=True):
         """Add the given person as a member of this team.
 
-        If the given person is already a member of this team we'll simply
-        change its membership status. Otherwise a new TeamMembership is
-        created with the given status.
+        :param person: If the given person is already a member of this
+            team we'll simply change its membership status. Otherwise a new
+            TeamMembership is created with the given status.
 
-        If the person is actually a team and force_team_add is False, the
-        team will actually be invited to join this one. Otherwise the team
-        is added as if it were a person.
+        :param reviewer: The user who made the given person a member of this
+            team.
 
-        If the person is not a team, and may_subscribe_to_list
-        is True, then the person may be subscribed to the team's
-        mailing list, depending on the list status and the person's
-        auto-subscribe settings.
+        :param comment: String that will be assigned to the
+            proponent_comment, reviwer_comment, or acknowledger comment.
 
-        The given status must be either Approved, Proposed or Admin.
+        :param status: `TeamMembershipStatus` value must be either
+            Approved, Proposed or Admin.
+            If the new member is a team, the status will be changed to
+            Invited unless the user is also an admin of that team.
 
-        The reviewer is the user who made the given person a member of this
-        team.
+        :param force_team_add: If the person is actually a team and
+            force_team_add is False, the team will actually be invited to
+            join this one. Otherwise the team is added as if it were a
+            person.
+
+        :param may_subscribe_to_list: If the person is not a team, and
+            may_subscribe_to_list is True, then the person may be subscribed
+            to the team's mailing list, depending on the list status and the
+            person's auto-subscribe settings.
+
+        :return: A tuple containing a boolean indicating when the
+            membership status changed and the current `TeamMembershipStatus`.
+            This depends on the desired status passed as an argument, the
+            subscription policy and the user's priveleges.
         """
-
-    def deactivateAllMembers(comment, reviewer):
-        """Deactivate all the members of this team."""
 
     @operation_parameters(
         team=copy_field(ITeamMembership['team']),
@@ -1462,6 +1466,13 @@ class IPersonEditRestricted(Interface):
         must be active (APPROVED or ADMIN) and set to expire in less than
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
+
+
+class IPersonModerate(Interface):
+    """IPerson attributes that require launchpad.Moderate."""
+
+    def deactivateAllMembers(comment, reviewer):
+        """Deactivate all the members of this team."""
 
 
 class IPersonCommAdminWriteRestricted(Interface):
@@ -1514,7 +1525,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IHasStanding, ISetLocation, IRootContext):
+              IPersonModerate, IHasStanding, ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -1655,7 +1666,7 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
-    def isNameBlacklisted(self, name):
+    def isNameBlacklisted(name):
         """Is the given name blacklisted by Launchpad Administrators?"""
 
     def createPersonAndEmail(
@@ -1803,11 +1814,18 @@ class IPersonSet(Interface):
         """
 
     @operation_parameters(
-        text=TextLine(title=_("Search text"), default=u""))
+        text=TextLine(
+            title=_("Search text"), default=u""),
+        created_after=Datetime(
+            title=_("Created after"), required=False),
+        created_before=Datetime(
+            title=_("Created before"), required=False),
+        )
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findPerson(text="", exclude_inactive_accounts=True,
-                   must_have_email=False):
+                   must_have_email=False,
+                   created_after=None, created_before=None):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1827,6 +1845,9 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
+
+        If created_before or created_after are not None, they are used to
+        restrict the search to the dates provided.
         """
 
     @operation_parameters(
@@ -1848,7 +1869,7 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def merge(from_person, to_person, deactivate_members=False, user=None):
+    def merge(from_person, to_person):
         """Merge a person/team into another.
 
         The old person/team (from_person) will be left as an atavism.
@@ -1867,7 +1888,7 @@ class IPersonSet(Interface):
         develops. -- StuartBishop 20050812
         """
 
-    def getValidPersons(self, persons):
+    def getValidPersons(persons):
         """Get all the Persons that are valid.
 
         This method is more effective than looking at

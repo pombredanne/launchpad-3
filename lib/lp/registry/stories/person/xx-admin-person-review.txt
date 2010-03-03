@@ -47,7 +47,7 @@ hidden from the UI.
 
 The page also contains a link back to the +review page.
 
-    >>> link = admin_browser.getLink(url='+review', index=1)
+    >>> link = admin_browser.getLink(url='+review')
     >>> print link.text
     edit[IMG] Review the user's Launchpad information
 
@@ -103,7 +103,8 @@ be able to suspend spam accounts.
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from zope.component import getUtility
     >>> registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-    >>> registry_team.addMember(registry_expert, registry_team.teamowner)
+    >>> ignored = registry_team.addMember(
+    ...     registry_expert, registry_team.teamowner)
     >>> print registry_expert.inTeam(registry_team)
     True
     >>> logout()

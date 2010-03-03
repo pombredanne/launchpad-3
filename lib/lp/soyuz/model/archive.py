@@ -31,6 +31,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
@@ -54,9 +55,10 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, CannotCopy, DistroSeriesNotFound, IArchive, IArchiveSet,
-    IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
+    DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
+    InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
+    PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -111,10 +113,19 @@ class Archive(SQLBase):
         If the owner of the archive is private, then the archive cannot be
         made public.
         """
-        if not value:
-            # The archive is transitioning from public to private.
+        if value is False:
+            # The archive is transitioning from private to public.
             assert self.owner.visibility != PersonVisibility.PRIVATE, (
                 "Private teams may not have public PPAs.")
+
+        # If the privacy is being changed ensure there are no sources
+        # published.
+        sources_count = self.getPublishedSources().count()
+        if sources_count > 0:
+            raise CannotSwitchPrivacy(
+                "This archive has had %d sources published and therefore "
+                "cannot have its privacy switched." % sources_count)
+
         return value
 
     name = StringCol(
@@ -130,7 +141,8 @@ class Archive(SQLBase):
     purpose = EnumCol(
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
-    enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+    _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+    enabled = property(lambda x: x._enabled)
 
     publish = BoolCol(dbName='publish', notNull=True, default=True)
 
@@ -285,6 +297,12 @@ class Archive(SQLBase):
             return urlappend(
                 url, "/".join(
                     (self.owner.name, self.name, self.distribution.name)))
+
+        if self.is_copy:
+            url = urlappend(
+                config.archivepublisher.copy_base_url,
+                self.distribution.name + '-' + self.name)
+            return urlappend(url, self.distribution.name)
 
         try:
             postfix = archive_postfixes[self.purpose]
@@ -1094,17 +1112,8 @@ class Archive(SQLBase):
                     to_series=None, include_binaries=False):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
-        sources = []
-        for name in source_names:
-            # Check to see if the source package exists, and raise a useful
-            # error if it doesn't.
-            getUtility(ISourcePackageNameSet)[name]
-            # Grabbing the item at index 0 ensures it's the most recent
-            # publication.
-            sources.append(
-                from_archive.getPublishedSources(
-                    name=name, exact_match=True)[0])
-
+        sources = self._collectLatestPublishedSources(
+            from_archive, source_names)
         self._copySources(sources, to_pocket, to_series, include_binaries)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
@@ -1118,6 +1127,28 @@ class Archive(SQLBase):
             name=source_name, version=version, exact_match=True)[0]
 
         self._copySources([source], to_pocket, to_series, include_binaries)
+
+    def _collectLatestPublishedSources(self, from_archive, source_names):
+        """Private helper to collect the latest published sources for an
+        archive.
+
+        :raises NoSuchSourcePackageName: If any of the source_names do not
+            exist.
+        """
+        sources = []
+        for name in source_names:
+            # Check to see if the source package exists. This will raise
+            # a NoSuchSourcePackageName exception if the source package
+            # doesn't exist.
+            getUtility(ISourcePackageNameSet)[name]
+            # Grabbing the item at index 0 ensures it's the most recent
+            # publication.
+            published_sources = from_archive.getPublishedSources(
+                name=name, exact_match=True,
+                status=PackagePublishingStatus.PUBLISHED)
+            if published_sources.count() > 0:
+                sources.append(published_sources[0])
+        return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False):
@@ -1230,13 +1261,45 @@ class Archive(SQLBase):
             extra_exprs.append(Build.buildstate == build_status)
 
         result_set = store.find(
-            SourcePackageRelease, 
+            SourcePackageRelease,
             Build.sourcepackagereleaseID == SourcePackageRelease.id,
             Build.archive == self,
             *extra_exprs)
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
         return result_set
+
+    def _setBuildStatuses(self, status):
+        """Update the pending Build Jobs' status for this archive."""
+
+        query = """
+            UPDATE Job SET status = %s
+            FROM Build, BuildPackageJob, BuildQueue
+            WHERE
+                -- insert self.id here
+                Build.archive = %s
+                AND BuildPackageJob.build = Build.id
+                AND BuildPackageJob.job = BuildQueue.job
+                AND Job.id = BuildQueue.job
+                -- Build is in state BuildStatus.NEEDSBUILD (0)
+                AND Build.buildstate = %s;
+        """ % sqlvalues(status, self, BuildStatus.NEEDSBUILD)
+
+        store = Store.of(self)
+        store.execute(query)
+
+    def enable(self):
+        """See `IArchive`."""
+        assert self._enabled == False, "This archive is already enabled."
+        self._enabled = True
+        self._setBuildStatuses(JobStatus.WAITING)
+
+    def disable(self):
+        """See `IArchive`."""
+        assert self._enabled == True, "This archive is already disabled."
+        self._enabled = False
+        self._setBuildStatuses(JobStatus.SUSPENDED)
+
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1378,7 +1441,11 @@ class ArchiveSet:
             owner=owner, distribution=distribution, name=name,
             displayname=displayname, description=description,
             purpose=purpose, publish=publish, signing_key=signing_key,
-            enabled=enabled, require_virtualized=require_virtualized)
+            require_virtualized=require_virtualized)
+
+        # Upon creation archives are enabled by default.
+        if enabled == False:
+            new_archive.disable()
 
         # Private teams cannot have public PPAs.
         if owner.visibility == PersonVisibility.PRIVATE:
@@ -1468,7 +1535,7 @@ class ArchiveSet:
             Archive,
             Archive.signing_key == None,
             Archive.purpose == ArchivePurpose.PPA,
-            Archive.enabled == True)
+            Archive._enabled == True)
         results.order_by(Archive.date_created)
         return results.config(distinct=True)
 
@@ -1584,7 +1651,7 @@ class ArchiveSet:
 
         if exclude_disabled:
             public_archive = And(Archive.private == False,
-                                 Archive.enabled == True)
+                                 Archive._enabled == True)
         else:
             public_archive = (Archive.private == False)
 

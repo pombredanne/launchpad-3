@@ -32,13 +32,11 @@ __all__ = [
     'BranchMirrorer',
     'BranchLoopError',
     'BranchReferenceForbidden',
-    'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
     'install_worker_ui_factory',
     'PullerWorker',
     'PullerWorkerProtocol',
     'StackedOnBranchNotFound',
-    'URLChecker',
     ]
 
 
@@ -363,8 +361,8 @@ class PullerWorker:
             stacked-on branch for the product of the branch we are mirroring.
             None or '' if there is no such branch.
         :param protocol: An instance of `PullerWorkerProtocol`.
-        :param branch_mirrorer: An instance of `BranchMirrorer`.  If not passed,
-            one will be chosen based on the value of `branch_type`.
+        :param branch_mirrorer: An instance of `BranchMirrorer`.  If not
+            passed, one will be chosen based on the value of `branch_type`.
         :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
             global ErrorUtility.
         """
@@ -421,12 +419,12 @@ class PullerWorker:
         from lp.codehosting.vfs import get_puller_server
 
         server = get_puller_server()
-        server.setUp()
+        server.start_server()
         try:
             source_branch = self.branch_mirrorer.open(self.source)
             return self.branch_mirrorer.mirror(source_branch, self.dest)
         finally:
-            server.tearDown()
+            server.stop_server()
 
     def mirror(self):
         """Open source and destination branches and pull source into
@@ -518,6 +516,7 @@ class PullerWorker:
 
 WORKER_ACTIVITY_PROGRESS_BAR = 'progress bar'
 WORKER_ACTIVITY_NETWORK = 'network'
+
 
 class PullerWorkerUIFactory(SilentUIFactory):
     """An UIFactory that always says yes to breaking locks."""

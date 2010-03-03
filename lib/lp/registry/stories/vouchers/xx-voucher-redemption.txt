@@ -117,7 +117,8 @@ viewing his +related-projects page.
     >>> commercial_member = getUtility(IPersonSet).getByEmail(
     ...     'commercial-member@canonical.com')
     >>> celebs = getUtility(ILaunchpadCelebrities)
-    >>> celebs.registry_experts.addMember(commercial_member, commercial_member)
+    >>> ignored = celebs.registry_experts.addMember(
+    ...     commercial_member, commercial_member)
     >>> logout()
 
     >>> browser.open(

@@ -3,23 +3,30 @@
 
 """Test Archive features."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.build import Build
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
 
@@ -381,6 +388,222 @@ class TestCorrespondingDebugArchive(TestCaseWithFactory):
 
         self.assertIs(
             self.primary_archive.debug_archive, None)
+
+
+class TestArchiveEnableDisable(TestCaseWithFactory):
+    """Test the enable and disable methods of Archive."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        #XXX: rockstar - 12 Jan 2010 - Bug #506255 - Tidy up these tests!
+        super(TestArchiveEnableDisable, self).setUp()
+
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        self.archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PRIMARY)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        sample_data = store.find(Build)
+        for build in sample_data:
+            build.buildstate = BuildStatus.FULLYBUILT
+        store.flush()
+
+        # We test builds that target a primary archive.
+        self.builds = []
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="apg", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="vim", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gcc", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="bison", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="flex", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="postgres",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        # Set up the builds for test.
+        score = 1000
+        duration = 0
+        for build in self.builds:
+            score += 1
+            duration += 60
+            bq = build.buildqueue_record
+            bq.lastscore = score
+            bq.estimated_duration = timedelta(seconds=duration)
+
+    def _getBuildJobsByStatus(self, archive, status):
+        # Return the count for archive build jobs with the given status.
+        query = """
+            SELECT COUNT(Job.id)
+            FROM Build, BuildPackageJob, BuildQueue, Job
+            WHERE
+                Build.archive = %s
+                AND BuildPackageJob.build = Build.id
+                AND BuildPackageJob.job = BuildQueue.job
+                AND Job.id = BuildQueue.job
+                AND Build.buildstate = %s
+                AND Job.status = %s;
+        """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.execute(query).get_one()[0]
+
+    def assertNoBuildJobsHaveStatus(self, archive, status):
+        # Check that that the jobs attached to this archive do not have this
+        # status.
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), 0)
+
+    def assertHasBuildJobsWithStatus(self, archive, status):
+        # Check that that there are jobs attached to this archive that have
+        # the specified status.
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), 8)
+
+    def test_enableArchive(self):
+        # Enabling an archive should set all the Archive's suspended builds to
+        # WAITING.
+
+        # Disable the archive, because it's currently enabled.
+        self.archive.disable()
+        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.SUSPENDED)
+        self.archive.enable()
+        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.SUSPENDED)
+        self.assertTrue(self.archive.enabled)
+
+    def test_enableArchiveAlreadyEnabled(self):
+        # Enabling an already enabled Archive should raise an AssertionError.
+        self.assertRaises(AssertionError, self.archive.enable)
+
+    def test_disableArchive(self):
+        # Disabling an archive should set all the Archive's pending bulds to
+        # SUSPENDED.
+        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.WAITING)
+        self.archive.disable()
+        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.WAITING)
+        self.assertFalse(self.archive.enabled)
+
+    def test_disableArchiveAlreadyDisabled(self):
+        # Disabling an already disabled Archive should raise an
+        # AssertionError.
+        self.archive.disable()
+        self.assertRaises(AssertionError, self.archive.disable)
+
+class TestCollectLatestPublishedSources(TestCaseWithFactory):
+    """Ensure that the private helper method works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestCollectLatestPublishedSources, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create an archive with some published sources. We'll store
+        # a reference to the naked archive so that we can call
+        # the private method which is not defined on the interface.
+        self.archive = self.factory.makeArchive()
+        self.naked_archive = removeSecurityProxy(self.archive)
+
+        self.pub_1 = self.publisher.getPubSource(
+            version='0.5.11~ppa1', archive=self.archive, sourcename="foo",
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.pub_2 = self.publisher.getPubSource(
+            version='0.5.11~ppa2', archive=self.archive, sourcename="foo",
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.pub_3 = self.publisher.getPubSource(
+            version='0.9', archive=self.archive, sourcename="bar",
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def test_collectLatestPublishedSources_returns_latest(self):
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual('0.5.11~ppa2', pubs[0].source_package_version)
+
+    def test_collectLatestPublishedSources_returns_published_only(self):
+        # Set the status of the latest pub to DELETED and ensure that it
+        # is not returned.
+        self.pub_2.secure_record.status = PackagePublishingStatus.DELETED
+
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+
+
+class TestArchivePrivacySwitching(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Create a public and a private PPA."""
+        super(TestArchivePrivacySwitching, self).setUp()
+        self.public_ppa = self.factory.makeArchive()
+        self.private_ppa = self.factory.makeArchive()
+        self.private_ppa.buildd_secret = 'blah'
+        self.private_ppa.private = True
+
+    def make_ppa_private(self, ppa):
+        """Helper method to privatise a ppa."""
+        ppa.private = True
+        ppa.buildd_secret = "secret"
+
+    def make_ppa_public(self, ppa):
+        """Helper method to make a PPA public (and use for assertRaises)."""
+        ppa.private = False
+        ppa.buildd_secret = ''
+
+    def test_switch_privacy_no_pubs_succeeds(self):
+        # Changing the privacy is fine if there are no publishing
+        # records.
+        self.make_ppa_private(self.public_ppa)
+        self.assertTrue(self.public_ppa.private)
+
+        self.private_ppa.private = False
+        self.assertFalse(self.private_ppa.private)
+
+    def test_switch_privacy_with_pubs_fails(self):
+        # Changing the privacy is not possible when the archive already
+        # has published sources.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        publisher.getPubSource(archive=self.public_ppa)
+        publisher.getPubSource(archive=self.private_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_private, self.public_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

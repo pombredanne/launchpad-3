@@ -28,22 +28,24 @@ redirect back to the PPA page with a feedback message:
     ...     print msg
     Only private archives can have subscribers.
 
-Setup both cprov's and mark's PPAs as a private one:
+Setup private PPAs for both Celso and Mark:
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
-    >>> admin_browser.getLink("Administer archive").click()
-    >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
-    >>> admin_browser.getControl("Save").click()
-    >>> admin_browser.open("http://launchpad.dev/~mark/+archive/ppa")
-    >>> admin_browser.getLink("Administer archive").click()
-    >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
-    >>> admin_browser.getControl("Save").click()
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('admin@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, name="p3a", distribution=ubuntu, private=True)
+    >>> mark_private_ppa = factory.makeArchive(
+    ...     owner=mark, name="p3a", distribution=ubuntu, private=True)
+    >>> logout()
 
 The PPA page includes a link to manage subscriptions:
 
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/p3a")
     >>> cprov_browser.getLink("Manage access").click()
 
 The page includes the required dependencies for the yui2-based date
@@ -62,7 +64,7 @@ with a message:
 
     >>> main_content = find_main_content(cprov_browser.contents)
     >>> print extract_text(main_content.find('h1'))
-    Manage access to PPA for Celso Providelo
+    Manage access to PPA named p3a for Celso Providelo
 
     >>> print extract_text(find_tag_by_id(cprov_browser.contents,
     ...     'no-subscribers'))
@@ -123,7 +125,7 @@ Joe has multiple subscriptions:
 
     >>> mark_browser = setupBrowser(
     ...     auth="Basic mark@example.com:test")
-    >>> mark_browser.open("http://launchpad.dev/~mark/+archive/ppa/+subscriptions")
+    >>> mark_browser.open("http://launchpad.dev/~mark/+archive/p3a/+subscriptions")
     >>> mark_browser.getControl(name='field.subscriber').value = 'joesmith'
     >>> mark_browser.getControl(
     ...     name='field.description').value = "Joe is also my friend"
@@ -138,9 +140,9 @@ listed in the current subscriptions area:
     >>> for row in find_tags_by_class(joe_browser.contents,
     ...                               'archive-subscription-row'):
     ...     print extract_text(row)
-    Archive
-    PPA for Mark Shuttleworth    View
-    PPA for Celso Providelo      View
+    Archive                          Owner
+    PPA named... (ppa:mark/p3a)      Mark Shuttleworth       View
+    PPA named... (ppa:cprov/p3a)     Celso Providelo         View
 
 == Confirming a subscription ==
 
@@ -153,12 +155,12 @@ displaying their subscription.
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    deb http://joesmith:...@private-ppa.launchpad.dev/mark/ppa/ubuntu
-        breezy-autotest main #Personal access of Joe Smith
-        to PPA for Mark Shuttleworth
-    deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/ppa/ubuntu
-        breezy-autotest main #Personal access of Joe Smith
-        to PPA for Mark Shuttleworth
+    deb http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
+        hoary main #Personal access of Joe Smith
+        to PPA named p3a for Mark Shuttleworth
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
+        hoary main #Personal access of Joe Smith
+        to PPA named p3a for Mark Shuttleworth
 
 This page will include information about the signing key, if the archive
 has a signing key:
@@ -169,7 +171,7 @@ has a signing key:
     >>> login('foo.bar@canonical.com')
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> a_key = getUtility(IGPGKeySet).get(1)
-    >>> mark.archive.signing_key = a_key
+    >>> mark_private_ppa.signing_key = a_key
     >>> logout()
 
     >>> joe_browser.reload()
@@ -177,11 +179,11 @@ has a signing key:
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    deb http://joesmith:...@private-ppa.launchpad.dev/mark/ppa/ubuntu
-        breezy-autotest main #Personal access of Joe Smith
-        to PPA for Mark Shuttleworth
-    deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/ppa/ubuntu
-        breezy-autotest main #Personal access of Joe Smith
-        to PPA for Mark Shuttleworth
+    deb http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
+        hoary main #Personal access of Joe Smith
+        to PPA named p3a for Mark Shuttleworth
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/p3a/ubuntu
+        hoary main #Personal access of Joe Smith
+        to PPA named p3a for Mark Shuttleworth
     This repository is signed ...
 

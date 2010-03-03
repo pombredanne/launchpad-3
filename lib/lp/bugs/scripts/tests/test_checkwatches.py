@@ -9,14 +9,20 @@ import transaction
 
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.database.sqlbase import commit
+from canonical.launchpad.ftests import login
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, BugTrackerType, IBugSet, IBugTaskSet,
+    ILaunchpadCelebrities, IPersonSet, IProductSet, IQuestionSet)
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.scripts import checkwatches
 from lp.bugs.scripts.checkwatches import CheckWatchesErrorUtility
-from lp.bugs.tests.externalbugtracker import TestBugzillaAPIXMLRPCTransport
+from lp.bugs.tests.externalbugtracker import (
+    TestBugzillaAPIXMLRPCTransport, new_bugtracker)
 from lp.testing import TestCaseWithFactory
 
 
@@ -38,37 +44,17 @@ class NonConnectingBugzillaAPI(BugzillaAPI):
     def getExternalBugTrackerToUse(self):
         return self
 
-    def getProductsForRemoteBugs(self, remote_bugs):
-        """Return the products for some remote bugs.
-
-        This method is basically the same as that of the superclass but
-        without the call to initializeRemoteBugDB().
-        """
-        bug_products = {}
-        for bug_id in bug_ids:
-            # If one of the bugs we're trying to get the product for
-            # doesn't exist, just skip it.
-            try:
-                actual_bug_id = self._getActualBugId(bug_id)
-            except BugNotFound:
-                continue
-
-            bug_dict = self._bugs[actual_bug_id]
-            bug_products[bug_id] = bug_dict['product']
-
-        return bug_products
-
 
 class NoBugWatchesByRemoteBugUpdater(checkwatches.BugWatchUpdater):
     """A subclass of BugWatchUpdater with methods overridden for testing."""
 
-    def _getBugWatchesByRemoteBug(self, bug_watch_ids):
-        """Return an empty dict.
+    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
+        """Return an empty list.
 
-        This method overrides _getBugWatchesByRemoteBug() so that bug
+        This method overrides _getBugWatchesForRemoteBug() so that bug
         497141 can be regression-tested.
         """
-        return {}
+        return []
 
 
 class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
@@ -144,6 +130,76 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         last_oops = error_utility.getLastOopsReport()
         self.assertTrue(
             last_oops.value.startswith('Spurious remote bug ID'))
+
+
+class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
+    """Tests for updating bugs with linked questions."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Set up bugs, watches and questions to test with."""
+        super(TestUpdateBugsWithLinkedQuestions, self).setUp()
+
+        # For test_can_update_bug_with_questions we need a bug that has
+        # a question linked to it.
+        bug_with_question = getUtility(IBugSet).get(10)
+        question = getUtility(IQuestionSet).get(1)
+
+        # XXX gmb 2007-12-11 bug 175545:
+        #     We shouldn't have to login() here, but since
+        #     database.buglinktarget.BugLinkTargetMixin.linkBug()
+        #     doesn't accept a user parameter, instead depending on the
+        #     currently logged in user, we get an exception if we don't.
+        login('test@canonical.com')
+        question.linkBug(bug_with_question)
+
+        # We subscribe launchpad_developers to the question since this
+        # indirectly subscribes foo.bar@canonical.com to it, too. We can
+        # then use this to test the updating of a question with indirect
+        # subscribers from a bug watch.
+        question.subscribe(
+            getUtility(ILaunchpadCelebrities).launchpad_developers)
+        commit()
+
+        # We now need to switch to the checkwatches DB user so that
+        # we're testing with the correct set of permissions.
+        self.layer.switchDbUser(config.checkwatches.dbuser)
+
+        # For test_can_update_bug_with_questions we also need a bug
+        # watch and by extension a bug tracker.
+        sample_person = getUtility(IPersonSet).getByEmail(
+            'test@canonical.com')
+        bugtracker = new_bugtracker(BugTrackerType.ROUNDUP)
+        self.bugtask_with_question = getUtility(IBugTaskSet).createTask(
+            bug_with_question, sample_person,
+            product=getUtility(IProductSet).getByName('firefox'))
+        self.bugwatch_with_question = bug_with_question.addWatch(
+            bugtracker, '1', getUtility(ILaunchpadCelebrities).janitor)
+        self.bugtask_with_question.bugwatch = self.bugwatch_with_question
+        commit()
+
+    def test_can_update_bug_with_questions(self):
+        """Test whether bugs with linked questions can be updated.
+
+        This will also test whether indirect subscribers of linked
+        questions will be notified of the changes made when the bugwatch
+        is updated.
+        """
+        # We need to check that the bug task we created in setUp() is
+        # still being referenced by our bug watch.
+        self.assertEqual(self.bugwatch_with_question.bugtasks[0].id,
+            self.bugtask_with_question.id)
+
+        # We can now update the bug watch, which will in turn update the
+        # bug task and the linked question.
+        self.bugwatch_with_question.updateStatus('some status',
+            BugTaskStatus.INPROGRESS)
+        self.assertEqual(self.bugwatch_with_question.bugtasks[0].status,
+            BugTaskStatus.INPROGRESS,
+            "BugTask status is inconsistent. Expected %s but got %s" %
+            (BugTaskStatus.INPROGRESS.title,
+            self.bugtask_with_question.status.title))
 
 
 def test_suite():

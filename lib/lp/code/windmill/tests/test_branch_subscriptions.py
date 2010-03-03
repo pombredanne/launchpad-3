@@ -9,24 +9,23 @@ __all__ = []
 import unittest
 
 import windmill
-from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing import lpuser
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
 
-class TestBranchSubscriptions(TestCaseWithFactory):
+class TestBranchSubscriptions(WindmillTestCase):
     """Test subscriptions to branches."""
 
     layer = CodeWindmillLayer
+    suite_name = "Branch Subscription Ajax Load Test"
 
     def test_branch_subscription_ajax_load(self):
-        """Test branch subscriptions loaded via ajax.
-        """
+        """Subscribe to a branch from the branch page."""
 
-        client = WindmillTestClient("Branch Subscription Ajax Load Test")
+        client = self.client
 
         lpuser.FOO_BAR.ensure_login(client)
 
@@ -60,10 +59,9 @@ class TestBranchSubscriptions(TestCaseWithFactory):
             validator=u'No subscribers.')
 
     def test_team_edit_subscription_ajax_load(self):
-        """Test that team subscriptions are editable through the ajax portlet.
-        """
+        """Unsubscribe a team from the branch."""
 
-        client = WindmillTestClient("Branch Subscription Ajax Load Test")
+        client = self.client
 
         lpuser.SAMPLE_PERSON.ensure_login(client)
 

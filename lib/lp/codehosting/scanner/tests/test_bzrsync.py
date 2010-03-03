@@ -73,7 +73,7 @@ class FakeTransportServer:
         self._url_prefix = url_prefix
         self._chroot_server = None
 
-    def setUp(self):
+    def start_server(self):
         """Activate the transport URL."""
         # The scanner tests assume that branches live on a Launchpad virtual
         # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
@@ -81,11 +81,11 @@ class FakeTransportServer:
         # transport do the work.
         register_transport(self._url_prefix, self._transportFactory)
         self._chroot_server = ChrootServer(self._transport)
-        self._chroot_server.setUp()
+        self._chroot_server.start_server()
 
-    def tearDown(self):
+    def stop_server(self):
         """Deactivate the transport URL."""
-        self._chroot_server.tearDown()
+        self._chroot_server.stop_server()
         unregister_transport(self._url_prefix, self._transportFactory)
 
     def _transportFactory(self, url):
@@ -111,8 +111,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # Here we set up a fake so that we can test without worrying about
         # authservers and the like.
         server = FakeTransportServer(self.get_transport())
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        server.start_server()
+        self.addCleanup(server.stop_server)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
@@ -183,7 +183,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         This method allow subclasses to instrument the BzrSync instance used
         in syncBranch.
         """
-        return BzrSync(LaunchpadZopelessLayer.txn, db_branch)
+        return BzrSync(db_branch)
 
     def syncAndCount(self, db_branch=None, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -363,7 +363,7 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
-        bzrsync = BzrSync(LaunchpadZopelessLayer.txn, self.db_branch)
+        bzrsync = BzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
         self.assertCounts(
             counts, new_revisions=1, new_numbers=1, new_authors=1)

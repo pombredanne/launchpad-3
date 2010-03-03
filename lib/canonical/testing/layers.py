@@ -30,6 +30,7 @@ __all__ = [
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
+    'GoogleLaunchpadFunctionalLayer',
     'GoogleServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
@@ -89,6 +90,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import (
@@ -240,15 +242,23 @@ class BaseLayer:
     # in tearTestDown.
     disable_thread_check = False
 
+    # A flag to make services like Librarian and Memcached to persist
+    # between test runs. This flag is set in setUp() by looking at the
+    # LP_PERSISTENT_TEST_SERVICES environment variable.
+    persist_test_services = False
+
     @classmethod
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
+        BaseLayer.persist_test_services = (
+            os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
         # Kill any Memcached or Librarian left running from a previous
         # test run, or from the parent test process if the current
         # layer is being run in a subprocess.
-        kill_by_pidfile(MemcachedLayer.getPidFile())
-        LibrarianTestSetup().tearDown()
+        if not BaseLayer.persist_test_services:
+            kill_by_pidfile(MemcachedLayer.getPidFile())
+            LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
             DatabaseLayer.connect().close()
@@ -341,6 +351,7 @@ class BaseLayer:
         # Fail tests with memory leaks now rather than when Launchpad crashes
         # due to a leak because someone ignored the warnings.
         if gc.garbage:
+            del gc.garbage[:]
             gc.collect() # Expensive, so only do if there might be garbage.
             if gc.garbage:
                 BaseLayer.flagTestIsolationFailure(
@@ -459,6 +470,9 @@ class MemcachedLayer(BaseLayer):
     def setUp(cls):
         # Create a client
         MemcachedLayer.client = memcache_client_factory()
+        if (BaseLayer.persist_test_services and
+            os.path.exists(MemcachedLayer.getPidFile())):
+            return
 
         # First, check to see if there is a memcached already running.
         # This happens when new layers are run as a subprocess.
@@ -494,16 +508,18 @@ class MemcachedLayer(BaseLayer):
 
         # Register an atexit hook just in case tearDown doesn't get
         # invoked for some perculiar reason.
-        atexit.register(kill_by_pidfile, pidfile)
+        if not BaseLayer.persist_test_services:
+            atexit.register(kill_by_pidfile, pidfile)
 
     @classmethod
     @profiled
     def tearDown(cls):
         MemcachedLayer.client.disconnect_all()
         MemcachedLayer.client = None
-        # Kill our memcached, and there is no reason to be nice about it.
-        kill_by_pidfile(MemcachedLayer.getPidFile())
-        MemcachedLayer._memcached_process = None
+        if not BaseLayer.persist_test_services:
+            # Kill our memcached, and there is no reason to be nice about it.
+            kill_by_pidfile(MemcachedLayer.getPidFile())
+            MemcachedLayer._memcached_process = None
 
     @classmethod
     @profiled
@@ -1153,8 +1169,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
         disconnect_stores()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
-                               GoogleServiceLayer):
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     @profiled
@@ -1191,6 +1206,31 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
 
         # Disconnect Storm so it doesn't get in the way of database resets
         disconnect_stores()
+
+
+class GoogleLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,
+                                     GoogleServiceLayer):
+    """Provides Google service in addition to LaunchpadFunctionalLayer."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
 
 
 
@@ -1388,7 +1428,7 @@ class MockHTTPTask:
         return self.request._orig_env
 
 
-class PageTestLayer(LaunchpadFunctionalLayer):
+class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
     """Environment for page tests.
     """
     @classmethod
@@ -1832,6 +1872,21 @@ class BaseWindmillLayer(AppServerLayer):
         os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
         cls.shell_objects = start_windmill()
 
+        # Patch the config to provide the port number and not use https.
+        sites = (
+            ('vhost.mainsite', 'rooturl: http://launchpad.dev:8085/'),
+            ('vhost.answers', 'rooturl: http://answers.launchpad.dev:8085/'),
+            ('vhost.blueprints',
+                'rooturl: http://blueprints.launchpad.dev:8085/'),
+            ('vhost.bugs', 'rooturl: http://bugs.launchpad.dev:8085/'),
+            ('vhost.code', 'rooturl: http://code.launchpad.dev:8085/'),
+            ('vhost.testopenid', 'rooturl: http://testopenid.dev:8085/'),
+            ('vhost.translations',
+                'rooturl: http://translations.launchpad.dev:8085/'))
+        for site in sites:
+            config.push('windmillsettings', "\n[%s]\n%s\n" % site)
+        allvhosts.reload()
+
     @classmethod
     @profiled
     def tearDown(cls):
@@ -1840,6 +1895,7 @@ class BaseWindmillLayer(AppServerLayer):
         if cls.config_file is not None:
             # Close the file so that it gets deleted.
             cls.config_file.close()
+        config.reloadConfig()
 
     @classmethod
     @profiled
