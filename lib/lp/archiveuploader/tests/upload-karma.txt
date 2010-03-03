@@ -49,8 +49,10 @@ compared to the package creator, then both will get karma.
 
 Poke the queue entry so it looks like Foo Bar (name16) uploaded it:
 
-    >>> from canonical.launchpad.interfaces import IGPGKeySet, IPersonSet
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
+
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> key = getUtility(IGPGKeySet).getGPGKeysForPeople([name16])[0]
     >>> removeSecurityProxy(foo_src.queue_root).signing_key = key

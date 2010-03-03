@@ -1,13 +1,16 @@
 In order to prepare the tests below some initialization is required.
 
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.database.sqlbase import commit
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> from lp.archiveuploader.nascentupload import NascentUpload
     >>> from lp.archiveuploader.tests import (
     ...     datadir, getPolicy, mock_logger_quiet)
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, IArchivePermissionSet, IPackagesetSet,
-    ...     IPersonSet, ISourcePackageNameSet)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from lp.soyuz.interfaces.archive import (
+    ...     ArchivePermissionType, IArchivePermissionSet)
+    >>> from lp.soyuz.interfaces.packageset import IPackagesetSet
 
     >>> insecure_policy = getPolicy(
     ...     name='insecure', distro='ubuntu', distroseries='hoary')
