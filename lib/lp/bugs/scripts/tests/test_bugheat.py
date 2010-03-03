@@ -73,6 +73,8 @@ class TestBugHeatCalculator(TestCaseWithFactory):
         for i in range(3):
             dupe = self.factory.makeBug()
             dupe.duplicateof = self.bug
+        # Each bug reporter is by default also marked as being affected
+        # by the bug, so we have three additional affected users.
         expected_heat += BugHeatConstants.AFFECTED_USER * 3
 
         person = self.factory.makePerson()
