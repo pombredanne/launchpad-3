@@ -6,13 +6,14 @@ is used to render the flames.
 
     >>> from lp.bugs.browser.bug import MAX_HEAT
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.webapp import canonical_url
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from BeautifulSoup import BeautifulSoup
     >>> def print_flames(html):
     ...     soup = BeautifulSoup(html)
-    ...     for img in soup.span.contents:
+    ...     for img in soup.contents:
     ...         print img['src']
+    ...         print img['alt']
+    ...         print img['title']
     >>> login('foo.bar@canonical.com')
     >>> bug = factory.makeBug()
 
@@ -23,29 +24,26 @@ and two black-and-white flames.
     >>> removeSecurityProxy(bug).heat = MAX_HEAT / 2
     >>> bug_heat_view = create_initialized_view(bug, name='+bug-heat')
     >>> print_flames(bug_heat_view())
-    /@@/flame-icon
-    /@@/flame-icon
-    /@@/flame-bw-icon
-    /@@/flame-bw-icon
+    /@@/bug-heat-2.png
+    2 out of 4 heat flames
+    Heat: 2500
 
 A bug with a maximum heat will display all four flames coloured.
 
     >>> removeSecurityProxy(bug).heat = MAX_HEAT
     >>> bug_heat_view = create_initialized_view(bug, name='+bug-heat')
     >>> print_flames(bug_heat_view())
-    /@@/flame-icon
-    /@@/flame-icon
-    /@@/flame-icon
-    /@@/flame-icon
+    /@@/bug-heat-4.png
+    4 out of 4 heat flames
+    Heat: 5000
 
 A heat of less than a quarter of the maximum will display no coloured flames.
 
     >>> removeSecurityProxy(bug).heat = 0.1 * MAX_HEAT
     >>> bug_heat_view = create_initialized_view(bug, name='+bug-heat')
     >>> print_flames(bug_heat_view())
-    /@@/flame-bw-icon
-    /@@/flame-bw-icon
-    /@@/flame-bw-icon
-    /@@/flame-bw-icon
+    /@@/bug-heat-0.png
+    0 out of 4 heat flames
+    Heat: 500
 
     >>> logout()

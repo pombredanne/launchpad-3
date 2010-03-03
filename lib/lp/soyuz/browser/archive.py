@@ -1782,7 +1782,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['displayname', 'description', 'enabled']
+    field_names = ['displayname', 'description', 'enabled', 'publish']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 
@@ -1802,6 +1802,14 @@ class ArchiveAdminView(BaseArchiveEditView):
         this is a private archive.
         """
         form.getWidgetsData(self.widgets, 'field', data)
+
+        if data.get('private') != self.context.private:
+            # The privacy is being switched.
+            if self.context.getPublishedSources().count() > 0:
+                self.setFieldError(
+                    'private',
+                    'This archive already has published sources. It is '
+                    'not possible to switch the privacy.')
 
         if data.get('buildd_secret') is None and data['private']:
             self.setFieldError(

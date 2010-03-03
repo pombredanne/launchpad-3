@@ -115,10 +115,19 @@ class Archive(SQLBase):
         If the owner of the archive is private, then the archive cannot be
         made public.
         """
-        if not value:
-            # The archive is transitioning from public to private.
+        if value is False:
+            # The archive is transitioning from private to public.
             assert self.owner.visibility != PersonVisibility.PRIVATE, (
                 "Private teams may not have public PPAs.")
+
+        # If the privacy is being changed ensure there are no sources
+        # published.
+        sources_count = self.getPublishedSources().count()
+        if sources_count > 0:
+            raise CannotSwitchPrivacy(
+                "This archive has had %d sources published and therefore "
+                "cannot have its privacy switched." % sources_count)
+
         return value
 
     name = StringCol(
@@ -290,6 +299,12 @@ class Archive(SQLBase):
             return urlappend(
                 url, "/".join(
                     (self.owner.name, self.name, self.distribution.name)))
+
+        if self.is_copy:
+            url = urlappend(
+                config.archivepublisher.copy_base_url,
+                self.distribution.name + '-' + self.name)
+            return urlappend(url, self.distribution.name)
 
         try:
             postfix = archive_postfixes[self.purpose]
@@ -1219,7 +1234,7 @@ class Archive(SQLBase):
         self._copySources([source], to_pocket, to_series, include_binaries)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
-        """Private helper to collect the latest published sources for an 
+        """Private helper to collect the latest published sources for an
         archive.
 
         :raises NoSuchSourcePackageName: If any of the source_names do not
@@ -1351,7 +1366,7 @@ class Archive(SQLBase):
             extra_exprs.append(Build.buildstate == build_status)
 
         result_set = store.find(
-            SourcePackageRelease, 
+            SourcePackageRelease,
             Build.sourcepackagereleaseID == SourcePackageRelease.id,
             Build.archive == self,
             *extra_exprs)
