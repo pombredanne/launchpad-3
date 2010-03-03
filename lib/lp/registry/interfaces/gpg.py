@@ -95,7 +95,7 @@ class GPGKeyAlgorithm(DBEnumeratedType):
 class IGPGKey(IHasOwner):
     """OpenPGP support"""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry('gpg_key')
 
     id = Int(title=_("Database id"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)

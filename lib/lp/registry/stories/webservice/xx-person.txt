@@ -176,8 +176,18 @@ Let's give "name12" a key via the back door of our internal Python APIs:
 Now when we get the gpgkey collection for 'name12' again, the key should show
 up:
 
-    >>> print_self_link_of_entries(webservice.get(gpgkeys).jsonBody())
-    XXX
+    >>> keys = webservice.get(gpgkeys).jsonBody()
+    >>> print_self_link_of_entries(keys)
+    http://api.launchpad.dev/beta/~name12/+gpg-keys/00000001
+
+
+And then we can actually retrieve the key:
+
+    >>> pprint_entry(keys['entries'][0])
+    fingerprint: u'...'
+    keyid: u'...'
+    resource_type_link: u'http://.../#gpg_key'
+    self_link: u'http://.../~name12/+gpg-keys/...'
 
 
 === Team memberships ===
