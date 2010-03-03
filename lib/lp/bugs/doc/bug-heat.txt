@@ -116,3 +116,18 @@ or Distribution.
     >>> print distro_series.distribution.max_bug_heat
     123
 
+Maximum heat is limited to bugs of a specific target.
+
+    >>> product = factory.makeProduct()
+    >>> product_bug = factory.makeBug(product=product)
+    >>> product_bug.setHeat(123)
+    >>> distro = factory.makeDistribution()
+    >>> distro_bug = factory.makeBug()
+    >>> distro_task = distro_bug.addTask(bug.owner, distro)
+    >>> distro_bug.setHeat(456)
+    >>> print product.max_bug_heat
+    123
+    >>> print distro.max_bug_heat
+    456
+
+

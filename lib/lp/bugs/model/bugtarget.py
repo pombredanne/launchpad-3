@@ -185,40 +185,54 @@ class HasBugsBase:
             return
 
         if IDistribution.providedBy(self):
-            sql = """SELECT Bug.heat
-                     FROM Bug, Bugtask, DistroSeries
-                     WHERE Bugtask.bug = Bug.id
-                     AND Bugtask.distroseries = DistroSeries.id
-                     OR Bugtask.distribution = DistroSeries.distribution
-                     AND Bugtask.distribution = %s
-                     ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)
+            sql = ["""SELECT Bug.heat
+                      FROM Bug, Bugtask
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
+                      FROM Bug, Bugtask, DistroSeries
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.distroseries = DistroSeries.id
+                      AND DistroSeries.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProduct.providedBy(self):
-            sql = """SELECT Bug.heat
-                     FROM Bug, Bugtask, ProductSeries
-                     WHERE Bugtask.bug = Bug.id
-                     AND Bugtask.productseries = ProductSeries.id
-                     OR Bugtask.product = ProductSeries.product
-                     AND Bugtask.product = %s
-                     ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)
+            sql = ["""SELECT Bug.heat
+                      FROM Bug, Bugtask
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
+                      FROM Bug, Bugtask, ProductSeries
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.productseries = ProductSeries.id
+                      AND ProductSeries.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = """SELECT MAX(heat)
-                     FROM Bug, Bugtask, Product
-                     WHERE Bugtask.bug = Bug.id AND
-                     Bugtask.product = Product.id AND
-                     Product.project =  %s""" % sqlvalues(self)
+            sql = ["""SELECT MAX(heat)
+                      FROM Bug, Bugtask, Product
+                      WHERE Bugtask.bug = Bug.id AND
+                      Bugtask.product = Product.id AND
+                      Product.project =  %s""" % sqlvalues(self)]
         elif IDistributionSourcePackage.providedBy(self):
-            sql = """SELECT MAX(heat)
-                     FROM Bug, Bugtask
-                     WHERE Bugtask.bug = Bug.id AND
-                     Bugtask.distribution = %s AND
-                     Bugtask.sourcepackagename = %s""" % sqlvalues(
-                self.distribution, self.sourcepackagename)
+            sql = ["""SELECT MAX(heat)
+                      FROM Bug, Bugtask
+                      WHERE Bugtask.bug = Bug.id AND
+                      Bugtask.distribution = %s AND
+                      Bugtask.sourcepackagename = %s""" % sqlvalues(
+                 self.distribution, self.sourcepackagename)]
         else:
             raise NotImplementedError
 
-        cur = cursor()
-        cur.execute(sql)
-        self.setMaxBugHeat(cur.fetchone()[0])
+        results = []
+        for query in sql:
+            cur = cursor()
+            cur.execute(query)
+            record = cur.fetchone()
+            if record is not None:
+                results.append(record[0])
+            cur.close()
+        self.setMaxBugHeat(max(results))
 
         # If the product is part of a project group we calculate the maximum
         # heat for the project group too.
