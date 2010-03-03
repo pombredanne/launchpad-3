@@ -16,7 +16,7 @@ from zope.publisher.browser import TestRequest
 
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer, MemcachedLayer
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.testing import build_test_suite
 from lp.testing import TestCase
@@ -52,16 +52,11 @@ class TestPageTemplate(PageTemplate):
         return context
 
 
-def clear_memcache():
-    """Clear everything from memcached. Only do this in tests!"""
-    getUtility(IMemcacheClient).flush_all()
-
-
 def memcacheSetUp(test):
     setUp(test)
     test.globs['TestPageTemplate'] = TestPageTemplate
     test.globs['dedent'] = dedent
-    test.globs['clear_memcache'] = clear_memcache
+    test.globs['MemcachedLayer'] = MemcachedLayer
 
 
 special = {

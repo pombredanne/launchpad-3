@@ -33,7 +33,7 @@ cause this template to render differently.
 
 If we clear the cache, it will be rendered as expected.
 
-    >>> clear_memcache()
+    >>> MemcachedLayer.purge()
     >>> print template(param='third')
     <div>
         <span>third</span>

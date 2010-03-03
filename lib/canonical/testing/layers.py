@@ -537,6 +537,11 @@ class MemcachedLayer(BaseLayer):
     def getPidFile(cls):
         return os.path.join(config.root, '.memcache.pid')
 
+    @classmethod
+    def purge(cls):
+        "Purge everything from our memcached."
+        MemcachedLayer.client.flush_all() # Only do this in tests!
+
 
 class LibrarianLayer(BaseLayer):
     """Provides tests access to a Librarian instance.
