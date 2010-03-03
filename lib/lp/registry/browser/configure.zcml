@@ -2161,7 +2161,7 @@
         module="lp.registry.browser.personproduct"/>
     <browser:url
         for="lp.registry.interfaces.ssh.ISSHKey"
-        path_expression="string+ssh-keys/${id}"
+        path_expression="string:+ssh-keys/${id}"
         rootsite="api"
-        attribute_to_parent="owner" />
+        attribute_to_parent="person" />
 </configure>
