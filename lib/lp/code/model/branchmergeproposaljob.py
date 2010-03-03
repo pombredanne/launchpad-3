@@ -2,14 +2,14 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
-from __future__ import with_statement
-
-
 """Job classes related to BranchMergeProposals are in here.
 
 This includes both jobs for the proposals themselves, or jobs that are
 creating proposals, or diffs relating to the proposals.
 """
+
+
+from __future__ import with_statement
 
 
 __metaclass__ = type
