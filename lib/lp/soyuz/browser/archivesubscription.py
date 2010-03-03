@@ -35,7 +35,6 @@ from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IPersonalArchiveSubscription)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
@@ -327,7 +326,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         # active token, then create a token, provided a notification
         # and redirect.
         if self.request.form.get('activate') and not self.active_token:
-            token = self.context.archive.newAuthToken(self.context.subscriber)
+            self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.redirect(self.request.getURL())
 
