@@ -122,10 +122,12 @@ A bunch of messages are sent to the mailing lists.
 Give one of the mailing lists a contact address, to further simulate what the
 sync script has to deal with.
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, IEmailAddressSet, IPersonSet)
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus, IEmailAddressSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+
     >>> login('admin@canonical.com')
     >>> team = getUtility(IPersonSet).getByName('staging-two')
     >>> email = getUtility(IEmailAddressSet).new(

@@ -37,9 +37,10 @@ state.
 
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.mailinlist import (
     ...     IMailingListSet, MailingListStatus)
     >>> from canonical.launchpad.ftests import login, logout
+
     >>> login('admin@canonical.com')
     >>> mailing_list_set = getUtility(IMailingListSet)
     >>> itest_one = removeSecurityProxy(mailing_list_set.get('itest-one'))
