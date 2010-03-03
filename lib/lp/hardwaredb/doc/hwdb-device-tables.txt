@@ -151,7 +151,7 @@ vendor ID and a vendor name. We store the IDs as a string, because not all
 all busses use numeric IDs. Numbers are represented as strings with
 hexadecimal digits, prepended by '0x'.
 
-    >>> from canonical.launchpad.interfaces import HWBus, IHWVendorIDSet
+    >>> from lp.hardwaredb.interfaces.hwdb import HWBus, IHWVendorIDSet
     >>> vendor_id_set = getUtility(IHWVendorIDSet)
     >>> intel_pci_id = vendor_id_set.create(bus=HWBus.PCI,
     ...                                     vendor_id='0x8086',
@@ -2342,7 +2342,7 @@ Foo Bar.
 Instead of passing a seqence of bug IDs, we can also specify one or
 more bug tags.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskSearchParams, IBugTaskSet)
     >>> from canonical.launchpad.searchbuilder import any
 

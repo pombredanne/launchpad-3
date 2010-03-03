@@ -155,8 +155,9 @@ HWSubmission table.
     >>> import pytz
     >>> from datetime import datetime
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.hardwaredb.interfaces.hwdb import (
     ...     HWSubmissionFormat, IHWSubmissionSet)
+
     >>> date_created = datetime(2007, 04, 01, tzinfo=pytz.timezone('UTC'))
     >>> date_submitted = datetime(2007, 04, 02, tzinfo=pytz.timezone('UTC'))
     >>> submission_data = 'submission data'
@@ -366,8 +367,10 @@ to the method, or if the passed parameter is neither the owner nor an admin.
 When an anonymous submitter later registers a Launchpad account, the field
 `owner` is updated.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IEmailAddressSet, PersonCreationRationale)
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
+
     >>> user = getUtility(IPersonSet).ensurePerson(
     ...     u'beeblebrox@example.com', u'Beeblebrox',
     ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
