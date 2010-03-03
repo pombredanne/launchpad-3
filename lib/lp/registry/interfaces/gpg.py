@@ -20,11 +20,12 @@ import re
 
 from zope.schema import Bool, Int, TextLine, Choice
 from zope.interface import Interface, Attribute, implementer
-from zope.component import adapts
+from zope.component import adapter
 
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lp.registry.interfaces.role import IHasOwner
 from lazr.restful.declarations import (
     collection_default_content, export_as_webservice_collection,
@@ -142,7 +143,7 @@ class IGPGKeySet(Interface):
         """Return OpenPGP keys for a set of people."""
 
 
-@adapts(IGPGKey)
+@adapter(IGPGKey)
 @implementer(ICanonicalUrlData)
 def get_canonical_url_data_for_gpgkey(gpg_key):
     """Return the `ICanonicalUrlData` for an `IGPGKey`."""
