@@ -1,4 +1,3 @@
-import pdb
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -36,12 +35,11 @@ from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IPersonalArchiveSubscription)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView, Navigation)
+    canonical_url, LaunchpadView)
 from canonical.widgets import DateWidget
 from canonical.widgets.popup import PersonPickerWidget
 
@@ -349,7 +347,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         elif self.request.form.get('regenerate') and self.active_token:
             self.active_token.deactivate()
 
-            token = self.context.archive.newAuthToken(self.context.subscriber)
+            self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.addNotification(
                 "Launchpad has generated the new password you requested "
