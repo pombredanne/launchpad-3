@@ -902,6 +902,7 @@ class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
 
     label = 'Linked packages'
+    page_title = label
 
     @property
     def all_packaging(self):
@@ -929,15 +930,7 @@ class ProductPackagesView(LaunchpadView):
         for series in self.context.series:
             packagings = []
             for packaging in series.packagings:
-                form_id = 'delete-%s-%s-%s' % (
-                    packaging.distroseries.name,
-                    packaging.sourcepackagename.name,
-                    packaging.productseries.name,
-                    )
-                packaging_field = dict(
-                    packaging=packaging,
-                    form_id=form_id)
-                packagings.append(packaging_field)
+                packagings.append(packaging)
             packaged_series.append(dict(
                 series=series, packagings=packagings))
         return packaged_series
