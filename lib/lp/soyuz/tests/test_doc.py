@@ -38,7 +38,7 @@ def lobotomize_stevea():
     validity.
     """
     from canonical.launchpad.database import EmailAddress
-    from canonical.launchpad.interfaces import EmailAddressStatus
+    from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
     stevea_emailaddress.status = EmailAddressStatus.NEW

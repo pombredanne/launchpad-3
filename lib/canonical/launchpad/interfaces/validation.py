@@ -194,7 +194,7 @@ def validate_new_team_email(email):
     another launchpad account.
     """
     from canonical.launchpad.webapp import canonical_url
-    from canonical.launchpad.interfaces import IEmailAddressSet
+    from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     _validate_email(email)
     email_address = getUtility(IEmailAddressSet).getByEmail(email)
     if email_address is not None:
@@ -218,7 +218,7 @@ def validate_new_person_email(email):
     need to create another one.
     """
     from canonical.launchpad.webapp import canonical_url
-    from canonical.launchpad.interfaces import IPersonSet
+    from lp.registry.interfaces.person import IPersonSet
     _validate_email(email)
     owner = getUtility(IPersonSet).getByEmail(email)
     if owner is not None:

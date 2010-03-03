@@ -909,7 +909,7 @@ class Branch(SQLBase):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
-        from canonical.launchpad.interfaces import IStore
+        from canonical.launchpad.interfaces.lpstore import IStore
         IStore(self).find(
             Branch,
             Branch.id == self.id,

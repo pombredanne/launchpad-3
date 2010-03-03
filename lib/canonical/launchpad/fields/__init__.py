@@ -282,7 +282,7 @@ class BugField(Reference):
 
     def _get_schema(self):
         """Get the schema here to avoid circular imports."""
-        from canonical.launchpad.interfaces import IBug
+        from lp.bugs.interfaces.bug import IBug
         return IBug
 
     def _set_schema(self, schema):
@@ -760,7 +760,7 @@ class ProductNameField(PillarNameField):
 
 def is_public_person(person):
     """Return True if the person is public."""
-    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    from lp.registry.interfaces.person import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         return False
     return person.visibility == PersonVisibility.PUBLIC
@@ -768,7 +768,7 @@ def is_public_person(person):
 
 def is_private_membership_person(person):
     """True if the person/team has private membership visibility."""
-    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    from lp.registry.interfaces.person import IPerson, PersonVisibility
     if not IPerson.providedBy(person):
         return False
     return person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP
