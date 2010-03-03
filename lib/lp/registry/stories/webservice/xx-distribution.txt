@@ -143,3 +143,14 @@ packages matching (substring) the given text.
     speed: u'100 Mbps'
     status: u'Official'
     whiteboard: None
+
+"getCountryMirrorForCountry" returns the country DNS mirror for a given
+country; returning None if there isn't one.
+
+    >>> antarctica = webservice.get("/+countries/AQ").jsonBody()
+    >>> antarctica_country_mirror_releases = webservice.named_get(
+    ...     ubuntu['self_link'], 'getCountryMirrorForCountry',
+    ...     country = antarctica['self_link'],
+    ...     mirror_type = "CD Image").jsonBody()
+    >>> print antarctica_country_mirror_releases
+    None
