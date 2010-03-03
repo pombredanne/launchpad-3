@@ -285,16 +285,6 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
 
     label = "Private PPA access"
 
-    def initialize(self):
-        """Overridden to ensure we are not viewing a team rather than
-        a person.
-
-        As ITeam is an IPerson, this view will by default match both.
-        """
-        if self.context.is_team:
-            raise NotFoundError
-        super(PersonArchiveSubscriptionsView, self).initialize()
-
     @cachedproperty
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
