@@ -306,8 +306,8 @@ class SourcePackageRemoveUpstreamView(ReturnToReferrerMixin,
             self.context.sourcepackagename,
             self.context.distroseries)
         self.request.response.addInfoNotification(
-            'The project %s was unlinked from this source package.' %
-            old_series.product.displayname)
+            'Removed upstream association between %s and %s.' % (
+            old_series.title, self.context.distroseries.displayname))
 
 
 class SourcePackageView:

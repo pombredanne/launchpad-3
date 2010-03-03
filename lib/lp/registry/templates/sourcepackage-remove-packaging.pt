@@ -9,17 +9,23 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info">
-      <p>
-        Do you want to remove the upstream link to
-        <a tal:replace="structure context/productseries/fmt:link"/>?
-      </p>
-      <p>
-      Links from distribution packages to upstream project series let
-      distribution and upstream maintainers share bugs, patches, and
-      translations efficiently.
-      </p>
+  <div tal:condition="not: context/productseries"
+       class="error">
+    This upstream association was deleted already.
+  </div>
+  <div tal:condition="context/productseries">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <div metal:fill-slot="extra_info">
+        <p>
+          Do you want to remove the upstream link to
+          <a tal:replace="structure context/productseries/fmt:link"/>?
+        </p>
+        <p>
+        Links from distribution packages to upstream project series let
+        distribution and upstream maintainers share bugs, patches, and
+        translations efficiently.
+        </p>
+      </div>
     </div>
   </div>
 

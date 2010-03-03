@@ -49,7 +49,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from lp.registry.browser.packaging import PackagingDeleteView
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin)
@@ -243,7 +242,7 @@ class DistributionSourcePackageBaseView:
 
 
 class DistributionSourcePackageView(DistributionSourcePackageBaseView,
-                                    PackagingDeleteView):
+                                    LaunchpadView):
     """View class for DistributionSourcePackage."""
     implements(IDistributionSourcePackageActionMenu)
 

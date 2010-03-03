@@ -81,7 +81,6 @@ from lp.bugs.browser.bugtask import (
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
@@ -899,7 +898,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 check_permission('launchpad.Commercial', self.context))
 
 
-class ProductPackagesView(PackagingDeleteView):
+class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
 
     label = 'Linked packages'
@@ -937,8 +936,7 @@ class ProductPackagesView(PackagingDeleteView):
                     )
                 packaging_field = dict(
                     packaging=packaging,
-                    form_id=form_id,
-                    field=self._renderHiddenPackagingField(packaging))
+                    form_id=form_id)
                 packagings.append(packaging_field)
             packaged_series.append(dict(
                 series=series, packagings=packagings))
@@ -1264,7 +1262,8 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
+class ProductReviewLicenseView(ReturnToReferrerMixin,
+                               ProductEditView, EditPrivateBugsMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [

@@ -218,6 +218,9 @@ If there are multiple potential matches they are all shown.
     Lernid Dev...
 
 
+Upstream connections view
+-------------------------
+
 The view includes a property for determining if the project has a bug
 tracker, though the rules are somewhat complicated.
 
@@ -233,7 +236,8 @@ If the view's package has no productseries set then has_bugtracker is False.
     >>> package = factory.makeSourcePackage(
     ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
 
-    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> view = create_initialized_view(
+    ...     package, name='+upstream-connections')
 
     >>> print package.productseries
     None
@@ -249,7 +253,8 @@ So let's set the product series so we can do more interesting testing.
 If a product is not part of a project group and its bug tracker is not
 set then the view property is false.
 
-    >>> view = create_initialized_view(package, name='+portlet-associations')
+    >>> view = create_initialized_view(
+    ...     package, name='+upstream-connections')
 
     >>> print product.official_malone
     False
@@ -319,7 +324,7 @@ to the project series.
 
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    The project Stinky was unlinked from this source package.
+    Removed upstream association between Stinky stinkyseries series and Wonky.
 
     >>> view = create_initialized_view(package, name='+portlet-associations')
     >>> print extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
