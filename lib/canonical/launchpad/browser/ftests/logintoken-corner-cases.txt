@@ -11,23 +11,23 @@ Using the +newaccount view on a token that was already confirmed should
 redirect to the default token view. This would happen if for example the
 user tried to re-post the form after registering his or her account.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.logintoken import (
     ...     ILoginTokenSet, LoginTokenType)
     >>> from canonical.launchpad.browser import NewUserAccountView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> token = getUtility(ILoginTokenSet).new(
-    ...     requester=None, requesteremail=None, 
+    ...     requester=None, requesteremail=None,
     ...     email='foo@barino.com', tokentype=LoginTokenType.NEWACCOUNT)
     >>> token.consume()
     >>> form = {'field.actions.continue':	'Continue',
-    ...         'field.displayname': 'Alex', 
+    ...         'field.displayname': 'Alex',
     ...         'field.hide_email_addresses': 'off',
     ...         'field.password': '23-is-the-answer',
     ...         'field.password_dupe': '23-is-the-answer'}
     >>> view = NewUserAccountView(token, LaunchpadTestRequest(form=form))
     >>> view.initialize()
-    
+
     >>> response = view.request.response
     >>> response.getStatus()
     302

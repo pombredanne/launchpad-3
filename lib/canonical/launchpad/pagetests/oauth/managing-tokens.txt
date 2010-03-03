@@ -6,8 +6,10 @@ and/or revoked from that user's +oauth-tokens page.
     # Create a request token, but don't convert it to an access token.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumerSet, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+
     >>> login('salgado@ubuntu.com')
     >>> token = getUtility(IOAuthConsumerSet).getByKey(
     ...     'foobar123451432').newRequestToken()
