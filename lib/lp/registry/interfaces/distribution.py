@@ -318,6 +318,16 @@ class IDistributionPublic(
         if it's not found.
         """
 
+    @operation_parameters(
+        country=copy_field(IDistributionMirror['country'], required=True),
+        mirror_type=copy_field(IDistributionMirror['content'], required=True))
+    @operation_returns_entry(IDistributionMirror)
+    @export_read_operation()
+    def getCountryMirrorForCountry(country, mirror_type):
+        """Return the country DNS mirror for a given country and content
+        type.
+        """
+
     def newMirror(owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,
                   ftp_base_url=None, rsync_base_url=None, enabled=False,
