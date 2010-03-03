@@ -307,8 +307,8 @@ class OpenIDCallbackView(OpenIDLogin):
                     removeSecurityProxy(account).createPerson(
                         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
                     should_update_last_write = True
+                self.login(account)
 
-            self.login(account)
             if should_update_last_write:
                 # This is a GET request but we changed the database, so update
                 # session_data['last_write'] to make sure further requests use

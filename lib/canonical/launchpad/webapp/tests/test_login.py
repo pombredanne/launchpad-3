@@ -56,6 +56,10 @@ class StubbedOpenIDCallbackView(OpenIDCallbackView):
     def login(self, account):
         super(StubbedOpenIDCallbackView, self).login(account)
         self.login_called = True
+        current_policy = getUtility(IStoreSelector).get_current()
+        if not isinstance(current_policy, MasterDatabasePolicy):
+            raise AssertionError(
+                "Not using the master store: %s" % current_policy)
 
 
 @contextmanager

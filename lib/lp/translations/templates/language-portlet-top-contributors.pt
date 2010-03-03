@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-top-contributors"
-  tal:condition="view/getTopContributors">
+  tal:condition="view/top_contributors">
   <h2>Top contributors</h2>
   <div class="portletBody portletContent">
     <p>
