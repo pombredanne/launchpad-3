@@ -1784,12 +1784,6 @@ class BugSet:
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
         return result_set.order_by('id')
 
-    def dangerousGetAllBugs(self):
-        """See `IBugSet`."""
-        store = IStore(Bug)
-        result_set = store.find(Bug)
-        return result_set.order_by('id')
-
 
 class BugAffectsPerson(SQLBase):
     """A bug is marked as affecting a user."""

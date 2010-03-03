@@ -27,6 +27,7 @@ from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
