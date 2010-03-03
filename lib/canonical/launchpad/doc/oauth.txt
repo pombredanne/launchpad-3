@@ -10,9 +10,11 @@ OAuthConsumerSet utility.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     AccessLevel, OAuthPermission)
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.oauth import (
     ...     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet,
-    ...     IOAuthNonce, IOAuthRequestToken, IPersonSet)
+    ...     IOAuthNonce, IOAuthRequestToken)
+    >>> from lp.registry.interfaces.person import IPersonSet
+
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> verifyObject(IOAuthConsumerSet, consumer_set)
     True
@@ -101,8 +103,10 @@ it, which means the consumer using that token will only have access
 to things linked to that context (Product, Project, Distribution,
 DistroSourcePackage).
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet, IProjectGroupSet)
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> request_token2 = consumer.newRequestToken()
     >>> request_token2.review(

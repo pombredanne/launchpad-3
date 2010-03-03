@@ -5,8 +5,12 @@ Responsibility for security-related bugs, are modelled in Launchpad with
 a "security contact" on a Distribution or a Product.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet, IPersonSet, IHasSecurityContact)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     IHasSecurityContact)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
     >>> personset = getUtility(IPersonSet)
     >>> productset = getUtility(IProductSet)
     >>> ubuntu = getUtility(IDistributionSet).get(1)

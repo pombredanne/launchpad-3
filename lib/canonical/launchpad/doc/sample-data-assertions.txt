@@ -40,27 +40,29 @@ for the mentoring set of pagetests. Bug #2 should be incomplete, and bug #8
 complete.  The specification should be incomplete too. Finally, Bug #6
 should be a duplicate, and should be incomplete.
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IBugSet, IDistributionSet
-  >>> bugset = getUtility(IBugSet)
-  >>> distroset = getUtility(IDistributionSet)
-  >>> from canonical.launchpad.ftests import login
-  >>> login('no-priv@canonical.com')
-  >>> b2 = bugset.get(2)
-  >>> b2.is_complete
-  False
-  >>> b8 = bugset.get(8)
-  >>> b8.is_complete
-  True
-  >>> b6 = bugset.get(6)
-  >>> b6.is_complete
-  False
-  >>> b6.duplicateof is not None
-  True
-  >>> kubuntu = distroset.getByName('kubuntu')
-  >>> cluster_blueprint = kubuntu.getSpecification('cluster-installation')
-  >>> cluster_blueprint.is_complete
-  False
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+
+    >>> bugset = getUtility(IBugSet)
+    >>> distroset = getUtility(IDistributionSet)
+    >>> from canonical.launchpad.ftests import login
+    >>> login('no-priv@canonical.com')
+    >>> b2 = bugset.get(2)
+    >>> b2.is_complete
+    False
+    >>> b8 = bugset.get(8)
+    >>> b8.is_complete
+    True
+    >>> b6 = bugset.get(6)
+    >>> b6.is_complete
+    False
+    >>> b6.duplicateof is not None
+    True
+    >>> kubuntu = distroset.getByName('kubuntu')
+    >>> cluster_blueprint = kubuntu.getSpecification('cluster-installation')
+    >>> cluster_blueprint.is_complete
+    False
 
 There should be no mentorships on any of these.
 

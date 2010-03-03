@@ -23,7 +23,8 @@ instead to expose this as an edit form after the object is created.
 Let's use Salgado and the Launchpad Administrators team as an examples
 here, since they haven't uploaded custom logos yet.
 
-    >>> from canonical.launchpad.interfaces import IPerson, IPersonSet
+    >>> from lp.registry.interfaces.person import IPerson, IPersonSet
+
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> salgado.logo is None
     True

@@ -10,8 +10,9 @@ The AccountSet object provides methods to retrieve `IAccount`s. It
 implements the IAccountSet.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IAccount, IAccountSet, IPerson)
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     IAccount, IAccountSet)
+    >>> from lp.registry.interfaces.person import IPerson
 
     >>> account_set = getUtility(IAccountSet)
     >>> verifyObject(IAccountSet, account_set)
@@ -113,7 +114,7 @@ email address:
 If we add a new guessed email address, it will be included in the
 guessed list:
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     EmailAddressStatus, IEmailAddressSet)
     >>> email = getUtility(IEmailAddressSet).new(
     ...     "guessed-email@example.com", account=account,

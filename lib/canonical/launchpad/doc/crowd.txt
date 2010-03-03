@@ -2,13 +2,15 @@
 
 A person is adaptable to ICrowd.
 
-  >>> from canonical.launchpad.interfaces import IPersonSet, ICrowd
-  >>> from zope.component import getUtility
-  >>> personset = getUtility(IPersonSet)
-  >>> mark = personset.getByName('mark')
-  >>> print mark.name
-  mark
-  >>> mark_crowd = ICrowd(mark)
+    >>> from canonical.launchpad.interfaces.launchpad import ICrowd
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+
+    >>> personset = getUtility(IPersonSet)
+    >>> mark = personset.getByName('mark')
+    >>> print mark.name
+    mark
+    >>> mark_crowd = ICrowd(mark)
 
 The person is in that crowd.
 

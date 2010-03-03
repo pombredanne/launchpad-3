@@ -7,10 +7,13 @@ Vocabularies are lists of terms. In Launchpad's Component Architecture
 style widget) "speaks", i.e., its allowed values.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectGroupSet)
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> from lp.registry.interfaces.product import IProductSet
+
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
     >>> login('foo.bar@canonical.com')
@@ -69,7 +72,7 @@ All the distributions that use Malone as their main bug tracker.
     gentoo Gentoo Gentoo
     ubuntu Ubuntu Ubuntu
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in using_malone_vocabulary
@@ -516,8 +519,8 @@ All bug watches associated with a bugtask's bug.
 Bug watches with an email address URL (i.e. starts with "mailto:") are
 treated differently.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugWatchSet, IBugTrackerSet)
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
     >>> bug_twelve = getUtility(IBugSet).get(12)
     >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')
@@ -563,8 +566,9 @@ context blueprint.
 
 First, we set up a product with three blueprints.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.blueprints.interfaces.specification import (
     ...     ISpecificationSet, SpecificationDefinitionStatus)
+
     >>> evolution = product_set.getByName('evolution')
     >>> foobar_person = person_set.getByName('name16')
     >>> foobar_person.displayname
