@@ -146,20 +146,6 @@ listed in the current subscriptions area:
     PPA named... (ppa:mark/p3a)      Mark Shuttleworth       View
     PPA named... (ppa:cprov/p3a)     Celso Providelo         View
 
-A person who is subscribed to the one archive multiple times (ie. via
-a combination of teams) will not see multiple entries.
-
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/p3a")
-    >>> cprov_browser.getLink("Manage access").click()
-    >>> cprov_browser.getControl(name='field.subscriber').value = 'joesmith'
-    >>> cprov_browser.getControl(
-    ...     name='field.description').value = "Joe is my friend"
-    >>> cprov_browser.getControl(name="field.actions.add").click()
-    >>> joe_browser.reload()
-    >>> len(find_tags_by_class(
-    ...     joe_browser.contents, 'archive-subscription-row'))
-    2
-
 
 == Confirming a subscription ==
 
@@ -203,4 +189,24 @@ has a signing key:
         hoary main #Personal access of Joe Smith
         to PPA named p3a for Mark Shuttleworth
     This repository is signed ...
+
+Once a person has activated a subscription, being subscribed again via
+another team does not lead to duplicate entries on the person's
+subscriptions page.
+
+    >>> mark_browser.open("http://launchpad.dev/~mark/+archive/p3a")
+    >>> mark_browser.getLink("Manage access").click()
+    >>> mark_browser.getControl(name='field.subscriber').value = 'teamjoe'
+    >>> mark_browser.getControl(
+    ...     name='field.description').value = "Joe's friends are my friends."
+    >>> mark_browser.getControl(name="field.actions.add").click()
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
+    >>> rows = find_tags_by_class(
+    ...     joe_browser.contents, 'archive-subscription-row')
+    >>> for row in rows:
+    ...     print extract_text(row)
+    Archive                                            Owner
+    PPA named p3a for Mark Shuttleworth (ppa:mark/p3a) Mark Shuttleworth View
+    PPA named p3a for Celso Providelo (ppa:cprov/p3a)  Celso Providelo   View
 
