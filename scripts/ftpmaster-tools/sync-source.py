@@ -696,8 +696,8 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         source_version = Sources[pkg]["version"]
         if (dest_version is None
                 or apt_pkg.VersionCompare(dest_version, source_version) < 0):
-            if (dest_version is None
-                    or (not Options.force
+            if (dest_version is not None
+                    and (not Options.force
                         and dest_version.find("ubuntu") != -1)):
                 stat_cant_update += 1
                 print ("[NOT Updating - Modified] %s_%s (vs %s)"
