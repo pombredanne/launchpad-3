@@ -151,6 +151,18 @@ traversed to, obviously.
     HTTP/1.1 404 Not Found
     ...
 
+=== GPG keys ===
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login(ANONYMOUS)
+
+    >>> gpg_user = getUtility(IPersonSet).getByName('salgado')
+    >>> gpg_key = factory.makeGPGKey(gpg_user)
+
+    >>> logout()
 
 === Team memberships ===
 
