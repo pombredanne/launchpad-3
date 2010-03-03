@@ -4,7 +4,7 @@ The branch puller application is an XMLRPC service that allows the puller
 to find and update the status of branches.  It is available as the
 branch_puller attribute of our private XMLRPC instance.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     IPrivateApplication)
     >>> from lp.code.interfaces.codehosting import (
     ...     IBranchPullerApplication)
