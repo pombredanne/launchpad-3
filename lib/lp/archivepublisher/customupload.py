@@ -126,7 +126,15 @@ class CustomUpload:
                     self.tarfile_path, member.name)
 
             if member.issym():
-                target_path = os.path.join(self.tmpdir, member.linkname)
+                # This is a bit tricky.  We need to take the dirname of
+                # the link's name which is where the link's target is
+                # relative to, and prepend the extraction directory to
+                # get an absolute path for the link target.
+                rel_link_file_location = os.path.dirname(member.name)
+                abs_link_file_location = os.path.join(
+                    self.tmpdir, rel_link_file_location)
+                target_path = os.path.join(
+                    abs_link_file_location, member.linkname)
                 if not os.path.realpath(target_path).startswith(self.tmpdir):
                     raise CustomUploadTarballBadSymLink(
                         self.tarfile_path, member.name, member.linkname)

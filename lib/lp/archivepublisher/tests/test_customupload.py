@@ -72,7 +72,6 @@ class TestCustomUpload(unittest.TestCase):
 
 class TestTarfileVerification(unittest.TestCase):
 
-
     def setUp(self):
         self.tarfile_path = "/tmp/_verify_extract"
         self.tarfile_name = os.path.join(self.tarfile_path, "test_tarfile.tar")
@@ -120,7 +119,11 @@ class TestTarfileVerification(unittest.TestCase):
         """Fail if a symlink's target is outside the tmp tree."""
         tar_file = self.createTarfileWithSymlink(target="/etc/passwd")
         self.assertFails(CustomUploadTarballBadSymLink, tar_file)
-        return
+
+    def testFailsToExtractBadRelativeSymlink(self):
+        """Fail if a symlink's relative target is outside the tmp tree."""
+        tar_file = self.createTarfileWithSymlink(target="../outside")
+        self.assertFails(CustomUploadTarballBadSymLink, tar_file)
 
     def testFailsToExtractBadFileType(self):
         """Fail if a file in a tarfile is not a regular file or a symlink."""
