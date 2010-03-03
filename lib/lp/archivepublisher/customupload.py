@@ -120,8 +120,13 @@ class CustomUpload:
                 raise CustomUploadTarballInvalidFileType(
                     self.tarfile_path, member.name)
 
+            # Append os.sep to stop attacks like /var/tmp/../tmpBOGUS
+            # This is unlikely since someone would need to guess what
+            # mkdtemp returned, but still ...
+            tmpdir = self.tmpdir + os.sep
+
             member_path = os.path.join(self.tmpdir, member.name)
-            if not os.path.realpath(member_path).startswith(self.tmpdir):
+            if not os.path.realpath(member_path).startswith(tmpdir):
                 raise CustomUploadTarballBadFile(
                     self.tarfile_path, member.name)
 
@@ -135,7 +140,8 @@ class CustomUpload:
                     self.tmpdir, rel_link_file_location)
                 target_path = os.path.join(
                     abs_link_file_location, member.linkname)
-                if not os.path.realpath(target_path).startswith(self.tmpdir):
+
+                if not os.path.realpath(target_path).startswith(tmpdir):
                     raise CustomUploadTarballBadSymLink(
                         self.tarfile_path, member.name, member.linkname)
 

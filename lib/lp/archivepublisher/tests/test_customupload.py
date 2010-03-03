@@ -13,6 +13,8 @@ import tarfile
 import tempfile
 import unittest
 
+from lp.testing import TestCase
+
 from lp.archivepublisher.customupload import (
     CustomUpload, CustomUploadTarballInvalidFileType,
     CustomUploadTarballBadFile, CustomUploadTarballBadSymLink)
@@ -70,17 +72,30 @@ class TestCustomUpload(unittest.TestCase):
             '1.4', os.readlink(os.path.join(self.test_dir, 'current')))
 
 
-class TestTarfileVerification(unittest.TestCase):
+class TestTarfileVerification(TestCase):
 
     def setUp(self):
+        TestCase.setUp(self)
         self.tarfile_path = "/tmp/_verify_extract"
-        self.tarfile_name = os.path.join(self.tarfile_path, "test_tarfile.tar")
+        self.tarfile_name = os.path.join(
+            self.tarfile_path, "test_tarfile.tar")
         self.custom_processor = CustomUpload(None, self.tarfile_name, None)
-        self.custom_processor.tmpdir = "/tmp/_extract_test"
+        self.custom_processor.tmpdir = self.makeTemporaryDirectory()
+
+    def closeTarfileObject(self):
+        self.tar_fileobj.close()
+
+    def closeTarfile(self, tar_file):
+        tar_file.close()
 
     def createTarfile(self):
         self.tar_fileobj = cStringIO.StringIO()
-        return tarfile.open(name=None, mode="w", fileobj=self.tar_fileobj)
+        tar_file = tarfile.open(name=None, mode="w", fileobj=self.tar_fileobj)
+        # Ordering matters here, addCleanup pushes onto a stack which is
+        # popped in reverse order.
+        self.addCleanup(self.closeTarfileObject)
+        self.addCleanup(self.closeTarfile, tar_file)
+        return tar_file
 
     def createTarfileWithSymlink(self, target):
         info = tarfile.TarInfo(name="i_am_a_symlink")
@@ -98,22 +113,14 @@ class TestTarfileVerification(unittest.TestCase):
         return tar_file
 
     def assertFails(self, exception, tar_file):
-        try:
-            self.assertRaises(
-                exception,
-                self.custom_processor.verifyBeforeExtracting,
-                tar_file)
-        finally:
-            tar_file.close()
-            self.tar_fileobj.close()
+        self.assertRaises(
+            exception,
+            self.custom_processor.verifyBeforeExtracting,
+            tar_file)
 
     def assertPasses(self, tar_file):
-        try:
-            result = self.custom_processor.verifyBeforeExtracting(tar_file)
-            self.assertTrue(result)
-        finally:
-            tar_file.close()
-            self.tar_fileobj.close()
+        result = self.custom_processor.verifyBeforeExtracting(tar_file)
+        self.assertTrue(result)
 
     def testFailsToExtractBadSymlink(self):
         """Fail if a symlink's target is outside the tmp tree."""
