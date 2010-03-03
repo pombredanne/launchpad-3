@@ -16,6 +16,10 @@ __all__ = [
 from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_collection_of)
 
 from canonical.launchpad import _
 
@@ -42,14 +46,17 @@ class SSHKeyType(DBEnumeratedType):
 
 class ISSHKey(Interface):
     """SSH public key"""
+
+    export_as_webservice_entry('ssh_key')
+
     id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True, readonly=True)
-    personID = Int(title=_('Owner ID'), required=True, readonly=True)
-    keytype = Choice(title=_("Key type"), required=True,
-                     vocabulary=SSHKeyType)
-    keytext = TextLine(title=_("Key text"), required=True)
-    comment = TextLine(title=_("Comment describing this key"),
-                       required=True)
+    personID = exported(Int(title=_('Owner ID'), required=True, readonly=True))
+    keytype = exported(Choice(title=_("Key type"), required=True,
+                     vocabulary=SSHKeyType))
+    keytext = exported(TextLine(title=_("Key text"), required=True))
+    comment = exported(TextLine(title=_("Comment describing this key"),
+                       required=True))
 
     def destroySelf():
         """Remove this SSHKey from the database."""
