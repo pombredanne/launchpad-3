@@ -23,7 +23,8 @@ CVE references can be created with the ICveSet utility.
     >>> login("test@canonical.com")
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
+    >>> from lp.bugs.interfaces.cve import CveStatus, ICveSet
+
     >>> cveset = getUtility(ICveSet)
 
 To create a CVE, call ICveSet.new(sequence, description,
@@ -46,7 +47,9 @@ getBugCveCount.
 If we add another link, the count will of course increase by one.  The
 supplied user is the person linking the CVEs.
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.linkCVE(cve, user=no_priv)

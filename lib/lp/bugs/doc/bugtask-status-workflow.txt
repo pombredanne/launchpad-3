@@ -11,8 +11,9 @@ Here are examples of each transition that we record. First, let's create
 a new bug to work with:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag, CreateBugParams)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bug import IBugSet, CreateBugParams
 
     >>> login("foo.bar@canonical.com")
     >>> foobar = getUtility(ILaunchBag).user

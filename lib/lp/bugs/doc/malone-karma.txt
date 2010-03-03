@@ -2,14 +2,18 @@ This file lists all the karma events that Malone produces. First let's
 import some stuff and define a function to help us make the
 documentation cleaner:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IDistributionSet, IKarmaActionSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.karma import IKarmaActionSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
 Setup an event listener to help ensure karma is assigned when it should.
 
     >>> from zope.event import notify
     >>> from lp.registry.tests.karma import KarmaAssignedEventListener
+
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 
@@ -50,8 +54,9 @@ Change the description of a bug:
 
 Add a CVE reference to a bug:
 
-    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
-    >>> from canonical.launchpad.database import BugCve
+    >>> from lp.bugs.interfaces.cve import CveStatus, ICveSet
+    >>> from lp.bugs.model.bugcve import BugCve
+
     >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
     ...     status=CveStatus.CANDIDATE)
     >>> bugcve = BugCve(cve=cve, bug=bug)
@@ -70,7 +75,7 @@ Add watch for external bug to the bug:
 
 Mark a bug task as fixed:
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskStatus, IDistroBugTask)
     >>> bugtask = bug.bugtasks[0]
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
@@ -152,7 +157,8 @@ Change a bug task's importance:
 
 Create a new bug task on a product:
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> evolution = getUtility(IProductSet)['evolution']
     >>> evolution_task = getUtility(IBugTaskSet).createTask(
     ...     bug, product=evolution, owner=foo_bar)

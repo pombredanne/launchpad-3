@@ -332,7 +332,7 @@ ISupportsCommentImport interface.
 
     >>> from lp.bugs.externalbugtracker import (
     ...     get_external_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.bugs.interfaces.bugtracker import (
     ...     BugTrackerType, ISupportsCommentImport)
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
@@ -348,9 +348,10 @@ DebBugs implements all of these.
 
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug = getUtility(IBugSet).get(4)
     >>> bug_watch = bug.addWatch(
@@ -421,8 +422,7 @@ getMessageForComment() will return an imported comment as a Launchpad
 Message. It requires a Person instance to be used as the Message's
 owner, so we'll turn Teun Vink into a Person.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PersonCreationRationale)
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> poster = getUtility(IPersonSet).ensurePerson(
     ...     poster_email, poster_name, PersonCreationRationale.BUGIMPORT,
     ...     comment='when importing comments for %s.' % bug_watch.title)

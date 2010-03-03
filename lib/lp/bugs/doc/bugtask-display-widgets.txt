@@ -14,7 +14,9 @@ the assignee's browser name, with a link to his person page, and with a
 person icon in front of the name.
 
     >>> from canonical.widgets.bugtask import AssigneeDisplayWidget
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugTask
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> firefox_bugtask = bug_one.bugtasks[0]
     >>> firefox_bugtask.assignee.displayname

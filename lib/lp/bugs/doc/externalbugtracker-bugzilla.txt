@@ -300,9 +300,12 @@ update:
 
 Let's add a handful of watches:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugWatchSet, IPersonSet)
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+
+    >>> sample_person = getUtility(
+    ...     IPersonSet).getByEmail('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_watch_set = getUtility(IBugWatchSet)
 

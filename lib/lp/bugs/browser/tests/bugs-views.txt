@@ -111,7 +111,9 @@ If Sample Person get subscribed to bug #2, he can see it in the list.
 
 Only five bugs are returned by default:
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams, IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> for index in range(20):
     ...     bug = firefox.createBug(CreateBugParams(

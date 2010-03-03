@@ -28,9 +28,11 @@ comments are displayed on bugs pages. We'll make Mark Shuttleworth a
 member of Launchpad Beta Testers in order to demonstrate this.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, logout
+
     >>> login('foo.bar@canonical.com')
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> launchpad_beta_testers = getUtility(

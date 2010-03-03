@@ -95,8 +95,9 @@ the product manually, since it's hard to guess which product that is
 most likely to get added. Let's take a look how it works for packages,
 which can have packaging links that helps us choose the product.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IDistributionSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+
     >>> owner = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')

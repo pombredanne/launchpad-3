@@ -24,10 +24,11 @@ methods.
     ...     def getBugTargetName(self, remote_bug):
     ...         return self._bugs[remote_bug]['package']
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IDistributionSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
+
     >>> bugtracker = new_bugtracker(BugTrackerType.BUGZILLA)
     >>> external_bugtracker = BugImportingExternalBugTracker(
     ...     'http://example.com/')

@@ -79,8 +79,9 @@ tracker. Aliases can be edited once a bug tracker has been added, but
 for now we'll dig directly to the database.
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import BugTrackerType, IBugTrackerSet
+  >>> from lp.bugs.interfaces.bugtraker import BugTrackerType, IBugTrackerSet
   >>> from canonical.launchpad.ftests import login, logout
+
   >>> login('test@canonical.com')
   >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
   >>> gnome_bugzilla.aliases = ['http://alias.example.com/']

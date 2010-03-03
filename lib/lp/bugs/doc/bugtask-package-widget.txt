@@ -12,7 +12,8 @@ SourcePackageName will be returned by getInputValue(). In order for us
 to map the package names, we need a distribution, so we give the widget
 a distribution task to work with.
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IDistroBugTask
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> ubuntu_task = bug_one.bugtasks[-2]

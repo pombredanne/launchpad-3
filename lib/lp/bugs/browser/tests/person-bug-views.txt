@@ -10,6 +10,7 @@ Let's define a helper function to make it easier to construct a view.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
     >>> def create_view(context, name, form=None):
     ...     view = getMultiAdapter(
     ...         (context, LaunchpadTestRequest(form=form)), name=name)
@@ -310,9 +311,10 @@ bug counts, is also available.
 Adding another bug will update the totals returned by
 packagebugs_search_view.total_bug_counts.
 
-    >>> from canonical.launchpad.interfaces import (CreateBugParams,
-    ...     BugTaskImportance)
     >>> import transaction
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
+
     >>> bug_params = CreateBugParams(
     ...     owner=name16,
     ...     title="Some new bug",

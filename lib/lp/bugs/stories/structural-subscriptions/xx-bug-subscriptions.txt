@@ -72,8 +72,8 @@ can subscribe any Launchpad user.
 Firstly, we appoint Sample Person as the driver for the distribution.
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')

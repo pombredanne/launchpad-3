@@ -57,8 +57,9 @@ slash or not:
 Watches of Email Address bugtrackers are slightly different: the `url`
 property is always the same as the bugtracker baseurl property.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugTrackerSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> bugtrackerset = getUtility(IBugTrackerSet)
 
     >>> email_bugtracker = bugtrackerset['email']
@@ -409,9 +410,10 @@ creating a bug task with a conjoined master.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, BugTrackerType, IBugTaskSet,
-    ...     IBugTrackerSet, IDistributionSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bugtraker import BugTrackerType
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> firefox = ubuntu.getSourcePackage('mozilla-firefox')

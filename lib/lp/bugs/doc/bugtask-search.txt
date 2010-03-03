@@ -4,7 +4,7 @@ BugTasks are usually searched through an IBugTarget's searchTasks()
 method, but they all delegate the search to IBugTaskSet.search(). That
 method accepts a single parameter; an BugTaskSearchParams instance.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskSearchParams, IBugTaskSet)
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> all_public = BugTaskSearchParams(user=None)
@@ -67,7 +67,7 @@ and in particular, mozilla-firefox in Ubuntu has 'em:
 To get all related tasks to a person call searchTasks() on the person
 object:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> user = getUtility(IPersonSet).getByName('name16')
     >>> user_bugs = user.searchTasks(None, user=None)
     >>> user_bugs.count() > 0
@@ -293,7 +293,7 @@ series.
 
 Add an Ubuntu bugtask for a bug that is confirmed upstream.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance, BugTaskStatus)
     >>> from lp.bugs.tests.test_bugtask_1 import (
     ...     BugTaskSearchBugsElsewhereTest)
@@ -736,9 +736,12 @@ closed after a certain date.
 It's possible to search for bugs with an attachment of a certain type.
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
-    ...     IMessageSet)
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet,
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bugattachment import (
+    ...     BugAttachmentType, IBugAttachmentSet)
+
     >>> product = factory.makeProductNoCommit()
     >>> patch_bug = factory.makeBug(
     ...     product=product)

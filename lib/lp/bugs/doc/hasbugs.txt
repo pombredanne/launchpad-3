@@ -30,7 +30,7 @@ values to have some sample data for the examples that follow.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance, BugTaskStatus, IBugTaskSet)
 
     >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)

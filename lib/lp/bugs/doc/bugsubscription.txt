@@ -43,8 +43,9 @@ a bug is unduped, and so forth.
 Let's create a new bug to demonstrate how direct and indirect
 subscriptions work.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag, IPersonSet, CreateBugParams)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> personset = getUtility(IPersonSet)
 
@@ -180,7 +181,9 @@ Here are some examples of the three types of indirect subscribers:
 After adding a product bugtask we can see that the upstream bug
 supervisor is also an indirect subscriber.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+
     >>> firefox = getUtility(IProductSet).get(4)
 
     >>> getUtility(IBugTaskSet).createTask(

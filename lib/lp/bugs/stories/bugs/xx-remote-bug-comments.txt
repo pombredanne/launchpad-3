@@ -80,7 +80,8 @@ When the comment is synchronized, it receives a remote comment id, and
 the 'awaiting synchronization' mark goes away.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugMessageSet, IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> bug_15 = getUtility(IBugSet).get(15)

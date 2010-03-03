@@ -6,9 +6,9 @@ and product series, and release managers can directly target
 the bug to series for which they are drivers.
 
     >>> from zope.component import getUtility, getMultiAdapter
-
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IOpenLaunchBag
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> login("no-priv@canonical.com")
 

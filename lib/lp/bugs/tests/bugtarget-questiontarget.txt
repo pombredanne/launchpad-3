@@ -13,8 +13,8 @@ in this interface test for creating the bug. The target may be a:
 Product, Distribution, ProductSeries, DistributionSeries,
 SourcePackage, or DistributionSourcePackages.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTarget, IQuestionTarget)
+    >>> from lp.answers.interfaces.questiontarget import IQuestionTarget
+    >>> from lp.bugs.interfaces.bugtarget import IBugTarget
 
     >>> login('foo.bar@canonical.com')
     >>> IBugTarget.providedBy(bugtarget)
@@ -177,8 +177,10 @@ target come from the bugtask's target.
     >>> big_bug = filebug(
     ...     bugtarget, "Print is borked", status=BugTaskStatus.NEW)
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTaskSet, IDistributionSet, ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> evo_ubuntu = getUtility(ISourcePackageNameSet)['evolution']

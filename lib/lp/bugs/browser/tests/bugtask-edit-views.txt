@@ -83,8 +83,9 @@ If we try to change the source package to a package name that another
 distribution task already has, an error message will occur. First,
 let's add an evolution (Ubuntu) task to bug two.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTaskSet, IDistributionSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')

@@ -958,7 +958,9 @@ error message is sent telling you this.
 
 The 'cve' command associates a bug with a CVE reference.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams, IProductSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+
     >>> def new_firefox_bug():
     ...     firefox = getUtility(IProductSet).getByName('firefox')
     ...     return firefox.createBug(CreateBugParams(
@@ -1609,8 +1611,9 @@ which bug task to edit:
 
 === The user is a package bug supervisor ===
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

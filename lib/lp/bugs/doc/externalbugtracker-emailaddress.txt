@@ -33,8 +33,8 @@ mailto:<email-address>.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTracker, IBugTrackerSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bugtracker import IBugTracker, IBugTrackerSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
@@ -76,7 +76,7 @@ If the message ID of the email sent to the remote tracker is not known,
 we record a remotebug value of '' for the bugwatch (we can't use None
 because BugWatch.remotebug is a NOT NULL field).
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> bug_watch = example_bug.addWatch(bugtracker=email_tracker,
     ...     remotebug='', owner=getUtility(ILaunchpadCelebrities).janitor)

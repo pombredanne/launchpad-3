@@ -38,7 +38,9 @@ assigned to.
 Anyway, let's start our demonstration by adding a comment to a bug:
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet, IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> sample_person = getUtility(ILaunchBag).user
     >>> comment = getUtility(IMessageSet).fromText(
@@ -748,8 +750,8 @@ We will need some helper functions.
 
 We will also need a fresh new bug.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, CreateBugParams)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> description = getUtility(IMessageSet).fromText(
     ...     'subject', 'a description of the bug.', sample_person,

@@ -178,9 +178,10 @@ A LargeBugTagsWidget is rendered as a <textarea>,
 
 We can search for bugs with some specific tag.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> from canonical.launchpad.searchbuilder import all
+
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> svg_tasks = ubuntu.searchTasks(
     ...     BugTaskSearchParams(tag=all(u'svg'), user=None))
@@ -243,7 +244,9 @@ tags used in its distribution/distroseries, since it's good to see
 which tags can be used. The tags are ordered alphabetically.  All tags
 are shown, no matter if they are used in open bugs or closed ones.
 
-    >>> from canonical.launchpad.interfaces import IProductSet, BugTaskStatus
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login('test@canonical.com')
     >>> for bugtask in firefox.searchTasks(BugTaskSearchParams(

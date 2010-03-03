@@ -6,11 +6,15 @@ means a file files that relates to the bug in some other way, like a log
 file or a screenshot.
 
 Let's look at a bug that has no attachments:
+
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugAttachment, IBugSet, IMessageSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugattachment import IBugAttachment
+
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
     >>> bug_one.attachments.count()
@@ -377,8 +381,10 @@ Let's make the bug public again:
 
 We can search for attachment of a specific types:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugAttachmentType, BugTaskSearchParams, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     IBugTaskSet, BugTaskSearchParams)
+    >>> from lp.bugs.interfaces.bugattachment import BugAttachmentType
+
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> attachmenttype = BugAttachmentType.UNSPECIFIED
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)

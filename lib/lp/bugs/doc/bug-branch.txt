@@ -4,8 +4,9 @@ Branches can be linked to Bugs, to track work in progress on branches,
 and when fixes are committed.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IBugBranch, IBugBranchSet
-    >>> from canonical.launchpad.database import BugBranch, BugBranchSet
+    >>> from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
+    >>> from lp.bugs.model.bugbranch import BugBranch, BugBranchSet
+
     >>> verifyObject(IBugBranch, BugBranch.get(1))
     True
     >>> verifyObject(IBugBranchSet, BugBranchSet())
@@ -16,8 +17,8 @@ and when fixes are committed.
 
 BugBranch links a bug and a branch.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> from canonical.database.sqlbase import flush_database_updates
 

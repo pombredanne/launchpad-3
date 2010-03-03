@@ -169,8 +169,7 @@ however, whether they're in the team or not.
     >>> login('test@canonical.com')
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> security_team = getUtility(IPersonSet).getByName('name20')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> foo_bar.inTeam(security_team)

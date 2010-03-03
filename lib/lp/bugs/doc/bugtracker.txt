@@ -139,8 +139,9 @@ it. If this method is not passed a name parameter when it creates a new
 bugtracker it will use make_bugtracker_name() to generate a name for the
 bug tracker.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> a_bugtracker = bugtracker_set.ensureBugTracker(

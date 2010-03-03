@@ -27,10 +27,16 @@ name, that information is recorded in the description, and the first
 comment, of the bug report.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet, IBugSet, IBugTaskSet,
-    ...     ILaunchBag, IOpenLaunchBag, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     ILaunchBag, IOpenLaunchBag)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams, IBugTaskSet)
+
 
     >>> launchbag = getUtility(IOpenLaunchBag)
     >>> login("foo.bar@canonical.com")
@@ -406,7 +412,8 @@ bugtargetdisplayname. Approved nominations are not included in the
 returned results, because an approved nomination will have created a
 task anyway.
 
-    >>> from canonical.launchpad.interfaces import IBugTask, IBugNomination
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
+    >>> from lp.bugs.interfaces.bugnomination import IBugNomination
 
     >>> def get_object_type(task_or_nomination):
     ...     if IBugTask.providedBy(task_or_nomination):

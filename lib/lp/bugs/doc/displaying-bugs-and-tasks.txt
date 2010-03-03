@@ -13,48 +13,48 @@ The icon is dependent on the importance of the IBugTask object.
 
 Let's use a few examples to demonstrate:
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import BugTaskImportance, IBugTaskSet
-  >>> from canonical.launchpad.ftests import test_tales
-  >>> from canonical.launchpad.ftests import login
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance, IBugTaskSet
+    >>> from canonical.launchpad.ftests import test_tales
+    >>> from canonical.launchpad.ftests import login
 
-  >>> login("foo.bar@canonical.com")
-  >>> bugtaskset = getUtility(IBugTaskSet)
-  >>> test_task = bugtaskset.get(4)
-  >>> ORIGINAL_IMPORTANCE = test_task.importance
+    >>> login("foo.bar@canonical.com")
+    >>> bugtaskset = getUtility(IBugTaskSet)
+    >>> test_task = bugtaskset.get(4)
+    >>> ORIGINAL_IMPORTANCE = test_task.importance
 
-  >>> test_task.transitionToImportance(
-  ...   BugTaskImportance.CRITICAL, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
-  'sprite bug-critical'
+    >>> test_task.transitionToImportance(
+    ...   BugTaskImportance.CRITICAL, getUtility(ILaunchBag).user)
+    >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+    'sprite bug-critical'
 
-  >>> test_task.transitionToImportance(
-  ...   BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
-  'sprite bug-high'
+    >>> test_task.transitionToImportance(
+    ...   BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
+    >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+    'sprite bug-high'
 
-  >>> test_task.transitionToImportance(
-  ...   BugTaskImportance.MEDIUM, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
-  'sprite bug-medium'
+    >>> test_task.transitionToImportance(
+    ...   BugTaskImportance.MEDIUM, getUtility(ILaunchBag).user)
+    >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+    'sprite bug-medium'
 
-  >>> test_task.transitionToImportance(
-  ...   BugTaskImportance.LOW, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
-  'sprite bug-low'
+    >>> test_task.transitionToImportance(
+    ...   BugTaskImportance.LOW, getUtility(ILaunchBag).user)
+    >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+    'sprite bug-low'
 
-  >>> test_task.transitionToImportance(
-  ...   BugTaskImportance.WISHLIST, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
-  'sprite bug-wishlist'
+    >>> test_task.transitionToImportance(
+    ...   BugTaskImportance.WISHLIST, getUtility(ILaunchBag).user)
+    >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+    'sprite bug-wishlist'
 
-  >>> test_task.transitionToImportance(
-  ...   BugTaskImportance.UNDECIDED, getUtility(ILaunchBag).user)
-  >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
-  'sprite bug-undecided'
+    >>> test_task.transitionToImportance(
+    ...   BugTaskImportance.UNDECIDED, getUtility(ILaunchBag).user)
+    >>> test_tales("bugtask/image:sprite_css", bugtask=test_task)
+    'sprite bug-undecided'
 
-  >>> test_task.transitionToImportance(
-  ...   ORIGINAL_IMPORTANCE, getUtility(ILaunchBag).user)
+    >>> test_task.transitionToImportance(
+    ...   ORIGINAL_IMPORTANCE, getUtility(ILaunchBag).user)
 
 
 == Displaying Logos for Bug Tasks ==
@@ -96,14 +96,15 @@ you might prefer that to read, simply:
 We define a helper that uses the BugTaskListingView class (obtained via
 +listing-view) to render the status:
 
-  >>> from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
-  >>> from zope.component import getMultiAdapter
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-  >>> def render_bugtask_status(task):
-  ...   view = getMultiAdapter(
-  ...       (task, LaunchpadTestRequest()), name="+listing-view")
-  ...   return view.status
+    >>> def render_bugtask_status(task):
+    ...   view = getMultiAdapter(
+    ...       (task, LaunchpadTestRequest()), name="+listing-view")
+    ...   return view.status
 
 Let's see some examples of how this works:
 

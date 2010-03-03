@@ -6,9 +6,11 @@ calling IBug.addNomination.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyClass
-    >>> from canonical.launchpad.database import BugNomination
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugNomination, IBugSet, IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugnomination import IBugNomination
+    >>> from lp.bugs.model.bugnomination import BugNomination
 
     >>> login("no-priv@canonical.com")
 

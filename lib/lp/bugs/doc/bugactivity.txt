@@ -22,9 +22,11 @@ are simple little functions.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import (
     ...     ObjectCreatedEvent, ObjectModifiedEvent)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     IUpstreamBugTask, IDistroBugTask, IBugTaskSet)
+
     >>> user = getUtility(ILaunchBag).user
 
 
