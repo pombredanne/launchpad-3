@@ -148,9 +148,49 @@ packages matching (substring) the given text.
 country; returning None if there isn't one.
 
     >>> antarctica = webservice.get("/+countries/AQ").jsonBody()
-    >>> antarctica_country_mirror_releases = webservice.named_get(
+    >>> antarctica_country_mirror_archive = webservice.named_get(
     ...     ubuntu['self_link'], 'getCountryMirrorForCountry',
     ...     country = antarctica['self_link'],
-    ...     mirror_type = "CD Image").jsonBody()
-    >>> print antarctica_country_mirror_releases
+    ...     mirror_type = "Archive").jsonBody()
+    >>> pprint_entry(antarctica_country_mirror_archive)
+    content: u'Archive'
+    country_dns_mirror: True
+    country_link: u'http://.../+countries/AQ'
+    date_created: u'2010-01-03T00:07:44.412317+00:00'
+    date_reviewed: None
+    description: None
+    displayname: u'Davis Station'
+    distribution_link: u'http://.../ubuntu'
+    enabled: True
+    ftp_base_url: None
+    http_base_url: u'http://mirror.davis.antarctica.org/ubuntu'
+    name: u'mirror.davis.antarctica.org-archive'
+    official_candidate: True
+    owner_link: u'http://.../~mark'
+    resource_type_link: u'http://.../#distribution_mirror'
+    reviewer_link: None
+    rsync_base_url: None
+    self_link: u'http://.../ubuntu/+mirror/mirror.davis.antarctica.org-archive'
+    speed: u'100 Mbps'
+    status: u'Official'
+    whiteboard: None
+
+    >>> uk = webservice.get("/+countries/GB").jsonBody()
+    >>> uk_country_mirror_archive = webservice.named_get(
+    ...     ubuntu['self_link'], 'getCountryMirrorForCountry',
+    ...     country = uk['self_link'],
+    ...     mirror_type = "Archive")
+    >>> print uk_country_mirror_archive.jsonBody()
     None
+
+For "getCountryMirrorForCountry", the mirror_type parameter must be "Archive" or
+"CD Images":
+
+    >>> uk_country_mirror_archive = webservice.named_get(
+    ...     ubuntu['self_link'], 'getCountryMirrorForCountry',
+    ...     country = uk['self_link'],
+    ...     mirror_type = "Bogus")
+    >>> print uk_country_mirror_archive.jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: mirror_type: Invalid value "Bogus". Acceptable values are: Archive, CD Image
