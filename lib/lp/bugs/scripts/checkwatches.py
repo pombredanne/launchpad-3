@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.errorlog import (

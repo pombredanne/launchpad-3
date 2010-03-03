@@ -11,7 +11,9 @@ from zope.interface import implements
 from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
 from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
-from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing.factory import LaunchpadObjectFactory
 
 

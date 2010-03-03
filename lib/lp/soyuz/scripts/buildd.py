@@ -17,7 +17,7 @@ from lp.archivepublisher.debversion import Version
 from lp.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.registry.interfaces.distribution import IDistributionSet

@@ -176,7 +176,7 @@
     <browser:url
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         path_expression="string:bugs"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:menu
         id="malone_actions"
         title="Menu for Malone-related actions."/>

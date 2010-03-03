@@ -11,7 +11,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IRosettaApplication"
         path_expression="string:translations"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="canonical.launchpad.interfaces.IRosettaApplication"
         name="+index"
@@ -142,7 +142,7 @@
         <browser:url
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
             path_expression="string:+imports"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
         <browser:defaultView
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
             name="+index"
@@ -348,7 +348,7 @@
         <browser:url
             for="canonical.launchpad.interfaces.ILanguageSet"
             path_expression="string:+languages"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
             rootsite="translations"/>
         <browser:page
             for="canonical.launchpad.interfaces.ILanguageSet"
@@ -511,7 +511,7 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             path_expression="string:+groups"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
             rootsite="translations" />
         <browser:defaultView
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"

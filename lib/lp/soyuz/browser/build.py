@@ -26,7 +26,7 @@ from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,

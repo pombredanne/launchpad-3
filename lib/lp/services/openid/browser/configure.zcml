@@ -29,7 +29,7 @@
     <browser:url
         for="..interfaces.openidrpconfig.IOpenIDRPConfigSet"
         path_expression="string:+rpconfig"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         />
 
     <browser:navigation

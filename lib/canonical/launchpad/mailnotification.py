@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     TeamMembershipStatus)
 from lp.bugs.interfaces.bugchange import IBugChange
-from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from lp.registry.interfaces.structuralsubscription import (

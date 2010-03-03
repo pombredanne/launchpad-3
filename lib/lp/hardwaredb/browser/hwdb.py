@@ -21,7 +21,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from z3c.ptcompat import ViewPageTemplateFile
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.launchpad import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionMissingFields, IHWDBApplication, IHWDeviceClassSet,
     IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionForm,

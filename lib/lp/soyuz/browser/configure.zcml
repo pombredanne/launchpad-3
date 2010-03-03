@@ -378,7 +378,7 @@
     <browser:url
         for="lp.buildmaster.interfaces.builder.IBuilderSet"
         path_expression="string:builders"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.buildmaster.interfaces.builder.IBuilderSet"
         name="+index"/>
@@ -775,7 +775,7 @@
     <browser:url
         for="lp.soyuz.interfaces.packageset.IPackagesetSet"
         path_expression="string:package-sets"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         />
     <browser:navigation
         module="lp.soyuz.browser.packageset"

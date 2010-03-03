@@ -36,13 +36,19 @@ from zope.security.proxy import isinstance as zope_isinstance
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 
+from lazr.uri import URI
+
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IDistribution, IFAQSet,
-    IProduct, IProjectGroup, IDistributionSourcePackage, ISprint,
-    LicenseStatus, NotFoundError)
+from lp.answers.interfaces.faq import IFAQSet
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.product import IProduct, LicenseStatus
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.sprint import ISprint
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
@@ -53,8 +59,9 @@ from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
 import canonical.launchpad.pagetitles
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import canonical_url, urlappend
-from lazr.uri import URI
+
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)

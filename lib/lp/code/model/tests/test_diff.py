@@ -15,7 +15,7 @@ from bzrlib.branch import Branch
 from bzrlib import trace
 import transaction
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer

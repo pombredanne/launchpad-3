@@ -37,7 +37,8 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
-from canonical.launchpad.interfaces.launchpad import  IPrivacy, NotFoundError
+from canonical.launchpad.interfaces.launchpad import  IPrivacy
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored

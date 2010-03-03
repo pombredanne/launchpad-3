@@ -183,7 +183,7 @@
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             path_expression="string:codeofconduct"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
             parent_utility="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
@@ -381,7 +381,7 @@
     <browser:url
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         facet="overview"
@@ -482,7 +482,7 @@
     <browser:url
         for="lp.registry.interfaces.pillar.IPillarNameSet"
         path_expression="string:pillars"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:page
         for="lp.registry.interfaces.pillar.IPillar"
         name="+listing-simple"
@@ -513,7 +513,7 @@
         <browser:url
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             path_expression="string:karmaaction"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
         <browser:defaultView
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             name="+index"/>
@@ -692,7 +692,7 @@
     <browser:url
         for="lp.registry.interfaces.announcement.IAnnouncementSet"
         path_expression="string:+announcements"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.registry.interfaces.announcement.IAnnouncementSet"
         name="+announcements"/>
@@ -750,7 +750,7 @@
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
             path_expression="string:~${name}"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPerson"
             name="+index"/>
@@ -1380,7 +1380,7 @@
     <browser:url
         for="lp.registry.interfaces.product.IProduct"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+download"
@@ -1505,7 +1505,7 @@
     <browser:url
         for="lp.registry.interfaces.product.IProductSet"
         path_expression="string:projects"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProductSet"
         permission="zope.Public"
@@ -1867,7 +1867,7 @@
     <browser:url
         for="lp.registry.interfaces.distribution.IDistribution"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistributionSet"
         permission="zope.Public"

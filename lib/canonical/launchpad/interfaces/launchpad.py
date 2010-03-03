@@ -24,7 +24,6 @@ __all__ = [
     'IAppFrontPageSearchForm',
     'IAuthApplication',
     'IAuthServerApplication',
-    'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'ICrowd',
     'IFeedsApplication',
@@ -40,13 +39,10 @@ __all__ = [
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
-    'ILaunchBag',
     'ILaunchpadCelebrities',
-    'ILaunchpadRoot',
     'ILaunchpadSearch',
     'ILaunchpadUsage',
     'INotificationRecipientSet',
-    'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
     'IPasswordResets',
@@ -62,10 +58,7 @@ __all__ = [
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     'NameNotAvailable',
-    'NotFoundError',
-    'UnexpectedFormData',
     'UnknownRecipientError',
-    'UnsafeFormGetSubmissionError',
     ]
 
 

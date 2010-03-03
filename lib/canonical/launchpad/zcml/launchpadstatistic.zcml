@@ -24,7 +24,7 @@
   <browser:url
     for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
     path_expression="string:+statistics"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:defaultView

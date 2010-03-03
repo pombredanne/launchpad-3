@@ -8,7 +8,7 @@ from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
 from lazr.enum import DBEnumeratedType, DBItem
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries

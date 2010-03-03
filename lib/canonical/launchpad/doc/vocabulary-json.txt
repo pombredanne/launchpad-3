@@ -3,9 +3,10 @@
 This view provides a simple means for AJAX widgets to retrieve vocabulary
 entries until vocabularies are integrated into the REST API.
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
     >>> import simplejson
     >>> from urllib import urlencode
+
     >>> root = getUtility(ILaunchpadRoot)
     >>> def print_json(json):
     ...     data = simplejson.loads(json)

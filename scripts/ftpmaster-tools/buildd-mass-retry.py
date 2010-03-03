@@ -19,7 +19,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket

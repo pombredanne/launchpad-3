@@ -15,7 +15,7 @@ from zope.app.form.utility import setUpWidget
 from zope.component import getMultiAdapter, getUtility
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 

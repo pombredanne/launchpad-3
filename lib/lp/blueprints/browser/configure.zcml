@@ -133,7 +133,7 @@
     <browser:url
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         path_expression="string:sprints"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         name="+index"/>
@@ -450,7 +450,7 @@
         <browser:url
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
             path_expression="string:"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
             rootsite="blueprints"/>
         <browser:defaultView
             for="lp.blueprints.interfaces.specification.ISpecificationSet"

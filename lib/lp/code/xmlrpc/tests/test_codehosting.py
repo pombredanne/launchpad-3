@@ -22,7 +22,7 @@ from lp.services.scripts.interfaces.scriptactivity import (
     IScriptActivitySet)
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError

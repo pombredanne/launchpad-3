@@ -136,7 +136,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IBazaarApplication"
         path_expression="string:+code"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBazaarApplication"
         name="+index"/>
@@ -682,7 +682,7 @@
         <browser:url
             for="lp.code.interfaces.codeimport.ICodeImportSet"
             path_expression="string:+code-imports"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
             rootsite="code"/>
         <browser:defaultView
             for="lp.code.interfaces.codeimport.ICodeImportSet"

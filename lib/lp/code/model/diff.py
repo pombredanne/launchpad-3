@@ -28,7 +28,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.uuid import generate_uuid
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 
