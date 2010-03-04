@@ -74,6 +74,13 @@ class ILoginToken(IAuthToken):
     def sendClaimTeamEmail():
         """E-mail instructions for claiming a team to self.email."""
 
+    def activateGPGKey(key, can_encrypt):
+        """Activate a GPG key.
+
+        :return: A Launchpad key, whether it's new, email addresses that were
+            created, email addresses owned by someone else.
+        """
+
     def createEmailAddresses(uids):
         """Create EmailAddresses for the GPG UIDs that do not exist yet.
 

@@ -35,6 +35,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+from lp.registry.interfaces.gpg import IGPGKeySet
 
 
 class LoginToken(SQLBase):
@@ -240,6 +241,20 @@ class LoginToken(SQLBase):
         message = template % replacements
         subject = "Launchpad: Claim existing team"
         self._send_email(from_name, subject, message)
+
+    def activateGPGKey(self, key, can_encrypt):
+        """See `ILoginToken`."""
+        gpgkeyset = getUtility(IGPGKeySet)
+        requester = self.requester
+        lpkey, new = gpgkeyset.activate(requester, key, can_encrypt)
+
+        self.consume()
+
+        if not new:
+            return lpkey, new, [], []
+
+        created, owned_by_others = self.createEmailAddresses(key.emails)
+        return lpkey, new, created, owned_by_others
 
     def createEmailAddresses(self, uids):
         """Create EmailAddresses for the GPG UIDs that do not exist yet.

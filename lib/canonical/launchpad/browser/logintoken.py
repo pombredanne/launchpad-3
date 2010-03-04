@@ -449,14 +449,9 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
             return
 
     def _activateGPGKey(self, key, can_encrypt):
-        gpgkeyset = getUtility(IGPGKeySet)
-        lpkey, new = gpgkeyset.activate(
-            self.context.requester, key, can_encrypt)
-
-        requester = self.context.requester
-        person_url = canonical_url(requester)
-
-        self.context.consume()
+        person_url = canonical_url(self.context.requester)
+        lpkey, new, created, owned_by_others = self.context.activateGPGKey(
+            key, can_encrypt)
 
         if not new:
             msgid = _(
@@ -470,8 +465,6 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
         self.request.response.addInfoNotification(_(
             "The key ${lpkey} was successfully validated. ",
             mapping=dict(lpkey=lpkey.displayname)))
-        created, owned_by_others = self.context.createEmailAddresses(
-            key.emails)
 
         if len(created):
             msgid = _(
