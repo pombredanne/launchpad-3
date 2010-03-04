@@ -159,6 +159,7 @@ class LanguageSet:
             'visible IS TRUE',
             orderBy='englishname')
 
+    @property
     def common_languages(self):
         """See `ILanguageSet`."""
         return iter(self._visible_languages)
