@@ -61,6 +61,7 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication.callTraversalHooks(request, obj2)
         self.assertEquals(request.traversed_objects, [obj1])
 
+
 class TestReadOnlyModeSwitches(TestCase):
     # At the beginning of every request (in publication.beforeTraversal()), we
     # check to see if we've changed from/to read-only/read-write and if there
@@ -151,6 +152,27 @@ class TestReadOnlyModeSwitches(TestCase):
             # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
             # through private attributes to get to the store's database.
             master._connection._database.dsn_without_user.strip())
+
+
+class TestReadOnlyNotifications(TestCase):
+
+    def setUp(self):
+        TestCase.setUp(self)
+        touch_read_only_file()
+        self.addCleanup(remove_read_only_file, assert_mode_switch=False)
+
+    def test_notification(self):
+        publication = LaunchpadBrowserPublication(None)
+        request = LaunchpadTestRequest()
+        publication.maybeNotifyReadOnlyMode(request)
+        self.assertEqual(1, len(request.notifications))
+
+    def test_notification_xmlrpc(self):
+        from canonical.launchpad.webapp.servers import PublicXMLRPCRequest
+        publication = LaunchpadBrowserPublication(None)
+        request = PublicXMLRPCRequest(None, {})
+        # This is just assertNotRaises
+        publication.maybeNotifyReadOnlyMode(request)
 
 
 class TestWebServicePublication(TestCaseWithFactory):
