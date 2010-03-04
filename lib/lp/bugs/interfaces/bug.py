@@ -320,6 +320,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     heat = exported(
         Int(title=_("The 'heat' of the bug"),
         required=False, readonly=True))
+    heat_last_updated = Datetime(
+        title=_('Heat Last Updated'), required=False, readonly=True)
 
     # Adding related BugMessages provides a hook for getting at
     # BugMessage.visible when building bug comments.

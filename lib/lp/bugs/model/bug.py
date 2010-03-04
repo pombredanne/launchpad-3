@@ -260,6 +260,7 @@ class Bug(SQLBase):
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
     heat = IntCol(notNull=True, default=0)
+    heat_last_updated = UtcDateTimeCol(default=0)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
 
     @property
@@ -1534,6 +1535,7 @@ class Bug(SQLBase):
     def setHeat(self, heat):
         """See `IBug`."""
         self.heat = heat
+        self.heat_last_updated = UTC_NOW
         for task in self.bugtasks:
             task.target.recalculateMaxBugHeat()
 
