@@ -12,7 +12,6 @@ from datetime import datetime
 
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 
-
 class BugHeatConstants:
 
     PRIVACY = 150
