@@ -36,11 +36,11 @@ from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import  IPrivacy, NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -255,7 +255,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         CollectionField(
             title=_("Branches associated with this bug, usually "
             "branches on which this bug is being fixed."),
-            value_type=Reference(schema=IBranch),
+            value_type=Reference(schema=IBugBranch),
             readonly=True))
     tags = exported(
         List(title=_("Tags"), description=_("Separated by whitespace."),
