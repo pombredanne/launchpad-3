@@ -1642,7 +1642,7 @@
             permission="launchpad.Admin"
             interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorAdminRestricted"
             set_attributes="status reviewer date_reviewed"
-            attributes="destroySelf" />
+            attributes="destroySelf transitionToCountryMirror" />
     </class>
 
     <adapter
