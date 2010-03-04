@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 
-from canonical.launchpad.interfaces import IFAQTarget
+from lp.answers.interfaces.faqtarget import IFAQTarget
 
 
 def question_to_questiontarget(question):
@@ -46,4 +46,3 @@ def sourcepackage_to_faqtarget(sourcepackage):
 def faq_to_faqtarget(faq):
     """Adapts an `IFAQ` into an `IFAQTarget`."""
     return faq.target
-

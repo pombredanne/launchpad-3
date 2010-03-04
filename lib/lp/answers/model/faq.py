@@ -26,10 +26,12 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-
-from canonical.launchpad.interfaces import (
-    IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProjectGroup)
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import IPerson, validate_public_person
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.answers.interfaces.faq import IFAQ, IFAQSet
+from lp.answers.interfaces.faqcollection import FAQSort
 
 
 class FAQ(SQLBase):

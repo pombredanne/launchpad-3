@@ -11,12 +11,11 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IFAQ
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, stepthrough)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.widgets import TokensTextWidget
-
+from lp.answers.interfaces.faq import IFAQ
 
 class FAQTargetNavigationMixin:
     """Navigation mixin for `IFAQTarget`."""

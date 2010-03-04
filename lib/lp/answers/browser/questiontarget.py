@@ -38,12 +38,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, preferred_or_request_languages)
-from lp.answers.browser.faqcollection import FAQCollectionMenu
-from canonical.launchpad.interfaces import (
-    IDistribution, IFAQCollection, ILanguageSet, ILaunchpadCelebrities,
-    IProjectGroup, IQuestionCollection, IQuestionSet, IQuestionTarget,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
-    QuestionStatus)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
@@ -51,6 +47,16 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.distribution import IDistribution
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.interfaces.faqcollection import IFAQCollection
+from lp.answers.interfaces.questioncollection import (
+    IQuestionCollection, IQuestionSet, ISearchableByQuestionOwner)
+from lp.answers.interfaces.questiontarget import (
+    IQuestionTarget, ISearchQuestionsForm)
+from lp.answers.browser.faqcollection import FAQCollectionMenu
 
 
 class AskAQuestionButtonView:
