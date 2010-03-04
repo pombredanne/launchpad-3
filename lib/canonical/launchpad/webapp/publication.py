@@ -209,15 +209,16 @@ class LaunchpadBrowserPublication(
     def maybeNotifyReadOnlyMode(self, request):
         """Hook to notify about read-only mode."""
         if is_read_only():
-            notification_response = INotificationResponse(request)
-            notification_response.addWarningNotification(
-                structured("""
-                    Launchpad is undergoing maintenance and is in
-                    read-only mode. <i>You cannot make any
-                    changes.</i> Please see the <a
-                    href="http://blog.launchpad.net/maintenance">Launchpad
-                    Blog</a> for details.
-                    """))
+            notification_response = INotificationResponse(request, None)
+            if notification_response is not None:
+                notification_response.addWarningNotification(
+                    structured("""
+                        Launchpad is undergoing maintenance and is in
+                        read-only mode. <i>You cannot make any
+                        changes.</i> Please see the <a
+                        href="http://blog.launchpad.net/maintenance">Launchpad
+                        Blog</a> for details.
+                        """))
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.

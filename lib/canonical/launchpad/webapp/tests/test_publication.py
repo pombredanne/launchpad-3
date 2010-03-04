@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import logging
 import sys
 import unittest
 
@@ -33,7 +34,7 @@ from canonical.launchpad.webapp.publication import (
     is_browser, LaunchpadBrowserPublication)
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest, WebServicePublication)
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 from lp.testing import TestCase, TestCaseWithFactory
 
 
@@ -156,6 +157,8 @@ class TestReadOnlyModeSwitches(TestCase):
 
 class TestReadOnlyNotifications(TestCase):
 
+    layer = FunctionalLayer
+
     def setUp(self):
         TestCase.setUp(self)
         touch_read_only_file()
@@ -166,6 +169,9 @@ class TestReadOnlyNotifications(TestCase):
         request = LaunchpadTestRequest()
         publication.maybeNotifyReadOnlyMode(request)
         self.assertEqual(1, len(request.notifications))
+        notification = request.notifications[0]
+        self.assertEqual(logging.WARNING, notification.level)
+        self.assertTrue('read-only mode' in notification.message)
 
     def test_notification_xmlrpc(self):
         from canonical.launchpad.webapp.servers import PublicXMLRPCRequest
