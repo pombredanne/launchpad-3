@@ -19,7 +19,7 @@ from zope.schema.interfaces import ValidationError
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.webapp.interfaces import IMultiLineWidgetLayout
 
 

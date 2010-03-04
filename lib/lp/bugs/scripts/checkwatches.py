@@ -21,11 +21,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchErrorType, CreateBugParams,
-    IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
-    IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
-    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.scripts.logger import log as default_log
@@ -35,7 +31,14 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction, queryInteraction)
 from canonical.launchpad.webapp.publisher import canonical_url
-
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtracker import IBugTracker, IBugTrackerSet
+from lp.bugs.interfaces.bugwatch import BugWatchErrorType, IBugWatchSet
+from lp.bugs.interfaces.externalbugtracker import (
+    ISupportsCommentImport, ISupportsCommentPushing, UNKNOWN_REMOTE_STATUS)
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, BugWatchUpdateError,

@@ -16,11 +16,11 @@ from zope.schema import Choice, Datetime
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.interfaces import IAnnouncement
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.date import DateTimeWidget
 from canonical.launchpad import _
+from lp.registry.interfaces.announcement import IAnnouncement
 
 
 class IAnnouncementDateWidget(ISimpleInputWidget):

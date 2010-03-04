@@ -26,8 +26,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.browser.widgets import DescriptionWidget
 from canonical.launchpad.fields import StrippedTextLine
-from canonical.launchpad.interfaces import (
-    BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.vocabularies.dbobjects import (
@@ -37,6 +36,8 @@ from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
 from canonical.widgets.textwidgets import (
     LowerCaseTextWidget, StrippedTextWidget)
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType, IBugTracker, IBugTrackerSet)
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
