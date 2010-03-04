@@ -195,17 +195,16 @@ the builds can be created.
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, logout
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, ILibraryFileAliasSet)
-  >>> from canonical.launchpad.ftests import syncUpdate
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
   >>> login('foo.bar@canonical.com')
 
   >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-  >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+
   >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
-  >>> new_chroot = breezy_autotest["i386"].addOrUpdateChroot(fake_chroot)
-  >>> syncUpdate(new_chroot)
+  >>> test_publisher = SoyuzTestPublisher()
+  >>> test_publisher.addFakeChroots(distroseries=breezy_autotest)
 
 Upload a new "bar" source so we can accept it later.  We need to login to
 upload.
