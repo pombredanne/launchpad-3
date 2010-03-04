@@ -165,12 +165,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_(
                 "The title of this series. It should be distinctive "
                 "and designed to look good at the top of a page.")))
-    summary = exported(
-        Summary(title=_("Summary"), required=True,
-            description=_(
-                "A brief summary of the highlights of this release. "
-                "It should be no longer than a single paragraph, up "
-                "to 200 words.")))
     description = exported(
         Description(title=_("Description"), required=True,
             description=_("A detailed description of this series, with "
@@ -237,14 +231,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
-    drivers = Attribute(
-        'A list of the people or teams who are drivers for this series. '
-        'This list is made up of any drivers or owners from this '
-        'DistroSeries, and the Distribution to which it belong.')
-    bug_supervisor = Attribute(
-        'Currently just a reference to the Distribution bug supervisor.')
-    security_contact = Attribute(
-        'Currently just a reference to the Distribution security contact.')
     messagecount = Attribute("The total number of translatable items in "
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "

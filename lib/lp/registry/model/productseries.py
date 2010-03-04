@@ -50,8 +50,6 @@ from lp.translations.model.translationimportqueue import (
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
@@ -60,10 +58,12 @@ from lp.blueprints.interfaces.specification import (
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
+from lp.registry.model.series import SeriesMixin
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 
@@ -92,12 +92,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         notNull=True, schema=SeriesStatus,
         default=SeriesStatus.DEVELOPMENT)
     name = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,
         notNull=True)
+
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,
@@ -159,25 +159,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def bugtargetname(self):
         """See IBugTarget."""
         return "%s/%s" % (self.product.name, self.name)
-
-    @property
-    def drivers(self):
-        """See IProductSeries."""
-        drivers = set()
-        drivers.add(self.driver)
-        drivers = drivers.union(self.product.drivers)
-        drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.displayname)
-
-    @property
-    def bug_supervisor(self):
-        """See IProductSeries."""
-        return self.product.bug_supervisor
-
-    @property
-    def security_contact(self):
-        """See IProductSeries."""
-        return self.product.security_contact
 
     def getPOTemplate(self, name):
         """See IProductSeries."""

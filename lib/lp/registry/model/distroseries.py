@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'DistroSeries',
     'DistroSeriesSet',
-    'SeriesMixin',
     ]
 
 import logging
@@ -142,14 +141,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     status = EnumCol(
         dbName='releasestatus', notNull=True, schema=SeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
-    parent_series =  ForeignKey(
+    parent_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
@@ -160,7 +158,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
-        dbName='nominatedarchindep',foreignKey='DistroArchSeries',
+        dbName='nominatedarchindep', foreignKey='DistroArchSeries',
         notNull=False, default=None)
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
@@ -269,25 +267,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def parent(self):
         """See `IDistroSeries`."""
         return self.distribution
-
-    @property
-    def drivers(self):
-        """See `IDistroSeries`."""
-        drivers = set()
-        drivers.add(self.driver)
-        drivers = drivers.union(self.distribution.drivers)
-        drivers.discard(None)
-        return sorted(drivers, key=lambda driver: driver.displayname)
-
-    @property
-    def bug_supervisor(self):
-        """See `IDistroSeries`."""
-        return self.distribution.bug_supervisor
-
-    @property
-    def security_contact(self):
-        """See `IDistroSeries`."""
-        return self.distribution.security_contact
 
     @property
     def sortkey(self):
@@ -738,7 +717,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -1056,7 +1035,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
-            """ %  sqlvalues(self, archives, status, pocket)
+            """ % sqlvalues(self, archives, status, pocket)
 
         if component:
             clause += (
