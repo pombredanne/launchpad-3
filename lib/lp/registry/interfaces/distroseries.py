@@ -12,7 +12,6 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
-    'ISeriesMixin',
     'NoSuchDistroSeries',
     ]
 
@@ -46,7 +45,7 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IHasBugs, IHasOfficialBugTags)
 from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
@@ -132,23 +131,12 @@ class DistroSeriesVersionField(UniqueField):
 
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
+
     @rename_parameters_as(dateexpected='date_targeted')
     @export_factory_operation(
         IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
     def newMilestone(name, dateexpected=None, summary=None, code_name=None):
         """Create a new milestone for this DistroSeries."""
-
-
-class ISeriesMixin(Interface):
-    """Methods & properties shared between distro & product series."""
-
-    active = exported(
-        Bool(
-            title=_("Active"),
-            description=_(
-                "Whether or not this series is stable and supported, or "
-                "under current development. This excludes series which "
-                "are experimental or obsolete.")))
 
 
 class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
@@ -198,7 +186,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
-    named_version =  Attribute('The combined display name and version.')
+    named_version = Attribute('The combined display name and version.')
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
     upload_components = Attribute("The series components that can be "
@@ -240,7 +228,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         title=_("Defer translation imports"),
         description=_("Suspends any translation imports for this series"),
         default=True,
-        required=True
+        required=True,
         )
     binarycount = Attribute("Binary Packages Counter")
 
@@ -443,8 +431,8 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return a list of packagings that are the most recently linked.
 
         At most five packages are returned of those most recently linked to an
-    upstream.
-    """
+        upstream.
+        """
 
     @operation_parameters(
         created_since_date=Datetime(

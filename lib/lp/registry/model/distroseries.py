@@ -87,8 +87,6 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
@@ -98,7 +96,10 @@ from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet, ISeriesMixin)
+    IDistroSeries, IDistroSeriesSet)
+from lp.registry.model.series import SeriesMixin
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -122,20 +123,6 @@ from canonical.launchpad.webapp.interfaces import (
     TranslationUnavailable)
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet)
-
-
-class SeriesMixin:
-    """See `ISeriesMixin`."""
-    implements(ISeriesMixin)
-
-    @property
-    def active(self):
-        return self.status in [
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FROZEN,
-            SeriesStatus.CURRENT,
-            SeriesStatus.SUPPORTED
-            ]
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,

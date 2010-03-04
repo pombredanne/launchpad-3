@@ -8,10 +8,18 @@
 __metaclass__ = type
 
 __all__ = [
-    'SeriesStatus'
+    'SeriesStatus',
+    'ISeriesMixin',
     ]
 
+from zope.interface import Interface
+from zope.schema import Bool
+
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import exported
+
+from canonical.launchpad import _
+
 
 class SeriesStatus(DBEnumeratedType):
     """Distro/Product Series Status
@@ -76,3 +84,14 @@ class SeriesStatus(DBEnumeratedType):
         haven't started working yet.
         """)
 
+
+class ISeriesMixin(Interface):
+    """Methods & properties shared between distro & product series."""
+
+    active = exported(
+        Bool(
+            title=_("Active"),
+            description=_(
+                "Whether or not this series is stable and supported, or "
+                "under current development. This excludes series which "
+                "are experimental or obsolete.")))

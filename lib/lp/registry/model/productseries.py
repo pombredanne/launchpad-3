@@ -303,7 +303,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -431,8 +431,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(productseries=self,
-                                     orderBy=['-priority','name'])
+        result = POTemplate.selectBy(
+            productseries=self, orderBy=['-priority', 'name'])
         return shortlist(result, 300)
 
     def getCurrentTranslationTemplates(self, just_ids=False):
@@ -465,7 +465,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             ProductSeries.product = Product.id AND
             (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
             ''' % sqlvalues(self),
-            orderBy=['-priority','name'],
+            orderBy=['-priority', 'name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
 
