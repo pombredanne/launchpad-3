@@ -16,11 +16,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, TeamMembershipStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
-
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator)

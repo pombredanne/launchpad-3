@@ -25,6 +25,17 @@ import tempfile
 
 from zope.component import getUtility
 
+from canonical.encoding import guess as guess_encoding
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGVerificationError, IGPGHandler)
+from canonical.librarian.utils import copy_and_close
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.archiveuploader.nascentuploadfile import (
     UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
 from lp.archiveuploader.tagfiles import (
@@ -33,15 +44,6 @@ from lp.archiveuploader.utils import (
     determine_source_file_type, get_source_file_extension,
     ParseMaintError, prefix_multi_line_string, re_is_component_orig_tar_ext,
     re_issource, re_valid_pkg_name, re_valid_version, safe_fix_maintainer)
-from canonical.encoding import guess as guess_encoding
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
-from canonical.launchpad.interfaces import (
-    GPGVerificationError, IGPGHandler, IGPGKeySet,
-    ISourcePackageNameSet, NotFoundError)
-from canonical.librarian.utils import copy_and_close
 
 
 class SignableTagFile:

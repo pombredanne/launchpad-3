@@ -23,6 +23,13 @@ import os
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
@@ -30,12 +37,8 @@ from lp.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from lp.archiveuploader.permission import check_upload_to_archive
 from lp.archiveuploader.utils import determine_source_file_type
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
-from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
-    ISourcePackageNameSet, NotFoundError, QueueInconsistentStateError)
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
 
 PARTNER_COMPONENT_NAME = 'partner'

@@ -15,6 +15,7 @@ __all__ = [
 
 import os
 
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.archiveuploader.dscfile import DSCFile, SignableTagFile
 from lp.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile,  CustomUploadFile, DdebBinaryUploadFile,
@@ -24,7 +25,6 @@ from lp.archiveuploader.utils import (
     re_isadeb, re_issource, re_changes_file_name)
 from lp.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
-from canonical.launchpad.interfaces import SourcePackageUrgency
 
 
 class ChangesFile(SignableTagFile):

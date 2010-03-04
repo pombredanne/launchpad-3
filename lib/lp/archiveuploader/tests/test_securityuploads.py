@@ -10,14 +10,15 @@ import unittest
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.processor import ProcessorFamily
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackageUploadStatus)
+
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):

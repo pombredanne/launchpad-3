@@ -13,13 +13,12 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600

@@ -8,9 +8,15 @@ __all__ = ['LaunchpadCelebrities']
 
 from zope.interface import implements
 from zope.component import getUtility
-from canonical.launchpad.interfaces import (
-    ILanguageSet, ILaunchpadCelebrities, IPersonSet, IDistributionSet,
-    IBugTrackerSet, IProductSet, NotFoundError, IDistributionMirrorSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distributionmirror import IDistributionMirrorSet
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.

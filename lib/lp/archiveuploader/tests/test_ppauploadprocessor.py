@@ -34,8 +34,9 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet, SourcePackageFormat)
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.services.mail import stub

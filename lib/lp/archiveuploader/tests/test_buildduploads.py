@@ -11,8 +11,8 @@ from lp.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.ftests import import_public_test_keys
 
 

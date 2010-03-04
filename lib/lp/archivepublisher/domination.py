@@ -62,7 +62,7 @@ from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor,
     clear_current_connection_cache)
 
-from canonical.launchpad.interfaces import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 def clear_cache():
