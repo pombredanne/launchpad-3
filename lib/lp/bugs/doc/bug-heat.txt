@@ -12,11 +12,21 @@ A new bug will have a heat of zero.
     >>> bug.heat
     0
 
+It will also have a heat_last_updated of None.
+
+    >>> print bug.heat_last_updated
+    None
+
 The bug's heat can be set by calling its setHeat() method.
 
     >>> bug.setHeat(42)
     >>> bug.heat
     42
+
+Its heat_last_updated will also have been set.
+
+    >>> bug.heat_last_updated
+    datetime.datetime(..., tzinfo=<UTC>)
 
 
 The BugHeatUpdater class
