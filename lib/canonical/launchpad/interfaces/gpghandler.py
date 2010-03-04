@@ -6,6 +6,8 @@
 from zope.interface import Interface, Attribute
 
 __all__ = [
+    'GPGKeyExpired',
+    'GPGKeyRevoked',
     'GPGKeyNotFoundError',
     'GPGUploadFailure',
     'GPGVerificationError',
@@ -27,6 +29,21 @@ class MoreThanOneGPGKeyFound(Exception):
 
 class GPGKeyNotFoundError(Exception):
     """The given GPG key was not found in the keyserver."""
+
+
+class GPGKeyRevoked(Exception):
+    """The given GPG key was revoked."""
+
+    def __init__(self, key):
+        super(GPGKeyRevoked, self).__init__(
+            "%s has been publicly revoked" % (key.keyid,))
+
+
+class GPGKeyExpired(Exception):
+    """The given GPG key has expired."""
+
+    def __init__(self, key):
+        super(GPGKeyRevoked, self).__init__("%s has expired" % (key.keyid,))
 
 
 class SecretGPGKeyImportDetected(Exception):
@@ -179,6 +196,19 @@ class IGPGHandler(Interface):
 
         If the key with the given fingerprint is not present in the local
         keyring, first import it from the key server into the local keyring.
+
+        :param fingerprint: The key fingerprint, which must be an hexadecimal
+            string.
+        :raise GPGKeyNotFoundError: if the key is not found neither in the
+            local keyring nor in the key server.
+        :return: a `PymeKey`object containing the key information.
+        """
+
+    def retrieveActiveKey(fingerprint):
+        """Retrieve key information, raise errors if the key is not active.
+
+        Exactly like `retrieveActiveKey` except raises errors if the key is
+        expired or has been revoked.
 
         :param fingerprint: The key fingerprint, which must be an hexadecimal
             string.

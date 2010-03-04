@@ -31,8 +31,8 @@ from canonical.config import config
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm, valid_fingerprint)
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError, GPGUploadFailure, GPGVerificationError,
-    IGPGHandler, IPymeKey, IPymeSignature, IPymeUserId,
+    GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError, GPGUploadFailure,
+    GPGVerificationError, IGPGHandler, IPymeKey, IPymeSignature, IPymeUserId,
     MoreThanOneGPGKeyFound, SecretGPGKeyImportDetected)
 from canonical.launchpad.validators.email import valid_email
 
@@ -409,6 +409,15 @@ class GPGHandler:
 
             # Import in the local key ring
             key = self.importPublicKey(pubkey)
+        return key
+
+    def retrieveActiveKey(self, fingerprint):
+        """See `IGPGHandler`."""
+        key = self.retrieveKey(fingerprint)
+        if key.revoked:
+            raise GPGKeyRevoked(key)
+        if key.expired:
+            raise GPGKeyExpired(key)
         return key
 
     def _submitKey(self, content):
