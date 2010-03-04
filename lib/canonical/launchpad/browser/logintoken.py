@@ -49,9 +49,9 @@ from lp.registry.interfaces.person import (
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.authtoken import IAuthToken
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
-    GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,
-    IGPGKeyValidationForm, ILoginTokenSet, IPerson, IPersonSet,
+    EmailAddressStatus, GPGKeyAlgorithm, GPGKeyExpired, GPGKeyRevoked,
+    GPGKeyNotFoundError, GPGVerificationError, IEmailAddressSet, IGPGHandler,
+    IGPGKeySet, IGPGKeyValidationForm, ILoginTokenSet, IPerson, IPersonSet,
     ITeam, LoginTokenType)
 
 
@@ -249,7 +249,6 @@ class ResetPasswordView(BaseTokenView, LaunchpadFormView):
         else:
             naked_account.password = data.get('password')
 
-        person = self.context.requester
         self.context.consume()
         self.logInPrincipalByEmail(self.context.email)
 
@@ -582,10 +581,9 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 'YOU</kdb>). Try later or <a href="${url}/+editpgpkeys"> '
                 'cancel your request</a>.',
                 mapping=dict(key=key, url=person_url))))
-            return None
-
-        # If key is globally revoked, skip the import and consume the token.
-        if key.revoked:
+        except GPGKeyRevoked:
+            # If key is globally revoked, skip the import and consume the
+            # token.
             self.addError(
                     structured(_(
                 'The key ${key} cannot be validated because it has been '
@@ -594,9 +592,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 'process to <a href="${url}/+editpgpkeys">find and '
                 'import</a> the new key.',
                 mapping=dict(key=key.keyid, url=person_url))))
-            return None
-
-        if key.expired:
+        except GPGKeyExpired:
             self.addError(
                         structured(_(
                 'The key ${key} cannot be validated because it has expired. '
@@ -604,9 +600,8 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 '<kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> '
                 'then enter <kbd>expire</kbd>), and try again.',
                 mapping=dict(key=key.keyid))))
-            return None
-
-        return key
+        else:
+            return key
 
 
 class ValidateEmailView(BaseTokenView, LaunchpadFormView):
