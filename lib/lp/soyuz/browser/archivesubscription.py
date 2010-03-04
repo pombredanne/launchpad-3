@@ -299,16 +299,16 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
 
         # Turn the result set into a list of dicts so it can be easily
         # accessed in TAL. Note that we need to ensure that only one
-        # PersonalArchiveSubscription is included for each token,
+        # PersonalArchiveSubscription is included for each archive,
         # as the person might have participation in multiple
         # subscriptions (via different teams).
-        unique_tokens = set()
+        unique_archives = set()
         personal_subscription_tokens = []
         for subscription, token in subs_with_tokens:
-            if token in unique_tokens:
+            if subscription.archive in unique_archives:
                 continue
-            elif token is not None:
-                unique_tokens.add(token)
+
+            unique_archives.add(subscription.archive)
 
             personal_subscription = PersonalArchiveSubscription(
                 self.context, subscription.archive)
