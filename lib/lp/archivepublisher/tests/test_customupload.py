@@ -82,19 +82,13 @@ class TestTarfileVerification(TestCase):
         self.custom_processor = CustomUpload(None, self.tarfile_name, None)
         self.custom_processor.tmpdir = self.makeTemporaryDirectory()
 
-    def closeTarfileObject(self):
-        self.tar_fileobj.close()
-
-    def closeTarfile(self, tar_file):
-        tar_file.close()
-
     def createTarfile(self):
         self.tar_fileobj = cStringIO.StringIO()
         tar_file = tarfile.open(name=None, mode="w", fileobj=self.tar_fileobj)
         # Ordering matters here, addCleanup pushes onto a stack which is
         # popped in reverse order.
-        self.addCleanup(self.closeTarfileObject)
-        self.addCleanup(self.closeTarfile, tar_file)
+        self.addCleanup(self.tar_fileobj.close)
+        self.addCleanup(tar_file.close)
         return tar_file
 
     def createSymlinkInfo(self, target, name="i_am_a_symlink"):
