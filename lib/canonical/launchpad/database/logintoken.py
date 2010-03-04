@@ -6,8 +6,11 @@
 __metaclass__ = type
 __all__ = ['LoginToken', 'LoginTokenSet']
 
+from itertools import chain
+
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 from storm.expr import And
@@ -25,6 +28,7 @@ from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
     LoginTokenType)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
@@ -236,6 +240,47 @@ class LoginToken(SQLBase):
         message = template % replacements
         subject = "Launchpad: Claim existing team"
         self._send_email(from_name, subject, message)
+
+    def createEmailAddresses(self, uids):
+        """Create EmailAddresses for the GPG UIDs that do not exist yet.
+
+        For each of the given UIDs, check if it is already registered and, if
+        not, register it.
+
+        Return a tuple containing the list of newly created emails (as
+        strings) and the emails that exist and are already assigned to another
+        person (also as strings).
+        """
+        emailset = getUtility(IEmailAddressSet)
+        requester = self.requester
+        account = self.requester_account
+        emails = chain(requester.validatedemails, [requester.preferredemail])
+        # Must remove the security proxy because the user may not be logged in
+        # and thus won't be allowed to view the requester's email addresses.
+        emails = [
+            removeSecurityProxy(email).email.lower() for email in emails]
+
+        created = []
+        existing_and_owned_by_others = []
+        for uid in uids:
+            # Here we use .lower() because the case of email addresses's chars
+            # don't matter to us (e.g. 'foo@baz.com' is the same as
+            # 'Foo@Baz.com').  However, note that we use the original form
+            # when creating a new email.
+            if uid.lower() not in emails:
+                # EmailAddressSet.getByEmail() is not case-sensitive, so
+                # there's no need to do uid.lower() here.
+                if emailset.getByEmail(uid) is not None:
+                    # This email address is registered but does not belong to
+                    # our user.
+                    existing_and_owned_by_others.append(uid)
+                else:
+                    # The email is not yet registered, so we register it for
+                    # our user.
+                    email = emailset.new(uid, requester, account=account)
+                    created.append(uid)
+
+        return created, existing_and_owned_by_others
 
 
 class LoginTokenSet:

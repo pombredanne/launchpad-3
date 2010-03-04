@@ -19,18 +19,14 @@ __all__ = [
 import re
 
 from zope.schema import Bool, Int, TextLine, Choice
-from zope.interface import Interface, Attribute, implementer
-from zope.component import adapter
+from zope.interface import Interface, Attribute
 
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lp.registry.interfaces.role import IHasOwner
-from lazr.restful.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of)
+from lazr.restful.declarations import export_as_webservice_entry, exported
+
 
 def valid_fingerprint(fingerprint):
     """Is the fingerprint of valid form."""
@@ -121,6 +117,13 @@ class IGPGKeySet(Interface):
     def new(ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=True):
         """Create a new GPGKey pointing to the given Person."""
+
+    def activate(requester, key, can_encrypt):
+        """Activate 'key' for 'requester'.
+
+        :return: A tuple of (IGPGKey, new), where 'new' is False if we have
+            reactivated an existing key.
+        """
 
     def get(key_id, default=None):
         """Return the GPGKey object for the given id.

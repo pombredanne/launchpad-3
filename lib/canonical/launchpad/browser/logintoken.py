@@ -18,7 +18,6 @@ __all__ = [
     'ValidateGPGKeyView',
     ]
 
-from itertools import chain
 import cgi
 import pytz
 import urllib
@@ -451,41 +450,28 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
 
     def _activateGPGKey(self, key, can_encrypt):
         gpgkeyset = getUtility(IGPGKeySet)
+        lpkey, new = gpgkeyset.activate(
+            self.context.requester, key, can_encrypt)
 
-        fingerprint = key.fingerprint
         requester = self.context.requester
         person_url = canonical_url(requester)
 
-        # Is it a revalidation ?
-        lpkey = gpgkeyset.getByFingerprint(fingerprint)
+        self.context.consume()
 
-        if lpkey:
-            lpkey.active = True
-            lpkey.can_encrypt = can_encrypt
+        if not new:
             msgid = _(
                 'Key ${lpkey} successfully reactivated. '
                 '<a href="${url}/+editpgpkeys">See more Information'
                 '</a>',
                 mapping=dict(lpkey=lpkey.displayname, url=person_url))
             self.request.response.addInfoNotification(structured(msgid))
-            self.context.consume()
             return
 
-        # Otherwise prepare to add
-        ownerID = self.context.requester.id
-        keyid = key.keyid
-        keysize = key.keysize
-        algorithm = GPGKeyAlgorithm.items[key.algorithm]
-
-        # Add new key in DB. See IGPGKeySet for further information
-        lpkey = gpgkeyset.new(ownerID, keyid, fingerprint, keysize, algorithm,
-                              can_encrypt=can_encrypt)
-
-        self.context.consume()
         self.request.response.addInfoNotification(_(
             "The key ${lpkey} was successfully validated. ",
             mapping=dict(lpkey=lpkey.displayname)))
-        created, owned_by_others = self._createEmailAddresses(key.emails)
+        created, owned_by_others = self.context.createEmailAddresses(
+            key.emails)
 
         if len(created):
             msgid = _(
@@ -504,47 +490,6 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 "your current one.</p>",
                 mapping=dict(emails=', '.join(owned_by_others)))
             self.request.response.addInfoNotification(structured(msgid))
-
-    def _createEmailAddresses(self, uids):
-        """Create EmailAddresses for the GPG UIDs that do not exist yet.
-
-        For each of the given UIDs, check if it is already registered and, if
-        not, register it.
-
-        Return a tuple containing the list of newly created emails (as
-        strings) and the emails that exist and are already assigned to another
-        person (also as strings).
-        """
-        emailset = getUtility(IEmailAddressSet)
-        requester = self.context.requester
-        account = self.context.requester_account
-        emails = chain(requester.validatedemails, [requester.preferredemail])
-        # Must remove the security proxy because the user may not be logged in
-        # and thus won't be allowed to view the requester's email addresses.
-        emails = [
-            removeSecurityProxy(email).email.lower() for email in emails]
-
-        created = []
-        existing_and_owned_by_others = []
-        for uid in uids:
-            # Here we use .lower() because the case of email addresses's chars
-            # don't matter to us (e.g. 'foo@baz.com' is the same as
-            # 'Foo@Baz.com').  However, note that we use the original form
-            # when creating a new email.
-            if uid.lower() not in emails:
-                # EmailAddressSet.getByEmail() is not case-sensitive, so
-                # there's no need to do uid.lower() here.
-                if emailset.getByEmail(uid) is not None:
-                    # This email address is registered but does not belong to
-                    # our user.
-                    existing_and_owned_by_others.append(uid)
-                else:
-                    # The email is not yet registered, so we register it for
-                    # our user.
-                    email = emailset.new(uid, requester, account=account)
-                    created.append(uid)
-
-        return created, existing_and_owned_by_others
 
     @property
     def validationphrase(self):

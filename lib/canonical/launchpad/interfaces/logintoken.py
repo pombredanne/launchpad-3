@@ -74,6 +74,17 @@ class ILoginToken(IAuthToken):
     def sendClaimTeamEmail():
         """E-mail instructions for claiming a team to self.email."""
 
+    def createEmailAddresses(uids):
+        """Create EmailAddresses for the GPG UIDs that do not exist yet.
+
+        For each of the given UIDs, check if it is already registered and, if
+        not, register it.
+
+        Return a tuple containing the list of newly created emails (as
+        strings) and the emails that exist and are already assigned to another
+        person (also as strings).
+        """
+
 
 class ILoginTokenSet(Interface):
     """The set of LoginTokens."""
