@@ -156,6 +156,7 @@ class TestReadOnlyModeSwitches(TestCase):
 
 
 class TestReadOnlyNotifications(TestCase):
+    """Tests for `LaunchpadBrowserPublication.maybeNotifyReadOnlyMode`."""
 
     layer = FunctionalLayer
 
@@ -165,6 +166,8 @@ class TestReadOnlyNotifications(TestCase):
         self.addCleanup(remove_read_only_file, assert_mode_switch=False)
 
     def test_notification(self):
+        # In read-only mode, maybeNotifyReadOnlyMode adds a warning that
+        # changes cannot be made to every request that supports notifications.
         publication = LaunchpadBrowserPublication(None)
         request = LaunchpadTestRequest()
         publication.maybeNotifyReadOnlyMode(request)
@@ -174,6 +177,8 @@ class TestReadOnlyNotifications(TestCase):
         self.assertTrue('read-only mode' in notification.message)
 
     def test_notification_xmlrpc(self):
+        # Even in read-only mode, maybeNotifyReadOnlyMode doesn't try to add a
+        # notification to a request that doesn't support notifications.
         from canonical.launchpad.webapp.servers import PublicXMLRPCRequest
         publication = LaunchpadBrowserPublication(None)
         request = PublicXMLRPCRequest(None, {})
