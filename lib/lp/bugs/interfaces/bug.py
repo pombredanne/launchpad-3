@@ -780,7 +780,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
-    def setHeat(heat):
+    def setHeat(heat, timestamp=None):
         """Set the heat for the bug."""
 
 class InvalidDuplicateValue(Exception):
@@ -1033,6 +1033,14 @@ class IBugSet(Interface):
         # XXX 2010-01-08 gmb bug=505850:
         #     Note, this method should go away when we have a proper
         #     permissions system for scripts.
+
+    def getBugsWithOutdatedHeat(max_heat_age):
+        """Return the set of bugs whose heat is out of date.
+
+        :param max_heat_age: The maximum age, in days, that a bug's heat
+                             can be before it is included in the
+                             returned set.
+        """
 
 
 class IFileBugData(Interface):

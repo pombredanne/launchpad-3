@@ -29,6 +29,60 @@ Its heat_last_updated will also have been set.
     datetime.datetime(..., tzinfo=<UTC>)
 
 
+Getting bugs whose heat is outdated
+-----------------------------------
+
+It's possible to get the set of bugs whose heat hasn't been updated for
+a given amount of time by calling IBugSet's getBugsWithOutdatedHeat()
+method.
+
+First, we'll set the heat of all bugs so that none of them are out of
+date.
+
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> for bug in getUtility(IBugSet).dangerousGetAllBugs():
+    ...     bug.setHeat(0)
+
+If we call getBugsWithOutdatedHeat() now, the set that is returned will
+be empty because all the bugs have been recently updated.
+getBugsWithOutdatedHeat() takes a single parameter, max_heat_age, which
+is the maximum age, in days, that a bug's heat can be before it gets
+included in the returned set.
+
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    0
+
+IBug.setHeat() takes a timestamp parameter so that we can set the
+heat_last_updated date manually for the purposes of testing. If we make
+a bug's heat older than the max_heat_age that we pass to
+getBugsWithOutdatedHeat() it will appear in the set returned by
+getBugsWithOutdatedHeat().
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import timezone
+    >>> old_heat_bug = factory.makeBug()
+    >>> old_heat_bug.setHeat(
+    ...     0, datetime.now(timezone('UTC')) - timedelta(days=2))
+
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs.count()
+    1
+
+    >>> outdated_bugs[0] == old_heat_bug
+    True
+
+getBugsWithOutdatedHeat() also returns bugs whose heat has never been
+updated.
+
+    >>> new_bug = factory.makeBug()
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs.count()
+    2
+
+    >>> new_bug in outdated_bugs
+    True
+
+
 The BugHeatUpdater class
 ---------------------------
 
