@@ -1021,6 +1021,19 @@ class IBugSet(Interface):
         Otherwise, return False.
         """
 
+    def dangerousGetAllBugs():
+        """DO NOT CALL THIS METHOD.
+
+        This method exists solely to allow the bug heat script to grab
+        all the bugs in the database - including private ones - and
+        iterate over them. DO NOT USE IT UNLESS YOU KNOW WHAT YOU'RE
+        DOING. AND IF YOU KNOW WHAT YOU'RE DOING YOU KNOW BETTER THAN TO
+        USE THIS ANYWAY.
+        """
+        # XXX 2010-01-08 gmb bug=505850:
+        #     Note, this method should go away when we have a proper
+        #     permissions system for scripts.
+
 
 class IFileBugData(Interface):
     """A class containing extra data to be used when filing a bug."""
