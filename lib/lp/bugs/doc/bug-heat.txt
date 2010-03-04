@@ -93,37 +93,51 @@ module and runs as part of the garbo-daily cronjob.
     >>> from canonical.launchpad.scripts.garbo import BugHeatUpdater
     >>> from canonical.launchpad.scripts import FakeLogger
 
-    >>> update_bug_heat = BugHeatUpdater(FakeLogger())
+    >>> update_bug_heat = BugHeatUpdater(FakeLogger(), max_heat_age=1)
 
 BugHeatUpdater implements ITunableLoop and as such is callable. Calling
-it as a method will update the heat for all the bugs currently held in
-Launchpad.
+it as a method will update the heat for all the bugs whose heat is more
+than seven days old.
 
-Before update_bug_heat is called, bug 1 will have no heat.
+Before update_bug_heat is called, new_bug and old_heat_bug will have no
+heat.
 
-    >>> from zope.component import getUtility
-    >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> bug_1 = getUtility(IBugSet).get(1)
-
-    >>> bug_1.heat
+    >>> old_heat_bug.heat
     0
 
-We touch bug 1 to make sure its date_last_updated is recent enough (bug heat
-decays over time).
+    >>> new_bug.heat
+    0
 
-    >>> new_comment = bug_1.newMessage(
-    ...     owner=bug_1.owner, subject="...", content="...")
-    >>> import transaction ; transaction.commit()
-    >>> bug_1 = getUtility(IBugSet).get(1)
+We need to flush the store to ensure that the bugs we've created are
+available to the update_bug_heat script.
 
-    >>> update_bug_heat(chunk_size=1)
-    DEBUG Updating 1 Bugs (starting id: ...)
-    ...
+    >>> import transaction
+    >>> transaction.commit()
 
-Bug 1's heat will now be greater than 0.
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    2
 
-    >>> bug_1.heat > 0
+We need to run update_bug_heat() twice to ensure that both the bugs are
+updated.
+
+    >>> update_bug_heat(chunk_size=2)
+    DEBUG Updating 1 Bugs (starting id: ...
+
+The bugs' heat will now be greater than 0
+
+    >>> old_heat_bug = getUtility(IBugSet).get(old_heat_bug.id)
+    >>> old_heat_bug.heat > 0
     True
+
+    >>> new_bug = getUtility(IBugSet).get(new_bug.id)
+    >>> new_bug.heat > 0
+    True
+
+IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all
+the bugs have been updated.
+
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    0
 
 
 Caculating the maximum heat for a target

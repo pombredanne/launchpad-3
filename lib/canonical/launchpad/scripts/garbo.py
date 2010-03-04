@@ -699,18 +699,21 @@ class BugHeatUpdater(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self, log, abort_time=None):
+    def __init__(self, log, abort_time=None, max_heat_age=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
         self.transaction = transaction
-        self.offset = 0
         self.total_updated = 0
+        self.is_done = False
+        if max_heat_age is None:
+            max_heat_age = config.calculate_bug_heat.max_heat_age
+        self.max_heat_age = config.calculate_bug_heat.max_heat_age
 
     def isDone(self):
         """See `ITunableLoop`."""
         # When the main loop has no more Bugs to process it sets
         # offset to None. Until then, it always has a numerical
         # value.
-        return self.offset is None
+        return self.is_done
 
     def __call__(self, chunk_size):
         """Retrieve a batch of Bugs and update their heat.
@@ -723,29 +726,23 @@ class BugHeatUpdater(TunableLoop):
         #     foolish. We shouldn't have to do this.
         chunk_size = int(chunk_size)
 
-        start = self.offset
-        end = self.offset + chunk_size
-
         transaction.begin()
-        # XXX 2010-01-08 gmb bug=505850:
-        #     This method call should be taken out and shot as soon as
-        #     we have a proper permissions system for scripts.
-        bugs = getUtility(IBugSet).dangerousGetAllBugs()[start:end]
+        bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+            self.max_heat_age)[:chunk_size]
 
-        self.offset = None
         bug_count = bugs.count()
         if bug_count > 0:
             starting_id = bugs.first().id
             self.log.debug("Updating %i Bugs (starting id: %i)" %
                 (bug_count, starting_id))
+        else:
+            self.is_done = True
 
         for bug in bugs:
             # We set the starting point of the next batch to the Bug
             # id after the one we're looking at now. If there aren't any
             # bugs this loop will run for 0 iterations and starting_id
             # will remain set to None.
-            start += 1
-            self.offset = start
             self.log.debug("Updating heat for bug %s" % bug.id)
             bug_heat_calculator = BugHeatCalculator(bug)
             heat = bug_heat_calculator.getBugHeat()
@@ -837,6 +834,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDAssociationPruner,
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
+        BugHeatUpdater,
         ]
     experimental_tunable_loops = []
 
