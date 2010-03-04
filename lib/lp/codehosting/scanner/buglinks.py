@@ -13,9 +13,11 @@ import urlparse
 from bzrlib.errors import InvalidBugStatus
 from zope.component import adapter, getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.codehosting.scanner import events
-from canonical.launchpad.interfaces import (
-    IBugBranchSet, IBugSet, ILaunchpadCelebrities, NotFoundError)
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugbranch import IBugBranchSet
 
 
 class BugBranchLinker:

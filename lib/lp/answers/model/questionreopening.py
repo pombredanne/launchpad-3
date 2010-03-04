@@ -24,7 +24,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from lp.registry.interfaces.person import validate_public_person
 from lp.answers.interfaces.questionenums import QuestionStatus
-from lp.answers.interfaces.reopening import IQuestionReopening
+from lp.answers.interfaces.questionreopening import IQuestionReopening
 
 
 class QuestionReopening(SQLBase):

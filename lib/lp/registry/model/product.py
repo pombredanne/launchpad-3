@@ -81,8 +81,8 @@ from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
-    NotFoundError)
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes)
 from canonical.launchpad.interfaces.launchpadstatistic import (

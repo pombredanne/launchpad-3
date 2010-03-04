@@ -39,14 +39,14 @@ from canonical.config import config
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from lp.services.job.model.job import Job
-from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
-    UnknownSender)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageJob,
-    IMessageSet, IUserToUserEmail, InvalidEmailMessage)
+    IMessageSet, IUserToUserEmail, InvalidEmailMessage, UnknownSender)
 from canonical.launchpad.mail import signed_message_from_string
-from lp.registry.interfaces.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.registry.interfaces.person import (
+    IPersonSet, PersonCreationRationale, validate_public_person)
 from lazr.config import as_timedelta
 
 from canonical.database.sqlbase import SQLBase

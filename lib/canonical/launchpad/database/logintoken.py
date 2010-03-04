@@ -22,15 +22,17 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces import (
-    ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
-    LoginTokenType)
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginToken, ILoginTokenSet)
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, NotFoundError)
+from lp.registry.interfaces.person import IPersonSet
 
 
 class LoginToken(SQLBase):

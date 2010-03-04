@@ -43,8 +43,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, NotFoundError)
+from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.batching import BatchNavigator

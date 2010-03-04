@@ -24,14 +24,22 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    IDistroSeriesSet, IFeedsApplication,
-    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
-    IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    IWebServiceApplication)
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet)
+from canonical.launchpad.interfaces.launchpad import (
+    IAuthServerApplication, IBazaarApplication, IFeedsApplication,
+    IPrivateMaloneApplication, IRosettaApplication, IWebServiceApplication)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.mailinglist import IMailingListApplication
+from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsoverview import (
