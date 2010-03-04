@@ -15,9 +15,8 @@ from lp.translations.browser.serieslanguage import (
 from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadZopelessLayer
-from lp.translations.browser.distroseries import DistroSeriesView
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory, login_person
+from lp.testing import TestCaseWithFactory
 
 
 class TestDistroSeriesLanguage(TestCaseWithFactory):
