@@ -97,10 +97,14 @@ class TestTarfileVerification(TestCase):
         self.addCleanup(self.closeTarfile, tar_file)
         return tar_file
 
-    def createTarfileWithSymlink(self, target):
-        info = tarfile.TarInfo(name="i_am_a_symlink")
+    def createSymlinkInfo(self, target, name="i_am_a_symlink"):
+        info = tarfile.TarInfo(name=name)
         info.type = tarfile.SYMTYPE
         info.linkname = target
+        return info
+
+    def createTarfileWithSymlink(self, target):
+        info = self.createSymlinkInfo(target)
         tar_file = self.createTarfile()
         tar_file.addfile(info)
         return tar_file
@@ -142,6 +146,11 @@ class TestTarfileVerification(TestCase):
         tar_file = self.createTarfileWithFile(tarfile.REGTYPE, "../outside")
         self.assertFails(CustomUploadTarballBadFile, tar_file)
 
+    def testFailsToExtractBadAbsoluteFileLocation(self):
+        """Fail if the file resolves to a path outside the tmp tree."""
+        tar_file = self.createTarfileWithFile(tarfile.REGTYPE, "/etc/passwd")
+        self.assertFails(CustomUploadTarballBadFile, tar_file)
+
     def testRegularFileDoesntRaise(self):
         """Adding a normal file should pass inspection."""
         tar_file = self.createTarfileWithFile(tarfile.REGTYPE)
@@ -155,6 +164,14 @@ class TestTarfileVerification(TestCase):
     def testSymlinkDoesntRaise(self):
         """Adding a symlink should pass inspection."""
         tar_file = self.createTarfileWithSymlink(target="something/blah")
+        self.assertPasses(tar_file)
+
+    def testRelativeSymlinkTargetInsideDirectoryDoesntRaise(self):
+        tar_file = self.createTarfileWithFile(
+            tarfile.DIRTYPE, name="testdir")
+        info = self.createSymlinkInfo(
+            name="testdir/symlink", target="../dummy")
+        tar_file.addfile(info)
         self.assertPasses(tar_file)
 
     def test_extract(self):
