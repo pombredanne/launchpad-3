@@ -1839,6 +1839,14 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
 
+    def test_10_minute_lease(self):
+        self.useBzrBranches()
+        bmp = self.createExampleMerge()[0]
+        job = UpdatePreviewDiffJob.create(bmp)
+        job.acquireLease()
+        expiry_delta = job.lease_expires - datetime.now(UTC)
+        self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
+
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):
 
