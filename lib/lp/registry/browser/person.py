@@ -1211,7 +1211,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     def configure_mailing_list(self):
         target = '+mailinglist'
         mailing_list = self.person.mailing_list
-        if mailing_list is not None and mailing_list.is_usable:
+        if mailing_list is not None:
             text = 'Configure mailing list'
             icon = 'edit'
         else:

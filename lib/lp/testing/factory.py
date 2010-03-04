@@ -1840,6 +1840,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
+    def makeMailingList(self, team, owner):
+        """Create a mailing list for the team."""
+        team_list = getUtility(IMailingListSet).new(team, owner)
+        team_list.startConstructing()
+        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        return team_list
+
     def makeTeamAndMailingList(
         self, team_name, owner_name,
         visibility=None,
@@ -1867,9 +1874,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
                 subscription_policy=subscription_policy)
-        team_list = getUtility(IMailingListSet).new(team, owner)
-        team_list.startConstructing()
-        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        team_list = self.makeMailingList(team, owner)
         return team, team_list
 
     def makeMirror(self, distribution, displayname, country=None,
