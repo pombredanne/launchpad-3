@@ -13,6 +13,8 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from storm.locals import Or
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import ISlaveStore
@@ -75,7 +77,7 @@ class Language(SQLBase):
         Norwegian languages Nynorsk (nn) and Bokmaal (nb) are similar
         and may provide suggestions for each other.
         """
-        if self.code in ['pt_BR']:
+        if self.code == 'pt_BR':
             return None
         elif self.code == 'nn':
             return Language.byCode('nb')
@@ -151,11 +153,24 @@ class Language(SQLBase):
 class LanguageSet:
     implements(ILanguageSet)
 
-    @property
-    def common_languages(self):
-        return iter(Language.select(
+    @cachedproperty
+    def _visible_languages(self):
+        return Language.select(
             'visible IS TRUE',
-            orderBy='englishname'))
+            orderBy='englishname')
+
+    def common_languages(self):
+        """See `ILanguageSet`."""
+        return iter(self._visible_languages)
+
+    def getDefaultLanguages(self):
+        """See `ILanguageSet`."""
+        return self._visible_languages
+
+    def getAllLanguages(self):
+        """See `ILanguageSet`."""
+        return ISlaveStore(Language).find(Language).order_by(
+            Language.englishname)
 
     def __iter__(self):
         """See `ILanguageSet`."""
@@ -255,8 +270,3 @@ class LanguageSet:
             results = None
 
         return results
-
-    def getAll(self):
-        """See `ILanguageSet`."""
-        return ISlaveStore(Language).find(Language).order_by(
-            Language.englishname)

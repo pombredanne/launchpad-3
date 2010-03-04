@@ -18,8 +18,9 @@ from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_as_webservice_collection,
-    collection_default_content, exported)
+    collection_default_content, exported, export_as_webservice_collection,
+    export_as_webservice_entry, export_operation_as, export_read_operation,
+    operation_returns_collection_of)
 
 
 class TextDirection(DBEnumeratedType):
@@ -78,8 +79,10 @@ class ILanguage(Interface):
         title=u'List of Person/Team that translate into this language.',
         required=True)
 
-    translators_count = exported(Int(
-        title=u"Total number of translators for this language."))
+    translators_count = exported(
+        Int(
+            title=u"Total number of translators for this language.",
+            readonly=True))
 
     translation_teams = Field(
         title=u'List of Teams that translate into this language.',
@@ -107,14 +110,14 @@ class ILanguage(Interface):
         Bool(
             title=u'Visible',
             description=(
-                u'Whether this language should ususally be visible or not.'),
+                u'Whether this language is visible by default.'),
             required=True))
 
-    direction = Choice(
+    direction = exported(Choice(
         title=u'Text direction',
         description=u'The direction of text in this language.',
         required=True,
-        vocabulary=TextDirection)
+        vocabulary=TextDirection))
 
     displayname = TextLine(
         title=u'The displayname of the language',
@@ -131,13 +134,11 @@ class ILanguage(Interface):
         required=True,
         readonly=True)
 
-    abbreviated_text_dir = exported(
-        TextLine(
-            title=(u'The abbreviated form of the text direction, suitable'
-                   u' for use in HTML files.'),
-            required=True,
-            readonly=True),
-        exported_as='abbreviated_text_direction')
+    abbreviated_text_dir = TextLine(
+        title=(u'The abbreviated form of the text direction, suitable'
+               u' for use in HTML files.'),
+        required=True,
+        readonly=True)
 
     def getFullCode(variant=None):
         """Compose full language code for this language."""
@@ -151,12 +152,17 @@ class ILanguageSet(Interface):
 
     export_as_webservice_collection(ILanguage)
 
-    @collection_default_content()
-    def getAll():
+    @export_read_operation()
+    @operation_returns_collection_of(ILanguage)
+    def getAllLanguages():
         """Return a result set of all ILanguages from Launchpad."""
 
-    common_languages = Attribute("An iterator over languages that are "
-        "not hidden.")
+    @collection_default_content()
+    def getDefaultLanguages():
+        """An API wrapper for `common_languages`"""
+
+    common_languages = Attribute(
+        "An iterator over languages that are not hidden.")
 
     def __iter__():
         """Returns an iterator over all languages."""
