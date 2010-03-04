@@ -54,7 +54,7 @@ from lp.translations.model.customlanguagecode import (
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
-                                HasBranchesMixin, 
+                                HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
                                 HasMergeProposalsMixin):
     """This is a "Magic Distribution Source Package". It is not an
