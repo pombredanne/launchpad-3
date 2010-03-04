@@ -54,7 +54,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.job.runner import JobRunner
 from lp.testing import (
-    capture_events, login_person, TestCaseWithFactory, time_counter)
+    capture_events, login_person, TestCaseWithFactory)
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
 
