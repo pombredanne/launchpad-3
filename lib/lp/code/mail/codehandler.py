@@ -541,7 +541,8 @@ class CodeHandler:
             if part.is_multipart():
                 continue
             payload = part.get_payload(decode=True)
-            if part['Content-type'].startswith('text/plain'):
+            content_type = part.get('Content-type', 'text/plain').lower()
+            if content_type.startswith('text/plain'):
                 body = payload
                 charset = part.get_param('charset')
                 if charset is not None:

@@ -436,6 +436,43 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('', comment)
         transaction.commit()
 
+    def test_findMergeDirectiveAndComment_no_content_type(self):
+        """findMergeDirectiveAndComment handles empty message bodies.
+
+        Empty message bodies are returned verbatim.
+        """
+        md = self.factory.makeMergeDirective()
+        message = self.factory.makeSignedMessage(
+            body='', attachment_contents=''.join(md.to_lines()))
+        body = message.get_payload()[0]
+        del body['Content-type']
+        body.set_payload('body')
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        comment, md2 = code_handler.findMergeDirectiveAndComment(message)
+        self.assertEqual('body', comment)
+        transaction.commit()
+
+    def test_findMergeDirectiveAndComment_case_insensitive(self):
+        """findMergeDirectiveAndComment handles empty message bodies.
+
+        Empty message bodies are returned verbatim.
+        """
+        md = self.factory.makeMergeDirective()
+        message = self.factory.makeSignedMessage(
+            body='', attachment_contents=''.join(md.to_lines()))
+        body = message.get_payload()[0]
+        # Unlike dicts, messages append when you assign to a key.  So
+        # we must delete the first Content-type before adding another.
+        del body['Content-type']
+        body['Content-type'] = 'Text/Plain'
+        body.set_payload('body')
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        comment, md2 = code_handler.findMergeDirectiveAndComment(message)
+        self.assertEqual('body', comment)
+        transaction.commit()
+
     def test_findMergeDirectiveAndCommentUnicodeBody(self):
         """findMergeDirectiveAndComment returns unicode comments."""
         md = self.factory.makeMergeDirective()
