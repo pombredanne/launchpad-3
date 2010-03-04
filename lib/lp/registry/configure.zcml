@@ -390,6 +390,7 @@
                 unassigned_bugtasks
                 new_bugtasks
                 all_bugtasks
+                has_bugtasks
                 getUsedBugTags
                 getUsedBugTagsWithOpenCounts
                 bugtargetdisplayname

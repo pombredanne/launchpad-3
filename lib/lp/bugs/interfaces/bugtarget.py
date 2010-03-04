@@ -56,6 +56,8 @@ class IHasBugs(Interface):
         "A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
+    has_bugtasks = Attribute(
+        "True if at least one BugTask has ever been reported for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(
