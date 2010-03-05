@@ -35,9 +35,9 @@ for that import:
 Filtering the code import list
 ==============================
 
-The code import listing is filterable, though only on review status so
-far.  There are no invalid imports in the sample data, so if we filter
-just on them we'll see the "no imports found" message.  It is worth
+The code import listing is filterable, on review status and type.
+There are no invalid imports in the sample data, so if we filter just
+on them we'll see the "no imports found" message.  It is worth
 ensuring that the control for filtering on review status reads "Any"
 by default, as the code that ensures this is poking at Zope 3
 internals a bit.
@@ -62,6 +62,16 @@ imports appear again.
     >>> for name in names:
     ...     print name
     gnome-terminal/import
+    evolution/import
+
+We can also filter by type.
+
+    >>> browser.getControl(name="field.type").displayValue = ["CVS"]
+    >>> browser.getControl(name="submit").click()
+    >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
+    >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
+    >>> for name in names:
+    ...     print name
     evolution/import
 
 If we create a lot of imports, the listing view will be batched.
