@@ -90,13 +90,13 @@ Ensure that anonymous API sessions can view mirror listings; archive/releases.
     ...     ubuntu['archive_mirrors_collection_link'])
     >>> anon_archive_mirrors = archive_response.jsonBody()
     >>> print anon_archive_mirrors['total_size']
-    4
+    6
 
     >>> cd_response = anon_webservice.get(
     ...     ubuntu['cdimage_mirrors_collection_link'])
     >>> anon_cd_mirrors = cd_response.jsonBody()
     >>> print anon_cd_mirrors['total_size']
-    4
+    5
 
 One must have special permissions to access certain attributes:
 
