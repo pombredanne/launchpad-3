@@ -1632,6 +1632,7 @@
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
         <allow
             attributes="
+                id
                 name
                 displayname
                 description
