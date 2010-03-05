@@ -331,6 +331,22 @@ There cannot be multiple country mirrors of one type for one country:
     CountryMirrorAlreadySet: Antarctica already has an country Archive mirror set.
     <BLANKLINE>
 
+Mirrors which have not been probed may not be marked as country mirrors:
+
+    >>> archive_mirror = webservice.named_get(
+    ...     ubuntu['self_link'], 'getMirrorByName',
+    ...     name='archive-mirror').jsonBody()
+    >>> response = karl_webservice.patch(
+    ...     archive_mirror['self_link'], 'application/json',
+    ...     dumps(patch)).jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: This mirror may not be set as a country mirror as it has not been probed.
+    <BLANKLINE>
+    Traceback (most recent call last):
+    ...
+    MirrorNotProbed: This mirror may not be set as a country mirror as it has not been probed.
+
 = Distribution Mirror Custom Operations =
 
 DistributionMirror has some custom operations.
