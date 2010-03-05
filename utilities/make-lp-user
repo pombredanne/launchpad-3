@@ -146,6 +146,10 @@ def run_native_gpg(arguments):
     env = os.environ.copy()
     if 'GNUPGHOME' in env:
         del env['GNUPGHOME']
+
+    # Prevent translated gpg output from messing up our parsing.
+    env['LC_ALL'] = 'C'
+
     command_line = ['gpg'] + arguments
     pipe = subprocess.Popen(
         command_line, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
