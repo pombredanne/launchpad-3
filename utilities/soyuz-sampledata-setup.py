@@ -49,6 +49,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.soyuz.interfaces.component import IComponentSet
@@ -132,8 +133,6 @@ def parse_args(arguments):
 
 def get_person_set():
     """Return `IPersonSet` utility."""
-    # Avoid circular import.
-    from lp.registry.interfaces.person import IPersonSet
     return getUtility(IPersonSet)
 
 
@@ -368,6 +367,7 @@ def create_ppa_user(username, options, approver, log):
 
     transaction.commit()
 
+    person = getUtility(IPersonSet).getByName(username)
     sign_code_of_conduct(person, log)
 
     return person
