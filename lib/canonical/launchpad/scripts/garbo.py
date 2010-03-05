@@ -32,8 +32,8 @@ from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
-from lp.bugs.scripts.bugheat import BugHeatCalculator
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
@@ -702,7 +702,7 @@ class BugHeatUpdater(TunableLoop):
     def __init__(self, log, abort_time=None, max_heat_age=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
         self.transaction = transaction
-        self.total_updated = 0
+        self.total_processed = 0
         self.is_done = False
         if max_heat_age is None:
             max_heat_age = config.calculate_bug_heat.max_heat_age
@@ -733,7 +733,8 @@ class BugHeatUpdater(TunableLoop):
         bug_count = bugs.count()
         if bug_count > 0:
             starting_id = bugs.first().id
-            self.log.debug("Updating %i Bugs (starting id: %i)" %
+            self.log.debug(
+                "Adding CalculateBugHeatJobs for %i Bugs (starting id: %i)" %
                 (bug_count, starting_id))
         else:
             self.is_done = True
@@ -743,11 +744,9 @@ class BugHeatUpdater(TunableLoop):
             # id after the one we're looking at now. If there aren't any
             # bugs this loop will run for 0 iterations and starting_id
             # will remain set to None.
-            self.log.debug("Updating heat for bug %s" % bug.id)
-            bug_heat_calculator = BugHeatCalculator(bug)
-            heat = bug_heat_calculator.getBugHeat()
-            bug.setHeat(heat)
-            self.total_updated += 1
+            self.log.debug("Adding CalculateBugHeatJob for bug %s" % bug.id)
+            getUtility(ICalculateBugHeatJobSource).create(bug)
+            self.total_processed += 1
         transaction.commit()
 
 

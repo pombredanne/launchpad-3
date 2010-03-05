@@ -86,9 +86,8 @@ updated.
 The BugHeatUpdater class
 ---------------------------
 
-In order to calculate bug heat we need to use the BugHeatUpdater
-class, which is designed precisely for that task. It's part of the garbo
-module and runs as part of the garbo-daily cronjob.
+The BugHeatUpdater class is used to create bug heat calculation jobs for
+bugs with out-of-date heat.
 
     >>> from canonical.launchpad.scripts.garbo import BugHeatUpdater
     >>> from canonical.launchpad.scripts import FakeLogger
@@ -96,19 +95,22 @@ module and runs as part of the garbo-daily cronjob.
     >>> update_bug_heat = BugHeatUpdater(FakeLogger(), max_heat_age=1)
 
 BugHeatUpdater implements ITunableLoop and as such is callable. Calling
-it as a method will update the heat for all the bugs whose heat is more
-than seven days old.
+it as a method will add jobs to calculate the heat of for all the bugs
+whose heat is more than seven days old.
 
-Before update_bug_heat is called, new_bug and old_heat_bug will have no
-heat.
+Before update_bug_heat is called, we'll ensure that there are no waiting
+jobs in the bug heat calculation queue.
 
-    >>> old_heat_bug.heat
+    >>> from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
+    >>> for calc_job in getUtility(ICalculateBugHeatJobSource).iterReady():
+    ...     calc_job.job.start()
+    ...     calc_job.job.complete()
+
+    >>> ready_jobs = list(getUtility(ICalculateBugHeatJobSource).iterReady())
+    >>> len(ready_jobs)
     0
 
-    >>> new_bug.heat
-    0
-
-We need to flush the store to ensure that the bugs we've created are
+We need to commit here to ensure that the bugs we've created are
 available to the update_bug_heat script.
 
     >>> import transaction
@@ -121,19 +123,22 @@ We need to run update_bug_heat() twice to ensure that both the bugs are
 updated.
 
     >>> update_bug_heat(chunk_size=2)
-    DEBUG Updating 2 Bugs (starting id: ...)
-    DEBUG Updating heat for bug ...
-    DEBUG Updating heat for bug ...
+    DEBUG Adding CalculateBugHeatJobs for 2 Bugs (starting id: ...)
+    DEBUG Adding CalculateBugHeatJob for bug ...
+    DEBUG Adding CalculateBugHeatJob for bug ...
 
-The bugs' heat will now be greater than 0
+There will now be two CalculateBugHeatJobs in the queue.
 
-    >>> old_heat_bug = getUtility(IBugSet).get(old_heat_bug.id)
-    >>> old_heat_bug.heat > 0
-    True
+    >>> ready_jobs = list(getUtility(ICalculateBugHeatJobSource).iterReady())
+    >>> len(ready_jobs)
+    2
 
-    >>> new_bug = getUtility(IBugSet).get(new_bug.id)
-    >>> new_bug.heat > 0
-    True
+Running them will update the bugs' heat.
+
+    >>> for calc_job in getUtility(ICalculateBugHeatJobSource).iterReady():
+    ...     calc_job.job.start()
+    ...     calc_job.run()
+    ...     calc_job.job.complete()
 
 IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all
 the bugs have been updated.
