@@ -33,7 +33,7 @@ The list of all languages visible by default in Launchpad can by obtained
 at '/+languages'.
 
 
-    >>> def getLanguagesEntries(languages):
+    >>> def get_languages_entries(languages):
     ...     list = ''
     ...     for language in languages['entries']:
     ...         if language['visible']:
@@ -44,7 +44,7 @@ at '/+languages'.
     >>> default_languages = webservice.get('/+languages').jsonBody()
     >>> default_languages['resource_type_link']
         u'http.../#languages'
-    >>> languages = getLanguagesEntries(default_languages)
+    >>> languages = get_languages_entries(default_languages)
     >>> print languages
     Abkhazian
     ...
@@ -60,7 +60,7 @@ default.
     ...     '/+languages?'
     ...     'ws.op=getAllLanguages&ws.start=0&ws.size=10'
     ...     ).jsonBody()
-    >>> print getLanguagesEntries(all_languages)
+    >>> print get_languages_entries(all_languages)
     Abkhazian
     ...
     Afar (Djibouti)(hidden)
