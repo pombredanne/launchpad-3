@@ -2277,6 +2277,7 @@ INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_
 INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer, country_dns_mirror) VALUES (9, 1, 'canonical-releases', 'http://releases.ubuntu.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, '2006-10-16 18:31:43.434567', NULL, 30, NULL, NULL, false);
 INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer, country_dns_mirror) VALUES (10, 1, 'random-releases-mirror', 'http://releases.random.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, '2006-10-16 18:31:43.434567', NULL, 10, NULL, NULL, false);
 
+
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
 
 
@@ -4850,6 +4851,7 @@ ALTER TABLE mirrorproberecord DISABLE TRIGGER ALL;
 
 INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (1, 6, 46, '2006-05-24 17:11:59.37369');
 INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (2, 7, 47, '2006-05-24 17:12:03.714206');
+
 
 ALTER TABLE mirrorproberecord ENABLE TRIGGER ALL;
 

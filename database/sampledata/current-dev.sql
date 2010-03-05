@@ -4933,6 +4933,7 @@ ALTER TABLE mirrorproberecord DISABLE TRIGGER ALL;
 INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (1, 6, 46, '2006-05-24 17:11:59.37369');
 INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (2, 7, 47, '2006-05-24 17:12:03.714206');
 
+
 ALTER TABLE mirrorproberecord ENABLE TRIGGER ALL;
 
 
