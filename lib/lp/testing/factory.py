@@ -1940,6 +1940,19 @@ class LaunchpadObjectFactory(ObjectFactory):
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list
 
+    def makeMirrorProbeRecord(self, mirror):
+        """Create a probe record for a mirror of a distribution."""
+        log_file = StringIO()
+        log_file.write("Fake probe, nothing useful here.")
+        log_file.seek(0)
+
+        library_alias = getUtility(ILibraryFileAliasSet).create(
+            name='foo', size=len(log_file.getvalue()),
+            file=log_file, contentType='text/plain')
+
+        proberecord = mirror.newProbeRecord(library_alias)
+        return proberecord
+
     def makeMirror(self, distribution, displayname, country=None,
                    http_url=None, ftp_url=None, rsync_url=None):
         """Create a mirror for the distribution."""
