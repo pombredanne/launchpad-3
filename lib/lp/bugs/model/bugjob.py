@@ -63,7 +63,7 @@ class BugJob(Storm):
         :param metadata: The type-specific variables, as a JSON-compatible
             dict.
         """
-        Storm.__init__(self)
+        super(BugJob, self).__init__()
         json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.bug = bug
@@ -90,17 +90,6 @@ class BugJobDerived(BaseRunnableJob):
 
     def __init__(self, job):
         self.context = job
-
-    # We need to define __eq__ and __ne__ here to prevent the security
-    # proxy from mucking up our comparisons in tests and elsewhere.
-
-    def __eq__(self, job):
-        return (
-            self.__class__ is removeSecurityProxy(job.__class__)
-            and self.job == job.job)
-
-    def __ne__(self, job):
-        return not (self == job)
 
     @classmethod
     def create(cls, bug):

@@ -1189,8 +1189,10 @@ class RegisterProposalSchema(Interface):
             ' will not be shown in the diff.)'))
 
     comment = Text(
-        title=_('Initial Comment'), required=False,
-        description=_('Describe your change.'))
+        title=_('Description of the Change'), required=False,
+        description=_('Describe what changes your branch introduces, '
+                      'what bugs it fixes, or what features it implements. '
+                      'Ideally include rationale and how to test.'))
 
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
@@ -1260,7 +1262,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 registrant=registrant, target_branch=target_branch,
                 prerequisite_branch=prerequisite_branch,
                 needs_review=data['needs_review'],
-                initial_comment=data.get('comment'),
+                description=data.get('comment'),
                 review_requests=review_requests,
                 commit_message=data.get('commit_message'))
             self.next_url = canonical_url(proposal)
