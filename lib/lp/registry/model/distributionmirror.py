@@ -45,11 +45,11 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.distributionmirror import (
+    CannotTransitionToCountryMirror, CountryMirrorAlreadySet,
     IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,
     IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
-    MirrorContent, MirrorFreshness, MirrorSpeed, MirrorStatus, PROBE_INTERVAL,
-    CannotTransitionToCountryMirror, CountryMirrorAlreadySet,
-    MirrorNotOfficial, MirrorHasNoHTTPUrl, MirrorNotProbed)
+    MirrorContent, MirrorFreshness, MirrorHasNoHTTPUrl, MirrorNotOfficial,
+    MirrorNotProbed, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import simple_sendmail, format_address
