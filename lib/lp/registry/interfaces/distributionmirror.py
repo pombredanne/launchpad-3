@@ -8,9 +8,6 @@ __metaclass__ = type
 __all__ = [
 'CannotTransitionToCountryMirror',
 'CountryMirrorAlreadySet',
-'MirrorNotOfficial',
-'MirrorHasNoHTTPUrl',
-'MirrorNotProbed',
 'IDistributionMirror',
 'IMirrorDistroArchSeries',
 'IMirrorDistroSeriesSource',
@@ -18,11 +15,14 @@ __all__ = [
 'IDistributionMirrorSet',
 'IMirrorCDImageDistroSeries',
 'PROBE_INTERVAL',
-'UnableToFetchCDImageFileList',
 'MirrorContent',
 'MirrorFreshness',
+'MirrorHasNoHTTPUrl',
+'MirrorNotOfficial',
+'MirrorNotProbed',
 'MirrorSpeed',
-'MirrorStatus']
+'MirrorStatus',
+'UnableToFetchCDImageFileList']
 
 from cgi import escape
 
