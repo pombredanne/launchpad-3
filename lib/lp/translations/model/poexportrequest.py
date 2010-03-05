@@ -154,7 +154,7 @@ class POExportRequestSet:
         # are deleted on the master afterwards.
         head = self._getHeadRequest()
         if head is None:
-            return None, None, None
+            return None, None, None, None
 
         requests = ISlaveStore(POExportRequest).find(
             POExportRequest,
