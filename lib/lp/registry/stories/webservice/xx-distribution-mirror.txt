@@ -250,6 +250,7 @@ $CC.releases.ubuntu.com, these are tracked in Launchpad.
     >>> davis_station = factory.makeMirror(ubuntu_distro,
     ...     "Davis Station", country = 9,
     ...     http_url="http://mirror.davis.antarctica.org/ubuntu")
+    >>> de_archive_prober_log = factory.makeMirrorProbeRecord(de_archive)
     >>> logout()
 
     >>> review_patch = {
