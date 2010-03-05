@@ -371,11 +371,11 @@ There cannot be multiple country mirrors of one type for one country:
     ...     dumps(patch)).jsonBody()
     Traceback (most recent call last):
     ...
-    ValueError: Antarctica already has an country Archive mirror set.
+    ValueError: Antarctica already has a country Archive mirror set.
     <BLANKLINE>
     Traceback (most recent call last):
     ...
-    CountryMirrorAlreadySet: Antarctica already has an country Archive mirror set.
+    CountryMirrorAlreadySet: Antarctica already has a country Archive mirror set.
     <BLANKLINE>
 
 Mirrors which have not been probed may not be marked as country mirrors:

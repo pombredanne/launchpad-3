@@ -154,7 +154,7 @@ class DistributionMirror(SQLBase):
         if self.distribution.getCountryMirror(self.country,
             self.content):
             # Country already has a country mirror.
-            raise CountryMirrorAlreadySet("%s already has an country %s mirror "
+            raise CountryMirrorAlreadySet("%s already has a country %s mirror "
                 "set." % (self.country.name, self.content))
 
         if not self.isOfficial():
