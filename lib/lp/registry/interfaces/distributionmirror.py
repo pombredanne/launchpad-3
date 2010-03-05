@@ -6,6 +6,11 @@
 __metaclass__ = type
 
 __all__ = [
+'CannotTransitionToCountryMirror',
+'CountryMirrorAlreadySet',
+'MirrorNotOfficial',
+'MirrorHasNoHTTPUrl',
+'MirrorNotProbed',
 'IDistributionMirror',
 'IMirrorDistroArchSeries',
 'IMirrorDistroSeriesSource',
@@ -30,7 +35,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, mutator_for, operation_parameters)
+    export_write_operation, exported, mutator_for, operation_parameters,
+    webservice_error)
 from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
@@ -44,6 +50,44 @@ from lp.services.worlddata.interfaces.country import ICountry
 
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
+
+
+class CannotTransitionToCountryMirror(Exception):
+    """Root exception for transitions to country mirrors.
+    """
+    webservice_error(400) # HTTP Error: 'Bad Request'.
+
+
+class CountryMirrorAlreadySet(CannotTransitionToCountryMirror):
+    """Distribution mirror cannot be set as a country mirror.
+
+    Raised when a user tries to change set a distribution mirror as a country
+    mirror, however there is already one set for that country.
+    """
+
+
+class MirrorNotOfficial(CannotTransitionToCountryMirror):
+    """Distribution mirror is not permitted to become a country mirror.
+
+    Raised when a user tries to change set a distribution mirror as a country
+    mirror, however the mirror in question is not official.
+    """
+
+
+class MirrorHasNoHTTPUrl(CannotTransitionToCountryMirror):
+    """Distribution mirror has no HTTP URL.
+
+    Raised when a user tries to make an official mirror a country mirror,
+    however the mirror has not HTTP URL set.
+    """
+
+
+class MirrorNotProbed(CannotTransitionToCountryMirror):
+    """Distribution mirror has not been probed.
+
+    Raised when a user tries to set an official mirror as a country mirror,
+    however the mirror has not been probed yet.
+    """
 
 
 class MirrorContent(DBEnumeratedType):
