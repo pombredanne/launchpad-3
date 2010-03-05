@@ -285,7 +285,6 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
 
         # Add a fake backup.bzr dir
-        #import pdb; pdb.set_trace()
         source_branch_transport = get_transport(db_branch.getPullURL())
         source_branch_transport.mkdir('backup.bzr')
 
