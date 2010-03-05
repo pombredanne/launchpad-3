@@ -474,6 +474,21 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 # Pass on errors found when unpacking the source.
                 yield error
 
+    def findCopyright(self):
+        """Find and store any debian/copyright."""
+        # Instead of trying to predict the unpacked source directory name,
+        # we simply use glob to retrive everything like:
+        # 'tempdir/*/debian/copyright'
+        globpath = os.path.join(tmpdir, "*", "debian/copyright")
+        for fullpath in glob.glob(globpath):
+            if not os.path.exists(fullpath):
+                continue
+            self.logger.debug("Copying copyright contents.")
+            self.copyright = open(fullpath).read().strip()
+
+        if self.copyright is None:
+            yield UploadWarning("No copyright file found.")
+
     def unpackAndCheckSource(self):
         """Verify uploaded source using dpkg-source."""
         self.logger.debug(
@@ -524,18 +539,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # XXX cprov 20070713: We should access only the expected directory
         # name (<sourcename>-<no_epoch(no_revision(version))>).
 
-        # Instead of trying to predict the unpacked source directory name,
-        # we simply use glob to retrive everything like:
-        # 'tempdir/*/debian/copyright'
-        globpath = os.path.join(tmpdir, "*", "debian/copyright")
-        for fullpath in glob.glob(globpath):
-            if not os.path.exists(fullpath):
-                continue
-            self.logger.debug("Copying copyright contents.")
-            self.copyright = open(fullpath).read().strip()
-
-        if self.copyright is None:
-            yield UploadWarning("No copyright file found.")
+        self.findCopyright()
 
         self.logger.debug("Cleaning up source tree.")
         try:
