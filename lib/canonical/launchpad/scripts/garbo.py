@@ -706,7 +706,7 @@ class BugHeatUpdater(TunableLoop):
         self.is_done = False
         if max_heat_age is None:
             max_heat_age = config.calculate_bug_heat.max_heat_age
-        self.max_heat_age = config.calculate_bug_heat.max_heat_age
+        self.max_heat_age = max_heat_age
 
     def isDone(self):
         """See `ITunableLoop`."""

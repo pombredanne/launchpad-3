@@ -1807,7 +1807,8 @@ class BugSet:
             Bug.heat_last_updated < last_updated_cutoff,
             Bug.heat_last_updated == None)
 
-        return store.find(Bug, last_updated_clause)
+        return store.find(Bug, last_updated_clause).order_by(
+            Bug.heat_last_updated)
 
 
 class BugAffectsPerson(SQLBase):

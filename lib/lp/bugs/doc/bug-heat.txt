@@ -121,7 +121,9 @@ We need to run update_bug_heat() twice to ensure that both the bugs are
 updated.
 
     >>> update_bug_heat(chunk_size=2)
-    DEBUG Updating 1 Bugs (starting id: ...
+    DEBUG Updating 2 Bugs (starting id: ...)
+    DEBUG Updating heat for bug ...
+    DEBUG Updating heat for bug ...
 
 The bugs' heat will now be greater than 0
 
