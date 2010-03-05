@@ -399,7 +399,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return DistributionMirror.selectOneBy(distribution=self, name=name)
 
-    def getCountryMirrorForCountry(self, country, mirror_type):
+    def getCountryMirror(self, country, mirror_type):
         """See `IDistribution`."""
         return DistributionMirror.selectOneBy(distribution=self,
             country=country, content=mirror_type, country_dns_mirror = True)

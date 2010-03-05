@@ -323,7 +323,7 @@ class IDistributionPublic(
         mirror_type=copy_field(IDistributionMirror['content'], required=True))
     @operation_returns_entry(IDistributionMirror)
     @export_read_operation()
-    def getCountryMirrorForCountry(country, mirror_type):
+    def getCountryMirror(country, mirror_type):
         """Return the country DNS mirror for a given country and content
         type.
         """

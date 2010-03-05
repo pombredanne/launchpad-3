@@ -144,8 +144,8 @@ packages matching (substring) the given text.
     status: u'Official'
     whiteboard: None
 
-"getCountryMirrorForCountry" returns the country DNS mirror for a given
-country; returning None if there isn't one.
+"getCountryMirror" returns the country DNS mirror for a given country;
+returning None if there isn't one.
 
     >>> # Prepare stuff.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -190,7 +190,7 @@ country; returning None if there isn't one.
 
     >>> antarctica = webservice.get("/+countries/AQ").jsonBody()
     >>> antarctica_country_mirror_archive = webservice.named_get(
-    ...     ubuntu['self_link'], 'getCountryMirrorForCountry',
+    ...     ubuntu['self_link'], 'getCountryMirror',
     ...     country = antarctica['self_link'],
     ...     mirror_type = "Archive").jsonBody()
     >>> pprint_entry(antarctica_country_mirror_archive)
@@ -218,17 +218,17 @@ country; returning None if there isn't one.
 
     >>> uk = webservice.get("/+countries/GB").jsonBody()
     >>> uk_country_mirror_archive = webservice.named_get(
-    ...     ubuntu['self_link'], 'getCountryMirrorForCountry',
+    ...     ubuntu['self_link'], 'getCountryMirror',
     ...     country = uk['self_link'],
     ...     mirror_type = "Archive")
     >>> print uk_country_mirror_archive.jsonBody()
     None
 
-For "getCountryMirrorForCountry", the mirror_type parameter must be "Archive" or
+For "getCountryMirror", the mirror_type parameter must be "Archive" or
 "CD Images":
 
     >>> uk_country_mirror_archive = webservice.named_get(
-    ...     ubuntu['self_link'], 'getCountryMirrorForCountry',
+    ...     ubuntu['self_link'], 'getCountryMirror',
     ...     country = uk['self_link'],
     ...     mirror_type = "Bogus")
     >>> print uk_country_mirror_archive.jsonBody()

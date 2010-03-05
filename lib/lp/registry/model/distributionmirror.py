@@ -152,7 +152,7 @@ class DistributionMirror(SQLBase):
     def verifyTransitionToCountryMirror(self):
         """ Verify that a mirror can be set as a country mirror.
         """
-        if self.distribution.getCountryMirrorForCountry(self.country,
+        if self.distribution.getCountryMirror(self.country,
             self.content):
             # Country already has a country mirror.
             raise CountryMirrorAlreadySet, ("%s already has an country %s mirror "
