@@ -11,23 +11,26 @@ from time import sleep
 from unittest import TestLoader
 
 import transaction
-from canonical.testing import LaunchpadZopelessLayer
+
+from subunit import IsolatedTestCase
+
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
-from lp.code.interfaces.branchmergeproposal import (
-    IUpdatePreviewDiffJobSource,)
-from lp.testing.mail_helpers import pop_notifications
-from lp.services.job.runner import (
-    JobCronScript, JobRunner, BaseRunnableJob, TwistedJobRunner
-)
-from lp.services.job.interfaces.job import JobStatus, IRunnableJob
-from lp.services.job.model.job import Job
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+from canonical.testing import LaunchpadZopelessLayer
+
+from lp.code.interfaces.branchmergeproposal import (
+    IUpdatePreviewDiffJobSource)
+from lp.services.job.interfaces.job import JobStatus, IRunnableJob
+from lp.services.job.model.job import Job
+from lp.services.job.runner import (
+    BaseRunnableJob, JobCronScript, JobRunner, TwistedJobRunner)
+from lp.testing import TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
 
 
 class NullJob(BaseRunnableJob):
@@ -325,7 +328,7 @@ class TestTwistedJobRunner(TestCaseWithFactory):
         self.assertIn('Job ran too long.', oops.value)
 
 
-class TestJobCronScript(TestCaseWithFactory):
+class TestJobCronScript(IsolatedTestCase, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
