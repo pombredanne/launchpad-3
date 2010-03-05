@@ -274,17 +274,17 @@ $CC.releases.ubuntu.com, these are tracked in Launchpad.
     description: None
     displayname: u'Technische Universitaet Dresden'
     distribution_link: u'http://.../ubuntu'
-    enabled: True
+    enabled: False
     ftp_base_url: None
     http_base_url: u'http://ubuntu.mirror.tudos.de/ubuntu'
     name: u'ubuntu.mirror.tudos.de-archive'
     official_candidate: True
-    owner_link: u'http://.../~name12'
+    owner_link: u'http://.../~ubuntu-team'
     resource_type_link: u'http://.../#distribution_mirror'
     reviewer_link: None
-    rsync_base_url: u'rsync://ubuntu.mirror.tudos.de/ubuntu'
+    rsync_base_url: None
     self_link: u'http://.../ubuntu/+mirror/ubuntu.mirror.tudos.de-archive'
-    speed: u'10 Gbps'
+    speed: u'256 Kbps'
     status: u'Official'
     whiteboard: None
 
