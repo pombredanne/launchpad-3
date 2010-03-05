@@ -8,17 +8,6 @@ __metaclass__ = type
 import os
 import unittest
 
-from storm.store import Store
-from zope.component import getUtility
-
-from lp.archiveuploader.tests.test_uploadprocessor import (
-    TestUploadProcessorBase)
-from lp.archiveuploader.uploadprocessor import UploadProcessor
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-
 from lp.archiveuploader.dscfile import findCopyright
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import mock_logger_quiet
@@ -49,7 +38,18 @@ class TestDscFile(TestCase):
         self.assertEqual(
             errors[0].message,
             "Symbolic link for debian/copyright not allowed")
-        
+
+    def testGoodDebianCopyright(self):
+        copyright = "copyright for dummies"
+        file = open(self.file_path, "w")
+        file.write(copyright)
+        file.close()
+
+        errors = list(findCopyright(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
+
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(self.dsc_file.copyright, copyright)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
