@@ -1,4 +1,3 @@
-import pdb
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -45,7 +44,6 @@ class TestDscFile(TestCase):
         errors = list(findCopyright(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
-        pdb.set_trace() ############################## Breakpoint ##############################
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
