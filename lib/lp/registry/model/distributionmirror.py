@@ -155,23 +155,23 @@ class DistributionMirror(SQLBase):
         if self.distribution.getCountryMirror(self.country,
             self.content):
             # Country already has a country mirror.
-            raise CountryMirrorAlreadySet, ("%s already has an country %s mirror "
+            raise CountryMirrorAlreadySet("%s already has an country %s mirror "
                 "set." % (self.country.name, self.content))
 
         if not self.isOfficial():
             # Only official mirrors may be set as country mirrors.
-            raise MirrorNotOfficial, ("This mirror may not be set as a "
+            raise MirrorNotOfficial("This mirror may not be set as a "
                 "country mirror as it is not official.")
 
         if self.http_base_url is None:
             # Country mirrors must have HTTP URLs set.
-            raise MirrorHasNoHTTPUrl, ("This mirror may not be set as a "
+            raise MirrorHasNoHTTPUrl("This mirror may not be set as a "
                 "country mirror as it does not have an HTTP URL set.")
 
         if not self.last_probe_record:
             # Only mirrors which have been probed may be set as country
             # mirrors.
-            raise MirrorNotProbed, ("This mirror may not be set as a "
+            raise MirrorNotProbed("This mirror may not be set as a "
                 "country mirror as it has not been probed.")
 
         # Verification done.
