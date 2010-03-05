@@ -97,7 +97,7 @@ from canonical.database.revision import (
     confirm_dbrevision, confirm_dbrevision_on_startup)
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
+from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
