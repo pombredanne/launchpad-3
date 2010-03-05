@@ -32,12 +32,12 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, mutator_for, operation_parameters,
     webservice_error)
 from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
