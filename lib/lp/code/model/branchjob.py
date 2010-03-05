@@ -274,7 +274,7 @@ class BranchScanJob(BranchJobDerived):
 
     @classmethod
     def create(cls, branch):
-        """See `IBranchUpgradeJobSource`."""
+        """See `IBranchScanJobSource`."""
         branch_job = BranchJob(branch, BranchJobType.SCAN_BRANCH, {})
         return cls(branch_job)
 
