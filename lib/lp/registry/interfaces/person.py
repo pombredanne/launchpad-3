@@ -431,9 +431,9 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
-# XXX: salgado, 2010/03/05: This is currently used by c-i-p, so it can't be
-# removed yet.  As soon as we stop using c-i-p, though, we'll be able to
-# remove this.
+# XXX: salgado, 2010/03/05, bug=532688: This is currently used by c-i-p, so it
+# can't be removed yet.  As soon as we stop using c-i-p, though, we'll be able
+# to remove this.
 class IPersonChangePassword(Interface):
     """The schema used by Person +changepassword form."""
 
