@@ -1348,7 +1348,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         file_size = NumberFormatterAPI(
             file_.libraryfile.content.filesize).bytes()
         if file_.description is not None:
-            description = file_.description
+            description = cgi.escape(file_.description)
         else:
             description = file_.libraryfile.filename
         link_title = "%s (%s)" % (description, file_size)

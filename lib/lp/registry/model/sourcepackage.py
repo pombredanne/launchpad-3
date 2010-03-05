@@ -443,6 +443,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                 BugTask.sourcepackagename == self.sourcepackagename),
             user)
 
+    @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.distribution_sourcepackage.max_bug_heat
+
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an

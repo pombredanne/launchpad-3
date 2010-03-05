@@ -186,7 +186,6 @@ class OpenIDLogin(LaunchpadView):
         self.openid_request.addExtension(
             sreg.SRegRequest(optional=['email', 'fullname']))
 
-        trust_root = self.request.getApplicationURL()
         assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")
         # Once the user authenticates with the OpenID provider they will be
@@ -195,9 +194,10 @@ class OpenIDLogin(LaunchpadView):
         # they started the login process (i.e. the current URL without the
         # '+login' bit). To do that we encode that URL as a query arg in the
         # return_to URL passed to the OpenID Provider
-        starting_url = urllib.urlencode([('starting_url', self.starting_url)])
-        return_to = urlappend(
-            self.request.getApplicationURL(), '+openid-callback')
+        starting_url = urllib.urlencode(
+            [('starting_url', self.starting_url.encode('utf-8'))])
+        trust_root = allvhosts.configs['mainsite'].rooturl
+        return_to = urlappend(trust_root, '+openid-callback')
         return_to = "%s?%s" % (return_to, starting_url)
         form_html = self.openid_request.htmlMarkup(trust_root, return_to)
 
@@ -307,8 +307,8 @@ class OpenIDCallbackView(OpenIDLogin):
                     removeSecurityProxy(account).createPerson(
                         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
                     should_update_last_write = True
+                self.login(account)
 
-            self.login(account)
             if should_update_last_write:
                 # This is a GET request but we changed the database, so update
                 # session_data['last_write'] to make sure further requests use

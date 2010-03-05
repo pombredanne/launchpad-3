@@ -27,14 +27,8 @@ CodeReviewComments are created from their BranchMergeProposals:
     >>> comment = merge_proposal.createComment(
     ...     sender, 'Please merge', 'This patch is very nice.')
 
-The first comment to be created is the root of the code review
-conversation, and is available as BranchMergeProposal.root_comment.
-
-    >>> merge_proposal.root_comment == comment
-    True
-
-Subsequent comments are marked as replies to the root_comment, by
-default.
+The initial email that gets sent out has the message_id stored in the merge
+proposal.  Subsequent comments are marked as replies to the initial email.
 
     >>> from lp.code.enums import CodeReviewVote
     >>> comment2 = merge_proposal.createComment(
