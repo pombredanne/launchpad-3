@@ -213,7 +213,6 @@ class IDistributionPublic(
             value_type=Reference(schema=Interface)))
     architectures = List(
         title=_("DistroArchSeries inside this Distribution"))
-    bugCounter = Attribute("The distro bug counter")
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))

@@ -475,26 +475,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def __iter__(self):
         return iter(self.series)
 
-    @property
-    def bugCounter(self):
-        """See `IDistribution`."""
-        counts = []
-
-        severities = [BugTaskStatus.NEW,
-                      BugTaskStatus.CONFIRMED,
-                      BugTaskStatus.INVALID,
-                      BugTaskStatus.FIXRELEASED]
-
-        querystr = ("BugTask.distribution = %s AND "
-                 "BugTask.status = %s")
-
-        for severity in severities:
-            query = querystr % sqlvalues(self.id, severity.value)
-            count = BugTask.select(query).count()
-            counts.append(count)
-
-        return counts
-
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
         distroseries = DistroSeries.selectOneBy(
