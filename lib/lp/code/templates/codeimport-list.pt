@@ -68,16 +68,16 @@
             </a>
           </td>
 
-          <td tal:content="structure codeimport/rcs_type/name">
+          <td tal:content="structure codeimport/date_created/fmt:datetime">
             some date
+          </td>
+
+          <td tal:content="structure codeimport/rcs_type/title">
+            some type
           </td>
 
           <td tal:content="structure codeimport/getImportDetailsForDisplay">
-            some date
-          </td>
-
-          <td tal:content="structure codeimport/date_created/fmt:datetime">
-            some date
+            some details
           </td>
 
           <td tal:content="codeimport/review_status/title">

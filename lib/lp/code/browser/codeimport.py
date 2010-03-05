@@ -107,8 +107,8 @@ class CodeImportSetView(LaunchpadView):
             status = self.status_widget.getInputValue()
         # Similar for 'type'
         rcs_type = None
-        if self.status_widget.hasValidInput():
-            rcs_type = self.status_widget.getInputValue()
+        if self.type_widget.hasValidInput():
+            rcs_type = self.type_widget.getInputValue()
 
         imports = self.context.search(review_status=status, rcs_type=rcs_type)
 
