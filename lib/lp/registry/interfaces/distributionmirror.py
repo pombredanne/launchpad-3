@@ -385,9 +385,9 @@ class IDistributionMirror(Interface):
                       "visible to admins and the mirror's registrant).")))
 
     @mutator_for(country_dns_mirror)
-    @operation_parameters(country=copy_field(country_dns_mirror))
+    @operation_parameters(country_dns_mirror=copy_field(country_dns_mirror))
     @export_write_operation()
-    def transitionToCountryMirror(country):
+    def transitionToCountryMirror(country_dns_mirror):
        """Method run on changing country_dns_mirror."""
 
     @invariant
