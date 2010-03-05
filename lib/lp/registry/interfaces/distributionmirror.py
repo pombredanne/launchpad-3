@@ -7,9 +7,6 @@ __metaclass__ = type
 
 __all__ = [
 'IDistributionMirror',
-'IDistributionMirrorAdminRestricted',
-'IDistributionMirrorEditRestricted',
-'IDistributionMirrorPublic',
 'IMirrorDistroArchSeries',
 'IMirrorDistroSeriesSource',
 'IMirrorProbeRecord',
@@ -30,8 +27,10 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, exported)
+    export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, mutator_for, operation_parameters)
 from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
@@ -284,33 +283,10 @@ class DistroMirrorRsyncURIField(DistroMirrorURIField):
     def getMirrorByURI(self, url):
         return getUtility(IDistributionMirrorSet).getByRsyncUrl(url)
 
-class IDistributionMirrorAdminRestricted(Interface):
-    """IDistributionMirror properties requiring launchpad.Admin permission."""
 
-    reviewer = exported(PublicPersonChoice(
-        title=_('Reviewer'), required=False, readonly=True,
-        vocabulary='ValidPersonOrTeam', description=_(
-            "The person who last reviewed this mirror.")))
-    date_reviewed = exported(Datetime(
-        title=_('Date reviewed'), required=False, readonly=True,
-        description=_(
-            "The date on which this mirror was last reviewed by a mirror admin.")))
-
-
-class IDistributionMirrorEditRestricted(Interface):
-    """IDistributionMirror properties requiring launchpad.Edit permission."""
-    
-    official_candidate = exported(Bool(
-        title=_('Apply to be an official mirror of this distribution'),
-        required=False, readonly=False, default=True))
-    whiteboard = exported(Whiteboard(
-        title=_('Whiteboard'), required=False, readonly=False,
-        description=_("Notes on the current status of the mirror (only "
-                      "visible to admins and the mirror's registrant).")))
-
-
-class IDistributionMirrorPublic(Interface):
-    """Public IDistributionMirror properties."""
+class IDistributionMirror(Interface):
+    """A mirror of a given distribution."""
+    export_as_webservice_entry()
 
     id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = exported(PublicPersonChoice(
@@ -389,7 +365,30 @@ class IDistributionMirrorPublic(Interface):
     country_dns_mirror = exported(Bool(
         title=_('Country DNS Mirror'),
         description=_('Whether this is a country mirror in DNS.'),
-        required=False, readonly=False, default=False))
+        required=False, readonly=True, default=False))
+
+    reviewer = exported(PublicPersonChoice(
+        title=_('Reviewer'), required=False, readonly=True,
+        vocabulary='ValidPersonOrTeam', description=_(
+            "The person who last reviewed this mirror.")))
+    date_reviewed = exported(Datetime(
+        title=_('Date reviewed'), required=False, readonly=True,
+        description=_(
+            "The date on which this mirror was last reviewed by a mirror admin.")))
+
+    official_candidate = exported(Bool(
+        title=_('Apply to be an official mirror of this distribution'),
+        required=False, readonly=False, default=True))
+    whiteboard = exported(Whiteboard(
+        title=_('Whiteboard'), required=False, readonly=False,
+        description=_("Notes on the current status of the mirror (only "
+                      "visible to admins and the mirror's registrant).")))
+
+    @mutator_for(country_dns_mirror)
+    @operation_parameters(country=copy_field(country_dns_mirror))
+    @export_write_operation()
+    def transitionToCountryMirror(country):
+       """Method run on changing country_dns_mirror."""
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
@@ -525,10 +524,6 @@ class IDistributionMirrorPublic(Interface):
         Sources.gz file refer to and the path to the file itself.
         """
 
-class IDistributionMirror(IDistributionMirrorAdminRestricted,
-        IDistributionMirrorEditRestricted, IDistributionMirrorPublic):
-    """A mirror of a given distribution."""
-    export_as_webservice_entry()
 
 
 class UnableToFetchCDImageFileList(Exception):
