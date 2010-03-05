@@ -292,6 +292,20 @@ Mirror listing administrators may change the status however:
     country_link: u'http://.../+countries/DE'
     ...
 
+And change it back:
+
+    >>> unmark_country_patch = {
+    ...     u'country_dns_mirror': False
+    ... }
+    >>> response = karl_webservice.patch(
+    ...     de_archive_mirror['self_link'], 'application/json',
+    ...     dumps(unmark_country_patch)).jsonBody()
+    >>> pprint_entry(response)
+    content: u'Archive'
+    country_dns_mirror: False
+    country_link: u'http://.../+countries/DE
+    ...
+
 There cannot be multiple country mirrors of one type for one country:
 
     >>> login('admin@canonical.com')
