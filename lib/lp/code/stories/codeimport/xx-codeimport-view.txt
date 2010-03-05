@@ -66,7 +66,7 @@ imports appear again.
 
 We can also filter by type.
 
-    >>> browser.getControl(name="field.type").displayValue = ["CVS"]
+    >>> browser.getControl(name="field.type").displayValue = ["Concurrent Versions System"]
     >>> browser.getControl(name="submit").click()
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
