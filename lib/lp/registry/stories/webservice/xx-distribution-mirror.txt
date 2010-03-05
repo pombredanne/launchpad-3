@@ -347,6 +347,40 @@ Mirrors which have not been probed may not be marked as country mirrors:
     ...
     MirrorNotProbed: This mirror may not be set as a country mirror as it has not been probed.
 
+Mirrors which are not official or do not have an HTTP URL may not be set as
+country mirrors:
+
+    >>> login('admin@canonical.com')
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> us_mirror = factory.makeMirror(ubuntu_distro, "OSU Open Source Lab",
+    ...     country = 226,
+    ...     ftp_url="ftp://ubuntu.osuosl.org/pub/ubuntu/")
+    >>> logout()
+
+    >>> us_mirror_json = webservice.named_get(
+    ...     ubuntu['self_link'], 'getMirrorByName',
+    ...     name='ubuntu.osuosl.org-archive').jsonBody()
+    >>> pprint_entry(us_mirror_json)
+    content: u'Archive'
+    country_dns_mirror: False
+    country_link: u'http://.../+countries/US'
+    ...
+    ftp_base_url: u'ftp://ubuntu.osuosl.org/pub/ubuntu/'
+    http_base_url: None
+    ...
+
+    >>> response = karl_webservice.patch(
+    ...     us_mirror_json['self_link'], 'application/json',
+    ...     dumps(patch)).jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: This mirror may not be set as a country mirror as it is not official.
+    <BLANKLINE>
+    Traceback (most recent call last):
+    ...
+    MirrorNotOfficial: This mirror may not be set as a country mirror as it is not official.
+
 = Distribution Mirror Custom Operations =
 
 DistributionMirror has some custom operations.
