@@ -22,8 +22,7 @@ from lp.testing import TestCaseWithFactory
 
 def wipe_queue(queue):
     """Erase all export queue entries."""
-    queue_ids = IMasterStore(POExportRequest).execute(
-        "DELETE FROM POExportRequest")
+    IMasterStore(POExportRequest).execute("DELETE FROM POExportRequest")
 
 
 class BaseExportViewMixin(TestCaseWithFactory):

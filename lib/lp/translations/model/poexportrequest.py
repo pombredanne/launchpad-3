@@ -136,15 +136,10 @@ class POExportRequestSet:
         oldest_live = self._getOldestLiveRequest()
         if oldest_live is None:
             return None
-
-        # Look only for requests on the slave store that are certainly
-        # live.
-        slave_store = ISlaveStore(POExportRequest)
-        live_requests = slave_store.find(
-            POExportRequest,
-            POExportRequest.id >= oldest_live.id)
-
-        return live_requests.order_by(POExportRequest.id).first()
+        else:
+            return ISlaveStore(POExportRequest).find(
+                POExportRequest,
+                POExportRequest.id == oldest_live.id).one()
 
     def getRequest(self):
         """See `IPOExportRequestSet`."""

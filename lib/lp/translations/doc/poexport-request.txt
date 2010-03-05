@@ -53,6 +53,9 @@ Our user requests the Catalan and Czech translations of a template.
 
 Now we request that the queue be processed.
 
+(Commits are needed to make the test requests seep through to the slave
+database).
+
     >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
     >>> transaction.commit()

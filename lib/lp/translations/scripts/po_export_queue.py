@@ -378,9 +378,10 @@ def process_queue(transaction_manager, logger):
     Each item is removed from the queue as it is processed.
     """
     request_set = getUtility(IPOExportRequestSet)
+    no_request = (None, None, None, None)
 
     request = request_set.getRequest()
-    while None not in request:
+    while request != no_request:
         person, objects, format, request_ids = request
         process_request(person, objects, format, logger)
         request_set.removeRequest(request_ids)
