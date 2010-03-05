@@ -675,6 +675,10 @@ def findCopyright(dsc_file, tmpdir, logger):
     for fullpath in glob.glob(globpath):
         if not os.path.exists(fullpath):
             continue
+        if os.path.islink(fullpath):
+            yield UploadError(
+                "Symbolic link for debian/copyright not allowed")
+            return
         logger.debug("Copying copyright contents.")
         dsc_file.copyright = open(fullpath).read().strip()
 
