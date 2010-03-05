@@ -307,6 +307,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
 
 class FakeOpenIDRequest:
     extensions = None
+    return_to = None
 
     def addExtension(self, extension):
         if self.extensions is None:
@@ -318,6 +319,7 @@ class FakeOpenIDRequest:
         return False
 
     def htmlMarkup(self, trust_root, return_to):
+        self.return_to = return_to
         return None
 
 
@@ -333,6 +335,20 @@ class StubbedOpenIDLogin(OpenIDLogin):
 
 class TestOpenIDLogin(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
+
+    def test_return_to_with_non_ascii_chars(self):
+        # Sometimes the +login link will have non-ascii characters in the
+        # query string, and we need to include those in the return_to URL that
+        # we pass to the OpenID provider, so we must utf-encode them.
+        request = LaunchpadTestRequest(
+            form={'non_ascii_field': 'subproc\xc3\xa9s'})
+        # This is a hack to make the request.getURL(1) call issued by the view
+        # not raise an IndexError.
+        request._app_names = ['foo']
+        view = StubbedOpenIDLogin(object(), request)
+        view()
+        self.assertIn(
+            'non_ascii_field%3Dsubproc%C3%A9s', view.openid_request.return_to)
 
     def test_sreg_fields(self):
         # We request the user's email address and Full Name (through the SREG
@@ -350,6 +366,31 @@ class TestOpenIDLogin(TestCaseWithFactory):
         self.assertIsInstance(sreg_extension, sreg.SRegRequest)
         self.assertEquals(['email', 'fullname'],
                           sorted(sreg_extension.allRequestedFields()))
+
+
+class TestOpenIDRealm(TestCaseWithFactory):
+    # The realm (aka trust_root) specified by the RP is "designed to give the
+    # end user an indication of the scope of the authentication request", so
+    # for us the realm will always be the root URL of the mainsite.
+    layer = AppServerLayer
+
+    def test_realm_for_mainsite(self):
+        browser = Browser()
+        browser.open('http://launchpad.dev:8085/+login')
+        # At this point browser.contents contains a hidden form which would've
+        # been auto-submitted if we had in-browser JS support, but since we
+        # don't we can easily inspect what's in the form.
+        self.assertEquals('http://launchpad.dev:8085/',
+                          browser.getControl(name='openid.realm').value)
+
+    def test_realm_for_vhosts(self):
+        browser = Browser()
+        browser.open('http://bugs.launchpad.dev:8085/+login')
+        # At this point browser.contents contains a hidden form which would've
+        # been auto-submitted if we had in-browser JS support, but since we
+        # don't we can easily inspect what's in the form.
+        self.assertEquals('http://launchpad.dev:8085/',
+                          browser.getControl(name='openid.realm').value)
 
 
 def test_suite():
