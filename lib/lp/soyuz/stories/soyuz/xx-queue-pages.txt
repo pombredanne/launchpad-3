@@ -204,27 +204,24 @@ the builds can be created.
 
   >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
   >>> test_publisher = SoyuzTestPublisher()
+  >>> ignore = test_publisher.setUpDefaultDistroSeries(breezy_autotest)
   >>> test_publisher.addFakeChroots(distroseries=breezy_autotest)
 
-Upload a new "bar" source so we can accept it later.  We need to login to
-upload.
+Upload a new "bar" source so we can accept it later.
 
-  >>> from lp.archiveuploader.tests import (
-  ...     datadir, getPolicy, mock_logger_quiet)
-  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import datadir
+  >>> changes_file = open(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'))
+  >>> changes_file_content = changes_file.read()
+  >>> changes_file.close()
 
-  >>> sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distroseries='breezy-autotest')
-  >>> bar_src = NascentUpload(
-  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
-  >>> bar_src.process()
-  >>> bar_src.do_accept()
-  True
-  >>> bar_queue_id = str(bar_src.queue_root.id)
+  >>> bar_src = test_publisher.getPubSource(
+  ...     sourcename='bar', distroseries=breezy_autotest, spr_only=True,
+  ...     version='1.0-1', component='universe', section='devel',
+  ...     changes_file_content=changes_file_content)
 
-  >>> import transaction
-  >>> transaction.commit()
+  >>> bar_src.package_upload.setNew()
+  >>> bar_queue_id = bar_src.package_upload.id
   >>> logout()
 
 Swallow any email generated at the upload:
@@ -245,8 +242,18 @@ Go back to the "new" queue and accept "bar":
 
   >>> upload_manager_browser.open(
   ...    "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> print_queue(upload_manager_browser.contents)
+  Package             Version     Component Section Priority Pocket  When
+  bar (source)        1.0-1       universe  devel   low      Release ...
+  netapplet...ddtp... -                                      Release 2006-...
+  netapplet...dist... -                                      Release 2006-...
+  alsa-utils (source) 1.0.9a-4... main      base    low      Release 2006-...
+  netapplet (source)  0.99.6-1    main      web     low      Release 2006-...
+  pmount (i386)       0.1-1                                  Release 2006-...
+  moz...irefox (i386) 0.9                                    Release 2006-...
+
   >>> upload_manager_browser.getControl(
-  ...     name="QUEUE_ID").value = [bar_queue_id]
+  ...     name="QUEUE_ID").value = [str(bar_queue_id)]
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
@@ -257,22 +264,23 @@ Go back to the "new" queue and accept "bar":
   pmount (i386)       0.1-1                                  Release 2006-...
   moz...irefox (i386) 0.9                                    Release 2006-...
 
-Accepting queue items results in an email to the uploader and (usually) an
-email to the distroseries' announcement list (see
-nascentupload-announcements.txt).
+Accepting queue items results in an email to the uploader (and the changer
+if it is someone other than the uploader) and (usually) an email to the
+distroseries' announcement list (see nascentupload-announcements.txt).
 
   >>> [notification, announcement] = pop_notifications()
-  >>> notification['To']
-  'Daniel Silverstone <daniel.silverstone@canonical.com>'
-  >>> announcement['To']
-  'autotest_changes@ubuntu.com'
+  >>> print notification['To']
+  Foo Bar <foo.bar@canonical.com>,
+  Daniel Silverstone <daniel.silverstone@canonical.com>
+  >>> print announcement['To']
+  autotest_changes@ubuntu.com
 
 Forcing a duplicated submission on a queue item is recognised.  Here we
 submit the same form again via a different browser instance, which simulates
 a double post.
 
   >>> duplicate_submission_browser.getControl(
-  ...     name="QUEUE_ID").value = [bar_queue_id]
+  ...     name="QUEUE_ID").value = [str(bar_queue_id)]
   >>> duplicate_submission_browser.getControl(name="Accept").click()
   >>> for message in get_feedback_messages(
   ...     duplicate_submission_browser.contents):
