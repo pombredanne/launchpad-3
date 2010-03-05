@@ -352,6 +352,31 @@ class TestOpenIDLogin(TestCaseWithFactory):
                           sorted(sreg_extension.allRequestedFields()))
 
 
+class TestOpenIDRealm(TestCaseWithFactory):
+    # The realm (aka trust_root) specified by the RP is "designed to give the
+    # end user an indication of the scope of the authentication request", so
+    # for us the realm will always be the root URL of the mainsite.
+    layer = AppServerLayer
+
+    def test_realm_for_mainsite(self):
+        browser = Browser()
+        browser.open('http://launchpad.dev:8085/+login')
+        # At this point browser.contents contains a hidden form which would've
+        # been auto-submitted if we had in-browser JS support, but since we
+        # don't we can easily inspect what's in the form.
+        self.assertEquals('http://launchpad.dev:8085/',
+                          browser.getControl(name='openid.realm').value)
+
+    def test_realm_for_vhosts(self):
+        browser = Browser()
+        browser.open('http://bugs.launchpad.dev:8085/+login')
+        # At this point browser.contents contains a hidden form which would've
+        # been auto-submitted if we had in-browser JS support, but since we
+        # don't we can easily inspect what's in the form.
+        self.assertEquals('http://launchpad.dev:8085/',
+                          browser.getControl(name='openid.realm').value)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
