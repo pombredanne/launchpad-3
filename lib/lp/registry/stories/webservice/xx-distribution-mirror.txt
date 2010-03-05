@@ -90,13 +90,13 @@ Ensure that anonymous API sessions can view mirror listings; archive/releases.
     ...     ubuntu['archive_mirrors_collection_link'])
     >>> anon_archive_mirrors = archive_response.jsonBody()
     >>> print anon_archive_mirrors['total_size']
-    6
+    4
 
     >>> cd_response = anon_webservice.get(
     ...     ubuntu['cdimage_mirrors_collection_link'])
     >>> anon_cd_mirrors = cd_response.jsonBody()
     >>> print anon_cd_mirrors['total_size']
-    5
+    4
 
 One must have special permissions to access certain attributes:
 
@@ -242,13 +242,15 @@ Country DNS mirrors are mirrors which have been assigned $CC.archive or
 $CC.releases.ubuntu.com, these are tracked in Launchpad.
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('admin@canonical.com')
     >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
     >>> de_archive = factory.makeMirror(ubuntu_distro,
-    ...     "Technische Universität Dresden", country = 82,
+    ...     "Technische Universitaet Dresden", country = 82,
     ...     http_url="http://ubuntu.mirror.tudos.de/ubuntu/")
     >>> davis_station = factory.makeMirror(ubuntu_distro,
     ...     "Davis Station", country = 9,
     ...     http_url="http://mirror.davis.antarctica.org/ubuntu")
+    >>> logout()
 
     >>> de_archive_mirror = webservice.named_get(
     ...     ubuntu['self_link'], 'getMirrorByName',
@@ -260,7 +262,7 @@ $CC.releases.ubuntu.com, these are tracked in Launchpad.
     date_created: u'2010-01-03T01:48:02.934190+00:00'
     date_reviewed: None
     description: None
-    displayname: u'Technische Universit\xe4t Dresden'
+    displayname: u'Technische Universitaet Dresden'
     distribution_link: u'http://.../ubuntu'
     enabled: True
     ftp_base_url: None
