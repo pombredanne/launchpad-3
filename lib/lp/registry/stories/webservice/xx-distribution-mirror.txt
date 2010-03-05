@@ -269,14 +269,14 @@ $CC.releases.ubuntu.com, these are tracked in Launchpad.
     content: u'Archive'
     country_dns_mirror: False
     country_link: u'http://.../+countries/DE'
-    date_created: u'2010-01-03T01:48:02.934190+00:00'
+    date_created: ...
     date_reviewed: None
     description: None
     displayname: u'Technische Universitaet Dresden'
     distribution_link: u'http://.../ubuntu'
     enabled: False
     ftp_base_url: None
-    http_base_url: u'http://ubuntu.mirror.tudos.de/ubuntu'
+    http_base_url: u'http://ubuntu.mirror.tudos.de/ubuntu/'
     name: u'ubuntu.mirror.tudos.de-archive'
     official_candidate: True
     owner_link: u'http://.../~ubuntu-team'
