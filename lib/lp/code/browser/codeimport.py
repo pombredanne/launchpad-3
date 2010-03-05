@@ -67,7 +67,7 @@ class CodeImportSetBreadcrumb(Breadcrumb):
     text = u'Code Import System'
 
 
-class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
+class DropdownWidgetWithAny(LaunchpadDropdownWidget):
     """A <select> widget with a more appropriate 'no value' message.
 
     By default `LaunchpadDropdownWidget` displays 'no value' when the
@@ -88,8 +88,14 @@ class CodeImportSetView(LaunchpadView):
         status_field = Choice(
             __name__='status', title=_("Review Status"),
             vocabulary=CodeImportReviewStatus, required=False)
-        self.status_widget = CustomWidgetFactory(ReviewStatusDropdownWidget)
+        self.status_widget = CustomWidgetFactory(DropdownWidgetWithAny)
         setUpWidget(self, 'status',  status_field, IInputWidget)
+
+        type_field = Choice(
+            __name__='type', title=_("Review Status"),
+            vocabulary=RevisionControlSystems, required=False)
+        self.type_widget = CustomWidgetFactory(DropdownWidgetWithAny)
+        setUpWidget(self, 'type',  type_field, IInputWidget)
 
         # status should be None if either (a) there were no query arguments
         # supplied, i.e. the user browsed directly to this page (this is when
@@ -99,11 +105,12 @@ class CodeImportSetView(LaunchpadView):
         status = None
         if self.status_widget.hasValidInput():
             status = self.status_widget.getInputValue()
+        # Similar for 'type'
+        rcs_type = None
+        if self.status_widget.hasValidInput():
+            rcs_type = self.status_widget.getInputValue()
 
-        if status is not None:
-            imports = self.context.search(review_status=status)
-        else:
-            imports = self.context.getAll()
+        imports = self.context.search(review_status=status, rcs_type=rcs_type)
 
         self.batchnav = BatchNavigator(imports, self.request)
 
