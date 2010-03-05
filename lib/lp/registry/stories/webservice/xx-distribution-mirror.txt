@@ -381,6 +381,33 @@ country mirrors:
     ...
     MirrorNotOfficial: This mirror may not be set as a country mirror as it is not official.
 
+    >>> review_patch = {
+    ...     u'official_candidate' : True,
+    ...     u'status' : 'Official'
+    ... }
+    >>> response = karl_webservice.patch(
+    ...     us_mirror_json['self_link'], 'application/json',
+    ...     dumps(review_patch)).jsonBody()
+    >>> pprint_entry(response)
+    content: u'Archive'
+    country_dns_mirror: False
+    ...
+    official_candidate: True
+    ...
+    status: u'Official'
+    ...
+
+    >>> response = karl_webservice.patch(
+    ...     us_mirror_json['self_link'], 'application/json',
+    ...     dumps(patch)).jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: This mirror may not be set as a country mirror as it does not have an HTTP URL set.
+    <BLANKLINE>
+    Traceback (most recent call last):
+    ...
+    MirrorHasNoHTTPUrl: This mirror may not be set as a country mirror as it does not have an HTTP URL set.
+
 = Distribution Mirror Custom Operations =
 
 DistributionMirror has some custom operations.
