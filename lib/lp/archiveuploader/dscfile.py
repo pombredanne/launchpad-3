@@ -525,7 +525,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # XXX cprov 20070713: We should access only the expected directory
         # name (<sourcename>-<no_epoch(no_revision(version))>).
 
-        findCopyright(self, tmpdir, self.logger)
+        for error in findCopyright(self, tmpdir, self.logger):
+            yield error
 
         self.logger.debug("Cleaning up source tree.")
         try:
