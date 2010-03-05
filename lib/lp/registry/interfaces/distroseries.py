@@ -29,7 +29,7 @@ from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, Description, PublicPersonChoice, Summary, Title,
+    ContentNameField, Description, PublicPersonChoice, Title,
     UniqueField)
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -48,7 +48,6 @@ from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
 
 
@@ -421,8 +420,8 @@ class IDistroSeriesPublic(
     @operation_parameters(
         created_since_date=Datetime(
             title=_("Created Since Timestamp"),
-            description=_("Return items that are more recent than this "
-                          "timestamp."),
+            description=_(
+                "Return items that are more recent than this timestamp."),
             required=False),
         status=Choice(
             # Really PackageUploadCustomFormat, patched in
