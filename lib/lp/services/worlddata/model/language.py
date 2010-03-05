@@ -153,7 +153,7 @@ class Language(SQLBase):
 class LanguageSet:
     implements(ILanguageSet)
 
-    @cachedproperty
+    @property
     def _visible_languages(self):
         return Language.select(
             'visible IS TRUE',

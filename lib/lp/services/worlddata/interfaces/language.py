@@ -19,7 +19,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from lazr.restful.declarations import (
     collection_default_content, exported, export_as_webservice_collection,
-    export_as_webservice_entry, export_operation_as, export_read_operation,
+    export_as_webservice_entry, export_read_operation,
     operation_returns_collection_of)
 
 

@@ -10,8 +10,8 @@ The language information from Launchpad can be queried using
     >>> es = webservice.get('/+languages/es').jsonBody()
     >>> es['resource_type_link']
     u'http.../#language'
-    >>> print es['abbreviated_text_direction']
-    ltr
+    >>> print es['direction']
+    Left to Right
     >>> print es['code']
     es
     >>> print es['english_name']
@@ -47,8 +47,6 @@ default.
     ...     '/+languages?'
     ...     'ws.op=getAllLanguages&ws.start=0&ws.size=10'
     ...     ).jsonBody()
-    >>> all_languages['resource_type_link']
-        u'http.../#languages'
     >>> for language in all_languages['entries']:
     ...     if language['visible']:
     ...         print language['english_name']
