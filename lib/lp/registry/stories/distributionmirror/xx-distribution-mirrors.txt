@@ -40,16 +40,10 @@ The archive mirrors display the "freshness", how far behind they are.
     >>> print browser.title
     Mirrors of Ubuntu Linux...
     >>> print_mirrors_by_countries(browser.contents)
-    Antarctica:
-      [(u'Davis Station', u'http', u'100 Mbps', u'Last update unknown'),
-       (u'Archive-mirror2', u'http', u'128 Kbps', u'Six hours behind')]
-    France:
-      [(u'Archive-404-mirror', u'http', u'512 Kbps', u'Last update unknown'),
-       (u'Archive-mirror', u'http', u'128 Kbps', u'Last update unknown')]
-    Germany:
-      [(u'Technische Universit\xe4t Dresden', u'http\nrsync', u'10 Gbps', u'Last update unknown')]
-    United Kingdom:
-      [(u'Canonical-archive', u'http', u'100 Mbps', u'Last update unknown')]
+    France: [(u'Archive-404-mirror', u'http', u'512 Kbps', u'Last update unknown'),
+      (u'Archive-mirror', u'http', u'128 Kbps', u'Last update unknown')]
+    United Kingdom: [(u'Canonical-archive', u'http', u'100 Mbps', u'Last update unknown')]
+
     >>> find_tags_by_class(browser.contents, 'distromirrorstatusSIXHOURSBEHIND')
     [<span class="distromirrorstatusSIXHOURSBEHIND">Six hours behind</span>]
     >>> find_tags_by_class(browser.contents, 'distromirrorstatusUNKNOWN')[0]
