@@ -328,7 +328,7 @@ And change it back:
     >>> pprint_entry(response)
     content: u'Archive'
     country_dns_mirror: False
-    country_link: u'http://.../+countries/DE
+    country_link: u'http://.../+countries/DE'
     ...
 
 There cannot be multiple country mirrors of one type for one country:
