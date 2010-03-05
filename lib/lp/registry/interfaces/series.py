@@ -12,7 +12,6 @@ __all__ = [
     'ISeriesMixin',
     ]
 
-from zope.interface import Interface
 from zope.schema import Bool
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -21,8 +20,8 @@ from lazr.restful.declarations import exported
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ParticipatingPersonChoice, PublicPersonChoice, Summary)
-
+    PublicPersonChoice, Summary)
+from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
 
 
@@ -90,8 +89,16 @@ class SeriesStatus(DBEnumeratedType):
         """)
 
 
-class ISeriesMixin(Interface):
+class ISeriesMixin(IHasDrivers):
     """Methods & properties shared between distro & product series."""
+
+    active = exported(
+        Bool(
+            title=_("Active"),
+            description=_(
+                "Whether or not this series is stable and supported, or "
+                "under current development. This excludes series which "
+                "are experimental or obsolete.")))
 
     summary = exported(
         Summary(title=_("Summary"),
@@ -102,13 +109,15 @@ class ISeriesMixin(Interface):
                            'and is recommended for all new deployments".'),
              required=True))
 
-    active = exported(
-        Bool(
-            title=_("Active"),
-            description=_(
-                "Whether or not this series is stable and supported, or "
-                "under current development. This excludes series which "
-                "are experimental or obsolete.")))
+    drivers = exported(
+        CollectionField(
+            title=_(
+                'A list of the people or teams who are drivers for this '
+                'series. This list is made up of any drivers or owners '
+                'from this series and the parent drivers.'),
+            readonly=True,
+            value_type=Reference(schema=IPerson)))
+
 
     bug_supervisor = CollectionField(
         title=_('Currently just a reference to the parent bug '
@@ -121,12 +130,3 @@ class ISeriesMixin(Interface):
         description=_('Currently just a reference to the parent '
                       'security contact.'),
         required=False, vocabulary='ValidPersonOrTeam')
-
-    drivers = exported(
-        CollectionField(
-            title=_(
-                'A list of the people or teams who are drivers for this '
-                'series. This list is made up of any drivers or owners '
-                'from this series and the parent drivers.'),
-            readonly=True,
-            value_type=Reference(schema=IPerson)))

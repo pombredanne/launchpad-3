@@ -31,8 +31,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description, PublicPersonChoice, Summary, Title,
     UniqueField)
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers)
+from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
@@ -139,10 +138,9 @@ class IDistroSeriesEditRestricted(Interface):
         """Create a new milestone for this DistroSeries."""
 
 
-class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                          IBugTarget, ISpecificationGoal, IHasMilestones,
-                          IHasBuildRecords, ISeriesMixin,
-                          IHasOfficialBugTags):
+class IDistroSeriesPublic(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")

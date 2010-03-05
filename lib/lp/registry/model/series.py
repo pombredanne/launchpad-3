@@ -5,12 +5,16 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'SeriesMixin',
+    ]
+
+from operator import attrgetter
 from sqlobject import StringCol
 
 from zope.interface import implements
 
-from lp.registry.interfaces.distroseries import ISeriesMixin
-from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
 
 
 class SeriesMixin:
@@ -46,4 +50,4 @@ class SeriesMixin:
         drivers.add(self.driver)
         drivers = drivers.union(self.parent.drivers)
         drivers.discard(None)
-        return sorted(drivers, key=lambda driver: driver.displayname)
+        return sorted(drivers, key=attrgetter('displayname'))

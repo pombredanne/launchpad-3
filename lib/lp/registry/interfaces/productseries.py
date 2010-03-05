@@ -25,8 +25,7 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
 from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers)
+from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
@@ -90,9 +89,9 @@ class IProductSeriesEditRestricted(Interface):
         """Create a new milestone for this ProjectSeries."""
 
 
-class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                           IBugTarget, ISpecificationGoal, IHasMilestones,
-                           IHasOfficialBugTags, ISeriesMixin):
+class IProductSeriesPublic(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
