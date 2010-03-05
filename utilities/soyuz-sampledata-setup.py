@@ -41,8 +41,6 @@ from canonical.database.sqlbase import sqlvalues
 
 from canonical.lp import initZopeless
 
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
