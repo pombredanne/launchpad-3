@@ -14,7 +14,7 @@ class TranslationTemplateBuildState(DebianBuildState):
     
 
 
-class TranslationTemplatesBuildManager(BuildManager):
+class TranslationTemplatesBuildManager(DebianBuildManager):
     """Generate translation templates from branch.
 
     This is the implementation of `TranslationTemplatesBuildJob`.  The
@@ -49,13 +49,13 @@ class TranslationTemplatesBuildManager(BuildManager):
         command = ['/usr/bin/apt-get', 'install', '-y'] + required_packages
         self.runInChroot(command, as_root=True)
 
-    # To satisfy DebianPackageMangers needs without having a misleading
-    # mehotd name here.
+    # To satisfy DebianPackageManagers needs without having a misleading
+    # method name here.
     doRunBuild = doInstall
 
     def doGenerate(self):
         """Generate templates."""
-        command = ['generate-translation-templates.py', self.branch_url]
+        command = [self._generatepath, self.branch_url]
         self.runInChroot( command)
 
     def iterate_INSTALL(self, success):
