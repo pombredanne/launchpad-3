@@ -437,10 +437,7 @@ class TestCodeHandler(TestCaseWithFactory):
         transaction.commit()
 
     def test_findMergeDirectiveAndComment_no_content_type(self):
-        """findMergeDirectiveAndComment handles empty message bodies.
-
-        Empty message bodies are returned verbatim.
-        """
+        """Parts with no content-type are treated as text/plain."""
         md = self.factory.makeMergeDirective()
         message = self.factory.makeSignedMessage(
             body='', attachment_contents=''.join(md.to_lines()))
@@ -451,13 +448,9 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler = CodeHandler()
         comment, md2 = code_handler.findMergeDirectiveAndComment(message)
         self.assertEqual('body', comment)
-        transaction.commit()
 
     def test_findMergeDirectiveAndComment_case_insensitive(self):
-        """findMergeDirectiveAndComment handles empty message bodies.
-
-        Empty message bodies are returned verbatim.
-        """
+        """findMergeDirectiveAndComment uses case-insensitive content-type."""
         md = self.factory.makeMergeDirective()
         message = self.factory.makeSignedMessage(
             body='', attachment_contents=''.join(md.to_lines()))
@@ -471,7 +464,6 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler = CodeHandler()
         comment, md2 = code_handler.findMergeDirectiveAndComment(message)
         self.assertEqual('body', comment)
-        transaction.commit()
 
     def test_findMergeDirectiveAndCommentUnicodeBody(self):
         """findMergeDirectiveAndComment returns unicode comments."""
