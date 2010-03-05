@@ -354,7 +354,8 @@ class TestJobCronScript(IsolatedTestCase, TestCaseWithFactory):
             source_interface = IUpdatePreviewDiffJobSource
 
             def __init__(self):
-                super(JobCronScriptSubclass, self).__init__(DummyRunner)
+                super(JobCronScriptSubclass, self).__init__(
+                    DummyRunner, test_args=[])
                 self.logger = ListLogger()
 
         old_errorlog = errorlog.globalErrorUtility
