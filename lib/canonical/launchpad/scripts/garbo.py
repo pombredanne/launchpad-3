@@ -27,7 +27,6 @@ from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
@@ -704,6 +703,7 @@ class BugHeatUpdater(TunableLoop):
         self.transaction = transaction
         self.total_processed = 0
         self.is_done = False
+        self.offset = 0
         if max_heat_age is None:
             max_heat_age = config.calculate_bug_heat.max_heat_age
         self.max_heat_age = max_heat_age
@@ -725,10 +725,12 @@ class BugHeatUpdater(TunableLoop):
         #     trying to slice using floats or anything similarly
         #     foolish. We shouldn't have to do this.
         chunk_size = int(chunk_size)
+        start = self.offset
+        end = self.offset + chunk_size
 
         transaction.begin()
         bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
-            self.max_heat_age)[:chunk_size]
+            self.max_heat_age)[start:end]
 
         bug_count = bugs.count()
         if bug_count > 0:
@@ -739,11 +741,14 @@ class BugHeatUpdater(TunableLoop):
         else:
             self.is_done = True
 
+        self.offset = None
         for bug in bugs:
             # We set the starting point of the next batch to the Bug
             # id after the one we're looking at now. If there aren't any
             # bugs this loop will run for 0 iterations and starting_id
             # will remain set to None.
+            start += 1
+            self.offset = start
             self.log.debug("Adding CalculateBugHeatJob for bug %s" % bug.id)
             getUtility(ICalculateBugHeatJobSource).create(bug)
             self.total_processed += 1
