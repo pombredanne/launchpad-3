@@ -46,6 +46,8 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -65,12 +67,12 @@ from lp.soyuz.interfaces.archivedependency import (
     IArchiveDependency)
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
-    ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     ISourcePackagePublishingHistoryPublic, PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.message import (
     IIndexedMessage, IMessage, IUserToUserEmail)
@@ -188,12 +190,12 @@ ISourcePackagePublishingHistoryPublic[
         LAZR_WEBSERVICE_EXPORTED)[
             'return_type'].value_type.schema = IBinaryPackagePublishingHistory
 patch_reference_property(
-    ISecureBinaryPackagePublishingHistory, 'distroarchseries',
+    IBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)
 patch_reference_property(
-    ISecureBinaryPackagePublishingHistory, 'archive', IArchive)
+    IBinaryPackagePublishingHistory, 'archive', IArchive)
 patch_reference_property(
-    ISecureSourcePackagePublishingHistory, 'archive', IArchive)
+    ISourcePackagePublishingHistory, 'archive', IArchive)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
@@ -321,6 +323,9 @@ patch_reference_property(
     IStructuralSubscriptionTarget)
 
 IBuildBase['buildstate'].vocabulary = BuildStatus
+
+patch_reference_property(
+    ISourcePackageRelease, 'source_package_recipe_build', ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(

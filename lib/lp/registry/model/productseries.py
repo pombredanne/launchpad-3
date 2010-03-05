@@ -160,6 +160,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See IBugTarget."""
         return "%s/%s" % (self.product.name, self.name)
 
+    @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.product.max_bug_heat
+
     def getPOTemplate(self, name):
         """See IProductSeries."""
         return POTemplate.selectOne(
