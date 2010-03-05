@@ -634,6 +634,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.fullseriesname
 
     @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.distribution.max_bug_heat
+
+    @property
     def last_full_language_pack_exported(self):
         return LanguagePack.selectFirstBy(
             distroseries=self, type=LanguagePackType.FULL,
@@ -1173,7 +1178,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         urgency, changelog_entry, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
-        build_conflicts_indep, dateuploaded=DEFAULT):
+        build_conflicts_indep, dateuploaded=DEFAULT,
+        source_package_recipe_build=None):
         """See `IDistroSeries`."""
         return SourcePackageRelease(
             upload_distroseries=self, sourcepackagename=sourcepackagename,
@@ -1187,7 +1193,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format, dsc_binaries=dsc_binaries,
             build_conflicts=build_conflicts,
-            build_conflicts_indep=build_conflicts_indep)
+            build_conflicts_indep=build_conflicts_indep,
+            source_package_recipe_build=source_package_recipe_build)
 
     def getComponentByName(self, name):
         """See `IDistroSeries`."""
@@ -1373,8 +1380,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    quote(self.distribution.all_distro_archive_ids),
                    quote(text), quote_like(text))
             ).config(distinct=True)
-
-        ranked_package_caches = package_caches.order_by('rank DESC')
 
         # Create a function that will decorate the results, converting
         # them from the find_spec above into a DSBP:
