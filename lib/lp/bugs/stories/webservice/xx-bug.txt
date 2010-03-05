@@ -363,7 +363,7 @@ It's possible to change the task's assignee.
   http://.../~cprov
 
 
-The task's importance can be modified directly...
+The task's importance can be modified directly.
 
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
@@ -377,20 +377,6 @@ The task's importance can be modified directly...
   >>> body['importance']
   u'High'
 
-...or through a named operation.
-
-  >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToImportance', importance='Low')
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: application/json
-  ...
-  <BLANKLINE>
-  null
-  >>> body = webservice.get(bugtask_path).jsonBody()
-  >>> body['importance']
-  u'Low'
-
 Only bug supervisors or people who can otherwise edit the bugtask's
 pillar are authorised to edit the importance.
 
@@ -400,10 +386,9 @@ pillar are authorised to edit the importance.
 
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
-  u'Low'
+  u'High'
 
-The task's status is another aspect of the task that can be modified
-either directly or through a named operation.
+The task's status can also be modified directly.
 
   >>> print webservice.get(bugtask_path).jsonBody()['status']
   Confirmed
@@ -415,21 +400,14 @@ either directly or through a named operation.
   >>> print webservice.get(bugtask_path).jsonBody()['status']
   Fix Committed
 
-  >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToStatus', status='New')
-  HTTP/1.1 200 Ok...
-
-  >>> print webservice.get(bugtask_path).jsonBody()['status']
-  New
-
 If an error occurs during a request that sets both 'status' and
 'importance', neither one will be set.
 
   >>> task = webservice.get(bugtask_path).jsonBody()
   >>> print task['status']
-  New
+  Fix Committed
   >>> print task['importance']
-  Low
+  High
 
   >>> patch = {u'importance': 'High', u'status': u'No Such Status'}
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
@@ -437,12 +415,11 @@ If an error occurs during a request that sets both 'status' and
 
   >>> task = webservice.get(bugtask_path).jsonBody()
   >>> print task['status']
-  New
+  Fix Committed
   >>> print task['importance']
-  Low
+  High
 
-Like the importance, the milestone can be set either directly or via a
-named operation, and only by appropriately privileged users.
+The milestone can only be set by appropriately privileged users.
 
   >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
   None
@@ -455,20 +432,12 @@ named operation, and only by appropriately privileged users.
   >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
   http://.../debian/+milestone/3.1
 
-  >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToMilestone',
-  ...     milestone=webservice.getAbsoluteUrl('/debian/+milestone/3.1-rc1'))
-  HTTP/1.1 200 Ok...
-
-  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
-  http://.../debian/+milestone/3.1-rc1
-
   >>> print user_webservice.patch(
   ...     bugtask_path, 'application/json', dumps(patch))
   HTTP/1.1 401 Unauthorized...
 
   >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
-  http://.../debian/+milestone/3.1-rc1
+  http://.../debian/+milestone/3.1
 
 We can change the task's target. Here we change the task's target from
 the mozilla-firefox package to alsa-utils.
