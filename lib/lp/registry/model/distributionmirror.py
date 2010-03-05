@@ -150,8 +150,7 @@ class DistributionMirror(SQLBase):
         SQLBase.destroySelf(self)
 
     def verifyTransitionToCountryMirror(self):
-        """ Verify that a mirror can be set as a country mirror.
-        """
+        """Verify that a mirror can be set as a country mirror."""
         if self.distribution.getCountryMirror(self.country,
             self.content):
             # Country already has a country mirror.
@@ -178,8 +177,7 @@ class DistributionMirror(SQLBase):
         return True
 
     def canTransitionToCountryMirror(self):
-        """ See if a mirror can be set as a country mirror or return False.
-        """
+        """See if a mirror can be set as a country mirror or return False."""
         try:
             self.verifyTransitionToCountryMirror()
         except CannotTransitionToCountryMirror:
