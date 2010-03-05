@@ -666,12 +666,17 @@ class DSCUploadedFile(NascentUploadFile):
             yield error
 
 
-def findCopyright(dsc_file, tmpdir, logger):
-    """Find and store any debian/copyright."""
+def findCopyright(dsc_file, source_dir, logger):
+    """Find and store any debian/copyright.
+    
+    :param dsc_file: A DSCFile object where the copyright will be stored.
+    :param source_dir: The directory where the source was extracted.
+    :param logger: A logger object for debug output.
+    """
     # Instead of trying to predict the unpacked source directory name,
     # we simply use glob to retrive everything like:
     # 'tempdir/*/debian/copyright'
-    globpath = os.path.join(tmpdir, "*", "debian/copyright")
+    globpath = os.path.join(source_dir, "*", "debian/copyright")
     for fullpath in glob.glob(globpath):
         if not os.path.exists(fullpath):
             continue
