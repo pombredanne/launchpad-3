@@ -16,10 +16,10 @@ from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.buildqueue import IBuildQueue
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
 

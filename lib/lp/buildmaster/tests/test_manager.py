@@ -18,20 +18,20 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.tests import BuilddSlaveTestSetup
 from canonical.config import config
+from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.scripts.logger import BufferLogger
+from canonical.testing.layers import (
+    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     BaseDispatchResult, BuilddManager, FailDispatchResult, RecordingSlave,
     ResetDispatchResult, buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.scripts.logger import BufferLogger
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from canonical.testing.layers import (
-    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
 
 
 class TestRecordingSlaves(TrialTestCase):

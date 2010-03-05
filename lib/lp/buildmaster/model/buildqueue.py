@@ -31,10 +31,10 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)

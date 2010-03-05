@@ -16,6 +16,7 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -23,7 +24,6 @@ from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
