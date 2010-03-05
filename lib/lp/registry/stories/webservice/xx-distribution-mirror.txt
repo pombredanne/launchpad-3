@@ -263,9 +263,6 @@ $CC.releases.ubuntu.com, these are tracked in Launchpad.
     ...     name='ubuntu.mirror.tudos.de-archive').jsonBody()
 
     >>> response = karl_webservice.patch(
-    ...     davis_station_archive_json['self_link'], 'application/json',
-    ...     dumps(review_patch)).jsonBody()
-    >>> response = karl_webservice.patch(
     ...     de_archive_mirror['self_link'], 'application/json',
     ...     dumps(review_patch)).jsonBody()
 
@@ -361,6 +358,11 @@ There cannot be multiple country mirrors of one type for one country:
     country_link: u'http://.../+countries/AQ'
     ...
 
+    >>> # Mark davis_station_archive_json official.
+    >>> response = karl_webservice.patch(
+    ...     davis_station_archive_json['self_link'], 'application/json',
+    ...     dumps(review_patch)).jsonBody()
+    >>> # Mark davis_station_archive_json as country mirror.
     >>> response = karl_webservice.patch(
     ...     davis_station_archive_json['self_link'], 'application/json',
     ...     dumps(patch)).jsonBody()
