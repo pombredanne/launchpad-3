@@ -47,7 +47,9 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,
     IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
-    MirrorContent, MirrorFreshness, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
+    MirrorContent, MirrorFreshness, MirrorSpeed, MirrorStatus, PROBE_INTERVAL,
+    CannotTransitionToCountryMirror, CountryMirrorAlreadySet,
+    MirrorNotOfficial, MirrorHasNoHTTPUrl, MirrorNotProbed)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import simple_sendmail, format_address
@@ -146,6 +148,48 @@ class DistributionMirror(SQLBase):
         assert self.last_probe_record is None, (
             "This mirror has been probed and thus can't be removed.")
         SQLBase.destroySelf(self)
+
+    def verifyTransitionToCountryMirror(self):
+        """ Verify that a mirror can be set as a country mirror.
+        """
+        if self.distribution.getCountryMirrorForCountry(self.country,
+            self.content):
+            # Country already has a country mirror.
+            raise CountryMirrorAlreadySet
+
+        if not self.isOfficial():
+            # Only official mirrors may be set as country mirrors.
+            raise MirrorNotOfficial
+
+        if self.http_base_url is None:
+            # Country mirrors must have HTTP URLs set.
+            raise MirrorHasNoHTTPUrl
+
+        if not self.last_probe_record:
+            # Only mirrors which have been probed may be set as country
+            # mirrors.
+            raise MirrorNotProbed
+
+        # Verification done.
+        return True
+
+    def canTransitionToCountryMirror(self):
+        """ See if a mirror can be set as a country mirror or return False.
+        """
+        try:
+            self.verifyTransitionToCountryMirror()
+        except CannotTransitionToCountryMirror:
+            return False
+
+        return True
+
+    def transitionToCountryMirror(self, country_dns_mirror):
+        """See `IDistributionMirror`."""
+        # Environment sanity checks.
+        if country_dns_mirror:
+            self.verifyTransitionToCountryMirror()
+
+        self.country_dns_mirror = country_dns_mirror
 
     def getOverallFreshness(self):
         """See IDistributionMirror"""
