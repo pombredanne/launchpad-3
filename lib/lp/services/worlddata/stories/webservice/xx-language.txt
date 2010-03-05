@@ -10,7 +10,7 @@ The language information from Launchpad can be queried using
     >>> es = webservice.get('/+languages/es').jsonBody()
     >>> es['resource_type_link']
     u'http.../#language'
-    >>> print es['direction']
+    >>> print es['text_direction']
     Left to Right
     >>> print es['code']
     es
@@ -32,11 +32,24 @@ Accesing all or visible languages through API
 The list of all languages visible by default in Launchpad can by obtained
 at '/+languages'.
 
+
+    >>> def getLanguagesEntries(languages):
+    ...     list = ''
+    ...     for language in languages['entries']:
+    ...         if language['visible']:
+    ...             list += language['english_name'] + "\n"
+    ...         else:
+    ...             list += language['english_name'] + '(hidden)' + "\n"
+    ...     return list
     >>> default_languages = webservice.get('/+languages').jsonBody()
     >>> default_languages['resource_type_link']
         u'http.../#languages'
-    >>> print default_languages['entries'][0]['english_name']
+    >>> languages = getLanguagesEntries(default_languages)
+    >>> print languages
     Abkhazian
+    ...
+    >>> '(hidden)' in languages
+    False
 
 The list of all languages known by Launchpad can by obtained
 from '/+languages' using 'getAllLanguages' operation.
@@ -47,11 +60,7 @@ default.
     ...     '/+languages?'
     ...     'ws.op=getAllLanguages&ws.start=0&ws.size=10'
     ...     ).jsonBody()
-    >>> for language in all_languages['entries']:
-    ...     if language['visible']:
-    ...         print language['english_name']
-    ...     else:
-    ...         print language['english_name'] + '(hidden)'
+    >>> print getLanguagesEntries(all_languages)
     Abkhazian
     ...
     Afar (Djibouti)(hidden)

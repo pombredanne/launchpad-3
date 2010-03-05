@@ -113,11 +113,13 @@ class ILanguage(Interface):
                 u'Whether this language is visible by default.'),
             required=True))
 
-    direction = exported(Choice(
-        title=u'Text direction',
-        description=u'The direction of text in this language.',
-        required=True,
-        vocabulary=TextDirection))
+    direction = exported(
+        Choice(
+            title=u'Text direction',
+            description=u'The direction of text in this language.',
+            required=True,
+            vocabulary=TextDirection),
+        exported_as='text_direction')
 
     displayname = TextLine(
         title=u'The displayname of the language',
