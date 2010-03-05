@@ -345,6 +345,10 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch_transport.copy_tree_to_transport(upgrade_transport)
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
+            # If there's already a backup.bzr, delete it.
+            if upgrade_transport.has('backup.bzr'):
+                upgrade_transport.delete_tree('backup.bzr')
+
             # Perform the upgrade.
             upgrade(upgrade_branch.base)
 
