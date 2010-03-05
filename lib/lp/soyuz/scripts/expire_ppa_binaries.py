@@ -125,7 +125,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
                 Archive,
                 BinaryPackageFile AS bpf,
                 BinaryPackageRelease AS bpr,
-                SecureBinaryPackagePublishingHistory AS bpph
+                BinaryPackagePublishingHistory AS bpph
             WHERE
                 lfa.id = bpf.libraryfile
                 AND bpr.id = bpf.binarypackagerelease
@@ -140,7 +140,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
             FROM
                 BinaryPackageRelease AS bpr,
                 BinaryPackageFile AS bpf,
-                SecureBinaryPackagePublishingHistory AS bpph,
+                BinaryPackagePublishingHistory AS bpph,
                 Archive AS a,
                 Person AS p
             WHERE

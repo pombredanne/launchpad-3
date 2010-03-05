@@ -16,9 +16,10 @@ import pytz
 from StringIO import StringIO
 import re
 
-from storm.store import Store
-from storm.expr import Join
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
+from storm.expr import Join
+from storm.locals import Int, Reference
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -37,8 +38,7 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+from lp.soyuz.interfaces.archive import IArchiveSet, MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested, PackageDiffStatus)
@@ -112,6 +112,10 @@ class SourcePackageRelease(SQLBase):
         dbName='upload_distroseries')
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
+
+    source_package_recipe_build_id = Int(name='sourcepackage_recipe_build')
+    source_package_recipe_build = Reference(
+        source_package_recipe_build_id, 'SourcePackageRecipeBuild.id')
 
     # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
