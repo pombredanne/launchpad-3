@@ -13,6 +13,7 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
+    'findCopyright',
     ]
 
 import apt_pkg
@@ -474,21 +475,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 # Pass on errors found when unpacking the source.
                 yield error
 
-    def findCopyright(self):
-        """Find and store any debian/copyright."""
-        # Instead of trying to predict the unpacked source directory name,
-        # we simply use glob to retrive everything like:
-        # 'tempdir/*/debian/copyright'
-        globpath = os.path.join(tmpdir, "*", "debian/copyright")
-        for fullpath in glob.glob(globpath):
-            if not os.path.exists(fullpath):
-                continue
-            self.logger.debug("Copying copyright contents.")
-            self.copyright = open(fullpath).read().strip()
-
-        if self.copyright is None:
-            yield UploadWarning("No copyright file found.")
-
     def unpackAndCheckSource(self):
         """Verify uploaded source using dpkg-source."""
         self.logger.debug(
@@ -539,7 +525,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # XXX cprov 20070713: We should access only the expected directory
         # name (<sourcename>-<no_epoch(no_revision(version))>).
 
-        self.findCopyright()
+        findCopyright(self, tmpdir, self.logger)
 
         self.logger.debug("Cleaning up source tree.")
         try:
@@ -678,6 +664,22 @@ class DSCUploadedFile(NascentUploadFile):
             self.checkSizeAndCheckSum()
         except UploadError, error:
             yield error
+
+
+def findCopyright(dsc_file, tmpdir, logger):
+    """Find and store any debian/copyright."""
+    # Instead of trying to predict the unpacked source directory name,
+    # we simply use glob to retrive everything like:
+    # 'tempdir/*/debian/copyright'
+    globpath = os.path.join(tmpdir, "*", "debian/copyright")
+    for fullpath in glob.glob(globpath):
+        if not os.path.exists(fullpath):
+            continue
+        logger.debug("Copying copyright contents.")
+        dsc_file.copyright = open(fullpath).read().strip()
+
+    if dsc_file.copyright is None:
+        yield UploadWarning("No copyright file found.")
 
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
