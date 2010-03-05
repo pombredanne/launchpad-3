@@ -8,9 +8,10 @@ mirrors:
     >>> distro = distros['entries'][0]
     >>> ubuntu = webservice.get(distro['self_link']).jsonBody()
     >>> ubuntu_archive_mirrors = webservice.get(ubuntu['archive_mirrors_collection_link']).jsonBody()
-    >>> canonical_archive = ubuntu_archive_mirrors['entries'][0]
-    >>> canonical_archive_json = webservice.get(canonical_archive['self_link']).jsonBody()
-    >>> pprint_entry(canonical_archive_json)
+    >>> canonical_archive = webservice.named_get(
+    ...     ubuntu['self_link'], 'getMirrorByName',
+    ...     name='canonical-archive').jsonBody()
+    >>> pprint_entry(canonical_archive)
     content: u'Archive'
     country_dns_mirror: False
     country_link: u'http://.../+countries/GB'
@@ -99,7 +100,9 @@ Ensure that anonymous API sessions can view mirror listings; archive/releases.
 
 One must have special permissions to access certain attributes:
 
-    >>> archive_404_mirror = ubuntu_archive_mirrors['entries'][1]
+    >>> archive_404_mirror = webservice.named_get(
+    ...     ubuntu['self_link'], 'getMirrorByName',
+    ...     name="archive-404-mirror").jsonBody()
     >>> response = no_priv_webservice.get(
     ...     archive_404_mirror['self_link']).jsonBody()
     >>> pprint_entry(response)
@@ -248,7 +251,9 @@ or not.
 "getOverallFreshness" returns the freshness of the mirror determined by the
 mirror prober from the mirror's last probe.
 
-    >>> releases_mirror2 = ubuntu_cd_mirrors['entries'][2]
+    >>> releases_mirror2 = webservice.named_get(
+    ...     ubuntu['self_link'], 'getMirrorByName',
+    ...     name='releases-mirror2').jsonBody()
     >>> freshness = webservice.named_get(releases_mirror2['self_link'],
     ...     'getOverallFreshness').jsonBody()
     >>> print freshness
