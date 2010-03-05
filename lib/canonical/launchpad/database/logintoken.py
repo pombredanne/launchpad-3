@@ -12,6 +12,8 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+import pytz
+
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 from storm.expr import And
 
@@ -241,6 +243,14 @@ class LoginToken(SQLBase):
         message = template % replacements
         subject = "Launchpad: Claim existing team"
         self._send_email(from_name, subject, message)
+
+    @property
+    def validation_phrase(self):
+        """The phrase used to validate sign-only GPG keys"""
+        utctime = self.date_created.astimezone(pytz.UTC)
+        return 'Please register %s to the\nLaunchpad user %s.  %s UTC' % (
+            self.fingerprint, self.requester.name,
+            utctime.strftime('%Y-%m-%d %H:%M:%S'))
 
     def activateGPGKey(self, key, can_encrypt):
         """See `ILoginToken`."""

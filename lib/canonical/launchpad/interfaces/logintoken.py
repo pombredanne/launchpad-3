@@ -32,6 +32,9 @@ class ILoginToken(IAuthToken):
         required=False,
         )
 
+    validation_phrase = Text(
+        title=_("The phrase used to validate sign-only GPG keys"))
+
     def destroySelf():
         """Remove this LoginToken from the database.
 

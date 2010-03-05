@@ -48,10 +48,10 @@ from lp.registry.interfaces.person import (
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.authtoken import IAuthToken
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, GPGKeyAlgorithm, GPGKeyExpired, GPGKeyRevoked,
-    GPGKeyNotFoundError, GPGVerificationError, IEmailAddressSet, IGPGHandler,
-    IGPGKeySet, IGPGKeyValidationForm, ILoginTokenSet, IPerson, IPersonSet,
-    ITeam, LoginTokenType)
+    EmailAddressStatus, GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError,
+    GPGVerificationError, IEmailAddressSet, IGPGHandler,
+    IGPGKeyValidationForm, ILoginTokenSet, IPerson, IPersonSet, ITeam,
+    LoginTokenType)
 
 
 UTC = pytz.UTC
@@ -442,7 +442,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
 
         # We compare the word-splitted content to avoid failures due
         # to whitepace differences.
-        if signature.plain_data.split() != self.validationphrase.split():
+        if signature.plain_data.split() != self.context.validation_phrase.split():
             self.addError(_(
                 'The signed content does not match the message found '
                 'in the email.'))
@@ -483,14 +483,6 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 "your current one.</p>",
                 mapping=dict(emails=', '.join(owned_by_others)))
             self.request.response.addInfoNotification(structured(msgid))
-
-    @property
-    def validationphrase(self):
-        """The phrase used to validate sign-only GPG keys"""
-        utctime = self.context.date_created.astimezone(UTC)
-        return 'Please register %s to the\nLaunchpad user %s.  %s UTC' % (
-            self.context.fingerprint, self.context.requester.name,
-            utctime.strftime('%Y-%m-%d %H:%M:%S'))
 
     def _getGPGKey(self):
         """Look up the OpenPGP key for this login token.
