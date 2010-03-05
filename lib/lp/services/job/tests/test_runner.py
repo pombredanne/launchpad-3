@@ -303,7 +303,7 @@ class ListLogger:
         self.entries.append(input)
 
 
-class TestTwistedJobRunner(TestCaseWithFactory):
+class TestTwistedJobRunner(IsolatedTestCase, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
