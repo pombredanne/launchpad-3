@@ -153,7 +153,7 @@ returning None if there isn't one.
     >>> login('admin@canonical.com')
     >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
     >>> davis_station = factory.makeMirror(ubuntu_distro,
-    ...     "Davis Station", country = 9,
+    ...     "Davis Station", country=9,
     ...     http_url="http://mirror.davis.antarctica.org/ubuntu")
     >>> davis_station_log = factory.makeMirrorProbeRecord(davis_station)
     >>> logout()
@@ -191,8 +191,8 @@ returning None if there isn't one.
     >>> antarctica = webservice.get("/+countries/AQ").jsonBody()
     >>> antarctica_country_mirror_archive = webservice.named_get(
     ...     ubuntu['self_link'], 'getCountryMirror',
-    ...     country = antarctica['self_link'],
-    ...     mirror_type = "Archive").jsonBody()
+    ...     country=antarctica['self_link'],
+    ...     mirror_type="Archive").jsonBody()
     >>> pprint_entry(antarctica_country_mirror_archive)
     content: u'Archive'
     country_dns_mirror: True
@@ -219,8 +219,8 @@ returning None if there isn't one.
     >>> uk = webservice.get("/+countries/GB").jsonBody()
     >>> uk_country_mirror_archive = webservice.named_get(
     ...     ubuntu['self_link'], 'getCountryMirror',
-    ...     country = uk['self_link'],
-    ...     mirror_type = "Archive")
+    ...     country=uk['self_link'],
+    ...     mirror_type="Archive")
     >>> print uk_country_mirror_archive.jsonBody()
     None
 
@@ -229,8 +229,8 @@ For "getCountryMirror", the mirror_type parameter must be "Archive" or
 
     >>> uk_country_mirror_archive = webservice.named_get(
     ...     ubuntu['self_link'], 'getCountryMirror',
-    ...     country = uk['self_link'],
-    ...     mirror_type = "Bogus")
+    ...     country=uk['self_link'],
+    ...     mirror_type="Bogus")
     >>> print uk_country_mirror_archive.jsonBody()
     Traceback (most recent call last):
     ...

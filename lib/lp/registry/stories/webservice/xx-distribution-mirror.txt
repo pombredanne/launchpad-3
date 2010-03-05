@@ -248,7 +248,7 @@ $CC.releases.ubuntu.com, these are tracked in Launchpad.
     ...     "Technische Universitaet Dresden", country = 82,
     ...     http_url="http://ubuntu.mirror.tudos.de/ubuntu/")
     >>> davis_station = factory.makeMirror(ubuntu_distro,
-    ...     "Davis Station", country = 9,
+    ...     "Davis Station", country=9,
     ...     http_url="http://mirror.davis.antarctica.org/ubuntu")
     >>> de_archive_prober_log = factory.makeMirrorProbeRecord(de_archive)
     >>> logout()
@@ -399,7 +399,7 @@ country mirrors:
 
     >>> login('admin@canonical.com')
     >>> us_mirror = factory.makeMirror(ubuntu_distro, "OSU Open Source Lab",
-    ...     country = 226,
+    ...     country=226,
     ...     ftp_url="ftp://ubuntu.osuosl.org/pub/ubuntu/")
     >>> logout()
 
