@@ -37,13 +37,13 @@ API_INDEX = $(APIDOC_DIR)/index.html
 # It is impossible to get buildout to tell us all the files it would
 # build, since each egg's setup.py doesn't tell us that information.
 BUILDOUT_BIN = \
-    bin/apiindex bin/combine-css bin/fl-build-report \
+    $(PY) bin/apiindex bin/combine-css bin/fl-build-report \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
     bin/jstest bin/killservice bin/kill-test-services bin/lint.sh \
-    bin/lp-windmill bin/py bin/retest bin/run bin/sprite-util \
+    bin/lp-windmill bin/retest bin/run bin/sprite-util \
     bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
     bin/twistd bin/update-download-cache bin/windmill
 
