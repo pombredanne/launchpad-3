@@ -201,10 +201,11 @@ def parse_args(arguments):
     parser.add_option(
         '-e', '--email', action='store', dest='email', default=None,
         help="Email address; set to use real GPG key for this address.")
+
     options, args = parser.parse_args(arguments)
     if len(args) == 0:
         print __doc__
-        return 2
+        sys.exit(2)
 
     options.username = args[0]
     options.teams = args[1:]
@@ -214,14 +215,14 @@ def parse_args(arguments):
 
 def main(arguments):
     """Run the script."""
-    execute_zcml_for_scripts()
-    transaction.begin()
-
     options = parse_args(arguments)
     if options.email is None:
     	email = '%s@example.com' % options.username
     else:
         email = options.email
+
+    execute_zcml_for_scripts()
+    transaction.begin()
 
     person = make_person(options.username, email)
     add_person_to_teams(person, options.teams)
