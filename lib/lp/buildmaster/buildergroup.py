@@ -116,11 +116,3 @@ class BuilderGroup:
                 builder.requestAbort()
             self.logger.warn("Builder '%s' rescued from '%s': '%s'" % (
                 builder.name, slave_build_id, reason))
-
-    def updateBuild(self, queueItem):
-        """Verify the current build job status.
-
-        Perform the required actions for each state.
-        """
-        queueItem.builder.updateBuild(queueItem)
-        self.commit()
