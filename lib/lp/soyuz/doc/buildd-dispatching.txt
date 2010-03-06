@@ -71,9 +71,8 @@ The BuilddMaster will be set up next. This involves checking the various
 builders and resetting the virtualized ones if needed. Please note that
 'frog' is a PPA builder and was reset due to a communication time-out.
 
-    >>> bm.addDistroArchSeries(hoary_i386)
-    >>> bm.setupBuilders(hoary_i386)
-    WARNING:root.builders.x86:Resetting builder: http://localhost:9221/ -- (111, 'Connection refused')
+    >>> bm.checkBuilders()
+    WARNING:root:Resetting builder: http://localhost:9221/ -- (111, 'Connection refused')
     Traceback (most recent call last):
     ...
     error: (111, 'Connection refused')
