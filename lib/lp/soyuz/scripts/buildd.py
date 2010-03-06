@@ -13,11 +13,14 @@ __all__ = [
 
 from zope.component import getUtility
 
+from canonical.config import config
 from lp.archivepublisher.debversion import Version
+from lp.archivepublisher.utils import process_in_batches
 from lp.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
@@ -89,7 +92,8 @@ class QueueBuilder(LaunchpadCronScript):
         # it's needed even for 'score-only' mode.
         for series in sorted_distroseries:
             for archseries in series.architectures:
-                archserieses.append(archseries)
+                if archseries.getChroot():
+                    archserieses.append(archseries)
                 buildMaster.addDistroArchSeries(archseries)
 
         if not self.options.score_only:
@@ -98,7 +102,7 @@ class QueueBuilder(LaunchpadCronScript):
             # with the distroarchseries we're interested in.
             self.logger.info("Rebuilding build queue.")
             for distroseries in sorted_distroseries:
-                buildMaster.createMissingBuilds(distroseries)
+                self.createMissingBuilds(distroseries)
 
         # Ensure all NEEDSBUILD builds have a buildqueue entry
         # and re-score them.
@@ -106,6 +110,54 @@ class QueueBuilder(LaunchpadCronScript):
         self.scoreCandidates(archserieses)
 
         self.txn.commit()
+
+    def createMissingBuilds(self, distroseries):
+        """Ensure that each published package is completly built."""
+        self.logger.info("Processing %s" % distroseries.name)
+        # Do not create builds for distroseries with no nominatedarchindep
+        # they can't build architecture independent packages properly.
+        if not distroseries.nominatedarchindep:
+            self.logger.debug(
+                "No nominatedarchindep for %s, skipping" % distroseries.name)
+            return
+
+        # Listify the architectures to avoid hitting this MultipleJoin
+        # multiple times.
+        distroseries_architectures = list(distroseries.architectures)
+        if not distroseries_architectures:
+            self.logger.debug(
+                "No architectures defined for %s, skipping"
+                % distroseries.name)
+            return
+
+        architectures_available = list(distroseries.enabled_architectures)
+        if not architectures_available:
+            self.logger.debug(
+                "Chroots missing for %s, skipping" % distroseries.name)
+            return
+
+        self.logger.info(
+            "Supported architectures: %s" %
+            " ".join(arch_series.architecturetag
+                     for arch_series in architectures_available))
+
+        pas_verify = BuildDaemonPackagesArchSpecific(
+            config.builddmaster.root, distroseries)
+
+        sources_published = distroseries.getSourcesPublishedForAllArchives()
+        self.logger.info(
+            "Found %d source(s) published." % sources_published.count())
+
+        def process_source(pubrec):
+            builds = pubrec.createMissingBuilds(
+                architectures_available=architectures_available,
+                pas_verify=pas_verify, logger=self.logger)
+            if len(builds) > 0:
+                self.txn.commit()
+
+        process_in_batches(
+            sources_published, process_source, self.logger,
+            minimum_chunk_size=1000)
 
     def scoreCandidates(self, archseries):
         """Iterate over the pending buildqueue entries and re-score them."""

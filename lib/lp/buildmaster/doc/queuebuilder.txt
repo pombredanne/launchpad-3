@@ -15,6 +15,7 @@ able to:
 == Setting up ==
 
     >>> from lp.buildmaster.master import BuilddMaster
+    >>> from lp.soyuz.scripts.buildd import QueueBuilder
 
 Import the bunch of required database classes:
 
@@ -47,6 +48,9 @@ souces and locations but with higher IDs.
     ...         flush_database_updates()
 
     >>> build_master = BuilddMaster(logger, FakeZtm())
+    >>> queue_builder = QueueBuilder(name='queue-builder', test_args=[])
+    >>> queue_builder.txn = FakeZtm()
+    >>> queue_builder.logger = logger
 
 Emulate a PocketChroot entry to validate the following
 distroarchseries:
@@ -75,10 +79,13 @@ Produce a set of available DistroArchSeries, for which the
 build jobs will be created.
 
     >>> distroseries = set()
+    >>> archseries = set()
 
-    >>> for archseries in DistroArchSeries.select():
-    ...     distroseries.add(archseries.distroseries)
-    ...     build_master.addDistroArchSeries(archseries)
+    >>> for das in DistroArchSeries.select():
+    ...     distroseries.add(das.distroseries)
+    ...     if das.getChroot():
+    ...         archseries.add(das)
+    ...     build_master.addDistroArchSeries(das)
 
     >>> import operator
     >>> distroseries = sorted(
@@ -87,9 +94,7 @@ build jobs will be created.
 Among all the available distroarchseries only the one with chroot will
 be considered.
 
-    >>> valid_archs = sorted(build_master._archseries.keys(),
-    ...                      key=operator.attrgetter('id'))
-    >>> for arch in valid_archs:
+    >>> for arch in sorted(archseries, key=operator.attrgetter('id')):
     ...     print arch.title
     The Warty Warthog Release for i386 (x86)
     The Hoary Hedgehog Release for i386 (x86)
@@ -108,7 +113,7 @@ This is to allow us to study carefully what is being added as we add
 new series and builds.
 
     >>> for series in distroseries:
-    ...      build_master.createMissingBuilds(series)
+    ...      queue_builder.createMissingBuilds(series)
 
 Add the missing build queue entries.
 
@@ -298,7 +303,7 @@ We expect to have a couple of new builds for the sane hoary/RELEASE,
 one for warty/UPDATES and one for hoary/RELEASE/PPA.
 
     >>> for series in distroseries:
-    ...      build_master.createMissingBuilds(series)
+    ...      queue_builder.createMissingBuilds(series)
 
 Check that we only created new Build entries for the new hoary releases:
 

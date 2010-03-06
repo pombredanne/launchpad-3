@@ -21,15 +21,12 @@ from zope.component import getUtility
 from canonical.librarian.interfaces import ILibrarianClient
 
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
-from lp.archivepublisher.utils import process_in_batches
 from canonical.buildd.utils import notes
-from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from lp.buildmaster.buildergroup import BuilderGroup
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from canonical.config import config
 
 
 def determineArchitecturesToBuild(pubrec, legal_archseries,
@@ -212,54 +209,6 @@ class BuilddMaster:
                 builder.updateStatus(self.getLogger())
 
         self.commit()
-
-    def createMissingBuilds(self, distroseries):
-        """Ensure that each published package is completly built."""
-        self._logger.info("Processing %s" % distroseries.name)
-        # Do not create builds for distroseries with no nominatedarchindep
-        # they can't build architecture independent packages properly.
-        if not distroseries.nominatedarchindep:
-            self._logger.debug(
-                "No nominatedarchindep for %s, skipping" % distroseries.name)
-            return
-
-        # Listify the architectures to avoid hitting this MultipleJoin
-        # multiple times.
-        distroseries_architectures = list(distroseries.architectures)
-        if not distroseries_architectures:
-            self._logger.debug(
-                "No architectures defined for %s, skipping"
-                % distroseries.name)
-            return
-
-        architectures_available = list(distroseries.enabled_architectures)
-        if not architectures_available:
-            self._logger.debug(
-                "Chroots missing for %s, skipping" % distroseries.name)
-            return
-
-        self._logger.info(
-            "Supported architectures: %s" %
-            " ".join(arch_series.architecturetag
-                     for arch_series in architectures_available))
-
-        pas_verify = BuildDaemonPackagesArchSpecific(
-            config.builddmaster.root, distroseries)
-
-        sources_published = distroseries.getSourcesPublishedForAllArchives()
-        self._logger.info(
-            "Found %d source(s) published." % sources_published.count())
-
-        def process_source(pubrec):
-            builds = pubrec.createMissingBuilds(
-                architectures_available=architectures_available,
-                pas_verify=pas_verify, logger=self._logger)
-            if len(builds) > 0:
-                self.commit()
-
-        process_in_batches(
-            sources_published, process_source, self._logger,
-            minimum_chunk_size=1000)
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
