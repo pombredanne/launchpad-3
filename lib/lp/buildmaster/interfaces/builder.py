@@ -182,6 +182,9 @@ class IBuilder(IHasOwner):
         the XMLRPC is working properly at this point.
         """
 
+    def updateStatus(logger=None):
+        """Update the builder's status by probing it."""
+
     def cleanSlave():
         """Clean any temporary files from the slave."""
 

@@ -8,6 +8,8 @@ __metaclass__ = type
 __all__ = [
     'Builder',
     'BuilderSet',
+    'rescueBuilderIfLost',
+    'updateBuilderStatus',
     ]
 
 import httplib
@@ -197,6 +199,32 @@ def rescueBuilderIfLost(builder, logger=None):
                 (builder.name, slave_build_id, reason))
 
 
+def updateBuilderStatus(builder, logger=None):
+    """See `IBuilder`."""
+    if logger:
+        logger.debug('Checking %s' % builder.name)
+
+    try:
+        builder.checkSlaveAlive()
+        builder.checkSlaveArchitecture()
+        builder.rescueIfLost(logger)
+    # Catch only known exceptions.
+    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+    # disturbing in this context. We should spend sometime sanitizing the
+    # exceptions raised in the Builder API since we already started the
+    # main refactoring of this area.
+    except (ValueError, TypeError, xmlrpclib.Fault,
+            BuildDaemonError), reason:
+        builder.failBuilder(str(reason))
+        if logger:
+            logger.warn(
+                "%s (%s) marked as failed due to: %s",
+                builder.name, builder.url, builder.failnotes, exc_info=True)
+    except socket.error, reason:
+        error_message = str(reason)
+        builder.handleTimeout(logger, error_message)
+
+
 class Builder(SQLBase):
 
     implements(IBuilder, IHasBuildRecords)
@@ -302,6 +330,9 @@ class Builder(SQLBase):
     def rescueIfLost(self, logger=None):
         """See `IBuilder`."""
         rescueBuilderIfLost(self, logger)
+
+    def updateStatus(self, logger=None):
+        updateBuilderStatus(self, logger)
 
     def cleanSlave(self):
         """See IBuilder."""
