@@ -76,12 +76,12 @@ change the owner's of mirrors:
     >>> karl_db = getUtility(IPersonSet).getByName('karl')
     >>> test_db = getUtility(IPersonSet).getByName('name12')
     >>> no_priv_db = getUtility(IPersonSet).getByName('no-priv')
-    >>> karl_webservice = webservice_for_person(karl_db,
-    ...     permission=OAuthPermission.WRITE_PUBLIC)
-    >>> test_webservice = webservice_for_person(test_db,
-    ...     permission=OAuthPermission.WRITE_PUBLIC)
-    >>> no_priv_webservice = webservice_for_person(no_priv_db,
-    ...     permission=OAuthPermission.READ_PUBLIC)
+    >>> karl_webservice = webservice_for_person(
+    ...     karl_db, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> test_webservice = webservice_for_person(
+    ...     test_db, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> no_priv_webservice = webservice_for_person(
+    ...     no_priv_db, permission=OAuthPermission.READ_PUBLIC)
     >>> logout()
 
 Ensure that anonymous API sessions can view mirror listings; archive/releases.
@@ -420,11 +420,11 @@ country mirrors:
     ...     dumps(patch)).jsonBody()
     Traceback (most recent call last):
     ...
-    ValueError: This mirror may not be set as a country mirror as it is not official.
+    ValueError: This mirror may not be set as a country mirror as it is not an official mirror.
     <BLANKLINE>
     Traceback (most recent call last):
     ...
-    MirrorNotOfficial: This mirror may not be set as a country mirror as it is not official.
+    MirrorNotOfficial: This mirror may not be set as a country mirror as it is not an official mirror.
 
     >>> response = karl_webservice.patch(
     ...     us_mirror_json['self_link'], 'application/json',
