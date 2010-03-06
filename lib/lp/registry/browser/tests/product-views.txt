@@ -503,7 +503,8 @@ the user to make the connection.
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
-    There are no source packages that are a good match. Can you suggest one?
+    There are no unlinked source packages that are a good match.
+    Can you suggest one?
     Link to Ubuntu package
 
     >>> spn = factory.makeSourcePackageName(name="bingo")
