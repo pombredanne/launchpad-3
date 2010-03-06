@@ -33,8 +33,7 @@ release.
     >>> archdistroseries = ubuntu.currentseries.nominatedarchindep
     >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
     >>> pc = archdistroseries.addOrUpdateChroot(chroot=chroot)
-    >>> bm.addDistroArchSeries(archdistroseries)
-    >>> bm.setupBuilders(archdistroseries)
+    >>> bm.checkBuilders()
     >>> processor = archdistroseries.processorfamily.processors[0]
 
 Make a builder to process our build request.

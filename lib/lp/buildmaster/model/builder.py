@@ -729,10 +729,7 @@ class BuilderSet(object):
         buildMaster = BuilddMaster(logger, txn)
 
         logger.info("Setting Builders.")
-        # Put every distroarchseries we can find into the build master.
-        for archseries in getUtility(IDistroArchSeriesSet):
-            buildMaster.addDistroArchSeries(archseries)
-            buildMaster.setupBuilders(archseries)
+        buildMaster.checkBuilders()
 
         logger.info("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve
