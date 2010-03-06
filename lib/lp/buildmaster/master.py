@@ -290,25 +290,3 @@ class BuilddMaster:
         if subname is None:
             return self._logger
         return logging.getLogger("%s.%s" % (self._logger.name, subname))
-
-    def scoreCandidates(self):
-        """Iterate over the pending buildqueue entries and re-score them."""
-        if not self._archseries:
-            self._logger.info("No architecture found to rescore.")
-            return
-
-        # Get the current build job candidates.
-        archseries = self._archseries.keys()
-        bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(archseries)
-
-        self._logger.info("Found %d build in NEEDSBUILD state. Rescoring"
-                          % candidates.count())
-
-        for job in candidates:
-            uptodate_build = getUtility(IBuildSet).getByQueueEntry(job)
-            if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
-                continue
-            job.score()
-
-        self.commit()

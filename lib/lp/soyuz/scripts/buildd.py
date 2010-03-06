@@ -15,7 +15,8 @@ from zope.component import getUtility
 
 from lp.archivepublisher.debversion import Version
 from lp.buildmaster.master import BuilddMaster
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from lp.services.scripts.base import (
@@ -83,10 +84,12 @@ class QueueBuilder(LaunchpadCronScript):
 
         sorted_distroseries = self.calculateDistroseries()
         buildMaster = BuilddMaster(self.logger, self.txn)
+        archserieses = []
         # Initialize BuilddMaster with the relevant architectures.
         # it's needed even for 'score-only' mode.
         for series in sorted_distroseries:
             for archseries in series.architectures:
+                archserieses.append(archseries)
                 buildMaster.addDistroArchSeries(archseries)
 
         if not self.options.score_only:
@@ -100,9 +103,28 @@ class QueueBuilder(LaunchpadCronScript):
         # Ensure all NEEDSBUILD builds have a buildqueue entry
         # and re-score them.
         buildMaster.addMissingBuildQueueEntries()
-        buildMaster.scoreCandidates()
+        self.scoreCandidates(archserieses)
 
         self.txn.commit()
+
+    def scoreCandidates(self, archseries):
+        """Iterate over the pending buildqueue entries and re-score them."""
+        if not archseries:
+            self.logger.info("No architecture found to rescore.")
+            return
+
+        # Get the current build job candidates.
+        bqset = getUtility(IBuildQueueSet)
+        candidates = bqset.calculateCandidates(archseries)
+
+        self.logger.info("Found %d build in NEEDSBUILD state. Rescoring"
+                         % candidates.count())
+
+        for job in candidates:
+            uptodate_build = getUtility(IBuildSet).getByQueueEntry(job)
+            if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
+                continue
+            job.score()
 
     def calculateDistroseries(self):
         """Return an ordered list of distroseries for the given arguments."""
