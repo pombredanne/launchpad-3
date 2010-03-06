@@ -28,6 +28,7 @@ from lp.archivepublisher.utils import process_in_batches
 from canonical.buildd.utils import notes
 from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from lp.buildmaster.buildergroup import BuilderGroup
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from canonical.config import config
 
 
@@ -200,6 +201,17 @@ class BuilddMaster:
         # in the private attribute _archreleases
         self._archseries[archseries]["builders"] = \
             notes[archseries.processorfamily]["builders"]
+
+    def checkBuilders(self):
+        """Set up the builders."""
+        for builder in getUtility(IBuilderSet):
+            # XXX Robert Collins 2007-05-23 bug=31546: builders that are not
+            # 'ok' are not worth rechecking here for some currently
+            # undocumented reason. This also relates to bug #30633.
+            if builder.builderok:
+                builder.updateStatus(self.getLogger())
+
+        self.commit()
 
     def createMissingBuilds(self, distroseries):
         """Ensure that each published package is completly built."""
