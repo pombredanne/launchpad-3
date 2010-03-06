@@ -45,16 +45,15 @@ class BuilderGroup:
             # 'ok' are not worth rechecking here for some currently
             # undocumented reason. This also relates to bug #30633.
             if builder.builderok:
-                self.updateBuilderStatus(builder, arch)
+                self.updateBuilderStatus(builder)
 
         # Commit the updates made to the builders.
         self.commit()
 
-    def updateBuilderStatus(self, builder, arch):
+    def updateBuilderStatus(self, builder):
         """Update the status for a builder by probing it.
 
         :param builder: A builder object.
-        :param arch: The expected architecture family of the builder.
         """
         self.logger.debug('Checking %s' % builder.name)
         try:

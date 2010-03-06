@@ -129,9 +129,7 @@ be aborted appropriately.
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Broken Slave', LostBuildingBrokenSlave())
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
-    >>> buildergroup.updateBuilderStatus(lostbuilding_builder, hoary_i386)
+    >>> buildergroup.updateBuilderStatus(lostbuilding_builder)
     WARNING:root:Lost Building Broken Slave (http://fake:0000) marked as failed due to: <Fault 8002: 'Could not abort'>
     Traceback (most recent call last):
     ...
