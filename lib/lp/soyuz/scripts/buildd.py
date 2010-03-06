@@ -16,7 +16,6 @@ from zope.component import getUtility
 from canonical.config import config
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
-from lp.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -74,8 +73,6 @@ class QueueBuilder(LaunchpadCronScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
-        # In order to avoid the partial commits inside BuilddMaster
-        # to happen we pass a FakeZtm instance if dry-run mode is selected.
         class _FakeZTM:
             """A fake transaction manager."""
             def commit(self):
@@ -86,15 +83,13 @@ class QueueBuilder(LaunchpadCronScript):
             self.txn = _FakeZTM()
 
         sorted_distroseries = self.calculateDistroseries()
-        buildMaster = BuilddMaster(self.logger, self.txn)
         archserieses = []
-        # Initialize BuilddMaster with the relevant architectures.
+        # Initialize the relevant architectures (those with chroots).
         # it's needed even for 'score-only' mode.
         for series in sorted_distroseries:
             for archseries in series.architectures:
                 if archseries.getChroot():
                     archserieses.append(archseries)
-                buildMaster.addDistroArchSeries(archseries)
 
         if not self.options.score_only:
             # For each distroseries we care about, scan for
@@ -106,7 +101,7 @@ class QueueBuilder(LaunchpadCronScript):
 
         # Ensure all NEEDSBUILD builds have a buildqueue entry
         # and re-score them.
-        buildMaster.addMissingBuildQueueEntries()
+        self.addMissingBuildQueueEntries(archserieses)
         self.scoreCandidates(archserieses)
 
         self.txn.commit()
@@ -158,6 +153,28 @@ class QueueBuilder(LaunchpadCronScript):
         process_in_batches(
             sources_published, process_source, self.logger,
             minimum_chunk_size=1000)
+
+    def addMissingBuildQueueEntries(self, archseries):
+        """Create missing Buildd Jobs. """
+        self.logger.info("Scanning for build queue entries that are missing")
+
+        buildset = getUtility(IBuildSet)
+        builds = buildset.getPendingBuildsForArchSet(archseries)
+
+        if not builds:
+            return
+
+        for build in builds:
+            if not build.buildqueue_record:
+                name = build.sourcepackagerelease.name
+                version = build.sourcepackagerelease.version
+                tag = build.distroarchseries.architecturetag
+                self.logger.debug(
+                    "Creating buildqueue record for %s (%s) on %s"
+                    % (name, version, tag))
+                build.queueBuild()
+
+        self.txn.commit()
 
     def scoreCandidates(self, archseries):
         """Iterate over the pending buildqueue entries and re-score them."""

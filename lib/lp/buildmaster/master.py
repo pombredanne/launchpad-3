@@ -210,28 +210,6 @@ class BuilddMaster:
 
         self.commit()
 
-    def addMissingBuildQueueEntries(self):
-        """Create missing Buildd Jobs. """
-        self._logger.info("Scanning for build queue entries that are missing")
-
-        buildset = getUtility(IBuildSet)
-        builds = buildset.getPendingBuildsForArchSet(self._archseries)
-
-        if not builds:
-            return
-
-        for build in builds:
-            if not build.buildqueue_record:
-                name = build.sourcepackagerelease.name
-                version = build.sourcepackagerelease.version
-                tag = build.distroarchseries.architecturetag
-                self._logger.debug(
-                    "Creating buildqueue record for %s (%s) on %s"
-                    % (name, version, tag))
-                build.queueBuild()
-
-        self.commit()
-
     def scanActiveBuilders(self):
         """Collect informations/results of current build jobs."""
 

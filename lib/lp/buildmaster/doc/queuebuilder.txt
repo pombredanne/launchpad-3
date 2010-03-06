@@ -14,7 +14,6 @@ able to:
 
 == Setting up ==
 
-    >>> from lp.buildmaster.master import BuilddMaster
     >>> from lp.soyuz.scripts.buildd import QueueBuilder
 
 Import the bunch of required database classes:
@@ -33,10 +32,10 @@ test_system_documentation.py for more information.
     >>> import logging
     >>> logger = logging.getLogger()
 
-Now that we have satisfied all of the needs for BuildMaster, let's
+Now that we have satisfied all of the needs for QueueBuilder, let's
 instantiate it.
 
-If I pass the current 'transaction' to BuilddMaster it will call
+If I pass the current 'transaction' to QueueBuilder it will call
 commit() on it for it build created. It apparently mess with the
 transaction manager is a way that the builds created in the sampledata
 catch-up (line 103) do not persist for the test build creation (line
@@ -47,7 +46,6 @@ souces and locations but with higher IDs.
     ...     def commit(self):
     ...         flush_database_updates()
 
-    >>> build_master = BuilddMaster(logger, FakeZtm())
     >>> queue_builder = QueueBuilder(name='queue-builder', test_args=[])
     >>> queue_builder.txn = FakeZtm()
     >>> queue_builder.logger = logger
@@ -85,7 +83,6 @@ build jobs will be created.
     ...     distroseries.add(das.distroseries)
     ...     if das.getChroot():
     ...         archseries.add(das)
-    ...     build_master.addDistroArchSeries(das)
 
     >>> import operator
     >>> distroseries = sorted(
@@ -117,7 +114,7 @@ new series and builds.
 
 Add the missing build queue entries.
 
-    >>> build_master.addMissingBuildQueueEntries()
+    >>> queue_builder.addMissingBuildQueueEntries(archseries)
 
 Store current status of the database:
 
@@ -372,7 +369,7 @@ created in the last stage of the queue-builder script.
     >>> print given_back_build.buildqueue_record
     None
 
-    >>> build_master.addMissingBuildQueueEntries()
+    >>> queue_builder.addMissingBuildQueueEntries(archseries)
 
     >>> given_back_build.buildqueue_record is not None
     True
