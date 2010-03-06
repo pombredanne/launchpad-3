@@ -149,7 +149,6 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         queue_item = FakeBuildQueue(behavior)
         slave_status = behavior._builder.slave.status
         builder = behavior._builder
-        slave = builder.slave
 
         behavior.dispatchBuildToSlave(queue_item, logging)
 

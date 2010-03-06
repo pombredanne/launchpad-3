@@ -8,7 +8,6 @@ import pytz
 import unittest
 
 from storm.store import Store
-import transaction
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW

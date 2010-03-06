@@ -71,7 +71,7 @@ def get_builder_data():
         GROUP BY processor, virtualized;
     """
     results = store.execute(builder_data).get_all()
-    builders_in_total = builders_for_job = virtualized_total = 0
+    builders_in_total = virtualized_total = 0
 
     builder_stats = defaultdict(int)
     for processor, virtualized, count in results:

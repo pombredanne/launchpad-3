@@ -482,7 +482,7 @@ class TestBuilddManagerScan(TrialTestCase):
         test_publisher = SoyuzTestPublisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
-        unused = test_publisher.setUpDefaultDistroSeries(hoary)
+        test_publisher.setUpDefaultDistroSeries(hoary)
         test_publisher.addFakeChroots()
         login(ANONYMOUS)
 
