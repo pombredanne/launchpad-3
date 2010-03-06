@@ -1,8 +1,8 @@
-= Sample data cleanup =
+= Sample data setup =
 
 In order to run Soyuz locally on a development system, the sample data
 must be cleaned up and customized a bit.  This is done by a the script
-utilities/soyuz-sampledata-cleanup.py.
+utilities/soyuz-sampledata-setup.py.
 
 We only need this script for the playground sample data, so there's
 little point in inspecting what it does to the test database in detail.
@@ -12,7 +12,7 @@ little point in inspecting what it does to the test database in detail.
 The --dry-run option makes the script roll back its changes.
 
     >>> return_code, output, error = run_script(
-    ...     'utilities/soyuz-sampledata-cleanup.py', args=['--dry-run'])
+    ...     'utilities/soyuz-sampledata-setup.py', args=['--dry-run'])
 
     >>> print return_code
     0
