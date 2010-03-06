@@ -9,10 +9,8 @@ little point in inspecting what it does to the test database in detail.
 
     >>> from canonical.launchpad.ftests.script import run_script
 
-The --dry-run option makes the script roll back its changes.
-
     >>> return_code, output, error = run_script(
-    ...     'utilities/soyuz-sampledata-setup.py', args=['--dry-run'])
+    ...     'utilities/soyuz-sampledata-setup.py')
 
     >>> print return_code
     0
@@ -20,3 +18,6 @@ The --dry-run option makes the script roll back its changes.
     >>> print error
     INFO ...
     INFO Done.
+
+    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+    >>> LaunchpadTestSetup().force_dirty_database()
