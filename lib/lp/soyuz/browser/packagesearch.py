@@ -11,12 +11,15 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
+
 class PackageSearchViewBase(LaunchpadView):
     """A common package search interface"""
 
     def initialize(self):
         """Save the search text set by the user."""
         self.text = self.request.get("text", None)
+        if self.text is not None:
+            self.text = self.text.strip()
 
     @property
     def search_requested(self):
