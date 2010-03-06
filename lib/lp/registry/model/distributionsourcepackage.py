@@ -54,7 +54,7 @@ from lp.translations.model.customlanguagecode import (
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
-                                HasBranchesMixin, 
+                                HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
                                 HasMergeProposalsMixin):
     """This is a "Magic Distribution Source Package". It is not an
@@ -141,6 +141,26 @@ class DistributionSourcePackage(BugTargetBase,
     bug_reporting_guidelines = property(
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
+
+    def _get_max_bug_heat(self):
+        """See `IHasBugs`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is None:
+            return None
+        else:
+            return dsp_in_db.max_bug_heat
+
+    def _set_max_bug_heat(self, value):
+        """See `IHasBugs`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is None:
+            dsp_in_db = DistributionSourcePackageInDatabase()
+            dsp_in_db.sourcepackagename = self.sourcepackagename
+            dsp_in_db.distribution = self.distribution
+            Store.of(self.distribution).add(dsp_in_db)
+        dsp_in_db.max_bug_heat = value
+
+    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
 
     @property
     def latest_overall_publication(self):
@@ -474,3 +494,6 @@ class DistributionSourcePackageInDatabase(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     bug_reporting_guidelines = Unicode()
+
+    max_bug_heat = Int()
+

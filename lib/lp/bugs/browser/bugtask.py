@@ -33,7 +33,9 @@ __all__ = [
     'BugTaskTextView',
     'BugTaskView',
     'BugTasksAndNominationsView',
+    'bugtask_heat_html',
     'BugsBugTaskSearchListingView',
+    'calculate_heat_display',
     'NominationsReviewTableBatchNavigatorView',
     'TextualBugTaskSearchListingView',
     'get_buglisting_search_filter_url',
@@ -49,6 +51,7 @@ import re
 from simplejson import dumps
 import urllib
 from operator import attrgetter, itemgetter
+from math import floor, log
 
 from zope import component
 from zope.app.form import CustomWidgetFactory
@@ -110,7 +113,8 @@ from lp.bugs.interfaces.bugtask import (
     IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
     IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
+    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
+    RESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -137,7 +141,7 @@ from canonical.launchpad import helpers
 from lp.bugs.browser.bug import BugContextMenu, BugViewMixin, BugTextView
 from lp.bugs.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
-    BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
+    BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
@@ -1079,10 +1083,38 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        view = getMultiAdapter(
-            (self.context.bug, self.request),
-            name='+bug-heat')
-        return view()
+        return bugtask_heat_html(self.context)
+
+
+def calculate_heat_display(heat, max_bug_heat):
+    """Calculate the number of heat 'flames' to display."""
+    heat = float(heat)
+    max_bug_heat = float(max_bug_heat)
+    if max_bug_heat == 0:
+        return 0
+    if heat / max_bug_heat < 0.33333:
+        return 0
+    if heat / max_bug_heat < 0.66666 or max_bug_heat < 2:
+        return int(floor((heat / max_bug_heat) * 4))
+    else:
+        heat_index = int(floor((log(heat) / log(max_bug_heat)) * 4))
+        # ensure that we never return a value > 4, even if
+        # max_bug_heat is outdated.
+        return min(heat_index, 4)
+
+
+def bugtask_heat_html(bugtask):
+    """Render the HTML representing bug heat for a given bugask."""
+    max_bug_heat = bugtask.target.max_bug_heat
+    if max_bug_heat is None:
+        max_bug_heat = 5000
+    heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
+    html = (
+        '<span><img src="/@@/bug-heat-%(ratio)i.png" '
+        'alt="%(ratio)i out of 4 heat flames"  title="Heat: %(heat)i" />'
+        '</span>'
+        % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
+    return html
 
 
 class BugTaskPortletView:
@@ -1849,6 +1881,14 @@ class BugsStatsMixin(BugsInfoMixin):
             params.assignee = self.user
             return self.context.searchTasks(params).count()
 
+    @property
+    def bugs_with_patches_count(self):
+        """A count of unresolved bugs with patches."""
+        return self.context.searchTasks(
+            None, user=self.user,
+            status=(UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES),
+            omit_duplicates=True, has_patch=True).count()
+
 
 class BugListingPortletInfoView(LaunchpadView, BugsInfoMixin):
     """Portlet containing available bug listings without stats."""
@@ -1859,7 +1899,8 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 
 def get_buglisting_search_filter_url(
-        assignee=None, importance=None, status=None, status_upstream=None):
+        assignee=None, importance=None, status=None, status_upstream=None,
+        has_patches=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -1871,6 +1912,8 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.status', status))
     if status_upstream is not None:
         search_params.append(('field.status_upstream', status_upstream))
+    if has_patches is not None:
+        search_params.append(('field.has_patch', 'on'))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
@@ -1955,10 +1998,7 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        view = getMultiAdapter(
-            (self.bugtask.bug, self.request),
-            name='+bug-heat')
-        return view()
+        return bugtask_heat_html(self.bugtask)
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -2128,7 +2168,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
         BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
         )
 
     # These widgets are customised so as to keep the presentation of this view

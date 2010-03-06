@@ -117,15 +117,15 @@
               <h2>Recent Launchpad blog posts</h2>
               <ul>
                 <li class="news">
+                  <a href="http://blog.launchpad.net/?p=1356">
+                  Finding and managing patches</a><span class="registered"> &ndash; 03 Mar 2010</span><br />
+                  Pick the low-hanging fruit. Launchpad now makes it easy to find and work with all bug
+                  patches associated with a project or package.
+                </li>
+                <li class="news">
                   <a href="http://blog.launchpad.net/?p=1316">
                   Measuring bug heat</a><span class="registered"> &ndash; 27 Jan 2010</span><br />
                   Launchpad shows a new calculated measure of a bug's importance to help make triage easier.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net/?p=1311">
-                  Improved bug patch notifications</a><span class="registered"> &ndash; 27 Jan 2010</span><br />
-                  Bug listings now highlight bugs that have patches. Launchpad also emails you when a new patch is
-                  added to bugs you care about.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/general/anonymous-access-to-the-launchpad-web-service-api">
