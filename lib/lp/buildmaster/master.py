@@ -18,14 +18,10 @@ import operator
 
 from zope.component import getUtility
 
-from canonical.librarian.interfaces import ILibrarianClient
-
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
-from canonical.buildd.utils import notes
-from lp.buildmaster.buildergroup import BuilderGroup
 from lp.buildmaster.interfaces.builder import IBuilderSet
 
 
@@ -134,70 +130,10 @@ class BuilddMaster:
     def __init__(self, logger, tm):
         self._logger = logger
         self._tm = tm
-        self.librarian = getUtility(ILibrarianClient)
-        self._archseries = {}
         self._logger.info("Buildd Master has been initialised")
 
     def commit(self):
         self._tm.commit()
-
-    def addDistroArchSeries(self, distroarchseries):
-        """Setting up a workable DistroArchSeries for this session."""
-        self._logger.debug("Adding DistroArchSeries %s/%s/%s"
-                          % (distroarchseries.distroseries.distribution.name,
-                             distroarchseries.distroseries.name,
-                             distroarchseries.architecturetag))
-
-        # Is there a chroot for this archseries?
-        if distroarchseries.getChroot():
-            # Fill out the contents.
-            self._archseries.setdefault(distroarchseries, {})
-
-    def setupBuilders(self, archseries):
-        """Setting up a group of builder slaves for a given DistroArchSeries.
-
-        Use the annotation utility to store a BuilderGroup instance
-        keyed by the the DistroArchSeries.processorfamily in the
-        global registry 'notes' and refer to this 'note' in the private
-        attribute '_archseries' keyed by the given DistroArchSeries
-        and the label 'builders'. This complicated arrangement enables us
-        to share builder slaves between different DistroArchRelases since
-        their processorfamily values are the same (compatible processors).
-        """
-        # Determine the builders for this distroarchseries...
-        if archseries not in self._archseries:
-            # Avoid entering in the huge loop if we don't find at least
-            # one architecture for which we can build on.
-            self._logger.debug(
-                "Chroot missing for %s/%s/%s, skipping"
-                % (archseries.distroseries.distribution.name,
-                   archseries.distroseries.name,
-                   archseries.architecturetag))
-            return
-
-        # query the global annotation registry and verify if
-        # we have already done the builder checks for the
-        # processor family in question. if it's already done
-        # simply refer to that information in the _archseries
-        # attribute.
-        if 'builders' not in notes[archseries.processorfamily]:
-
-            # setup a BuilderGroup object
-            info = "builders.%s" % archseries.processorfamily.name
-            builderGroup = BuilderGroup(self.getLogger(info), self._tm)
-
-            # check the available slaves for this archseries
-            builderGroup.checkAvailableSlaves(archseries)
-
-            # annotate the group of builders for the
-            # DistroArchSeries.processorfamily in question and the
-            # label 'builders'
-            notes[archseries.processorfamily]["builders"] = builderGroup
-
-        # consolidate the annotation for the architecture release
-        # in the private attribute _archreleases
-        self._archseries[archseries]["builders"] = \
-            notes[archseries.processorfamily]["builders"]
 
     def checkBuilders(self):
         """Set up the builders."""
