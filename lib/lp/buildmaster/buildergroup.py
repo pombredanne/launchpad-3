@@ -15,7 +15,6 @@ from zope.component import getUtility
 
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, IBuilderSet)
-from lp.buildmaster.interfaces.builder import CorruptBuildID
 
 
 class BuilderGroup:
@@ -61,7 +60,7 @@ class BuilderGroup:
         try:
             builder.checkSlaveAlive()
             builder.checkCanBuildForDistroArchSeries(arch)
-            self.rescueBuilderIfLost(builder)
+            builder.rescueIfLost(self.logger)
         # Catch only known exceptions.
         # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
         # disturbing in this context. We should spend sometime sanitizing the
@@ -76,43 +75,3 @@ class BuilderGroup:
         except socket.error, reason:
             error_message = str(reason)
             builder.handleTimeout(self.logger, error_message)
-
-    def rescueBuilderIfLost(self, builder):
-        """Reset Builder slave if job information doesn't match with DB.
-
-        If builder is BUILDING or WAITING but has an information record
-        that doesn't match what is stored in the DB, we have to dismiss
-        its current actions and let the slave free for another job,
-        assuming the XMLRPC is working properly at this point.
-        """
-        status_sentence = builder.slaveStatusSentence()
-
-        # 'ident_position' dict relates the position of the job identifier
-        # token in the sentence received from status(), according the
-        # two status we care about. See see lib/canonical/buildd/slave.py
-        # for further information about sentence format.
-        ident_position = {
-            'BuilderStatus.BUILDING': 1,
-            'BuilderStatus.WAITING': 2
-            }
-
-        # Isolate the BuilderStatus string, always the first token in
-        # see lib/canonical/buildd/slave.py and
-        # IBuilder.slaveStatusSentence().
-        status = status_sentence[0]
-
-        # If slave is not building nor waiting, it's not in need of rescuing.
-        if status not in ident_position.keys():
-            return
-
-        slave_build_id = status_sentence[ident_position[status]]
-
-        try:
-            builder.verifySlaveBuildID(slave_build_id)
-        except CorruptBuildID, reason:
-            if status == 'BuilderStatus.WAITING':
-                builder.cleanSlave()
-            else:
-                builder.requestAbort()
-            self.logger.warn("Builder '%s' rescued from '%s': '%s'" % (
-                builder.name, slave_build_id, reason))

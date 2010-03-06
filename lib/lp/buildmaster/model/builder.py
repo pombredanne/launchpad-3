@@ -52,7 +52,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
+    CannotResumeHost, CorruptBuildID, IBuilder, IBuilderSet,
+    ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp import urlappend
@@ -157,6 +158,45 @@ class BuilderSlave(xmlrpclib.ServerProxy):
             raise BuildSlaveFailure(info)
 
 
+# This is a separate function since MockBuilder needs to use it too.
+# Do not use it -- (Mock)Builder.rescueIfLost should be used instead.
+def rescueBuilderIfLost(builder, logger=None):
+    """See `IBuilder`."""
+    status_sentence = builder.slaveStatusSentence()
+
+    # 'ident_position' dict relates the position of the job identifier
+    # token in the sentence received from status(), according the
+    # two status we care about. See see lib/canonical/buildd/slave.py
+    # for further information about sentence format.
+    ident_position = {
+        'BuilderStatus.BUILDING': 1,
+        'BuilderStatus.WAITING': 2
+        }
+
+    # Isolate the BuilderStatus string, always the first token in
+    # see lib/canonical/buildd/slave.py and
+    # IBuilder.slaveStatusSentence().
+    status = status_sentence[0]
+
+    # If slave is not building nor waiting, it's not in need of rescuing.
+    if status not in ident_position.keys():
+        return
+
+    slave_build_id = status_sentence[ident_position[status]]
+
+    try:
+        builder.verifySlaveBuildID(slave_build_id)
+    except CorruptBuildID, reason:
+        if status == 'BuilderStatus.WAITING':
+            builder.cleanSlave()
+        else:
+            builder.requestAbort()
+        if logger:
+            logger.warn(
+                "Builder '%s' rescued from '%s': '%s'" %
+                (builder.name, slave_build_id, reason))
+
+
 class Builder(SQLBase):
 
     implements(IBuilder, IHasBuildRecords)
@@ -245,6 +285,10 @@ class Builder(SQLBase):
         """See IBuilder."""
         if self.slave.echo("Test")[0] != "Test":
             raise BuildDaemonError("Failed to echo OK")
+
+    def rescueIfLost(self, logger=None):
+        """See `IBuilder`."""
+        rescueBuilderIfLost(self, logger)
 
     def cleanSlave(self):
         """See IBuilder."""
