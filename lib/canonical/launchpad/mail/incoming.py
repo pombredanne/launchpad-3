@@ -9,8 +9,8 @@ __metaclass__ = type
 
 from logging import getLogger
 from cStringIO import StringIO as cStringIO
-from email.Utils import getaddresses, parseaddr
-import email.Errors
+from email.utils import getaddresses, parseaddr
+import email.errors
 import re
 import sys
 
@@ -265,19 +265,13 @@ def handleMail(trans=transaction):
                     continue
 
                 # Extract the domain the mail was sent to. Mails sent to
-                # Launchpad should have an X-Original-To header.
-                if mail.has_key('X-Original-To'):
-                    addresses = [mail['X-Original-To']]
-                else:
-                    log = getLogger('canonical.launchpad.mail')
-                    log.warn(
-                        "No X-Original-To header was present in email: %s" %
-                         file_alias_url)
-                    # Process all addresses found as a fall back.
-                    cc = mail.get_all('cc') or []
-                    to = mail.get_all('to') or []
-                    names_addresses = getaddresses(to + cc)
-                    addresses = [addr for name, addr in names_addresses]
+                # Launchpad should have an X-Original-To header, but
+                # it has an incorrect address.
+                # Process all addresses found as a fall back.
+                cc = mail.get_all('cc') or []
+                to = mail.get_all('to') or []
+                names_addresses = getaddresses(to + cc)
+                addresses = [addr for name, addr in names_addresses]
 
                 handler = None
                 for email_addr in addresses:

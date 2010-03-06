@@ -19,14 +19,16 @@ from sqlobject import (
 from storm.expr import Join
 from storm.store import Store
 
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
+from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.project import Project
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.worlddata.model.language import Language
 from lp.translations.model.translator import Translator
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -60,6 +62,21 @@ class TranslationGroup(SQLBase):
     translators = SQLMultipleJoin('Translator',
                                   joinColumn='translationgroup')
     translation_guide_url = StringCol(notNull=False, default=None)
+
+    def __getitem__(self, language_code):
+        """See `ITranslationGroup`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        query = store.find(
+            Translator,
+            Translator.translationgroup == self,
+            Translator.languageID == Language.id,
+            Language.code == language_code)
+        
+        translator = query.one()
+        if translator is None:
+            raise NotFoundError, language_code
+
+        return translator
 
     # used to note additions
     def add(self, content):
@@ -117,17 +134,15 @@ class TranslationGroup(SQLBase):
         else:
             return 0
 
-
-    # get a translator by code
-    def __getitem__(self, code):
+    def fetchTranslatorData(self):
         """See ITranslationGroup."""
-        language_set = getUtility(ILanguageSet)
-        language = language_set[code]
-        result = Translator.selectOneBy(language=language,
-                                        translationgroup=self)
-        if result is None:
-            raise NotFoundError, code
-        return result
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        translator_data = store.find(
+            (Translator, Language, Person),
+            Translator.translationgroup == self,
+            Language.id == Translator.languageID,
+            Person.id == Translator.translatorID)
+        return translator_data.order_by(Language.englishname)
 
 
 class TranslationGroupSet:

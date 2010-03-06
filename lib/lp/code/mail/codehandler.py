@@ -541,7 +541,8 @@ class CodeHandler:
             if part.is_multipart():
                 continue
             payload = part.get_payload(decode=True)
-            if part['Content-type'].startswith('text/plain'):
+            content_type = part.get('Content-type', 'text/plain').lower()
+            if content_type.startswith('text/plain'):
                 body = payload
                 charset = part.get_param('charset')
                 if charset is not None:
@@ -604,13 +605,10 @@ class CodeHandler:
                     target.code_reviewer, submitter, None,
                     _notify_listeners=False)
 
-            if comment_text.strip() == '':
-                comment = None
-            else:
-                comment = bmp.createComment(
-                    submitter, message['Subject'], comment_text,
-                    _notify_listeners=False)
-            return bmp, comment
+            comment_text = comment_text.strip()
+            if comment_text != '':
+                bmp.description = comment_text
+            return bmp
 
         except BranchMergeProposalExists:
             body = get_error_message(

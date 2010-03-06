@@ -671,7 +671,7 @@ class SourcePackagePublisher:
         """Create the publishing entry on db if does not exist."""
         # Avoid circular import.
         from lp.soyuz.model.publishing import (
-            SecureSourcePackagePublishingHistory)
+            SourcePackagePublishingHistory)
 
         # Check if the sprelease is already published and if so, just
         # report it.
@@ -702,7 +702,7 @@ class SourcePackagePublisher:
 
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
-        entry = SecureSourcePackagePublishingHistory(
+        entry = SourcePackagePublishingHistory(
             distroseries=self.distroseries.id,
             sourcepackagerelease=sourcepackagerelease.id,
             status=PackagePublishingStatus.PENDING,
@@ -721,9 +721,9 @@ class SourcePackagePublisher:
         """Query for the publishing entry"""
         # Avoid circular import.
         from lp.soyuz.model.publishing import (
-            SecureSourcePackagePublishingHistory)
+            SourcePackagePublishingHistory)
 
-        ret = SecureSourcePackagePublishingHistory.select(
+        ret = SourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
                    AND distroseries = %s
                    AND archive = %s
@@ -926,7 +926,7 @@ class BinaryPackagePublisher:
         """Create the publishing entry on db if does not exist."""
         # Avoid circular imports.
         from lp.soyuz.model.publishing import (
-            SecureBinaryPackagePublishingHistory)
+            BinaryPackagePublishingHistory)
 
         # These need to be pulled from the binary package data, not the
         # binary package release: the data represents data from /this
@@ -962,7 +962,7 @@ class BinaryPackagePublisher:
 
 
         # Create the Publishing entry with status PENDING.
-        SecureBinaryPackagePublishingHistory(
+        BinaryPackagePublishingHistory(
             binarypackagerelease = binarypackage.id,
             component = component.id,
             section = section.id,
@@ -987,9 +987,9 @@ class BinaryPackagePublisher:
         """Query for the publishing entry"""
         # Avoid circular imports.
         from lp.soyuz.model.publishing import (
-            SecureBinaryPackagePublishingHistory)
+            BinaryPackagePublishingHistory)
 
-        ret = SecureBinaryPackagePublishingHistory.select(
+        ret = BinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
                    AND distroarchseries = %s
                    AND archive = %s
