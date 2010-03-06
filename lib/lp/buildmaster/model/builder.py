@@ -37,6 +37,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
     CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
@@ -52,7 +53,7 @@ from lp.services.job.interfaces.job import JobStatus
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
