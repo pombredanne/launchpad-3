@@ -27,14 +27,7 @@ The master also requires an 'logging' instance to not compromise the
 standard output with noisily output.
 
     >>> import logging
-
-First let's test an essential part of the Build-master class, the
-BuilderGroup() class, by creating an empty BuilderGroup object
-
-    >>> from lp.buildmaster.buildergroup import BuilderGroup
-
-    >>> buildergroup = BuilderGroup(
-    ...     logging.getLogger(), local_transaction)
+    >>> logger = logging.getLogger()
 
 Import MockBuilder and a series of MockSlaves to be used in this test.
 
@@ -44,7 +37,7 @@ Import MockBuilder and a series of MockSlaves to be used in this test.
     ...    LostBuildingSlave, LostWaitingSlave, MockBuilder, OkSlave,
     ...    SaneBuildingSlave, SaneWaitingSlave, WaitingSlave)
 
-Let's play with a BuilderGroup method designed to rescue build slaves
+Let's play with a Builder method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
 only happens if the slave is processing deleted or modified BuildQueue
 entry, since Build entries are never removed. It might be caused by
@@ -69,21 +62,21 @@ identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
 
     >>> sanebuilding_builder = MockBuilder(
     ...     'Sane Building Slave', SaneBuildingSlave())
-    >>> sanebuilding_builder.rescueIfLost(buildergroup.logger) is None
+    >>> sanebuilding_builder.rescueIfLost(logger) is None
     True
 
 A sane WAITING slave:
 
     >>> sanewaiting_builder = MockBuilder(
     ...     'Sane Waiting Slave', SaneWaitingSlave())
-    >>> sanewaiting_builder.rescueIfLost(buildergroup.logger) is None
+    >>> sanewaiting_builder.rescueIfLost(logger) is None
     True
 
 A insane WAITING slave, with wrong BuildQueue/Build relation:
 
     >>> insanewaiting_builder = MockBuilder(
     ...     'Insane Waiting Slave', InsaneWaitingSlave())
-    >>> insanewaiting_builder.rescueIfLost(buildergroup.logger)
+    >>> insanewaiting_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Insane Waiting Slave' rescued from '7-1': 'Job build entry mismatch'
 
 It was rescued because the BuildQueue.id == 1 isn't related to
@@ -94,7 +87,7 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
 
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Slave', LostBuildingSlave())
-    >>> lostbuilding_builder.rescueIfLost(buildergroup.logger)
+    >>> lostbuilding_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Lost Building Slave' rescued from
     '1000-10000': 'Object not found'
 
@@ -102,7 +95,7 @@ Then a lost slave in status 'WAITING':
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
-    >>> lostwaiting_builder.rescueIfLost(buildergroup.logger)
+    >>> lostwaiting_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'Object not found'
 
 Both got rescued, as expected.
@@ -114,13 +107,13 @@ A BUILDING or WAITING slave without a build assigned in the DB will also be resc
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> lostbuilding_builder.current_build_behavior = IdleBuildBehavior()
-    >>> lostbuilding_builder.rescueIfLost(buildergroup.logger)
+    >>> lostbuilding_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000': 'No job assigned to builder'
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> lostwaiting_builder.current_build_behavior = IdleBuildBehavior()
-    >>> lostwaiting_builder.rescueIfLost(buildergroup.logger)
+    >>> lostwaiting_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'No job assigned to builder'
 
 Slave-scanner will deactivate a 'lost-building' builder that could not
@@ -129,7 +122,7 @@ be aborted appropriately.
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Broken Slave', LostBuildingBrokenSlave())
 
-    >>> lostbuilding_builder.updateStatus(buildergroup.logger)
+    >>> lostbuilding_builder.updateStatus(logger)
     WARNING:root:Lost Building Broken Slave (http://fake:0000) marked as failed due to: <Fault 8002: 'Could not abort'>
     Traceback (most recent call last):
     ...
@@ -183,7 +176,7 @@ hence certain package dependencies.
     ...     'I am giving this job back',
     ...     WaitingSlave('BuildStatus.GIVENBACK'))
 
-    >>> buildergroup.builders = [
+    >>> unused_builders_why_why_why = [
     ...     builder1, builder2, builder3, builder4, builder5, builder6,
     ...     builder7, builder8, builder9, builder10, builder11]
 
