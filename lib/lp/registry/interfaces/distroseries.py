@@ -48,6 +48,7 @@ from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
 
 
@@ -139,7 +140,8 @@ class IDistroSeriesEditRestricted(Interface):
 
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
-    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags):
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
+    IHasBuildRecords):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
