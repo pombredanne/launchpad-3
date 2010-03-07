@@ -487,9 +487,6 @@ hr {
 #logincontrol {
     float: right;
 }
-#logincontrol a:hover {
-    text-decoration: none;
-}
 
 /* push image a little bit down to make it line up better with the text */
 #logincontrol img {
