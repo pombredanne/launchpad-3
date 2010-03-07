@@ -14,17 +14,17 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
-from canonical.launchpad.interfaces.launchpad import NotFoundError
-from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.scripts.base import (
+    LaunchpadCronScript, LaunchpadScriptFailure)
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+from lp.soyuz.model.pas import BuildDaemonPackagesArchSpecific
 
 # XXX cprov 2009-04-16: This function should live in
 # lp.registry.interfaces.distroseries. It cannot be done right now
