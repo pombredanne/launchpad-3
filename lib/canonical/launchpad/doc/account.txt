@@ -16,7 +16,6 @@ implements the IAccountSet interface.
     >>> from canonical.launchpad.interfaces.account import (
     ...     IAccount, IAccountSet)
     >>> from lp.registry.interfaces.person import IPerson
-    >>> from canonical.launchpad.interfaces import IAccount, IAccountSet
 
     >>> account_set = getUtility(IAccountSet)
     >>> verifyObject(IAccountSet, account_set)
