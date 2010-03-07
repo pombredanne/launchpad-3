@@ -86,7 +86,7 @@
         <div class="yui-g">
           <div class="yui-u first">
             <div class="homepage-whatslaunchpad"
-                 tal:condition="not:view/user">
+                 tal:condition="not:view/user" tal:content="cache:anonymous">
               <h2><span class="launchpad-gold">Launchpad</span> is a software collaboration platform that provides:</h2>
               <ul tal:define="apphomes view/apphomes">
               <li><a tal:attributes="href apphomes/bugs"><img src="/@@/bug" alt="" /></a>
@@ -117,15 +117,15 @@
               <h2>Recent Launchpad blog posts</h2>
               <ul>
                 <li class="news">
+                  <a href="http://blog.launchpad.net/?p=1356">
+                  Finding and managing patches</a><span class="registered"> &ndash; 03 Mar 2010</span><br />
+                  Pick the low-hanging fruit. Launchpad now makes it easy to find and work with all bug
+                  patches associated with a project or package.
+                </li>
+                <li class="news">
                   <a href="http://blog.launchpad.net/?p=1316">
                   Measuring bug heat</a><span class="registered"> &ndash; 27 Jan 2010</span><br />
                   Launchpad shows a new calculated measure of a bug's importance to help make triage easier.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net/?p=1311">
-                  Improved bug patch notifications</a><span class="registered"> &ndash; 27 Jan 2010</span><br />
-                  Bug listings now highlight bugs that have patches. Launchpad also emails you when a new patch is
-                  added to bugs you care about.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/general/anonymous-access-to-the-launchpad-web-service-api">
@@ -159,7 +159,7 @@
               <input id="text" type="text" name="field.text" size="25%" />
               <input id="search" type="submit" value="Search Launchpad" />
             </form>
-            <div id="homepage-stats">
+            <div id="homepage-stats" tal:content="cache:public, 1 hour">
               <strong class="registry-stat"
                 tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,
               <strong class="bugs-stat"
@@ -182,7 +182,8 @@
               </tal:logged_out>You can test Launchpad's functionality
               in our sandbox environment.
               (<a href="/+help/home-page-staging-help.html" target="help">What's this?</a>)<br />
-              <tal:logged_in condition="view/user" omit-tag="">
+              <tal:logged_in condition="view/user" omit-tag=""
+                  tal:content="cache:public">
                 If you're ready, you can:
                 <ul tal:define="apphomes view/apphomes">
                   <li><a href="https://help.launchpad.net/">
@@ -207,7 +208,10 @@
               </tal:logged_in>
             </div>
 
-            <div id="homepage-featured" class="homepage-portlet">
+            <div id="homepage-featured" class="homepage-portlet"
+                tal:content="cache:anonymous, 1 hour">
+              <tal:cache
+                  tal:content="cache:public, 5 minutes" tal:omit-tag="">
               <h2>Featured projects</h2>
 
               <div class="featured-project-top"
@@ -231,9 +235,10 @@
                   </li>
                 </ul>
               </div>
+              </tal:cache>
 
               <ul class="horizontal">
-                <li>
+                <li tal:content="cache:public, 1 hour">
                   <strong><a href="/projects">Browse all
                     <tal:count content="view/project_count">42</tal:count>
                     projects</a>!</strong>

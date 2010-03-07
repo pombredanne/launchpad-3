@@ -194,7 +194,8 @@ class OpenIDLogin(LaunchpadView):
         # they started the login process (i.e. the current URL without the
         # '+login' bit). To do that we encode that URL as a query arg in the
         # return_to URL passed to the OpenID Provider
-        starting_url = urllib.urlencode([('starting_url', self.starting_url)])
+        starting_url = urllib.urlencode(
+            [('starting_url', self.starting_url.encode('utf-8'))])
         trust_root = allvhosts.configs['mainsite'].rooturl
         return_to = urlappend(trust_root, '+openid-callback')
         return_to = "%s?%s" % (return_to, starting_url)
