@@ -31,6 +31,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
@@ -66,7 +67,7 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet

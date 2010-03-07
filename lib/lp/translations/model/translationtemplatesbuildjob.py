@@ -21,9 +21,9 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IBranchJob, IRosettaUploadJobSource
 from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
 from lp.translations.pottery.detect_intltool import is_intltool_structure

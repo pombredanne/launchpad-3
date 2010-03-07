@@ -56,7 +56,7 @@ Set IBuilder.builderok of all present builders:
 
 Clean up previous BuildQueue results from sampledata:
 
-    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+    >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> lost_job = getUtility(IBuildQueueSet).get(1)
     >>> lost_job.builder.name
     u'bob'
@@ -181,7 +181,7 @@ buildqueue record, so the build was eliminated:
 
     >>> BuilddSlaveTestSetup().tearDown()
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> build.buildstate = BuildStatus.FAILEDTOBUILD
     >>> job.destroySelf()
     >>> flush_database_updates()

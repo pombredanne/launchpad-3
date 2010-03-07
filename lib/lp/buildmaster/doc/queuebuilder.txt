@@ -19,7 +19,8 @@ able to:
 Import the bunch of required database classes:
 
     >>> from canonical.launchpad.database import (
-    ...      Build, BuildQueue, DistroArchSeries, PocketChroot)
+    ...      Build, DistroArchSeries, PocketChroot)
+    >>> from lp.buildmaster.model.buildqueue import BuildQueue 
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from canonical.launchpad.interfaces import (
@@ -231,7 +232,8 @@ distroseries (see bug 181328).
     >>> copied_pub = pub_failed.copyTo(
     ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.soyuz.interfaces.build import IBuildSet
     >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)

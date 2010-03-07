@@ -21,6 +21,7 @@ from storm.locals import And, Desc, In, Select, SQL, Store
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.lazr.utils import smartquote
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.model.bug import get_bug_tags_open_count
@@ -48,7 +49,6 @@ from lp.soyuz.model.sourcepackagerelease import (
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates

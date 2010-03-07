@@ -15,29 +15,26 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
 
-from zope.component import getSiteManager, getUtility
-
-from zope.interface import implements
-
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
 from storm.expr import In, Join, LeftJoin
 from storm.store import Store
+from zope.component import getSiteManager, getUtility
+from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 def normalize_virtualization(virtualized):
@@ -71,7 +68,7 @@ def get_builder_data():
         GROUP BY processor, virtualized;
     """
     results = store.execute(builder_data).get_all()
-    builders_in_total = builders_for_job = virtualized_total = 0
+    builders_in_total = virtualized_total = 0
 
     builder_stats = defaultdict(int)
     for processor, virtualized, count in results:
