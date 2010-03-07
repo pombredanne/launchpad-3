@@ -350,10 +350,13 @@ class IBuilderSet(Interface):
         :param txn: A zopeless transaction object which is currently used by
             legacy code that we are in the process of removing. DO NOT add
             additional uses of this parameter.
-        :return: A lp.buildmaster.master.BuilddMaster instance. This is
-            temporary and once the dispatchBuilds method no longer requires
-            a used instance this return parameter will be dropped.
         """
+
+    def checkBuilders(logger, txn):
+        """Update the status of all builders and commit."""
+
+    def scanActiveBuilders(logger, txn):
+        """Scan all active builders, updating the current build jobs."""
 
     def getBuildersForQueue(processor, virtualized):
         """Return all builders for given processor/virtualization setting."""

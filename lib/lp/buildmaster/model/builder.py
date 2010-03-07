@@ -35,7 +35,6 @@ from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
-from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
@@ -48,7 +47,6 @@ from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.helpers import filenameToContentType
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
@@ -726,16 +724,38 @@ class BuilderSet(object):
         """See IBuilderSet."""
         logger.info("Slave Scan Process Initiated.")
 
-        buildMaster = BuilddMaster(logger, txn)
-
         logger.info("Setting Builders.")
-        buildMaster.checkBuilders()
+        self.checkBuilders(logger, txn)
 
         logger.info("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve
         # builds where they are completed
-        buildMaster.scanActiveBuilders()
-        return buildMaster
+        self.scanActiveBuilders(logger, txn)
+
+    def checkBuilders(self, logger, txn):
+        """Set up the builders."""
+        for builder in self:
+            # XXX Robert Collins 2007-05-23 bug=31546: builders that are not
+            # 'ok' are not worth rechecking here for some currently
+            # undocumented reason. This also relates to bug #30633.
+            if builder.builderok:
+                builder.updateStatus(logger)
+
+        txn.commit()
+
+    def scanActiveBuilders(self, logger, txn):
+        """Collect informations/results of current build jobs."""
+
+        queueItems = getUtility(IBuildQueueSet).getActiveBuildJobs()
+
+        logger.debug(
+            "scanActiveBuilders() found %d active build(s) to check"
+            % queueItems.count())
+
+        build_set = getUtility(IBuildSet)
+        for job in queueItems:
+            job.builder.updateBuild(job)
+            txn.commit()
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""

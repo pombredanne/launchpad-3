@@ -278,7 +278,7 @@ class SlaveScanner(LaunchpadCronScript):
                 "Unhandled arguments %s" % repr(self.args))
 
         builder_set = getUtility(IBuilderSet)
-        buildMaster = builder_set.pollBuilders(self.logger, self.txn)
+        builder_set.pollBuilders(self.logger, self.txn)
 
         self.logger.info("Dispatching Jobs.")
 

@@ -9,9 +9,7 @@ Set up build environment.
     >>> logger = logging.getLogger()
     >>> logger.setLevel(logging.CRITICAL)
 
-    >>> from lp.buildmaster.master import BuilddMaster
     >>> from canonical.buildd.tests import BuilddSlaveTestSetup
-    >>> bm = BuilddMaster(logger, transaction)
     >>> BuilddSlaveTestSetup().setUp()
 
     >>> from canonical.librarian.interfaces import ILibrarianClient
@@ -33,7 +31,10 @@ release.
     >>> archdistroseries = ubuntu.currentseries.nominatedarchindep
     >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
     >>> pc = archdistroseries.addOrUpdateChroot(chroot=chroot)
-    >>> bm.checkBuilders()
+
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> getUtility(IBuilderSet).checkBuilders(logger, transaction)
+
     >>> processor = archdistroseries.processorfamily.processors[0]
 
 Make a builder to process our build request.
