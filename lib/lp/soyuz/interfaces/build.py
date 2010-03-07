@@ -312,6 +312,13 @@ class IBuildSet(Interface):
         build queue entry. If not found, return None.
         """
 
+    def getQueueEntriesForBuildIDs(build_ids):
+        """Return the IBuildQueue instances for the IBuild IDs at hand.
+
+        Retrieve the build queue and related builder rows associated with the
+        builds in question where they exist.
+        """
+
 
 class IBuildRescoreForm(Interface):
     """Form for rescoring a build."""

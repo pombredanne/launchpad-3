@@ -1062,3 +1062,21 @@ class BuildSet:
             BuildQueue.job == queue_entry.job)
 
         return result_set.one()
+
+    def getQueueEntriesForBuildIDs(self, build_ids):
+        """See `IBuildSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        origin = (
+            BuildPackageJob,
+            Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
+            Join(Build, BuildPackageJob.build == Build.id),
+            LeftJoin(
+                Builder,
+                BuildQueue.builderID == Builder.id),
+            )
+        result_set = store.using(*origin).find(
+            (BuildQueue, Builder, BuildPackageJob),
+            In(Build.id, build_ids))
+
+        return result_set

@@ -533,25 +533,3 @@ class BuildQueueSet(object):
             orderBy=['-BuildQueue.lastscore'])
 
         return candidates
-
-    def getForBuilds(self, build_ids):
-        """See `IBuildQueueSet`."""
-        # Avoid circular import problem.
-        from lp.soyuz.model.build import Build
-        from lp.buildmaster.model.builder import Builder
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        origin = (
-            BuildPackageJob,
-            Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
-            Join(Build, BuildPackageJob.build == Build.id),
-            LeftJoin(
-                Builder,
-                BuildQueue.builderID == Builder.id),
-            )
-        result_set = store.using(*origin).find(
-            (BuildQueue, Builder, BuildPackageJob),
-            In(Build.id, build_ids))
-
-        return result_set
