@@ -319,6 +319,16 @@ class IBuildSet(Interface):
         builds in question where they exist.
         """
 
+    def calculateCandidates(archseries):
+        """Return the BuildQueue records for the given archseries's Builds.
+
+        Returns a selectRelease of BuildQueue items for sorted by descending
+        'lastscore' for Builds within the given archseries.
+
+        'archseries' argument should be a list of DistroArchSeries and it is
+        asserted to not be None/empty.
+        """
+
 
 class IBuildRescoreForm(Interface):
     """Form for rescoring a build."""

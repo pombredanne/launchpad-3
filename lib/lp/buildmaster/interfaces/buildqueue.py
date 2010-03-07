@@ -144,13 +144,3 @@ class IBuildQueueSet(Interface):
 
     def getActiveBuildJobs():
         """Return All active Build Jobs."""
-
-    def calculateCandidates(archseries):
-        """Return the BuildQueue records for the given archseries.
-
-        Returns a selectRelease of BuildQueue items sorted by descending
-        'lastscore' within the given archseries.
-
-        'archseries' argument should be a list of DistroArchSeries and it is
-        asserted to not be None/empty.
-        """

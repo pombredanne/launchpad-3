@@ -1080,3 +1080,26 @@ class BuildSet:
             In(Build.id, build_ids))
 
         return result_set
+
+    def calculateCandidates(self, archseries):
+        """See `IBuildSet`."""
+        if not archseries:
+            raise AssertionError("Given 'archseries' cannot be None/empty.")
+
+        arch_ids = [d.id for d in archseries]
+
+        query = """
+           Build.distroarchseries IN %s AND
+           Build.buildstate = %s AND
+           BuildQueue.job_type = %s AND
+           BuildQueue.job = BuildPackageJob.job AND
+           BuildPackageJob.build = build.id AND
+           BuildQueue.builder IS NULL
+        """ % sqlvalues(
+            arch_ids, BuildStatus.NEEDSBUILD, BuildFarmJobType.PACKAGEBUILD)
+
+        candidates = BuildQueue.select(
+            query, clauseTables=['Build', 'BuildPackageJob'],
+            orderBy=['-BuildQueue.lastscore'])
+
+        return candidates
