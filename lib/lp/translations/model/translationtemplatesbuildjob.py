@@ -35,6 +35,9 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
     Implementation-wise, this is actually a `BranchJob`.
     """
     implements(IBranchJob, IBuildFarmJob)
+
+    class_job_type = BranchJobType.TRANSLATION_TEMPLATES_BUILD
+
     classProvides(
         ISpecificBuildFarmJobClass, ITranslationTemplatesBuildJobSource)
 

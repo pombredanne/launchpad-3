@@ -265,7 +265,7 @@ private one and the view the page again.
     >>> mark_private_ppa = factory.makeArchive(
     ...     owner=mark, name="p3a", distribution=ubuntu, private=True)
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(source1_mark.secure_record).archive = (
+    >>> removeSecurityProxy(source1_mark).archive = (
     ...     mark_private_ppa)
     >>> logout()
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
@@ -288,7 +288,7 @@ his private one:
     >>> login('admin@canonical.com')
     >>> cprov_private_ppa = factory.makeArchive(
     ...     owner=cprov, name="p3a", distribution=ubuntu, private=True)
-    >>> removeSecurityProxy(source1.secure_record).archive = (
+    >>> removeSecurityProxy(source1).archive = (
     ...     cprov_private_ppa)
     >>> source1.sourcepackagerelease.upload_archive = cprov_private_ppa
     >>> logout()
@@ -310,7 +310,7 @@ Now we'll publish it in the primary archive.
     ...     ArchivePurpose.PRIMARY)
     >>> source1_ubuntu = source1.copyTo(
     ...     source1.distroseries, source1.pocket, primary)
-    >>> source1_ubuntu.secure_record.setPublished()
+    >>> source1_ubuntu.setPublished()
     >>> flush_database_updates()
     >>> logout()
 

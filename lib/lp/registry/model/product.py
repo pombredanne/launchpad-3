@@ -16,10 +16,9 @@ import operator
 import datetime
 import calendar
 import pytz
-import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
-from storm.locals import And, Desc, Join, SQL, Store, Unicode
+from storm.locals import And, Desc, Int, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -250,6 +249,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_rosetta', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
+    max_bug_heat = Int()
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -1090,7 +1090,7 @@ class ProductSet:
         if registrant is None:
             registrant = owner
         if licenses is None:
-            licenses = sets.Set()
+            licenses = set()
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,

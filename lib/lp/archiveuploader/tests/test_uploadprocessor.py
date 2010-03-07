@@ -490,8 +490,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         queue_item.setAccepted()
         pubrec = queue_item.sources[0].publish(self.log)
-        pubrec.secure_record.status = PackagePublishingStatus.PUBLISHED
-        pubrec.secure_record.datepublished = UTC_NOW
+        pubrec.status = PackagePublishingStatus.PUBLISHED
+        pubrec.datepublished = UTC_NOW
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
@@ -562,7 +562,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # the copy archive ancestry override later.
         restricted = getUtility(IComponentSet)["restricted"]
         for pub in bar_bin_pubs:
-            pub.secure_record.component = restricted
+            pub.component = restricted
 
         # Create a COPY archive for building in non-virtual builds.
         uploader = getUtility(IPersonSet).getByName('name16')

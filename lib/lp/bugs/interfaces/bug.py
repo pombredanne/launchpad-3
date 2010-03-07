@@ -15,6 +15,7 @@ __all__ = [
     'IBugBecameQuestionEvent',
     'IBugDelta',
     'IBugSet',
+    'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
@@ -346,6 +347,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     has_patches = Attribute("Does this bug have any patches?")
 
+    latest_patch_uploaded = exported(
+        Datetime(
+            title=_('Date when the most recent patch was uploaded.'),
+            required=False, readonly=True))
+
+    latest_patch = Attribute("The most recent patch of this bug.")
+
     @operation_parameters(
         subject=optional_message_subject_field(),
         content=copy_field(IMessage['content']))
@@ -500,6 +508,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
         :owner: An IPerson.
         :data: A file-like object, or a `str`.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
+    def linkAttachment(owner, file_alias, comment, is_patch=False,
+                       description=None):
+        """Link an `ILibraryFileAlias` to this bug.
+
+        :owner: An IPerson.
+        :file_alias: The `ILibraryFileAlias` to link to this bug.
         :description: A brief description of the attachment.
         :comment: An IMessage or string.
         :filename: A string.
@@ -1012,6 +1032,19 @@ class IBugSet(Interface):
         # XXX 2010-01-08 gmb bug=505850:
         #     Note, this method should go away when we have a proper
         #     permissions system for scripts.
+
+
+class IFileBugData(Interface):
+    """A class containing extra data to be used when filing a bug."""
+
+    initial_summary = Attribute("The initial summary for the bug.")
+    private = Attribute("Whether the bug should be private.")
+    extra_description = Attribute("A longer description of the bug.")
+    initial_tags = Attribute("The initial tags for the bug.")
+    subscribers = Attribute("The initial subscribers for the bug.")
+    comments = Attribute("Comments to add to the bug.")
+    attachments = Attribute("Attachments to add to the bug.")
+    hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
 
 
 class InvalidBugTargetType(Exception):

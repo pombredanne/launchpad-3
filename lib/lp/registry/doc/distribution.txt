@@ -27,6 +27,12 @@ To retrieve a specific distribution, use IDistributionSet.get:
     >>> print ubuntu.name
     ubuntu
 
+The distribution has a useful string representation containing its display
+name in quotes and its name in parentheses.
+
+    >>> ubuntu
+    <Distribution 'Ubuntu' (ubuntu)>
+
 Or, to grab one by name, use either getByName() or __getitem__().  They both
 can be used to look up distributions by their aliases too.
 

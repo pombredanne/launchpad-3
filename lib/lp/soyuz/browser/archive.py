@@ -1791,7 +1791,7 @@ class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
                    'buildd_secret', 'authorized_size', 'relative_build_score',
-                   'external_dependencies']
+                   'external_dependencies', 'arm_builds_allowed']
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
 

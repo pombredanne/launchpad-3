@@ -34,7 +34,10 @@ from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.archiveuploader.nascentuploadfile import (
     UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
@@ -556,7 +559,36 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         self.logger.debug("Done")
 
-    def storeInDatabase(self):
+    def findBuild(self):
+        """Find and return the SourcePackageRecipeBuild, if one is specified.
+
+        If by any chance an inconsistent build was found this method will
+        raise UploadError resulting in a upload rejection.
+        """
+        build_id = getattr(self.policy.options, 'buildid', None)
+        if build_id is None:
+            return None
+
+        build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
+
+        # The master verifies the status to confirm successful upload.
+        build.buildstate = BuildStatus.FULLYBUILT
+        # If this upload is successful, any existing log is wrong and
+        # unuseful.
+        build.upload_log = None
+
+        # Sanity check; raise an error if the build we've been
+        # told to link to makes no sense.
+        if (build.pocket != self.policy.pocket or
+            build.distroseries != self.policy.distroseries or
+            build.archive != self.policy.archive):
+            raise UploadError(
+                "Attempt to upload source specifying "
+                "recipe build %s, where it doesn't fit." % build.id)
+
+        return build
+
+    def storeInDatabase(self, build):
         """Store DSC information as a SourcePackageRelease record.
 
         It reencodes all fields extracted from DSC, the simulated_changelog
@@ -601,6 +633,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             changelog_entry=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,
+            source_package_recipe_build=build,
             copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
             )

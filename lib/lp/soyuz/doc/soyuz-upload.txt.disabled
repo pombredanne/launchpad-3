@@ -534,8 +534,9 @@ Now we process the accepted queue items, one more time.
 These packages must now be in the publishing history. Let's check it.
 
     >>> from canonical.launchpad.database import (
-    ...    SecureSourcePackagePublishingHistory as SSPPH)
+    ...    SourcePackagePublishingHistory as SSPPH)
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
     >>> package_names.sort()
     >>> for name in package_names:
     ...     spn = SourcePackageName.selectOneBy(name=name)

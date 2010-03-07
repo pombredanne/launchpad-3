@@ -259,7 +259,7 @@ in Launchpad:
     True
 
     >>> moin_change = read_test_message('moin-change.txt')
-    >>> moin_change['X-Original-To'] = "notifications@%s" % (
+    >>> moin_change['To'] += ", notifications@%s" % (
     ...     config.launchpad.specs_domain)
     >>> moin_change['Sender'] = 'webmaster@ubuntu.com'
 

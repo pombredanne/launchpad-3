@@ -1,13 +1,15 @@
-= Project and the Answer Tracker =
+===============================
+Projects and the answer tracker
+===============================
 
-Although question cannot be filed directly against projects, IProjectGroup in
-Launchpad also provides the IQuestionCollection and
+Although question cannot be filed directly against project groups,
+IProjectGroup in Launchpad also provides the IQuestionCollection and
 ISearchableByQuestionOwner interfaces.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.answers.interfaces.questioncollection import (
-    ...     IQuestionCollection, ISearchableByQuestionOwner)
+    ...     ISearchableByQuestionOwner, IQuestionCollection)
 
     >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> verifyObject(IQuestionCollection, mozilla_project)
@@ -15,39 +17,40 @@ ISearchableByQuestionOwner interfaces.
     >>> verifyObject(ISearchableByQuestionOwner, mozilla_project)
     True
 
-== searchQuestions() ==
 
-This means that it is possible to search for all questions filed against
-products in a project using the project searchQuestions() method.
+Questions filed against project in a project group
+==================================================
 
-    # Add a question to thunderbird.
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+You can search for all questions filed against projects in a project using the
+project group's searchQuestions() method.
+
     >>> from lp.registry.interfaces.product import IProductSet
+
     >>> login('test@canonical.com')
     >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
-    >>> sample_person = getUtility(ILaunchBag).user
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> question = thunderbird.newQuestion(
-    ...     sample_person, "SVG attachments aren't displayed",
+    ...     sample_person,
+    ...     "SVG attachments aren't displayed ",
     ...     "It would be a nice feature if SVG attachments could be displayed"
-    ...     "inlined.")
+    ...     " inlined.")
 
     >>> for question in mozilla_project.searchQuestions(search_text='svg'):
     ...     print question.title, question.target.displayname
     SVG attachments aren't displayed            Mozilla Thunderbird
     Problem showing the SVG demo on W3C site    Mozilla Firefox
 
-In the case were a Project has no Products, then we can expect no 
-possible questions.
+In the case where a project group has no projects, there are no results.
 
     >>> aaa_project = getUtility(IProjectGroupSet).getByName('aaa')
-    >>> [q for question in aaa_project.searchQuestions()]
+    >>> list(aaa_project.searchQuestions())
     []
 
-Questions can be searched by all the standard searchQuestions() parameters
-(consult questiontarget.txt for the full details.)
+Questions can be searched by all the standard searchQuestions() parameters.
+See questiontarget.txt for the full details.
 
     >>> from lp.answers.interfaces.questionenums import (
-    ...     QuestionStatus, QuestionSort)
+    ...     QuestionSort, QuestionStatus)
     >>> for question in mozilla_project.searchQuestions(
     ...     owner=sample_person, status=QuestionStatus.OPEN,
     ...     sort=QuestionSort.OLDEST_FIRST):
@@ -55,20 +58,21 @@ Questions can be searched by all the standard searchQuestions() parameters
     Problem showing the SVG demo on W3C site    Mozilla Firefox
     SVG attachments aren't displayed            Mozilla Thunderbird
 
-== getQuestionLanguages() ==
 
-The getQuestionLanguages() returns the set of languages that is used by
-all the questions in the project products.
+Languages
+=========
 
-    >>> sorted(language.code
-    ...        for language in mozilla_project.getQuestionLanguages())
-    [u'en', u'pt_BR']
+getQuestionLanguages() returns the set of languages that is used by all the
+questions in the project group's projects.
 
-(The firefox product has one question created in Brazilian Portuguese.)
+    # The Firefox project group has one question created in Brazilian
+    # Portuguese. 
+    >>> print ', '.join(
+    ...     sorted(language.code
+    ...            for language in mozilla_project.getQuestionLanguages()))
+    en, pt_BR
 
-In the case where a Project has no Products, language questions will 
-still return and empty set.
+In the case where a project group has no projects, there are no results.
 
-    >>> [language.code for language in aaa_project.getQuestionLanguages()]
+    >>> list(aaa_project.getQuestionLanguages())
     []
-

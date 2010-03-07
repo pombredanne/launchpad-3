@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
 import apt_pkg
-from cStringIO import StringIO
 import datetime
 import logging
 import operator
@@ -32,9 +31,8 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.helpers import (
-     get_contact_email_addresses, filenameToContentType, get_email_template)
+     get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.mail import (
     simple_sendmail, format_address)
 from canonical.launchpad.webapp import canonical_url
@@ -103,13 +101,6 @@ class Build(BuildBase, SQLBase):
             BuildPackageJob.job == BuildQueue.jobID,
             BuildPackageJob.build == self.id)
         return results.one()
-
-    @property
-    def upload_log_url(self):
-        """See `IBuild`."""
-        if self.upload_log is None:
-            return None
-        return self._getProxiedFileURL(self.upload_log)
 
     def _getLatestPublication(self):
         store = Store.of(self)
@@ -516,6 +507,9 @@ class Build(BuildBase, SQLBase):
 
         return estimated_duration
 
+    def verifySuccessfulUpload(self):
+        return self.binarypackages.count() > 0
+
     def notify(self, extra_info=None):
         """See `IBuildBase`.
 
@@ -666,27 +660,6 @@ class Build(BuildBase, SQLBase):
             simple_sendmail(
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
-
-    def storeUploadLog(self, content):
-        """See `IBuildBase`."""
-        # The given content is stored in the librarian, restricted as
-        # necessary according to the targeted archive's privacy.  The content
-        # object's 'upload_log' attribute will point to the
-        # `LibrarianFileAlias`.
-
-        assert self.upload_log is None, (
-            "Upload log information already exist and cannot be overridden.")
-
-        filename = 'upload_%s_log.txt' % self.id
-        contentType = filenameToContentType(filename)
-        file_size = len(content)
-        file_content = StringIO(content)
-        restricted = self.archive.private
-
-        library_file = getUtility(ILibraryFileAliasSet).create(
-            filename, file_size, file_content, contentType=contentType,
-            restricted=restricted)
-        self.upload_log = library_file
 
     def _getDebByFileName(self, filename):
         """Helper function to get a .deb LFA in the context of this build."""

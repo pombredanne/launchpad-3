@@ -149,7 +149,7 @@ ubuntu/breezy-autotest/i386, which is empty:
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.model.publishing import (
-    ...     SecureBinaryPackagePublishingHistory)
+    ...     BinaryPackagePublishingHistory)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -164,7 +164,7 @@ as possible.
     >>> at_warty_i386 = warty['i386'].getBinaryPackage('at')
     >>> sample_bpr = at_warty_i386.currentrelease.binarypackagerelease
 
-    >>> SecureBinaryPackagePublishingHistory.selectBy(
+    >>> BinaryPackagePublishingHistory.selectBy(
     ...     distroarchseries=bt_i386, binarypackagerelease=sample_bpr).count()
     0
 
