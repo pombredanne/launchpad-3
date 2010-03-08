@@ -61,3 +61,6 @@ lib/canonical/buildd/launchpad-files
 .memcache.pid
 ./pipes
 tags.new
+wadl-development-1.0.xml
+wadl-development-beta.xml
+wadl-development-devel.xml
