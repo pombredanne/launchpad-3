@@ -77,7 +77,7 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplate
-
+from lp.translations.interfaces.pofile import IPOFile
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
 IBranch['linked_bugs'].value_type.schema = IBug
@@ -292,9 +292,10 @@ patch_choice_parameter_type(
     PackageUploadCustomFormat)
 patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
+patch_collection_property(
+    IDistroSeries, 'all_potemplates', IPOTemplate)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
-IDistroSeries['all_potemplates'].value_type.schema=IPOTemplate
 
 
 # IDistroArchSeries
@@ -377,3 +378,7 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+
+# IPOTemplate
+patch_collection_property(
+    IPOTemplate, 'pofiles', IPOFile)

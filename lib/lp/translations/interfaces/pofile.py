@@ -19,6 +19,9 @@ from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleTerm, SimpleVocabulary)
 
+from lazr.restful.declarations import (
+    exported, export_as_webservice_entry)
+
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
@@ -33,8 +36,12 @@ from lp.translations.interfaces.translationsperson import (
 class IPOFile(IRosettaStats):
     """A translation file."""
 
-    id = Int(
-        title=_('The translation file id.'), required=True, readonly=True)
+    export_as_webservice_entry(
+        singular_name="pofile",
+        plural_name="pofiles")
+
+    id = exported(Int(
+        title=_('The translation file id.'), required=True, readonly=True))
 
     potemplate = Object(
         title=_('The translation file template.'),

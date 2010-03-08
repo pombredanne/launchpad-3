@@ -9,8 +9,7 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_as_webservice_collection,
-    collection_default_content, exported)
+    exported, export_as_webservice_entry)
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -21,6 +20,8 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
+from lp.registry.interfaces.sourcepackage import (
+    ISourcePackage)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from canonical.launchpad import _
@@ -122,6 +123,12 @@ class IHasTranslationTemplates(Interface):
         """
 
 
+class TranslationTargetChoice():
+    """Posible translation tagets for a template."""
+    productseries = IProductSeries
+    sourcepackage = ISourcePackage
+
+
 class IPOTemplate(IRosettaStats):
     """A translation template."""
 
@@ -168,7 +175,7 @@ class IPOTemplate(IRosettaStats):
             "If unchecked, people can no longer change the template's "
             "translations."),
         required=True,
-        default=True))
+        default=True), exported_as='active')
 
     owner = exported(Choice(
         title=_("Owner"),
@@ -197,6 +204,13 @@ class IPOTemplate(IRosettaStats):
         required=False,
         vocabulary="SourcePackageName")
 
+    sourcepackage_component_name = exported(TextLine(
+        title=_("Source package component name"),
+        description=_(
+            "The component name of the source package to which this"
+            " template belongs."),
+        readonly=True))
+
     from_sourcepackagename = Choice(
         title=_("From Source Package Name"),
         description=_(
@@ -223,7 +237,7 @@ class IPOTemplate(IRosettaStats):
             "Check this box if this template is part of a language pack so "
             "its translations should be exported that way."),
         required=True,
-        default=False))
+        default=False), exported_as='exported_in_languagepacks')
 
     path = exported(TextLine(
         title=_(
@@ -237,7 +251,7 @@ class IPOTemplate(IRosettaStats):
     source_file_format = exported(Choice(
         title=_("File format for the source file"),
         required=False,
-        vocabulary=TranslationFileFormat))
+        vocabulary=TranslationFileFormat), exported_as='format')
 
     priority = exported(Int(
         title=_('Priority'),
@@ -273,8 +287,14 @@ class IPOTemplate(IRosettaStats):
             '''),
         vocabulary='TranslationPermission')
 
-    pofiles = Attribute(
-        _('All `IPOFile` that exist for this template.'))
+#    pofiles = Attribute("All `IPOFile` that exist for this template.")
+
+    pofiles = exported(
+        CollectionField(
+            title=_("All `IPOFile` that exist for this template."),
+            # Really IPOFile, see _schema_circular_imports.py.
+            value_type=Reference(schema=Interface)),
+        exported_as='all_pofiles')
 
     relatives_by_name = Attribute(
         _('All `IPOTemplate` objects that have the same name asa this one.'))
@@ -299,13 +319,17 @@ class IPOTemplate(IRosettaStats):
 
     distribution = Object(
         title=_(
-            'The `IDistribution` to which this translation template belongs.'
-            ),
+            'The `IDistribution` to which this translation template belongs.'),
         readonly=True, schema=IDistribution)
 
-    language_count = Int(
+    messagecount = exported(Int(
+        title=_('The number of messages for this template.'),
+        required=True, readonly=True),
+        exported_as='messages_count')
+
+    language_count = exported(Int(
         title=_('The number of languages for which we have translations.'),
-        required=True, readonly=True)
+        required=True, readonly=True), exported_as='languages_count')
 
     translationtarget = Attribute(
         _('''
@@ -315,7 +339,7 @@ class IPOTemplate(IRosettaStats):
 
     date_last_updated = exported(Datetime(
         title=_('Date for last update'),
-        required=True))
+        required=True), exported_as='last_update')
 
     uses_english_msgids = Bool(
         title=_("Uses English strings as msgids"), readonly=True,
@@ -607,9 +631,9 @@ class IPOTemplateSubset(Interface):
     def getClosestPOTemplate(path):
         """Return a `IPOTemplate` with a path closer to given path, or None.
 
-        If there is no `IPOTemplate` with a common path with the given argument,
-        or if there are more than one `IPOTemplate` with the same common path,
-        and both are the closer ones, returns None.
+        If there is no `IPOTemplate` with a common path with the given,
+        argument or if there are more than one `IPOTemplate` with the same
+        common path, and both are the closer ones, returns None.
         """
 
     def findUniquePathlessMatch(filename):

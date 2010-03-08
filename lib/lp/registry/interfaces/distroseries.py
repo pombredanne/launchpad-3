@@ -26,7 +26,7 @@ from lazr.restful.declarations import (
     export_factory_operation, export_read_operation, exported,
     operation_parameters, operation_returns_collection_of,
     operation_returns_entry, rename_parameters_as, webservice_error)
-from lazr.restful.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (

@@ -10,3 +10,5 @@ from lp.translations.interfaces.translationimportqueue import (
 
 from lp.translations.interfaces.potemplate import (
     IPOTemplate)
+from lp.translations.interfaces.pofile import (
+    IPOFile)

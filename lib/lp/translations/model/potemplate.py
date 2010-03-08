@@ -335,15 +335,31 @@ class POTemplate(SQLBase, RosettaStats):
             distinct=True).count()
 
     @property
+    def _sourcepackage(self):
+        from lp.registry.model.sourcepackage import \
+            SourcePackage
+        if (self.distroseries is not None and
+            self.sourcepackagename is not None):
+            return SourcePackage(distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename)
+        else:
+            return None
+
+    @property
     def translationtarget(self):
         if self.productseries is not None:
             return self.productseries
         elif self.distroseries is not None:
-            from lp.registry.model.sourcepackage import \
-                SourcePackage
-            return SourcePackage(distroseries=self.distroseries,
-                sourcepackagename=self.sourcepackagename)
+            return self._sourcepackage
         raise AssertionError('Unknown POTemplate translation target')
+
+    @property
+    def sourcepackage_component_name(self):
+        """ See `IPOTemplate`."""
+        if self._sourcepackage is not None:
+            return self._sourcepackage.latest_published_component_name
+        else:
+            return None
 
     def getHeader(self):
         """See `IPOTemplate`."""
