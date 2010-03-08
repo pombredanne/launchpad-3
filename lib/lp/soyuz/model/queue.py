@@ -272,10 +272,6 @@ class PackageUpload(SQLBase):
         query %= inner_query
 
         store = IMasterStore(PackageUpload)
-
-        import pdb
-        pdb.set_trace()
-
         result_set = store.execute(query)
         known_filenames = result_set.get_all()
 
