@@ -250,7 +250,7 @@ class PackageUpload(SQLBase):
                 bpr.build IN (%s)
                 AND bpf.binarypackagerelease = bpr.id
                 AND bpf.libraryfile = lfa.id
-        """ % sqlvalues(builds)
+        """ % sqlvalues([build.id for build in builds])
         query = """
             SELECT DISTINCT lfa.filename
             FROM
