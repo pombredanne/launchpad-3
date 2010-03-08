@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Acceptance test for the translations-export-to-branch script."""
@@ -11,10 +11,12 @@ from textwrap import dedent
 
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import ZopelessAppServerLayer
 
 from lp.testing import map_branch_contents, TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 from lp.translations.scripts.translations_to_branch import (
     ExportTranslationsToBranch)
@@ -121,6 +123,18 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
         self.assertEqual(
             None, re.search("INFO\s+Committed [0-9]+ file", stderr))
+
+    def test_exportToBranches_handles_nonascii_exceptions(self):
+        # There's an exception handler in _exportToBranches that must
+        # cope well with non-ASCII exception strings.
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        boom = Exception(u'\u2639')
+        exporter._exportToBranch = FakeMethod(failure=boom)
+
+        exporter._exportToBranches([self.factory.makeProductSeries()])
+
+        self.assertEqual(1, exporter._exportToBranch.call_count)
 
 
 class TestExportToStackedBranch(TestCaseWithFactory):
