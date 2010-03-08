@@ -138,7 +138,7 @@ class BuilddMaster:
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
         self._archseries = {}
-        self._logger.info("Buildd Master has been initialised")
+        self._logger.debug("Buildd Master has been initialised")
 
     def commit(self):
         self._tm.commit()
