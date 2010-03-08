@@ -114,7 +114,7 @@ from lp.bugs.interfaces.bugtask import (
     INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
     IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
     IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -1886,7 +1886,7 @@ class BugsStatsMixin(BugsInfoMixin):
         """A count of unresolved bugs with patches."""
         return self.context.searchTasks(
             None, user=self.user,
-            status=(UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES),
+            status=UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES,
             omit_duplicates=True, has_patch=True).count()
 
 
