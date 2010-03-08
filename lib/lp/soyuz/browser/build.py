@@ -23,7 +23,6 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin, ProxiedLibraryFileAlias)
 from canonical.lazr.utils import safe_hasattr
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
