@@ -13,7 +13,7 @@ from zope.app.testing import ztapi
 from zope.app.testing.placelesssetup import PlacelessSetup
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 
 
 class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):

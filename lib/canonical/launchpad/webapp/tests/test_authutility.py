@@ -21,8 +21,9 @@ from canonical.launchpad.webapp.authentication import (
     LaunchpadPrincipal, PlacelessAuthUtility)
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.interfaces import (
-    IAccount, IPasswordEncryptor, IPerson)
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
+from lp.registry.interfaces.person import IPerson
 
 
 class DummyPerson(object):

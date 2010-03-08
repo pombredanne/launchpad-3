@@ -20,8 +20,9 @@ from zope.testing.cleanup import cleanUp
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.interfaces import (
-    IDistributionSet, ILanguageSet, IPersonSet)
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.testing import browser

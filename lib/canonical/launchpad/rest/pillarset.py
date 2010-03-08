@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IPillarNameSet
+from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 from lazr.restful.interfaces import ITopLevelEntryLink

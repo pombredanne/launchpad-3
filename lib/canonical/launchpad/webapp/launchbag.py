@@ -16,12 +16,21 @@ from zope.security import management
 from zope import thread
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.interfaces import (
-        IAccount, IBug, IDistribution, IDistroSeries, IPerson,
-        IProjectGroup, IProduct, ISourcePackage, IDistroArchSeries,
-        ISpecification, IBugTask, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+
 
 _utc_tz = pytz.timezone('UTC')
 

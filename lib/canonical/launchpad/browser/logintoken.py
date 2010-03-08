@@ -44,15 +44,18 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
 
 from lp.registry.browser.team import HasRenewalPolicyMixin
-from lp.registry.interfaces.person import (
-    INewPersonForm, PersonCreationRationale)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
-from canonical.launchpad.interfaces.authtoken import IAuthToken
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
-    GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,
-    IGPGKeyValidationForm, ILoginTokenSet, IPerson, IPersonSet,
-    ITeam, LoginTokenType)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthToken, LoginTokenType)
+from canonical.launchpad.interfaces.logintoken import (    
+    IGPGKeyValidationForm, ILoginTokenSet)
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, GPGVerificationError, IGPGHandler)
+from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
+from lp.registry.interfaces.person import (
+    IPerson, IPersonSet, INewPersonForm, ITeam, PersonCreationRationale)
 
 
 UTC = pytz.UTC

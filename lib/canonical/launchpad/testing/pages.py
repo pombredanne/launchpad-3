@@ -29,9 +29,10 @@ from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
-    TeamMembershipStatus)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthConsumerSet, OAUTH_REALM)
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, stop, strip_prefix)
 from canonical.launchpad.webapp import canonical_url

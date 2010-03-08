@@ -8,7 +8,7 @@ __all__ = ['PersonRoles']
 
 from zope.interface import implements
 from zope.component import adapts, getUtility
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.launchpad import (
     IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
 
 from lp.registry.interfaces.person import IPerson

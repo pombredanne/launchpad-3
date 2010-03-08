@@ -17,7 +17,7 @@ from lp.testing import TestCase
 def test_requestapi():
     """
     >>> from canonical.launchpad.webapp.tales import IRequestAPI, RequestAPI
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.interface.verify import verifyObject
 
     >>> class FakePrincipal:

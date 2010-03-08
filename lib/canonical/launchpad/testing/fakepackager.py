@@ -23,9 +23,9 @@ from zope.component import getUtility
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.uploadpolicy import findPolicyByName
 from canonical.launchpad.ftests.keys_for_tests import import_secret_test_key
-from canonical.launchpad.interfaces import IGPGHandler
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackageUploadStatus)
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import QuietFakeLogger
 
 

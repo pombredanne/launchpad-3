@@ -12,11 +12,12 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.interfaces import IPerson, IPersonSet
-
 from lazr.restful.interfaces import (
     IJSONRequestCache, ITopLevelEntryLink)
+
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.registry.interfaces.person import IPerson, IPersonSet
+
 
 class IMeLink(ITopLevelEntryLink, ICanonicalUrlData):
     """A marker interface."""

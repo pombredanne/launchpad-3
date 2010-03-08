@@ -16,11 +16,14 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
-    IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
-    MailingListStatus, PersonalStanding, PostedMessageStatus)
-from lp.registry.interfaces.person import PersonVisibility
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.message import IMessageSet
+from lp.registry.interfaces.person import (
+    IPersonSet, PersonVisibility, PersonalStanding)
+from lp.registry.interfaces.mailinglist import (
+    IMailingListAPIView, IMailingListSet, IMessageApprovalSet,
+    MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
