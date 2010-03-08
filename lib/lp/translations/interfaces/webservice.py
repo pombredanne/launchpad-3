@@ -7,3 +7,6 @@ from lp.translations.interfaces.translationimportqueue import (
     IHasTranslationImports,
     ITranslationImportQueue,
     ITranslationImportQueueEntry)
+
+from lp.translations.interfaces.potemplate import (
+    IPOTemplate)

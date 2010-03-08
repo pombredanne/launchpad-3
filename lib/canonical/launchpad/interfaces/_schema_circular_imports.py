@@ -70,6 +70,7 @@ from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.translations.interfaces.potemplate import IPOTemplate
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
@@ -287,6 +288,8 @@ patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
+IDistroSeries['all_potemplates'].value_type.schema=IPOTemplate
+
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)

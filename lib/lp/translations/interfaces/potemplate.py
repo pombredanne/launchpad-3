@@ -7,6 +7,10 @@ from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import (
+    export_as_webservice_entry, export_as_webservice_collection,
+    collection_default_content, exported)
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -121,48 +125,52 @@ class IHasTranslationTemplates(Interface):
 class IPOTemplate(IRosettaStats):
     """A translation template."""
 
-    id = Int(
-        title=u"The translation template id.",
-        required=True, readonly=True)
+    export_as_webservice_entry(
+        singular_name='potemplate',
+        plural_name='potemplates')
 
-    name = TextLine(
+    id = exported(Int(
+        title=u"The translation template id.",
+        required=True, readonly=True))
+
+    name = exported(TextLine(
         title=_("Template name"),
         description=_("The name of this PO template, for example "
             "'evolution-2.2'. Each translation template has a "
             "unique name in its package. It's important to get this "
             "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
-        required=True)
+        required=True))
 
-    translation_domain = TextLine(
+    translation_domain = exported(TextLine(
         title=_("Translation domain"),
         description=_("The translation domain for a translation template. "
             "Used with PO file format when generating MO files for inclusion "
             "in language pack or MO tarball exports."),
-        required=True)
+        required=True))
 
-    description = Text(
+    description = exported(Text(
         title=_("Description"),
         description=_("Please provide a brief description of the content "
             "of this translation template, for example, telling translators "
             "if this template contains strings for end-users or other "
             "developers."),
-        required=False)
+        required=False))
 
     header = Text(
         title=_('Header'),
         description=_("The standard template header in its native format."),
         required=True)
 
-    iscurrent = Bool(
+    iscurrent = exported(Bool(
         title=_("Accept translations?"),
         description=_(
             "If unchecked, people can no longer change the template's "
             "translations."),
         required=True,
-        default=True)
+        default=True))
 
-    owner = Choice(
+    owner = exported(Choice(
         title=_("Owner"),
         required=True,
         description=_(
@@ -170,7 +178,7 @@ class IPOTemplate(IRosettaStats):
             "and change it's status, and can also upload new versions "
             "of the template when a new release is made or when the "
             "translation strings have been changed during development."),
-        vocabulary="ValidOwner")
+        vocabulary="ValidOwner"))
 
     productseries = Choice(
         title=_("Series"),
@@ -209,29 +217,29 @@ class IPOTemplate(IRosettaStats):
         required=False,
         vocabulary="BinaryPackageName")
 
-    languagepack = Bool(
+    languagepack = exported(Bool(
         title=_("Include translations for this template in language packs?"),
         description=_(
             "Check this box if this template is part of a language pack so "
             "its translations should be exported that way."),
         required=True,
-        default=False)
+        default=False))
 
-    path = TextLine(
+    path = exported(TextLine(
         title=_(
             "Path of the template in the source tree, including filename."),
-        required=False)
+        required=False))
 
     source_file = Object(
         title=_('Source file for this translation template'),
         readonly=True, schema=ILibraryFileAlias)
 
-    source_file_format = Choice(
+    source_file_format = exported(Choice(
         title=_("File format for the source file"),
         required=False,
-        vocabulary=TranslationFileFormat)
+        vocabulary=TranslationFileFormat))
 
-    priority = Int(
+    priority = exported(Int(
         title=_('Priority'),
         required=True,
         default=0,
@@ -240,7 +248,7 @@ class IPOTemplate(IRosettaStats):
             'there are multiple templates, and you can use this as a way '
             'of indicating which are more important and should be '
             'translated first. Pick any number - higher priority '
-            'templates will generally be listed first.'))
+            'templates will generally be listed first.')))
 
     datecreated = Datetime(
         title=_('When this translation template was created.'), required=True,
@@ -305,9 +313,9 @@ class IPOTemplate(IRosettaStats):
             This will either be an `ISourcePackage` or an `IProductSeries`.
             '''))
 
-    date_last_updated = Datetime(
+    date_last_updated = exported(Datetime(
         title=_('Date for last update'),
-        required=True)
+        required=True))
 
     uses_english_msgids = Bool(
         title=_("Uses English strings as msgids"), readonly=True,

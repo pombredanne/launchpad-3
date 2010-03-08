@@ -47,7 +47,7 @@ from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
 from canonical.launchpad import _
 
-from lazr.restful.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
     export_factory_operation,
@@ -261,6 +261,13 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
         "series.")
+
+    all_potemplates = exported(
+        CollectionField(
+            title=_("All po templates associated with this distroseries,"
+                    " ordered by priority."),
+            # Really IPOTemplates, see _schema_circular_imports.py.
+            value_type=Reference(schema=Interface)))
 
     hide_all_translations = Bool(
         title=u'Hide translations for this release', required=True,
