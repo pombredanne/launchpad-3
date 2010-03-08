@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=E0213
+
 """Interfaces for source package builds."""
 
 __metaclass__ = type
@@ -25,6 +27,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.job.interfaces.job import IJob
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class ISourcePackageRecipeBuild(IBuildBase):
@@ -48,6 +51,10 @@ class ISourcePackageRecipeBuild(IBuildBase):
     recipe = Object(
         schema=ISourcePackageRecipe, required=True,
         title=_("The recipe being built."))
+
+    source_package_release = Reference(
+        ISourcePackageRelease, title=_("The produced source package release"),
+        readonly=True)
 
 
 class ISourcePackageRecipeBuildSource(Interface):
