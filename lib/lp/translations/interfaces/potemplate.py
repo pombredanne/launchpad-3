@@ -123,12 +123,6 @@ class IHasTranslationTemplates(Interface):
         """
 
 
-class TranslationTargetChoice():
-    """Posible translation tagets for a template."""
-    productseries = IProductSeries
-    sourcepackage = ISourcePackage
-
-
 class IPOTemplate(IRosettaStats):
     """A translation template."""
 
@@ -203,13 +197,6 @@ class IPOTemplate(IRosettaStats):
             "The source package that uses this template."),
         required=False,
         vocabulary="SourcePackageName")
-
-    sourcepackage_component_name = exported(TextLine(
-        title=_("Source package component name"),
-        description=_(
-            "The component name of the source package to which this"
-            " template belongs."),
-        readonly=True))
 
     from_sourcepackagename = Choice(
         title=_("From Source Package Name"),
