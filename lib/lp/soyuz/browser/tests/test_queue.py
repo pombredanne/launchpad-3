@@ -76,8 +76,8 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.partner_queue_admin = self.factory.makePerson(
             email='partner-queue@example.org')
         getUtility(IArchivePermissionSet).newQueueAdmin(
-            distribution.getArchiveByComponent('main'),
-            self.main_queue_admin, self.main_spr.component)
+            distribution.getArchiveByComponent('partner'),
+            self.partner_queue_admin, self.partner_spr.component)
 
 
         # We need to commit to ensure the changes file exists in the
@@ -148,6 +148,45 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
             'DONE',
             getUtility(IPackageUploadSet).get(package_upload_id).status.name)
 
+    def test_partner_admin_can_accept_partner_upload(self):
+        # A person with queue admin access for partner
+        # can accept uploads to the partner archive.
+        login('partner-queue@example.org')
+        self.assertTrue(
+            self.partner_archive.canAdministerQueue(
+                self.partner_queue_admin, self.partner_spr.component))
+
+        package_upload_id = self.partner_spr.package_upload.id
+        self.form['QUEUE_ID'] = [package_upload_id]
+        request = LaunchpadTestRequest(form=self.form)
+        request.method = 'POST'
+        view = self.setupQueueView(request)
+
+        self.assertEquals(
+            'DONE',
+            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+
+    def test_partner_admin_cannot_accept_main_upload(self):
+        # A person with queue admin access for partner cannot necessarily
+        # accept uploads to main.
+        login('partner-queue@example.org')
+        self.assertFalse(
+            self.main_archive.canAdministerQueue(
+                self.partner_queue_admin, self.main_spr.component))
+
+        package_upload_id = self.main_spr.package_upload.id
+        self.form['QUEUE_ID'] = [package_upload_id]
+        request = LaunchpadTestRequest(form=self.form)
+        request.method = 'POST'
+        view = self.setupQueueView(request)
+
+        self.assertEquals(
+            "FAILED: partner-upload (You have no rights to accept "
+            "component(s) 'main')",
+            view.request.response.notifications[0].message)
+        self.assertEquals(
+            'NEW',
+            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
