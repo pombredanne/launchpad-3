@@ -218,7 +218,7 @@ class PackageUpload(SQLBase):
                 raise QueueInconsistentStateError(info)
 
         self._checkForBinariesinDestinationArchive(
-            pub.build for pub in self.builds)
+            [pub.build for pub in self.builds])
         for build in self.builds:
             try:
                 build.checkComponentAndSection()
@@ -241,16 +241,20 @@ class PackageUpload(SQLBase):
         QueueInconsistentStateError is raised containing all filenames
         that cannot be published.
         """
+        if len(builds) == 0:
+            return
+
         inner_query = """
             SELECT DISTINCT lfa.filename
             FROM
                 binarypackagefile bpf, binarypackagerelease bpr,
                 libraryfilealias lfa
             WHERE
-                bpr.build IN (%s)
+                bpr.build IN %s
                 AND bpf.binarypackagerelease = bpr.id
                 AND bpf.libraryfile = lfa.id
         """ % sqlvalues([build.id for build in builds])
+
         query = """
             SELECT DISTINCT lfa.filename
             FROM
@@ -263,12 +267,20 @@ class PackageUpload(SQLBase):
                 AND ds.distribution = %s
                 AND bpph.binarypackagerelease = bpf.binarypackagerelease
                 AND bpf.libraryfile = lfa.id
-                AND lfa.filename IN (%s)
-        """ % sqlvalues(
-            self.archive, self.distroseries.distribution, inner_query)
+                AND lfa.filename IN (%%s)
+        """ % sqlvalues(self.archive, self.distroseries.distribution)
+        query %= inner_query
+
         store = IMasterStore(PackageUpload)
+
+        import pdb
+        pdb.set_trace()
+
         result_set = store.execute(query)
         known_filenames = result_set.get_all()
+
+        # Do any of the files to be uploaded already exist in the destination
+        # archive?
         if len(known_filenames) > 0:
             filename_list = "\n\t%s".join(
                 [filename for filename in known_filenames])
