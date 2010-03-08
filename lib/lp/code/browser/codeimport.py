@@ -221,7 +221,7 @@ class NewCodeImportForm(Interface):
         description=_(
             "The URL of the git repository.  The HEAD branch will be "
             "imported."),
-        allowed_schemes=["git"],
+        allowed_schemes=["git", "http", "https"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
         allow_query=False,

@@ -1096,6 +1096,44 @@ Another way of sorting searches is by bug heat.
     1 Firefox does not support SVG [heat: 1]
 
 
+=== Ordering by patch age ===
+
+We can also sort search results by the creation time of the youngest
+patch attached to a bug.
+
+Since we have at present no bugs with patches, we use effectively
+the default sort order, by bug task ID (which is implicitly added as
+a "second level" sort order to ensure reliable sorting).
+
+    >>> params = BugTaskSearchParams(
+    ...     orderby='latest_patch_uploaded', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    26 2 Ubuntu Blackhole Trash folder
+    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+
+If we add a patch attachment to bug 2 and bug 10, they are listed first.
+
+    >>> patch_attachment_bug_2 = factory.makeBugAttachment(
+    ...     bug=bug_two, is_patch=True)
+    >>> patch_attachment_bug_10 = factory.makeBugAttachment(
+    ...     bug=bug_ten, is_patch=True)
+    >>> params = BugTaskSearchParams(
+    ...     orderby='latest_patch_uploaded', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    26 2 Ubuntu Blackhole Trash folder
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+
+
 == Searching using a flat interface ==
 
 An alternative, simplified interface for searching bug tasks is available
