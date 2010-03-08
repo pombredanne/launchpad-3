@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=E0211,E0213
 
+from __future__ import with_statement
+
 """Common build base classes."""
 
 __metaclass__ = type
@@ -30,6 +32,9 @@ from canonical.librarian.utils import copy_and_close
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.model.buildqueue import BuildQueue
+
+
+UPLOAD_LOG_FILENAME = 'uploader.log'
 
 
 class BuildBase:
@@ -96,6 +101,25 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.buildlog)
 
+    def getUploadLogContent(self, root, leaf):
+        """Retrieve the upload log contents.
+
+        :param root: Root directory for the uploads
+        :param leaf: Leaf for this particular upload
+        :return: Contents of log file or message saying no log file was found.
+        """
+        # Retrieve log file content.
+        possible_locations = (
+            'failed', 'failed-to-move', 'rejected', 'accepted')
+        for location_dir in possible_locations:
+            log_filepath = os.path.join(root, location_dir, leaf,
+                UPLOAD_LOG_FILENAME)
+            if os.path.exists(log_filepath):
+                with open(log_filepath, 'r') as uploader_log_file:
+                    return uploader_log_file.read()
+        else:
+            return 'Could not find upload log file'
+
     @property
     def upload_log_url(self):
         """See `IBuildBase`."""
@@ -161,7 +185,7 @@ class BuildBase:
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
-        uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+        uploader_logfilename = os.path.join(upload_dir, UPLOAD_LOG_FILENAME)
         uploader_command = self.getUploaderCommand(
             upload_leaf, uploader_logfilename)
         logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
@@ -239,23 +263,8 @@ class BuildBase:
             not self.verifySuccessfulUpload()):
             logger.debug("Build %s upload failed." % self.id)
             self.buildstate = BuildStatus.FAILEDTOUPLOAD
-            # Retrieve log file content.
-            possible_locations = (
-                'failed', 'failed-to-move', 'rejected', 'accepted')
-            for location_dir in possible_locations:
-                upload_final_location = os.path.join(
-                    root, location_dir, upload_leaf)
-                if os.path.exists(upload_final_location):
-                    log_filepath = os.path.join(
-                        upload_final_location, 'uploader.log')
-                    uploader_log_file = open(log_filepath)
-                    try:
-                        uploader_log_content = uploader_log_file.read()
-                    finally:
-                        uploader_log_file.close()
-                    break
-            else:
-                uploader_log_content = 'Could not find upload log file'
+            uploader_log_content = self.getUploadLogContent(root,
+                upload_leaf)
             # Store the upload_log_contents in librarian so it can be
             # accessed by anyone with permission to see the build.
             self.storeUploadLog(uploader_log_content)
