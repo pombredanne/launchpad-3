@@ -21,7 +21,6 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
 
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.puller.worker import (
     BranchLoopError, BranchMirrorer, BranchReferenceForbidden,
     PullerWorkerProtocol, StackedOnBranchNotFound,
@@ -35,7 +34,6 @@ from lp.code.enums import BranchType
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
 from lazr.uri import URI
-from canonical.testing import reset_logging
 
 
 def get_netstrings(line):
@@ -134,7 +132,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         source_tree.commit('commit message')
         # Make the directory.
         dest = get_transport(to_mirror.dest)
-        ensure_base(dest)
+        dest.create_prefix()
         dest.mkdir('.bzr')
         # 'dest' is not a branch.
         self.assertRaises(
@@ -567,6 +565,7 @@ class TestMirroredBranchPolicy(TestCase):
     """Tests specific to `MirroredBranchPolicy`."""
 
     def setUp(self):
+        super(TestMirroredBranchPolicy, self).setUp()
         self.factory = LaunchpadObjectFactory()
 
     def testNoFileURL(self):
@@ -681,11 +680,11 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.assertSentNetstrings(['startMirroring', '0'])
 
     def test_mirrorSucceeded(self):
-        # Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'.
+        # Calling 'mirrorSucceeded' sends the revids and 'mirrorSucceeded'.
         self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorSucceeded(1234)
-        self.assertSentNetstrings(['mirrorSucceeded', '1', '1234'])
+        self.protocol.mirrorSucceeded('rev1', 'rev2')
+        self.assertSentNetstrings(['mirrorSucceeded', '2', 'rev1', 'rev2'])
 
     def test_mirrorFailed(self):
         # Calling 'mirrorFailed' sends the error message.
@@ -732,17 +731,17 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         self.saved_factory = bzrlib.ui.ui_factory
+        self.disable_directory_isolation()
 
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
         bzrlib.ui.ui_factory = self.saved_factory
-        reset_logging()
 
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""
         server = HttpServer()
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        server.start_server()
+        self.addCleanup(server.stop_server)
         # The gc.collect allows the threads behind any HTTP requests to exit.
         self.addCleanup(gc.collect)
         return server

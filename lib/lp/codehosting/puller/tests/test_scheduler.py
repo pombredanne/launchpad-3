@@ -16,7 +16,7 @@ import pytz
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 
-from twisted.internet import defer, error
+from twisted.internet import defer, error, reactor, task
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -41,8 +41,7 @@ from canonical.twistedsupport.tests.test_processmonitor import (
 
 class FakePullerEndpointProxy:
 
-    def __init__(self, branch_queues=None):
-        self.branch_queues = branch_queues
+    def __init__(self):
         self.calls = []
 
     def callRemote(self, method_name, *args):
@@ -57,8 +56,8 @@ class FakePullerEndpointProxy:
     def _default(self, *args):
         return defer.succeed(None)
 
-    def _remote_getBranchPullQueue(self, branch_type):
-        return defer.succeed(self.branch_queues[branch_type])
+    def _remote_acquireBranchToPull(self, *args):
+        return defer.succeed(0)
 
     def _remote_setStackedOn(self, branch_id, stacked_on_location):
         if stacked_on_location == 'raise-branch-not-found':
@@ -69,7 +68,7 @@ class FakePullerEndpointProxy:
         return defer.succeed(None)
 
 
-class TestJobScheduler(unittest.TestCase):
+class TestJobScheduler(TrialTestCase):
 
     def setUp(self):
         self.masterlock = 'master.lock'
@@ -79,8 +78,9 @@ class TestJobScheduler(unittest.TestCase):
         if os.path.exists(self.masterlock):
             os.unlink(self.masterlock)
 
-    def makeJobScheduler(self):
-        return scheduler.JobScheduler(None, logging.getLogger())
+    def makeJobScheduler(self, branch_type_names=()):
+        return scheduler.JobScheduler(
+            FakePullerEndpointProxy(), logging.getLogger(), branch_type_names)
 
     def testManagerCreatesLocks(self):
         manager = self.makeJobScheduler()
@@ -98,6 +98,13 @@ class TestJobScheduler(unittest.TestCase):
         self.assertRaises(scheduler.LockError, anothermanager.lock)
         self.failUnless(os.path.exists(self.masterlock))
         manager.unlock()
+
+    def test_run_calls_acquireBranchToPull(self):
+        manager = self.makeJobScheduler(('HOSTED',))
+        manager.run()
+        self.assertEqual(
+            [('acquireBranchToPull', ('HOSTED',))],
+            manager.branch_puller_endpoint.calls)
 
 
 class TestPullerWireProtocol(TrialTestCase):
@@ -223,8 +230,8 @@ class TestPullerMonitorProtocol(
         def startMirroring(self):
             self.calls.append('startMirroring')
 
-        def mirrorSucceeded(self, last_revision):
-            self.calls.append(('mirrorSucceeded', last_revision))
+        def mirrorSucceeded(self, revid_before, revid_after):
+            self.calls.append(('mirrorSucceeded', revid_before, revid_after))
 
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
@@ -261,8 +268,9 @@ class TestPullerMonitorProtocol(
         """Receiving a mirrorSucceeded message notifies the listener."""
         self.protocol.do_startMirroring()
         self.listener.calls = []
-        self.protocol.do_mirrorSucceeded('1234')
-        self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
+        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
+        self.assertEqual(
+            [('mirrorSucceeded', 'rev1', 'rev2')], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorDeferred(self):
@@ -319,7 +327,7 @@ class TestPullerMonitorProtocol(
         """
         self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.protocol.do_mirrorSucceeded('rev1')
+        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -475,18 +483,18 @@ class TestPullerMaster(TrialTestCase):
         return deferred.addCallback(checkSetStackedOn)
 
     def test_mirrorComplete(self):
-        arbitrary_revision_id = 'rev1'
+        arbitrary_revision_ids = ('rev1', 'rev2')
         deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
-        def mirrorSucceeded(ignored):
+        def mirrorSucceeded(*ignored):
             self.status_client.calls = []
-            return self.eventHandler.mirrorSucceeded(arbitrary_revision_id)
+            return self.eventHandler.mirrorSucceeded(*arbitrary_revision_ids)
         deferred.addCallback(mirrorSucceeded)
 
         def checkMirrorCompleted(ignored):
             self.assertEqual(
                 [('mirrorComplete', self.arbitrary_branch_id,
-                  arbitrary_revision_id)],
+                  arbitrary_revision_ids[1])],
                 self.status_client.calls)
         return deferred.addCallback(checkMirrorCompleted)
 
@@ -514,7 +522,6 @@ class TestPullerMasterSpawning(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        from twisted.internet import reactor
         self.factory = ObjectFactory()
         self.available_oops_prefixes = set(['foo'])
         self.eventHandler = self.makePullerMaster(
@@ -524,7 +531,6 @@ class TestPullerMasterSpawning(TrialTestCase):
         self.commands_spawned = []
 
     def tearDown(self):
-        from twisted.internet import reactor
         reactor.spawnProcess = self._realSpawnProcess
 
     def makePullerMaster(self, branch_type_name, default_stacked_on_url=None,
@@ -638,6 +644,11 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
     layer = TwistedAppServerLayer
 
+    # XXX: Hacky workaround for Trial. It interprets the skip method as a
+    # reason to skip the tests, but the default test result object doesn't
+    # support skipping, hence errors.
+    skip = None
+
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
@@ -651,6 +662,11 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakePullerEndpointProxy()
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.
@@ -783,7 +799,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         check_lock_id_script = """
         branch.lock_write()
-        protocol.mirrorSucceeded('b')
+        protocol.mirrorSucceeded('a', 'b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()

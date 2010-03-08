@@ -47,8 +47,9 @@
              tal:content="pot/name">A POTemplate
           </a><tal:comma condition="not: repeat/pot/end">, 
         </tal:comma></tal:relatives_by_source><!--
-          --><tal:more condition="view/has_more_templates_by_source"
-                       >...</tal:more>
+          --><tal:more-templates replace="structure view/more_templates_by_source_link">
+          and <a href="#">17 other templates</a>
+          </tal:more-templates>.
       </p>
     </div>
 
@@ -115,7 +116,7 @@
              class="download sprite">download</a>
           translation tarballs.
         </p>
-        <div tal:condition="context/required:launchpad.Admin">
+        <div tal:condition="context/required:launchpad.TranslationsAdmin">
           <a tal:attributes="href
                              context/menu:navigation/administer/url"
              class="edit sprite">

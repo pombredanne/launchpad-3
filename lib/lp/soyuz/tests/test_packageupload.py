@@ -15,7 +15,7 @@ from canonical.testing import LaunchpadZopelessLayer
 from email import message_from_string
 from lp.archiveuploader.tests import datadir
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail import stub
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -180,7 +180,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # Release ubuntutest/breezy-autotest, so delayed-copies to
         # SECURITY pocket can be accepted.
         self.test_publisher.breezy_autotest.status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
         # Create an ancestry publication in 'multiverse'.
         ancestry_source = self.test_publisher.getPubSource(
@@ -231,7 +231,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         expected_subject = (
             '[ubuntutest/breezy-autotest-security]\n\t'
-            'dist-upgrader_20060302.0120_all.tar.gz, '
+            'dist-upgrader_20060302.0120_all.tar.gz (delayed),\n\t'
             'foocomm 1.0-2 (Accepted)')
         self.assertEquals(msg['Subject'], expected_subject)
 
@@ -281,7 +281,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # Create the default delayed-copy context.
         delayed_copy = self.createDelayedCopy(source_only=True)
         self.test_publisher.breezy_autotest.status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
         self.layer.txn.commit()
 
         # Accept and publish the delayed-copy.

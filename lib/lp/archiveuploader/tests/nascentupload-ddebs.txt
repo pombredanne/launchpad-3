@@ -11,8 +11,8 @@ feature.
 
 First we will create a source and a corresponding binary publication
 in the database, 'debug' and 'debug-bin' version '0.9', which will be
-an ancestor for the subsequent upload containing a 'debug-dbg' DDEB.
-This is done using `SoyuzTestPublisher`.
+an ancestor for the subsequent upload containing a 'debug-bin-dbgsym'
+DDEB. This is done using `SoyuzTestPublisher`.
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
@@ -43,28 +43,28 @@ We need a slightly different database setup for creating binaries.
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
-With that done, we now upload a new source, 'debug - 1.0', which is
+With that done, we now upload a new source, 'debug - 1.0-1', which is
 immediately accepted and stands pending publication.
 
     >>> src = getUploadForSource(
-    ...     'suite/debug_1.0/debug_1.0_source.changes')
+    ...     'suite/debug_1.0-1/debug_1.0-1_source.changes')
     >>> src.process()
     >>> result = src.do_accept()
     >>> print src.queue_root.status.name
     DONE
 
     >>> [src_pub] = src.queue_root.archive.getPublishedSources(
-    ...     name='debug', version='1.0', exact_match=True)
+    ...     name='debug', version='1.0-1', exact_match=True)
 
     >>> print src_pub.displayname, src_pub.status.name
-    debug 1.0 in hoary PENDING
+    debug 1.0-1 in hoary PENDING
 
 At this point a deb and a ddeb, produced during a normal build
 process, are uploaded. This is exactly the same procedure used for
 binary uploads with only ordinary debs.
 
     >>> bin = getUploadForBinary(
-    ...     'suite/debug_1.0/debug_1.0_i386.changes')
+    ...     'suite/debug_1.0-1/debug_1.0-1_i386.changes')
 
 DDEBs undergo exactly the same checks as ordinary DEBs. These are
 never considered NEW, so the binary upload has a 'never-seen-before'
@@ -91,8 +91,8 @@ Now, both, binary and debug-symbol packages are pending publication.
     ...     print '%s %s %s' % (
     ...         bin_pub.displayname, bin_pub.status.name,
     ...         bin_pub.archive.purpose.name)
-    debug-bin 1.0 in hoary i386 PENDING PRIMARY
-    debug-dbg 1.0 in hoary i386 PENDING DEBUG
+    debug-bin 1.0-1 in hoary i386 PENDING PRIMARY
+    debug-bin-dbgsym 1.0-1 in hoary i386 PENDING DEBUG
 
 DEBs and DDEBs are uploaded to separate archives, because the size
 impact of uploading them to a single archive on mirrors would be
@@ -104,7 +104,7 @@ The DDEB is stored appropriately in the database.
     >>> ddeb = ddeb_pub.binarypackagerelease
 
     >>> print ddeb.title
-    debug-dbg-1.0
+    debug-bin-dbgsym-1.0-1
 
 The corresponding `BinaryPackageRelease` is recorded with DDEB format.
 
@@ -115,7 +115,7 @@ And its corresponding file is also stored as DDEB filetype.
 
     >>> for bin_file in ddeb.files:
     ...     print bin_file.libraryfile.filename, bin_file.filetype.name
-    debug-dbg_1.0_i386.ddeb DDEB
+    debug-bin-dbgsym_1.0-1_i386.ddeb DDEB
 
 
 == DDEBs in other archives ==
@@ -144,15 +144,15 @@ receive the DDEB.
     ...     binaryname='debug-bin', pub_source=copied_source, archive=copy)
 
     >>> src_pub = test_publisher.getPubSource(
-    ...     sourcename='debug', version='1.0', archive=copy)
+    ...     sourcename='debug', version='1.0-1', archive=copy)
 
     >>> print src_pub.displayname, src_pub.status.name
-    debug 1.0 in hoary PENDING
+    debug 1.0-1 in hoary PENDING
 
 Now we upload the DEB and the DDEB, which are auto-accepted.
 
     >>> bin = getUploadForBinary(
-    ...     'suite/debug_1.0/debug_1.0_i386.changes')
+    ...     'suite/debug_1.0-1/debug_1.0-1_i386.changes')
     >>> bin.policy.archive = copy
 
     >>> bin.process()
@@ -175,6 +175,6 @@ the ones in the primary archive.
     ...     print '%s %s %s' % (
     ...         bin_pub.displayname, bin_pub.status.name,
     ...         bin_pub.archive.purpose.name)
-    debug-bin 1.0 in hoary i386 PENDING COPY
-    debug-dbg 1.0 in hoary i386 PENDING COPY
+    debug-bin 1.0-1 in hoary i386 PENDING COPY
+    debug-bin-dbgsym 1.0-1 in hoary i386 PENDING COPY
 

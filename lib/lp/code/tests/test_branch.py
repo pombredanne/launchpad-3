@@ -17,7 +17,8 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.code.xmlrpc.branch import PublicCodehostingAPI
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import run_with_login, TestCaseWithFactory
@@ -231,13 +232,23 @@ class TestWriteToBranch(PermissionTest):
         branch = self.factory.makeAnyBranch(owner=team)
         self.assertCanEdit(person, branch)
 
+    def test_vcs_imports_members_can_edit_import_branch(self):
+        # Even if a branch isn't owned by vcs-imports, vcs-imports members can
+        # edit it if it has a code import associated with it.
+        person = self.factory.makePerson()
+        branch = self.factory.makeCodeImport().branch
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        removeSecurityProxy(vcs_imports).addMember(
+            person, vcs_imports.teamowner)
+        self.assertCanEdit(person, branch)
+
     def makeOfficialPackageBranch(self):
         """Make a branch linked to the pocket of a source package."""
         branch = self.factory.makePackageBranch()
         # Make sure the (distroseries, pocket) combination used allows us to
         # upload to it.
         stable_states = (
-            DistroSeriesStatus.SUPPORTED, DistroSeriesStatus.CURRENT)
+            SeriesStatus.SUPPORTED, SeriesStatus.CURRENT)
         if branch.distroseries.status in stable_states:
             pocket = PackagePublishingPocket.BACKPORTS
         else:
@@ -259,14 +270,19 @@ class TestWriteToBranch(PermissionTest):
         self.assertCanEdit(branch.owner, branch)
 
     def assertCanUpload(self, person, spn, archive, component,
-                        strict_component=True):
+                        strict_component=True, distroseries=None):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
+        if distroseries is None:
+            distroseries = archive.distribution.currentseries
         self.assertIs(
             None,
-            verify_upload(person, spn, archive, component, strict_component))
+            verify_upload(
+                person, spn, archive, component, distroseries,
+                strict_component))
 
-    def assertCannotUpload(self, reason, person, spn, archive, component):
+    def assertCannotUpload(
+        self, reason, person, spn, archive, component, distroseries=None):
         """Assert that 'person' cannot upload to the archive.
 
         :param reason: The expected reason for not being able to upload. A
@@ -277,7 +293,10 @@ class TestWriteToBranch(PermissionTest):
         :param archive: The `IArchive` being uploaded to.
         :param component: The IComponent to which the package belongs.
         """
-        exception = verify_upload(person, spn, archive, component)
+        if distroseries is None:
+            distroseries = archive.distribution.currentseries
+        exception = verify_upload(
+            person, spn, archive, component, distroseries)
         self.assertEqual(reason, str(exception))
 
     def test_package_upload_permissions_grant_branch_edit(self):
@@ -306,6 +325,74 @@ class TestWriteToBranch(PermissionTest):
         # Now person can edit the branch on the basis of the upload
         # permissions granted above.
         self.assertCanEdit(person, branch)
+
+    def test_arbitrary_person_cannot_edit(self):
+        # Arbitrary people cannot edit branches, you have to be someone
+        # special.
+        branch = self.factory.makeAnyBranch()
+        person = self.factory.makePerson()
+        self.assertCannotEdit(person, branch)
+
+    def test_code_import_registrant_can_edit(self):
+        # It used to be the case that all import branches were owned by the
+        # special, restricted team ~vcs-imports. This made a lot of work for
+        # the Launchpad development team, since they needed to delete and
+        # rename import branches whenever people wanted it. To reduce this
+        # work a little, whoever registered of a code import branch is allowed
+        # to edit the branch, even if they aren't one of the owners.
+        registrant = self.factory.makePerson()
+        code_import = self.factory.makeCodeImport(registrant=registrant)
+        branch = code_import.branch
+        removeSecurityProxy(branch).setOwner(
+            getUtility(ILaunchpadCelebrities).vcs_imports,
+            getUtility(ILaunchpadCelebrities).vcs_imports)
+        self.assertCanEdit(registrant, branch)
+
+
+class TestComposePublicURL(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestComposePublicURL, self).setUp('admin@canonical.com')
+
+    def test_composePublicURL_accepts_supported_schemes(self):
+        # composePublicURL accepts all schemes that PublicCodehostingAPI
+        # supports.
+        branch = self.factory.makeAnyBranch()
+
+        url_pattern = '%%s://bazaar.launchpad.dev/~%s/%s/%s' % (
+            branch.owner.name, branch.product.name, branch.name)
+        for scheme in PublicCodehostingAPI.supported_schemes:
+            public_url = branch.composePublicURL(scheme)
+            self.assertEqual(url_pattern % scheme, public_url)
+
+        # sftp support is also grandfathered in.
+        sftp_url = branch.composePublicURL('sftp')
+        self.assertEqual(url_pattern % 'sftp', sftp_url)
+
+    def test_composePublicURL_default_http(self):
+        # The default scheme for composePublicURL is http.
+        branch = self.factory.makeAnyBranch()
+        prefix = 'http://'
+        public_url = branch.composePublicURL()
+        self.assertEqual(prefix, public_url[:len(prefix)])
+
+    def test_composePublicURL_unknown_scheme(self):
+        # Schemes that aren't known to be supported are not accepted.
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(AssertionError, branch.composePublicURL, 'irc')
+
+    def test_composePublicURL_http_private(self):
+        # Private branches don't have public http URLs.
+        branch = self.factory.makeAnyBranch(private=True)
+        self.assertRaises(AssertionError, branch.composePublicURL, 'http')
+
+    def test_composePublicURL_no_https(self):
+        # There's no https support.  If there were, it should probably
+        # not work for private branches.
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(AssertionError, branch.composePublicURL, 'https')
 
 
 def test_suite():

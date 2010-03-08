@@ -70,9 +70,9 @@ The FAQ is created and the browser displays the page for Sample Person.
     FAQ #12 : Questions : Mozilla Firefox
 
     >>> content = find_main_content(owner_browser.contents)
-    >>> extract_text(content.find('div', {'id' : 'faq-keywords'}))
+    >>> extract_text(find_tag_by_id(content, 'faq-keywords'))
     u'Keywords:...RSS bookmark'
-    >>> extract_text(content.find('div', {'id' : 'faq-content'}))
+    >>> extract_text(find_tag_by_id(content, 'faq-content'))
     u'Use the bookmark bar.'
 
 He returns to the projects list of FAQs to verify that the newest

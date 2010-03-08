@@ -46,11 +46,11 @@ You can even modify the title and description of 'Answered' and
 
     >>> def print_question_status(browser):
     ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'registration'))
+    ...         find_tag_by_id(browser.contents, 'question-status'))
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+question/3')
     >>> print_question_status(user_browser)
-    Invalid ...
+    Status: Invalid
 
     >>> user_browser.getLink('Edit question')
     <Link...>
@@ -93,8 +93,8 @@ edit the Status Whiteboard using the 'Edit Question' page.
     >>> browser.getControl('Save Changes').click()
 
     >>> soup = find_main_content(browser.contents)
-    >>> print soup.first('b', text='Whiteboard:').findNext('td').renderContents()
-    Some note
+    >>> print extract_text(find_tag_by_id(soup, 'question-whiteboard'))
+    Whiteboard: Some note
     >>> portlet_details = find_tag_by_id(browser.contents, 'portlet-details')
 
 Since the assignee is notified of changes to the question, his name also

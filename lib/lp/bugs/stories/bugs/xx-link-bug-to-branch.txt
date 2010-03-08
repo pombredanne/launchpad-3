@@ -33,7 +33,7 @@ a related branch.
     Successfully registered branch main for this bug.
     ...
     Related branches
-    lp://dev/~name12/firefox/main (Development)
+    lp://dev/~name12/firefox/main
     ...
 
 We can delete existing links between a bug and a branch.

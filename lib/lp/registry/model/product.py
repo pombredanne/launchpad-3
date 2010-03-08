@@ -1,6 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -17,10 +16,9 @@ import operator
 import datetime
 import calendar
 import pytz
-import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
-from storm.locals import And, Desc, Join, SQL, Store, Unicode
+from storm.locals import And, Desc, Int, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -45,7 +43,8 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
-from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.customlanguagecode import (
+    CustomLanguageCode, HasCustomLanguageCodesMixin)
 from lp.translations.model.potemplate import POTemplate
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distribution import Distribution
@@ -69,9 +68,11 @@ from lp.answers.model.question import (
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin, ITranslationImportQueue)
-from canonical.launchpad.database.structuralsubscription import (
+    HasTranslationImportsMixin)
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
@@ -81,6 +82,8 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from lp.registry.interfaces.person import IPersonSet
@@ -166,13 +169,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
-              HasMergeProposalsMixin):
+              HasCustomLanguageCodesMixin, HasMergeProposalsMixin):
 
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
-        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
+        IFAQTarget, IHasBugSupervisor, IHasCustomLanguageCodes, IHasIcon,
+        IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
 
     _table = 'Product'
 
@@ -217,7 +220,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     screenshotsurl = StringCol(
         dbName='screenshotsurl', notNull=False, default=None)
-    wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
+    wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     programminglang = StringCol(
         dbName='programminglang', notNull=False, default=None)
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
@@ -228,6 +231,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
+    translation_focus = ForeignKey(
+        dbName='translation_focus', foreignKey='ProductSeries',
+        notNull=False, default=None)
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
@@ -243,6 +249,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_rosetta', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
+    max_bug_heat = Int()
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -544,8 +551,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags_open_count(BugTask.product == self, user)
 
-    branches = SQLMultipleJoin('Branch', joinColumn='product',
-        orderBy='id')
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
@@ -744,11 +749,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         targetseries = ubuntu.currentseries
         product_series = self.translatable_series
 
-        # First, go with development focus branch
-        if product_series and self.development_focus in product_series:
-            return self.development_focus
-        # Next, go with the latest product series that has templates:
         if product_series:
+            # First, go with translation focus
+            if self.translation_focus in product_series:
+                return self.translation_focus
+            # Next, go with development focus
+            if self.development_focus in product_series:
+                return self.development_focus
+            # Next, go with the latest product series that has templates:
             return product_series[-1]
         # Otherwise, look for an Ubuntu package in the current distroseries:
         for package in packages:
@@ -771,7 +779,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Specification.product = %s AND
             Specification.id = MentoringOffer.specification
             """ % sqlvalues(self.id) + """ AND NOT
-            (""" + Specification.completeness_clause +")",
+            (""" + Specification.completeness_clause + ")",
             clauseTables=['Specification'],
             distinct=True)
         via_bugs = MentoringOffer.select("""
@@ -874,7 +882,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -913,18 +921,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         return ProductSeries.selectOneBy(product=self, name=name)
 
-    def newSeries(self, owner, name, summary, branch=None):
+    def newSeries(
+        self, owner, name, summary, branch=None, releasefileglob=None):
         # XXX: jamesh 2008-04-11
         # Set the ID of the new ProductSeries to avoid flush order
         # loops in ProductSet.createProduct()
-        series = ProductSeries(productID=self.id, owner=owner, name=name,
-                             summary=summary, branch=branch)
+        series = ProductSeries(
+            productID=self.id, owner=owner, name=name,
+            summary=summary, branch=branch, releasefileglob=releasefileglob)
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # The user is a product driver, and should be the driver of this
             # series to make him the release manager.
             series.driver = owner
         return series
-
 
     def getRelease(self, version):
         """See `IProduct`."""
@@ -955,19 +964,23 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Packaging.productseriesID == ProductSeries.id,
             ProductSeries.product == self,
             Packaging.distroseriesID == DistroSeries.id,
-            DistroSeries.distributionID == Distribution.id
+            DistroSeries.distributionID == Distribution.id,
             ).config(distinct=True).order_by(Distribution.name)
 
     def setBugSupervisor(self, bug_supervisor, user):
         """See `IHasBugSupervisor`."""
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
-            subscription = self.addBugSubscription(bug_supervisor, user)
+            self.addBugSubscription(bug_supervisor, user)
 
-    def getCustomLanguageCode(self, language_code):
-        """See `IProduct`."""
-        return CustomLanguageCode.selectOneBy(
-            product=self, language_code=language_code)
+    def composeCustomLanguageCodeMatch(self):
+        """See `HasCustomLanguageCodesMixin`."""
+        return CustomLanguageCode.product == self
+
+    def createCustomLanguageCode(self, language_code, language):
+        """See `IHasCustomLanguageCodes`."""
+        return CustomLanguageCode(
+            product=self, language_code=language_code, language=language)
 
     def userCanEdit(self, user):
         """See `IProduct`."""
@@ -1000,8 +1013,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             series.getTimeline(include_inactive=include_inactive)
             for series in series_list
             if include_inactive or series.active or
-               series == self.development_focus
-            ]
+               series == self.development_focus]
 
 
 class ProductSet:
@@ -1078,7 +1090,7 @@ class ProductSet:
         if registrant is None:
             registrant = owner
         if licenses is None:
-            licenses = sets.Set()
+            licenses = set()
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
@@ -1288,7 +1300,7 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product._ownerID
+            Person.id == Product._ownerID,
             ).config(distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate

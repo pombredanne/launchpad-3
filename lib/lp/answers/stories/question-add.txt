@@ -8,6 +8,12 @@ which support is desired:
     >>> print browser.title
     Questions : Ubuntu
 
+The user sees an involvement link to ask a question.
+
+    >>> link = find_tag_by_id(browser.contents, 'involvement').a
+    >>> print extract_text(link)
+    Ask a question
+
 Asking a new question requires logging in:
 
     >>> browser.getLink('Ask a question').click()
@@ -95,9 +101,9 @@ mouse is left over the question's title.
     ennvironment plugin is requested.
     <BLANKLINE>
     1) The plugin finder service indicates that JRE is available
-    2) next screen indicates JRE &quot;not available&quot; and requests
-    &quot;manual install&quot;
-    3) clicking on &quot;manual install&quot; open java web site.......
+    2) next screen indicates JRE "not available" and requests
+    "manual install"
+    3) clicking on "manual install" open java web site.......
 
 Similarly, the beginning of the FAQ's content appears when the mouse
 hovers on the FAQ's title:
@@ -159,7 +165,7 @@ redirect the user to the question page.
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'registration'))
-    Open... Question #..., asked...by...No Privileges Person...
+    Asked by No Privileges Person on ...
     >>> contents = find_main_content(user_browser.contents)
     >>> print extract_text(contents.find('div', 'report'))
     I use Ubuntu on AMD64 ...

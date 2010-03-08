@@ -36,6 +36,7 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadSet)
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from lp.soyuz.scripts.processaccepted import (
@@ -351,10 +352,18 @@ class CopyChecker:
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
         """
-        if source.distroseries.distribution != self.archive.distribution:
+        if series not in self.archive.distribution.series:
             raise CannotCopy(
-                "Cannot copy to an unsupported distribution: %s." %
-                source.distroseries.distribution.name)
+                "No such distro series %s in distribution %s." %
+                (series.name, source.distroseries.distribution.name))
+
+        format = SourcePackageFormat.getTermByToken(
+            source.sourcepackagerelease.dsc_format).value
+
+        if not series.isSourcePackageFormatPermitted(format):
+            raise CannotCopy(
+                "Source format '%s' not supported by target series %s." %
+                (source.sourcepackagerelease.dsc_format, series.name))
 
         if self.include_binaries:
             built_binaries = source.getBuiltBinaries()

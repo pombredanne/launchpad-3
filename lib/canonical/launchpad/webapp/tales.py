@@ -40,11 +40,12 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
-    IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus,
-    NotFoundError)
+    IProduct, IProjectGroup, IDistributionSourcePackage, ISprint,
+    LicenseStatus, NotFoundError)
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -471,8 +472,7 @@ class ObjectFormatterAPI:
         try:
             url = canonical_url(
                 self._context, path_only_if_possible=True,
-                rootsite=rootsite,
-                view_name=view_name)
+                rootsite=rootsite, view_name=view_name)
         except Unauthorized:
             url = ""
         return url
@@ -480,14 +480,15 @@ class ObjectFormatterAPI:
     def api_url(self, context):
         """Return the object's (partial) canonical web service URL.
 
-        This method returns everything that goes after the web service
-        version number. It's the same as 'url', but without any view
-        name.
+        This method returns everything that goes after the web service version
+        number.  Effectively the canonical URL but only the relative part with
+        no site.
         """
-
-        # Some classes override the rootsite. We always want a path-only
-        # URL, so we override it to nothing.
-        return self.url(rootsite=None)
+        try:
+            url = canonical_url(self._context, force_local_path=True)
+        except Unauthorized:
+            url = ""
+        return url
 
     def traverse(self, name, furtherPath):
         if name.startswith('link:') or name.startswith('url:'):
@@ -623,7 +624,7 @@ class ObjectImageDisplayAPI:
         context = self._context
         if IProduct.providedBy(context):
             return 'sprite product'
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             return 'sprite project'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -656,7 +657,7 @@ class ObjectImageDisplayAPI:
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
-        if IProject.providedBy(context):
+        if IProjectGroup.providedBy(context):
             return '/@@/project-logo'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -678,7 +679,7 @@ class ObjectImageDisplayAPI:
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
-        if IProject.providedBy(context):
+        if IProjectGroup.providedBy(context):
             return '/@@/project-mugshot'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -759,6 +760,17 @@ class ObjectImageDisplayAPI:
         raise NotImplementedError(
             "Badge display not implemented for this item")
 
+    def boolean(self):
+        """Return an icon representing the context as a boolean value."""
+        if bool(self._context):
+            icon = 'yes'
+        else:
+            icon = 'no'
+        markup = (
+            '<span class="sprite %(icon)s">&nbsp;'
+            '<span class="invisible-link">%(icon)s</span></span>')
+        return markup % dict(icon=icon)
+
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBugTask objects to a formatted string. This inherits
@@ -778,7 +790,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s" />')
+        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
 
     linked_icon_template = (
         '<a href="%s" alt="%s" title="%s" class="%s"></a>')
@@ -828,6 +840,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         """Return whether the bug is linked to a specification."""
         return self._context.bug.specifications.count() > 0
 
+    def _hasPatch(self):
+        """Return whether the bug has a patch."""
+        return self._context.bug.has_patches
+
+
     def badges(self):
 
         badges = []
@@ -854,6 +871,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 milestone_text , "Linked to %s" % milestone_text,
                 "sprite milestone"))
 
+        if self._hasPatch():
+            badges.append(self.icon_template % (
+                "haspatch", "Has a patch", "sprite haspatch-icon"))
+
         # Join with spaces to avoid the icons smashing into each other
         # when multiple ones are presented.
         return " ".join(badges)
@@ -878,6 +899,10 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
     def _hasSpecification(self):
         """See `BugTaskImageDisplayAPI`"""
         return self._context.has_specification
+
+    def _hasPatch(self):
+        """See `BugTaskImageDisplayAPI`"""
+        return self._context.has_patch
 
 
 class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
@@ -1239,7 +1264,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
 
 
 class PillarFormatterAPI(CustomizableFormatter):
-    """Adapter for IProduct, IDistribution and IProject objects to a
+    """Adapter for IProduct, IDistribution and IProjectGroup objects to a
     formatted string."""
 
     _link_summary_template = '%(displayname)s'
@@ -1323,7 +1348,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         file_size = NumberFormatterAPI(
             file_.libraryfile.content.filesize).bytes()
         if file_.description is not None:
-            description = file_.description
+            description = cgi.escape(file_.description)
         else:
             description = file_.libraryfile.filename
         link_title = "%s (%s)" % (description, file_size)
@@ -1368,7 +1393,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink',
+        'api_url': 'api_url'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
@@ -1404,68 +1430,6 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '%(name)s</a>: %(title)s' % self._args(view_name))
-
-
-class PreviewDiffFormatterAPI(ObjectFormatterAPI):
-    """Formatter for preview diffs."""
-
-    def url(self, view_name=None, rootsite=None):
-        """Use the url of the librarian file containing the diff.
-        """
-        librarian_alias = self._context.diff_text
-        if librarian_alias is None:
-            return None
-        else:
-            return librarian_alias.getURL()
-
-    def link(self, view_name):
-        """The link to the diff should show the line count.
-
-        Stale diffs will have a stale-diff css class.
-        Diffs with conflicts will have a conflict-diff css class.
-        Diffs with neither will have clean-diff css class.
-
-        The title of the diff will show the number of lines added or removed
-        if available.
-
-        :param view_name: If not None, the link will point to the page with
-            that name on this object.
-        """
-        title_words = []
-        if self._context.conflicts is not None:
-            style = 'conflicts-diff'
-            title_words.append(_('CONFLICTS'))
-        else:
-            style = 'clean-diff'
-        # Stale style overrides conflicts or clean.
-        if self._context.stale:
-            style = 'stale-diff'
-            title_words.append(_('Stale'))
-
-        if self._context.added_lines_count:
-            title_words.append(
-                _("%s added") % self._context.added_lines_count)
-
-        if self._context.removed_lines_count:
-            title_words.append(
-                _("%s removed") % self._context.removed_lines_count)
-
-        args = {
-            'line_count': _('%s lines') % self._context.diff_lines_count,
-            'style': style,
-            'title': ', '.join(title_words),
-            'url': self.url(view_name),
-            }
-        # Under normal circumstances, there will be an associated file,
-        # however if the diff is empty, then there is no alias to link to.
-        if args['url'] is None:
-            return (
-                '<span title="%(title)s" class="%(style)s">'
-                '%(line_count)s</span>' % args)
-        else:
-            return (
-                '<a href="%(url)s" title="%(title)s" class="%(style)s">'
-                '<img src="/@@/download"/>&nbsp;%(line_count)s</a>' % args)
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
@@ -1637,6 +1601,13 @@ class PPAFormatterAPI(CustomizableFormatter):
 
     _link_summary_template = '%(display_name)s'
     _link_permission = 'launchpad.View'
+    _reference_template = "ppa:%(owner_name)s/%(ppa_name)s"
+
+    final_traversable_names = {
+        'reference': 'reference',
+        }
+    final_traversable_names.update(
+        CustomizableFormatter.final_traversable_names)
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1665,6 +1636,24 @@ class PPAFormatterAPI(CustomizableFormatter):
                 return '<span class="%s">%s</span>' % (css, summary)
             else:
                 return ''
+
+    def reference(self, view_name=None, rootsite=None):
+        """Return the text PPA reference for a PPA."""
+        # XXX: noodles 2010-02-11 bug=336779: This following check
+        # should be replaced with the normal check_permission once
+        # permissions for archive subscribers has been resolved.
+        if self._context.private:
+            request = get_current_browser_request()
+            person = IPerson(request.principal)
+            subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                person, self._context)
+            if subscriptions.is_empty():
+                return ''
+
+        return self._reference_template % {
+            'owner_name': self._context.owner.name,
+            'ppa_name': self._context.name,
+            }
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
@@ -2904,7 +2893,7 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
-                    address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
+                    address, '<a href="%s" class="%s">%s</a>' % (
                         canonical_url(person), css_sprite, address))
 
         return text
@@ -3059,17 +3048,13 @@ class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
         view/macro:page
-        view/macro:page/onecolumn
-        view/macro:page/applicationhome
-        view/macro:page/pillarindex
-        view/macro:page/freeform
+        view/macro:page/main_side
+        view/macro:page/main_only
+        view/macro:page/searchless
+        view/macro:page/locationless
 
         view/macro:pagehas/applicationtabs
-        view/macro:pagehas/applicationborder
-        view/macro:pagehas/applicationbuttons
         view/macro:pagehas/globalsearch
-        view/macro:pagehas/heading
-        view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
 
         view/macro:pagetype
@@ -3078,7 +3063,6 @@ class PageMacroDispatcher:
 
     implements(ITraversable)
 
-    master = ViewPageTemplateFile('../templates/main-template.pt')
     base = ViewPageTemplateFile('../../../lp/app/templates/base-layout.pt')
 
     def __init__(self, context):
@@ -3115,7 +3099,7 @@ class PageMacroDispatcher:
         if pagetype not in self._pagetypes:
             raise TraversalError('unknown pagetype: %s' % pagetype)
         self.context.__pagetype__ = pagetype
-        return self._template.macros['master']
+        return self.base.macros['master']
 
     def haspage(self, layoutelement):
         pagetype = getattr(self.context, '__pagetype__', None)
@@ -3130,15 +3114,9 @@ class PageMacroDispatcher:
 
         def __init__(self,
             applicationtabs=False,
-            applicationborder=False,
-            applicationbuttons=False,
             globalsearch=False,
-            heading=False,
-            pageheading=True,
             portlets=False,
             pagetypewasset=True,
-            actionsmenu=True,
-            navigationtabs=False
             ):
             self.elements = vars()
 
@@ -3146,107 +3124,24 @@ class PageMacroDispatcher:
             return self.elements[name]
 
     _pagetypes = {
-        'unset':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                pagetypewasset=False),
-        'default':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True),
-        'default2.0':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                navigationtabs=True),
-        'onecolumn':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                navigationtabs=True,
-                portlets=False),
-        'applicationhome':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                applicationtabs=True,
-                globalsearch=True,
-                pageheading=False,
-                heading=True),
-        'pillarindex':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                globalsearch=True,
-                heading=True,
-                pageheading=False,
-                portlets=True),
-        'search':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=False,
-                heading=False,
-                pageheading=False,
-                portlets=False),
-       'freeform':
-            LayoutElements(),
        'main_side':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=True,
-                heading=False,
-                pageheading=False,
                 portlets=True),
        'main_only':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=True,
-                heading=False,
-                pageheading=False,
                 portlets=False),
        'searchless':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=False,
-                heading=False,
-                pageheading=False,
                 portlets=False),
        'locationless':
             LayoutElements(),
         }
-
-    _3_0_pagetypes = [
-        'main_side',
-        'main_only',
-        'searchless',
-        'locationless',
-        ]
-
-    @property
-    def _template(self):
-        """Return the ViewPageTemplateFile used by layout."""
-        if self.context.__pagetype__ in self._3_0_pagetypes:
-            return self.base
-        else:
-            return self.master
 
 
 class TranslationGroupFormatterAPI(ObjectFormatterAPI):
@@ -3254,7 +3149,7 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link',
-        'url': 'url', 
+        'url': 'url',
         'displayname': 'displayname',
     }
 

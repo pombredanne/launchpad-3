@@ -12,7 +12,7 @@ from zope.testing.doctestunit import DocTestSuite
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.hwdb import HWBus, IHWDeviceSet
+from lp.hardwaredb.interfaces.hwdb import HWBus, IHWDeviceSet
 from canonical.launchpad.searchbuilder import all, any
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401,W0611
@@ -50,7 +50,8 @@ from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
+    export_destructor_operation, exported, operation_parameters,
+    operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 
@@ -116,10 +117,6 @@ class BranchTargetError(Exception):
 
 class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
-
-
-class UnknownBranchTypeError(Exception):
-    """Raised when the user specifies an unrecognized branch type."""
 
 
 class BranchCreationForbidden(BranchCreationException):
@@ -355,6 +352,17 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
                 "This is the external location where the Bazaar "
                 "branch is hosted.")))
 
+    @operation_parameters(
+        scheme=TextLine(title=_("URL scheme"), default=u'http'))
+    @export_read_operation()
+    def composePublicURL(scheme='http'):
+        """Return a public URL for the branch using the given protocol.
+
+        :param scheme: a protocol name accepted by the public
+            code-hosting API.  (As a legacy issue, 'sftp' is also
+            accepted).
+        """
+
     description = exported(
         Text(
             title=_('Description'), required=False,
@@ -398,10 +406,11 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             description=_(
                 "Make this branch visible only to its subscribers.")))
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))
     @export_write_operation()
-    def setPrivate(private):
+    def setPrivate(private, user):
         """Set the branch privacy for this branch."""
 
     # People attributes
@@ -458,7 +467,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
                           "that is responsible for reviewing proposals and "
                           "merging into this branch.")))
 
-    # XXX: JonathanLange 2008-11-24: Export these.
+    # Distroseries and sourcepackagename are exported together as
+    # the sourcepackage.
     distroseries = Choice(
         title=_("Distribution Series"), required=False,
         vocabulary='DistroSeries',
@@ -478,9 +488,12 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         "The IDistribution that this branch belongs to. None if not a "
         "package branch.")
 
-    sourcepackage = Attribute(
-        "The ISourcePackage that this branch belongs to. None if not a "
-        "package branch.")
+    # Really an ISourcePackage.
+    sourcepackage = exported(
+        Reference(
+            title=_("The ISourcePackage that this branch belongs to. "
+                    "None if not a package branch."),
+            schema=Interface, required=False, readonly=True))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -679,10 +692,19 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             required=True,
             readonly=False))
 
+    @export_destructor_operation()
+    def destroySelfBreakReferences():
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted as 
+        well as any items with mandatory references.
+        """
+
     def destroySelf(break_references=False):
         """Delete the specified branch.
 
         BranchRevisions associated with this branch will also be deleted.
+
         :param break_references: If supplied, break any references to this
             branch by deleting items with mandatory references and
             NULLing other references.
@@ -728,8 +750,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         target_branch=Reference(schema=Interface),
         prerequisite_branch=Reference(schema=Interface),
         needs_review=Bool(title=_('Needs review'),
-            description=_('If True, set queue_status to NEEDS_REVIEW.'
-            'Otherwise, it will be WORK_IN_PROGRESS.')),
+            description=_('If True the proposal needs review.'
+            'Otherwise, it will be work in progress.')),
         initial_comment=Text(
             title=_('Initial comment'),
             description=_("Registrant's initial description of proposal.")),
@@ -748,38 +770,35 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         registrant, target_branch, prerequisite_branch=None,
         needs_review=True, initial_comment=None, commit_message=None,
         reviewers=None, review_types=None):
-        """API-oriented version of addLandingTarget.
-
-        The parameters are the same as addLandingTarget, except that
-        review_requests is split into a list of reviewers and a list of
-        review types.
-        """
-
-    def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
-                         whiteboard=None, date_created=None,
-                         needs_review=False, initial_comment=None,
-                         review_requests=None, review_diff=None,
-                         commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the prerequisite_branch, if it is there,
-        must be branches of the same project as the source branch.
+        must be branches with the same target as the source branch.
 
-        Branches without associated projects, junk branches, cannot
-        specify landing targets.
+        Personal branches (a.k.a. junk branches) cannot specify landing targets.
+        """
+
+    def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
+                         date_created=None, needs_review=False,
+                         description=None, review_requests=None,
+                         review_diff=None, commit_message=None):
+        """Create a new BranchMergeProposal with this branch as the source.
+
+        Both the target_branch and the prerequisite_branch, if it is there,
+        must be branches with the same target as the source branch.
+
+        Personal branches (a.k.a. junk branches) cannot specify landing targets.
 
         :param registrant: The person who is adding the landing target.
         :param target_branch: Must be another branch, and different to self.
         :param prerequisite_branch: Optional but if it is not None, it must be
             another branch.
-        :param whiteboard: Optional.  Just text, notes or instructions
-            pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
         :param needs_review: Used to specify the proposal is ready for
             review right now.
-        :param initial_comment: An optional initial comment can be added
-            when adding the new target.
+        :param description: A description of the bugs fixed, features added,
+            or refactorings.
         :param review_requests: An optional list of (`Person`, review_type).
         """
 
@@ -807,7 +826,20 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 
-    def revisions_since(timestamp):
+    def getMainlineBranchRevisions(start_date, end_date=None,
+                                   oldest_first=False):
+        """Return the matching mainline branch revision objects.
+
+        :param start_date: Return revisions that were committed after the
+            start_date.
+        :param end_date: Return revisions that were committed before the
+            end_date
+        :param oldest_first: Defines the ordering of the result set.
+        :returns: A resultset of tuples for
+            (BranchRevision, Revision, RevisionAuthor)
+        """
+
+    def getRevisionsSince(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
     code_is_browseable = Attribute(
@@ -850,6 +882,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         :param launchbag: `ILaunchBag`.
         """
 
+    @export_read_operation()
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 
@@ -1043,6 +1076,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         """
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
+    upgrade_pending = Attribute(
+        "Whether a branch has had an upgrade requested.")
 
     def requestUpgrade():
         """Create an IBranchUpgradeJob to upgrade this branch."""
@@ -1169,7 +1204,36 @@ class IBranchSet(Interface):
         Either from the external specified in Branch.url, from the URL on
         http://bazaar.launchpad.net/ or the lp: URL.
 
+        This is a frontend shim to `IBranchLookup.getByUrl` to allow it to be
+        exported over the API. If you want to call this from within the
+        Launchpad app, use the `IBranchLookup` version instead.
+
         Return None if no match was found.
+        """
+
+    @operation_parameters(
+        urls=List(
+            title=u'A list of URLs of branches',
+            description=(
+                u'These can be URLs external to '
+                u'Launchpad, lp: URLs, or http://bazaar.launchpad.net/ URLs, '
+                u'or any mix of all these different kinds.'),
+            value_type=TextLine(),
+            required=True))
+    @export_read_operation()
+    def getByUrls(urls):
+        """Finds branches by URL.
+
+        Either from the external specified in Branch.url, from the URL on
+        http://bazaar.launchpad.net/, or from the lp: URL.
+
+        This is a frontend shim to `IBranchLookup.getByUrls` to allow it to be
+        exported over the API. If you want to call this from within the
+        Launchpad app, use the `IBranchLookup` version instead.
+
+        :param urls: An iterable of URLs expressed as strings.
+        :return: A dictionary mapping URLs to branches. If the URL has no
+            associated branch, the URL will map to `None`.
         """
 
     @collection_default_content()

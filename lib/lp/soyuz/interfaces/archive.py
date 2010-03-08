@@ -14,6 +14,7 @@ __all__ = [
     'ArchiveNotPrivate',
     'ArchivePurpose',
     'CannotCopy',
+    'CannotSwitchPrivacy',
     'ComponentNotFound',
     'DistroSeriesNotFound',
     'IArchive',
@@ -76,6 +77,12 @@ class ArchiveDependencyError(Exception):
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
     webservice_error(400) #Bad request.
+
+
+class CannotSwitchPrivacy(Exception):
+    """Raised when switching the privacy of an archive that has
+    publishing records."""
+    webservice_error(400) # Bad request.
 
 
 class PocketNotFound(Exception):
@@ -145,17 +152,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))
 
-    publish = Bool(
-        title=_("Publish"), required=False,
-        description=_("Whether the archive is to be published or not."))
-
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is guarded by a validator.
     private = exported(
         Bool(
             title=_("Private"), required=False,
             description=_(
-                "Whether the archive is private to the owner or not.")))
+                "Whether the archive is private to the owner or not. "
+                "This can only be changed if the archive has not had "
+                "any sources published.")))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,
@@ -896,8 +901,8 @@ class IArchiveAppend(Interface):
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
 
-        It will copy the most recent versions of the named sources to
-        the destination archive if necessary.
+        It will copy the most recent PUBLISHED versions of the named
+        sources to the destination archive if necessary.
 
         This operation will only succeeds when all requested packages
         are synchronised between the archives. If any of the requested
@@ -993,6 +998,10 @@ class IArchiveAppend(Interface):
 class IArchiveEdit(Interface):
     """Archive interface for operations restricted by edit privilege."""
 
+    publish = Bool(
+        title=_("Publish"), required=False,
+        description=_("Whether the archive is to be published or not."))
+
     @operation_parameters(
         person=Reference(schema=IPerson),
         source_package_name=TextLine(
@@ -1083,6 +1092,15 @@ class IArchiveEdit(Interface):
         :param person: An `IPerson` whose permission should be revoked.
         :param component: An `IComponent` or textual component name.
         """
+
+    def enable():
+        """Enable the archive."""
+
+    def disable():
+        """Disable the archive."""
+
+    arm_builds_allowed = Bool(
+        title=_("Allow ARM builds for this archive"))
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
@@ -1263,7 +1281,7 @@ class IArchiveSet(Interface):
         """
 
     def getArchivesForDistribution(distribution, name=None, purposes=None,
-        user=None):
+        user=None, exclude_disabled=True):
         """Return a list of all the archives for a distribution.
 
         This will return all the archives for the given distribution, with
@@ -1272,12 +1290,13 @@ class IArchiveSet(Interface):
         :param distribution: target `IDistribution`
         :param name: An optional archive name which will further restrict
             the results to only those archives with this name.
-        :param purposes: An optional achive purpose or list of purposes with
+        :param purposes: An optional archive purpose or list of purposes with
             which to filter the results.
         :param user: An optional `IPerson` who is requesting the archives,
             which is used to include private archives for which the user
             has permission. If it is not supplied, only public archives
             will be returned.
+        :param exclude_disabled: Whether to exclude disabled archives.
 
         :return: A queryset of all the archives for the given
             distribution matching the given params.

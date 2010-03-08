@@ -103,8 +103,8 @@ the Answers facet.
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution'
     >>> browser.getLink('Answers').click()
-    >>> browser.title
-    'Questions : \xe2\x80\x9cevolution\xe2\x80\x9d source package : 5.04 : Ubuntu'
+    >>> print browser.title
+    Questions : ...evolution... source package : Hoary (5.04) : Ubuntu
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/hoary/+source/evolution/+addquestion'
 

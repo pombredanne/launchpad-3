@@ -4,18 +4,30 @@
 """Tests for job-running facilities."""
 
 
+from __future__ import with_statement
+
+import sys
+from time import sleep
 from unittest import TestLoader
 
 import transaction
 from canonical.testing import LaunchpadZopelessLayer
+from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
+from lp.code.interfaces.branchmergeproposal import (
+    IUpdatePreviewDiffJobSource,)
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.job.runner import JobRunner, BaseRunnableJob
+from lp.services.job.runner import (
+    JobCronScript, JobRunner, BaseRunnableJob, TwistedJobRunner
+)
 from lp.services.job.interfaces.job import JobStatus, IRunnableJob
 from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class NullJob(BaseRunnableJob):
@@ -125,7 +137,25 @@ class TestJobRunner(TestCaseWithFactory):
         reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
-        self.assertEqual([('foo', 'bar')], oops.req_vars)
+        self.assertEqual(1, len(oops.req_vars))
+        self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
+
+    def test_oops_messages_used_when_handling(self):
+        """Oops messages should appear even when exceptions are handled."""
+        job_1, job_2 = self.makeTwoJobs()
+        def handleError():
+            reporter = errorlog.globalErrorUtility
+            try:
+                raise ValueError('Fake exception.  Foobar, I say!')
+            except ValueError:
+                reporter.handling(sys.exc_info())
+        job_1.run = handleError
+        runner = JobRunner([job_1, job_2])
+        runner.runAll()
+        reporter = getUtility(IErrorReportingUtility)
+        oops = reporter.getLastOopsReport()
+        self.assertEqual(1, len(oops.req_vars))
+        self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
 
     def test_runAll_aborts_transaction_on_error(self):
         """runAll should abort the transaction on oops."""
@@ -222,6 +252,115 @@ class TestJobRunner(TestCaseWithFactory):
         # has been committed.
         transaction.abort()
         self.assertEqual(JobStatus.FAILED, job.job.status)
+
+
+class StuckJob(BaseRunnableJob):
+    """Simulation of a job that stalls."""
+    implements(IRunnableJob)
+
+    done = False
+
+    @classmethod
+    def iterReady(cls):
+        if not cls.done:
+            yield StuckJob(1)
+            yield StuckJob(2)
+        cls.done = True
+
+    @staticmethod
+    def get(id):
+        return StuckJob(id)
+
+    def __init__(self, id):
+        self.id = id
+        self.job = Job()
+
+    def acquireLease(self):
+        if self.id == 2:
+            lease_length = 1
+        else:
+            lease_length = 10000
+        return self.job.acquireLease(lease_length)
+
+    def run(self):
+        if self.id == 2:
+            sleep(30)
+        else:
+            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+            assert (
+                'user=branchscanner' in store._connection._raw_connection.dsn)
+
+
+class ListLogger:
+
+    def __init__(self):
+        self.entries = []
+
+    def info(self, input, *args):
+        self.entries.append(input)
+
+
+class TestTwistedJobRunner(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_timeout(self):
+        """When a job exceeds its lease, an exception is raised.
+
+        Unfortunately, timeouts include the time it takes for the zope
+        machinery to start up, so we run a job that will not time out first,
+        followed by a job that is sure to time out.
+        """
+        logger = ListLogger()
+        runner = TwistedJobRunner.runFromSource(
+            StuckJob, 'branchscanner', logger)
+
+        self.assertEqual(1, len(runner.completed_jobs))
+        self.assertEqual(1, len(runner.incomplete_jobs))
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        expected = [
+            'Running through Twisted.', 'Job resulted in OOPS: %s' % oops.id]
+        self.assertEqual(expected, logger.entries)
+        self.assertEqual('TimeoutError', oops.type)
+        self.assertIn('Job ran too long.', oops.value)
+
+
+class TestJobCronScript(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_configures_oops_handler(self):
+        """JobCronScript.main should configure the global error utility."""
+
+        class DummyRunner:
+
+            @classmethod
+            def runFromSource(cls, source, dbuser, logger):
+                expected_config = errorlog.ErrorReportingUtility()
+                expected_config.configure('update_preview_diffs')
+                self.assertEqual(
+                    errorlog.globalErrorUtility.oops_prefix,
+                    expected_config.oops_prefix)
+                return cls()
+
+            completed_jobs = []
+            incomplete_jobs = []
+
+        class JobCronScriptSubclass(JobCronScript):
+            config_name = 'update_preview_diffs'
+            source_interface = IUpdatePreviewDiffJobSource
+
+            def __init__(self):
+                super(JobCronScriptSubclass, self).__init__(DummyRunner)
+                self.logger = ListLogger()
+
+        old_errorlog = errorlog.globalErrorUtility
+        try:
+            errorlog.globalErrorUtility = errorlog.ErrorReportingUtility()
+            cronscript = JobCronScriptSubclass()
+            cronscript.main()
+        finally:
+            errorlog.globalErrorUtility = old_errorlog
 
 
 def test_suite():

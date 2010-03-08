@@ -41,7 +41,7 @@ from canonical.launchpad.helpers import (
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
     IDistribution, IFAQCollection, ILanguageSet, ILaunchpadCelebrities,
-    IProject, IQuestionCollection, IQuestionSet, IQuestionTarget,
+    IProjectGroup, IQuestionCollection, IQuestionSet, IQuestionTarget,
     ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
     QuestionStatus)
 from canonical.launchpad.webapp import (
@@ -66,13 +66,16 @@ class AskAQuestionButtonView:
             target = IQuestionTarget(self.context)
 
         return """
-              <a href="%s/+addquestion">
-                <img
-                  alt="Ask a question"
-                  src="/+icing/but-sml-askaquestion.gif"
-                />
-              </a>
-        """ % canonical_url(target, rootsite='answers')
+            <div id="involvement" class="portlet involvement">
+              <ul>
+                <li style="border: none">
+                  <a class="menu-link-ask_question sprite answers"
+                    href="%s">Ask a question</a>
+                </li>
+              </ul>
+            </div>
+        """ % canonical_url(
+            target, view_name='+addquestion', rootsite='answers')
 
 
 class UserSupportLanguagesMixin:
@@ -191,7 +194,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     @property
     def display_target_column(self):
         """Return True when the context has question targets to display."""
-        return IProject.providedBy(self.context)
+        return IProjectGroup.providedBy(self.context)
 
     # Will contain the parameters used by searchResults
     search_params = None
@@ -263,7 +266,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     @property
     def context_is_project(self):
         """Return True when the context is a project."""
-        return IProject.providedBy(self.context)
+        return IProjectGroup.providedBy(self.context)
 
     @property
     def unspoken_languages(self):

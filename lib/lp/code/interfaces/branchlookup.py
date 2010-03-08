@@ -100,6 +100,14 @@ class IBranchLookup(Interface):
         Return None if no match was found.
         """
 
+    def getByUrls(urls):
+        """Find branches by URL.
+
+        :param urls: A list of URLs expressed as strings.
+        :return: A dictionary mapping those URLs to `IBranch` objects. If
+            there is no branch for a URL, the URL is mapped to `None` instead.
+        """
+
     def getByLPPath(path):
         """Find the branch associated with an lp: path.
 

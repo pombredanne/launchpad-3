@@ -25,7 +25,7 @@ and/or has PPA support.
     >>> admin_browser.getControl('PPA support available').selected = True
     >>> admin_browser.getControl('Continue').click()
     >>> print admin_browser.title
-    ia64 : 5.04 : Ubuntu
+    ia64 : Hoary (5.04) : Ubuntu
 
 Other users won't see the link nor the page where a new port can be
 registered.

@@ -106,7 +106,7 @@ Create a chain of dependent source publications:
 They all share a source file.
 
     >>> shared_file = test_publisher.addMockFile(
-    ...     'shared.tar.gz', filecontent='Y')
+    ...     'shared_1.0.tar.gz', filecontent='Y')
     >>> discard = removed_source.sourcepackagerelease.addFile(shared_file)
     >>> discard = postponed_source.sourcepackagerelease.addFile(shared_file)
     >>> discard = published_source.sourcepackagerelease.addFile(shared_file)
@@ -155,13 +155,13 @@ Dependent binary publications.
 
     >>> [postponed_binary] =  removed_binary.copyTo(
     ...     hoary, PackagePublishingPocket.PROPOSED, ubuntu.main_archive)
-    >>> postponed_binary.secure_record.status = (
+    >>> postponed_binary.status = (
     ...     PackagePublishingStatus.SUPERSEDED)
-    >>> postponed_binary.secure_record.scheduleddeletiondate = future_date
+    >>> postponed_binary.scheduleddeletiondate = future_date
 
     >>> [published_binary] =  removed_binary.copyTo(
     ...     hoary, PackagePublishingPocket.UPDATES, ubuntu.main_archive)
-    >>> published_binary.secure_record.status = (
+    >>> published_binary.status = (
     ...     PackagePublishingStatus.PUBLISHED)
 
 Store the 'removable' context in the database as a checkpoint, so it
@@ -228,7 +228,7 @@ the temporary repository.
     obsolete-bin_666_i386.deb:   OK
     obsolete_666.dsc:            OK
     stuck-bin_666_i386.deb:      OK
-    shared.tar.gz:               OK
+    shared_1.0.tar.gz:           OK
     stuck_666.dsc:               OK
     stuck_667.dsc:               OK
     stuck_668.dsc:               OK
@@ -265,9 +265,9 @@ A few details to pay attention to in the log output:
    used with different names for two distinct sourcepackages
    (openoffice and openoffice-l10n is an example);
 
- * The source file shared across publications ('shared.tar.gz') wasn't
-   removed as it is still related to a 'live' and a 'future-deletion'
-   publications.
+ * The source file shared across publications ('shared_1.0.tar.gz')
+   wasn't removed as it is still related to a 'live' and a
+   'future-deletion' publications.
 
  * Dependent binaries are only possible via publication copies and are
    only removed 'atomically', i.e. since there is a 'live' publication
@@ -316,7 +316,7 @@ The repository was also left in the expected state.
     obsolete-bin_666_i386.deb:   REMOVED
     obsolete_666.dsc:            REMOVED
     stuck-bin_666_i386.deb:      OK
-    shared.tar.gz:               OK
+    shared_1.0.tar.gz:           OK
     stuck_666.dsc:               REMOVED
     stuck_667.dsc:               OK
     stuck_668.dsc:               OK
@@ -328,9 +328,9 @@ since they are related to only a single file (files can't be
 shared). In order to trigger the consideration of these specific
 publications we have to remove any 'live' publications.
 
-    >>> published_binary.secure_record.status = (
+    >>> published_binary.status = (
     ...    PackagePublishingStatus.SUPERSEDED)
-    >>> published_binary.secure_record.scheduleddeletiondate = past_date
+    >>> published_binary.scheduleddeletiondate = past_date
 
 Now DeathRow considers 'stuck-bin' publications.
 
@@ -354,7 +354,7 @@ imposing quarantine on it. Once the quarantine is lifted, by setting a
 'past' scheduleddeletiondate, the binary file finally gets removed
 from the repository.
 
-    >>> postponed_binary.secure_record.scheduleddeletiondate = past_date
+    >>> postponed_binary.scheduleddeletiondate = past_date
 
 That done, the publication and its files are free to be removed in a
 single pass.
@@ -389,7 +389,7 @@ The file was removed from the repository.
     obsolete-bin_666_i386.deb:   REMOVED
     obsolete_666.dsc:            REMOVED
     stuck-bin_666_i386.deb:      REMOVED
-    shared.tar.gz:               OK
+    shared_1.0.tar.gz:           OK
     stuck_666.dsc:               REMOVED
     stuck_667.dsc:               OK
     stuck_668.dsc:               OK

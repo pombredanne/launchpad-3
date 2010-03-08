@@ -173,7 +173,7 @@ added.
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
     >>> admin_browser.getControl("Tags").value = "tag1 tag2 tag3"
     >>> admin_browser.getControl("Change").click()
-    >>> admin_browser.getControl('Yes, define new tag', index=0).click()
+    >>> admin_browser.getControl('Create the new tag', index=0).click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
@@ -188,7 +188,7 @@ added.
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
     >>> admin_browser.getControl("Tags").value = "tag1 tag2 tag4"
     >>> admin_browser.getControl("Change").click()
-    >>> admin_browser.getControl('Yes, define new tag', index=0).click()
+    >>> admin_browser.getControl('Create the new tag', index=0).click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
@@ -277,3 +277,25 @@ bundled with that comment in the UI.
     status:
     Confirmed &#8594; New
     --------
+
+If a target of a bug task is changed the old and new value will be shown.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
+    ...     '1/+editstatus')
+    >>> admin_browser.getControl(
+    ...     'Package').value = 'linux-source-2.6.15'
+    >>> admin_browser.getControl("Save Changes").click()
+    >>> print_comments(admin_browser.contents)
+    Sample Person
+    ...
+    Foo Bar
+    wrote
+    ...
+    --------
+    Foo Bar
+    ...
+    affects:
+    mozilla-firefox (Ubuntu) &#8594; linux-source-2.6.15 (Ubuntu)
+    --------
+

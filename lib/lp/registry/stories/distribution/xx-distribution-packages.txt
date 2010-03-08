@@ -47,7 +47,7 @@ here first:
     ...     'http://localhost'
     ...     '/ubuntu/breezy-autotest/+package/mozilla-firefox')
     >>> print browser.title
-    mozilla-firefox : 6.6.6 : Ubuntu
+    mozilla-firefox : Breezy Badger Autotest (6.6.6) : Ubuntu
 
 Now run a search for mozilla-firefox and check that it is found:
 
@@ -124,9 +124,9 @@ archive as well as some new PPAs.
     >>> publisher = SoyuzTestPublisher()
     >>> publisher.prepareBreezyAutotest()
     >>> ubuntutest = publisher.ubuntutest
-    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
-    >>> ubuntutest['breezy-autotest'].status = DistroSeriesStatus.DEVELOPMENT
-    >>> ubuntutest['hoary-test'].status = DistroSeriesStatus.DEVELOPMENT
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> ubuntutest['breezy-autotest'].status = SeriesStatus.DEVELOPMENT
+    >>> ubuntutest['hoary-test'].status = SeriesStatus.DEVELOPMENT
 
     # Publish the source 'netapplet' in the breezy-autotest and
     #  main archive.
@@ -284,8 +284,18 @@ As can be seen, the packaging is not linked yet.  We can do that now using the
     >>> print user_browser.url
     http://launchpad.dev/ubuntu/warty/+source/iceweasel/+edit-packaging
 
+In step one the project is specified.
+
     >>> user_browser.getControl(
-    ...     name='field.productseries').value = "firefox/trunk"
+    ...     name='field.product').value = "firefox"
+    >>> user_browser.getControl('Continue').click()
+
+In step two, one of the series for that project can be selected.
+
+    >>> series_control = user_browser.getControl(name='field.productseries')
+    >>> print series_control.options
+    ['trunk', '1.0']
+    >>> series_control.value = ['trunk']
     >>> user_browser.getControl('Change').click()
 
 Go back to the source page, and now the upstream's description is shown and
@@ -360,7 +370,7 @@ A link to further PPA searches is also included.
     ...     url='http://launchpad.dev/ubuntutest/+ppas?'
     ...         'name_filter=netapplet')
     >>> link.text
-    "...more untrusted versions of..."
+    "...other untrusted versions of..."
 
 
 Source package change logs
@@ -464,8 +474,8 @@ changelog:
     ...     "+changelog")
     >>> changelog = find_tag_by_id(
     ...     user_browser.contents, 'commercialpackage_1.0-1')
-    >>> changelog.find('a')
-    <a href="http://launchpad.dev/~name16" class="sprite person">&nbsp;foo.bar@canonical.com</a>
+    >>> print extract_text(changelog.find('a'))
+    foo.bar@canonical.com
 
 
 Packages that are not published

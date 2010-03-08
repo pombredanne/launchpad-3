@@ -21,6 +21,7 @@ At the top level we provide a collection of bugs.
   attachments_collection_link: u'http://.../bugs/11/attachments'
   bug_tasks_collection_link: u'http://.../bugs/11/bug_tasks'
   bug_watches_collection_link: u'http://.../bugs/11/bug_watches'
+  can_expire: False
   cves_collection_link: u'http://.../bugs/11/cves'
   date_created: u'2007-03-15T20:33:56.678930+00:00'
   date_last_message: None
@@ -29,9 +30,12 @@ At the top level we provide a collection of bugs.
   description: u"I've had problems when switching..."
   duplicate_of_link: None
   duplicates_collection_link: u'http://.../bugs/11/duplicates'
+  heat: 0
   id: 11
+  latest_patch_uploaded: None
   messages_collection_link: u'http://.../bugs/11/messages'
   name: None
+  number_of_duplicates: 0
   owner_link: u'http://.../~name16'
   private: False
   resource_type_link: u'http://.../#bug'
@@ -42,6 +46,9 @@ At the top level we provide a collection of bugs.
   title: u'Make Jokosher use autoaudiosink'
   users_affected_collection_link: u'http://.../bugs/11/users_affected'
   users_affected_count: 0
+  users_affected_count_with_dupes: 0
+  users_affected_with_dupes_collection_link: u'http://.../bugs/11/users_affected_with_dupes'
+  users_unaffected_collection_link: u'http://.../bugs/11/users_unaffected'
   users_unaffected_count: 0
   who_made_private_link: None
 
@@ -248,6 +255,12 @@ relation to some bug.
   >>> webservice.get("/messages").status
   404
 
+Bug messages can be accessed anonymously.
+
+  >>> messages = anon_webservice.get("/bugs/5/messages").jsonBody()['entries']
+  >>> print messages[0]['self_link']
+  http://.../firefox/+bug/5/comments/0
+
 We can add a new message to a bug by calling the newMessage method.
 
   >>> print webservice.named_post(
@@ -325,12 +338,14 @@ data in a bug task is derived from the bug.
   self_link: u'http://api.../debian/+source/mozilla-firefox/+bug/1'
   status: u'Confirmed'
   target_link: u'http://api.../debian/+source/mozilla-firefox'
+  task_age: ...
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
 
-  >>> bugtask_path = bug_one_bugtasks[0]['self_link']
-  >>> bugtask = webservice.get(bugtask_path).jsonBody()
-  >>> bugtask == bug_one_bugtasks[0]
-  True
+Because task age is a dynamic calculation between now and the date_created
+we will just verify that an integer is returned.
+
+  >>> print type(bug_one_bugtasks[0]['task_age'])
+  <type 'int'>
 
 The collection of bug tasks is not exposed as a resource:
 
@@ -340,6 +355,7 @@ The collection of bug tasks is not exposed as a resource:
 It's possible to change the task's assignee.
 
   >>> patch = {u'assignee_link': webservice.getAbsoluteUrl('/~cprov')}
+  >>> bugtask_path = bug_one_bugtasks[0]['self_link']
   >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
   HTTP/1.1 209 Content Returned...
 
@@ -668,7 +684,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
     ...
     Location: http://.../bugs/.../nominations/...
     ...
-  
+
     >>> nominations = webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
     >>> pprint_collection(nominations)
@@ -691,7 +707,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
 John cannot approve or decline the nomination.
 
     >>> nom_url = nominations['entries'][0]['self_link']
-    
+
     >>> print john_webservice.named_get(nom_url, 'canApprove').jsonBody()
     False
 
@@ -707,9 +723,9 @@ John cannot approve or decline the nomination.
     >>> logout()
 
 Eric, however, can and does decline the nomination.
-    
+
     >>> eric_webservice = webservice_for_person(
-    ...     eric, permission=OAuthPermission.WRITE_PRIVATE)    
+    ...     eric, permission=OAuthPermission.WRITE_PRIVATE)
     >>> print eric_webservice.named_post(nom_url, 'decline')
     HTTP/1.1 200 Ok...
 
@@ -858,6 +874,12 @@ Each subscription can be accessed individually.
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/stevea'
   subscribed_by_link: u'http://.../~janitor'
+
+Subscriptions can also be accessed anonymously.
+
+  >>> subscriptions = anon_webservice.get(bug_one_subscriptions_url).jsonBody()
+  >>> print subscriptions['entries'][0]['self_link']
+  http://.../bugs/1/+subscription/stevea
 
 We can also create new subscriptions.
 
@@ -1631,6 +1653,76 @@ a given device.
     http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
 
 
+User related bug tasks
+~~~~~~~~~~~~~~~~~~~~~~
+
+Calling searchTasks() on a Person object returns a collection of tasks
+related to this person.
+
+First create some sample data
+
+    >>> login('foo.bar@canonical.com')
+    >>> testuser1 = factory.makePerson(name='testuser1')
+    >>> testuser2 = factory.makePerson(name='testuser2')
+    >>> testuser3 = factory.makePerson(name='testuser3')
+    >>> testbug1 = factory.makeBug(owner=testuser1)
+    >>> testbug2 = factory.makeBug(owner=testuser1)
+    >>> subscription = testbug2.subscribe(testuser2, testuser2)
+    >>> logout()
+
+There are two tasks related to `testuser1`, the initial tasks of both
+bugs:
+
+    >>> related = webservice.named_get(
+    ...     '/~testuser1', 'searchTasks'
+    ...     ).jsonBody()
+    >>> pprint_collection(related)
+    start: 0
+    total_size: 2
+    ---
+    ...
+    owner_link: u'http://api.launchpad.dev/beta/~testuser1'
+    ...
+    ---
+    ...
+    owner_link: u'http://api.launchpad.dev/beta/~testuser1'
+    ...
+
+`testuser2` is subscribed to `testbugs2`, so this bug is related to this
+user:
+
+    >>> related = webservice.named_get(
+    ...     '/~testuser2', 'searchTasks'
+    ...     ).jsonBody()
+    >>> len(related['entries']) == 1
+    True
+    >>> int(related['entries'][0]['bug_link'].split('/')[-1]) == testbug2.id
+    True
+
+`testuser3` is not active, so the collection of related tasks to him is
+empty:
+
+    >>> related = webservice.named_get(
+    ...     '/~testuser3', 'searchTasks'
+    ...     ).jsonBody()
+    >>> pprint_collection(related)
+    start: None
+    total_size: 0
+    ---
+
+You are not allowed to overwrite all user related parameter in the same
+query, because in this case this bug will no be related to the person
+anymore. In this case a `400 Bad Request`-Error will be returned
+
+    >>> name12 = webservice.get("/~name12").jsonBody()
+    >>> print webservice.named_get(
+    ...     '/~name16', 'searchTasks', assignee=name12['self_link'],
+    ...     owner=name12['self_link'], bug_subscriber=name12['self_link'],
+    ...     bug_commenter=name12['self_link']
+    ...     )
+    HTTP/1.1 400 Bad Request...
+
+
 Affected users
 --------------
 
@@ -1677,6 +1769,7 @@ The collection of all CVEs is available at the top level.
     start: 0
     total_size: 10
     ---
+    bugs_collection_link: u'http://.../bugs/cve/2005-2737/bugs'
     date_created: u'2005-09-13T14:05:17.043865+00:00'
     date_modified: u'2005-09-13T14:05:17.043865+00:00'
     description: u'Cross-site scripting (XSS) vulnerability...'
@@ -1707,11 +1800,13 @@ The collection of all CVEs is available at the top level.
 And for every bug we can look at the CVEs linked to it.
 
     >>> bug_one_cves_url = bug_one['cves_collection_link']
-    >>> pprint_collection(webservice.get(bug_one_cves_url).jsonBody())
+    >>> bug_one_cves = webservice.get(bug_one_cves_url).jsonBody()
+    >>> pprint_collection(bug_one_cves)
     resource_type_link: u'http://.../#cve-page-resource'
     start: 0
     total_size: 1
     ---
+    bugs_collection_link: u'http://.../bugs/cve/1999-8979/bugs'
     date_created: u'2005-09-07T19:00:32.944561+00:00'
     date_modified: u'2005-09-13T14:00:03.508959+00:00'
     description: u'Firefox crashes all the time'
@@ -1723,6 +1818,15 @@ And for every bug we can look at the CVEs linked to it.
     title: u'CVE-1999-8979 (Entry)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979'
     ---
+
+For every CVE we can also look at the bugs linked to it.
+
+    >>> cve_entry = bug_one_cves['entries'][0]
+    >>> bug_links = webservice.get(
+    ...     cve_entry['bugs_collection_link']).jsonBody()
+    >>> for bug in bug_links['entries']:
+    ...     print bug['self_link']
+    http://.../bugs/1
 
 Unlink CVEs from that bug.
 

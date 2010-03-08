@@ -9,7 +9,7 @@ sampledata builder.
     >>> import datetime
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.soyuz.interfaces.builder import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
     # Create a new build record.
@@ -23,10 +23,11 @@ sampledata builder.
     >>> bob_builder.builderok = True
 
     # Set a known duration for the current job.
-    >>> in_progress_build = removeSecurityProxy(
-    ...     bob_builder.currentjob.build)
+    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> build2 = getUtility(IBuildSet).getByQueueEntry(bob_builder.currentjob)
+    >>> in_progress_build = removeSecurityProxy(build2)
     >>> one_minute = datetime.timedelta(seconds=60)
-    >>> in_progress_build.estimated_build_duration = one_minute
+    >>> in_progress_build.buildqueue_record.estimated_duration = one_minute
 
     >>> logout()
 
@@ -70,6 +71,30 @@ component.
     Architecture: i386
     Pocket: Release
     Component: main
+
+Let's disable the job associated with the build. This has the side effect
+that a dispatch time estimation will not be available for the build in
+question.
+
+    >>> build.buildqueue_record.job.suspend()
+    >>> anon_browser.open(build_url)
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
+    ...
+    Build status
+    Needs building
+    Build details
+    Source: testing - 1.0
+    Archive: Primary Archive for Ubuntu Test
+    Series: Breezy Badger Autotest
+    Architecture: i386
+    Pocket: Release
+    Component: main
+
+Re-enable the build in order to avioid subsequent test breakage.
+
+    >>> build.buildqueue_record.job.resume()
+    >>> anon_browser.open(build_url)
 
 The 'Build details' section exists for all status and contains links
 to all the relevant entities involed in this build.
@@ -122,12 +147,8 @@ messages.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.database.constants import UTC_NOW
     >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> in_progress_build.buildstate = BuildStatus.NEEDSBUILD
-    >>> in_progress_build.buildqueue_record.buildstart = None
-    >>> in_progress_build.buildqueue_record.builder = None
-    >>> build.buildstate = BuildStatus.BUILDING
-    >>> build.buildqueue_record.buildstart = UTC_NOW
-    >>> build.buildqueue_record.builder = bob_builder
+    >>> in_progress_build.buildqueue_record.reset()
+    >>> build.buildqueue_record.markAsBuilding(bob_builder)
     >>> build.buildqueue_record.logtail = 'one line\nanother line'
     >>> logout()
 

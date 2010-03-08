@@ -7,7 +7,7 @@ import os
 import transaction
 import unittest
 
-from twisted.internet import defer
+from twisted.internet import defer, task, reactor
 from twisted.internet.error import (
     ConnectionClosed, ProcessTerminated, TimeoutError)
 from twisted.python.failure import Failure
@@ -24,8 +24,8 @@ from lp.buildmaster.manager import (
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.logger import BufferLogger
@@ -43,6 +43,11 @@ class TestRecordingSlaves(TrialTestCase):
         TrialTestCase.setUp(self)
         self.slave = RecordingSlave(
             'foo', 'http://foo:8221/rpc', 'foo.host')
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def test_representation(self):
         """`RecordingSlave` has a custom representation.
@@ -51,18 +56,29 @@ class TestRecordingSlaves(TrialTestCase):
         """
         self.assertEqual('<foo:http://foo:8221/rpc>', repr(self.slave))
 
+    def assert_ensurepresent(self, func):
+        """Helper function to test results from calling ensurepresent."""
+        self.assertEqual(
+            [True, 'Download'],
+            func('boing', 'bar', 'baz'))
+        self.assertEqual(
+            [('ensurepresent', ('boing', 'bar', 'baz'))],
+            self.slave.calls)
+
     def test_ensurepresent(self):
         """`RecordingSlave.ensurepresent` always succeeds.
 
         It returns the expected succeed code and records the interaction
         information for later use.
         """
-        self.assertEqual(
-            [True, 'Download'],
-            self.slave.ensurepresent('boing', 'bar', 'baz'))
-        self.assertEqual(
-            [('ensurepresent', ('boing', 'bar', 'baz'))],
-            self.slave.calls)
+        self.assert_ensurepresent(self.slave.ensurepresent)
+
+    def test_sendFileToSlave(self):
+        """RecordingSlave.sendFileToSlave always succeeeds.
+
+        It calls ensurepresent() and hence returns the same results.
+        """
+        self.assert_ensurepresent(self.slave.sendFileToSlave)
 
     def test_build(self):
         """`RecordingSlave.build` always succeeds.
@@ -489,13 +505,16 @@ class TestBuilddManagerScan(TrialTestCase):
 
     def assertBuildingJob(self, job, builder, logtail=None):
         """Assert the given job is building on the given builder."""
+        from lp.services.job.interfaces.job import JobStatus
         if logtail is None:
             logtail = 'Dummy sampledata entry, not processing'
 
         self.assertTrue(job is not None)
         self.assertEqual(job.builder, builder)
-        self.assertTrue(job.buildstart is not None)
-        self.assertEqual(job.build.buildstate, BuildStatus.BUILDING)
+        self.assertTrue(job.date_started is not None)
+        self.assertEqual(job.job.status, JobStatus.RUNNING)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual(build.buildstate, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
     def _getManager(self):
@@ -617,8 +636,9 @@ class TestBuilddManagerScan(TrialTestCase):
 
         job = getUtility(IBuildQueueSet).get(job.id)
         self.assertTrue(job.builder is None)
-        self.assertTrue(job.buildstart is None)
-        self.assertEqual(job.build.buildstate, BuildStatus.NEEDSBUILD)
+        self.assertTrue(job.date_started is None)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual(build.buildstate, BuildStatus.NEEDSBUILD)
 
     def testScanRescuesJobFromBrokenBuilder(self):
         # The job assigned to a broken builder is rescued.
@@ -701,13 +721,14 @@ class TestDispatchResult(unittest.TestCase):
         builder.builderok = True
 
         job = builder.currentjob
+        build = getUtility(IBuildSet).getByQueueEntry(job)
         self.assertEqual(
             'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
-            job.build.title)
+            build.title)
 
-        self.assertEqual('BUILDING', job.build.buildstate.name)
+        self.assertEqual('BUILDING', build.buildstate.name)
         self.assertNotEqual(None, job.builder)
-        self.assertNotEqual(None, job.buildstart)
+        self.assertNotEqual(None, job.date_started)
         self.assertNotEqual(None, job.logtail)
 
         transaction.commit()
@@ -717,9 +738,10 @@ class TestDispatchResult(unittest.TestCase):
     def assertJobIsClean(self, job_id):
         """Re-fetch the `IBuildQueue` record and check if it's clean."""
         job = getUtility(IBuildQueueSet).get(job_id)
-        self.assertEqual('NEEDSBUILD', job.build.buildstate.name)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual('NEEDSBUILD', build.buildstate.name)
         self.assertEqual(None, job.builder)
-        self.assertEqual(None, job.buildstart)
+        self.assertEqual(None, job.date_started)
         self.assertEqual(None, job.logtail)
 
     def testResetDispatchResult(self):

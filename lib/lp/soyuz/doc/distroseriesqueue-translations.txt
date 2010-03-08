@@ -8,7 +8,7 @@ uploaded into the system.
   >>> from lp.soyuz.model.component import Component
   >>> from lp.soyuz.model.section import Section
   >>> from lp.soyuz.model.publishing import (
-  ...     SecureSourcePackagePublishingHistory)
+  ...     SourcePackagePublishingHistory)
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -57,7 +57,7 @@ queue:
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
   ...     '', '', '', '', dapper.main_archive, 'copyright ?!', '', '')
 
-  >>> publishing_history = SecureSourcePackagePublishingHistory(
+  >>> publishing_history = SourcePackagePublishingHistory(
   ...     distroseries=dapper.id,
   ...     sourcepackagerelease=source_package_release.id,
   ...     component=source_package_release.component.id,
@@ -65,7 +65,6 @@ queue:
   ...     status=PackagePublishingStatus.PUBLISHED,
   ...     datecreated=UTC_NOW,
   ...     pocket=PackagePublishingPocket.RELEASE,
-  ...     embargo=False,
   ...     archive=dapper.main_archive)
 
   # Do the upload into the system.
@@ -414,8 +413,8 @@ package.
   ...     ])
   >>> for filename in translation_files:
   ...     print filename
-  source/po/ca.po
-  source/po/cs.po
-  source/po/de.po
+  ./source/po/ca.po
+  ./source/po/cs.po
+  ./source/po/de.po
   ...
-  source/po/pmount.pot
+  ./source/po/pmount.pot

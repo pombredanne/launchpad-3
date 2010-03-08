@@ -109,10 +109,6 @@ bug. He uses the link to Related bug to return to the bug.
     ...     find_tag_by_id(user_browser.contents, 'original-bug'))
     This question was originally filed as bug #10.
 
-    >>> portlet = find_portlet(user_browser.contents, 'Related bugs')
-    >>> portlet.a
-    <a class="sprite bug" href="http://bugs.launchpad.dev/bugs/10">Bug #10: another test bug</a>
-
     >>> user_browser.getLink('#10: another test bug').click()
     >>> user_browser.title
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
@@ -242,8 +238,8 @@ it is still in the Open status.
     Question #... : Questions : Jokosher
 
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'registration'))
-    Open Question #..., asked ... by Foo Bar
+    ...     find_tag_by_id(user_browser.contents, 'question-status'))
+    Status: Open
 
 No Privileges Person uses his browser's back button to view the bug
 again. The bug status is sill Invalid for Jokosher, but he can edit it.

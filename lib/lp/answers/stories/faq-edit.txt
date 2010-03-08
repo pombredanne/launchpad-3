@@ -82,10 +82,5 @@ The user can see his changes on the page:
 The 'Last updated by' field in the 'Lifecycle' portlet is updated
 with the name of the user who made the last modification:
 
-    >>> print extract_text(find_portlet(browser.contents, 'Lifecycle'))
-    Lifecycle
-    Created by: Sample Person
-    When: ...
-    Last updated by: Sample Person
-    When: ...
-
+    >>> print extract_text(find_tag_by_id(browser.contents, 'faq-updated'))
+    Last updated by: Sample Person on ...

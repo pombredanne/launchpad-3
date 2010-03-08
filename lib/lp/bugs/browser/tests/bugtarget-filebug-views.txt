@@ -43,6 +43,53 @@ directly.
     u'Test description.'
 
 
+== URLs to additional FileBug elements ==
+
+FileBugViewBase's inline_filebug_base_url returns the base URL for all
+inline +filebug work.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> filebug_view = create_initialized_view(
+    ...     firefox, '+filebug')
+
+This property returns the root URL of the current request, so in the
+case of this test will return 127.0.0.1.
+
+    >>> print filebug_view.inline_filebug_base_url
+    http://127.0.0.1/
+
+FileBugViewBase provides properties that return the URLs of further
+useful parts of the +filebug process.
+
+The inline_filebug_form_url property returns the URL of the inline
+filebug form so that it may be loaded asynchronously.
+
+    >>> print filebug_view.inline_filebug_form_url
+    http://launchpad.dev/firefox/+filebug-inline-form
+
+Similarly, the duplicate_search_url property returns the base URL for
+the duplicate search view, which can be used to load the list of
+possible duplicates for a bug asynchronously.
+
+    >>> print filebug_view.duplicate_search_url
+    http://launchpad.dev/firefox/+filebug-show-similar
+
+For project groups, the URLs returned will refer to the default product
+for those project groups.
+
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> gnome_project = getUtility(IProjectGroupSet).getByName('gnome')
+    >>> gnome_filebug_view = create_initialized_view(
+    ...     gnome_project, '+filebug')
+
+    >>> print gnome_filebug_view.inline_filebug_form_url
+    http://launchpad.dev/evolution/+filebug-inline-form
+
+    >>> print gnome_filebug_view.duplicate_search_url
+    http://launchpad.dev/evolution/+filebug-show-similar
+
+
 == Adding extra info to filed bugs ==
 
 It's possible for bug reporting tools to upload a file with debug
@@ -81,19 +128,28 @@ Librarian.
 
     >>> transaction.commit()
 
-Now, if we pass the token to the filebug view, the extra_data
-attribute will be set with the actual data. Also, the used parser will
-be available on the view itself. This is useful later, for doing
-cleanup.
+The data is processed by a ProcessApportBlobJob, which the filebug view
+can then access to get the parsed data. We'll define a helper method for
+processing the blob.
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> print filebug_view.data_parser
-    None
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+
+    >>> def process_blob(token):
+    ...     blob = getUtility(ITemporaryStorageManager).fetch(token)
+    ...     job = getUtility(IProcessApportBlobJobSource).create(blob)
+    ...     job.job.start()
+    ...     job.run()
+    ...     job.job.complete()
+    >>> process_blob(token)
+
+Now, if we pass the token to the filebug view, the extra_data
+attribute will be set with the actual data.
+
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(
+    ...     filebug_view.request, token) is filebug_view
     True
-    >>> filebug_view.data_parser
-    <...FileBugDataParser object at ...>
 
     >>> filebug_view.extra_data.extra_description
     u'This should be added to the description.'
@@ -147,9 +203,10 @@ to the bug.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.validate(bug_data) is None
     True
@@ -205,9 +262,10 @@ be specified using a Content-description header, but it's not required.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.validate(bug_data) is None
     True
@@ -281,9 +339,10 @@ message.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.extra_data.extra_description
     u'This bug should be private.'
@@ -336,9 +395,10 @@ We can also specify that a bug is public via the same field.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.extra_data.extra_description
     u'This bug should be public.'
@@ -391,9 +451,10 @@ identified by their Launchpad name or their e-mail address.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
 
     >>> filebug_view.extra_data.extra_description
@@ -455,9 +516,10 @@ certain people and teams to bugs when they are filed.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
 
     >>> filebug_view.extra_data.extra_description
@@ -516,9 +578,9 @@ bug and that the bug has been marked as private.
 As already seen above, it's the FileBugViewBase's publishTraverse that
 finds the right blob to use.
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.extra_data_token == token
     True
@@ -529,7 +591,7 @@ Since the view itself is returned, it will handle further traversals as
 well, so if we call the method again, it represents a URL like
 '.../+filebug/token/foo', which should raise a NotFound error.
 
-    >>> filebug_view.publishTraverse(request, token)
+    >>> filebug_view.publishTraverse(filebug_view.request, token)
     Traceback (most recent call last):
     ...
     NotFound:...
@@ -540,9 +602,8 @@ well, so if we call the method again, it represents a URL like
 If publishTraverse is called with a token that can't be found, a
 NotFound error is raised.
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, 'no-such-token')
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request, 'no-such-token')
     Traceback (most recent call last):
     ...
     NotFound:...
@@ -559,7 +620,7 @@ can pass an empty request and pass the data dict to the methods
 directly.
 
     >>> login('no-priv@canonical.com')
-    >>> filebug_view = create_view(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None
     True
     >>> filebug_view.submit_bug_action.success(bug_data)
@@ -581,7 +642,7 @@ The base class allows security bugs to be filed.
     ...     title=u'Security bug', comment=u'Test description.',
     ...     security_related=True)
 
-    >>> filebug_view = create_view(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None
     True
     >>> filebug_view.submit_bug_action.success(bug_data)
@@ -600,7 +661,7 @@ Bug supervisors are offered several extra options when filing bugs.
 
     >>> login_person(person)
 
-    >>> filebug_view = create_view(product, LaunchpadTestRequest())
+    >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> normal_fields = set(filebug_view.field_names)
     >>> product.setBugSupervisor(person, person)
     >>> supervisor_fields = set(filebug_view.field_names)

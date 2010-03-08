@@ -20,7 +20,7 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.testing import TestCaseWithFactory, verifyObject
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from canonical.launchpad.webapp.publisher import canonical_url
 
 
@@ -911,6 +911,7 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('eo'))
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('de'))
 
+
 class TestTranslationCredits(TestCaseWithFactory):
     """Test generation of translation credits."""
 
@@ -1209,7 +1210,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 class TestPOFileSet(TestCaseWithFactory):
     """Test PO file set methods."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         # Create a POFileSet to work with.
@@ -1445,6 +1446,148 @@ class TestPOFileSet(TestCaseWithFactory):
             all_pofiles,
             list_of_tuples_into_list(
                 self.pofileset.getPOFilesWithTranslationCredits()))
+
+    def test_getPOFilesWithTranslationCredits_untranslated(self):
+        # We need absolute DB access to be able to remove a translation
+        # message.
+        LaunchpadZopelessLayer.switchDbUser('postgres')
+
+        # Initially, we only get data from the sampledata, all of which
+        # are untranslated.
+        sampledata_pofiles = list(
+            self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True))
+        total = len(sampledata_pofiles)
+        self.assertEquals(3, total)
+
+        # All POFiles with translation credits messages are
+        # returned along with relevant POTMsgSets.
+        potemplate1 = self.factory.makePOTemplate()
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            potemplate1, singular=u'translator-credits', sequence=1)
+
+        sr_pofile = self.factory.makePOFile('sr', potemplate=potemplate1)
+        pofiles_with_credits = (
+            self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True))
+        self.assertNotIn((sr_pofile, credits_potmsgset),
+                         list(pofiles_with_credits))
+        self.assertEquals(
+            total,
+            pofiles_with_credits.count())
+
+        # Removing a translation for this message, removes it
+        # from a result set when untranslated=True is passed in.
+        message = credits_potmsgset.getSharedTranslationMessage(
+            sr_pofile.language)
+        message.destroySelf()
+        pofiles_with_credits = (
+            self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True))
+        self.assertIn((sr_pofile, credits_potmsgset),
+                      list(pofiles_with_credits))
+        self.assertEquals(
+            total + 1,
+            pofiles_with_credits.count())
+
+    def test_getPOFilesByPathAndOrigin_path_mismatch(self):
+        # getPOFilesByPathAndOrigin matches on POFile path.
+        template = self.factory.makePOTemplate()
+        pofile = template.newPOFile('ta')
+
+        not_found = self.pofileset.getPOFilesByPathAndOrigin(
+            'tu.po', distroseries=template.distroseries,
+            sourcepackagename=template.sourcepackagename,
+            productseries=template.productseries)
+
+        self.assertContentEqual([], not_found)
+
+    def test_getPOFilesByPathAndOrigin_productseries_none(self):
+        # getPOFilesByPathAndOrigin returns an empty result set if a
+        # ProductSeries search matches no POFiles.
+        productseries = self.factory.makeProductSeries()
+
+        # Look for zh.po, which does not exist.
+        not_found = self.pofileset.getPOFilesByPathAndOrigin(
+            'zh.po', productseries=productseries)
+
+        self.assertContentEqual([], not_found)
+
+    def test_getPOFilesByPathAndOrigin_productseries(self):
+        # getPOFilesByPathAndOrigin finds a POFile for a productseries.
+        productseries = self.factory.makeProductSeries()
+        template = self.factory.makePOTemplate(productseries=productseries)
+        pofile = template.newPOFile('nl')
+        removeSecurityProxy(pofile).path = 'nl.po'
+
+        found = self.pofileset.getPOFilesByPathAndOrigin(
+            'nl.po', productseries=productseries)
+
+        self.assertContentEqual([pofile], found)
+
+    def test_getPOFilesByPathAndOrigin_sourcepackage_none(self):
+        # getPOFilesByPathAndOrigin returns an empty result set if a
+        # source-package search matches no POFiles.
+        package = self.factory.makeSourcePackage()
+
+        # Look for no.po, which does not exist.
+        not_found = self.pofileset.getPOFilesByPathAndOrigin(
+            'no.po', distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+
+        self.assertContentEqual([], not_found)
+
+    def test_getPOFilesByPathAndOrigin_sourcepackage(self):
+        # getPOFilesByPathAndOrigin finds a POFile for a source package
+        # name.
+        package = self.factory.makeSourcePackage()
+        template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile = template.newPOFile('kk')
+        removeSecurityProxy(pofile).path = 'kk.po'
+
+        found = self.pofileset.getPOFilesByPathAndOrigin(
+            'kk.po', distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+
+        self.assertContentEqual([pofile], found)
+
+    def test_getPOFilesByPathAndOrigin_from_sourcepackage_none(self):
+        # getPOFilesByPathAndOrigin returns an empty result set if a
+        # from-source-package search matches no POFiles.
+        upload_package = self.factory.makeSourcePackage()
+
+        # Look for la.po, which does not exist.
+        not_found = self.pofileset.getPOFilesByPathAndOrigin(
+            'la.po', distroseries=upload_package.distroseries,
+            sourcepackagename=upload_package.sourcepackagename)
+
+        self.assertContentEqual([], not_found)
+
+    def test_getPOFilesByPathAndOrigin_from_sourcepackage(self):
+        # getPOFilesByPathAndOrigin finds a POFile for the source
+        # package it was uploaded for (which may not be the same as the
+        # source package it's actually in).
+        upload_package = self.factory.makeSourcePackage()
+        distroseries = upload_package.distroseries
+        target_package = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        template = self.factory.makePOTemplate(
+            distroseries=distroseries,
+            sourcepackagename=target_package.sourcepackagename)
+        removeSecurityProxy(template).from_sourcepackagename = (
+            upload_package.sourcepackagename)
+        pofile = template.newPOFile('ka')
+        removeSecurityProxy(pofile).path = 'ka.po'
+        removeSecurityProxy(pofile).from_sourcepackagename = (
+            upload_package.sourcepackagename)
+
+        found = self.pofileset.getPOFilesByPathAndOrigin(
+            'ka.po', distroseries=distroseries,
+            sourcepackagename=upload_package.sourcepackagename)
+
+        self.assertContentEqual([pofile], found)
 
 
 class TestPOFileStatistics(TestCaseWithFactory):

@@ -138,11 +138,10 @@ performance problem in production.
     ...     is_bug_search_feed_active: False
     ...     """
     >>> config.push('bug_search_feed_data', bug_search_feed_data)
-    >>> try:
-    ...     browser.open(url)
-    ... except Unauthorized, info:
-    ...     print Unauthorized, info
-    zope.security.interfaces.Unauthorized Bug search feed deactivated
+    >>> browser.open(url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Bug search feed deactivated
 
 The bug search feed can be tested after setting is_bug_search_feed_active
 to True.

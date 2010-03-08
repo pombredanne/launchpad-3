@@ -29,6 +29,8 @@ from canonical.database.constants import UTC_NOW
 
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.tagfiles import parse_tagfile
+from lp.archiveuploader.utils import (determine_binary_file_type,
+    determine_source_file_type)
 
 from canonical.database.sqlbase import sqlvalues
 
@@ -47,9 +49,9 @@ from lp.soyuz.model.files import (
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
 
 def check_not_in_librarian(files, archive_root, directory):
@@ -76,6 +78,39 @@ def check_not_in_librarian(files, archive_root, directory):
         #                                'librarian' % fname)
         to_upload.append((fname, path))
     return to_upload
+
+
+BINARYPACKAGE_EXTENSIONS = {
+    BinaryPackageFormat.DEB: '.deb',
+    BinaryPackageFormat.UDEB: '.udeb',
+    BinaryPackageFormat.RPM: '.rpm'}
+
+
+class UnrecognizedBinaryFormat(Exception):
+
+    def __init__(self, fname, *args):
+        Exception.__init__(self, *args)
+        self.fname = fname
+
+    def __str__(self):
+        return '%s is not recognized as a binary file.' % self.fname
+
+
+def getBinaryPackageFormat(fname):
+    """Return the BinaryPackageFormat for the given filename.
+
+    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
+    'DEB'
+    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
+    'UDEB'
+    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
+    'RPM'
+    """
+    for key, value in BINARYPACKAGE_EXTENSIONS.items():
+        if fname.endswith(value):
+            return key
+
+    raise UnrecognizedBinaryFormat(fname)
 
 
 class DataSetupError(Exception):
@@ -613,9 +648,10 @@ class SourcePackageHandler:
         # SourcePackageReleaseFile entry on lp db.
         for fname, path in to_upload:
             alias = getLibraryAlias(path, fname)
-            SourcePackageReleaseFile(sourcepackagerelease=spr.id,
-                                     libraryfile=alias,
-                                     filetype=getFileType(fname))
+            SourcePackageReleaseFile(
+                sourcepackagerelease=spr.id,
+                libraryfile=alias,
+                filetype=determine_source_file_type(fname))
             log.info('Package file %s included into library' % fname)
 
         return spr
@@ -635,7 +671,7 @@ class SourcePackagePublisher:
         """Create the publishing entry on db if does not exist."""
         # Avoid circular import.
         from lp.soyuz.model.publishing import (
-            SecureSourcePackagePublishingHistory)
+            SourcePackagePublishingHistory)
 
         # Check if the sprelease is already published and if so, just
         # report it.
@@ -666,7 +702,7 @@ class SourcePackagePublisher:
 
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
-        entry = SecureSourcePackagePublishingHistory(
+        entry = SourcePackagePublishingHistory(
             distroseries=self.distroseries.id,
             sourcepackagerelease=sourcepackagerelease.id,
             status=PackagePublishingStatus.PENDING,
@@ -685,9 +721,9 @@ class SourcePackagePublisher:
         """Query for the publishing entry"""
         # Avoid circular import.
         from lp.soyuz.model.publishing import (
-            SecureSourcePackagePublishingHistory)
+            SourcePackagePublishingHistory)
 
-        ret = SecureSourcePackagePublishingHistory.select(
+        ret = SourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
                    AND distroseries = %s
                    AND archive = %s
@@ -805,9 +841,10 @@ class BinaryPackageHandler:
                  (bin_name.name, bin.version))
 
         alias = getLibraryAlias(path, fname)
-        BinaryPackageFile(binarypackagerelease=binpkg.id,
-                          libraryfile=alias,
-                          filetype=getFileType(fname))
+        BinaryPackageFile(
+            binarypackagerelease=binpkg.id,
+            libraryfile=alias,
+            filetype=determine_binary_file_type(fname))
         log.info('Package file %s included into library' % fname)
 
         # Return the binarypackage object.
@@ -889,7 +926,7 @@ class BinaryPackagePublisher:
         """Create the publishing entry on db if does not exist."""
         # Avoid circular imports.
         from lp.soyuz.model.publishing import (
-            SecureBinaryPackagePublishingHistory)
+            BinaryPackagePublishingHistory)
 
         # These need to be pulled from the binary package data, not the
         # binary package release: the data represents data from /this
@@ -925,7 +962,7 @@ class BinaryPackagePublisher:
 
 
         # Create the Publishing entry with status PENDING.
-        SecureBinaryPackagePublishingHistory(
+        BinaryPackagePublishingHistory(
             binarypackagerelease = binarypackage.id,
             component = component.id,
             section = section.id,
@@ -950,9 +987,9 @@ class BinaryPackagePublisher:
         """Query for the publishing entry"""
         # Avoid circular imports.
         from lp.soyuz.model.publishing import (
-            SecureBinaryPackagePublishingHistory)
+            BinaryPackagePublishingHistory)
 
-        ret = SecureBinaryPackagePublishingHistory.select(
+        ret = BinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
                    AND distroarchseries = %s
                    AND archive = %s

@@ -16,7 +16,7 @@ __all__ = [
 from zope.interface import implements, Interface
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadEditFormView)

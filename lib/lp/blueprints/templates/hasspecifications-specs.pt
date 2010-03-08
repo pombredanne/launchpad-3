@@ -10,6 +10,8 @@
 <body>
 
 <tal:side metal:fill-slot="side">
+  <tal:register-blueprint
+    content="structure context/@@+register-a-blueprint-button|nothing" />
   <tal:menu replace="structure context/@@+global-actions" />
   <div tal:replace="structure context/@@+portlet-latestspecs" />
 </tal:side>
@@ -30,9 +32,6 @@
       </p>
     </tal:block>
   </tal:block>
-
-  <div style="float: right;"
-       tal:content="structure context/@@+register-a-blueprint-button|nothing" />
 
   <tal:no_specs condition="not: has_any_specs">
     <p>
@@ -107,14 +106,11 @@
           In this case, the drivers are:
         </p>
 
-        <blockquote>
-          <ul>
-            <li tal:repeat="driver context/drivers" class="person">
-              <a tal:attributes="href driver/fmt:url"
-                 tal:content="driver/displayname">Foo Bar</a>
-            </li>
-          </ul>
-        </blockquote>
+        <ul class="subordinate">
+          <li tal:repeat="driver context/drivers">
+            <a tal:replace="structure driver/fmt:link">Foo Bar</a>
+          </li>
+        </ul>
       </tal:not_driver>
       <tal:is_driver condition="context/required:launchpad.Driver">
         Since you are a driver of
@@ -130,14 +126,13 @@
       release management with Launchpad.
     </p>
 
-    <blockquote>
-      <ul class="menu">
-        <li class="info">
-          <a href="https://help.launchpad.net/BlueprintDocumentation"
-          >Read more about tracking blueprints</a>
-        </li>
-      </ul>
-    </blockquote>
+    <ul class="horizontal">
+      <li>
+        <a class="info sprite"
+          href="https://help.launchpad.net/BlueprintDocumentation">Read
+          more about tracking blueprints</a>
+      </li>
+    </ul>
 
   </tal:no_specs>
   <tal:has_specs condition="has_any_specs">

@@ -13,8 +13,6 @@ __all__ = [
     ]
 
 
-from zope.traversing.interfaces import IPathAdapter
-from zope.component import queryAdapter
 from zope.interface import implements
 
 from canonical.launchpad.webapp import canonical_url
@@ -56,8 +54,12 @@ class Breadcrumb:
             return self._url
 
     def __repr__(self):
+        # XXX: salgado, 2009-10-14, http://bugs.python.org/issue5876: In
+        # python 2.5, the return value of __repr__() may be forced into a
+        # type(str), so we can't include unicode here.
+        text = self.text.encode('raw-unicode-escape')
         return "<%s url='%s' text='%s'>" % (
-            self.__class__.__name__, self.url, self.text)
+            self.__class__.__name__, self.url, text)
 
 
 class NameBreadcrumb(Breadcrumb):

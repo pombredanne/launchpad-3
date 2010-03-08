@@ -38,7 +38,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
@@ -49,7 +49,7 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot,IHasSecurityContact, ILaunchpadUsage)
+    IHasLogo, IHasMugshot, IHasSecurityContact, ILaunchpadUsage)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
@@ -60,12 +60,12 @@ from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.translations.interfaces.translationgroup import (
-    IHasTranslationGroup)
+    ITranslationPolicy)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
@@ -179,8 +179,8 @@ class License(DBEnumeratedType):
         'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
         'BSD', 'COMMON_PUBLIC',
         'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
-        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
-        'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2', 'GNU_GPL_V3',
+        'GNU_LGPL_V2_1', 'GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
         'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
         'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
@@ -272,8 +272,18 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
-    def newSeries(owner, name, summary, branch=None):
-        """Creates a new ProductSeries for this product."""
+    def newSeries(owner, name, summary, branch=None, releasefileglob=None):
+        """Creates a new `IProductSeries` for this `IProduct`.
+
+        :param owner: The registrant of this series.
+        :param name: The unique name of this series.
+        :param summary: The summary of the purpose and focus of development
+            of this series.
+        :param branch: The bazaar branch that contains the code for
+            this series.
+        :param releasefileglob: The public URL pattern where release files can
+            be automatically downloaded from and linked to this series.
+        """
 
 
 class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
@@ -328,7 +338,7 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
-    IHasTranslationGroup, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
     """Public IProduct properties."""
 
@@ -342,7 +352,7 @@ class IProductPublic(
             title=_('Part of'),
             required=False,
             vocabulary='Project',
-            schema=IProject,
+            schema=IProjectGroup,
             description=_(
                 'Super-project. In Launchpad, we can setup a special '
                 '"project group" that is an overarching initiative that '
@@ -576,6 +586,14 @@ class IProductPublic(
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
+    translation_focus = exported(
+        ReferenceChoice(
+            title=_("Translation Focus"), required=False,
+            vocabulary='FilteredProductSeries',
+            schema=IProductSeries,
+            description=_(
+                'The ProductSeries where translations are focused.')))
+
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
         "translated sorted by distroseries.name and sourcepackage.name.")
@@ -638,7 +656,8 @@ class IProductPublic(
         :param subscription_months: integer indicating the number of months
             the voucher is for.
         :param whiteboard: Notes for this activity.
-        :param current_datetime: Current time.  Will be datetime.now() if not specified.
+        :param current_datetime: Current time.  Will be datetime.now() if not
+            specified.
         :return: None
         """
 
@@ -667,13 +686,6 @@ class IProductPublic(
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
-
-    def getCustomLanguageCode(language_code):
-        """Look up `ICustomLanguageCode` for `language_code`, if any.
-
-        Products may override language code definitions for translation
-        import purposes.
-        """
 
     def userCanEdit(user):
         """Can the user edit this product?"""
@@ -709,15 +721,8 @@ class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
     export_as_webservice_entry('project')
 
 # Fix cyclic references.
-IProject['products'].value_type = Reference(IProduct)
+IProjectGroup['products'].value_type = Reference(IProduct)
 IProductRelease['product'].schema = IProduct
-
-# Patch the official_bug_tags field to make sure that it's
-# writable from the API, and not readonly like its definition
-# in IHasBugs.
-writable_obt_field = copy_field(IProduct['official_bug_tags'])
-writable_obt_field.readonly = False
-IProduct._v_attrs['official_bug_tags'] = writable_obt_field
 
 
 class IProductSet(Interface):

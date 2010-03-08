@@ -30,19 +30,15 @@ from canonical.widgets import LabeledMultiCheckBoxWidget
 class BugLinkView(LaunchpadFormView):
     """This view is used to link bugs to any IBugLinkTarget."""
 
-    label = _('Link to bug report')
-
+    label = _('Link a bug report')
     schema = IBugLinkForm
 
     focused_element_id = 'bug'
 
     @property
-    def page_title(self):
-        return 'Link question #%s to a bug report' % self.context.id
-
-    @property
-    def label(self):
-        return 'Link question to a bug report'
+    def cancel_url(self):
+        """See `LaunchpadFormview`."""
+        return canonical_url(self.context)
 
     @action(_('Link'))
     def linkBug(self, action, data):
@@ -98,17 +94,13 @@ class BugsUnlinkView(LaunchpadFormView):
     """This view is used to remove bug links from any IBugLinkTarget."""
 
     label = _('Remove links to bug reports')
-
     schema = IUnlinkBugsForm
     custom_widget('bugs', LabeledMultiCheckBoxWidget)
 
     @property
-    def page_title(self):
-        return 'Remove bug links from question #%s' % self.context.id
-
-    @property
-    def label(self):
-        return 'Remove links to bug reports'
+    def cancel_url(self):
+        """See `LaunchpadFormview`."""
+        return canonical_url(self.context)
 
     @action(_('Remove'))
     def unlinkBugs(self, action, data):
@@ -134,4 +126,3 @@ class BugsUnlinkView(LaunchpadFormView):
         """
         return [bug for bug in self.context.bugs
                 if check_permission('launchpad.View', bug)]
-

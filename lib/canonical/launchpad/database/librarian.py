@@ -40,11 +40,9 @@ class LibraryFileContent(SQLBase):
     _table = 'LibraryFileContent'
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    datemirrored = UtcDateTimeCol(default=None)
     filesize = IntCol(notNull=True)
     sha1 = StringCol(notNull=True)
     md5 = StringCol()
-    deleted = BoolCol(notNull=True, default=False)
 
 
 class LibraryFileAlias(SQLBase):
@@ -57,7 +55,7 @@ class LibraryFileAlias(SQLBase):
     _table = 'LibraryFileAlias'
     date_created = UtcDateTimeCol(notNull=False, default=DEFAULT)
     content = ForeignKey(
-            foreignKey='LibraryFileContent', dbName='content', notNull=True,
+            foreignKey='LibraryFileContent', dbName='content', notNull=False,
             )
     filename = StringCol(notNull=True)
     mimetype = StringCol(notNull=True)
@@ -188,6 +186,9 @@ class LibraryFileAlias(SQLBase):
                                  otherColumn='sourcepackagerelease',
                                  intermediateTable='SourcePackageReleaseFile')
 
+    @property
+    def deleted(self):
+        return self.content is None
 
     def __storm_invalidated__(self):
         """Make sure that the file is closed across transaction boundary."""

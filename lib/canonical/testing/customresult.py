@@ -9,11 +9,12 @@ __all__ = [
     'list_tests',
     'patch_find_tests',
     'patch_zope_testresult',
+    'replace_list_of_tests',
     ]
 
 from unittest import TestSuite
 from testtools import MultiTestResult, iterate_tests
-from zope.testing.testrunner import find, runner
+from zope.testing.testrunner import find, formatter, runner
 
 
 class NullOutputFormatter:
@@ -93,3 +94,21 @@ def patch_zope_testresult(result):
             zope_result.options.output = NullOutputFormatter()
             return MultiTestResult(result, zope_result)
     runner.TestResult = zope_result_factory
+
+
+def replace_list_of_tests(out_file):
+    """Replace OutputFormatter.list_of_tests.
+
+    This is so we can obtain the list of tests that zope.testing
+    thinks should be run, after considering layers, etc. It also
+    prints test.id() rather than str(test).
+
+    :param out_file: A writeable file where the list IDs can be
+        written to.
+    """
+    def list_of_tests(formatter, tests, layer_name):
+        """Report a list of test ids."""
+        print "Saving %s tests." % layer_name
+        for test in tests:
+            out_file.write(test.id() + "\n")
+    formatter.OutputFormatter.list_of_tests = list_of_tests

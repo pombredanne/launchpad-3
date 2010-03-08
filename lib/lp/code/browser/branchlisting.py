@@ -55,7 +55,7 @@ from canonical.launchpad.browser.feeds import (
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet)
-from canonical.launchpad.interfaces.personproduct import (
+from lp.registry.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
@@ -85,20 +85,13 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
-
-
-def get_plural_text(count, singular, plural):
-    """Return 'singular' if 'count' is 1, 'plural' otherwise."""
-    if count == 1:
-        return singular
-    else:
-        return plural
+from lp.services.browser_helpers import get_plural_text
 
 
 class CodeVHostBreadcrumb(Breadcrumb):
@@ -177,7 +170,7 @@ class BranchListingItem(BranchBadges):
     @property
     def active_series(self):
         return [series for series in self.associated_product_series
-                if series.status != DistroSeriesStatus.OBSOLETE]
+                if series.status != SeriesStatus.OBSOLETE]
 
     @property
     def bzr_identity(self):
@@ -1135,7 +1128,7 @@ class ProductBranchesMenu(ApplicationMenu):
     def code_import(self):
         text = 'Import your project'
         enabled = not self.context.official_codehosting
-        return Link('/+code-imports/+new', text, icon='add', enabled=enabled)
+        return Link('+new-import', text, icon='add', enabled=enabled)
 
 
 class ProductBranchListingView(BranchListingView):

@@ -31,20 +31,20 @@ class PackagingType(DBEnumeratedType):
     """
 
     PRIME = DBItem(1, """
-        Primary Product
+        Primary Project
 
-        This is the primary product packaged in this source package. For
-        example, a source package "apache2" would have a "prime" Packaging
+        This is the primary project packaged in this source package. For
+        example, a source package "apache2" would have a "prime" packaging
         relationship with the "apache2" product from the Apache Project.
-        The product and package don't have to have the same name.
+        The project and package don't have to have the same name.
         """)
 
     INCLUDES = DBItem(2, """
-        SourcePackage Includes Product
+        SourcePackage Includes Project
 
-        This source package includes some part or all of the product. For
-        example, the "cadaver" source package has an "includes" Packaging
-        relationship with the libneon product.
+        This source package includes some part or all of the project. For
+        example, the "cadaver" source package has an "includes" packaging
+        relationship with the libneon project.
         """)
 
 

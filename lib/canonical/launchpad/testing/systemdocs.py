@@ -10,18 +10,16 @@ __all__ = [
     'SpecialOutputChecker',
     'setUp',
     'setGlobs',
+    'stop',
     'strip_prefix',
     'tearDown',
     ]
 
 import logging
 import os
+import pdb
+import pprint
 import sys
-
-# pprint25 is a copy of pprint.py from Python 2.5, which is almost
-# identical to that in 2.4 except that it resolves an ordering issue
-# which makes the 2.4 version unsuitable for use in a doctest.
-import pprint25
 
 import transaction
 from zope.component import getUtility
@@ -174,6 +172,16 @@ def ordered_dict_as_string(dict):
         "%r: %r" % (key, value) for key, value in sorted(dict.items()))
 
 
+def stop():
+    # Temporarily restore the real stdout.
+    old_stdout = sys.stdout
+    sys.stdout = sys.__stdout__
+    try:
+        pdb.set_trace()
+    finally:
+        sys.stdout = old_stdout
+
+
 def setGlobs(test):
     """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
@@ -189,7 +197,8 @@ def setGlobs(test):
     test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
     test.globs['verifyObject'] = verifyObject
-    test.globs['pretty'] = pprint25.PrettyPrinter(width=1).pformat
+    test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
+    test.globs['stop'] = stop
 
 
 def setUp(test):

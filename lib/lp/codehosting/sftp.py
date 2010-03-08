@@ -20,6 +20,7 @@ __all__ = [
     ]
 
 
+from copy import copy
 import errno
 import os
 import stat
@@ -250,7 +251,7 @@ def avatar_to_sftp_server(avatar):
         config.codehosting.mirrored_branches_root)
     server = LaunchpadServer(
         avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
-    server.setUp()
+    server.start_server()
     transport = AsyncLaunchpadTransport(server, server.get_url())
     notify(accesslog.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
@@ -319,6 +320,10 @@ class TransportSFTPServer:
         """
         for stat_result, filename in zip(stat_results, filenames):
             shortname = urlutils.unescape(filename).encode('utf-8')
+            stat_result = copy(stat_result)
+            for attribute in ['st_uid', 'st_gid', 'st_mtime', 'st_nlink']:
+                if getattr(stat_result, attribute, None) is None:
+                    setattr(stat_result, attribute, 0)
             longname = lsLine(shortname, stat_result)
             attr_dict = self._translate_stat(stat_result)
             yield (shortname, longname, attr_dict)

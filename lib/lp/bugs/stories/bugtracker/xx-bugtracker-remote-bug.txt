@@ -42,7 +42,7 @@ Found page is generated:
   >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/99999')
   Traceback (most recent call last):
   ...
-  httperror_seek_wrapper: HTTP Error 404: Not Found
+  HTTPError: HTTP Error 404: Not Found
   >>> browser.handleErrors = False
 
 
@@ -92,13 +92,14 @@ The bug title is still provided if the user can view the private bug:
   Bug #2: Blackhole Trash folder
 
 For the case where the private bug is the only one watching the given
-remote bug, we don't perform the redirect ahead of time:
+remote bug, we don't perform the redirect ahead of time (i.e. before the
+user logs in):
 
-  >>> anon_browser.handleErrors = True
   >>> anon_browser.open(
   ...     'http://bugs.launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
-  >>> print_feedback_messages(anon_browser.contents)
-  To continue, you must log in to Launchpad.
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
 
 Set the bug back to public:
 

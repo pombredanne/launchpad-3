@@ -432,8 +432,7 @@ class IPOTemplate(IRosettaStats):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def newPOFile(language_code, variant=None,
-                  requester=None, create_sharing=True):
+    def newPOFile(language_code, variant=None, create_sharing=True):
         """Return a new `IPOFile` for the given language.
 
         Raise LanguageNotFound if the language does not exist in the

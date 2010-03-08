@@ -16,10 +16,6 @@
   <permission
     id="launchpad.Edit" title="Editing something" access_level="write" />
 
-  <permission
-    id="launchpad.EditLocation" title="Editing an object's location"
-    access_level="write" />
-
   <!-- Request large downloads, or other heavyweight jobs that are not
   semantically like "editing" and are not restricted to administrators.
   -->

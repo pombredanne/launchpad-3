@@ -42,7 +42,7 @@ also sends the email to the list of recipients.
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> BranchMailer.forRevision(branch, 1, 'foo@canonical.com',
-    ...     'The contents.', None, None).sendAll()
+    ...     'The contents.', None, 'Subject line').sendAll()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -53,7 +53,7 @@ also sends the email to the list of recipients.
     >>> print branch_notification['From']
     foo@canonical.com
     >>> print branch_notification['Subject']
-    [Branch ~name12/firefox/main]
+    Subject line
     >>> print branch_notification['X-Launchpad-Project']
     firefox
     >>> print branch_notification['X-Launchpad-Branch']
@@ -541,21 +541,19 @@ must also handle the unicode.
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
-    >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
-    From: Sample Person <test@canonical.com>
-    Subject: [Branch ~name12/firefox/new-name]
-    Whiteboard changed to:
-    <BLANKLINE>
-    A new ꀀ summary
-    <BLANKLINE>
-    --
-    lp://dev/~name12/firefox/new-name
-    http://code.launchpad.dev/~name12/firefox/new-name
-    <BLANKLINE>
-    You are subscribed to branch lp://dev/~name12/firefox/new-name.
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
+    >>> email = notifications.pop()
+    >>> email.get_payload(decode=True).decode('utf-8').splitlines()
+    [u'Whiteboard changed to:',
+     u'',
+     u'A new \ua000 summary',
+     u'',
+     u'--',
+     u'lp://dev/~name12/firefox/new-name',
+     u'http://code.launchpad.dev/~name12/firefox/new-name',
+     u'',
+     u'You are subscribed to branch lp://dev/~name12/firefox/new-name.',
+     u'To unsubscribe from this branch go to
+     http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.']
 
 
 == Modifications by users other than the branch owner ==

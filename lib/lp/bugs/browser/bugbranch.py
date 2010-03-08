@@ -9,20 +9,26 @@ __all__ = [
     'BugBranchAddView',
     'BugBranchDeleteView',
     'BugBranchPrimaryContext',
+    'BugBranchView',
     ]
 
-from zope.component import adapts, getMultiAdapter, getUtility
+from zope.component import adapts, getMultiAdapter
 from zope.interface import implements, Interface
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 
+from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import smartquote
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.code.browser.branchmergeproposal import (
+    latest_proposals_for_each_branch)
+from lp.code.enums import BranchLifecycleStatus
 
 
 class BugBranchPrimaryContext:
@@ -84,6 +90,24 @@ class BugBranchDeleteView(LaunchpadEditFormView):
         self.context.bug.unlinkBranch(self.context.branch, self.user)
 
     label = 'Remove bug branch link'
+
+
+class BugBranchView(LaunchpadView):
+    """Simple view to cache related branch information."""
+
+    __used_for__ = IBugBranch
+
+    @cachedproperty
+    def merge_proposals(self):
+        """Return a list of active proposals for the branch."""
+        branch = self.context.branch
+        return latest_proposals_for_each_branch(branch.landing_targets)
+
+    @property
+    def show_branch_status(self):
+        """Show the branch status if merged and there are no proposals."""
+        return (len(self.merge_proposals) == 0 and
+                self.context.branch.lifecycle_status == BranchLifecycleStatus.MERGED)
 
 
 class BranchLinkToBugView(LaunchpadFormView):

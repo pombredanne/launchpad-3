@@ -20,38 +20,43 @@ from storm.store import EmptyResultSet
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
-from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.lazr.utils import smartquote
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.karma import KarmaTotalCache
+from lp.registry.model.person import Person
+from lp.registry.model.sourcepackage import (
+    SourcePackage, SourcePackageQuestionTargetMixin)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.registry.model.karma import KarmaTotalCache
-from lp.registry.model.person import Person
-from lp.registry.model.sourcepackage import (
-    SourcePackage, SourcePackageQuestionTargetMixin)
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from canonical.launchpad.interfaces.lpstorm import IStore
-
-from canonical.lazr.utils import smartquote
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes)
+from lp.translations.model.customlanguagecode import (
+    CustomLanguageCode, HasCustomLanguageCodesMixin)
 
 
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
-                                HasBranchesMixin, HasMergeProposalsMixin):
+                                HasBranchesMixin,
+                                HasCustomLanguageCodesMixin,
+                                HasMergeProposalsMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -59,7 +64,8 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage, IQuestionTarget)
+    implements(
+        IDistributionSourcePackage, IHasCustomLanguageCodes, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -136,6 +142,26 @@ class DistributionSourcePackage(BugTargetBase,
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
 
+    def _get_max_bug_heat(self):
+        """See `IHasBugs`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is None:
+            return None
+        else:
+            return dsp_in_db.max_bug_heat
+
+    def _set_max_bug_heat(self, value):
+        """See `IHasBugs`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is None:
+            dsp_in_db = DistributionSourcePackageInDatabase()
+            dsp_in_db.sourcepackagename = self.sourcepackagename
+            dsp_in_db.distribution = self.distribution
+            Store.of(self.distribution).add(dsp_in_db)
+        dsp_in_db.max_bug_heat = value
+
+    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
+
     @property
     def latest_overall_publication(self):
         """See `IDistributionSourcePackage`."""
@@ -151,15 +177,19 @@ class DistributionSourcePackage(BugTargetBase,
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            pocket NOT IN (30, 40) AND
-            status in (2,5)""" %
+            pocket NOT IN (%s, %s) AND
+            status in (%s, %s)""" %
                 sqlvalues(self.distribution,
                           self.sourcepackagename,
-                          self.distribution.all_distro_archive_ids),
+                          self.distribution.all_distro_archive_ids,
+                          PackagePublishingPocket.PROPOSED,
+                          PackagePublishingPocket.BACKPORTS,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.OBSOLETE),
             clauseTables=["SourcePackagePublishingHistory",
-                          "SourcePackageRelease", 
+                          "SourcePackageRelease",
                           "DistroSeries"],
-            orderBy=["-status",
+            orderBy=["status",
                      SQLConstant(
                         "to_number(DistroSeries.version, '99.99') DESC"),
                      "-pocket"])
@@ -289,6 +319,7 @@ class DistributionSourcePackage(BugTargetBase,
                 self.sourcepackagename)
             if source_package.direct_packaging is not None:
                 return source_package.direct_packaging.productseries.product
+        return None
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
@@ -412,6 +443,19 @@ class DistributionSourcePackage(BugTargetBase,
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
 
+    def composeCustomLanguageCodeMatch(self):
+        """See `HasCustomLanguageCodesMixin`."""
+        return And(
+            CustomLanguageCode.distribution == self.distribution,
+            CustomLanguageCode.sourcepackagename == self.sourcepackagename)
+
+    def createCustomLanguageCode(self, language_code, language):
+        """See `IHasCustomLanguageCodes`."""
+        return CustomLanguageCode(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            language_code=language_code, language=language)
+
     @staticmethod
     def getPersonsByEmail(email_addresses):
         """[(EmailAddress,Person), ..] iterable for given email addresses."""
@@ -451,3 +495,6 @@ class DistributionSourcePackageInDatabase(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     bug_reporting_guidelines = Unicode()
+
+    max_bug_heat = Int()
+

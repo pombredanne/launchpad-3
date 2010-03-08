@@ -43,15 +43,7 @@
             <li tal:repeat="distroseries context/translatable_distroseriess">
               <a tal:attributes="href string:/${distroseries/distribution/name}/${distroseries/name}/+translations">
                 <tal:distroname replace="distroseries/distribution/displayname" />
-                <tal:version
-                  condition="distroseries/version"
-                  replace="distroseries/version"
-                />
-                <tal:codename
-                  condition="not:distroseries/version"
-                  replace="distroseries/title"
-                />
-              </a>
+                <tal:version replace="distroseries/named_version" /></a>
             </li>
           </ul>
         </div>

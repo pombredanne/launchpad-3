@@ -546,8 +546,8 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         # Invite team2 as member of team1 and team1 as member of team2. This
         # is not a problem because that won't make any team an active member
         # of the other.
-        self.team1.addMember(self.team2, self.foobar)
-        self.team2.addMember(self.team1, self.foobar)
+        self.team1.addMember(self.team2, self.no_priv)
+        self.team2.addMember(self.team1, self.no_priv)
         team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
             self.team1, self.team2)
         team2_on_team1 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
@@ -580,7 +580,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         """No status change can create cyclical participation."""
         # Invite team1 as a member of team3 and forcibly add team2 as member
         # of team1 and team3 as member of team2.
-        self.team3.addMember(self.team1, self.foobar)
+        self.team3.addMember(self.team1, self.no_priv)
         self.team1.addMember(self.team2, self.foobar, force_team_add=True)
         self.team2.addMember(self.team3, self.foobar, force_team_add=True)
 
@@ -593,7 +593,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
             TeamMembershipStatus.APPROVED, self.foobar)
 
     def test_invited_member_can_be_made_admin(self):
-        self.team2.addMember(self.team1, self.foobar)
+        self.team2.addMember(self.team1, self.no_priv)
         team1_on_team2 = getUtility(ITeamMembershipSet).getByPersonAndTeam(
             self.team1, self.team2)
         self.assertEqual(team1_on_team2.status, TeamMembershipStatus.INVITED)

@@ -12,21 +12,21 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from warnings import warn
-from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import classProvides, implements
 from zope.component import getUtility
 
+from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.lazr.utils import smartquote
 from lp.code.model.branch import Branch
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.model.build import Build, BuildSet
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -52,6 +52,7 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
@@ -335,8 +336,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         return IStore(SourcePackageRelease).find(
             SourcePackageRelease,
-            In(SourcePackageRelease.id, subselect)
-            ).order_by(Desc(
+            In(SourcePackageRelease.id, subselect)).order_by(Desc(
                 SQL("debversion_sort_key(SourcePackageRelease.version)")))
 
     @property
@@ -344,19 +344,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return self.sourcepackagename.name
 
     @property
-    def product(self):
-        # we have moved to focusing on productseries as the linker
-        warn('SourcePackage.product is deprecated, use .productseries',
-             DeprecationWarning, stacklevel=2)
-        ps = self.productseries
-        if ps is not None:
-            return ps.product
-        return None
-
-    @property
     def productseries(self):
         # See if we can find a relevant packaging record
-        packaging = self.packaging
+        packaging = self.direct_packaging
         if packaging is None:
             return None
         return packaging.productseries
@@ -364,16 +354,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def direct_packaging(self):
         """See `ISourcePackage`."""
-        # XXX flacoste 2008-02-28 For some crack reasons, it is possible
-        # for multiple productseries (of the same product) to state that they
-        # are packaged in the same source package. This creates all sort of
-        # weirdness documented in bug #196774. But in order to work around bug
-        # #181770, use a sort order that will be stable. I guess it makes the
-        # most sense to return the latest one.
-        return Packaging.selectFirstBy(
+        store = Store.of(self.sourcepackagename)
+        return store.find(
+            Packaging,
             sourcepackagename=self.sourcepackagename,
-            distroseries=self.distroseries,
-            orderBy=['packaging', '-datecreated'])
+            distroseries=self.distroseries).one()
 
     @property
     def packaging(self):
@@ -457,6 +442,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             And(BugTask.distroseries == self.distroseries,
                 BugTask.sourcepackagename == self.sourcepackagename),
             user)
+
+    @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.distribution_sourcepackage.max_bug_heat
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -554,8 +544,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # It should present the builds in a more natural order.
         if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore"]
+            clauseTables.append('BuildPackageJob')
+            condition_clauses.append('BuildPackageJob.build = Build.id')
             clauseTables.append('BuildQueue')
-            condition_clauses.append('BuildQueue.build = Build.id')
+            condition_clauses.append('BuildQueue.job = BuildPackageJob.job')
         elif build_state == BuildStatus.SUPERSEDED or build_state is None:
             orderBy = ["-Build.datecreated"]
         else:
@@ -578,6 +570,29 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             return latest_publishing.component
         else:
             return None
+
+    @property
+    def latest_published_component_name(self):
+        """See `ISourcePackage`."""
+        if self.latest_published_component is not None:
+            return self.latest_published_component.name
+        else:
+            return None
+
+    def get_default_archive(self, component=None):
+        """See `ISourcePackage`."""
+        if component is None:
+            component = self.latest_published_component
+        distribution = self.distribution
+        if component is not None and component.name == 'partner':
+            archive = getUtility(IArchiveSet).getByDistroPurpose(
+                distribution, ArchivePurpose.PARTNER)
+            if archive is None:
+                raise NoPartnerArchive(distribution)
+            else:
+                return archive
+        else:
+            return distribution.main_archive
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -677,14 +692,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         uploads = [
             build.package_upload
             for build in builds
-            if build.package_upload
-            ]
+            if build.package_upload]
         custom_files = []
         for upload in uploads:
             custom_files += [
                 custom for custom in upload.customfiles
-                if custom.customformat == our_format
-                ]
+                if custom.customformat == our_format]
 
         custom_files.sort(key=attrgetter('id'))
         return [custom.libraryfilealias for custom in custom_files]
+
+    def linkedBranches(self):
+        """See `ISourcePackage`."""
+        return dict((p.name, b) for (p, b) in self.linked_branches)
