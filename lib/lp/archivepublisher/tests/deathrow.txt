@@ -155,13 +155,13 @@ Dependent binary publications.
 
     >>> [postponed_binary] =  removed_binary.copyTo(
     ...     hoary, PackagePublishingPocket.PROPOSED, ubuntu.main_archive)
-    >>> postponed_binary.secure_record.status = (
+    >>> postponed_binary.status = (
     ...     PackagePublishingStatus.SUPERSEDED)
-    >>> postponed_binary.secure_record.scheduleddeletiondate = future_date
+    >>> postponed_binary.scheduleddeletiondate = future_date
 
     >>> [published_binary] =  removed_binary.copyTo(
     ...     hoary, PackagePublishingPocket.UPDATES, ubuntu.main_archive)
-    >>> published_binary.secure_record.status = (
+    >>> published_binary.status = (
     ...     PackagePublishingStatus.PUBLISHED)
 
 Store the 'removable' context in the database as a checkpoint, so it
@@ -328,9 +328,9 @@ since they are related to only a single file (files can't be
 shared). In order to trigger the consideration of these specific
 publications we have to remove any 'live' publications.
 
-    >>> published_binary.secure_record.status = (
+    >>> published_binary.status = (
     ...    PackagePublishingStatus.SUPERSEDED)
-    >>> published_binary.secure_record.scheduleddeletiondate = past_date
+    >>> published_binary.scheduleddeletiondate = past_date
 
 Now DeathRow considers 'stuck-bin' publications.
 
@@ -354,7 +354,7 @@ imposing quarantine on it. Once the quarantine is lifted, by setting a
 'past' scheduleddeletiondate, the binary file finally gets removed
 from the repository.
 
-    >>> postponed_binary.secure_record.scheduleddeletiondate = past_date
+    >>> postponed_binary.scheduleddeletiondate = past_date
 
 That done, the publication and its files are free to be removed in a
 single pass.

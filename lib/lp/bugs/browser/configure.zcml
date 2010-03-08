@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -108,6 +108,20 @@
             facet="bugs"
             permission="launchpad.Edit"
             template="../templates/official-bug-target-manage-tags.pt"/>
+        <browser:page
+            name="+patches"
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtarget.BugsPatchesView"
+            facet="bugs"
+            permission="zope.Public"
+            template="../templates/bugtarget-patches.pt"/>
+        <browser:page
+            name="+patches"
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.bugs.browser.bugtarget.BugsPatchesView"
+            facet="bugs"
+            permission="zope.Public"
+            template="../templates/bugtarget-patches.pt"/>
     </facet>
     <browser:page
         name="+bugtarget-macros-search"
@@ -1030,11 +1044,6 @@
             name="+bug-portlet-subscribers-ids"
             class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
             permission="zope.Public"/>
-        <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
-            class="lp.bugs.browser.bug.BugHeatView"
-            permission="zope.Public"
-            name="+bug-heat"/>
         <browser:navigation
             module="lp.bugs.browser.bug"
             classes="

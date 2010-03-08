@@ -2,10 +2,14 @@
 
 POTMsgSet represents messages to translate that a POTemplate file has.
 
-We need to get a POTMsgSet object to performe this test.
+In this test we'll be committing a lot to let changes replicate to the
+slave database.
+
+    >>> import transaction
+
+We need to get a POTMsgSet object to perform this test.
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
     >>> from lp.translations.interfaces.potmsgset import IPOTMsgSet
@@ -734,7 +738,7 @@ When a translation template is set as not current, those translations
 are not available as suggestions anymore:
 
     >>> evo_distro_template.iscurrent = False
-    >>> flush_database_updates()
+    >>> transaction.commit()
     >>> suggestions = (
     ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
     >>> len(suggestions)
@@ -748,7 +752,7 @@ translations.
     # We set the template as current again so we are sure that we don't show
     # suggestions just due to the change to the official_rosetta flag.
     >>> evo_distro_template.iscurrent = True
-    >>> flush_database_updates()
+    >>> transaction.commit()
     >>> suggestions = (
     ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
     >>> len(suggestions)
@@ -757,7 +761,7 @@ translations.
 And products not using translations officially have the same behaviour.
 
     >>> evolution.official_rosetta = False
-    >>> flush_database_updates()
+    >>> transaction.commit()
     >>> suggestions = evo_distro_message.getExternallyUsedTranslationMessages(
     ...    spanish)
     >>> len(suggestions)
@@ -767,7 +771,7 @@ Let's restore the flags for next section.
 
     >>> ubuntu.official_rosetta = True
     >>> evolution.official_rosetta = True
-    >>> flush_database_updates()
+    >>> transaction.commit()
 
 
 == POTMsgSet.getExternallySuggestedTranslationMessages ==
@@ -850,7 +854,7 @@ However, if the hoary template version is not current and thus hidden,
 we get no suggestions.
 
     >>> potmsgset_translated.potemplate.iscurrent = False
-    >>> flush_database_updates()
+    >>> transaction.commit()
 
     >>> wiki_submissions = (
     ...     potmsgset_untranslated.getExternallyUsedTranslationMessages(
@@ -865,7 +869,7 @@ Launchpad for translations.
     # suggestions just due to the change to the official_rosetta flag.
     >>> potmsgset_translated.potemplate.iscurrent = True
     >>> ubuntu.official_rosetta = False
-    >>> flush_database_updates()
+    >>> transaction.commit()
 
     >>> wiki_submissions = (
     ...     potmsgset_untranslated.getExternallyUsedTranslationMessages(
