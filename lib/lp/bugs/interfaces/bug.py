@@ -15,8 +15,9 @@ __all__ = [
     'IBugBecameQuestionEvent',
     'IBugDelta',
     'IBugSet',
+    'IFileBugData',
     'IFrontPageBugAddForm',
-    'IProjectBugAddForm',
+    'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
     'UserCannotUnsubscribePerson',
@@ -33,7 +34,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from lp.bugs.interfaces.bugattachment import IBugAttachment
-from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatch
@@ -346,6 +346,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     has_patches = Attribute("Does this bug have any patches?")
 
+    latest_patch_uploaded = exported(
+        Datetime(
+            title=_('Date when the most recent patch was uploaded.'),
+            required=False, readonly=True))
+
+    latest_patch = Attribute("The most recent patch of this bug.")
+
     @operation_parameters(
         subject=optional_message_subject_field(),
         content=copy_field(IMessage['content']))
@@ -506,6 +513,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         :is_patch: A boolean.
         """
 
+    def linkAttachment(owner, file_alias, comment, is_patch=False,
+                       description=None):
+        """Link an `ILibraryFileAlias` to this bug.
+
+        :owner: An IPerson.
+        :file_alias: The `ILibraryFileAlias` to link to this bug.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
     def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
@@ -587,7 +606,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """Create an INullBugTask and return it for the given parameters."""
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @call_with(owner=REQUEST_USER)
     @export_factory_operation(Interface, [])
     def addNomination(owner, target):
@@ -601,7 +620,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @export_read_operation()
     def canBeNominatedFor(target):
         """Can this bug nominated for this target?
@@ -612,7 +631,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @operation_returns_entry(Interface)
     @export_read_operation()
     def getNominationFor(target):
@@ -625,7 +644,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     @operation_parameters(
         target=Reference(
-            schema=IBugTarget, title=_('Target'), required=False),
+            schema=Interface, title=_('Target'), required=False),
         nominations=List(
             title=_("Nominations to search through."),
             value_type=Reference(schema=Interface), # IBugNomination
@@ -884,8 +903,8 @@ class IBugAddForm(IBug):
         required=True, default=False)
 
 
-class IProjectBugAddForm(IBugAddForm):
-    """Create a bug for an IProject."""
+class IProjectGroupBugAddForm(IBugAddForm):
+    """Create a bug for an IProjectGroup."""
     product = Choice(
         title=_("Project"), required=True,
         vocabulary="ProjectProductsUsingMalone")
@@ -895,7 +914,7 @@ class IFrontPageBugAddForm(IBugAddForm):
     """Create a bug for any bug target."""
 
     bugtarget = Reference(
-        schema=IBugTarget, title=_("Where did you find the bug?"),
+        schema=Interface, title=_("Where did you find the bug?"),
         required=True)
 
 
@@ -1012,6 +1031,19 @@ class IBugSet(Interface):
         # XXX 2010-01-08 gmb bug=505850:
         #     Note, this method should go away when we have a proper
         #     permissions system for scripts.
+
+
+class IFileBugData(Interface):
+    """A class containing extra data to be used when filing a bug."""
+
+    initial_summary = Attribute("The initial summary for the bug.")
+    private = Attribute("Whether the bug should be private.")
+    extra_description = Attribute("A longer description of the bug.")
+    initial_tags = Attribute("The initial tags for the bug.")
+    subscribers = Attribute("The initial subscribers for the bug.")
+    comments = Attribute("Comments to add to the bug.")
+    attachments = Attribute("Attachments to add to the bug.")
+    hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
 
 
 class InvalidBugTargetType(Exception):

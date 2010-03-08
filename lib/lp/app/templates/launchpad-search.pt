@@ -152,10 +152,8 @@
             condition="view/pages"
             define="batch view/pages/currentBatch|nothing">
 
-            <div class="upper-batch-nav search-batch">
-              <tal:navigation
-                 replace="structure view/pages/@@+navigation-links-upper"/>
-            </div>
+            <tal:navigation
+               replace="structure view/pages/@@+navigation-links-upper"/>
 
             <ul class="site-matches" tal:condition="batch">
               <li class="pagematch" tal:repeat="page batch">
@@ -172,10 +170,8 @@
               </li>
             </ul>
 
-            <div class="lower-batch-nav search-batch">
-              <tal:navigation
-                 replace="structure view/pages/@@+navigation-links-lower" />
-            </div>
+            <tal:navigation
+               replace="structure view/pages/@@+navigation-links-lower" />
 
             <form tal:replace="structure view/@@+search-form" />
           </tal:batch>

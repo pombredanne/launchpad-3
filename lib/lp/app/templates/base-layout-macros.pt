@@ -335,7 +335,7 @@
         <div class="lp-branding">
           <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
           &nbsp;&bull;&nbsp;
-          <a href="/+tour">Take the tour</a>
+          <a tal:attributes="href string:${rooturl}+tour">Take the tour</a>
           &nbsp;&bull;&nbsp;
           <a href="https://help.launchpad.net/">Read the guide</a>
           &nbsp;
@@ -354,7 +354,7 @@
       &copy; 2004-2010
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
-      <a href="/legal">Terms of use</a>
+      <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
       <a href="https://help.launchpad.net/Feedback"
         >Contact us</a>
@@ -410,11 +410,4 @@
     condition="python: count != 1"
     replace="l_plural" />
 </metal:plural-msg>
-
-<metal:yes-no define-macro="yes-no">
-  <span tal:condition="bool"
-    class="sprite yes">&nbsp;<span class="invisible-link">yes</span></span>
-  <span tal:condition="not: bool"
-    class="sprite no">&nbsp;<span class="invisible-link">no</span></span>
-</metal:yes-no>
 </macros>

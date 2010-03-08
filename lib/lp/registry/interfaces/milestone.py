@@ -12,7 +12,7 @@ __all__ = [
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
-    'IProjectMilestone',
+    'IProjectGroupMilestone',
     ]
 
 from zope.interface import Interface, Attribute
@@ -21,7 +21,7 @@ from zope.schema import Bool, Choice, Date, Int, TextLine
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.registry.interfaces.productrelease import IProductRelease
-from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
 from lp.bugs.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -70,7 +70,8 @@ class MilestoneNameField(ContentNameField):
         return milestone
 
 
-class IMilestone(IHasBugs, IStructuralSubscriptionTarget):
+class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
+                 IHasOfficialBugTags):
     """A milestone, or a targeting point for bugs and other
     release-management items that need coordination.
     """
@@ -216,7 +217,7 @@ class IMilestoneSet(Interface):
         """Return all visible milestones."""
 
 
-class IProjectMilestone(IMilestone):
+class IProjectGroupMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
 
 
