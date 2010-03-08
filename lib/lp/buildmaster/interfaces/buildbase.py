@@ -11,7 +11,6 @@ __all__ = [
     'BUILDD_MANAGER_LOG_NAME',
     'BuildStatus',
     'IBuildBase',
-    'incomplete_building_status',
     ]
 
 from zope.interface import Attribute, Interface
@@ -110,12 +109,6 @@ class BuildStatus(DBEnumeratedType):
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
         """)
-
-
-incomplete_building_status = (
-    BuildStatus.NEEDSBUILD,
-    BuildStatus.BUILDING,
-    )
 
 
 class IBuildBase(Interface):
