@@ -408,7 +408,8 @@
                 findRelatedArchives
                 findRelatedArchivePublications
                 userHasBugSubscriptions
-                max_bug_heat"/>
+                max_bug_heat
+                recalculateMaxBugHeat"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="

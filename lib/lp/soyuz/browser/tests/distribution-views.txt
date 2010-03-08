@@ -104,6 +104,15 @@ cases it will always be on source:
     >>> distro_pkg_search_view.search_by_binary_name
     False
 
+Leading and trailing white-space is stripped from the search text.
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search",
+    ...     form={'text': ' a '},
+    ...     query_string='text=a')
+    >>> distro_pkg_search_view.text
+    'a'
+
 
 Exact matches
 .............
