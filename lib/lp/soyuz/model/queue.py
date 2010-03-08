@@ -217,9 +217,9 @@ class PackageUpload(SQLBase):
             except QueueSourceAcceptError, info:
                 raise QueueInconsistentStateError(info)
 
+        self._checkForBinariesinDestinationArchive(
+            pub.build for pub in self.builds)
         for build in self.builds:
-            # as before, but for QueueBuildAcceptError
-            build.verifyBeforeAccept()
             try:
                 build.checkComponentAndSection()
             except QueueBuildAcceptError, info:
@@ -227,6 +227,54 @@ class PackageUpload(SQLBase):
 
         # if the previous checks applied and pass we do set the value
         self.status = PassthroughStatusValue(PackageUploadStatus.ACCEPTED)
+
+    def _checkForBinariesinDestinationArchive(self, builds):
+        """
+        Check for existing binaries (in destination archive) for all binary
+        uploads to be accepted.
+
+        Before accepting binary uploads we check whether any of the binaries
+        already exists in the destination archive and raise an exception if
+        this is the case.
+
+        If any of the uploaded binary files are already published a
+        QueueInconsistentStateError is raised containing all filenames
+        that cannot be published.
+        """
+        inner_query = """
+            SELECT DISTINCT lfa.filename
+            FROM
+                binarypackagefile bpf, binarypackagerelease bpr,
+                libraryfilealias lfa
+            WHERE
+                bpr.build IN (%s)
+                AND bpf.binarypackagerelease = bpr.id
+                AND bpf.libraryfile = lfa.id
+        """ % sqlvalues(builds)
+        query = """
+            SELECT DISTINCT lfa.filename
+            FROM
+                binarypackagefile bpf, binarypackagepublishinghistory bpph,
+                distroarchseries das, distroseries ds, libraryfilealias lfa
+            WHERE
+                bpph.archive = %s
+                AND bpph.distroarchseries = das.id
+                AND das.distroseries = ds.id
+                AND ds.distribution = %s
+                AND bpph.binarypackagerelease = bpf.binarypackagerelease
+                AND bpf.libraryfile = lfa.id
+                AND lfa.filename IN (%s)
+        """ % sqlvalues(
+            self.archive, self.distroseries.distribution, inner_query)
+        store = IMasterStore(PackageUpload)
+        result_set = store.execute(query)
+        known_filenames = result_set.get_all()
+        if len(known_filenames) > 0:
+            filename_list = "\n\t%s".join(
+                [filename for filename in known_filenames])
+            raise QueueInconsistentStateError(
+                'The following files are already published in %s:\n%s' % (
+                    self.archive.displayname, filename_list))
 
     def setDone(self):
         """See `IPackageUpload`."""
