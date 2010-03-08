@@ -273,6 +273,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
 
+    arm_builds_allowed = Bool(
+        title=_("Allow ARM builds for this archive"))
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
@@ -1098,9 +1101,6 @@ class IArchiveEdit(Interface):
 
     def disable():
         """Disable the archive."""
-
-    arm_builds_allowed = Bool(
-        title=_("Allow ARM builds for this archive"))
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
