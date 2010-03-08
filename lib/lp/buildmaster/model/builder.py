@@ -633,17 +633,17 @@ class BuilderSet(object):
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""
-        logger.info("Slave Scan Process Initiated.")
+        logger.debug("Slave Scan Process Initiated.")
 
         buildMaster = BuilddMaster(logger, txn)
 
-        logger.info("Setting Builders.")
+        logger.debug("Setting Builders.")
         # Put every distroarchseries we can find into the build master.
         for archseries in getUtility(IDistroArchSeriesSet):
             buildMaster.addDistroArchSeries(archseries)
             buildMaster.setupBuilders(archseries)
 
-        logger.info("Scanning Builders.")
+        logger.debug("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve
         # builds where they are completed
         buildMaster.scanActiveBuilders()

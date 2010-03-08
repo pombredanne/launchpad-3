@@ -220,16 +220,17 @@ class BuildQueue(SQLBase):
 
         head_job_processor, head_job_virtualized = head_job_platform
 
+        now = self._now()
         delay_query = """
             SELECT MIN(
               CASE WHEN
                 EXTRACT(EPOCH FROM
                   (BuildQueue.estimated_duration -
-                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))  >= 0
+                   (((%s AT TIME ZONE 'UTC') - Job.date_started))))  >= 0
               THEN
                 EXTRACT(EPOCH FROM
                   (BuildQueue.estimated_duration -
-                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))
+                   (((%s AT TIME ZONE 'UTC') - Job.date_started))))
               ELSE
                 -- Assume that jobs that have overdrawn their estimated
                 -- duration time budget will complete within 2 minutes.
@@ -250,7 +251,7 @@ class BuildQueue(SQLBase):
                 AND Job.status = %s
                 AND Builder.virtualized = %s
             """ % sqlvalues(
-                JobStatus.RUNNING,
+                now, now, JobStatus.RUNNING,
                 normalize_virtualization(head_job_virtualized))
 
         if head_job_processor is not None:
@@ -457,9 +458,14 @@ class BuildQueue(SQLBase):
 
         # A job will not get dispatched in less than 5 seconds no matter what.
         start_time = max(5, min_wait_time + sum_of_delays)
-        result = datetime.utcnow() + timedelta(seconds=start_time)
+        result = self._now() + timedelta(seconds=start_time)
 
         return result
+
+    @staticmethod
+    def _now():
+        """Provide utcnow() while allowing test code to monkey-patch this."""
+        return datetime.utcnow()
 
 
 class BuildQueueSet(object):
