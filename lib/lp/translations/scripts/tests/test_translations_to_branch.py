@@ -22,6 +22,10 @@ from lp.translations.scripts.translations_to_branch import (
     ExportTranslationsToBranch)
 
 
+class GruesomeException(Exception):
+    """CPU on fire.  Or some other kind of failure, like."""
+
+
 class TestExportTranslationsToBranch(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
@@ -129,12 +133,17 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # cope well with non-ASCII exception strings.
         exporter = ExportTranslationsToBranch(test_args=[])
         exporter.logger = QuietFakeLogger()
-        boom = Exception(u'\u2639')
-        exporter._exportToBranch = FakeMethod(failure=boom)
+        boom = u'\u2639'
+        exporter._exportToBranch = FakeMethod(failure=GruesomeException(boom))
 
         exporter._exportToBranches([self.factory.makeProductSeries()])
 
         self.assertEqual(1, exporter._exportToBranch.call_count)
+
+        exporter.logger.output_file.seek(0)
+        message = exporter.logger.output_file.read()
+        self.assertTrue(message.startswith("ERROR"))
+        self.assertTrue("GruesomeException" in message)
 
 
 class TestExportToStackedBranch(TestCaseWithFactory):
