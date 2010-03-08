@@ -60,11 +60,12 @@ class BugReportData:
     BAD_THRESHOLD = 20
 
     def __init__(self, open_bugs=0, triaged_bugs=0, upstream_bugs=0,
-                 watched_bugs=0):
+                 watched_bugs=0, bugs_with_upstream_patches=0):
         self.open_bugs = open_bugs
         self.triaged_bugs = triaged_bugs
         self.upstream_bugs = upstream_bugs
         self.watched_bugs = watched_bugs
+        self.bugs_with_upstream_patches = bugs_with_upstream_patches
 
     @property
     def triaged_bugs_percentage(self):
@@ -148,9 +149,9 @@ class PackageBugReportData(BugReportData):
         - *_url: convenience URLs
     """
     def __init__(self, dsp, dssp, product, open_bugs, triaged_bugs,
-                 upstream_bugs, watched_bugs):
+                 upstream_bugs, watched_bugs, bugs_with_upstream_patches):
         BugReportData.__init__(self, open_bugs, triaged_bugs, upstream_bugs,
-                               watched_bugs)
+                               watched_bugs, bugs_with_upstream_patches)
         self.dsp = dsp
         self.dssp = dssp
         self.product = product
@@ -235,6 +236,14 @@ class PackageBugReportData(BugReportData):
         self.watched_bugs_delta_url = urlappend(
             dsp_bugs_url, unwatched_bugs_search_filter_url)
 
+        # The bugs with upstream patches URL links to all open upstream
+        # bugs that don't have a bugwatch but have patches attached.
+        bugs_with_upstream_patches_filter_url = (
+            get_buglisting_search_filter_url(
+                status_upstream='pending_bugwatch', has_patches=True))
+        self.bugs_with_upstream_patches_url = urlappend(
+            dsp_bugs_url, bugs_with_upstream_patches_filter_url)
+
 
 class DistributionUpstreamBugReport(LaunchpadView):
     """Implements the actual upstream bug report.
@@ -248,6 +257,7 @@ class DistributionUpstreamBugReport(LaunchpadView):
     valid_sort_keys = [
         'bugtracker_name',
         'bug_supervisor_name',
+        'bugs_with_upstream_patches',
         'dsp',
         'open_bugs',
         'product',
@@ -344,7 +354,8 @@ class DistributionUpstreamBugReport(LaunchpadView):
         packages_to_exclude = self.context.upstream_report_excluded_packages
         counts = self.context.getPackagesAndPublicUpstreamBugCounts(
             limit=self.LIMIT, exclude_packages=packages_to_exclude)
-        for (dsp, product, open, triaged, upstream, watched) in counts:
+        for (dsp, product, open, triaged, upstream, watched,
+             bugs_with_upstream_patches) in counts:
             # The +edit-packaging page is only available for
             # IDistributionSeriesSourcepackages, so deduce one here. If
             # the distribution doesn't have series we can't offer a link
@@ -360,6 +371,7 @@ class DistributionUpstreamBugReport(LaunchpadView):
             self.total.watched_bugs += watched
 
             item = PackageBugReportData(
-                dsp, dssp, product, open, triaged, upstream, watched)
+                dsp, dssp, product, open, triaged, upstream, watched,
+                bugs_with_upstream_patches)
             self._data.append(item)
 

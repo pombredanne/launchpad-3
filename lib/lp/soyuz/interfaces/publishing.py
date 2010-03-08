@@ -16,8 +16,6 @@ __all__ = [
     'IFilePublishing',
     'IPublishingEdit',
     'IPublishingSet',
-    'ISecureBinaryPackagePublishingHistory',
-    'ISecureSourcePackagePublishingHistory',
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
     'ISourcePackagePublishingHistoryPublic',
@@ -31,7 +29,7 @@ __all__ = [
     'name_priority_map',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
+from zope.schema import Choice, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -238,7 +236,6 @@ class IPublishingView(Interface):
     """Base interface for all Publishing classes"""
 
     files = Attribute("Files included in this publication.")
-    secure_record = Attribute("Correspondent secure package history record.")
     displayname = exported(
         TextLine(
             title=_("Display Name"),
@@ -400,7 +397,7 @@ class ISourcePackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureSourcePackagePublishingHistory(IPublishingView):
+class ISourcePackagePublishingHistoryPublic(IPublishingView):
     """A source package publishing history record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -486,14 +483,6 @@ class ISecureSourcePackagePublishingHistory(IPublishingView):
             required=False, readonly=False,
             ),
         exported_as="date_removed")
-    embargo = Bool(
-            title=_('Whether or not this record is under embargo'),
-            required=True, readonly=False,
-            )
-    embargolifted = Datetime(
-            title=_('The date on which this record had its embargo lifted'),
-            required=False, readonly=False,
-            )
     removed_by = exported(
         Reference(
             IPerson,
@@ -505,11 +494,6 @@ class ISecureSourcePackagePublishingHistory(IPublishingView):
             title=_('Reason why this publication is going to be removed.'),
             required=False, readonly=False,
         ))
-
-
-class ISourcePackagePublishingHistoryPublic(
-    ISecureSourcePackagePublishingHistory):
-    """A source package publishing history record with public attributes."""
 
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
@@ -721,7 +705,7 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureBinaryPackagePublishingHistory(IPublishingView):
+class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     """A binary package publishing record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -822,15 +806,6 @@ class ISecureBinaryPackagePublishingHistory(IPublishingView):
             description=_("The context archive for this publication."),
             required=True, readonly=True,
             ))
-    embargo = Bool(
-            title=_('Whether or not this record is under embargo'),
-            required=True, readonly=False,
-            )
-    embargolifted = Datetime(
-            title=_('The date and time at which this record had its '
-                    'embargo lifted'),
-            required=False, readonly=False,
-            )
     removed_by = exported(
         Reference(
             IPerson,
@@ -844,11 +819,6 @@ class ISecureBinaryPackagePublishingHistory(IPublishingView):
             description=_(
                 'Reason why this publication is going to be removed.'),
             required=False, readonly=False))
-
-
-class IBinaryPackagePublishingHistoryPublic(
-    ISecureBinaryPackagePublishingHistory):
-    """A binary package publishing record with public attributes."""
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
         "represents this binarypackagerelease in this distroarchseries.")
