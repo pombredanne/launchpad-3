@@ -12,8 +12,6 @@ from unittest import TestLoader
 
 import transaction
 
-from subunit import IsolatedTestCase
-
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
@@ -29,7 +27,7 @@ from lp.services.job.interfaces.job import JobStatus, IRunnableJob
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
     BaseRunnableJob, JobCronScript, JobRunner, TwistedJobRunner)
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, ZopeIsolatedTestCase
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -303,7 +301,7 @@ class ListLogger:
         self.entries.append(input)
 
 
-class TestTwistedJobRunner(IsolatedTestCase, TestCaseWithFactory):
+class TestTwistedJobRunner(ZopeIsolatedTestCase, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -328,7 +326,7 @@ class TestTwistedJobRunner(IsolatedTestCase, TestCaseWithFactory):
         self.assertIn('Job ran too long.', oops.value)
 
 
-class TestJobCronScript(IsolatedTestCase, TestCaseWithFactory):
+class TestJobCronScript(ZopeIsolatedTestCase, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
