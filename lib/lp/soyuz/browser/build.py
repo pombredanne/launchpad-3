@@ -22,6 +22,7 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin, ProxiedLibraryFileAlias)
 from canonical.lazr.utils import safe_hasattr
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
@@ -127,17 +128,16 @@ class BuildBreadcrumb(Breadcrumb):
 
     @property
     def text(self):
-        # If this is a official distro build, there is already a
-        # breadcrumb for the source package, so produce a custom title.
-        # Otherwise there is no source information yet, so return the
-        # full title.
+        # If this is a PPA or copy archive build, include the source
+        # name and version. But for distro archives there are already
+        # breadcrumbs for both, so we omit them.
         if self.context.archive.is_ppa or self.context.archive.is_copy:
-            return self.context.title
+            return '%s build of %s %s' % (
+                self.context.arch_tag,
+                self.context.sourcepackagerelease.sourcepackagename.name,
+                self.context.sourcepackagerelease.version)
         else:
-            return '%s build in %s %s' % (
-                self.context.distroarchseries.architecturetag,
-                self.context.distroarchseries.distroseries.name,
-                self.context.pocket.name)
+            return '%s build' % self.context.arch_tag
 
 
 class BuildView(LaunchpadView):
