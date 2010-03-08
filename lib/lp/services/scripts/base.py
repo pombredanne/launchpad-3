@@ -22,7 +22,7 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
-from canonical.launchpad.interfaces import IScriptActivitySet
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from canonical.lp import initZopeless
 from lp.testing import ANONYMOUS
 

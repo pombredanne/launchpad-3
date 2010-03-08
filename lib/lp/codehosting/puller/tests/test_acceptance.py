@@ -30,7 +30,7 @@ from lp.code.enums import BranchType
 from lp.codehosting.vfs import get_lp_server
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
-from canonical.launchpad.interfaces import IScriptActivitySet
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from canonical.testing import ZopelessAppServerLayer
 
 

@@ -13,7 +13,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from canonical.launchpad.interfaces import IQuestionBug
+from lp.coop.answersbugs.interfaces import IQuestionBug
 
 from canonical.database.sqlbase import SQLBase
 

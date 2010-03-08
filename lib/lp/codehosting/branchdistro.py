@@ -27,7 +27,7 @@ import transaction
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.config import config
 
 from lp.code.interfaces.branchcollection import IAllBranches

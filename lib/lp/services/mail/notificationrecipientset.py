@@ -15,7 +15,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from zope.interface import implements
 
 from canonical.launchpad.helpers import emailPeople
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet, UnknownRecipientError)
 from lp.registry.interfaces.person import IPerson
 

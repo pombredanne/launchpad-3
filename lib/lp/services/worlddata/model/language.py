@@ -18,7 +18,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces import ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.services.worlddata.interfaces.language import (
     ILanguage, ILanguageSet, TextDirection)

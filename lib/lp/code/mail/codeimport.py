@@ -13,7 +13,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from canonical.config import config
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template)
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeImportEventDataType,
     CodeImportEventType, CodeImportReviewStatus, RevisionControlSystems)

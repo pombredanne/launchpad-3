@@ -18,7 +18,7 @@ from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.person import PersonCreationRationale
 from lp.services.openid.interfaces.openidrpconfig import (
     IOpenIDRPConfig, IOpenIDRPConfigSet)

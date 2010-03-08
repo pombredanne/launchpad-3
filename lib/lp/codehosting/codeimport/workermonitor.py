@@ -20,7 +20,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import begin, commit, rollback
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interaction import Participation
 from canonical.launchpad.webapp import canonical_url
 from canonical.twistedsupport import defer_to_thread
