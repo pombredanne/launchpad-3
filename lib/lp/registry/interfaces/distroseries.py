@@ -164,6 +164,12 @@ class IDistroSeriesPublic(
             description=_(
                 "The title of this series. It should be distinctive "
                 "and designed to look good at the top of a page.")))
+    active = exported(Bool(
+        title=_("Active"),
+        description=_(
+            "Whether or not this series is stable and supported, or "
+            "under current development. This excludes series which "
+            "are experimental or obsolete.")))
     description = exported(
         Description(title=_("Description"), required=True,
             description=_("A detailed description of this series, with "

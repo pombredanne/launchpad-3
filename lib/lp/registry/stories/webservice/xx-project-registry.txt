@@ -810,7 +810,6 @@ virtual host.
 
     >>> babadoo_foobadoo = webservice.get('/babadoo/foobadoo').jsonBody()
     >>> pprint_entry(babadoo_foobadoo)
-    active: True
     active_milestones_collection_link: u'http://.../babadoo/foobadoo/active_milestones'
     all_milestones_collection_link: u'http://.../babadoo/foobadoo/all_milestones'
     branch_link: u'http://.../~babadoo-owner/babadoo/fooey'

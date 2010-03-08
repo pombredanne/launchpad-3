@@ -92,13 +92,6 @@ class SeriesStatus(DBEnumeratedType):
 class ISeriesMixin(IHasDrivers):
     """Methods & properties shared between distro & product series."""
 
-    active = exported(Bool(
-        title=_("Active"),
-        description=_(
-            "Whether or not this series is stable and supported, or "
-            "under current development. This excludes series which "
-            "are experimental or obsolete.")))
-
     summary = exported(
         Summary(title=_("Summary"),
              description=_('A single paragraph that explains the goals of '
