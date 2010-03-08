@@ -71,9 +71,10 @@
                 <td class="translator-link">
                   <a tal:condition="translator/style_guide_url"
                      tal:attributes="href translator/style_guide_url"
-                     ><img src="/@@/link" alt="Doc"
+                     ><span alt="Doc"
                            tal:attributes="title translator/style_guide_url"
-                           />
+                           class="external-link sprite"
+                           ></span>
                     <tal:link
                        replace="translator/style_guide_url/fmt:shorten/30"
                        ></tal:link></a>

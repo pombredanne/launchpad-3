@@ -20,6 +20,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionenums import QuestionStatus
 
+
 class IQuestionReopening(Interface):
     """A record of the re-opening of a question.
 

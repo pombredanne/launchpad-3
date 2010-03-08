@@ -56,7 +56,7 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.request_country import (

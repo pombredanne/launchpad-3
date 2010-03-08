@@ -6,6 +6,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -23,6 +24,8 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.code.interfaces.branchjob import IBranchJob
 from lp.code.model.branchjob import BranchJob
+from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.codehosting.scanner import events
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.model.buildqueue import BuildQueue
@@ -213,6 +216,18 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
         removeSecurityProxy(branch).private = True
         self.assertFalse(self.jobsource.generatesTemplates(branch))
+
+    def test_scheduleTranslationTemplatesBuild_subscribed(self):
+        # If the feature is enabled, a TipChanged event for a branch that
+        # generates templates will schedule a templates build.
+        branch = self._makeTranslationBranch()
+        commit = DirectBranchCommit(branch, to_mirror=True)
+        commit.writeFile('POTFILES.in', 'foo')
+        commit.commit('message')
+        notify(events.TipChanged(branch, None, False))
+        branchjobs = list(TranslationTemplatesBuildJob.iterReady())
+        self.assertEqual(1, len(branchjobs))
+        self.assertEqual(branch, branchjobs[0].branch)
 
     def test_scheduleTranslationTemplatesBuild(self):
         # If the feature is enabled, scheduleTranslationTemplatesBuild
