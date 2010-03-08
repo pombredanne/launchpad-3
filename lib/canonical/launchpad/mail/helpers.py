@@ -8,9 +8,10 @@ import re
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    BugNotificationLevel, IDistroBugTask, IDistroSeriesBugTask,
-    IUpstreamBugTask)
+from lp.registry.interfaces.structuralsubscriptions import (
+    BugNotificationLevel)
+from lp.bugs.interfaces.bugtask import (
+    IDistroBugTask, IDistroSeriesBugTask, IUpstreamBugTask)
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.webapp import canonical_url
@@ -46,7 +47,7 @@ def get_main_body(signed_msg):
 def get_bugtask_type(bugtask):
     """Returns the specific IBugTask interface the bugtask provides.
 
-        >>> from canonical.launchpad.interfaces import (
+        >>> from lp.bugs.interfaces.bugtask import (
         ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)
         >>> from zope.interface import classImplementsOnly
         >>> class BugTask:

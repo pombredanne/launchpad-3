@@ -5,7 +5,8 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ICrowd, IPerson, ITeam
+from canonical.launchpad.interfaces.launchpad import ICrowd
+from lp.registry.interfaces.person import IPerson, ITeam
 
 
 class CrowdOfOnePerson:

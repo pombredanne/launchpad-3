@@ -45,11 +45,19 @@ from zope.component import getUtility
 from zope.contenttype import guess_content_type
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
-    IBugActivitySet, IBugAttachmentSet, IBugSet, IEmailAddressSet,
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessageSet, IPersonSet,
-    NotFoundError, PersonCreationRationale)
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.interfaces.emailaddress import (
+    IEmailAddressSet)
+from lp.bugs.interfaces.bug import IBugSet, CreateBugParams
+from lp.bugs.interfaces.bugactivity import IBugActivitySet
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
+from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus,
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 

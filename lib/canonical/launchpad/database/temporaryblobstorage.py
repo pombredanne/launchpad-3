@@ -24,12 +24,9 @@ from canonical.config import config
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces import (
-    ITemporaryBlobStorage,
-    ITemporaryStorageManager,
-    ILibraryFileAliasSet,
-    BlobTooLarge,
-    )
+from canonical.launchpad.interfaces.librarian import  ILibraryFileAliasSet
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryBlobStorage, ITemporaryStorageManager, BlobTooLarge)
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.database.librarian import LibraryFileAlias
 

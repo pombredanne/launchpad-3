@@ -13,21 +13,33 @@ from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.schema import ValidationError
 
-from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.launchpad.interfaces import (
-        BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
-        IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError,
-        NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
-        BugTaskStatus, UserCannotUnsubscribePerson)
 from lazr.lifecycle.event import (
     ObjectModifiedEvent, ObjectCreatedEvent)
 from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent, IObjectModifiedEvent)
+from lazr.lifecycle.snapshot import Snapshot
+
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, NotFoundError)
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from lp.bugs.interfaces.bug import IBug, IBugSet, CreateBugParams
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance, BugTaskStatus, IDistroBugTask)
+from lp.bugs.interfaces.cve import ICveSet
+from canonical.launchpad.interfaces.mail import (
+    IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+    IBugTaskEditEmailCommand, EmailProcessingError, BugTargetNotFound, 
+    UserCannotUnsubscribePerson)
+
 
 from canonical.launchpad.mail.helpers import (
     get_error_message, get_person_or_team)

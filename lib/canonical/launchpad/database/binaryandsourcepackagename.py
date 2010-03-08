@@ -18,7 +18,7 @@ from sqlobject import StringCol
 from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectHugeVocabulary, BatchedCountableIterator)
 
-from canonical.launchpad.interfaces import (
+from lp.soyuz.interfaces.binarypackagename import (
     IBinaryAndSourcePackageName)
 from lp.registry.model.sourcepackagename import (
     getSourcePackageDescriptions)

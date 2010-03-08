@@ -8,8 +8,10 @@ import gpgme
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import keys_for_tests
-from canonical.launchpad.interfaces import (
-    IGPGHandler, IPersonSet, IEmailAddressSet, EmailAddressStatus)
+from canonical.launchpad.interfaces.emailaddress import (
+    IEmailAddressSet, EmailAddressStatus)
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.scripts.keyringtrustanalyser import (
     addTrustedKeyring, addOtherKeyring, getValidUids, findEmailClusters,
     mergeClusters)

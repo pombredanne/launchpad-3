@@ -28,9 +28,10 @@ from lp.registry.model.product import Product
 from lp.translations.model.pomsgid import POMsgID
 from lp.answers.model.question import Question
 
-from canonical.launchpad.interfaces import (
-    ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet, QuestionStatus
-    )
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatistic, ILaunchpadStatisticSet)
+from lp.registry.interfaces.person import IPersonSet
+from lp.answers.interfaces.questionenums import QuestionStatus
 
 
 class LaunchpadStatistic(SQLBase):

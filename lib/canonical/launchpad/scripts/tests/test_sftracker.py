@@ -10,12 +10,17 @@ import unittest
 import pytz
 import transaction
 from zope.component import getUtility
-from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskImportance, BugTaskStatus, IEmailAddressSet,
-    ILaunchpadCelebrities, IPersonSet, IProductSet, PersonCreationRationale)
-from canonical.launchpad.scripts import sftracker
 
+from canonical.launchpad.interfaces.emailaddress import (
+    IEmailAddressSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.product import IProductSet
+from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
+from canonical.launchpad.scripts import sftracker
 from canonical.testing import LaunchpadZopelessLayer
+
 
 item_data = r"""
 <item id="1278591">

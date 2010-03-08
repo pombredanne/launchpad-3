@@ -9,7 +9,7 @@ from zope.sendmail.zcml import IMailerDirective
 from zope.interface import Interface
 from zope.schema import ASCII, Bool
 
-from canonical.launchpad.interfaces import IMailBox
+from canonical.launchpad.interfaces.mailbox import IMailBox
 from lp.services.mail.stub import StubMailer, TestMailer
 from lp.services.mail.mailbox import (
     DirectoryMailBox, POP3MailBox, TestMailBox)

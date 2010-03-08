@@ -13,7 +13,7 @@ from canonical.launchpad.ftests import login
 from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import IPerson
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -179,17 +179,21 @@ def test_preferred_or_request_languages():
     >>> from zope.app.testing.placelesssetup import setUp, tearDown
     >>> from zope.app.testing import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
+    >>> from canonical.launchpad.interfaces.geoip import
+    ...     IRequestPreferredLanguages, IRequestLocalLanguages)
     >>> from canonical.launchpad.helpers import preferred_or_request_languages
 
     First, test with a person who has a single preferred language.
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestPreferredLanguages,
+    ...     adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)

@@ -19,9 +19,13 @@ from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
 
 from canonical.uuid import generate_uuid
-from canonical.launchpad.interfaces import (
-    AccountStatus, GPGVerificationError, IGPGHandler, ILibraryFileAliasSet,
-    IMailBox, IPerson, IWeaklyAuthenticatedPrincipal)
+from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGVerificationError, IGPGHandler)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.mailbox import IMailBox
+from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
+from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interaction import get_current_principal

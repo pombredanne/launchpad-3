@@ -13,15 +13,18 @@ from zope.event import notify
 from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces import (
-    BugAttachmentType,
-    CreatedBugWithNoBugTasksError, EmailProcessingError,
-    IBugAttachmentSet,
-    IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
-    IBugTaskEditEmailCommand, IBugTaskEmailCommand,
-    ILaunchBag, IMailHandler,
-    IMessageSet, IQuestionSet, ISpecificationSet,
-    QuestionStatus)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.interfaces.mail import (
+    EmailProcessingError, IBugEditEmailCommand, IBugEmailCommand,
+    IBugTaskEditEmailCommand, IBugTaskEmailCommand, IMailHandler,)
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.bugs.interfaces.bug import CreatedBugWithNoBugTasksError
+from lp.bugs.interfaces.bugmessage import IBugMessageSet
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
 from lp.code.mail.codehandler import CodeHandler
 from canonical.launchpad.mail.commands import (
     BugEmailCommands, get_error_message)

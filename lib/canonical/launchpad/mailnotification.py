@@ -30,17 +30,22 @@ from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.adapters.bugchange import BugDuplicateChange, get_bug_changes
 from canonical.launchpad.helpers import (
     get_contact_email_addresses, get_email_template, shortlist)
-from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IHeldMessageDetails, ILaunchpadCelebrities,
-    INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
-    IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
-    TeamMembershipStatus)
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, INotificationRecipientSet)
+from canonical.launchpad.interfaces.emailaddress import (
+    IEmailAddressSet)
+from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.mailinglist import IHeldMessageDetails
+from lp.registry.interfaces.structuralsubscription import (
+    BugNotificationLevel, IStructuralSubscriptionTarget)
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet, TeamMembershipStatus)
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugchange import IBugChange
+from lp.bugs.interfaces.bugtask import IUpstreamBugTask
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from lp.services.mail.mailwrapper import MailWrapper

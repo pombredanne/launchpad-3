@@ -21,9 +21,10 @@ from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
 from storm.locals import Date, Desc, Int, Reference, Store
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAlias, ILibraryFileAliasSet, ILibraryFileContent,
-    ILibraryFileDownloadCount, IMasterStore)
+    ILibraryFileDownloadCount)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
