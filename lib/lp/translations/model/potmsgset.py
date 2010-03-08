@@ -15,6 +15,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+from storm.expr import SQL
 from storm.store import EmptyResultSet, Store
 
 from canonical.config import config
@@ -27,6 +28,7 @@ from lp.translations.model.translationmessage import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
@@ -324,6 +326,9 @@ class POTMsgSet(SQLBase):
 
         A message is used if it's either imported or current, and unused
         otherwise.
+
+        Suggestions are read-only, so these objects come from the slave
+        store.
         """
         if not config.rosetta.global_suggestions_enabled:
             return []
@@ -387,7 +392,9 @@ class POTMsgSet(SQLBase):
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
 
-        result = TranslationMessage.select('id IN (%s)' % ids_query)
+        result = ISlaveStore(TranslationMessage).find(
+            TranslationMessage,
+            TranslationMessage.id.is_in(SQL(ids_query)))
 
         return shortlist(result, longest_expected=100, hardlimit=2000)
 

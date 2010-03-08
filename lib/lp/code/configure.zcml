@@ -533,6 +533,30 @@
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="canonical.launchpad.subscribers.karma.branch_created"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.email.queue_tip_changed_email_jobs"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.schedule_diff_updates"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.schedule_translation_templates_build"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.schedule_translation_upload"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.IRevisionsRemoved"
+      handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.INewRevision"
+      handler="lp.codehosting.scanner.buglinks.got_new_revision"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.IScanCompleted"
+      handler="lp.codehosting.scanner.mergedetection.auto_merge_proposals"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.IScanCompleted"
+      handler="lp.codehosting.scanner.mergedetection.auto_merge_branches"/>
 
   <!-- Temporarily disabling queues
        <browser:page
