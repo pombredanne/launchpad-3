@@ -34,6 +34,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lazr.delegates import delegates
 from lp.services.job.interfaces.job import JobStatus
@@ -119,6 +120,24 @@ class BuildContextMenu(ContextMenu):
         return Link(
             '+rescore', text, icon='edit',
             enabled=self.context.can_be_rescored)
+
+
+class BuildBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IBuild`."""
+
+    @property
+    def text(self):
+        # If this is a official distro build, there is already a
+        # breadcrumb for the source package, so produce a custom title.
+        # Otherwise there is no source information yet, so return the
+        # full title.
+        if self.context.archive.is_ppa or self.context.archive.is_copy:
+            return self.context.title
+        else:
+            return '%s build in %s %s' % (
+                self.context.distroarchseries.architecturetag,
+                self.context.distroarchseries.distroseries.name,
+                self.context.pocket.name)
 
 
 class BuildView(LaunchpadView):

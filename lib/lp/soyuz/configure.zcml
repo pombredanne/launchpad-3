@@ -508,6 +508,11 @@
             permission="launchpad.Edit"
             set_attributes="buildlog datebuilt buildduration builder                                                                                                                 buildstate dependencies upload_log"/>
     </class>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.soyuz.interfaces.build.IBuild"
+        factory="lp.soyuz.browser.build.BuildBreadcrumb"
+        permission="zope.Public"/>
 
     <!-- BuildSet -->
 
