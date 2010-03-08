@@ -16,7 +16,7 @@ from canonical.database.sqlbase import flush_database_updates, cursor
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 

@@ -14,7 +14,7 @@ from zope.security.management import newInteraction, endInteraction
 from zope.session.interfaces import ISession, IClientIdManager
 
 from lazr.restful.interfaces import IWebServiceConfiguration
-from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import (
     FeedsLayer, setFirstLayer, WebServiceLayer)
 from canonical.launchpad.tests.readonly import (

@@ -28,7 +28,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.config import config, dbconfig
 from canonical.database.sqlbase import StupidCache
-from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
