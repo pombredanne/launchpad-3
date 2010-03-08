@@ -432,7 +432,7 @@
         class="lp.soyuz.browser.builder.BuilderHistoryView">
         <browser:page
             name="+history"
-            template="../templates/builder-history.pt"
+            template="../templates/builds.pt"
             facet="overview" />
         <browser:page
             template="../templates/builds-list.pt"
