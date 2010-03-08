@@ -408,7 +408,9 @@
                 official_bug_tags
                 findRelatedArchives
                 findRelatedArchivePublications
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                max_bug_heat
+                recalculateMaxBugHeat"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="

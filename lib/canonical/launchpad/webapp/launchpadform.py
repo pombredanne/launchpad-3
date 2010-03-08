@@ -7,10 +7,11 @@
 __metaclass__ = type
 
 __all__ = [
-    'LaunchpadFormView',
-    'LaunchpadEditFormView',
     'action',
     'custom_widget',
+    'LaunchpadEditFormView',
+    'LaunchpadFormView',
+    'ReturnToReferrerMixin',
     'safe_action',
     ]
 
@@ -32,7 +33,7 @@ from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
     IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.menu import escape
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -434,3 +435,30 @@ def safe_action(action):
     """
     action.is_safe = True
     return action
+
+
+class ReturnToReferrerMixin:
+    """Return to the previous page after submitting the form.
+
+    The _return_url is stored in a hidden field in the launchpad-form.pt
+    between the request to view the form and submitting the form.
+    """
+
+    @property
+    def _return_url(self):
+        """See `LaunchpadFormView`."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('_return_url')
+        if referrer is None:
+            # "referer" is misspelled in the HTTP specification.
+            referrer = self.request.getHeader('referer')
+
+        if (referrer is not None
+            and referrer.startswith(self.request.getApplicationURL())):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    next_url = _return_url
+    cancel_url = _return_url
