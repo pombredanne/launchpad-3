@@ -401,8 +401,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getCountryMirror(self, country, mirror_type):
         """See `IDistribution`."""
-        return DistributionMirror.selectOneBy(distribution=self,
-            country=country, content=mirror_type, country_dns_mirror=True)
+        store = Store.of(self)
+        results = store.find(
+            DistributionMirror,
+            distribution == self,
+            country == country,
+            content == mirror_type,
+            country_dns_mirror == True)
+        return results.one()
 
     def newMirror(self, owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,
