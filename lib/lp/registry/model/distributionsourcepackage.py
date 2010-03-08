@@ -283,6 +283,7 @@ class DistributionSourcePackage(BugTargetBase,
         results = store.find(
             Archive,
             Archive.distribution == self.distribution,
+            Archive._enabled == True,
             Archive.private == False,
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
