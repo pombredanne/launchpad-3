@@ -324,9 +324,7 @@ class IDistributionPublic(
     @operation_returns_entry(IDistributionMirror)
     @export_read_operation()
     def getCountryMirror(country, mirror_type):
-        """Return the country DNS mirror for a given country and content
-        type.
-        """
+        """Return the country DNS mirror for acountry and content type."""
 
     def newMirror(owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,

@@ -6,23 +6,24 @@
 __metaclass__ = type
 
 __all__ = [
-'CannotTransitionToCountryMirror',
-'CountryMirrorAlreadySet',
-'IDistributionMirror',
-'IMirrorDistroArchSeries',
-'IMirrorDistroSeriesSource',
-'IMirrorProbeRecord',
-'IDistributionMirrorSet',
-'IMirrorCDImageDistroSeries',
-'PROBE_INTERVAL',
-'MirrorContent',
-'MirrorFreshness',
-'MirrorHasNoHTTPUrl',
-'MirrorNotOfficial',
-'MirrorNotProbed',
-'MirrorSpeed',
-'MirrorStatus',
-'UnableToFetchCDImageFileList']
+    'CannotTransitionToCountryMirror',
+    'CountryMirrorAlreadySet',
+    'IDistributionMirror',
+    'IMirrorDistroArchSeries',
+    'IMirrorDistroSeriesSource',
+    'IMirrorProbeRecord',
+    'IDistributionMirrorSet',
+    'IMirrorCDImageDistroSeries',
+    'PROBE_INTERVAL',
+    'MirrorContent',
+    'MirrorFreshness',
+    'MirrorHasNoHTTPUrl',
+    'MirrorNotOfficial',
+    'MirrorNotProbed',
+    'MirrorSpeed',
+    'MirrorStatus',
+    'UnableToFetchCDImageFileList'
+    ]
 
 from cgi import escape
 
@@ -53,9 +54,8 @@ PROBE_INTERVAL = 23
 
 
 class CannotTransitionToCountryMirror(Exception):
-    """Root exception for transitions to country mirrors.
-    """
-    webservice_error(400) # HTTP Error: 'Bad Request'.
+    """Root exception for transitions to country mirrors."""
+    webservice_error(400)
 
 
 class CountryMirrorAlreadySet(CannotTransitionToCountryMirror):
@@ -418,7 +418,8 @@ class IDistributionMirror(Interface):
     date_reviewed = exported(Datetime(
         title=_('Date reviewed'), required=False, readonly=True,
         description=_(
-            "The date on which this mirror was last reviewed by a mirror admin.")))
+            "The date on which this mirror was last reviewed by a mirror "
+            "admin.")))
 
     official_candidate = exported(Bool(
         title=_('Apply to be an official mirror of this distribution'),
