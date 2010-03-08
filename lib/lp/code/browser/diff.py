@@ -23,8 +23,10 @@ class PreviewDiffNavigation(Navigation, FileNavigationMixin):
     usedfor = IPreviewDiff
 
 
-class PreviewDiffFormatterAPI(ObjectFormatterAPI):
-    """Formatter for preview diffs."""
+class DiffFormatterAPI(ObjectFormatterAPI):
+
+    def _get_url(self, librarian_alias):
+        return librarian_alias.getURL()
 
     def url(self, view_name=None, rootsite=None):
         """Use the url of the librarian file containing the diff.
@@ -32,8 +34,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         librarian_alias = self._context.diff_text
         if librarian_alias is None:
             return None
-        else:
-            return canonical_url(self._context) + '/+files/preview.diff'
+        return self._get_url(librarian_alias)
 
     def link(self, view_name):
         """The link to the diff should show the line count.
@@ -85,3 +86,10 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
                 '<a href="%(url)s" class="diff-link">'
                 '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s'
                 '</a>' % args)
+
+
+class PreviewDiffFormatterAPI(DiffFormatterAPI):
+    """Formatter for preview diffs."""
+
+    def _get_url(self, library_):
+        return canonical_url(self._context) + '/+files/preview.diff'

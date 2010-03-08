@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Tests for `IBuildBase`."""
 
 __metaclass__ = type
@@ -44,6 +46,33 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
     """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_getUploadLogContent_nolog(self):
+        """If there is no log file there, a string explaining that is returned.
+        """
+        self.useTempDir()
+        build_base = BuildBase()
+        self.assertEquals('Could not find upload log file', 
+            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
+
+    def test_getUploadLogContent_only_dir(self):
+        """If there is a directory but no log file, expect the error string,
+        not an exception."""
+        self.useTempDir()
+        os.makedirs("accepted/myleaf")
+        build_base = BuildBase()
+        self.assertEquals('Could not find upload log file', 
+            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
+
+    def test_getUploadLogContent_readsfile(self):
+        """If there is a log file, return its contents."""
+        self.useTempDir()
+        os.makedirs("accepted/myleaf")
+        with open('accepted/myleaf/uploader.log', 'w') as f:
+            f.write('foo')
+        build_base = BuildBase()
+        self.assertEquals('foo',
+            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploaderCommand(self):
         build_base = BuildBase()
