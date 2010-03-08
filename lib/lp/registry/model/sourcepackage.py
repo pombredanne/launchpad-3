@@ -12,10 +12,10 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import classProvides, implements
 from zope.component import getUtility
 
+from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
@@ -477,10 +477,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             target.datecreated = UTC_NOW
         else:
             # ok, we need to create a new one
-            Packaging(distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename,
-            productseries=productseries, owner=user,
-            packaging=PackagingType.PRIME)
+            Packaging(
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename,
+                productseries=productseries, owner=user,
+                packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
 
@@ -568,6 +569,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             include_status=[PackagePublishingStatus.PUBLISHED])
         if latest_publishing is not None:
             return latest_publishing.component
+        else:
+            return None
+
+    @property
+    def latest_published_component_name(self):
+        """See `ISourcePackage`."""
+        if self.latest_published_component is not None:
+            return self.latest_published_component.name
         else:
             return None
 

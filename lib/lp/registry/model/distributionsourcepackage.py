@@ -187,7 +187,7 @@ class DistributionSourcePackage(BugTargetBase,
                           PackagePublishingStatus.PUBLISHED,
                           PackagePublishingStatus.OBSOLETE),
             clauseTables=["SourcePackagePublishingHistory",
-                          "SourcePackageRelease", 
+                          "SourcePackageRelease",
                           "DistroSeries"],
             orderBy=["status",
                      SQLConstant(
@@ -283,6 +283,7 @@ class DistributionSourcePackage(BugTargetBase,
         results = store.find(
             Archive,
             Archive.distribution == self.distribution,
+            Archive._enabled == True,
             Archive.private == False,
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
@@ -319,6 +320,7 @@ class DistributionSourcePackage(BugTargetBase,
                 self.sourcepackagename)
             if source_package.direct_packaging is not None:
                 return source_package.direct_packaging.productseries.product
+        return None
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
