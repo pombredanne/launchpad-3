@@ -326,8 +326,11 @@ class BuildRecordsView(LaunchpadView):
     """
     __used_for__ = IHasBuildRecords
 
-    label = 'Builds'
-    page_title = label
+    page_title = 'Builds'
+
+    @property
+    def label(self):
+        return 'Builds for %s' % self.context.displayname
 
     def setupBuildList(self):
         """Setup a batched build records list.
