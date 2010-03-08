@@ -64,4 +64,14 @@
       </a>
     </td>
   </tr>
+  <tr tal:define="count view/bugs_with_patches_count|nothing;
+                  plural string: Bugs with patches;
+                  singular string: Bug with a patch;">
+    <td class="bugs-count" tal:content="count"/>
+    <td class="bugs-link">
+      <a tal:attributes="href string:${context/fmt:url}/+patches">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
+    </td>
+  </tr>
 </tal:portlet-bug-filters-content>

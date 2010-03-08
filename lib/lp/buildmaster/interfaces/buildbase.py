@@ -112,6 +112,18 @@ class IBuildBase(Interface):
             title=_("Distribution"), required=True,
             description=_("Shortcut for its distribution.")))
 
+    upload_log = Object(
+        schema=ILibraryFileAlias, required=False,
+        title=_("The LibraryFileAlias containing the upload log for "
+                "build resulting in an upload that could not be processed "
+                "successfully. Otherwise it will be None."))
+
+    upload_log_url = exported(
+        TextLine(
+            title=_("Upload Log URL"), required=False,
+            description=_("A URL for failed upload logs."
+                          "Will be None if there was no failure.")))
+
     def getUploaderCommand(upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
 
@@ -148,6 +160,9 @@ class IBuildBase(Interface):
         Subclasses can override this as needed, and call it from custom status
         handlers, but it should not be called externally.
         """
+
+    def verifySuccessfulUpload():
+        """Verify that the upload of this build completed succesfully."""
 
     def storeUploadLog(content):
         """Store the given content as the build upload_log.

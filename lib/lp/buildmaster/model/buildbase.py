@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=E0211,E0213
 
+from __future__ import with_statement
+
 """Common build base classes."""
 
 __metaclass__ = type
@@ -14,19 +16,26 @@ import logging
 import os
 import pytz
 import subprocess
+from cStringIO import StringIO
 
 from storm.store import Store
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     clear_current_connection_cache, cursor, flush_database_updates)
+from canonical.launchpad.helpers import filenameToContentType
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.model.buildqueue import BuildQueue
+
+
+UPLOAD_LOG_FILENAME = 'uploader.log'
 
 
 class BuildBase:
@@ -93,6 +102,32 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.buildlog)
 
+    def getUploadLogContent(self, root, leaf):
+        """Retrieve the upload log contents.
+
+        :param root: Root directory for the uploads
+        :param leaf: Leaf for this particular upload
+        :return: Contents of log file or message saying no log file was found.
+        """
+        # Retrieve log file content.
+        possible_locations = (
+            'failed', 'failed-to-move', 'rejected', 'accepted')
+        for location_dir in possible_locations:
+            log_filepath = os.path.join(root, location_dir, leaf,
+                UPLOAD_LOG_FILENAME)
+            if os.path.exists(log_filepath):
+                with open(log_filepath, 'r') as uploader_log_file:
+                    return uploader_log_file.read()
+        else:
+            return 'Could not find upload log file'
+
+    @property
+    def upload_log_url(self):
+        """See `IBuildBase`."""
+        if self.upload_log is None:
+            return None
+        return self._getProxiedFileURL(self.upload_log)
+
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
@@ -153,7 +188,7 @@ class BuildBase:
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
-        uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+        uploader_logfilename = os.path.join(upload_dir, UPLOAD_LOG_FILENAME)
         uploader_command = self.getUploaderCommand(
             upload_leaf, uploader_logfilename)
         logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
@@ -228,26 +263,11 @@ class BuildBase:
         # also contain the information required to manually reprocess the
         # binary upload when it was the case.
         if (self.buildstate != BuildStatus.FULLYBUILT or
-            self.binarypackages.count() == 0):
+            not self.verifySuccessfulUpload()):
             logger.warning("Build %s upload failed." % self.id)
             self.buildstate = BuildStatus.FAILEDTOUPLOAD
-            # Retrieve log file content.
-            possible_locations = (
-                'failed', 'failed-to-move', 'rejected', 'accepted')
-            for location_dir in possible_locations:
-                upload_final_location = os.path.join(
-                    root, location_dir, upload_leaf)
-                if os.path.exists(upload_final_location):
-                    log_filepath = os.path.join(
-                        upload_final_location, 'uploader.log')
-                    uploader_log_file = open(log_filepath)
-                    try:
-                        uploader_log_content = uploader_log_file.read()
-                    finally:
-                        uploader_log_file.close()
-                    break
-            else:
-                uploader_log_content = 'Could not find upload log file'
+            uploader_log_content = self.getUploadLogContent(root,
+                upload_leaf)
             # Store the upload_log_contents in librarian so it can be
             # accessed by anyone with permission to see the build.
             self.storeUploadLog(uploader_log_content)
@@ -255,8 +275,8 @@ class BuildBase:
             self.notify(extra_info=uploader_log_content)
         else:
             logger.info(
-                "Gathered build %s completely" %
-                self.sourcepackagerelease.name)
+                "Gathered %s %d completely" % (
+                self.__class__.__name__, self.id))
 
         # Release the builder for another job.
         self.buildqueue_record.builder.cleanSlave()
@@ -357,7 +377,31 @@ class BuildBase:
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
-        self.dependencies = slave_status.get('dependencies')
+        if slave_status.get('dependencies') is not None:
+            self.dependencies = unicode(slave_status.get('dependencies'))
+        else:
+            self.dependencies = None
+
+    def storeUploadLog(self, content):
+        """See `IBuildBase`."""
+        # The given content is stored in the librarian, restricted as
+        # necessary according to the targeted archive's privacy.  The content
+        # object's 'upload_log' attribute will point to the
+        # `LibrarianFileAlias`.
+
+        assert self.upload_log is None, (
+            "Upload log information already exists and cannot be overridden.")
+
+        filename = 'upload_%s_log.txt' % self.id
+        contentType = filenameToContentType(filename)
+        file_size = len(content)
+        file_content = StringIO(content)
+        restricted = self.is_private
+
+        library_file = getUtility(ILibraryFileAliasSet).create(
+            filename, file_size, file_content, contentType=contentType,
+            restricted=restricted)
+        self.upload_log = library_file
 
     def queueBuild(self, suspended=False):
         """See `IBuildBase`"""
