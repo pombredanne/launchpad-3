@@ -86,7 +86,6 @@ from lp.bugs.browser.bugtask import (
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
@@ -100,13 +99,15 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, sorted_version_numbers,
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, Navigation, sorted_version_numbers, StandardLaunchpadFacets,
     stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
+    ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
@@ -902,17 +903,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 check_permission('launchpad.Commercial', self.context))
 
 
-class ProductPackagesView(PackagingDeleteView):
+class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
 
     label = 'Linked packages'
-
-    @property
-    def all_packaging(self):
-        """See `PackagingDeleteView`."""
-        for series in self.context.series:
-            for packaging in series.packagings:
-                yield packaging
+    page_title = label
 
     @cachedproperty
     def series_packages(self):
@@ -926,23 +921,11 @@ class ProductPackagesView(PackagingDeleteView):
                 field: '<input type=''hidden' ...>},
                 }]
         """
-        # This method is a superset of all_packaging. While all_packaging will
-        # be called several times as data is mutated, series_packages should
-        # only be called during render().
         packaged_series = []
         for series in self.context.series:
             packagings = []
             for packaging in series.packagings:
-                form_id = 'delete-%s-%s-%s' % (
-                    packaging.distroseries.name,
-                    packaging.sourcepackagename.name,
-                    packaging.productseries.name,
-                    )
-                packaging_field = dict(
-                    packaging=packaging,
-                    form_id=form_id,
-                    field=self._renderHiddenPackagingField(packaging))
-                packagings.append(packaging_field)
+                packagings.append(packaging)
             packaged_series.append(dict(
                 series=series, packagings=packagings))
         return packaged_series
@@ -1317,7 +1300,8 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
+class ProductReviewLicenseView(ReturnToReferrerMixin,
+                               ProductEditView, EditPrivateBugsMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
@@ -1356,27 +1340,6 @@ class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
         # Private bugs can only be enabled if the product has a bug
         # supervisor.
         self.validate_private_bugs(data)
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        # The referer header we want is only available before the view's
-        # form submits to itself. This field is a hidden input in the form.
-        referrer = self.request.form.get('next_url')
-        if referrer is None:
-            referrer = self.request.getHeader('referer')
-
-        if (referrer is not None
-            and referrer.startswith(self.request.getApplicationURL())):
-            return referrer
-        else:
-            return canonical_url(self.context)
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return self.next_url
-
 
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
@@ -1668,7 +1631,7 @@ class ProjectAddStepOne(StepView):
         self.request.form['summary'] = data['summary']
 
 
-class ProjectAddStepTwo(StepView, ProductLicenseMixin):
+class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
