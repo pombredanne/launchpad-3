@@ -43,7 +43,7 @@ by default, as the code that ensures this is poking at Zope 3
 internals a bit.
 
     >>> browser.open('http://code.launchpad.dev/+code-imports')
-    >>> control = browser.getControl(name="field.status")
+    >>> control = browser.getControl(name="field.review_status")
     >>> control.displayValue
     ['Any']
     >>> control.displayValue = ["Invalid"]
@@ -55,24 +55,30 @@ internals a bit.
 Of course selecting the "Any" filtering option ensures that all
 imports appear again.
 
-    >>> browser.getControl(name="field.status").displayValue = ["Any"]
+    >>> browser.getControl(name="field.review_status").displayValue = ["Any"]
     >>> browser.getControl(name="submit").click()
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
-    >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
-    >>> for name in names:
-    ...     print name
-    gnome-terminal/import
-    evolution/import
+    >>> rows = [extract_text(tr) for tr in table('tr')]
+    >>> for row in rows:
+    ...     print row
+    Import                Created  Type               Location     Status
+    gnome-terminal/import 2007-... Subversion via ... http://sv... Reviewed
+    evolution/import      2007-... Concurrent Vers... :pserver:... Pending Review
 
 We can also filter by type.
 
-    >>> browser.getControl(name="field.type").displayValue = ["Concurrent Versions System"]
+    >>> control = browser.getControl(name="field.rcs_type")
+    >>> control.displayValue
+    ['Any']
+    >>> browser.getControl(name="field.rcs_type").displayValue = [
+    ...    "Concurrent Versions System"]
     >>> browser.getControl(name="submit").click()
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
-    >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
-    >>> for name in names:
-    ...     print name
-    evolution/import
+    >>> rows = [extract_text(tr) for tr in table('tr')]
+    >>> for row in rows:
+    ...     print row
+    Import           Created  Type               Location     Status
+    evolution/import 2007-... Concurrent Vers... :pserver:... Pending Review
 
 If we create a lot of imports, the listing view will be batched.
 

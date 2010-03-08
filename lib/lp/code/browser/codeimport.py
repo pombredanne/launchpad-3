@@ -23,7 +23,6 @@ from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import Interface
-from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -85,32 +84,31 @@ class CodeImportSetView(LaunchpadView):
 
     def initialize(self):
         """See `LaunchpadView.initialize`."""
-        status_field = Choice(
-            __name__='status', title=_("Review Status"),
-            vocabulary=CodeImportReviewStatus, required=False)
-        self.status_widget = CustomWidgetFactory(DropdownWidgetWithAny)
-        setUpWidget(self, 'status',  status_field, IInputWidget)
+        review_status_field = copy_field(
+            ICodeImport['review_status'], required=False, default=None)
+        self.review_status_widget = CustomWidgetFactory(DropdownWidgetWithAny)
+        setUpWidget(self, 'review_status',  review_status_field, IInputWidget)
 
-        type_field = Choice(
-            __name__='type', title=_("Review Status"),
-            vocabulary=RevisionControlSystems, required=False)
-        self.type_widget = CustomWidgetFactory(DropdownWidgetWithAny)
-        setUpWidget(self, 'type',  type_field, IInputWidget)
+        rcs_type_field = copy_field(
+            ICodeImport['rcs_type'], required=False, default=None)
+        self.rcs_type_widget = CustomWidgetFactory(DropdownWidgetWithAny)
+        setUpWidget(self, 'rcs_type',  rcs_type_field, IInputWidget)
 
         # status should be None if either (a) there were no query arguments
         # supplied, i.e. the user browsed directly to this page (this is when
         # hasValidInput returns False) or (b) the user chose 'Any' in the
         # status widget (this is when hasValidInput returns True but
         # getInputValue returns None).
-        status = None
-        if self.status_widget.hasValidInput():
-            status = self.status_widget.getInputValue()
+        review_status = None
+        if self.review_status_widget.hasValidInput():
+            review_status = self.review_status_widget.getInputValue()
         # Similar for 'type'
         rcs_type = None
-        if self.type_widget.hasValidInput():
-            rcs_type = self.type_widget.getInputValue()
+        if self.rcs_type_widget.hasValidInput():
+            rcs_type = self.rcs_type_widget.getInputValue()
 
-        imports = self.context.search(review_status=status, rcs_type=rcs_type)
+        imports = self.context.search(
+            review_status=review_status, rcs_type=rcs_type)
 
         self.batchnav = BatchNavigator(imports, self.request)
 
