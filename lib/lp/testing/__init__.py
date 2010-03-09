@@ -29,7 +29,7 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
-    'ZopeIsolatedTestCase',
+    'ZopeIsolatedTest',
     ]
 
 import copy
@@ -43,7 +43,6 @@ import subunit
 import sys
 import tempfile
 import time
-import unittest
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
@@ -591,22 +590,30 @@ class WindmillTestCase(TestCaseWithFactory):
         self.client.open(url=u'http://launchpad.dev:8085')
 
 
-class ZopeIsolatedTestCase(unittest.TestCase):
+class ZopeIsolatedTest:
     """Run tests in a sub-process, respecting Zope idiosyncrasies.
 
-    Use this as a baseclass for test cases, or as a mixin with an
-    interesting `TestCase` subclass.
+    Use this as a mixin with an interesting `TestCase` or `TestSuite`
+    subclass to quickly isolate tests with side-effects.
 
-    Each and every test *method* in the test case is run in a new,
-    forked, sub-process. This will slow down your tests, so use it
-    sparingly. However, when you need to, for example, start the
-    Twisted reactor (which cannot currently be safely stopped and
-    restarted in process) it is invaluable.
+    When mixed-in with a `TestCase`:
+
+      Each and every test *method* in the test case is run in a new,
+      forked, sub-process. This will slow down your tests, so use it
+      sparingly. However, when you need to, for example, start the
+      Twisted reactor (which cannot currently be safely stopped and
+      restarted in process) it is invaluable.
+
+    When mixed-in with a `TestSuite`:
+
+      All tests in this suite are run in a single, newly forked,
+      sub-process. This isolates the parent process from side-effects,
+      but the tests in this suite are not isolated from one another.
 
     This is basically a reimplementation of subunit's
-    `IsolatedTestCase`, but adjusted to work with Zope. In particular,
-    Zope's TestResult object is responsible for calling testSetUp()
-    and testTearDown() on the selected layer.
+    `IsolatedTestCase` or `IsolatedTestSuite`, but adjusted to work
+    with Zope. In particular, Zope's TestResult object is responsible
+    for calling testSetUp() and testTearDown() on the selected layer.
     """
 
     def run(self, result):
@@ -624,7 +631,7 @@ class ZopeIsolatedTestCase(unittest.TestCase):
             # obtain the result.
             result = testtools.MultiTestResult(
                 result, subunit.TestProtocolClient(fdwrite))
-            super(ZopeIsolatedTestCase, self).run(result)
+            super(ZopeIsolatedTest, self).run(result)
             fdwrite.flush()
             sys.stdout.flush()
             sys.stderr.flush()
