@@ -179,7 +179,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         view = self.setupQueueView(request)
 
         self.assertEquals(
-            "FAILED: partner-upload (You have no rights to accept "
+            "FAILED: main-upload (You have no rights to accept "
             "component(s) 'main')",
             view.request.response.notifications[0].message)
         self.assertEquals(
