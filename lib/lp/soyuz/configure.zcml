@@ -518,66 +518,6 @@
             interface="lp.soyuz.interfaces.build.IBuildSet"/>
     </securedutility>
 
-    <!-- BuilderSet -->
-
-    <securedutility
-        class="canonical.launchpad.database.BuilderSet"
-        provides="lp.buildmaster.interfaces.builder.IBuilderSet">
-        <allow
-            interface="lp.buildmaster.interfaces.builder.IBuilderSet"/>
-    </securedutility>
-    <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.buildmaster.interfaces.builder.IBuilder"
-        factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.buildmaster.interfaces.builder.IBuilderSet"
-        factory="lp.soyuz.browser.builder.BuilderSetBreadcrumb"
-        permission="zope.Public"/>
-
-    <!-- Builder -->
-
-    <class
-        class="canonical.launchpad.database.Builder">
-        <allow
-            interface="lp.buildmaster.interfaces.builder.IBuilder"/>
-        <allow
-            interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
-        <require
-            permission="launchpad.Edit"
-            set_schema="lp.buildmaster.interfaces.builder.IBuilder"/>
-    </class>
-
-    <!-- BuildQueue -->
-
-    <class
-        class="canonical.launchpad.database.BuildQueue">
-        <allow
-            interface="canonical.launchpad.interfaces.IBuildQueue"/>
-
-        <!-- XXX cprov 2005-10-20
-
-    bug=3580: We need a autobuild celebrity. -->
-
-
-        <!-- Grant permissions to write on BuildQueue and Build. -->
-
-        <require
-            permission="zope.Public"
-            set_attributes="lastscore builder logtail date_started"/>
-    </class>
-
-    <!-- BuildQueueSet -->
-
-    <securedutility
-        class="canonical.launchpad.database.BuildQueueSet"
-        provides="canonical.launchpad.interfaces.IBuildQueueSet">
-        <allow
-            interface="canonical.launchpad.interfaces.IBuildQueueSet"/>
-    </securedutility>
-
     <!-- DistroArchSeriesBinaryPackage -->
 
     <class
