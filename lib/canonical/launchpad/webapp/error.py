@@ -26,12 +26,13 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.adapter import (
     clear_request_started, set_request_started)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
-class SystemErrorView:
+class SystemErrorView(LaunchpadView):
     """Helper class for views on exceptions.
 
     Also, sets a 500 response code.
