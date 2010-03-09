@@ -69,6 +69,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.buildqueue import BuildQueue
 
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
@@ -129,7 +130,6 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
@@ -1908,6 +1908,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
+    def makeMailingList(self, team, owner):
+        """Create a mailing list for the team."""
+        team_list = getUtility(IMailingListSet).new(team, owner)
+        team_list.startConstructing()
+        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        return team_list
+
     def makeTeamAndMailingList(
         self, team_name, owner_name,
         visibility=None,
@@ -1935,9 +1942,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
                 subscription_policy=subscription_policy)
-        team_list = getUtility(IMailingListSet).new(team, owner)
-        team_list.startConstructing()
-        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        team_list = self.makeMailingList(team, owner)
         return team, team_list
 
     def makeMirror(self, distribution, displayname, country=None,

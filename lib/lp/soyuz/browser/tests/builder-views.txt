@@ -129,7 +129,7 @@ to the user who is trying to access a given content.
 Before checking if it works as expected we will setup an environment
 where builder 'Frog' is building a job from Celso's private PPA.
 
-    >>> from lp.soyuz.model.buildqueue import BuildQueue
+    >>> from lp.buildmaster.model.buildqueue import BuildQueue
     >>> from canonical.launchpad.interfaces import (
     ...    IBuilderSet, IPersonSet)
 
