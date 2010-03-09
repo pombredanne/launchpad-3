@@ -18,7 +18,7 @@ import logging
 import pytz
 import transaction
 
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 from zope.event import notify
 
 from bzrlib.branch import BzrBranchFormat4
@@ -352,18 +352,15 @@ class BzrSync:
         self.db_branch.updateScannedDetails(revision, revision_count)
 
 
-@adapter(events.TipChanged)
 def schedule_translation_upload(tip_changed):
     getUtility(IRosettaUploadJobSource).create(
         tip_changed.db_branch, tip_changed.old_tip_revision_id)
 
 
-@adapter(events.TipChanged)
 def schedule_translation_templates_build(tip_changed):
     utility = getUtility(ITranslationTemplatesBuildJobSource)
     utility.scheduleTranslationTemplatesBuild(tip_changed.db_branch)
 
 
-@adapter(events.TipChanged)
 def schedule_diff_updates(tip_changed):
     tip_changed.db_branch.scheduleDiffUpdates()

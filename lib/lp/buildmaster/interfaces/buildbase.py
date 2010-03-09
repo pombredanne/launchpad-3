@@ -7,7 +7,7 @@
 
 __metaclass__ = type
 
-__all__ = ['IBuildBase']
+__all__ = ['BUILDD_MANAGER_LOG_NAME', 'IBuildBase']
 
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Object, TextLine, Timedelta
@@ -16,12 +16,15 @@ from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.buildqueue import IBuildQueue
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
+
+
+BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 class IBuildBase(Interface):

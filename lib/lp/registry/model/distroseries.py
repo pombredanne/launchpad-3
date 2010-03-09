@@ -118,8 +118,7 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
-    TranslationUnavailable)
+    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR)
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet)
 
@@ -866,29 +865,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
              DistroSeriesSourcePackageRelease(self, release))
             for release in releases)
 
-    def checkTranslationsViewable(self):
-        """See `IDistroSeries`."""
-        if not self.hide_all_translations:
-            # Yup, viewable.
-            return
-
-        future = [
-            SeriesStatus.EXPERIMENTAL,
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FUTURE,
-            ]
-        if self.status in future:
-            raise TranslationUnavailable(
-                "Translations for this release series are not available yet.")
-        elif self.status == SeriesStatus.OBSOLETE:
-            raise TranslationUnavailable(
-                "This release series is obsolete.  Its translations are no "
-                "longer available.")
-        else:
-            raise TranslationUnavailable(
-                "Translations for this release series are not currently "
-                "available.  Please come back soon.")
-
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
         query = """
@@ -1054,8 +1030,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if component:
             clause += (
                 " AND SourcePackagePublishingHistory.component=%s"
-                % sqlvalues(component)
-                )
+                % sqlvalues(component))
 
         orderBy = ['SourcePackageName.name']
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
@@ -1116,7 +1091,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
                         'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName' ]
+                        'SourcePackageRelease', 'SourcePackageName']
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
@@ -1951,8 +1926,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return '%s%s' % (self.name, pocketsuffix[pocket])
 
     def isSourcePackageFormatPermitted(self, format):
-        return getUtility(ISourcePackageFormatSelectionSet
-            ).getBySeriesAndFormat(self, format) is not None
+        return getUtility(
+            ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
+                self, format) is not None
 
 
 class DistroSeriesSet:
@@ -1970,8 +1946,7 @@ class DistroSeriesSet:
         result_set = store.using((DistroSeries, POTemplate)).find(
             DistroSeries,
             DistroSeries.hide_all_translations == False,
-            DistroSeries.id == POTemplate.distroseriesID
-            ).config(distinct=True)
+            DistroSeries.id == POTemplate.distroseriesID).config(distinct=True)
         # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
         # because ResultSet reports a wrong count() when using DISTINCT. Also
         # ResultSet does not implement __len__(), which would make it more

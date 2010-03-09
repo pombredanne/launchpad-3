@@ -39,6 +39,11 @@ special = {
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
         ),
+    'buildqueue.txt': LayeredDocFileSuite(
+        '../doc/buildqueue.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
     }
 
 def test_suite():

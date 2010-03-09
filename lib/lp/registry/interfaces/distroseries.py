@@ -52,6 +52,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
 
 
+
 class DistroSeriesNameField(ContentNameField):
     """A class to ensure `IDistroSeries` has unique names."""
     errormessage = _("%s is already in use by another series.")
@@ -474,17 +475,6 @@ class IDistroSeriesPublic(
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
         :return: A result set containing `IPackageUpload`
-        """
-
-    def checkTranslationsViewable():
-        """Raise `TranslationUnavailable` if translations are hidden.
-
-        Checks the `hide_all_translations` flag.  If it is set, these
-        translations are not to be shown to the public.  In that case an
-        appropriate message is composed based on the series' `status`,
-        and a `TranslationUnavailable` exception is raised.
-
-        Simply returns if translations are not hidden.
         """
 
     def getUnlinkedTranslatableSourcePackages():

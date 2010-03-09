@@ -49,8 +49,6 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguage)
 from lp.registry.interfaces.entitlement import IEntitlement
 from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
@@ -1664,19 +1662,6 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
             self.obj.distribution).checkAuthenticated(user))
 
 
-class AdminDistroSeriesLanguage(AuthorizationBase):
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistroSeriesLanguage
-
-    def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistroSeriesLanguage` translations.
-
-        Distribution managers can also manage IDistroSeriesLanguage
-        """
-        return (AdminDistroSeriesTranslations(
-            self.obj.distroseries).checkAuthenticated(user))
-
-
 class BranchSubscriptionEdit(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBranchSubscription
@@ -2106,19 +2091,13 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.in_admin
 
 
-class ViewSourcePackagePublishingHistory(AuthorizationBase):
+class ViewSourcePackagePublishingHistory(ViewArchive):
     """Restrict viewing of source publications."""
     permission = "launchpad.View"
     usedfor = ISourcePackagePublishingHistory
 
-    def checkAuthenticated(self, user):
-        view_archive = ViewArchive(self.obj.archive)
-        if view_archive.checkAuthenticated(user):
-            return True
-        return user.in_admin
-
-    def checkUnauthenticated(self):
-        return not self.obj.archive.private
+    def __init__(self, obj):
+        super(ViewSourcePackagePublishingHistory, self).__init__(obj.archive)
 
 
 class EditPublishing(AuthorizationBase):

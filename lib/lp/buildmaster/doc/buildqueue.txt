@@ -13,8 +13,8 @@ As soon as a build job is processed succesfully (dispatched &
 collected) the BuildQueue record representing it is removed.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IBuildQueue
-    >>> from canonical.launchpad.interfaces import IBuildQueueSet
+    >>> from lp.buildmaster.interfaces.buildqueue import (
+    ...     IBuildQueue, IBuildQueueSet)
 
 Get an instance of Builder from the current sampledata using the
 IBuildQueueSet zope utility. The zope utility itself will be

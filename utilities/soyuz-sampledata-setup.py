@@ -13,6 +13,9 @@
 
 DO NOT RUN ON PRODUCTION SYSTEMS.  This script deletes lots of
 Ubuntu-related data.
+
+This script creates a user "ppa-user" (email ppa-user@example.com,
+password test) who is able to create PPAs.
 """
 
 __metaclass__ = type
@@ -20,9 +23,12 @@ __metaclass__ = type
 import _pythonpath
 
 from optparse import OptionParser
-from os import getenv
 import re
+import os
+import subprocess
 import sys
+from textwrap import dedent
+import transaction
 
 from zope.component import getUtility
 from zope.event import notify
@@ -40,15 +46,24 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.logger import logger, logger_options
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
 
+from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
+from lp.testing.factory import LaunchpadObjectFactory
+
+
+user_name = 'ppa-user'
+default_email = '%s@example.com' % user_name
 
 
 class DoNotRunOnProduction(Exception):
@@ -64,13 +79,18 @@ def get_max_id(store, table_name):
         return max_id[0]
 
 
+def get_store(flavor=MASTER_FLAVOR):
+    """Obtain an ORM store."""
+    return getUtility(IStoreSelector).get(MAIN_STORE, flavor)
+
+
 def check_preconditions(options):
     """Try to ensure that it's safe to run.
 
     This script must not run on a production server, or anything
     remotely like it.
     """
-    store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+    store = get_store(SLAVE_FLAVOR)
 
     # Just a guess, but dev systems aren't likely to have ids this high
     # in this table.  Production data does.
@@ -82,7 +102,7 @@ def check_preconditions(options):
     # For some configs it's just absolutely clear this script shouldn't
     # run.  Don't even accept --force there.
     forbidden_configs = re.compile('(edge|lpnet|production)')
-    current_config = getenv('LPCONFIG', 'an unknown config')
+    current_config = os.getenv('LPCONFIG', 'an unknown config')
     if forbidden_configs.match(current_config):
         raise DoNotRunOnProduction(
             "I won't delete Ubuntu data on %s and you can't --force me."
@@ -95,22 +115,25 @@ def parse_args(arguments):
     :return: (options, args, logger)
     """
     parser = OptionParser(
-        description="Delete existing Ubuntu releases and set up new ones.")
+        description="Set up fresh Ubuntu series and %s identity." % user_name)
     parser.add_option('-f', '--force', action='store_true', dest='force',
         help="DANGEROUS: run even if the database looks production-like.")
-    parser.add_option('-n', '--dry-run', action='store_true', dest='dry_run',
-        help="Do not commit changes.")
+    parser.add_option('-e', '--email', action='store', dest='email',
+        default=default_email,
+        help=(
+            "Email address to use for %s.  Should match your GPG key."
+            % user_name))
+
     logger_options(parser)
 
     options, args = parser.parse_args(arguments)
+
     return options, args, logger(options)
 
 
-def get_person(name):
+def get_person_set():
     """Return `IPersonSet` utility."""
-    # Avoid circular import.
-    from lp.registry.interfaces.person import IPersonSet
-    return getUtility(IPersonSet).getByName(name)
+    return getUtility(IPersonSet)
 
 
 def retire_series(distribution):
@@ -148,6 +171,20 @@ def set_lucille_config(distribution):
     for series in distribution.series:
         removeSecurityProxy(series).lucilleconfig = '''[publishing]
 components = main restricted universe multiverse'''
+
+
+def add_architecture(distroseries, architecture_name):
+    """Add a DistroArchSeries for the given architecture to `distroseries`."""
+    # Avoid circular import.
+    from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+    store = get_store(MASTER_FLAVOR)
+    family = getUtility(IProcessorFamilySet).getByName(architecture_name)
+    archseries = DistroArchSeries(
+        distroseries=distroseries, processorfamily=family,
+        owner=distroseries.owner, official=True,
+        architecturetag=architecture_name)
+    store.add(archseries)
 
 
 def create_sections(distroseries):
@@ -253,7 +290,7 @@ def clean_up(distribution, log):
     # published binaries without corresponding sources.
 
     log.info("Deleting all items in official archives...")
-    retire_distro_archives(distribution, get_person('name16'))
+    retire_distro_archives(distribution, get_person_set().getByName('name16'))
 
     # Disable publishing of all PPAs, as they probably have broken
     # publishings too.
@@ -271,7 +308,7 @@ def set_source_package_format(distroseries):
         utility.add(distroseries, format)
 
 
-def populate(distribution, parent_series_name, uploader_name, log):
+def populate(distribution, parent_series_name, uploader_name, options, log):
     """Set up sample data on `distribution`."""
     parent_series = distribution.getSeries(parent_series_name)
 
@@ -281,13 +318,71 @@ def populate(distribution, parent_series_name, uploader_name, log):
 
     log.info("Configuring sections...")
     create_sections(parent_series)
+    add_architecture(parent_series, 'amd64')
 
     log.info("Configuring components and permissions...")
-    create_components(parent_series, get_person(uploader_name))
+    uploader = get_person_set().getByName(uploader_name)
+    create_components(parent_series, uploader)
 
     set_source_package_format(parent_series)
 
     create_sample_series(parent_series, log)
+
+
+def sign_code_of_conduct(person, log):
+    """Sign Ubuntu Code of Conduct for `person`, if necessary."""
+    if person.is_ubuntu_coc_signer:
+        # Already signed.
+        return
+
+    log.info("Signing Ubuntu code of conduct.")
+    signedcocset = getUtility(ISignedCodeOfConductSet)
+    person_id = person.id
+    if signedcocset.searchByUser(person_id).count() == 0:
+        fake_gpg_key = LaunchpadObjectFactory().makeGPGKey(person)
+        Store.of(person).add(SignedCodeOfConduct(
+            owner=person, signingkey=fake_gpg_key,
+            signedcode="Normally a signed CoC would go here.", active=True))
+
+
+def create_ppa_user(username, options, approver, log):
+    """Create new user, with password "test," and sign code of conduct."""
+    person = get_person_set().getByName(username)
+    if person is None:
+        have_email = (options.email != default_email)
+        command_line = [
+            'utilities/make-lp-user',
+            username,
+            'ubuntu-team'
+            ]
+        if have_email:
+            command_line += ['--email', options.email]
+
+        pipe = subprocess.Popen(command_line, stderr=subprocess.PIPE)
+        stdout, stderr = pipe.communicate()
+        if stderr != '':
+            print stderr
+        if pipe.returncode != 0:
+            sys.exit(2)
+
+    transaction.commit()
+
+    person = getUtility(IPersonSet).getByName(username)
+    sign_code_of_conduct(person, log)
+
+    return person
+
+
+def create_ppa(distribution, person, name):
+    """Create a PPA for `person`."""
+    ppa = LaunchpadObjectFactory().makeArchive(
+        distribution=distribution, owner=person, name=name, virtualized=False,
+        description="Automatically created test PPA.")
+
+    series_name = distribution.currentseries.name
+    ppa.external_dependencies = (
+        "deb http://archive.ubuntu.com/ubuntu %s "
+        "main restricted universe multiverse\n") % series_name
 
 
 def main(argv):
@@ -302,14 +397,25 @@ def main(argv):
     clean_up(ubuntu, log)
 
     # Use Hoary as the root, as Breezy and Grumpy are broken.
-    populate(ubuntu, 'hoary', 'ubuntu-team', log)
+    populate(ubuntu, 'hoary', 'ubuntu-team', options, log)
 
-    if options.dry_run:
-        txn.abort()
-    else:
-        txn.commit()
+    admin = get_person_set().getByName('name16')
+    person = create_ppa_user(user_name, options, admin, log)
 
+    create_ppa(ubuntu, person, 'test-ppa')
+       
+    txn.commit()
     log.info("Done.")
+
+    print dedent("""
+        Now start your local Launchpad with "make run_codehosting" and log
+        into https://launchpad.dev/ as "%(email)s" with "test" as the
+        password.
+        Your user name will be %(user_name)s."""
+        % {
+            'email': options.email,
+            'user_name': user_name,
+            })
 
 
 if __name__ == "__main__":
