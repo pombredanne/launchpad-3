@@ -9,13 +9,14 @@
 Trawl a Launchpad branch's history to detect contributions by non-Canonical
 developers, then update https://dev.launchpad.net/Contributions accordingly.
 
-Usage: community-contributions.py [options] PATH_TO_LAUNCHPAD_DEVEL_BRANCH
+Usage: community-contributions.py [options] DEVEL_PATH DB_DEVEL_PATH
 
 Requirements:
-       You need a 'devel' branch of Launchpad available locally (see
-       https://dev.launchpad.net/Getting), your ~/.moin_ids file must
-       be set up correctly, and you need editmoin.py (if you don't
-       have it, the error message will tell you where to get it).
+       You need both the 'devel' and 'db-devel' branches of Launchpad
+       available locally (see https://dev.launchpad.net/Getting),
+       your ~/.moin_ids file must be set up correctly, and you need
+       editmoin.py (if you don't have it, the error message will tell
+       you where to get it).
 
 Options:
   -q            Print no non-essential messages.
@@ -215,10 +216,13 @@ merge_names_map = dict((wiki_encode(a), wiki_encode(b))
 class ContainerRevision():
     """A wrapper for a top-level LogRevision containing child LogRevisions."""
 
-    def __init__(self, top_lr):
+    def __init__(self, top_lr, branch_info):
         self.top_rev = top_lr       # e.g. LogRevision for r9371.
         self.contained_revs = []    # e.g. [ {9369.1.1}, {9206.4.4}, ... ],
                                     # where "{X}" means "LogRevision for X"
+
+        # The containing branch's tuple from the top-level dict.
+        self.branch_info = branch_info
 
     def add_subrev(self, lr):
         """Add a descendant child of this container revision."""
@@ -240,9 +244,8 @@ class ContainerRevision():
         # what to do about that; unifying the data is possible, but a
         # bit of work.  See https://dev.launchpad.net/Trunk for more
         # information.
-        rev_url_base = (
-            "http://bazaar.launchpad.net/~launchpad-pqm/"
-            "launchpad/devel/revision/")
+        rev_url_base = "http://bazaar.launchpad.net/%s/revision/" % (
+            self.branch_info[2])
 
         # In loggerhead, you can use either a revision number or a
         # revision ID.  In other words, these would reach the same page:
@@ -274,8 +277,10 @@ class ContainerRevision():
                              % (rev_id_url, len(self.contained_revs)))
 
         text = [
-            " * [[%s|r%s]] -- %s\n" % (rev_id_url, self.top_rev.revno,
-                                       date_str),
+            " * [[%s|r%s%s]] -- %s\n" % (
+                rev_id_url, self.top_rev.revno,
+                ' (%s)' % self.branch_info[0] if self.branch_info[0] else '',
+                date_str),
             " {{{\n%s\n}}}\n" % message,
             " '''Commits:'''\n ",
             commits_block,
@@ -403,7 +408,8 @@ class LogExCons(log.LogFormatter):
         self.all_ex_cons = {}
         # ContainerRevision object representing most-recently-seen
         # top-level rev.
-        current_top_level_rev = None
+        self.current_top_level_rev = None
+        self.branch_info = None
 
     def _toc(self, contributors):
         toc_text = []
@@ -415,7 +421,7 @@ class LogExCons(log.LogFormatter):
                             % (val.name_as_anchor, val.name,
                                val.num_landings(), plural))
         return toc_text
-      
+
     def result(self):
         "Return a moin-wiki-syntax string with TOC followed by contributions."
 
@@ -468,7 +474,8 @@ class LogExCons(log.LogFormatter):
         """
         # We count on always seeing the containing rev before its subrevs.
         if lr.merge_depth == 0:
-            self.current_top_level_rev = ContainerRevision(lr)
+            self.current_top_level_rev = ContainerRevision(
+                lr, self.branch_info)
         else:
             self.current_top_level_rev.add_subrev(lr)
         ex_cons = get_ex_cons(lr.rev.get_apparent_authors(), self.all_ex_cons)
@@ -512,7 +519,7 @@ def main():
 
     wiki_dest = "https://dev.launchpad.net/Contributions"
 
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         usage()
         sys.exit(1)
 
@@ -536,15 +543,20 @@ def main():
             wiki_dest += "/Draft"
 
     # Ensure we have the arguments we need.
-    if len(args) < 1:
-        sys.stderr.write("ERROR: path to Launchpad branch "
-                         "required as argument\n")
+    if len(args) != 2:
+        sys.stderr.write("ERROR: paths to Launchpad devel and db-devel "
+                         "branches required as arguments\n")
         usage()
         sys.exit(1)
 
+    branches = {
+        args[0]: (None, 8976, '~launchpad-pqm/launchpad/devel'),
+        args[1]: ('db-devel', 8327, '~launchpad-pqm/launchpad/db-devel'),
+        }
+
     lec = LogExCons()
 
-    for target in args:
+    for target, branch_info in branches.items():
         # Do everything.
         b = Branch.open(target)
 
@@ -553,11 +565,12 @@ def main():
         # number is 8327.  We're aiming at 'devel' right now, but perhaps
         # it would be good to parameterize this, or just auto-detect the
         # branch and choose the right number.
-        logger = log.Logger(b, {'start_revision' : 8327, # XXX: need to use different numbers for each.
+        logger = log.Logger(b, {'start_revision' : branch_info[1],
                                 'direction' : 'reverse',
                                 'levels' : 0, })
         if not quiet:
             print "Calculating (this may take a while)..."
+        lec.branch_info = branch_info
         logger.show(lec)  # Won't "show" anything -- just gathers data.
 
     page_contents = page_intro + lec.result()
