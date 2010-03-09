@@ -545,10 +545,6 @@ class POTemplateEditView(LaunchpadEditFormView):
             return self.next_url
 
     @property
-    def next_referrer(self):
-        return self.request.getHeader('referer')
-
-    @property
     def next_url(self):
         """See `LaunchpadEditFormView`."""
         # The referer header we want is only available before the view's
