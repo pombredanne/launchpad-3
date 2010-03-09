@@ -327,7 +327,7 @@ class ExCon():
             "=== %s ===\n\n" % name,
             "''%d top-level landing%s:''\n\n" % (self.num_landings(), plural),
             ''.join(map(str, sorted(self._landings,
-                                    key=lambda x: x.top_rev.revno,
+                                    key=lambda x: x.top_rev.rev.timestamp,
                                     reverse=True))),
             "\n",
             ]
