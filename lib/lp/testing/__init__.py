@@ -597,6 +597,12 @@ class ZopeIsolatedTestCase(unittest.TestCase):
     Use this as a baseclass for test cases, or as a mixin with an
     interesting `TestCase` subclass.
 
+    Each and every test *method* in the test case is run in a new,
+    forked, sub-process. This will slow down your tests, so use it
+    sparingly. However, when you need to, for example, start the
+    Twisted reactor (which cannot currently be safely stopped and
+    restarted in process) it is invaluable.
+
     This is basically a reimplementation of subunit's
     `IsolatedTestCase`, but adjusted to work with Zope. In particular,
     Zope's TestResult object is responsible for calling testSetUp()
