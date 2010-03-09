@@ -50,11 +50,11 @@ class ISSHKey(Interface):
     person = Int(title=_("Owner"), required=True, readonly=True)
     personID = Int(title=_('Owner ID'), required=True, readonly=True)
     keytype = exported(Choice(title=_("Key type"), required=True,
-                     vocabulary=SSHKeyType), readonly=True)
-    keytext = exported(TextLine(title=_("Key text"), required=True),
-                       readonly=True)
+                     vocabulary=SSHKeyType, readonly=True))
+    keytext = exported(TextLine(title=_("Key text"), required=True,
+                       readonly=True))
     comment = exported(TextLine(title=_("Comment describing this key"),
-                       required=True), read_only=True)
+                       required=True, readonly=True))
 
     def destroySelf():
         """Remove this SSHKey from the database."""
