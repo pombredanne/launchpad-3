@@ -242,17 +242,13 @@ class HasBugsBase:
     @property
     def has_bugtasks(self):
         """See `IHasBugs`."""
-        # Basically, the return value is self.all_bugtasks.count() > 0.
-        # But finding, sorting and counting all bug tasks can take
-        # a longer time (long enough that the HTML data for "number of
-        # open, critical etc bugs" on a bug page is retrieved in a
-        # separate request). all_bugtasks returns a
-        # storm.SQLObjectResultSet instance, and this class does not
-        # provide methods like is_empty(), so limit the query
-        # manually and simply check if at least one bug task exists.
-        all_tasks = self.all_bugtasks
-        all_tasks = all_tasks.limit(1)
-        return all_tasks.count() > 0
+        # Check efficiently if any bugtasks exist. We should avoid
+        # expensive calls like all_bugtasks.count(). all_bugtasks
+        # returns a storm.SQLObjectResultSet instance, and this
+        # class does not provide methods like is_empty(). But we can
+        # indirectly call SQLObjectResultSet._result_set.is_empty()
+        # by converting all_bugtasks into a boolean object.
+        return bool(self.all_bugtasks)
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""
