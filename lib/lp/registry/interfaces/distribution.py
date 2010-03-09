@@ -219,7 +219,8 @@ class IDistributionPublic(
     # properties
     currentseries = exported(
         Reference(
-            Interface, # Really IDistroSeries, see _schema_circular_imports.py.
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            Interface,
             title=_("Current series"),
             description=_(
                 "The current development series of this distribution. "

@@ -361,8 +361,6 @@ class DistributionSourcePackage(BugTargetBase,
 
     def getReleasesAndPublishingHistory(self):
         """See `IDistributionSourcePackage`."""
-        # Local import of DistroSeries to avoid import loop.
-        from lp.registry.model.distroseries import DistroSeries
         store = Store.of(self.distribution)
         result = store.find(
             (SourcePackageRelease, SourcePackagePublishingHistory),

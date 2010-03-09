@@ -949,19 +949,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
             ]
 
+
+        packaging_query = """
+            SELECT 1
+            FROM Packaging
+            WHERE Packaging.sourcepackagename = SourcePackageName.id
+            """
         has_packaging_condition = ''
         if has_packaging is True:
-            origin.append(Join(
-                Packaging,
-                Packaging.sourcepackagename == SourcePackageName.id))
+            has_packaging_condition = 'AND EXISTS (%s)' % packaging_query
         elif has_packaging is False:
-            has_packaging_condition = '''
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM Packaging
-                    WHERE Packaging.sourcepackagename = SourcePackageName.id
-                    )
-                '''
+            has_packaging_condition = 'AND NOT EXISTS (%s)' % packaging_query
 
         # Note: When attempting to convert the query below into straight
         # Storm expressions, a 'tuple index out-of-range' error was always
