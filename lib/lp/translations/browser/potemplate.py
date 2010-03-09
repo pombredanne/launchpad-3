@@ -545,15 +545,27 @@ class POTemplateEditView(LaunchpadEditFormView):
             return self.next_url
 
     @property
+    def next_referrer(self):
+        return self.request.getHeader('referer')
+
+    @property
     def next_url(self):
         """See `LaunchpadEditFormView`."""
         # The referer header we want is only available before the view's
         # form submits to itself. This field is a hidden input in the form.
         referrer = self.request.form.get('next_url')
+
         if referrer is None:
             referrer = self.request.getHeader('referer')
+            # If we don't have a referrer, if referrer contains the template
+            # name or if referrer is outside of our website, getting the
+            # next_url is delayed until the form is submitted.
+            # It is not computed before the submission, since from this form
+            # the template name can be changed and if referrer url depends on
+            # it, renaming will make the referrer an invalid URL.
             if (referrer is None
-                or self.context.name in referrer):
+                or self.context.name in referrer
+                or not referrer.startswith(self.request.getApplicationURL())):
                     # XXX: AdiRoiban 2010-02-32 bug=526998
                     # Since 'referer' can depend on the object name, and
                     # since from this form we can rename the object
