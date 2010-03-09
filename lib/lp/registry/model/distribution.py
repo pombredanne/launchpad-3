@@ -927,7 +927,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
         cache.changelog = ' '.join(sorted(sprchangelog))
 
-    def searchSourcePackageCaches(self, text):
+    def searchSourcePackageCaches(
+        self, text, has_packaging=None):
         """See `IDistribution`."""
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
@@ -948,25 +949,42 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
             ]
 
+        has_packaging_condition = ''
+        if has_packaging is True:
+            origin.append(Join(
+                Packaging,
+                Packaging.sourcepackagename == SourcePackageName.id))
+        elif has_packaging is False:
+            has_packaging_condition = '''
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM Packaging
+                    WHERE Packaging.sourcepackagename = SourcePackageName.id
+                    )
+                '''
+
         # Note: When attempting to convert the query below into straight
         # Storm expressions, a 'tuple index out-of-range' error was always
         # raised.
-        dsp_caches_with_ranks = store.using(*origin).find(
-            find_spec,
-            """distribution = %s AND
+        condition = """
+            distribution = %s AND
             archive IN %s AND
             (fti @@ ftq(%s) OR
              DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
+            %s
             """ % (quote(self), quote(self.all_distro_archive_ids),
-                   quote(text), quote_like(text))
+                   quote(text), quote_like(text), has_packaging_condition)
+        dsp_caches_with_ranks = store.using(*origin).find(
+            find_spec, condition
             ).order_by('rank DESC')
 
         return dsp_caches_with_ranks
 
-    def searchSourcePackages(self, text):
+    def searchSourcePackages(self, text, has_packaging=None):
         """See `IDistribution`."""
 
-        dsp_caches_with_ranks = self.searchSourcePackageCaches(text)
+        dsp_caches_with_ranks = self.searchSourcePackageCaches(
+            text, has_packaging=has_packaging)
 
         # Create a function that will decorate the resulting
         # DistributionSourcePackageCaches, converting
