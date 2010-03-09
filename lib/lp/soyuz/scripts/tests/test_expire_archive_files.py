@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test the expire-ppa-binaries.py script. """
+"""Test the expire-archive-files.py script. """
 
 import pytz
 
@@ -15,14 +15,13 @@ from canonical.config import config
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.scripts.expire_ppa_binaries import PPABinaryExpirer
+from lp.soyuz.scripts.expire_archive_files import ArchiveExpirer
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
 class TestPPABinaryExpiry(TestCaseWithFactory):
-    """Test the expire-ppa-binaries.py script."""
+    """Test the expire-archive-files.py script. """
 
     layer = LaunchpadZopelessLayer
     dbuser = config.binaryfile_expire.dbuser
@@ -59,11 +58,11 @@ class TestPPABinaryExpiry(TestCaseWithFactory):
         self.ppa2 = self.factory.makeArchive()
 
     def getScript(self, test_args=None):
-        """Return a PPABinaryExpirer instance."""
+        """Return a ArchiveExpirer instance."""
         if test_args is None:
             test_args = []
         test_args.extend(['--expire-after', '30'])
-        script = PPABinaryExpirer("test expirer", test_args=test_args)
+        script = ArchiveExpirer("test expirer", test_args=test_args)
         script.logger = QuietFakeLogger()
         script.txn = self.layer.txn
         return script

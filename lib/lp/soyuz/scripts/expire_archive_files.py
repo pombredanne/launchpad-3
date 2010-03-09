@@ -34,7 +34,7 @@ bzr-nightly-ppa
 """.split()
 
 
-class PPABinaryExpirer(LaunchpadCronScript):
+class ArchiveExpirer(LaunchpadCronScript):
     """Helper class for expiring old PPA binaries.
 
     Any PPA binary older than 30 days that is superseded or deleted
