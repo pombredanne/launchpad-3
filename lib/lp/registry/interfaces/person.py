@@ -517,8 +517,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             description=_(
                 "An image of exactly 64x64 pixels that will be displayed in "
                 "the heading of all pages related to you. Traditionally this "
-                "is a logo, a small picture or a personal mascot. It should be "
-                "no bigger than 50kb in size.")))
+                "is a logo, a small picture or a personal mascot. It should "
+                "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
 
     mugshot = exported(MugshotImageUpload(
