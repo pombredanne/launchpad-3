@@ -81,8 +81,8 @@ the message "There are currently no bugs filed..."
 
     >>> hot_bugs = find_tag_by_id(anon_browser.contents, 'hot-bugs')
     >>> print extract_text(hot_bugs)
-    Summary                Status  Importance   Last changed
-    #16  generic-string11  New     Undecided    0 seconds ago
+    Summary   Status  Importance   Last changed
+    #16  ...  New     Undecided    0 seconds ago
 
 When we mark our bug as "fix released", it is no longer a hot bug,
 and we see a message "no hot bugs" instead of the bug listing.
