@@ -305,6 +305,7 @@ class ExCon():
         # (key == value == ContainerRevision).  We use a dictionary
         # instead of list to get set semantics; set() would be overkill.
         self._landings = {}
+        self.seen_revs = set()
 
     def num_landings(self):
         """Return the number of top-level landings that include revisions
@@ -468,7 +469,9 @@ class LogExCons(log.LogFormatter):
             self.current_top_level_rev.add_subrev(lr)
         ex_cons = get_ex_cons(lr.rev.get_apparent_authors(), self.all_ex_cons)
         for ec in ex_cons:
-            ec.add_top_level_revision(self.current_top_level_rev)
+            if lr.rev.revision_id not in ec.seen_revs:
+                ec.add_top_level_revision(self.current_top_level_rev)
+                ec.seen_revs.add(lr.rev.revision_id)
 
 
 # XXX: Karl Fogel 2009-09-10: is this really necessary?  See bzrlib/log.py.
@@ -535,23 +538,24 @@ def main():
         usage()
         sys.exit(1)
 
-    target = args[0]
-
-    # Do everything.
-    b = Branch.open(target)
-
-    # XXX: Karl Fogel 2009-09-10: 8976 is the first non-Canonical
-    # contribution on 'devel'.  On 'db-devel', the magic revision
-    # number is 8327.  We're aiming at 'devel' right now, but perhaps
-    # it would be good to parameterize this, or just auto-detect the
-    # branch and choose the right number.
-    logger = log.Logger(b, {'start_revision' : 8976,
-                            'direction' : 'reverse',
-                            'levels' : 0, })
     lec = LogExCons()
-    if not quiet:
-        print "Calculating (this may take a while)..."
-    logger.show(lec)  # Won't "show" anything -- just gathers data.
+
+    for target in args:
+        # Do everything.
+        b = Branch.open(target)
+
+        # XXX: Karl Fogel 2009-09-10: 8976 is the first non-Canonical
+        # contribution on 'devel'.  On 'db-devel', the magic revision
+        # number is 8327.  We're aiming at 'devel' right now, but perhaps
+        # it would be good to parameterize this, or just auto-detect the
+        # branch and choose the right number.
+        logger = log.Logger(b, {'start_revision' : 8327, # XXX: need to use different numbers for each.
+                                'direction' : 'reverse',
+                                'levels' : 0, })
+        if not quiet:
+            print "Calculating (this may take a while)..."
+        logger.show(lec)  # Won't "show" anything -- just gathers data.
+
     page_contents = page_intro + lec.result()
     def update_if_modified(moinfile):
         if moinfile._unescape(moinfile.body) == page_contents:
