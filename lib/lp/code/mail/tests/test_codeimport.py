@@ -113,7 +113,5 @@ class TestNewCodeImports(TestCaseWithFactory):
             'vcs-imports team.\n', msg.get_payload(decode=True))
 
 
-
-
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
