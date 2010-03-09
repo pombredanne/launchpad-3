@@ -634,14 +634,11 @@ class ZopeIsolatedTestCase(unittest.TestCase):
             # Parent.
             os.close(pwrite)
             fdread = os.fdopen(pread, 'rU')
-            # Skip all the Zope stuff - the child process does that -
-            # by wrapping the result's __dict__ in a plain TestResult.
-            assert unittest.TestResult in result.__class__.mro(), (
-                "%r does not inherit from unittest.TestResult" % (result,))
-            base_result = unittest.TestResult()
-            base_result.__dict__ = result.__dict__
-            # Accept the result from the child process.
-            protocol = subunit.TestProtocolServer(base_result)
+            # Accept the result from the child process. Skip all the
+            # Zope-specific result stuff by passing a super() of the
+            # result.
+            result = super(ZopeTestResult, result)
+            protocol = subunit.TestProtocolServer(result)
             protocol.readFrom(fdread)
             fdread.close()
             os.waitpid(pid, 0)
