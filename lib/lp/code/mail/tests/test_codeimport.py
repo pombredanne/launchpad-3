@@ -34,8 +34,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         self.assertEqual('code-import', msg['X-Launchpad-Notification-Type'])
         self.assertEqual('~eric/fooix/import', msg['X-Launchpad-Branch'])
         self.assertEqual(
-            'A new Concurrent Versions System code import has been requested '
-            'by Eric:\n'
+            'A new CVS code import has been requested by Eric:\n'
             '    http://code.launchpad.dev/~eric/fooix/import\n'
             'from\n'
             '    :pserver:anonymouse@cvs.example.com:/cvsroot, a_module\n'
@@ -58,7 +57,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         self.assertEqual('code-import', msg['X-Launchpad-Notification-Type'])
         self.assertEqual('~eric/fooix/trunk', msg['X-Launchpad-Branch'])
         self.assertEqual(
-            'A new Subversion via bzr-svn code import has been requested '
+            'A new subversion via bzr-svn code import has been requested '
             'by Eric:\n'
             '    http://code.launchpad.dev/~eric/fooix/trunk\n'
             'from\n'
@@ -81,7 +80,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         self.assertEqual('code-import', msg['X-Launchpad-Notification-Type'])
         self.assertEqual('~eric/fooix/master', msg['X-Launchpad-Branch'])
         self.assertEqual(
-            'A new Git code import has been requested '
+            'A new git code import has been requested '
             'by Eric:\n'
             '    http://code.launchpad.dev/~eric/fooix/master\n'
             'from\n'
@@ -104,7 +103,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         self.assertEqual('code-import', msg['X-Launchpad-Notification-Type'])
         self.assertEqual('~eric/fooix/master', msg['X-Launchpad-Branch'])
         self.assertEqual(
-            'A new Mercurial code import has been requested '
+            'A new mercurial code import has been requested '
             'by Eric:\n'
             '    http://code.launchpad.dev/~eric/fooix/master\n'
             'from\n'

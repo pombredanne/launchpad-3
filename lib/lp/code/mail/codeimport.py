@@ -36,6 +36,13 @@ def new_import(code_import, event):
         location = '%s, %s' % (code_import.cvs_root, code_import.cvs_module)
     else:
         location = code_import.url
+    rcs_type_map = {
+        RevisionControlSystems.CVS: 'CVS',
+        RevisionControlSystems.SVN: 'subversion',
+        RevisionControlSystems.BZR_SVN: 'subversion',
+        RevisionControlSystems.GIT: 'git',
+        RevisionControlSystems.HG: 'mercurial',
+        }
     body = get_email_template('new-code-import.txt') % {
         'person': code_import.registrant.displayname,
         'branch': canonical_url(code_import.branch),

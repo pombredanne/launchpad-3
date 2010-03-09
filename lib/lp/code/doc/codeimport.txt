@@ -99,8 +99,7 @@ three members of the vcs-imports team.
     >>> print message['X-Launchpad-Message-Rationale']
     Operator @vcs-imports
     >>> print message.get_payload(decode=True)
-    A new Concurrent Versions System code import has been requested
-    by No Privileges Person:
+    A new CVS code import has been requested by No Privileges Person:
         http://code.launchpad.dev/~no-priv/firefox/trunk-cvs
     from
         :pserver:anonymous@cvs.example.com:/cvsroot, hello
