@@ -294,11 +294,8 @@ Stanza generation
 =================
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IArchiveSafePublisher,
     ...     IBinaryPackagePublishingHistory,
-    ...     ISourcePackageFilePublishing,
-    ...     ISecureSourcePackagePublishingHistory,
-    ...     ISecureBinaryPackagePublishingHistory)
+    ...     ISourcePackageFilePublishing)
 
 Retrieve any SourcePackagePublishingHistory entry.
 
@@ -371,7 +368,7 @@ Inspecting the modified record shows it's ready for domination:
     >>> from canonical.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
-    >>> modified_spph = spph.secure_record
+    >>> modified_spph = spph
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
 
@@ -431,7 +428,7 @@ two architecture-specific binaries in ubuntu/breezy-autotest.
     ghi-bin 666 in breezy-autotest i386
     ghi-bin 666 in breezy-autotest hppa
 
-Using the source publication, ISecureSourcePackagePublishingHistory, we
+Using the source publication, ISourcePackagePublishingHistory, we
 can obtain the published binaries.
 
     >>> created_ids = [bin.id for bin in binaries]
@@ -560,7 +557,7 @@ published in the original location.
 
     >>> deletable = source.getPublishedBinaries()[0]
     >>> deletable.requestDeletion(mark, "go")
-    >>> deleted = deletable.secure_record
+    >>> deleted = deletable
     >>> syncUpdate(deleted)
 
     >>> len(source.getPublishedBinaries())
@@ -594,10 +591,9 @@ the copied location to PUBLISHED, so they can be visible again for
 getPublishedBinaries().
 
     >>> for pub in copied_source.getBuiltBinaries():
-    ...     secure_record = pub.secure_record
-    ...     secure_record.status = PackagePublishingStatus.PUBLISHED
-    ...     secure_record.scheduleddeletiondate = None
-    ...     syncUpdate(secure_record)
+    ...     pub.status = PackagePublishingStatus.PUBLISHED
+    ...     pub.scheduleddeletiondate = None
+    ...     syncUpdate(pub)
 
 Now we override the first binary publication, the hppa one, to
 component 'universe'.
@@ -899,27 +895,11 @@ implement the 'age' property which return a timedelta representing
     datetime.timedelta(...)
 
 
-Secure Source Publishing
-========================
-
-'secure_record' returns a ISecureSourcePackagePublishing instance
-corresponding to this publication. This instance also implements
-IArchiveSafePublisher.
-
-    >>> sspph = spph.secure_record
-    >>> ISecureSourcePackagePublishingHistory.providedBy(sspph)
-    True
-    >>> verifyObject(IArchiveSafePublisher, sspph)
-    True
-    >>> sspph.embargo
-    False
-
-
 Binary and Binary File Publishing
 =================================
 
 Symmetric behaviour is offered for BinaryPackagePublishing,
-BinaryPackageFile and ISecureBinaryPackagePublishingHistory
+BinaryPackageFile and IBinaryPackagePublishingHistory
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBinaryPackageFilePublishing)
@@ -956,14 +936,6 @@ Generating respective "Packages" stanzas:
     SHA1: 5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33
     Description: Mozilla Firefox Web Browser
      Mozilla Firefox Web Browser is .....
-
-    >>> sbpph = bpph.secure_record
-    >>> ISecureBinaryPackagePublishingHistory.providedBy(sbpph)
-    True
-    >>> verifyObject(IArchiveSafePublisher, sbpph)
-    True
-    >>> sbpph.embargo
-    False
 
     >>> any_file = bpph.files[-1]
     >>> IBinaryPackageFilePublishing.providedBy(any_file)
