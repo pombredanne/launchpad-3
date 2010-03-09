@@ -553,9 +553,10 @@ class POTemplateEditView(LaunchpadEditFormView):
 
         if referrer is None:
             referrer = self.request.getHeader('referer')
-            # If we don't have a referrer, if referrer contains the template
-            # name or if referrer is outside of our website, getting the
-            # next_url is delayed until the form is submitted.
+            # If we don't have a referrer in the HTTP header, if referrer
+            # contains the template name or if referrer is outside of our
+            # website, getting the next_url is delayed until the
+            # form is submitted.
             # It is not computed before the submission, since from this form
             # the template name can be changed and if referrer url depends on
             # it, renaming will make the referrer an invalid URL.
