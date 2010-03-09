@@ -1,13 +1,20 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+
 """Job classes related to BranchMergeProposals are in here.
 
 This includes both jobs for the proposals themselves, or jobs that are
 creating proposals, or diffs relating to the proposals.
 """
 
+
+from __future__ import with_statement
+
+
 __metaclass__ = type
+
+
 __all__ = [
     'BranchMergeProposalJob',
     'CreateMergeProposalJob',
@@ -321,23 +328,25 @@ class CreateMergeProposalJob(BaseRunnableJob):
         """See `ICreateMergeProposalJob`."""
         # Avoid circular import
         from lp.code.mail.codehandler import CodeHandler
-        message = self.getMessage()
-        # Since the message was checked as signed before it was saved in the
-        # Librarian, just create the principle from the sender and setup the
-        # interaction.
-        name, email_addr = parseaddr(message['From'])
-        authutil = getUtility(IPlacelessAuthUtility)
-        principal = authutil.getPrincipalByLogin(email_addr)
-        if principal is None:
-            raise AssertionError('No principal found for %s' % email_addr)
-        setupInteraction(principal, email_addr)
+        url = self.context.message_bytes.getURL()
+        with errorlog.globalErrorUtility.oopsMessage('Mail url: %r' % url):
+            message = self.getMessage()
+            # Since the message was checked as signed before it was saved in
+            # the Librarian, just create the principal from the sender and set
+            # up the interaction.
+            name, email_addr = parseaddr(message['From'])
+            authutil = getUtility(IPlacelessAuthUtility)
+            principal = authutil.getPrincipalByLogin(email_addr)
+            if principal is None:
+                raise AssertionError('No principal found for %s' % email_addr)
+            setupInteraction(principal, email_addr)
 
-        server = get_multi_server(write_hosted=True)
-        server.start_server()
-        try:
-            return CodeHandler().processMergeProposal(message)
-        finally:
-            server.stop_server()
+            server = get_multi_server(write_hosted=True)
+            server.start_server()
+            try:
+                return CodeHandler().processMergeProposal(message)
+            finally:
+                server.stop_server()
 
     def getOopsRecipients(self):
         message = self.getMessage()
