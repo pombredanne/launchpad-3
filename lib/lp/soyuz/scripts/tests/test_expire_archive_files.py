@@ -116,8 +116,8 @@ class ArchiveExpiryCommonTests(ArchiveExpiryTestBase):
     def testNoExpirationWithNoDateremoved(self):
         """Test that no expiring happens if no dateremoved set."""
         pkg1 = self.stp.getPubSource(
-            sourcename="pkg1", architecturehintlist="i386", archive=self.archive,
-            dateremoved=None)
+            sourcename="pkg1", architecturehintlist="i386",
+            archive=self.archive, dateremoved=None)
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg1, dateremoved=None, archive=self.archive)
 
@@ -128,8 +128,8 @@ class ArchiveExpiryCommonTests(ArchiveExpiryTestBase):
     def testNoExpirationWithDateUnderThreshold(self):
         """Test no expiring if dateremoved too recent."""
         pkg2 = self.stp.getPubSource(
-            sourcename="pkg2", architecturehintlist="i386", archive=self.archive,
-            dateremoved=self.under_threshold_date)
+            sourcename="pkg2", architecturehintlist="i386",
+            archive=self.archive, dateremoved=self.under_threshold_date)
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg2, dateremoved=self.under_threshold_date,
             archive=self.archive)
@@ -141,8 +141,8 @@ class ArchiveExpiryCommonTests(ArchiveExpiryTestBase):
     def testExpirationWithDateOverThreshold(self):
         """Test expiring works if dateremoved old enough."""
         pkg3 = self.stp.getPubSource(
-            sourcename="pkg3", architecturehintlist="i386", archive=self.archive,
-            dateremoved=self.over_threshold_date)
+            sourcename="pkg3", architecturehintlist="i386",
+            archive=self.archive, dateremoved=self.over_threshold_date)
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg3, dateremoved=self.over_threshold_date,
             archive=self.archive)
@@ -154,8 +154,8 @@ class ArchiveExpiryCommonTests(ArchiveExpiryTestBase):
     def testNoExpirationWithDateOverThresholdAndOtherValidPublication(self):
         """Test no expiry if dateremoved old enough but other publication."""
         pkg4 = self.stp.getPubSource(
-            sourcename="pkg4", architecturehintlist="i386", archive=self.archive,
-            dateremoved=self.over_threshold_date)
+            sourcename="pkg4", architecturehintlist="i386",
+            archive=self.archive, dateremoved=self.over_threshold_date)
         other_source = pkg4.copyTo(
             pkg4.distroseries, pkg4.pocket, self.archive2)
         other_source.dateremoved = None
@@ -177,8 +177,8 @@ class ArchiveExpiryCommonTests(ArchiveExpiryTestBase):
         not over date threshold.
         """
         pkg5 = self.stp.getPubSource(
-            sourcename="pkg5", architecturehintlist="i386", archive=self.archive,
-            dateremoved=self.over_threshold_date)
+            sourcename="pkg5", architecturehintlist="i386",
+            archive=self.archive, dateremoved=self.over_threshold_date)
         other_source = pkg5.copyTo(
             pkg5.distroseries, pkg5.pocket, self.archive2)
         other_source.dateremoved = self.under_threshold_date
@@ -250,7 +250,8 @@ class TestPPAExpiry(ArchiveExpiryCommonTests):
 
     def testBlacklistingWorks(self):
         """Test that blacklisted PPAs are not expired."""
-        source, binary = self._setUpExpirablePublications(archive=self.archive)
+        source, binary = self._setUpExpirablePublications(
+            archive=self.archive)
         script = self.getScript()
         script.blacklist = [self.archive.owner.name, ]
         self.layer.txn.commit()
