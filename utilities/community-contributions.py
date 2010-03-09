@@ -305,7 +305,7 @@ class ExCon():
         # (key == value == ContainerRevision).  We use a dictionary
         # instead of list to get set semantics; set() would be overkill.
         self._landings = {}
-        self.seen_revs = set()
+        self.seen_revs = {}
 
     def num_landings(self):
         """Return the number of top-level landings that include revisions
@@ -419,6 +419,10 @@ class LogExCons(log.LogFormatter):
     def result(self):
         "Return a moin-wiki-syntax string with TOC followed by contributions."
 
+        for excon in self.all_ex_cons.values():
+            for rev, top_level_rev in excon.seen_revs.values():
+                excon.add_top_level_revision(top_level_rev)
+
         # Divide contributors into non-Canonical and Canonical.
         non_canonical_contributors = [x for x in self.all_ex_cons.values()
                                       if not x.is_canonical]
@@ -469,9 +473,9 @@ class LogExCons(log.LogFormatter):
             self.current_top_level_rev.add_subrev(lr)
         ex_cons = get_ex_cons(lr.rev.get_apparent_authors(), self.all_ex_cons)
         for ec in ex_cons:
-            if lr.rev.revision_id not in ec.seen_revs:
-                ec.add_top_level_revision(self.current_top_level_rev)
-                ec.seen_revs.add(lr.rev.revision_id)
+            if (lr.rev.revision_id not in ec.seen_revs or
+                lr.merge_depth <= ec.seen_revs[lr.rev.revision_id][0].merge_depth):
+                ec.seen_revs[lr.rev.revision_id] = (lr, self.current_top_level_rev)
 
 
 # XXX: Karl Fogel 2009-09-10: is this really necessary?  See bzrlib/log.py.
