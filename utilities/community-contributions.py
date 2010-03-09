@@ -239,11 +239,6 @@ class ContainerRevision():
         else:
             date_str = "(NO DATE)"
 
-        # XXX: Karl Fogel 2009-09-10: just using 'devel' branch for
-        # now.  We have four trunks; that makes life hard.  Not sure
-        # what to do about that; unifying the data is possible, but a
-        # bit of work.  See https://dev.launchpad.net/Trunk for more
-        # information.
         rev_url_base = "http://bazaar.launchpad.net/%s/revision/" % (
             self.branch_info[2])
 
@@ -499,9 +494,8 @@ def usage():
 page_intro = """This page shows contributions to Launchpad from \
 developers not on the Launchpad team at Canonical.
 
-It only lists changes that have landed in the Launchpad ''devel'' \
-tree, so changes that land in ''db-devel'' first may take a while to \
-show up (see the [[Trunk|trunk explanation]] for more).
+It lists all changes that have landed in the Launchpad ''devel'' \
+or ''db-devel'' trees (see the [[Trunk|trunk explanation]] for more).
 
 ~-''Note for maintainers: this page is updated every 10 minutes by a \
 cron job running as kfogel on devpad (though if there are no new \
@@ -549,6 +543,10 @@ def main():
         usage()
         sys.exit(1)
 
+    # This dict maps branch paths to tuples of (label, start revno,
+    # loggerhead_path). If the label is empty or None, no label will be
+    # shown. The start revnos here are the first non-Canonical
+    # contribution to each branch
     branches = {
         args[0]: (None, 8976, '~launchpad-pqm/launchpad/devel'),
         args[1]: ('db-devel', 8327, '~launchpad-pqm/launchpad/db-devel'),
@@ -560,16 +558,13 @@ def main():
         # Do everything.
         b = Branch.open(target)
 
-        # XXX: Karl Fogel 2009-09-10: 8976 is the first non-Canonical
-        # contribution on 'devel'.  On 'db-devel', the magic revision
-        # number is 8327.  We're aiming at 'devel' right now, but perhaps
-        # it would be good to parameterize this, or just auto-detect the
-        # branch and choose the right number.
         logger = log.Logger(b, {'start_revision' : branch_info[1],
                                 'direction' : 'reverse',
                                 'levels' : 0, })
         if not quiet:
             print "Calculating (this may take a while)..."
+
+        # Set information about the current branch for later formatting.
         lec.branch_info = branch_info
         logger.show(lec)  # Won't "show" anything -- just gathers data.
 
