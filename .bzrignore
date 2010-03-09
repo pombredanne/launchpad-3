@@ -60,6 +60,5 @@ lib/canonical/buildd/launchpad-files
 .testrepository
 .memcache.pid
 ./pipes
-lib/canonical/launchpad/apidoc/wadl-development-1.0.xml
-lib/canonical/launchpad/apidoc/wadl-development-beta.xml
-lib/canonical/launchpad/apidoc/wadl-development-devel.xml
+lib/canonical/launchpad/apidoc/wadl-development-*.xml
+tags.new
