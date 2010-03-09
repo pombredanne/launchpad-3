@@ -11,15 +11,16 @@ import optparse
 import sys
 
 from zope.component import getUtility
+
 from canonical.config import config
 from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import IProductSet
+from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.interaction import Participation
-
 from canonical.launchpad.scripts.sftracker import Tracker, TrackerImporter
+
 
 def main(argv):
     parser = optparse.OptionParser(description="This script imports bugs "

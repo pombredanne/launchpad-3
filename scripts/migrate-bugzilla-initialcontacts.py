@@ -4,7 +4,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
-import re
 import MySQLdb
 
 import _pythonpath
@@ -13,8 +12,12 @@ from zope.component import getUtility
 
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.interfaces.emailaddress import (
+    IEmailAddressSet)
+from lp.registry.interfaces.person import IPersonSet
+
 
 execute_zcml_for_scripts()
 ztm = initZopeless()

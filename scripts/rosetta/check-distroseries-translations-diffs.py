@@ -10,7 +10,7 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts import logger, logger_options
 

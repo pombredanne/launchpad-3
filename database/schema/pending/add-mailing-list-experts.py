@@ -11,8 +11,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPersonSet, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import IPersonSet, TeamSubscriptionPolicy
 
 
 execute_zcml_for_scripts()

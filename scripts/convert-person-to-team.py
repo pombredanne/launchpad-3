@@ -15,7 +15,8 @@ from zope.component import getUtility
 
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import AccountStatus, IPersonSet
+from canonical.launchpad.interfaces.account import AccountStatus
+from lp.registry.interfaces.person import IPersonSet
 
 
 class ConvertPersonToTeamScript(LaunchpadScript):

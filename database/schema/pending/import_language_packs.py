@@ -9,8 +9,9 @@ from urllib2 import urlopen
 from zope.component import getUtility
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.interfaces import (
-    IDistributionSet, ILanguagePackSet, LanguagePackType)
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.translations.interfaces.languagepack import (
+    ILanguagePackSet, LanguagePackType)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp import initZopeless
 

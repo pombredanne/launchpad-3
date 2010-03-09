@@ -37,8 +37,9 @@ from zope.component import getUtility
 from contrib.glock import GlobalLock
 
 from canonical.database.sqlbase import sqlvalues, cursor
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, PackagePublishingStatus)
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.librarian.client import LibrarianClient

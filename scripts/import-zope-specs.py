@@ -21,8 +21,10 @@ from canonical.lp.dbschema import (
     SpecificationStatus, SpecificationGoalStatus, SpecificationDelivery,
     SpecificationPriority)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, ISpecificationSet)
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.blueprints.interfaces.specification import ISpecificationSet
+
 
 WIKI_BASE = 'http://wiki.zope.org/zope3/'
 PROPOSAL_LISTS = ['Zope3Proposals', 'OldProposals', 'DraftProposals']

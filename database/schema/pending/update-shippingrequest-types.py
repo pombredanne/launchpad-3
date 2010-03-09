@@ -12,7 +12,7 @@ from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database import ShippingRequest
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import (
+from shipit.interfaces.shipit import (
     ShipItDistroSeries, ShipItFlavour, ShippingRequestType)
 
 

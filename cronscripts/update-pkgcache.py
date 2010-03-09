@@ -14,7 +14,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
 
 

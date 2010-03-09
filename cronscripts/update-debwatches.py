@@ -18,10 +18,15 @@ from zope.component import getUtility
 from lp.bugs.scripts import debbugs
 from lp.services.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import (IBugSet,
-    ILaunchpadCelebrities, InvalidEmailMessage, IBugTaskSet,
-    IBugWatchSet, IMessageSet, ICveSet, BugTaskSearchParams)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.message import (
+    IMessageSet, InvalidEmailMessage)
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.cve import ICveSet
 from canonical.database.constants import UTC_NOW
+
 
 # setup core values and defaults
 debbugs_location_default = '/srv/bugs-mirror.debian.org/'

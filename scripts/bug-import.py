@@ -9,9 +9,9 @@ import _pythonpath
 import logging
 
 from zope.component import getUtility
-from canonical.config import config
-from canonical.launchpad.interfaces import IProductSet
 
+from canonical.config import config
+from lp.registry.interfaces.product import IProductSet
 from lp.bugs.scripts.bugimport import BugImporter
 from lp.services.scripts.base import LaunchpadScript
 

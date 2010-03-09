@@ -14,11 +14,12 @@ import os
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IOpenIDRPConfigSet)
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasSet)
+from lp.services.openid.interfaces.openifrpconfig import IOpenIDRPConfigSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import PersonCreationRationale as PCR
+from lp.registry.interfaces.person import PersonCreationRationale as PCR
 
 execute_zcml_for_scripts()
 ztm = initZopeless()

@@ -20,8 +20,9 @@ from zope.component import getUtility
 
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import (
-    ICountrySet, IDistributionMirrorSet, MirrorContent)
+from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirrorSet, MirrorContent)
 
 
 class CacheCountryMirrors(LaunchpadScript):
