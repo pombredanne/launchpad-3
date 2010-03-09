@@ -57,8 +57,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         self.assertEqual('code-import', msg['X-Launchpad-Notification-Type'])
         self.assertEqual('~eric/fooix/trunk', msg['X-Launchpad-Branch'])
         self.assertEqual(
-            'A new subversion via bzr-svn code import has been requested '
-            'by Eric:\n'
+            'A new subversion code import has been requested by Eric:\n'
             '    http://code.launchpad.dev/~eric/fooix/trunk\n'
             'from\n'
             '    svn://svn.example.com/fooix/trunk\n'

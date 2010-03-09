@@ -46,7 +46,7 @@ def new_import(code_import, event):
     body = get_email_template('new-code-import.txt') % {
         'person': code_import.registrant.displayname,
         'branch': canonical_url(code_import.branch),
-        'rcs_type': code_import.rcs_type.title,
+        'rcs_type': rcs_type_map[code_import.rcs_type],
         'location': location,
         }
 
