@@ -32,9 +32,16 @@ def new_import(code_import, event):
     user = IPerson(event.user)
     subject = 'New code import: %s/%s' % (
         code_import.product.name, code_import.branch.name)
+    if code_import.rcs_type == RevisionControlSystems.CVS:
+        location = '%s, %s' % (code_import.cvs_root, code_import.cvs_module)
+    else:
+        location = code_import.url
     body = get_email_template('new-code-import.txt') % {
         'person': code_import.registrant.displayname,
-        'branch': canonical_url(code_import.branch)}
+        'branch': canonical_url(code_import.branch),
+        'rcs_type': code_import.rcs_type.title,
+        'location': location,
+        }
 
     from_address = format_address(
         user.displayname, user.preferredemail.email)
@@ -42,7 +49,9 @@ def new_import(code_import, event):
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name,
                'X-Launchpad-Message-Rationale':
-                   'Operator @%s' % vcs_imports.name}
+                   'Operator @%s' % vcs_imports.name,
+               'X-Launchpad-Notification-Type': 'code-import',
+               }
     for address in get_contact_email_addresses(vcs_imports):
         simple_sendmail(from_address, address, subject, body, headers)
 
