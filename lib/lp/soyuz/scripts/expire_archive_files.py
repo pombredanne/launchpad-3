@@ -60,6 +60,7 @@ class ArchiveExpirer(LaunchpadCronScript):
         from lp.soyuz.interfaces.archive import ArchivePurpose
 
         stay_of_execution = '%d days' % num_days
+        archive_types = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
         # The subquery here has to repeat the checks for privacy and
         # blacklisting on *other* publications that are also done in
@@ -79,7 +80,7 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND spph.dateremoved < (
                     CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
                 AND spph.archive = archive.id
-                AND archive.purpose = %s
+                AND archive.purpose IN %s
                 AND lfa.expires IS NULL
             EXCEPT
             SELECT sprf.libraryfile
@@ -97,13 +98,13 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND (
                     p.name IN %s
                     OR a.private IS TRUE
-                    OR a.purpose != %s
+                    OR a.purpose NOT IN %s
                     OR dateremoved >
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
                     OR dateremoved IS NULL);
             """ % sqlvalues(
-                stay_of_execution, ArchivePurpose.PPA, self.blacklist,
-                ArchivePurpose.PPA, stay_of_execution))
+                stay_of_execution, archive_types, self.blacklist,
+                archive_types, stay_of_execution))
 
         lfa_ids = results.get_all()
         return lfa_ids
@@ -114,6 +115,7 @@ class ArchiveExpirer(LaunchpadCronScript):
         from lp.soyuz.interfaces.archive import ArchivePurpose
 
         stay_of_execution = '%d days' % num_days
+        archive_types = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
         # The subquery here has to repeat the checks for privacy and
         # blacklisting on *other* publications that are also done in
@@ -133,7 +135,7 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND bpph.dateremoved < (
                     CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
                 AND bpph.archive = archive.id
-                AND archive.purpose = %s
+                AND archive.purpose IN %s
                 AND lfa.expires IS NULL
             EXCEPT
             SELECT bpf.libraryfile
@@ -151,13 +153,13 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND (
                     p.name IN %s
                     OR a.private IS TRUE
-                    OR a.purpose != %s
+                    OR a.purpose NOT IN %s
                     OR dateremoved >
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
                     OR dateremoved IS NULL);
             """ % sqlvalues(
-                stay_of_execution, ArchivePurpose.PPA, self.blacklist,
-                ArchivePurpose.PPA, stay_of_execution))
+                stay_of_execution, archive_types, self.blacklist,
+                archive_types, stay_of_execution))
 
         lfa_ids = results.get_all()
         return lfa_ids
