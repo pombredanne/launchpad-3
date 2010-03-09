@@ -58,7 +58,8 @@ from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
     InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
-    PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    NoTokensForTeams, PocketNotFound, VersionRequiresName,
+    default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import (
@@ -1219,6 +1220,11 @@ class Archive(SQLBase):
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # Tokens can only be created for individuals.
+        if person.is_team:
+            raise NoTokensForTeams(
+                "Subscription tokens can be created for individuals only.")
 
         # First, ensure that a current subscription exists for the
         # person and archive:
