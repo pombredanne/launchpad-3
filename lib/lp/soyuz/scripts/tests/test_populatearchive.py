@@ -29,7 +29,7 @@ from lp.soyuz.interfaces.packagecopyrequest import (
 from lp.soyuz.scripts.ftpmaster import PackageLocationError, SoyuzScriptError
 from lp.soyuz.scripts.populate_archive import ArchivePopulator
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCase
+from lp.testing import TestCaseWithFactory
 
 
 def get_spn(build):
@@ -38,7 +38,7 @@ def get_spn(build):
     return pub.sourcepackagerelease.sourcepackagename
 
 
-class TestPopulateArchiveScript(TestCase):
+class TestPopulateArchiveScript(TestCaseWithFactory):
     """Test the copy-package.py script."""
 
     layer = LaunchpadZopelessLayer
@@ -542,7 +542,7 @@ class TestPopulateArchiveScript(TestCase):
 
         This test should provoke a `SoyuzScriptError` exception because the
         copy archive does not exist yet and will need to be created.
-        
+
         This is different from a merge copy scenario where the destination
         copy archive exists already and hence no archive creation reason is
         needed.
@@ -690,20 +690,17 @@ class TestPopulateArchiveScript(TestCase):
         The copying of packages from private archives to public ones
         thus constitutes a security breach.
         """
-        # We will make cprov's PPA private and then attempt to copy from it.
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        ppa = cprov.archive
-        ppa.buildd_secret = 'super-secret-123'
-        ppa.private = True
+        # We will make a private PPA and then attempt to copy from it.
+        joe = self.factory.makePerson(name='joe')
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        joes_private_ppa = self.factory.makeArchive(
+            owner=joe, private=True, name="ppa", distribution=ubuntu)
 
-        extra_args = ['--from-user', 'cprov', '-a', 'amd64']
+        extra_args = ['--from-user', 'joe', '-a', 'amd64']
         copy_archive = self.runScript(
             extra_args=extra_args, exception_type=SoyuzScriptError,
             exception_text=(
-                "Cannot copy from private archive ('cprov/ppa')"))
-
-        ppa.private = False
-        ppa.buildd_secret = None
+                "Cannot copy from private archive ('joe/ppa')"))
 
     def testDisabledDestinationArchive(self):
         """Try copying to a disabled archive.

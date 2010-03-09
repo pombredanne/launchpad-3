@@ -176,6 +176,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/milestonetable.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
@@ -333,7 +335,7 @@
         <div class="lp-branding">
           <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
           &nbsp;&bull;&nbsp;
-          <a href="/+tour">Take the tour</a>
+          <a tal:attributes="href string:${rooturl}+tour">Take the tour</a>
           &nbsp;&bull;&nbsp;
           <a href="https://help.launchpad.net/">Read the guide</a>
           &nbsp;
@@ -352,7 +354,7 @@
       &copy; 2004-2010
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
-      <a href="/legal">Terms of use</a>
+      <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
       <a href="https://help.launchpad.net/Feedback"
         >Contact us</a>

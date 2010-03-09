@@ -114,6 +114,8 @@ class BranchMergeProposal(SQLBase):
     prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
+    description = StringCol(default=None)
+
     whiteboard = StringCol(default=None)
 
     queue_status = EnumCol(
@@ -206,17 +208,6 @@ class BranchMergeProposal(SQLBase):
     def target(self):
         """See `IHasBranchTarget`."""
         return self.source_branch.target
-
-    @property
-    def root_comment(self):
-        return CodeReviewComment.selectOne("""
-            CodeReviewMessage.id in (
-                SELECT CodeReviewMessage.id
-                    FROM CodeReviewMessage, Message
-                    WHERE CodeReviewMessage.branch_merge_proposal = %d AND
-                          CodeReviewMessage.message = Message.id
-                    ORDER BY Message.datecreated LIMIT 1)
-            """ % self.id)
 
     root_message_id = StringCol(default=None)
 
@@ -340,8 +331,6 @@ class BranchMergeProposal(SQLBase):
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
             self.requestReview()
-        elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
-            self.requestReview()
         elif status == BranchMergeProposalStatus.CODE_APPROVED:
             # Other half of the edge case.  If the status is currently queued,
             # we need to dequeue, otherwise we just approve the branch.
@@ -378,6 +367,11 @@ class BranchMergeProposal(SQLBase):
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
+            # Clear out any reviewed or queued values.
+            self.reviewer = None
+            self.reviewed_revision_id = None
+            self.queuer = None
+            self.queued_revision_id = None
 
     def isMergable(self):
         """See `IBranchMergeProposal`."""
@@ -517,7 +511,7 @@ class BranchMergeProposal(SQLBase):
             registrant=registrant,
             target_branch=self.target_branch,
             prerequisite_branch=self.prerequisite_branch,
-            whiteboard=self.whiteboard,
+            description=self.description,
             needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive

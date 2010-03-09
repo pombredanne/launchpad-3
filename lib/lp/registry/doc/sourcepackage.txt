@@ -42,6 +42,12 @@ ISourcePackageNameSet.queryByName:
     >>> print firefox.name
     mozilla-firefox
 
+Source packages have useful string representations containing their name in
+quotes.
+
+    >>> firefox
+    <SourcePackageName 'mozilla-firefox'>
+
 If the package doesn't exist, queryByName returns None:
 
     >>> biscoito = sourcepackagenameset.queryByName("biscoito")
@@ -83,14 +89,10 @@ upload, even though it gets changed in the publishing record.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> from canonical.launchpad.database import Component
     >>> from canonical.launchpad.database import (
-    ...     SecureSourcePackagePublishingHistory)
+    ...     SourcePackagePublishingHistory)
     >>> from canonical.launchpad.ftests import syncUpdate
 
-    # SourcePackagePublishingHistory is just a view on
-    # SecureSourcePackagePublishingHistory with some rows removed, so need
-    # to update the SecureSourcePackagePublishingHistory table.
-
-    >>> latest_publishing = SecureSourcePackagePublishingHistory.get(
+    >>> latest_publishing = SourcePackagePublishingHistory.get(
     ...     publishing_history[-1].id)
     >>> universe = Component.byName('universe')
     >>> latest_publishing.component = universe
@@ -136,20 +138,19 @@ SourcePackage context will be reachable.
 
 'pmount_0.1-1' in hoary is SUPERSEDED but not yet 'removed from disk'.
 
-    >>> secure_pub =  SecureSourcePackagePublishingHistory.get(
+    >>> pub = SourcePackagePublishingHistory.get(
     ...     pmount_hoary['0.1-1'].publishing_history[0].id)
-    >>> secure_pub.datesuperseded is not None
+    >>> pub.datesuperseded is not None
     True
-
-    >>> secure_pub.dateremoved is None
+    >>> pub.dateremoved is None
     True
 
 We will emulate disk-removal to ensure it will continue to be reachable.
 See bug #179028 for further information.
 
     >>> from datetime import timedelta
-    >>> secure_pub.dateremoved = secure_pub.datesuperseded + timedelta(days=1)
-    >>> syncUpdate(secure_pub)
+    >>> pub.dateremoved = pub.datesuperseded + timedelta(days=1)
+    >>> syncUpdate(pub)
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
@@ -255,86 +256,63 @@ package.
 
     >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> sp = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
-    >>> sp.productseries.name
-    u'1.0'
+    >>> print sp.productseries.name
+    1.0
 
-Now we make sure there is no Packaging data for a52dec in hoary.
+A source package's product series is None when it does not have a
+Packaging entry. Historical packaging does not affect the state of the
+productseries attribute.
 
     >>> from lp.registry.model.packaging import PackagingUtil
-    >>> a52decsp = SourcePackage(sourcepackagename=a52dec,
+    >>> hoary_a52dec = SourcePackage(sourcepackagename=a52dec,
     ...     distroseries=hoary)
-    >>> a52decsp.productseries.name
-    u'trunk'
-
     >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=a52decsp.productseries,
+    ...     productseries=hoary_a52dec.productseries,
     ...     sourcepackagename=a52dec,
     ...     distroseries=hoary)
     False
 
-So far so good.
+    >>> print hoary_a52dec.productseries
+    None
 
-Now verify we still get a product for that source package, thanks to the
-fact that we have Warty data for it
-
-    >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=a52decsp.productseries,
-    ...     sourcepackagename=a52dec,
-    ...     distroseries=warty)
-    True
-
-    >>> a52decsp.productseries.product.name
-    u'a52dec'
-
-Similarly, we should be able to get the packaging information from a
-parent distroseries, on the basis that a derivative is highly unlikely
-to change the packaging drastically without changing the name of the
-package.
-
-First, show there is no packging data for a52dec in g2k5:
-
-    >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=a52decsp.productseries,
-    ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5)
-    False
-
-Now verify we still get a product for that source package
-
-    >>> sp = SourcePackage(sourcepackagename=a52dec, distroseries=g2k5)
-    >>> sp.productseries.product.name
-    u'a52dec'
-
-And if we want to link that productseries to a source package in that
-distroseries
+Once a Packaging entry is created to link a distro series source package name
+to a product series, the source package does have a product series.
 
     >>> from lp.registry.interfaces.packaging import PackagingType
-    >>> from lp.registry.model.person import Person
-    >>> foobar = Person.byName('name16')
+
+    >>> user = factory.makePerson()
+    >>> a52dec_series = factory.makeProductSeries(name='ratty')
     >>> PackagingUtil().createPackaging(
-    ...     productseries=sp.productseries,
+    ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5,
+    ...     distroseries=hoary,
     ...     packaging=PackagingType.PRIME,
-    ...     owner=foobar)
+    ...     owner=user)
 
     >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=sp.productseries,
+    ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5)
+    ...     distroseries=hoary)
     True
 
-Packaging entries can be deleted using PackagingUtil.deletePackaging.
+    >>> print hoary_a52dec.productseries.name
+    ratty
+
+Packaging entries can be deleted using PackagingUtil.deletePackaging. That
+also removes the source package product series.
 
     >>> PackagingUtil().deletePackaging(
-    ...     productseries=sp.productseries,
+    ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5)
+    ...     distroseries=hoary)
     >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=sp.productseries,
+    ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5)
+    ...     distroseries=hoary)
     False
+
+    >>> print hoary_a52dec.productseries
+    None
 
 Linkified changelogs are available through SourcePackageReleaseView: XXX
 julian 2007-09-17 This is duplicating the page test. Instead it should

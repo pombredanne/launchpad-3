@@ -47,9 +47,9 @@ Make a builder to process our build request.
 Use the ITranslationTemplatesBuildJobSource to create a
 TranslationTemplatesBuildJob.
 
+    >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> from lp.translations.interfaces.translationtemplatesbuildjob import (
     ...     ITranslationTemplatesBuildJobSource)
-    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
     >>> branch = factory.makeBranch()
     >>> specific_job_source = getUtility(ITranslationTemplatesBuildJobSource)
     >>> specific_job = specific_job_source.create(branch)

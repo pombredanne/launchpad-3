@@ -58,3 +58,7 @@ lazr-js
 .subversion
 lib/canonical/buildd/launchpad-files
 .testrepository
+.memcache.pid
+./pipes
+lib/canonical/launchpad/apidoc/wadl-development-*.xml
+tags.new

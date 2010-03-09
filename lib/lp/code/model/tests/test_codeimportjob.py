@@ -114,7 +114,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
     def assertJobIsSelected(self, desired_job):
         """Assert that the expected job is chosen by getJobForMachine."""
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
-            self.machine.hostname)
+            self.machine.hostname, 10)
         self.assert_(observed_job is not None, "No job was selected.")
         self.assertEqual(desired_job, observed_job,
                          "Expected job not selected.")
@@ -122,7 +122,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
     def assertNoJobSelected(self):
         """Assert that no job is selected."""
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
-            'machine')
+            'machine', 10)
         self.assert_(observed_job is None, "Job unexpectedly selected.")
 
     def test_nothingSelectedIfNothingCreated(self):
@@ -274,7 +274,7 @@ class TestCodeImportJobSetGetJobForMachineGardening(ReclaimableJobTests):
         machine = self.factory.makeCodeImportMachine(set_online=True)
         login(ANONYMOUS)
         getUtility(ICodeImportJobSet).getJobForMachine(
-            machine.hostname)
+            machine.hostname, 10)
         login_for_code_imports()
         # Now there are no reclaimable jobs.
         self.assertReclaimableJobs([])
@@ -776,6 +776,21 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             new_job.date_due - running_job.date_due,
             code_import.effective_update_interval)
 
+    def test_partialSuccessCreatesNewJobDueNow(self):
+        # If called with a status of SUCCESS_PARTIAL, finishJob() creates a
+        # new CodeImportJob for the given CodeImport that is due to run right
+        # now.
+        running_job = self.makeRunningJob()
+        code_import = running_job.code_import
+        self.switchDbUser()
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESS_PARTIAL, None)
+        new_job = code_import.import_job
+        self.assert_(new_job is not None)
+        self.assertEqual(new_job.state, CodeImportJobState.PENDING)
+        self.assertEqual(new_job.machine, None)
+        self.assertSqlAttributeEqualsDate(new_job, 'date_due', UTC_NOW)
+
     def test_doesntCreateNewJobIfCodeImportNotReviewed(self):
         # finishJob() creates a new CodeImportJob for the given CodeImport,
         # unless the CodeImport has been suspended or marked invalid.
@@ -931,7 +946,8 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             code_import = job.code_import
             self.assertTrue(code_import.date_last_successful is None)
             getUtility(ICodeImportJobWorkflow).finishJob(job, status, None)
-            if status in CodeImportResultStatus.successes:
+            if status in [CodeImportResultStatus.SUCCESS,
+                          CodeImportResultStatus.SUCCESS_NOCHANGE]:
                 self.assertTrue(code_import.date_last_successful is not None)
             else:
                 self.assertTrue(code_import.date_last_successful is None)

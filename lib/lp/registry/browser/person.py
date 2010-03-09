@@ -20,7 +20,6 @@ __all__ = [
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
     'PersonBugsMenu',
-    'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
     'PersonCommentedBugTaskSearchListingView',
@@ -103,7 +102,7 @@ from zope.formlib.form import FormFields
 from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import adapts, getUtility
+from zope.component import adapts, getUtility, queryMultiAdapter
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
@@ -149,7 +148,6 @@ from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
 from canonical.launchpad.interfaces.gpghandler import (
     GPGKeyNotFoundError, IGPGHandler)
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from lp.blueprints.interfaces.specification import SpecificationFilter
@@ -165,9 +163,9 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
-    INewPerson, IPerson, IPersonChangePassword, IPersonClaim,
-    IPersonSet, ITeam, ITeamReassignment, PersonCreationRationale,
-    PersonVisibility, TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+    INewPerson, IPerson, IPersonClaim, IPersonSet, ITeam, ITeamReassignment,
+    PersonCreationRationale, PersonVisibility, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, IPollSubset
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
@@ -184,7 +182,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
+from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
@@ -196,7 +194,7 @@ from lp.soyuz.interfaces.sourcepackagerelease import (
 
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.objectreassignment import (
+from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
@@ -431,11 +429,23 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             return None
         return irc_nick
 
-    @stepthrough('+archivesubscriptions')
-    def traverse_archive_subscription(self, archive_id):
+    @stepto('+archivesubscriptions')
+    def traverse_archive_subscription(self):
         """Traverse to the archive subscription for this person."""
-        return traverse_archive_subscription_for_subscriber(
-            self.context, archive_id)
+        if self.context.is_team:
+            raise NotFoundError
+
+        if self.request.stepstogo:
+            # In which case we assume it is the archive_id (for the
+            # moment, archive name will be an option soon).
+            archive_id = self.request.stepstogo.consume()
+            return traverse_archive_subscription_for_subscriber(
+                self.context, archive_id)
+        else:
+            # Otherwise we return the normal view for a person's
+            # archive subscriptions.
+            return queryMultiAdapter(
+                (self.context, self.request), name ="+archivesubscriptions")
 
 
 class TeamNavigation(PersonNavigation):
@@ -887,12 +897,6 @@ class PersonMenuMixin(CommonMenuLinks):
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def editpassword(self):
-        target = '+changepassword'
-        text = 'Change your password'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
         text = 'Change details'
@@ -917,7 +921,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage',
              'editemailaddresses', 'editlanguages', 'editwikinames',
-             'editircnicknames', 'editjabberids', 'editpassword',
+             'editircnicknames', 'editjabberids',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
              'codesofconduct', 'karma', 'administer', 'administer_account',
              'projects', 'activate_ppa', 'maintained',
@@ -1093,11 +1097,6 @@ class PersonEditNavigationMenu(NavigationMenu):
         text = 'OpenPGP Keys'
         return Link(target, text)
 
-    def passwords(self):
-        target = '+changepassword'
-        text = 'Passwords'
-        return Link(target, text)
-
 
 class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     """Base class of team menus.
@@ -1211,7 +1210,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     def configure_mailing_list(self):
         target = '+mailinglist'
         mailing_list = self.person.mailing_list
-        if mailing_list is not None and mailing_list.is_usable:
+        if mailing_list is not None:
             text = 'Configure mailing list'
             icon = 'edit'
         else:
@@ -2581,7 +2580,7 @@ class TeamJoinMixin:
 
     @property
     def user_can_subscribe_to_list(self):
-        """Can the user subscribe to this team's mailing list?
+        """Can the prospective member subscribe to this team's mailing list?
 
         A user can subscribe to the list if the team has an active
         mailing list, and if they do not already have a subscription.
@@ -3879,45 +3878,6 @@ class PersonGPGView(LaunchpadView):
                                   fingerprint=key.fingerprint)
 
         token.sendGPGValidationRequest(key)
-
-
-class PersonChangePasswordView(LaunchpadFormView):
-
-    implements(IPersonEditMenu)
-
-    label = "Change your password"
-    schema = IPersonChangePassword
-    field_names = ['currentpassword', 'password']
-    custom_widget('password', PasswordChangeWidget)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    def validate(self, form_values):
-        current_password = form_values.get('currentpassword')
-        encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(current_password, self.context.password):
-            self.setFieldError('currentpassword', _(
-                "The provided password doesn't match your current password."))
-        # This is not part of the widget, since the value may
-        # be optional in some forms.
-        new_password = self.request.form.get('field.password', '')
-        if new_password.strip() == '':
-            self.setFieldError('password', _(
-                "Setting an empty password is not allowed."))
-
-    @action(_("Change Password"), name="submit")
-    def submit_action(self, action, data):
-        password = data['password']
-        self.context.password = password
-        self.request.response.addInfoNotification(_(
-            "Password changed successfully"))
-
-    @property
-    def cancel_url(self):
-        """The URL that the 'Cancel' link should return to."""
-        return canonical_url(self.context)
 
 
 class BasePersonEditView(LaunchpadEditFormView):
@@ -5898,8 +5858,7 @@ class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
     usedfor = IPersonIndexMenu
     facet = 'overview'
     title = 'Change person'
-    links = ('edit', 'administer', 'administer_account',
-             'branding', 'editpassword')
+    links = ('edit', 'administer', 'administer_account', 'branding')
 
 
 class ITeamIndexMenu(Interface):

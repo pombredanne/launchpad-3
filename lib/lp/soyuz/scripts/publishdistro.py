@@ -69,6 +69,11 @@ def add_options(parser):
                       dest="partner", metavar="PARTNER", default=False,
                       help="Run only over the partner archive.")
 
+    parser.add_option("--copy-archive", action="store_true",
+                      dest="copy_archive", metavar="COPYARCHIVE",
+                      default=False,
+                      help="Run only over the copy archives.")
+
     parser.add_option(
         "--primary-debug", action="store_true", default=False,
         dest="primary_debug", metavar="PRIMARYDEBUG",
@@ -103,12 +108,13 @@ def run_publisher(options, txn, log=None):
 
     exclusive_options = (
         options.partner, options.ppa, options.private_ppa,
-        options.primary_debug)
+        options.primary_debug, options.copy_archive)
+
     num_exclusive = [flag for flag in exclusive_options if flag]
     if len(num_exclusive) > 1:
         raise LaunchpadScriptFailure(
-            "Can only specify one of partner, ppa, private-ppa and "
-            "primary-debug.")
+            "Can only specify one of partner, ppa, private-ppa, copy-archive"
+            " and primary-debug.")
 
     log.debug("  Distribution: %s" % options.distribution)
     log.debug("    Publishing: %s" % careful_msg(options.careful_publishing))
@@ -161,6 +167,14 @@ def run_publisher(options, txn, log=None):
             raise LaunchpadScriptFailure(
                 "Could not find DEBUG archive for %s" % distribution.name)
         archives = [debug_archive]
+    elif options.copy_archive:
+        archives = getUtility(IArchiveSet).getArchivesForDistribution(
+            distribution, purposes=[ArchivePurpose.COPY])
+        # XXX 2010-02-24 Julian bug=246200
+        # Fix this to use bool when Storm fixes __nonzero__ on sqlobj
+        # result sets.
+        if archives.count() == 0:
+            raise LaunchpadScriptFailure("Could not find any COPY archives")
     else:
         archives = [distribution.main_archive]
 
@@ -185,9 +199,9 @@ def run_publisher(options, txn, log=None):
         try_and_commit("dominating", publisher.B_dominate,
                        options.careful or options.careful_domination)
 
-        # The primary archive uses apt-ftparchive to generate the indexes,
-        # everything else uses the newer internal LP code.
-        if archive.purpose == ArchivePurpose.PRIMARY:
+        # The primary and copy archives use apt-ftparchive to generate the
+        # indexes, everything else uses the newer internal LP code.
+        if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
             try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                            options.careful or options.careful_apt)
         else:
