@@ -3,10 +3,8 @@
 
 """Test the expire-archive-files.py script. """
 
-import pytz
-
 from datetime import datetime, timedelta
-
+import pytz
 import unittest
 
 from zope.component import getUtility
@@ -20,29 +18,14 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-class TestPPABinaryExpiry(TestCaseWithFactory):
-    """Test the expire-archive-files.py script. """
-
+class TestArchiveExpiryBase(TestCaseWithFactory):
+    """base class for the expire-archive-files.py script tests."""
     layer = LaunchpadZopelessLayer
     dbuser = config.binaryfile_expire.dbuser
 
-    # We need to test several cases are handled properly:
-    #  - publications with no "dateremoved" are not expired
-    #  - publications with dateremoved <= 30 days ago are not expired
-    #  - publications with dateremoved > 30 days ago are expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #     binary published elsewhere with no dateremoved are not
-    #     expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #    binary published elsewhere with dateremoved <= 30 days ago
-    #    are not expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #    binary published elsewhere with dateremoved > 30 days ago
-    #    are expired.
-
     def setUp(self):
         """Set up some test publications."""
-        super(TestPPABinaryExpiry, self).setUp()
+        super(TestArchiveExpiryBase, self).setUp()
         # Configure the test publisher.
         self.layer.switchDbUser("launchpad")
         self.stp = SoyuzTestPublisher()
@@ -73,6 +56,30 @@ class TestPPABinaryExpiry(TestCaseWithFactory):
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
         script.main()
+
+
+class TestPPABinaryExpiry(TestArchiveExpiryBase):
+    """Test the expire-archive-files.py script. """
+    # We need to test several cases are handled properly:
+    #  - publications with no "dateremoved" are not expired
+    #  - publications with dateremoved <= 30 days ago are not expired
+    #  - publications with dateremoved > 30 days ago are expired
+    #  - publications with dateremoved > 30 days ago but refer to a
+    #     binary published elsewhere with no dateremoved are not
+    #     expired
+    #  - publications with dateremoved > 30 days ago but refer to a
+    #    binary published elsewhere with dateremoved <= 30 days ago
+    #    are not expired
+    #  - publications with dateremoved > 30 days ago but refer to a
+    #    binary published elsewhere with dateremoved > 30 days ago
+    #    are expired.
+
+    def setUp(self):
+        """Set up some test publications."""
+        super(TestPPABinaryExpiry, self).setUp()
+        # Prepare two PPAs for the tests to use.
+        self.ppa = self.factory.makeArchive()
+        self.ppa2 = self.factory.makeArchive()
 
     def assertBinaryExpired(self, publication):
         self.assertNotEqual(
