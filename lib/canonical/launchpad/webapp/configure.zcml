@@ -188,7 +188,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IQuestion"
+        for="lp.answers.interfaces.question.IQuestion"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.QuestionImageDisplayAPI"
         name="image"
@@ -230,7 +230,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.ISpecification"
+        for="lp.blueprints.interfaces.specification.ISpecification"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
         name="image"
@@ -451,25 +451,25 @@
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.IProductSeries"
+        for="lp.registry.interfaces.productseries.IProductSeries"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ProductSeriesFormatterAPI"
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.IQuestion"
+        for="lp.answers.interfaces.question.IQuestion"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.QuestionFormatterAPI"
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.ISpecification"
+        for="lp.blueprints.interfaces.specification.ISpecification"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.ISpecificationBranch"
+        for="lp.blueprints.interfaces.specificationbranch.ISpecificationBranch"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationBranchFormatterAPI"
         name="fmt"

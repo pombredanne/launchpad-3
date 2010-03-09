@@ -13,7 +13,6 @@ from lp.bugs.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
-from lp.blueprints.interfaces.specificationtarget import *
 from lp.registry.interfaces.person import *
 from lp.registry.interfaces.pillar import *
 
@@ -114,16 +113,7 @@ from canonical.launchpad.interfaces.searchservice import *
 from lp.registry.interfaces.sourcepackage import *
 from lp.registry.interfaces.sourcepackagename import *
 from lp.soyuz.interfaces.sourcepackagerelease import *
-from lp.blueprints.interfaces.specification import *
-from lp.blueprints.interfaces.specificationbranch import *
-from lp.blueprints.interfaces.specificationbug import *
-from lp.blueprints.interfaces.specificationdependency import *
-from lp.blueprints.interfaces.specificationfeedback import *
-from lp.blueprints.interfaces.specificationsubscription import *
 from lp.services.worlddata.interfaces.spokenin import *
-from lp.blueprints.interfaces.sprint import *
-from lp.blueprints.interfaces.sprintattendance import *
-from lp.blueprints.interfaces.sprintspecification import *
 from lp.registry.interfaces.ssh import *
 from lp.registry.interfaces.structuralsubscription import *
 from lp.registry.interfaces.teammembership import *
@@ -132,18 +122,6 @@ from lp.registry.interfaces.wikiname import *
 from lp.soyuz.interfaces.packagediff import *
 from lp.soyuz.interfaces.packageset import *
 
-from lp.answers.interfaces.answercontact import *
-from lp.answers.interfaces.faq import *
-from lp.answers.interfaces.faqcollection import *
-from lp.answers.interfaces.faqtarget import *
-from lp.answers.interfaces.question import *
-from lp.coop.answersbugs.interfaces import *
-from lp.answers.interfaces.questioncollection import *
-from lp.answers.interfaces.questionenums import *
-from lp.answers.interfaces.questionmessage import *
-from lp.answers.interfaces.questionreopening import *
-from lp.answers.interfaces.questionsubscription import *
-from lp.answers.interfaces.questiontarget import *
 
 from canonical.launchpad.interfaces._schema_circular_imports import *
 

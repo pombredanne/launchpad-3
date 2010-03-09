@@ -270,9 +270,9 @@
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow
-            interface="canonical.launchpad.interfaces.IFAQCollection"/>
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"/>
         <allow
-            interface="canonical.launchpad.interfaces.IQuestionCollection"/>
+            interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
         <allow
             interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
         <require
@@ -1167,7 +1167,7 @@
         <!-- IFAQTarget -->
 
         <allow
-            interface="canonical.launchpad.interfaces.IFAQCollection"
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>
         <require
@@ -1436,7 +1436,7 @@
         <!-- IFAQTarget -->
 
         <allow
-            interface="canonical.launchpad.interfaces.IFAQCollection"
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>
         <require
