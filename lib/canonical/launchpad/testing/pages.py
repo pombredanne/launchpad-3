@@ -14,7 +14,6 @@ import pdb
 import pprint
 import re
 import transaction
-import sys
 import unittest
 
 from BeautifulSoup import (
@@ -34,7 +33,7 @@ from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
     TeamMembershipStatus)
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
+    LayeredDocFileSuite, SpecialOutputChecker, stop, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
@@ -713,16 +712,6 @@ def setupRosettaExpertBrowser():
             status=TeamMembershipStatus.ADMIN)
     logout()
     return setupBrowser(auth='Basic re@ex.com:test')
-
-
-def stop():
-    # Temporarily restore the real stdout.
-    old_stdout = sys.stdout
-    sys.stdout = sys.__stdout__
-    try:
-        pdb.set_trace()
-    finally:
-        sys.stdout = old_stdout
 
 
 def setUpGlobs(test):

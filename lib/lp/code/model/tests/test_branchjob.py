@@ -17,6 +17,7 @@ from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
+from bzrlib.transport import get_transport
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -273,6 +274,27 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             branch_format=BranchFormat.BZR_BRANCH_7,
             repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertRaises(AssertionError, BranchUpgradeJob.create, branch)
+
+    def test_existing_bzr_backup(self):
+        # If the target branch already has a backup.bzr dir, the upgrade copy
+        # should remove it.
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree(
+            hosted=True, format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+
+        # Add a fake backup.bzr dir
+        source_branch_transport = get_transport(db_branch.getPullURL())
+        source_branch_transport.mkdir('backup.bzr')
+
+        job = BranchUpgradeJob.create(db_branch)
+        job.run()
+
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
 
 
 class TestRevisionMailJob(TestCaseWithFactory):

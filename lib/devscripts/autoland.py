@@ -1,18 +1,11 @@
 """Land an approved merge proposal."""
 
-import os
-
-from launchpadlib.launchpad import (
-    Launchpad, EDGE_SERVICE_ROOT, STAGING_SERVICE_ROOT)
+from launchpadlib.launchpad import Launchpad
+from launchpadlib.uris import (
+    DEV_SERVICE_ROOT, EDGE_SERVICE_ROOT, LPNET_SERVICE_ROOT,
+    STAGING_SERVICE_ROOT)
 from lazr.uri import URI
 from bzrlib.errors import BzrCommandError
-
-
-# XXX: JonathanLange 2009-09-24: Both of these are available in more recent
-# versions of launchpadlib. When we start using such versions, we should
-# instead import these from launchpadlib.
-DEV_SERVICE_ROOT = 'https://api.launchpad.dev/beta/'
-LPNET_SERVICE_ROOT = 'https://api.launchpad.net/beta/'
 
 
 class MissingReviewError(Exception):
@@ -22,18 +15,16 @@ class MissingReviewError(Exception):
 class LaunchpadBranchLander:
 
     name = 'launchpad-branch-lander'
-    cache_dir = '~/.launchpadlib/cache'
 
     def __init__(self, launchpad):
         self._launchpad = launchpad
 
     @classmethod
-    def load(cls, service_root=EDGE_SERVICE_ROOT):
+    def load(cls, service_root='edge'):
         # XXX: JonathanLange 2009-09-24: No unit tests.
-        cache_dir = os.path.expanduser(cls.cache_dir)
         # XXX: JonathanLange 2009-09-24 bug=435813: If cached data invalid,
         # there's no easy way to delete it and try again.
-        launchpad = Launchpad.login_with(cls.name, service_root, cache_dir)
+        launchpad = Launchpad.login_with(cls.name, service_root)
         return cls(launchpad)
 
     def load_merge_proposal(self, mp_url):
@@ -264,13 +255,13 @@ def get_bazaar_host(api_root):
     """Get the Bazaar service for the given API root."""
     # XXX: JonathanLange 2009-09-24 bug=435803: This is only needed because
     # Launchpad doesn't expose the push URL for branches.
-    if api_root == EDGE_SERVICE_ROOT:
+    if api_root.startswith(EDGE_SERVICE_ROOT):
         return 'bazaar.launchpad.net'
-    elif api_root == DEV_SERVICE_ROOT:
+    elif api_root.startswith(DEV_SERVICE_ROOT):
         return 'bazaar.launchpad.dev'
-    elif api_root == STAGING_SERVICE_ROOT:
+    elif api_root.startswith(STAGING_SERVICE_ROOT):
         return 'bazaar.staging.launchpad.net'
-    elif api_root == LPNET_SERVICE_ROOT:
+    elif api_root.startswith(LPNET_SERVICE_ROOT):
         return 'bazaar.launchpad.net'
     else:
         raise ValueError(
