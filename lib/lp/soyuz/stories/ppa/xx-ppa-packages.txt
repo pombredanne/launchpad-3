@@ -35,7 +35,7 @@ the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
     >>> print anon_browser.title
-    Builds for...
+    Builds : PPA for Celso Providelo : Celso Providelo
 
     >>> print anon_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+builds
