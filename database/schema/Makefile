@@ -122,6 +122,8 @@ create:
 		echo "* Installing PL/PgSQL"; \
 	    	createlang -d ${EMPTY_DBNAME} plpgsql; \
 	fi
+	@ echo "* Creating todrop schema"
+	@ psql -d ${EMPTY_DBNAME} -q -c "CREATE SCHEMA todrop;"
 	@ echo "* Creating functions"
 	@ psql -d ${EMPTY_DBNAME} -f trusted.sql   | grep : | cat
 	@ psql -d ${EMPTY_DBNAME} -f testfuncs.sql | grep : | cat

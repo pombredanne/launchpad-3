@@ -117,13 +117,13 @@ Ordinary users cannot add and remove official bug tags.
     >>> ubuntu.addOfficialBugTag(u'foo')
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Distribution at ...>, 'addOfficialBugTag',
+    Unauthorized: (<Distribution 'Ubuntu' (ubuntu)>, 'addOfficialBugTag',
     'launchpad.Edit')
 
     >>> ubuntu.removeOfficialBugTag(u'foo')
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Distribution at ...>, 'removeOfficialBugTag',
+    Unauthorized: (<Distribution 'Ubuntu' (ubuntu)>, 'removeOfficialBugTag',
     'launchpad.Edit')
 
     >>> firefox.addOfficialBugTag(u'foo')
@@ -169,7 +169,7 @@ But only writable for users with edit permissions.
     >>> ubuntu.official_bug_tags = [u'foo', u'bar']
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Distribution at ...>, 'official_bug_tags', 'launchpad.Edit')
+    Unauthorized: (<Distribution 'Ubuntu' (ubuntu)>, 'official_bug_tags', 'launchpad.Edit')
 
 The same is available for products.
 

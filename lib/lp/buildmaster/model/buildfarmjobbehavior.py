@@ -26,8 +26,8 @@ from canonical.librarian.interfaces import ILibrarianClient
 from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
 
 class BuildFarmJobBehaviorBase:

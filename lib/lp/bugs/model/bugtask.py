@@ -50,6 +50,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.interfaces.lpstorm import IStore
+
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from lp.bugs.interfaces.bug import IBugSet
@@ -967,6 +969,9 @@ class BugTask(SQLBase, BugTaskMixin):
         enforced implicitly by the code in
         lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
         """
+
+        target_before_change = self.target
+
         if (self.milestone is not None and
             self.milestone.target != target):
             # If the milestone for this bugtask is set, we
@@ -990,6 +995,12 @@ class BugTask(SQLBase, BugTaskMixin):
                 raise IllegalTarget(
                     "Distribution bug tasks may only be re-targeted "
                     "to a package in the same distribution.")
+
+        # After the target has changed, we need to recalculate the maximum bug
+        # heat for the new and old targets.
+        if self.target != target_before_change:
+            target_before_change.recalculateMaxBugHeat()
+            self.target.recalculateMaxBugHeat()
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1309,6 +1320,7 @@ class BugTaskSet:
         "message_count": "Bug.message_count",
         "users_affected_count": "Bug.users_affected_count",
         "heat": "Bug.heat",
+        "latest_patch_uploaded": "Bug.latest_patch_uploaded",
         }
 
     _open_resolved_upstream = """
@@ -1356,40 +1368,38 @@ class BugTaskSet:
 
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
-        # Need to import Bug locally, to avoid circular imports.
+        # Import locally to avoid circular imports.
+        from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
-        bugtask_ids = [bugtask.id for bugtask in bugtasks]
-        bugs_with_mentoring_offers = list(Bug.select(
-            """id IN (SELECT MentoringOffer.bug
-                      FROM MentoringOffer, BugTask
-                      WHERE MentoringOffer.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_specifications = list(Bug.select(
-            """id IN (SELECT SpecificationBug.bug
-                      FROM SpecificationBug, BugTask
-                      WHERE SpecificationBug.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_branches = list(Bug.select(
-            """id IN (SELECT BugBranch.bug
-                      FROM BugBranch, BugTask
-                      WHERE BugBranch.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_patches = list(Bug.select(
-            """id IN (SELECT BugAttachment.bug
-                      FROM BugAttachment, BugTask
-                      WHERE BugAttachment.bug = BugTask.bug
-                      AND BugAttachment.type = %s
-                        AND BugTask.id IN %s)""" % sqlvalues(
-            BugAttachmentType.PATCH, bugtask_ids)))
+        from lp.bugs.model.bugbranch import BugBranch
+        from lp.registry.model.mentoringoffer import MentoringOffer
+
+        bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
+        bug_ids_with_mentoring_offers = set(IStore(MentoringOffer).find(
+                MentoringOffer.bugID, In(MentoringOffer.bugID, bug_ids)))
+        bug_ids_with_specifications = set(IStore(SpecificationBug).find(
+                SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
+        bug_ids_with_branches = set(IStore(BugBranch).find(
+                BugBranch.bugID, In(BugBranch.bugID, bug_ids)))
+
+        # Cache all bugs at once to avoid one query per bugtask. We
+        # could rely on the Storm cache, but this is explicit.
+        bugs = dict(IStore(Bug).find((Bug.id, Bug), In(Bug.id, bug_ids)))
+
         badge_properties = {}
         for bugtask in bugtasks:
+            bug = bugs[bugtask.bugID]
             badge_properties[bugtask] = {
                 'has_mentoring_offer':
-                    bugtask.bug in bugs_with_mentoring_offers,
-                'has_specification': bugtask.bug in bugs_with_specifications,
-                'has_branch': bugtask.bug in bugs_with_branches,
-                'has_patch': bugtask.bug in bugs_with_patches,
+                    bug.id in bug_ids_with_mentoring_offers,
+                'has_specification':
+                    bug.id in bug_ids_with_specifications,
+                'has_branch':
+                    bug.id in bug_ids_with_branches,
+                'has_patch':
+                    bug.latest_patch_uploaded is not None,
                 }
+
         return badge_properties
 
     def getMultiple(self, task_ids):
@@ -1561,15 +1571,18 @@ class BugTaskSet:
                                  "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
-            attachment_clause = (
-                "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
-            if isinstance(params.attachmenttype, any):
-                where_cond = "BugAttachment.type IN (%s)" % ", ".join(
-                    sqlvalues(*params.attachmenttype.query_values))
+            if params.attachmenttype == BugAttachmentType.PATCH:
+                extra_clauses.append("Bug.latest_patch_uploaded IS NOT NULL")
             else:
-                where_cond = "BugAttachment.type = %s" % sqlvalues(
-                    params.attachmenttype)
-            extra_clauses.append(attachment_clause % where_cond)
+                attachment_clause = (
+                    "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
+                if isinstance(params.attachmenttype, any):
+                    where_cond = "BugAttachment.type IN (%s)" % ", ".join(
+                        sqlvalues(*params.attachmenttype.query_values))
+                else:
+                    where_cond = "BugAttachment.type = %s" % sqlvalues(
+                        params.attachmenttype)
+                extra_clauses.append(attachment_clause % where_cond)
 
         if params.searchtext:
             extra_clauses.append(self._buildSearchTextClause(params))
