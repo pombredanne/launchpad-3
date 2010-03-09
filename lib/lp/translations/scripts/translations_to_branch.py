@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export translation snapshots to bzr branches where requested."""
@@ -238,10 +238,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 raise
             except Exception, e:
                 items_failed += 1
-                message = unicode(e)
-                if message == u'':
-                    message = e.__class__.__name__
-                self.logger.error("Failure: %s" % message)
+                self.logger.error("Failure: %s" % repr(e))
                 if self.txn:
                     self.txn.abort()
 

@@ -191,9 +191,6 @@ class ICodeImportSet(Interface):
             cvs_root=None, cvs_module=None, review_status=None):
         """Create a new CodeImport."""
 
-    def getAll():
-        """Return an iterable of all CodeImport objects."""
-
     def getActiveImports(text=None):
         """Return an iterable of all 'active' CodeImport objects.
 
@@ -222,9 +219,11 @@ class ICodeImportSet(Interface):
     def delete(id):
         """Delete a CodeImport given its id."""
 
-    def search(review_status):
-        """Find the CodeImports of the given status.
+    def search(review_status=None, rcs_type=None):
+        """Find the CodeImports of the given status and type.
 
         :param review_status: An entry from the `CodeImportReviewStatus`
-                              schema.
+            schema, or None, which signifies 'any status'.
+        :param rcs_type: An entry from the `RevisionControlSystems`
+            schema, or None, which signifies 'any type'.
         """
