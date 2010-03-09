@@ -65,8 +65,7 @@ class SystemErrorView(LaunchpadView):
     safe_to_show_in_restricted_mode = False
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(SystemErrorView, self).__init__(context, request)
         self.request.response.removeAllNotifications()
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
