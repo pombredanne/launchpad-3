@@ -96,7 +96,7 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND spph.archive = a.id
                 AND p.id = a.owner
                 AND (
-                    p.name IN %s
+                    (p.name IN %s AND a.purpose = %s)
                     OR a.private IS TRUE
                     OR a.purpose NOT IN %s
                     OR dateremoved >
@@ -104,7 +104,7 @@ class ArchiveExpirer(LaunchpadCronScript):
                     OR dateremoved IS NULL);
             """ % sqlvalues(
                 stay_of_execution, archive_types, self.blacklist,
-                archive_types, stay_of_execution))
+                ArchivePurpose.PPA, archive_types, stay_of_execution))
 
         lfa_ids = results.get_all()
         return lfa_ids
@@ -151,7 +151,7 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND bpph.archive = a.id
                 AND p.id = a.owner
                 AND (
-                    p.name IN %s
+                    (p.name IN %s AND a.purpose = %s)
                     OR a.private IS TRUE
                     OR a.purpose NOT IN %s
                     OR dateremoved >
@@ -159,7 +159,7 @@ class ArchiveExpirer(LaunchpadCronScript):
                     OR dateremoved IS NULL);
             """ % sqlvalues(
                 stay_of_execution, archive_types, self.blacklist,
-                archive_types, stay_of_execution))
+                ArchivePurpose.PPA, archive_types, stay_of_execution))
 
         lfa_ids = results.get_all()
         return lfa_ids
