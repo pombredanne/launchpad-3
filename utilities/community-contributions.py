@@ -305,6 +305,10 @@ class ExCon():
         # (key == value == ContainerRevision).  We use a dictionary
         # instead of list to get set semantics; set() would be overkill.
         self._landings = {}
+        # A map of revision IDs authored by this contributor (probably
+        # not top-level) to a (LogRevision, ContainerRevision) pair. The
+        # pair contains details of the shallowest found instance of this
+        # revision.
         self.seen_revs = {}
 
     def num_landings(self):
@@ -420,6 +424,8 @@ class LogExCons(log.LogFormatter):
     def result(self):
         "Return a moin-wiki-syntax string with TOC followed by contributions."
 
+        # Go through the shallowest authored revisions and add their
+        # top level revisions.
         for excon in self.all_ex_cons.values():
             for rev, top_level_rev in excon.seen_revs.values():
                 excon.add_top_level_revision(top_level_rev)
@@ -475,8 +481,10 @@ class LogExCons(log.LogFormatter):
             self.current_top_level_rev.add_subrev(lr)
         ex_cons = get_ex_cons(lr.rev.get_apparent_authors(), self.all_ex_cons)
         for ec in ex_cons:
+            # If this is the shallowest sighting of a revision, note it
+            # in the ExCon.
             if (lr.rev.revision_id not in ec.seen_revs or
-                lr.merge_depth <= ec.seen_revs[lr.rev.revision_id][0].merge_depth):
+                lr.merge_depth < ec.seen_revs[lr.rev.revision_id][0].merge_depth):
                 ec.seen_revs[lr.rev.revision_id] = (lr, self.current_top_level_rev)
 
 
