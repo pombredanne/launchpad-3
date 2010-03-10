@@ -250,6 +250,19 @@ class IPOTMsgSet(Interface):
         If a translation conflict is detected, TranslationConflict is raised.
         """
 
+    def unsetCurrentTranslation(pofile, reviewer, lock_timestamp):
+        """Dismiss the currently used translation.
+
+        The dismissed translation will be marked as "needs review" together
+        with all other suggestions that were not yet reviewed.
+
+        :param pofile: a `POFile` to dismiss suggestions from.
+        :param reviewer: the person that is doing the dismissal.
+        :param lock_timestamp: the timestamp when we checked the values we
+            want to update.
+
+        If a translation conflict is detected, TranslationConflict is raised.
+        """
     def applySanityFixes(unicode_text):
         """Return 'unicode_text' or None after doing some sanitization.
 

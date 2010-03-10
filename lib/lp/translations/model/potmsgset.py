@@ -857,7 +857,7 @@ class POTMsgSet(SQLBase):
             matching_message.validation_status = validation_status
 
         if just_a_suggestion:
-            # An existing message is just a suggestion, warn if needed.
+            # An existing message is just a suggestion, warn if needed
             if warn_about_lock_timestamp:
                 raise TranslationConflict(
                     'The new translations were saved as suggestions to '
@@ -883,6 +883,24 @@ class POTMsgSet(SQLBase):
         matching_message.sync()
         return matching_message
 
+    def _checkNoTranslationConflict(self, message, lock_timestamp):
+        """Checks if there is a translation conflict for message.
+
+        If a translation conflict is detected, TranslationConflict is raised.
+        """
+        if message.date_reviewed is not None:
+            use_date = message.date_reviewed
+        else:
+            use_date = message.date_created
+        if use_date >= lock_timestamp:
+            raise TranslationConflict(
+                'While you were reviewing these suggestions, somebody '
+                'else changed the actual translation. This is not an '
+                'error but you might want to re-review the strings '
+                'concerned.')
+        else:
+            return True
+
     def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
         """See `IPOTMsgSet`."""
         assert(lock_timestamp is not None)
@@ -892,20 +910,27 @@ class POTMsgSet(SQLBase):
             # Create an empty translation message.
             current = self.updateTranslation(
                 pofile, reviewer, [], False, lock_timestamp)
-        else:
-            if current.date_reviewed is not None:
-                use_date = current.date_reviewed
-            else:
-                use_date = current.date_created
-            if use_date >= lock_timestamp:
-                raise TranslationConflict(
-                    'While you were reviewing these suggestions, somebody '
-                    'else changed the actual translation. This is not an '
-                    'error but you might want to re-review the strings '
-                    'concerned.')
-            else:
-                current.reviewer = reviewer
-                current.date_reviewed = lock_timestamp
+        elif self._checkNoTranslationConflict(current, lock_timestamp):
+            current.reviewer = reviewer
+            current.date_reviewed = lock_timestamp
+
+    def unsetCurrentTranslation(self, pofile, reviewer, lock_timestamp):
+        """See `IPOTMsgSet`."""
+
+        assert(lock_timestamp is not None)
+        current = self.getCurrentTranslationMessage(
+            self.potemplate, pofile.language, pofile.variant)
+        if (current is not None and
+            self._checkNoTranslationConflict(current, lock_timestamp)):
+            # Create an empty translation message.
+            empty_translation = self.updateTranslation(
+                pofile, reviewer, [], False, lock_timestamp)
+            empty_translation.is_current = False
+#            current.date_created = (
+#                empty_translation.date_reviewed +
+#                datetime.timedelta(seconds=1))
+            current.potemplate = None
+            pofile.date_changed = UTC_NOW
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
