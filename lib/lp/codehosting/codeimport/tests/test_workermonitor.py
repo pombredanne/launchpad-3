@@ -718,11 +718,6 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
     def setUp(self):
         TestWorkerMonitorIntegration.setUp(self)
         self._protocol = None
-        # XXX 2009-11-23, MichaelHudson,
-        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
-        # make sure the reactor is running when the test method is executed to
-        # work around the linked Twisted bug.
-        return task.deferLater(reactor, 0, lambda: None)
 
     def performImport(self, job_id):
         """Perform the import job with ID job_id.

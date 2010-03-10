@@ -14,34 +14,34 @@ import unittest
 import pytz
 from zope.component import getUtility
 
-from lp.archivepublisher.config import Config
-from lp.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.testing import LaunchpadZopelessLayer
+from lp.archivepublisher.config import Config
+from lp.archivepublisher.diskpool import DiskPool
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.publishing import (
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingStatus)
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class SoyuzTestPublisher:
