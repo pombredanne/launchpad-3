@@ -98,21 +98,10 @@ class ArchiveExpiryTestBase(TestCaseWithFactory):
 
 
 class ArchiveExpiryCommonTests(ArchiveExpiryTestBase):
-    """Test the expire-archive-files.py script. """
-    # We need to test several cases are handled properly:
-    #  - publications with no "dateremoved" are not expired
-    #  - publications with dateremoved <= 30 days ago are not expired
-    #  - publications with dateremoved > 30 days ago are expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #     binary published elsewhere with no dateremoved are not
-    #     expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #    binary published elsewhere with dateremoved <= 30 days ago
-    #    are not expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #    binary published elsewhere with dateremoved > 30 days ago
-    #    are expired.
-
+    """Common source/binary expiration test cases.
+    
+    These will be shared irrespective of archive type (ppa/partner).
+    """
     def testNoExpirationWithNoDateremoved(self):
         """Test that no expiring happens if no dateremoved set."""
         pkg1 = self.stp.getPubSource(
@@ -226,20 +215,12 @@ class ArchiveExpiryCommonTests(ArchiveExpiryTestBase):
 
 
 class TestPPAExpiry(ArchiveExpiryCommonTests):
-    """Test the expire-archive-files.py script. """
-    # We need to test several cases are handled properly:
-    #  - publications with no "dateremoved" are not expired
-    #  - publications with dateremoved <= 30 days ago are not expired
-    #  - publications with dateremoved > 30 days ago are expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #     binary published elsewhere with no dateremoved are not
-    #     expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #    binary published elsewhere with dateremoved <= 30 days ago
-    #    are not expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #    binary published elsewhere with dateremoved > 30 days ago
-    #    are expired.
+    """Test the expire-archive-files.py script.
+    
+    Here we make use of the common test cases defined in the base class but
+    also add tests specific to PPAs (excluding particular PPAs from expiry
+    based on a "black list" or on the fact that PPA is private).
+    """
 
     def setUp(self):
         """Set up some test publications."""
@@ -271,20 +252,7 @@ class TestPPAExpiry(ArchiveExpiryCommonTests):
 
 
 class TestPartnerExpiry(ArchiveExpiryCommonTests):
-    """Test the expire-archive-files.py script. """
-    # We need to test several cases are handled properly:
-    #  - publications with no "dateremoved" are not expired
-    #  - publications with dateremoved <= 30 days ago are not expired
-    #  - publications with dateremoved > 30 days ago are expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #     binary published elsewhere with no dateremoved are not
-    #     expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #    binary published elsewhere with dateremoved <= 30 days ago
-    #    are not expired
-    #  - publications with dateremoved > 30 days ago but refer to a
-    #    binary published elsewhere with dateremoved > 30 days ago
-    #    are expired.
+    """Test the expire-archive-files.py script on partner archives."""
 
     def setUp(self):
         """Set up the partner archives under test."""
