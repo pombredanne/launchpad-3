@@ -219,7 +219,8 @@ class IDistributionPublic(
     # properties
     currentseries = exported(
         Reference(
-            Interface, # Really IDistroSeries, see _schema_circular_imports.py.
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            Interface,
             title=_("Current series"),
             description=_(
                 "The current development series of this distribution. "
@@ -405,17 +406,21 @@ class IDistributionPublic(
     # _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def searchSourcePackages(text):
+    def searchSourcePackages(text, has_packaging=None):
         """Search for source packages that correspond to the given text.
 
         This method just decorates the result of searchSourcePackageCaches()
         to return DistributionSourcePackages.
         """
 
-    def searchSourcePackageCaches(text):
+    def searchSourcePackageCaches(text, has_packaging=None):
         """Search for source packages that correspond to the given text.
 
         :param text: The text that will be matched.
+        :param has_packaging: If True, it will filter out
+            packages with no packaging (i.e. no link to the upstream
+            project). False will do the reverse filtering, and None
+            will do no filtering on this field.
         :return: A result set containing
             (DistributionSourcePackageCache, SourcePackageName, rank) tuples
             ordered by rank.
