@@ -13,12 +13,16 @@ import shutil
 import StringIO
 import tempfile
 import unittest
+import urllib
 
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
 
 from twisted.internet import defer, error, protocol, reactor, task
+from twisted.python import log
 from twisted.trial.unittest import TestCase as TrialTestCase
+
+import transaction
 
 from zope.component import getUtility
 
@@ -164,7 +168,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
     they did.
     """
 
-    layer = TwistedLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     skip = None
 
@@ -172,7 +176,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         """A subclass of CodeImportWorkerMonitor that stubs logging OOPSes."""
 
         def _logOopsFromFailure(self, failure):
-            self._failures.append(failure)
+            log.err(failure)
 
     def getResultsForOurCodeImport(self):
         """Return the `CodeImportResult`s for the `CodeImport` we created.
@@ -196,10 +200,14 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
                                      exc_types):
             self.assert_(failure.check(exc_type))
 
-    def makeWorkerMonitorWithJob(self, job_id, job_data):
+    def makeWorkerMonitorWithJob(self, job_id=1, job_data=()):
         return self.WorkerMonitor(
             job_id, QuietFakeLogger(),
             FakeCodeImportScheduleEndpointProxy({job_id: job_data}))
+
+    def makeWorkerMonitorWithoutJob(self):
+        return self.WorkerMonitor(
+            1, QuietFakeLogger(), FakeCodeImportScheduleEndpointProxy({}))
 
     def test_getWorkerArguments(self):
         # XXX
@@ -222,69 +230,49 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
 
     def test_getWorkerArguments_job_not_found(self):
         # XXX
-        worker_monitor = self.makeWorkerMonitorWithJob(1, (['a'], 1, 2))
-        worker_monitor._job_id = 2
+        worker_monitor = self.makeWorkerMonitorWithoutJob()
         return self.assertFailure(
             worker_monitor.getWorkerArguments(), ExitQuietly)
 
-    def test_getSourceDetails(self):
-        # getSourceDetails extracts the details from the CodeImport database
-        # object.
-        def check_source_details(details):
-            job = self.worker_monitor.getJob()
-            self.assertEqual(
-                details.url, job.code_import.url)
-            self.assertEqual(
-                details.cvs_root, job.code_import.cvs_root)
-            self.assertEqual(
-                details.cvs_module, job.code_import.cvs_module)
-        return self.worker_monitor.getSourceDetails().addCallback(
-            check_source_details)
-
     def test_updateHeartbeat(self):
-        # The worker monitor's updateHeartbeat method calls the
-        # updateHeartbeat job workflow method.
+        # XXX
+        log_tail = self.factory.getUniqueString()
+        job_id = self.factory.getUniqueInteger()
+        worker_monitor = self.makeWorkerMonitorWithJob(job_id)
         def check_updated_details(result):
-            job = self.worker_monitor.getJob()
-            self.assertEqual(job.logtail, 'log tail')
-        return self.worker_monitor.updateHeartbeat('log tail').addCallback(
+            self.assertEqual(
+                [('updateHeartbeat', job_id, log_tail)],
+                worker_monitor.codeimport_endpoint.calls)
+        return worker_monitor.updateHeartbeat(log_tail).addCallback(
             check_updated_details)
 
-    def test_finishJobCallsFinishJob(self):
-        # The worker monitor's finishJob method calls the
-        # finishJob job workflow method.
-        @read_only_transaction
+    def test_finishJob_calls_finishJobID_empty_log_file(self):
+        # XXX
+        job_id = self.factory.getUniqueInteger()
+        worker_monitor = self.makeWorkerMonitorWithJob(job_id)
+        worker_monitor._log_file_name = 'a'
+        self.assertEqual(worker_monitor._log_file.tell(), 0)
         def check_finishJob_called(result):
-            # We take as indication that finishJob was called that a
-            # CodeImportResult was created.
             self.assertEqual(
-                len(list(self.getResultsForOurCodeImport())), 1)
-        return self.worker_monitor.finishJob(
+                [('finishJobID', job_id, 'SUCCESS', '')],
+                worker_monitor.codeimport_endpoint.calls)
+        return worker_monitor.finishJob(
             CodeImportResultStatus.SUCCESS).addCallback(
             check_finishJob_called)
 
-    def test_finishJobDoesntUploadEmptyFileToLibrarian(self):
-        # The worker monitor's finishJob method does not try to upload an
-        # empty log file to the librarian.
-        self.assertEqual(self.worker_monitor._log_file.tell(), 0)
-        @read_only_transaction
-        def check_no_file_uploaded(result):
-            result = self.getOneResultForOurCodeImport()
-            self.assertIdentical(result.log_file, None)
-        return self.worker_monitor.finishJob(
-            CodeImportResultStatus.SUCCESS).addCallback(
-            check_no_file_uploaded)
-
-    def test_finishJobUploadsNonEmptyFileToLibrarian(self):
+    def test_finishJob_uploads_nonempty_file_to_librarian(self):
         # The worker monitor's finishJob method uploads the log file to the
         # librarian.
-        self.worker_monitor._log_file.write('some text')
-        @read_only_transaction
+        log_text = self.factory.getUniqueString()
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        worker_monitor._log_file.write(log_text)
+        worker_monitor._log_file_name = 'a'
         def check_file_uploaded(result):
-            result = self.getOneResultForOurCodeImport()
-            self.assertNotIdentical(result.log_file, None)
-            self.assertEqual(result.log_file.read(), 'some text')
-        return self.worker_monitor.finishJob(
+            transaction.abort()
+            url = worker_monitor.codeimport_endpoint.calls[0][3]
+            text = urllib.urlopen(url).read()
+            self.assertEqual(log_text, text)
+        return worker_monitor.finishJob(
             CodeImportResultStatus.SUCCESS).addCallback(
             check_file_uploaded)
 
