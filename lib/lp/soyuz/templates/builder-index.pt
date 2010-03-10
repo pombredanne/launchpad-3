@@ -111,7 +111,9 @@
     </tal:comment>
     <tal:job condition="job">
       <span class="sortkey" tal:content="job/id" />
-      <tal:build define="build job/specific_job/build">
+      <tal:build
+        condition="job/specific_job/build"
+        define="build job/specific_job/build">
         <tal:visible condition="build/required:launchpad.View">
           <tal:icon replace="structure build/image:icon" />
           Building
@@ -129,6 +131,11 @@
           Building private source
         </tal:restricted>
       </tal:build>
+      <tal:nobuild condition="not: job/specific_job/build">
+        Job of type
+        <tal:jobtype replace="job/specific_build/__class__/__name__" />
+        with no associated Build.
+      </tal:nobuild>
     </tal:job>
 
   </metal:macro>
@@ -161,21 +168,35 @@
           <span tal:attributes="title job/job/date_started/fmt:datetime"
                 tal:content="view/current_build_duration/fmt:exactduration"
             /> ago.</p>
-        <tal:visible
-           define="build job/specific_job/build"
-           condition="build/required:launchpad.View">
-          <tal:logtail condition="job/logtail">
-            <h3>Buildlog</h3>
-            <div tal:content="structure job/logtail/fmt:text-to-html"
-                 id="buildlog-tail" class="logtail">
-              Things are crashing and burning all over the place.
-            </div>
-            <p class="discreet" tal:condition="view/user">
-              Updated on
-              <span tal:replace="structure view/user/fmt:local-time"/>
-            </p>
-          </tal:logtail>
-        </tal:visible>
+        <tal:build
+           condition="job/specific_job/build"
+           define="build job/specific_job/build">
+          <tal:visible
+             condition="build/required:launchpad.View">
+            <tal:logtail condition="job/logtail">
+              <h3>Buildlog</h3>
+              <div tal:content="structure job/logtail/fmt:text-to-html"
+                   id="buildlog-tail" class="logtail">
+                Things are crashing and burning all over the place.
+              </div>
+              <p class="discreet" tal:condition="view/user">
+                Updated on
+                <span tal:replace="structure view/user/fmt:local-time"/>
+              </p>
+            </tal:logtail>
+          </tal:visible>
+        </tal:build>
+        <tal:nobuild condition="not: job/specific_job/build">
+          <h3>Buildlog</h3>
+          <div tal:content="structure job/logtail/fmt:text-to-html"
+               id="buildlog-tail" class="logtail">
+            Things are crashing and burning all over the place.
+          </div>
+          <p class="discreet" tal:condition="view/user">
+            Updated on
+            <span tal:replace="structure view/user/fmt:local-time"/>
+          </p>
+        </tal:nobuild>
       </tal:job>
     </div>
 

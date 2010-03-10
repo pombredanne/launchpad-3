@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -20,6 +20,12 @@ class BuildFarmJob:
     implements(IBuildFarmJob)
     classProvides(
         IBuildFarmCandidateJobSelection, ISpecificBuildFarmJobClass)
+
+    # Most build-farm job types have a Build associated, but not all.
+    # Default to None, so that the attribute is at least defined.
+    # XXX JeroenVermeulen 2010-03-11 bug=536819: this needs to be
+    # handled better, and formalized.
+    build = None
 
     def score(self):
         """See `IBuildFarmJob`."""
