@@ -152,6 +152,8 @@ accounts.
     >>> translator_merged in top_contributors
     False
 
+    >>> # In the end, revert the changes done to Language class
+    >>> Language.translators = real_translators_method
 
 View LanguageSet
 ------------------
