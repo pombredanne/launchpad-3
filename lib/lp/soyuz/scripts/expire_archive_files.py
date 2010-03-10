@@ -120,12 +120,6 @@ class ArchiveExpirer(LaunchpadCronScript):
         # The subquery here has to repeat the checks for privacy and
         # blacklisting on *other* publications that are also done in
         # the main loop for the archive being considered.
-        param_names = """
-                stay_of_execution archive_types blacklist
-                ppa archive_types stay_of_execution""".split()
-        param_values = sqlvalues(
-                stay_of_execution, archive_types, self.blacklist,
-                ArchivePurpose.PPA, archive_types, stay_of_execution)
         results = self.store.execute("""
             SELECT lfa.id
             FROM
@@ -165,7 +159,11 @@ class ArchiveExpirer(LaunchpadCronScript):
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
                         interval %(stay_of_execution)s)
                     OR dateremoved IS NULL)
-            """ % dict(zip(param_names, param_values)))
+            """ % sqlvalues(
+                stay_of_execution=stay_of_execution,
+                archive_types=archive_types,
+                blacklist=self.blacklist,
+                ppa=ArchivePurpose.PPA))
 
         lfa_ids = results.get_all()
         return lfa_ids
