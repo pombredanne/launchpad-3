@@ -8,7 +8,7 @@ import pwd
 
 from canonical.buildd.debian import DebianBuildManager, DebianBuildState
 
-class TranslationTemplateBuildState(DebianBuildState):
+class TranslationTemplatesBuildState(DebianBuildState):
     INSTALL = "INSTALL"
     GENERATE = "GENERATE"
     
@@ -22,7 +22,7 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
     runs on the build slave.
     """
 
-    initial_build_state = TranslationTemplateBuildState.INSTALL
+    initial_build_state = TranslationTemplatesBuildState.INSTALL
 
     def __init__(self, slave, buildid):
         super(TranslationTemplatesBuildManager, self).__init__(slave, buildid)
@@ -56,7 +56,7 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
     def doGenerate(self):
         """Generate templates."""
         command = [self._generatepath, self.branch_url]
-        self.runInChroot( command)
+        self.runInChroot(command)
 
     def iterate_INSTALL(self, success):
         """Installation was done."""
