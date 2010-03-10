@@ -22,6 +22,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
     LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
@@ -29,7 +30,7 @@ from lp.buildmaster.manager import (
     ResetDispatchResult, buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
