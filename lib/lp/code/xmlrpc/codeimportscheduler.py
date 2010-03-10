@@ -45,8 +45,11 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
             raise NoSuchCodeImportJob()
         return job
 
-    @return_fault
     def getImportDataForJobID(self, job_id):
+        return self._g(job_id)
+
+    @return_fault
+    def _g(self, job_id):
         """See `ICodeImportScheduler`."""
         job = self._getJob(job_id)
         arguments = CodeImportSourceDetails.fromCodeImport(
@@ -56,8 +59,11 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         log_file_name = '%s.log' % branch.unique_name[1:].replace('/', '-')
         return (arguments, branch_url, log_file_name)
 
-    @return_fault
     def updateHeartbeat(self, job_id, log_tail):
+        return self._u(job_id, log_tail)
+
+    @return_fault
+    def _u(self, job_id, log_tail):
         """See `ICodeImportScheduler`."""
         job = self._getJob(job_id)
         workflow = removeSecurityProxy(getUtility(ICodeImportJobWorkflow))
@@ -65,8 +71,7 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         return 0
 
     @return_fault
-    def finishJobID(self, job_id, status_name, log_file_alias_url):
-        """See `ICodeImportScheduler`."""
+    def _f(self, job_id, status_name, log_file_alias_url):
         job = self._getJob(job_id)
         status = CodeImportResultStatus.items[status_name]
         workflow = removeSecurityProxy(getUtility(ICodeImportJobWorkflow))
@@ -78,3 +83,7 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         else:
             log_file_alias = None
         workflow.finishJob(job, status, log_file_alias)
+
+    def finishJobID(self, job_id, status_name, log_file_alias_url):
+        """See `ICodeImportScheduler`."""
+        return self._f(job_id, status_name, log_file_alias_url)

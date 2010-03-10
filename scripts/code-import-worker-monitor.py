@@ -22,11 +22,14 @@ import os
 
 from twisted.internet import defer, reactor
 from twisted.python import log
+from twisted.web import xmlrpc
+
+from canonical.config import config
+from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor)
 from lp.services.scripts.base import LaunchpadScript
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class CodeImportWorker(LaunchpadScript):
@@ -34,6 +37,9 @@ class CodeImportWorker(LaunchpadScript):
     def __init__(self, name, dbuser=None, test_args=None):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
         set_up_oops_reporting(name, mangle_stdout=True)
+
+    def _init_db(self, implicit_begin, isolation):
+        pass
 
     def main(self):
         # XXX: MichaelHudson 2008-05-07 bug=227586: Setting up the component
@@ -49,8 +55,11 @@ class CodeImportWorker(LaunchpadScript):
 
     def _main(self):
         arg, = self.args
-        return CodeImportWorkerMonitor(int(arg), self.logger).run()
+        worker = CodeImportWorkerMonitor(
+            int(arg), self.logger,
+            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
+        return worker.run()
 
 if __name__ == '__main__':
-    script = CodeImportWorker('codeimportworker', dbuser='codeimportworker')
+    script = CodeImportWorker('codeimportworker')
     script.run()

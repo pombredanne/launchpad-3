@@ -19,8 +19,9 @@ from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
 
 from twisted.internet import defer, error, protocol, reactor, task
-from twisted.python import log
+from twisted.python import failure, log
 from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.web import xmlrpc
 
 import transaction
 
@@ -30,7 +31,7 @@ from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.testing.layers import (
-    TwistedLayer, TwistedLaunchpadZopelessLayer)
+    TwistedAppServerLayer, TwistedLaunchpadZopelessLayer, TwistedLayer)
 from canonical.twistedsupport import suppress_stderr
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
@@ -182,8 +183,8 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
     def assertOopsesLogged(self, exc_types):
         failures = self.flushLoggedErrors()
         self.assertEqual(len(exc_types), len(failures))
-        for failure, exc_type in zip(failures, exc_types):
-            self.assert_(failure.check(exc_type))
+        for fail, exc_type in zip(failures, exc_types):
+            self.assert_(fail.check(exc_type))
 
     def makeWorkerMonitorWithJob(self, job_id=1, job_data=()):
         return self.WorkerMonitor(
@@ -421,7 +422,8 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
         self.worker_monitor = self.WorkerMonitor(
-            job.id, QuietFakeLogger(), FakeCodeImportScheduleEndpointProxy())
+            job.id, QuietFakeLogger(),
+            FakeCodeImportScheduleEndpointProxy({}))
         self.worker_monitor.result_status = None
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -507,7 +509,7 @@ class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
 
 class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedAppServerLayer
 
     # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
@@ -636,7 +638,9 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         This implementation does it in-process.
         """
         self.layer.switchDbUser('codeimportworker')
-        monitor = CIWorkerMonitorForTesting(job_id, QuietFakeLogger())
+        monitor = CIWorkerMonitorForTesting(
+            job_id, QuietFakeLogger(),
+            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
@@ -645,6 +649,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
             protocol is actually constructed but before we drop the last
             reference to the monitor object.
             """
+            if isinstance(result, failure.Failure):
+                result.printTraceback()
             self._protocol = monitor._protocol
             return result
         return deferred.addBoth(save_protocol_object)
