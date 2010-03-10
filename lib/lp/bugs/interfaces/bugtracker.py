@@ -33,8 +33,9 @@ from canonical.launchpad.validators.name import name_validator
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_factory_operation, exported,
-    rename_parameters_as, REQUEST_USER)
+    export_as_webservice_entry, export_factory_operation,
+    export_read_operation, exported, operation_parameters,
+    operation_returns_entry, rename_parameters_as, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 
 
@@ -339,6 +340,10 @@ class IBugTrackerSet(Interface):
         If no tracker with the given id exists, return default.
         """
 
+    @operation_parameters(
+        name=TextLine(title=u"The bug tracker name", required=True))
+    @operation_returns_entry(IBugTracker)
+    @export_read_operation()
     def getByName(name, default=None):
         """Get a BugTracker by its name.
 
@@ -355,6 +360,12 @@ class IBugTrackerSet(Interface):
     def __iter__():
         """Iterate through BugTrackers."""
 
+    @rename_parameters_as(baseurl='base_url')
+    @operation_parameters(
+        baseurl=TextLine(
+            title=u"The base URL of the bug tracker", required=True))
+    @operation_returns_entry(IBugTracker)
+    @export_read_operation()
     def queryByBaseURL(baseurl):
         """Return one or None BugTracker's by baseurl"""
 
