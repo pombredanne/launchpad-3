@@ -142,6 +142,7 @@ class CodeImportWorkerMonitor:
 
     def _trap_nosuchcodeimportjob(self, failure):
         # XXX if ...
+        self._call_finish_job = False
         raise ExitQuietly
 
     def getWorkerArguments(self):
@@ -195,7 +196,8 @@ class CodeImportWorkerMonitor:
         else:
             log_file_alias_url = ''
         return self.codeimport_endpoint.callRemote(
-            'finishJobID', self._job_id, status.name, log_file_alias_url)
+            'finishJobID', self._job_id, status.name, log_file_alias_url
+            ).addErrback(self._trap_nosuchcodeimportjob)
 
     def _makeProcessProtocol(self, deferred):
         """Make an `CodeImportWorkerMonitorProtocol` for a subprocess."""

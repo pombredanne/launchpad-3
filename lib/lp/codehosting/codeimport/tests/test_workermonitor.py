@@ -370,9 +370,9 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         def check_log_file(ignored):
             failures = self.flushLoggedErrors(RuntimeError)
             self.assertEqual(1, len(failures))
-            failure = failures[0]
+            fail = failures[0]
             traceback_file = StringIO.StringIO()
-            failure.printTraceback(traceback_file)
+            fail.printTraceback(traceback_file)
             worker_monitor._log_file.seek(0)
             log_text = worker_monitor._log_file.read()
             self.assertIn(traceback_file.read(), log_text)
@@ -396,6 +396,8 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
     # This works around a clash between the TrialTestCase and the BzrTestCase.
     skip = None
 
+    layer = TwistedLayer
+
     class WorkerMonitor(CodeImportWorkerMonitor):
         """See `CodeImportWorkerMonitor`.
 
@@ -403,7 +405,18 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
         callback/errback as we choose.
         """
 
-        def _launchProcess(self, source_details):
+        def __init__(self, process_deferred, has_job=True):
+            if has_job:
+                job_data = {1: ([], '', '')}
+            else:
+                job_data = {}
+            CodeImportWorkerMonitor.__init__(
+                self, 1, QuietFakeLogger(),
+                FakeCodeImportScheduleEndpointProxy(job_data))
+            self.result_status = None
+            self.process_deferred = process_deferred
+
+        def _launchProcess(self, worker_arguments):
             return self.process_deferred
 
         def finishJob(self, status):
@@ -411,61 +424,47 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
             self.result_status = status
             return defer.succeed(None)
 
-    layer = TwistedLaunchpadZopelessLayer
-
-    def setUp(self):
-        self.factory = LaunchpadObjectFactory()
-        login('no-priv@canonical.com')
-        job = self.factory.makeCodeImportJob()
-        self.code_import_id = job.code_import.id
-        getUtility(ICodeImportJobWorkflow).startJob(
-            job, self.factory.makeCodeImportMachine(set_online=True))
-        self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(
-            job.id, QuietFakeLogger(),
-            FakeCodeImportScheduleEndpointProxy({}))
-        self.worker_monitor.result_status = None
-        self.layer.txn.commit()
-        self.layer.switchDbUser('codeimportworker')
-
-    def tearDown(self):
-        logout()
-
-    def assertFinishJobCalledWithStatus(self, ignored, status):
+    def assertFinishJobCalledWithStatus(self, ignored, worker_monitor, status):
         """Assert that finishJob was called with the given status."""
-        self.assertEqual(self.worker_monitor.result_status, status)
+        self.assertEqual(worker_monitor.result_status, status)
+
+    def assertFinishJobNotCalled(self, ignored, worker_monitor):
+        """Assert that finishJob was called with the given status."""
+        self.assertFinishJobCalledWithStatus(ignored, worker_monitor, None)
 
     def test_success(self):
         # In the successful case, finishJob is called with
         # CodeImportResultStatus.SUCCESS.
-        self.worker_monitor.process_deferred = defer.succeed(None)
-        return self.worker_monitor.run().addCallback(
-            self.assertFinishJobCalledWithStatus,
+        worker_monitor = self.WorkerMonitor(defer.succeed(None))
+        return worker_monitor.run().addCallback(
+            self.assertFinishJobCalledWithStatus, worker_monitor,
             CodeImportResultStatus.SUCCESS)
 
     def test_failure(self):
         # If the process deferred is fired with a failure, finishJob is called
         # with CodeImportResultStatus.FAILURE, but the call to run() still
         # succeeds.
-        self.worker_monitor.process_deferred = defer.fail(RuntimeError())
-        return self.worker_monitor.run().addCallback(
-            self.assertFinishJobCalledWithStatus,
+        worker_monitor = self.WorkerMonitor(defer.fail(RuntimeError()))
+        return worker_monitor.run().addCallback(
+            self.assertFinishJobCalledWithStatus, worker_monitor,
             CodeImportResultStatus.FAILURE)
 
     def test_quiet_exit(self):
         # If the process deferred fails with ExitQuietly, the call to run()
-        # succeeds.
-        self.worker_monitor.process_deferred = defer.fail(ExitQuietly())
-        return self.worker_monitor.run()
+        # succeeds, and finishJob is not called at all.
+        worker_monitor = self.WorkerMonitor(
+            defer.succeed(None), has_job=False)
+        return worker_monitor.run().addCallback(
+            self.assertFinishJobNotCalled, worker_monitor)
 
     def test_quiet_exit_from_finishJob(self):
         # If finishJob fails with ExitQuietly, the call to run() still
         # succeeds.
-        self.worker_monitor.process_deferred = defer.succeed(None)
+        worker_monitor = self.WorkerMonitor(defer.succeed(None))
         def finishJob(reason):
             raise ExitQuietly
-        self.worker_monitor.finishJob = finishJob
-        return self.worker_monitor.run()
+        worker_monitor.finishJob = finishJob
+        return worker_monitor.run()
 
 
 def nuke_codeimport_sample_data():
