@@ -145,7 +145,18 @@ archive as well as some new PPAs.
     >>> ppa_beta = factory.makeArchive(name="beta",
     ...                                distribution=ubuntutest)
 
-    # Then publish netapplet to both PPAs
+The 'ppa_disabled' archive added below will be disabled at the end of this
+set-up block. 
+It will thus not be listed in the "...other untrusted versions of..." portlet.
+
+    >>> ppa_disabled = factory.makeArchive(name="disabled",
+    ...                                    distribution=ubuntutest)
+
+    # Then publish netapplet to all PPAs
+    >>> netapplet_disabled_pub_breezy = publisher.getPubSource(
+    ...     sourcename="netapplet", archive=ppa_disabled,
+    ...     creator=ppa_disabled.owner,
+    ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.1d1')
     >>> netapplet_nightly_pub_breezy = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ppa_nightly,
     ...     creator=ppa_nightly.owner,
@@ -165,6 +176,8 @@ archive as well as some new PPAs.
     >>> from lp.registry.model.karma import KarmaTotalCache
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
+    >>> ppa_disabled_owner_id = ppa_disabled.owner.id
+    >>> ppa_disabled.disable()
     >>> transaction.commit()
 
     # XXX: Michael Nelson 2009-07-07 bug=396419. Currently there is no
@@ -178,11 +191,12 @@ archive as well as some new PPAs.
     ...     person=ppa_beta_owner_id, karma_total=200)
     >>> cache_entry = KarmaTotalCache(
     ...     person=ppa_nightly_owner_id, karma_total=201)
+    >>> cache_entry = KarmaTotalCache(
+    ...     person=ppa_disabled_owner_id, karma_total=202)
     >>> transaction.commit()
     >>> reconnect_stores('launchpad')
 
     >>> logout()
-
 
 A /$DISTRO/+source/$PACKAGE page shows an overview of a source package in
 a distribution.  There are several sections of information.

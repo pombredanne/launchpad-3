@@ -30,6 +30,7 @@ __all__ = [
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
+    'NoTokensForTeams',
     'PocketNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
@@ -102,6 +103,11 @@ class AlreadySubscribed(Exception):
 
 class ArchiveNotPrivate(Exception):
     """Raised when creating an archive subscription for a public archive."""
+    webservice_error(400) # Bad request.
+
+
+class NoTokensForTeams(Exception):
+    """Raised when creating a token for a team, rather than a person."""
     webservice_error(400) # Bad request.
 
 

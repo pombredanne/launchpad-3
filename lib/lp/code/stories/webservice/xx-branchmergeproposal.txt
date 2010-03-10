@@ -471,12 +471,36 @@ review.
 
     >>> login('admin@canonical.com')
     >>> from lp.code.enums import BranchMergeProposalStatus
-    >>> fixit_proposal.requestReview()
+
+First we create a review owned by someone else and requested of 'target'
+which is the one we want the method to return.
+
+    >>> source_branch = factory.makeBranch(owner=branch_owner,
+    ...     product=blob, name="foo")
+    >>> target_branch = factory.makeBranch(owner=target_owner,
+    ...     product=blob, name="bar")
+    >>> proposal = factory.makeBranchMergeProposal(
+    ...     target_branch=target_branch,
+    ...     product=blob, set_state=BranchMergeProposalStatus.NEEDS_REVIEW,
+    ...     registrant=branch_owner, source_branch=source_branch)
+    >>> proposal.nominateReviewer(target_owner, branch_owner)
+    <CodeReviewVoteReference at ...>
+
+And then we propose a merge the other way, so that the owner is target,
+but they have not been asked to review, meaning that the method shouldn't
+return this review.
+
+    >>> proposal = factory.makeBranchMergeProposal(
+    ...     target_branch=source_branch,
+    ...     product=blob, set_state=BranchMergeProposalStatus.NEEDS_REVIEW,
+    ...     registrant=target_owner, source_branch=target_branch)
+    >>> proposal.nominateReviewer(branch_owner, target_owner)
+    <CodeReviewVoteReference at ...>
     >>> logout()
 
     >>> proposals = webservice.named_get('/~target', 'getRequestedReviews'
     ...     ).jsonBody()
     >>> for proposal in proposals['entries']:
     ...     print_proposal(proposal)
-    http://.../~source/fooix/fix-it/+merge/2 - Needs review
+    http://.../~source/blob/foo/+merge/4 - Needs review
 
