@@ -25,10 +25,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
+
 from lp.code.enums import (
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -41,8 +43,7 @@ from lp.codehosting.codeimport.worker import (
     CodeImportSourceDetails, CodeImportWorkerExitCode,
     get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.workermonitor import (
-    CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
-    read_only_transaction)
+    CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly)
 from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.codeimport.tests.test_worker import (
@@ -129,6 +130,31 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TrialTestCase):
             self.protocol._tail, 'line 3\nline 4\nline 5\nline 6\n')
 
 
+class FakeCodeImportScheduleEndpointProxy:
+
+    def __init__(self):
+        self.calls = []
+
+    def callRemote(self, method_name, *args):
+        method = getattr(self, '_remote_%s' % method_name, self._default)
+        deferred = defer.maybeDeferred(method, *args)
+        def append_to_log(pass_through):
+            self.calls.append((method_name,) + tuple(args))
+            return pass_through
+        deferred.addCallback(append_to_log)
+        return deferred
+
+    def _default(self, *args):
+        return None
+
+    def _remote_getImportDataForJobID(self, job_id):
+        if job_id == 1:
+            return (['args'], 'http://branch', 'log-file-name.txt')
+        else:
+            raise NoSuchCodeImportJob()
+
+
+
 class TestWorkerMonitorUnit(TrialTestCase):
     """Unit tests for most of the `CodeImportWorkerMonitor` class.
 
@@ -138,7 +164,7 @@ class TestWorkerMonitorUnit(TrialTestCase):
     they did.
     """
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedLayer
 
     class WorkerMonitor(CodeImportWorkerMonitor):
         """A subclass of CodeImportWorkerMonitor that stubs logging OOPSes."""
@@ -169,22 +195,13 @@ class TestWorkerMonitorUnit(TrialTestCase):
             self.assert_(failure.check(exc_type))
 
     def setUp(self):
-        login('no-priv@canonical.com')
-        self.factory = LaunchpadObjectFactory()
-        job = self.factory.makeCodeImportJob()
-        self.code_import_id = job.code_import.id
-        getUtility(ICodeImportJobWorkflow).startJob(
-            job, self.factory.makeCodeImportMachine(set_online=True))
-        self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
-        self.worker_monitor._failures = []
-        self.layer.txn.commit()
-        self.layer.switchDbUser('codeimportworker')
+        self.worker_monitor = self.WorkerMonitor(
+            1, QuietFakeLogger(), FakeCodeImportScheduleEndpointProxy())
 
     def tearDown(self):
         logout()
 
-    def test_getJob(self):
+    def test_getWorkerArguments(self):
         # getJob() returns the job whose id we passed to the constructor.
         return self.assertEqual(
             self.worker_monitor.getJob().id, self.job_id)
@@ -200,7 +217,6 @@ class TestWorkerMonitorUnit(TrialTestCase):
     def test_getSourceDetails(self):
         # getSourceDetails extracts the details from the CodeImport database
         # object.
-        @read_only_transaction
         def check_source_details(details):
             job = self.worker_monitor.getJob()
             self.assertEqual(
@@ -215,7 +231,6 @@ class TestWorkerMonitorUnit(TrialTestCase):
     def test_updateHeartbeat(self):
         # The worker monitor's updateHeartbeat method calls the
         # updateHeartbeat job workflow method.
-        @read_only_transaction
         def check_updated_details(result):
             job = self.worker_monitor.getJob()
             self.assertEqual(job.logtail, 'log tail')
@@ -409,7 +424,6 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
     def tearDown(self):
         logout()
 
-    @read_only_transaction
     def assertFinishJobCalledWithStatus(self, ignored, status):
         """Assert that finishJob was called with the given status."""
         self.assertEqual(self.worker_monitor.result_status, status)
@@ -599,7 +613,6 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         self.assertEqual(
             self.foreign_commit_count, len(branch.revision_history()))
 
-    @read_only_transaction
     def assertImported(self, ignored, code_import_id):
         """Assert that the `CodeImport` of the given id was imported."""
         # In the in-memory tests, check that resetTimeout on the

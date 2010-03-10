@@ -22,7 +22,6 @@ from canonical.config import config
 from canonical.database.sqlbase import begin, commit, rollback
 from canonical.librarian.interfaces import IFileUploadClient
 from canonical.launchpad.webapp.interaction import Participation
-from canonical.twistedsupport import defer_to_thread
 from canonical.twistedsupport.loggingsupport import (
     log_oops_from_failure)
 from canonical.twistedsupport.processmonitor import (
@@ -104,49 +103,6 @@ class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
         """
         ProcessMonitorProtocolWithTimeout.processEnded(self, reason)
         self._looping_call.stop()
-
-
-def read_only_transaction(function):
-    """Wrap 'function' in a transaction and Zope session.
-
-    The transaction is always aborted."""
-    def transacted(*args, **kwargs):
-        begin()
-        # XXX gary 20-Oct-2008 bug 285808
-        # We should reconsider using a ftest helper for production code. For
-        # now, we explicitly keep the code from using a test request by using
-        # a basic participation.
-        login(ANONYMOUS, Participation())
-        try:
-            return function(*args, **kwargs)
-        finally:
-            logout()
-            rollback()
-    return mergeFunctionMetadata(function, transacted)
-
-
-def writing_transaction(function):
-    """Wrap 'function' in a transaction and Zope session.
-
-    The transaction is committed if 'function' returns normally and
-    aborted if it raises an exception."""
-    def transacted(*args, **kwargs):
-        begin()
-        # XXX gary 20-Oct-2008 bug 285808
-        # We should reconsider using a ftest helper for production code. For
-        # now, we explicitly keep the code from using a test request by using
-        # a basic participation.
-        login(ANONYMOUS, Participation())
-        try:
-            ret = function(*args, **kwargs)
-        except:
-            logout()
-            rollback()
-            raise
-        logout()
-        commit()
-        return ret
-    return mergeFunctionMetadata(function, transacted)
 
 
 class ExitQuietly(Exception):
