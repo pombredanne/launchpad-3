@@ -97,7 +97,7 @@ class ArchiveExpiryTestBase(TestCaseWithFactory):
             "lfa.expires should be None, but it's not.")
 
 
-class ArchiveExpiryCommonTests(ArchiveExpiryTestBase):
+class ArchiveExpiryCommonTests(object):
     """Common source/binary expiration test cases.
     
     These will be shared irrespective of archive type (ppa/partner).
@@ -214,7 +214,7 @@ class ArchiveExpiryCommonTests(ArchiveExpiryTestBase):
         self.assertBinaryNotExpired(binary)
 
 
-class TestPPAExpiry(ArchiveExpiryCommonTests):
+class TestPPAExpiry(ArchiveExpiryTestBase, ArchiveExpiryCommonTests):
     """Test the expire-archive-files.py script.
     
     Here we make use of the common test cases defined in the base class but
@@ -251,7 +251,7 @@ class TestPPAExpiry(ArchiveExpiryCommonTests):
         self.assertBinaryNotExpired(binary)
 
 
-class TestPartnerExpiry(ArchiveExpiryCommonTests):
+class TestPartnerExpiry(ArchiveExpiryTestBase, ArchiveExpiryCommonTests):
     """Test the expire-archive-files.py script on partner archives."""
 
     def setUp(self):
@@ -265,6 +265,4 @@ class TestPartnerExpiry(ArchiveExpiryCommonTests):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromNames(
-        '.'.join([__name__, klass])
-        for klass in ['TestPPAExpiry', 'TestPartnerExpiry'])
+    return unittest.TestLoader().loadTestsFromName(__name__)
