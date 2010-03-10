@@ -21,7 +21,6 @@ from twisted.internet import defer, error, protocol, reactor, task
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
@@ -48,7 +47,7 @@ from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
-from lp.testing import login, logout
+from lp.testing import login, logout, TestCase
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -156,7 +155,7 @@ class FakeCodeImportScheduleEndpointProxy:
 
 
 
-class TestWorkerMonitorUnit(TrialTestCase):
+class TestWorkerMonitorUnit(TrialTestCase, TestCase):
     """Unit tests for most of the `CodeImportWorkerMonitor` class.
 
     We have to pay attention to the fact that several of the methods of the
@@ -166,6 +165,8 @@ class TestWorkerMonitorUnit(TrialTestCase):
     """
 
     layer = TwistedLayer
+
+    skip = None
 
     class WorkerMonitor(CodeImportWorkerMonitor):
         """A subclass of CodeImportWorkerMonitor that stubs logging OOPSes."""
@@ -201,18 +202,30 @@ class TestWorkerMonitorUnit(TrialTestCase):
             FakeCodeImportScheduleEndpointProxy({job_id: job_data}))
 
     def test_getWorkerArguments(self):
-        # getJob() returns the job whose id we passed to the constructor.
+        # XXX
         worker_monitor = self.makeWorkerMonitorWithJob(1, (['a'], 1, 2))
         return worker_monitor.getWorkerArguments().addCallback(
             self.assertEqual, ['a'])
 
-    def test_getJobWhenJobDeleted(self):
-        # If the job has been deleted, getJob sets _call_finish_job to False
-        # and raises ExitQuietly.
-        job = self.worker_monitor.getJob()
-        removeSecurityProxy(job).destroySelf()
-        self.assertRaises(ExitQuietly, self.worker_monitor.getJob)
-        self.assertNot(self.worker_monitor._call_finish_job)
+    def test_getWorkerArguments_sets_branch_url_and_logfilename(self):
+        # XXX
+        branch_url = self.factory.getUniqueString()
+        log_file_name = self.factory.getUniqueString()
+        worker_monitor = self.makeWorkerMonitorWithJob(
+            1, (['a'], branch_url, log_file_name))
+        def check_branch_log(ignored):
+            self.assertEqual(
+                (branch_url, log_file_name),
+                (worker_monitor._branch_url, worker_monitor._log_file_name))
+        return worker_monitor.getWorkerArguments().addCallback(
+            check_branch_log)
+
+    def test_getWorkerArguments_job_not_found(self):
+        # XXX
+        worker_monitor = self.makeWorkerMonitorWithJob(1, (['a'], 1, 2))
+        worker_monitor._job_id = 2
+        return self.assertFailure(
+            worker_monitor.getWorkerArguments(), ExitQuietly)
 
     def test_getSourceDetails(self):
         # getSourceDetails extracts the details from the CodeImport database
