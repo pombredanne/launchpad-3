@@ -44,10 +44,10 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
         required_packages = [
             'bzr',
             'intltool',
-            'sudo',
             ]
-        command = ['/usr/bin/apt-get', 'install', '-y'] + required_packages
-        self.runInChroot(command, as_root=True)
+        command = ['apt-get', 'install', '-y'] + required_packages
+        chroot = ['sudo', 'chroot', self.chroot_path]
+        self.runSubProcess('/usr/bin/sudo', chroot + command)
 
     # To satisfy DebianPackageManagers needs without having a misleading
     # method name here.
@@ -55,8 +55,8 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
 
     def doGenerate(self):
         """Generate templates."""
-        command = [self._generatepath, self.branch_url]
-        self.runInChroot(command)
+        command = [self._generatepath, self.buildid, self.branch_url]
+        self.runSubProcess(self._generatepath, command)
 
     def iterate_INSTALL(self, success):
         """Installation was done."""
@@ -81,13 +81,3 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
             self._state = TranslationTemplatesBuildState.REAP
             self.doReapProcesses()
 
-    def runInChroot(self, command, as_root=False):
-        """Run command in chroot."""
-        chroot = ['sudo', '/usr/sbin/chroot', self.chroot_path]
-        if as_root:
-            sudo = []
-        else:
-            # We have to sudo to chroot, so if the command should _not_
-            # be run as root, we then need to sudo back to who we were.
-            sudo = ['/usr/bin/sudo', '-u', self.username]
-        return self.runSubProcess('/usr/bin/sudo', chroot + sudo + command)
