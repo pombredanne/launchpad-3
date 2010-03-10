@@ -55,11 +55,11 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveDisabled, 
-    ArchiveNotPrivate, ArchivePurpose, CannotCopy, CannotUploadToPPA,
-    CannotUploadToPocket, DistroSeriesNotFound, IArchive, IArchiveSet, 
-    IDistributionArchive, InsufficientUploadRights, InvalidPocketForPPA,
-    InvalidPocketForPartnerArchive, InvalidComponent, IPPA, 
-    MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
+    ArchiveNotPrivate, ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
+    CannotUploadToPPA, CannotUploadToPocket, DistroSeriesNotFound, IArchive,
+    IArchiveSet, IDistributionArchive, InsufficientUploadRights,
+    InvalidPocketForPPA, InvalidPocketForPartnerArchive, InvalidComponent,
+    IPPA, MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
     NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (

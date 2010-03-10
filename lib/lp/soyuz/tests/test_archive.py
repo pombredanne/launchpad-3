@@ -23,6 +23,7 @@ from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
     CannotSwitchPrivacy, InvalidPocketForPartnerArchive, InvalidPocketForPPA)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -575,41 +576,51 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         self.assertEquals(False,
             archive.checkArchivePermission(someone_unrelated))
 
-    def test_checkArchivePermission_distro_archive_regular_user(self):
+    def test_checkArchivePermission_distro_archive(self):
         # Regular users can not upload to ubuntu
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY, 
                                            distribution=ubuntu)
+        main = getUtility(IComponentSet)["main"]
+        # A regular user doesn't have access
         somebody = self.factory.makePerson(name="somebody")
-        self.assertEquals(False, archive.checkArchivePermission(somebody))
-
-    def test_checkArchivePermission_distro_archive_core_dev(self):
-        # Core developers can upload to ubuntu
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY, 
-                                           distribution=ubuntu)
+        self.assertEquals(False, 
+            archive.checkArchivePermission(somebody, main))
+        # An ubuntu core developer does have access
         kamion = getUtility(IPersonSet).getByName('kamion')
-        self.assertEquals(True, archive.checkArchivePermission(kamion))
+        self.assertEquals(True, archive.checkArchivePermission(kamion, main))
+
+    def test_checkArchivePermission_ppa(self):
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        owner = self.factory.makePerson(name="eigenaar")
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA, 
+                                           distribution=ubuntu,
+                                           owner=owner)
+        somebody = self.factory.makePerson(name="somebody")
+        # The owner has access
+        self.assertEquals(True, archive.checkArchivePermission(owner))
+        # Somebody unrelated does not
+        self.assertEquals(False, archive.checkArchivePermission(somebody))
 
     def test_checkUpload_partner_invalid_pocket(self):
         # Partner archives only have release and proposed pockets
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
-        self.assertRaises(InvalidPocketForPartnerArchive, 
-            archive.checkUpload(self.factory.makePerson(), 
+        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(), 
                                 self.factory.makeDistroSeries(),
                                 self.factory.makeSourcePackageName(),
                                 self.factory.makeComponent(),
-                                PackagePublishingPocket.UPDATES))
+                                PackagePublishingPocket.UPDATES),
+                                InvalidPocketForPartnerArchive)
  
     def test_checkUpload_ppa_invalid_pocket(self):
         # PPA archives only have release pockets
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertRaises(InvalidPocketForPPA, 
-            archive.checkUpload(self.factory.makePerson(), 
+        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(), 
                                 self.factory.makeDistroSeries(),
                                 self.factory.makeSourcePackageName(),
                                 self.factory.makeComponent(),
-                                PackagePublishingPocket.PROPOSED))
+                                PackagePublishingPocket.PROPOSED),
+                                InvalidPocketForPPA)
 
 
 class TestArchivePrivacySwitching(TestCaseWithFactory):
