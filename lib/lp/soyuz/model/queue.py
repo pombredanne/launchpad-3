@@ -240,6 +240,9 @@ class PackageUpload(SQLBase):
         The only way to find pre-existing binaries is to match on binary
         package file names.
         """
+        if len(builds) == 0:
+            return
+
         inner_query = """
             SELECT DISTINCT lfa.filename
             FROM
