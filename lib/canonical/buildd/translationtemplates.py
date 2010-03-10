@@ -31,9 +31,8 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
 
     def initiate(self, files, chroot, extra_args):
         """See `BuildManager`."""
-        self.branch_url = extra_args['branch_url']
-        self.username = pwd.getpwuid(os.getuid())[0]
-        self.chroot_path = os.path.join(
+        self._branch_url = extra_args['branch_url']
+        self._chroot_path = os.path.join(
             self.home, 'build-' + self._buildid, 'chroot-autobuild')
 
         super(TranslationTemplatesBuildManager, self).initiate(
@@ -46,7 +45,7 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
             'intltool',
             ]
         command = ['apt-get', 'install', '-y'] + required_packages
-        chroot = ['sudo', 'chroot', self.chroot_path]
+        chroot = ['sudo', 'chroot', self._chroot_path]
         self.runSubProcess('/usr/bin/sudo', chroot + command)
 
     # To satisfy DebianPackageManagers needs without having a misleading
@@ -55,7 +54,7 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
 
     def doGenerate(self):
         """Generate templates."""
-        command = [self._generatepath, self._buildid, self.branch_url]
+        command = [self._generatepath, self._buildid, self._branch_url]
         self.runSubProcess(self._generatepath, command)
 
     def iterate_INSTALL(self, success):
