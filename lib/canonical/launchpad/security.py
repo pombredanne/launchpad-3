@@ -1298,7 +1298,7 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
 
 
 class ViewBugTracker(AnonymousAuthorization):
-    """Anyone can view a Country."""
+    """Anyone can view a bug tracker."""
     usedfor = IBugTracker
 
 

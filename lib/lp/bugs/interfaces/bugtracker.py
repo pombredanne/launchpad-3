@@ -32,9 +32,9 @@ from canonical.launchpad.validators.name import name_validator
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    collection_default_content,
-    call_with, export_as_webservice_collection, export_as_webservice_entry,
-    export_factory_operation, exported, rename_parameters_as, REQUEST_USER)
+    call_with, collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_factory_operation, exported,
+    rename_parameters_as, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 
 

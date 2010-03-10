@@ -32,7 +32,7 @@ any user can access.
         u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org/watches'
     --- ...
 
-The bug tracker set provides the ensureBugTracker named opreation that a
+The bug tracker set provides the ensureBugTracker named operation that a
 logged in user can call to create a bug tracker.
 
     >>> params = dict(
