@@ -11,10 +11,9 @@ __all__ = [
     'SlaveScanner',
     ]
 
-from debian_bundle.changelog import Version
-
 from zope.component import getUtility
 
+from lp.archivepublisher.debversion import Version
 from lp.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.buildmaster.interfaces.builder import IBuilderSet

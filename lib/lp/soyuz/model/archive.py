@@ -11,7 +11,6 @@ __all__ = ['Archive', 'ArchiveSet']
 
 import re
 
-from debian_bundle.changelog import Version
 from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
@@ -24,6 +23,7 @@ from zope.event import notify
 from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
+from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW

@@ -20,7 +20,7 @@ import shutil
 import tarfile
 import tempfile
 
-from debian_bundle.changelog import (
+from lp.archivepublisher.debversion import (
     Version as make_version, VersionError)
 
 

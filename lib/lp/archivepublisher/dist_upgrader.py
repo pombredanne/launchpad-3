@@ -11,8 +11,8 @@ import os
 
 from lp.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)
-from debian_bundle.changelog import (
-    VersionError, Version as make_version)
+from lp.archivepublisher.debversion import (
+    BadUpstreamError, Version as make_version)
 
 
 class DistUpgraderAlreadyExists(CustomUploadError):

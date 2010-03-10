@@ -120,7 +120,7 @@ class DistroSeriesVersionField(UniqueField):
             raise LaunchpadValidationError(
                 "%s is not a valid version" % version)
         # Avoid circular import hell.
-        from debian_bundle.changelog import Version, VersionError
+        from lp.archivepublisher.debversion import Version, VersionError
         try:
             # XXX sinzui 2009-07-25 bug=404613: DistributionMirror and buildd
             # have stricter version rules than the schema. The version must

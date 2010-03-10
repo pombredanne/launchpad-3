@@ -10,7 +10,6 @@ __all__ = [
     'DistributionSourcePackageReleaseView',
     ]
 
-from debian_bundle.changelog import Version
 import operator
 
 from zope.component import getUtility
@@ -21,6 +20,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, stepthrough)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.archivepublisher.debversion import Version
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)

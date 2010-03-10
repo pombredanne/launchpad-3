@@ -18,7 +18,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
-from debian_bundle.changelog import Version
+from lp.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
