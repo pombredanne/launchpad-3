@@ -334,6 +334,21 @@ class TestWorkerMonitorUnit(TrialTestCase):
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
 
+    def test_callFinishJobCallsFinishJobPartial(self):
+        # If the argument to callFinishJob indicates that the subprocess
+        # exited with a code of CodeImportWorkerExitCode.SUCCESS_PARTIAL, it
+        # calls finishJob with a status of SUCCESS_PARTIAL.
+        calls = self.patchOutFinishJob()
+        ret = self.worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.SUCCESS_PARTIAL))
+        self.assertEqual(calls, [CodeImportResultStatus.SUCCESS_PARTIAL])
+        self.assertOopsesLogged([])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
     def test_callFinishJobLogsTracebackOnFailure(self):
         # When callFinishJob is called with a failure, it dumps the traceback
         # of the failure into the log file.
@@ -566,7 +581,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
             code_import.updateFromData(
                 {'review_status': CodeImportReviewStatus.REVIEWED},
                 self.factory.makePerson())
-        job = getUtility(ICodeImportJobSet).getJobForMachine('machine')
+        job = getUtility(ICodeImportJobSet).getJobForMachine('machine', 10)
         self.assertEqual(code_import, job.code_import)
         return job
 
@@ -680,11 +695,6 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
     def setUp(self):
         TestWorkerMonitorIntegration.setUp(self)
         self._protocol = None
-        # XXX 2009-11-23, MichaelHudson,
-        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
-        # make sure the reactor is running when the test method is executed to
-        # work around the linked Twisted bug.
-        return task.deferLater(reactor, 0, lambda: None)
 
     def performImport(self, job_id):
         """Perform the import job with ID job_id.

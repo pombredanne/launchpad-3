@@ -17,6 +17,7 @@ from zope.interface import implements
 from sqlobject import (
     AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound)
 from storm.expr import And, In, SQL
+from storm.locals import Int
 from storm.store import Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
@@ -37,8 +38,8 @@ from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import (
-    IProject, IProjectSeries, IProjectSet)
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup, IProjectGroupSeries, IProjectGroupSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -74,7 +75,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               HasBranchesMixin, HasMergeProposalsMixin):
     """A Project"""
 
-    implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
+    implements(IProjectGroup, IFAQCollection, IHasIcon, IHasLogo,
                IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
@@ -121,6 +122,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    max_bug_heat = Int()
 
     # convenient joins
 
@@ -140,7 +142,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def mentoring_offers(self):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         via_specs = MentoringOffer.select("""
             Product.project = %s AND
             Specification.product = Product.id AND
@@ -162,7 +164,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     def translatables(self):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -384,23 +386,23 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def milestones(self):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         return self._getMilestones(True)
 
     @property
     def all_milestones(self):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         return self._getMilestones(False)
 
     def getMilestone(self, name):
-        """See `IProject`."""
+        """See `IProjectGroup`."""
         for milestone in self.all_milestones:
             if milestone.name == name:
                 return milestone
         return None
 
     def getSeries(self, series_name):
-        """See `IProject.`"""
+        """See `IProjectGroup.`"""
         has_series = ProductSeries.selectFirst(
             AND(ProductSeries.q.productID == Product.q.id,
                 ProductSeries.q.name == series_name,
@@ -413,7 +415,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
 
 class ProjectSet:
-    implements(IProjectSet)
+    implements(IProjectGroupSet)
 
     def __init__(self):
         self.title = 'Projects registered in Launchpad'
@@ -428,11 +430,11 @@ class ProjectSet:
         return project
 
     def get(self, projectid):
-        """See `lp.registry.interfaces.project.IProjectSet`.
+        """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`.
 
-        >>> getUtility(IProjectSet).get(1).name
+        >>> getUtility(IProjectGroupSet).get(1).name
         u'apache'
-        >>> getUtility(IProjectSet).get(-1)
+        >>> getUtility(IProjectGroupSet).get(-1)
         Traceback (most recent call last):
         ...
         NotFoundError: -1
@@ -444,16 +446,16 @@ class ProjectSet:
         return project
 
     def getByName(self, name, ignore_inactive=False):
-        """See `IProjectSet`."""
+        """See `IProjectGroupSet`."""
         pillar = getUtility(IPillarNameSet).getByName(name, ignore_inactive)
-        if not IProject.providedBy(pillar):
+        if not IProjectGroup.providedBy(pillar):
             return None
         return pillar
 
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None,
             registrant=None):
-        """See `lp.registry.interfaces.project.IProjectSet`."""
+        """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`."""
         if registrant is None:
             registrant = owner
         return Project(
@@ -531,7 +533,7 @@ class ProjectSet:
 class ProjectSeries(HasSpecificationsMixin):
     """See `IprojectSeries`."""
 
-    implements(IProjectSeries)
+    implements(IProjectGroupSeries)
 
     def __init__(self, project, name):
         self.project = project

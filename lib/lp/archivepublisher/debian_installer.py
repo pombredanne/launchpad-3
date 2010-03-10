@@ -11,8 +11,6 @@ __metaclass__ = type
 __all__ = ['process_debian_installer']
 
 import os
-import tarfile
-import stat
 import shutil
 
 from lp.archivepublisher.customupload import (

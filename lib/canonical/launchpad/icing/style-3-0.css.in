@@ -805,6 +805,8 @@ div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
   visibility: visible;
 }
 
+.cves {float: right;}
+
 /* == Sprites == */
 .sprite {
     padding: 2px 0 5px 18px;
@@ -812,7 +814,7 @@ div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
 }
 input[type="submit"].icon-only {
     vertical-align: middle;
-    border: 0; 
+    border: 0;
     padding: 0;
     height: 16px;
     width: 16px;
@@ -924,6 +926,10 @@ body.tab-bugs #portlet-subscribers .sprite {
 }
 .treeExpanded {
     background-image: url(/@@/treeExpanded.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+}
+.branch {
+    background-image: url(/@@/branch.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
 }
 .distribution {

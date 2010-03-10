@@ -24,7 +24,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.objectreassignment import (
+from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)

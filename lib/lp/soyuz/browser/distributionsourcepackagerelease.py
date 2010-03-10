@@ -4,9 +4,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistributionSourcePackageReleaseBreadcrumb',
     'DistributionSourcePackageReleaseNavigation',
-    'DistributionSourcePackageReleaseView',
     'DistributionSourcePackageReleasePublishingHistoryView',
+    'DistributionSourcePackageReleaseView',
     ]
 
 from debian_bundle.changelog import Version
@@ -16,15 +17,24 @@ from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, stepthrough)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from canonical.lazr.utils import smartquote
+
+
+class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):
+    """A breadcrumb for `IDistributionSourcePackageRelease`."""
+
+    @property
+    def text(self):
+        return self.context.version
 
 
 class DistributionSourcePackageReleaseNavigation(Navigation):

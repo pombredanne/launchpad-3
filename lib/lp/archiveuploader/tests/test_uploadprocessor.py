@@ -490,8 +490,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         queue_item.setAccepted()
         pubrec = queue_item.sources[0].publish(self.log)
-        pubrec.secure_record.status = PackagePublishingStatus.PUBLISHED
-        pubrec.secure_record.datepublished = UTC_NOW
+        pubrec.status = PackagePublishingStatus.PUBLISHED
+        pubrec.datepublished = UTC_NOW
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
@@ -541,6 +541,29 @@ class TestUploadProcessor(TestUploadProcessorBase):
         bar_source_pub = self._publishPackage('bar', '1.0-1')
         [bar_original_build] = bar_source_pub.createMissingBuilds()
 
+        # Move the source from the accepted queue.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1",
+            name="bar")
+        queue_item.setDone()
+
+        # Upload and accept a binary for the primary archive source.
+        shutil.rmtree(upload_dir)
+        self.options.context = 'buildd'
+        self.options.buildid = bar_original_build.id
+        self.layer.txn.commit()
+        upload_dir = self.queueUpload("bar_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.is_rejected, False)
+        bar_bin_pubs = self._publishPackage('bar', '1.0-1', source=False)
+        # Mangle its publishing component to "restricted" so we can check
+        # the copy archive ancestry override later.
+        restricted = getUtility(IComponentSet)["restricted"]
+        for pub in bar_bin_pubs:
+            pub.component = restricted
+
         # Create a COPY archive for building in non-virtual builds.
         uploader = getUtility(IPersonSet).getByName('name16')
         copy_archive = getUtility(IArchiveSet).new(
@@ -567,6 +590,23 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Make sure the upload succeeded.
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
+
+        # The upload should also be auto-accepted even though there's no
+        # ancestry.  This means items should go to ACCEPTED and not NEW.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1",
+            name="bar",
+            archive=copy_archive)
+        self.assertEqual(
+            queue_items.count(), 1,
+            "Binary upload was not accepted when it should have been.")
+
+        # The copy archive binary published component should have been
+        # inherited from the main archive's.
+        copy_bin_pubs = queue_items[0].realiseUpload()
+        for pub in copy_bin_pubs:
+            self.assertEqual(pub.component.name, restricted.name)
 
     def testCopyArchiveUploadToCurrentDistro(self):
         """Check binary copy archive uploads to RELEASE pockets.

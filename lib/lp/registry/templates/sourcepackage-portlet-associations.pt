@@ -5,42 +5,16 @@
    omit-tag="">
 
   <div id="portlet-associations">
-    <h2>Upstream associations</h2>
+    <h2>Upstream connections</h2>
 
     <div class="portletBody portletContent"
          tal:define="series context/productseries">
       <tal:has_series condition="series">
-        <div id="upstreams" class="two-column-list">
-          <dl
-             tal:define="project series/product/project"
-             tal:condition="project">
-            <dt>Project Group:</dt>
-            <dd>
-              <a tal:replace="structure project/fmt:link" />
-            </dd>
-          </dl>
-
-          <dl>
-            <dt>Project:</dt>
-            <dd>
-              <a tal:replace="structure series/product/fmt:link" />
-            </dd>
-          </dl>
-
-          <dl>
-            <dt>Series:</dt>
-            <dd>
-              <a
-                 tal:content="series/name"
-                 tal:attributes="href series/fmt:url">Series</a>
-              <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
-            </dd>
-          </dl>
-        </div>
+        <div tal:content="structure context/@@+upstream-connections"/>
 
         <ul class="horizontal">
           <li>
-            <a
+            <a class="sprite info"
                tal:attributes="href series/product/menu:overview/packages/fmt:url"
                >Show upstream links</a>
           </li>
