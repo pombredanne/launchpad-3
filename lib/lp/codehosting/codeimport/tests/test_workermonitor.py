@@ -132,8 +132,9 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TrialTestCase):
 
 class FakeCodeImportScheduleEndpointProxy:
 
-    def __init__(self):
+    def __init__(self, jobs_dict):
         self.calls = []
+        self.jobs_dict = jobs_dict
 
     def callRemote(self, method_name, *args):
         method = getattr(self, '_remote_%s' % method_name, self._default)
@@ -148,8 +149,8 @@ class FakeCodeImportScheduleEndpointProxy:
         return None
 
     def _remote_getImportDataForJobID(self, job_id):
-        if job_id == 1:
-            return (['args'], 'http://branch', 'log-file-name.txt')
+        if job_id in self.jobs_dict:
+            return self.jobs_dict[job_id]
         else:
             raise NoSuchCodeImportJob()
 
@@ -194,17 +195,16 @@ class TestWorkerMonitorUnit(TrialTestCase):
                                      exc_types):
             self.assert_(failure.check(exc_type))
 
-    def setUp(self):
-        self.worker_monitor = self.WorkerMonitor(
-            1, QuietFakeLogger(), FakeCodeImportScheduleEndpointProxy())
-
-    def tearDown(self):
-        logout()
+    def makeWorkerMonitorWithJob(self, job_id, job_data):
+        return self.WorkerMonitor(
+            job_id, QuietFakeLogger(),
+            FakeCodeImportScheduleEndpointProxy({job_id: job_data}))
 
     def test_getWorkerArguments(self):
         # getJob() returns the job whose id we passed to the constructor.
-        return self.assertEqual(
-            self.worker_monitor.getJob().id, self.job_id)
+        worker_monitor = self.makeWorkerMonitorWithJob(1, (['a'], 1, 2))
+        return worker_monitor.getWorkerArguments().addCallback(
+            self.assertEqual, ['a'])
 
     def test_getJobWhenJobDeleted(self):
         # If the job has been deleted, getJob sets _call_finish_job to False
@@ -416,7 +416,8 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
+        self.worker_monitor = self.WorkerMonitor(
+            job.id, QuietFakeLogger(), FakeCodeImportScheduleEndpointProxy())
         self.worker_monitor.result_status = None
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')

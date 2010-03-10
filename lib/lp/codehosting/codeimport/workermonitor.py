@@ -14,22 +14,17 @@ import tempfile
 
 from twisted.internet import defer, error, reactor, task
 from twisted.python import failure
-from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import begin, commit, rollback
 from canonical.librarian.interfaces import IFileUploadClient
-from canonical.launchpad.webapp.interaction import Participation
 from canonical.twistedsupport.loggingsupport import (
     log_oops_from_failure)
 from canonical.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
 from lp.code.enums import CodeImportResultStatus
-from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
-from lp.testing import login, logout, ANONYMOUS
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
@@ -159,7 +154,7 @@ class CodeImportWorkerMonitor:
             self._logger.info(
                 'Found source details: %s', code_import_arguments)
             return code_import_arguments
-        return deferred.addCallback(_cb, self._trap_nosuchcodeimportjob)
+        return deferred.addCallbacks(_cb, self._trap_nosuchcodeimportjob)
 
     def updateHeartbeat(self, tail):
         """Call the updateHeartbeat method for the job we are working on."""
