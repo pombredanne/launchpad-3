@@ -241,9 +241,6 @@ class PackageUpload(SQLBase):
         QueueInconsistentStateError is raised containing all filenames
         that cannot be published.
         """
-        if len(builds) == 0:
-            return
-
         inner_query = """
             SELECT DISTINCT lfa.filename
             FROM
@@ -269,6 +266,7 @@ class PackageUpload(SQLBase):
                 AND bpf.libraryfile = lfa.id
                 AND lfa.filename IN (%%s)
         """ % sqlvalues(self.archive, self.distroseries.distribution)
+        # Inject the inner query.
         query %= inner_query
 
         store = IMasterStore(PackageUpload)
