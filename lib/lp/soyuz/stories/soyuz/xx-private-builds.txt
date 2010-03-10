@@ -321,13 +321,13 @@ Accessing the build page will now also work:
     ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
     ...     private_build.id)
     >>> print anon_browser.title
-    PPA named p3a for Celso Providelo : Celso Providelo
+    i386 build of privacy-test 666 : PPA named p3a for Celso Providelo : Celso Providelo
 
     >>> browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/p3a/+build/%s" %
     ...     private_build.id)
     >>> print browser.title
-    PPA named p3a for Celso Providelo : Celso Providelo
+    i386 build of privacy-test 666 : PPA named p3a for Celso Providelo : Celso Providelo
 
 When accessing the distroseries source package release page, the builds
 portlet will display a link to the newly unembargoed build:

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildBreadcrumb',
     'BuildContextMenu',
     'BuildNavigation',
     'BuildRecordsView',
@@ -28,6 +29,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.utils import safe_hasattr
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -119,6 +121,23 @@ class BuildContextMenu(ContextMenu):
         return Link(
             '+rescore', text, icon='edit',
             enabled=self.context.can_be_rescored)
+
+
+class BuildBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IBuild`."""
+
+    @property
+    def text(self):
+        # If this is a PPA or copy archive build, include the source
+        # name and version. But for distro archives there are already
+        # breadcrumbs for both, so we omit them.
+        if self.context.archive.is_ppa or self.context.archive.is_copy:
+            return '%s build of %s %s' % (
+                self.context.arch_tag,
+                self.context.sourcepackagerelease.sourcepackagename.name,
+                self.context.sourcepackagerelease.version)
+        else:
+            return '%s build' % self.context.arch_tag
 
 
 class BuildView(LaunchpadView):
