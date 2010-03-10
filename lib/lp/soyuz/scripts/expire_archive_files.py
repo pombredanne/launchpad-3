@@ -120,6 +120,12 @@ class ArchiveExpirer(LaunchpadCronScript):
         # The subquery here has to repeat the checks for privacy and
         # blacklisting on *other* publications that are also done in
         # the main loop for the archive being considered.
+        param_names = """
+                stay_of_execution archive_types blacklist
+                ppa archive_types stay_of_execution""".split()
+        param_values = sqlvalues(
+                stay_of_execution, archive_types, self.blacklist,
+                ArchivePurpose.PPA, archive_types, stay_of_execution)
         results = self.store.execute("""
             SELECT lfa.id
             FROM
@@ -133,9 +139,10 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND bpr.id = bpf.binarypackagerelease
                 AND bpph.binarypackagerelease = bpr.id
                 AND bpph.dateremoved < (
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
+                    interval %(stay_of_execution)s)
                 AND bpph.archive = archive.id
-                AND archive.purpose IN %s
+                AND archive.purpose IN %(archive_types)s
                 AND lfa.expires IS NULL
             EXCEPT
             SELECT bpf.libraryfile
@@ -151,15 +158,14 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND bpph.archive = a.id
                 AND p.id = a.owner
                 AND (
-                    (p.name IN %s AND a.purpose = %s)
+                    (p.name IN %(blacklist)s AND a.purpose = %(ppa)s)
                     OR a.private IS TRUE
-                    OR a.purpose NOT IN %s
-                    OR dateremoved >
-                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
-                    OR dateremoved IS NULL);
-            """ % sqlvalues(
-                stay_of_execution, archive_types, self.blacklist,
-                ArchivePurpose.PPA, archive_types, stay_of_execution))
+                    OR a.purpose NOT IN %(archive_types)s
+                    OR dateremoved > (
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
+                        interval %(stay_of_execution)s)
+                    OR dateremoved IS NULL)
+            """ % dict(zip(param_names, param_values)))
 
         lfa_ids = results.get_all()
         return lfa_ids
