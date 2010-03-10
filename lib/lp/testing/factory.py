@@ -440,7 +440,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 Account, person.accountID)
             account.status = AccountStatus.ACTIVE
 
-        email.status = email_address_status
+        removeSecurityProxy(email).status = email_address_status
 
         # Ensure updated ValidPersonCache
         flush_database_updates()
