@@ -24,6 +24,7 @@ from zope.interface import classProvides, implements
 from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
@@ -34,7 +35,6 @@ from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
