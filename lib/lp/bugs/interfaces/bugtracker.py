@@ -32,7 +32,9 @@ from canonical.launchpad.validators.name import name_validator
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    collection_default_content,
+    call_with, export_as_webservice_collection, export_as_webservice_entry,
+    export_factory_operation, exported, rename_parameters_as, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 
 
@@ -325,6 +327,7 @@ class IBugTrackerSet(Interface):
     Each BugTracker is a distinct instance of a bug tracking tool. For
     example, bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
     """
+    export_as_webservice_collection(IBugTracker)
 
     title = Attribute('Title')
 
@@ -355,6 +358,14 @@ class IBugTrackerSet(Interface):
     def queryByBaseURL(baseurl):
         """Return one or None BugTracker's by baseurl"""
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(
+        baseurl='base_url', bugtrackertype='bug_tracker_type',
+        contactdetails='contat_details')
+    @export_factory_operation(
+        IBugTracker,
+        ['baseurl', 'bugtrackertype', 'title', 'summary',
+         'contactdetails', 'name'])
     def ensureBugTracker(baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
         """Make sure that there is a bugtracker for the given base url.
@@ -362,6 +373,7 @@ class IBugTrackerSet(Interface):
         If not, create one using the given attributes.
         """
 
+    @collection_default_content()
     def search():
         """Search all the IBugTrackers in the system."""
 

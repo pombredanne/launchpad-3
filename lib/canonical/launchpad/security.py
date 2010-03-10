@@ -1297,6 +1297,11 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
              user.inTeam(translation_group.owner)))
 
 
+class ViewBugTracker(AnonymousAuthorization):
+    """Anyone can view a Country."""
+    usedfor = IBugTracker
+
+
 class EditBugTracker(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
