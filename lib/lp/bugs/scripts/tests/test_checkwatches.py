@@ -4,7 +4,9 @@
 
 __metaclass__ = type
 
+import threading
 import unittest
+
 import transaction
 
 from zope.component import getUtility
@@ -19,10 +21,12 @@ from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts import checkwatches
-from lp.bugs.scripts.checkwatches import CheckWatchesErrorUtility
+from lp.bugs.scripts.checkwatches import (
+    BugWatchUpdater, CheckWatchesErrorUtility, TwistedThreadScheduler)
 from lp.bugs.tests.externalbugtracker import (
-    TestBugzillaAPIXMLRPCTransport, new_bugtracker)
+    TestBugzillaAPIXMLRPCTransport, TestExternalBugTracker, new_bugtracker)
 from lp.testing import TestCaseWithFactory
 
 
@@ -246,6 +250,104 @@ class TestSerialScheduler(unittest.TestCase):
             lambda: self.failUnlessEqual([], numbers))
         # Run the scheduler.
         self.scheduler.run()
+
+
+class OutputFileForThreads:
+
+    def __init__(self):
+        self.output = {}
+        self.lock = threading.Lock()
+
+    def write(self, data):
+        thread_name = threading.currentThread().getName()
+        self.lock.acquire()
+        try:
+            if thread_name in self.output:
+                self.output[thread_name].append(data)
+            else:
+                self.output[thread_name] = [data]
+        finally:
+            self.lock.release()
+
+
+class ExternalBugTrackerForThreads(TestExternalBugTracker):
+
+    def __init__(self, output_file):
+        super(ExternalBugTrackerForThreads, self).__init__()
+        self.output_file = output_file
+
+    def getRemoteStatus(self, bug_id):
+        self.output_file.write(
+            "getRemoteStatus(bug_id=%r)" % bug_id)
+        return 'UNKNOWN'
+
+    def getCurrentDBTime(self):
+        return None
+
+
+class BugWatchUpdaterForThreads(BugWatchUpdater):
+
+    def __init__(self, output_file):
+        logger = QuietFakeLogger()
+        super(BugWatchUpdaterForThreads, self).__init__(transaction, logger)
+        self.output_file = output_file
+
+    def _getExternalBugTrackersAndWatches(self, bug_trackers, bug_watches):
+        return [(ExternalBugTrackerForThreads(self.output_file), bug_watches)]
+
+
+class TestTwistedThreadScheduler(TestCaseWithFactory):
+    # By default, updateBugTrackers() runs jobs serially, but a
+    # different scheduling policy can be plugged in. One such policy,
+    # for running several jobs in parallel, is TwistedThreadScheduler.
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestTwistedThreadScheduler, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.trackers = [
+            getUtility(IBugTrackerSet).ensureBugTracker(
+                "http://butterscotch.example.com", self.owner,
+                BugTrackerType.BUGZILLA, name="butterscotch"),
+            getUtility(IBugTrackerSet).ensureBugTracker(
+                "http://strawberry.example.com", self.owner,
+                BugTrackerType.BUGZILLA, name="strawberry"),
+            ]
+        self.bug = self.factory.makeBug(owner=self.owner)
+        for tracker in self.trackers:
+            for num in (1, 2, 3):
+                self.factory.makeBugWatch(
+                    "%s-%d" % (tracker.name, num),
+                    tracker, self.bug, self.owner)
+
+    def test_run_with_reactor(self):
+        # Commit so that threads all see the same thing.
+        transaction.commit()
+        # Prepare the updater with the Twisted scheduler.
+        output_file = OutputFileForThreads()
+        threaded_bug_watch_updater = BugWatchUpdaterForThreads(output_file)
+        threaded_bug_watch_scheduler = TwistedThreadScheduler(
+            num_threads=10, install_signal_handlers=False)
+        threaded_bug_watch_updater.updateBugTrackers(
+            bug_tracker_names=[tracker.name for tracker in self.trackers],
+            batch_size=5, scheduler=threaded_bug_watch_scheduler)
+
+        self.assertEqual(
+            ['butterscotch', 'strawberry'], sorted(output_file.output))
+
+        self.assertEqual(
+            ["getRemoteStatus(bug_id=u'butterscotch-1')",
+             "getRemoteStatus(bug_id=u'butterscotch-2')",
+             "getRemoteStatus(bug_id=u'butterscotch-3')"],
+            output_file.output['butterscotch']
+            )
+        self.assertEqual(
+            ["getRemoteStatus(bug_id=u'strawberry-1')",
+             "getRemoteStatus(bug_id=u'strawberry-2')",
+             "getRemoteStatus(bug_id=u'strawberry-3')"],
+            output_file.output['strawberry']
+            )
 
 
 def test_suite():
