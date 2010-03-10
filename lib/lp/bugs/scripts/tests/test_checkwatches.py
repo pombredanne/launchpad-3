@@ -2,6 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Checkwatches unit tests."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 import threading
@@ -206,10 +208,7 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
             self.bugtask_with_question.status.title))
 
 
-class TestSerialScheduler(unittest.TestCase):
-
-    def setUp(self):
-        self.scheduler = checkwatches.SerialScheduler()
+class TestSchedulerBase:
 
     def test_args_and_kwargs(self):
         def func(name, aptitude):
@@ -228,6 +227,13 @@ class TestSerialScheduler(unittest.TestCase):
             func, "Robin Hood", aptitude="Riding through the glen")
         # Run everything.
         self.scheduler.run()
+
+
+class TestSerialScheduler(TestSchedulerBase, unittest.TestCase):
+    """Test SerialScheduler."""
+
+    def setUp(self):
+        self.scheduler = checkwatches.SerialScheduler()
 
     def test_ordering(self):
         # The numbers list will be emptied in the order we add jobs to
@@ -252,7 +258,21 @@ class TestSerialScheduler(unittest.TestCase):
         self.scheduler.run()
 
 
+class TestTwistedThreadScheduler(TestSchedulerBase, unittest.TestCase):
+    """Test TwistedThreadScheduler.
+
+    By default, updateBugTrackers() runs jobs serially, but a
+    different scheduling policy can be plugged in. One such policy,
+    for running several jobs in parallel, is TwistedThreadScheduler.
+    """
+
+    def setUp(self):
+        self.scheduler = checkwatches.TwistedThreadScheduler(
+            num_threads=5, install_signal_handlers=False)
+
+
 class OutputFileForThreads:
+    """Collates writes according to thread name."""
 
     def __init__(self):
         self.output = {}
@@ -260,25 +280,22 @@ class OutputFileForThreads:
 
     def write(self, data):
         thread_name = threading.currentThread().getName()
-        self.lock.acquire()
-        try:
+        with self.lock:
             if thread_name in self.output:
                 self.output[thread_name].append(data)
             else:
                 self.output[thread_name] = [data]
-        finally:
-            self.lock.release()
 
 
 class ExternalBugTrackerForThreads(TestExternalBugTracker):
+    """Fake which records interesting activity to a file."""
 
     def __init__(self, output_file):
         super(ExternalBugTrackerForThreads, self).__init__()
         self.output_file = output_file
 
     def getRemoteStatus(self, bug_id):
-        self.output_file.write(
-            "getRemoteStatus(bug_id=%r)" % bug_id)
+        self.output_file.write("getRemoteStatus(bug_id=%r)" % bug_id)
         return 'UNKNOWN'
 
     def getCurrentDBTime(self):
@@ -286,6 +303,12 @@ class ExternalBugTrackerForThreads(TestExternalBugTracker):
 
 
 class BugWatchUpdaterForThreads(BugWatchUpdater):
+    """Fake updater.
+
+    Plumbs an `ExternalBugTrackerForThreads` into a given output file,
+    which is expected to be an instance of `OutputFileForThreads`, and
+    suppresses normal log activity.
+    """
 
     def __init__(self, output_file):
         logger = QuietFakeLogger()
@@ -296,15 +319,17 @@ class BugWatchUpdaterForThreads(BugWatchUpdater):
         return [(ExternalBugTrackerForThreads(self.output_file), bug_watches)]
 
 
-class TestTwistedThreadScheduler(TestCaseWithFactory):
-    # By default, updateBugTrackers() runs jobs serially, but a
-    # different scheduling policy can be plugged in. One such policy,
-    # for running several jobs in parallel, is TwistedThreadScheduler.
+class TestTwistedThreadSchedulerInPlace(TestCaseWithFactory):
+    """Test TwistedThreadScheduler in place.
+
+    As in, driving as much of the bug watch machinery as is possible
+    without making external connections.
+    """
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(TestTwistedThreadScheduler, self).setUp()
+    def test(self):
+        # Prepare test data.
         self.owner = self.factory.makePerson()
         self.trackers = [
             getUtility(IBugTrackerSet).ensureBugTracker(
@@ -320,9 +345,7 @@ class TestTwistedThreadScheduler(TestCaseWithFactory):
                 self.factory.makeBugWatch(
                     "%s-%d" % (tracker.name, num),
                     tracker, self.bug, self.owner)
-
-    def test_run_with_reactor(self):
-        # Commit so that threads all see the same thing.
+        # Commit so that threads all see the same database state.
         transaction.commit()
         # Prepare the updater with the Twisted scheduler.
         output_file = OutputFileForThreads()
@@ -332,10 +355,10 @@ class TestTwistedThreadScheduler(TestCaseWithFactory):
         threaded_bug_watch_updater.updateBugTrackers(
             bug_tracker_names=[tracker.name for tracker in self.trackers],
             batch_size=5, scheduler=threaded_bug_watch_scheduler)
-
+        # The thread names should match the tracker names.
         self.assertEqual(
             ['butterscotch', 'strawberry'], sorted(output_file.output))
-
+        # Check that getRemoteStatus() was called.
         self.assertEqual(
             ["getRemoteStatus(bug_id=u'butterscotch-1')",
              "getRemoteStatus(bug_id=u'butterscotch-2')",
