@@ -160,9 +160,14 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
 
     When a POST request on a bug is processed, a snapshot of the bug
     is created. This can lead to OOPSes as described in bugs 507642,
-    505999, 534339, if the bugs has more than
-    canonical.launchpad.webapp.snapshot.HARD_LIMIT_FOR_SNAPSHOT comments,
-    bug subscriptions or (un)affected users.
+    505999, 534339: A snapshot of a database collection field is a
+    shortlist() copy of the data and the creation of the snapshot fails
+    if a collection contains more elements than the hard limit of the
+    sortlist().
+
+    Hence we do not include properties in the snapshot that may have
+    a large number of elements: messages, bug subscriptions and
+    (un)affected users.
     """
     layer = DatabaseFunctionalLayer
 
