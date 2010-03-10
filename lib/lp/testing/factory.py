@@ -381,8 +381,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         a commit, despite all changes now being available in the main
         store.
         """
-        person = removeSecurityProxy(person) # Need to poke person's privates
-        person._preferredemail_cached = Store.of(person).find(
+        naked_person = removeSecurityProxy(person)
+        naked_person._preferredemail_cached = Store.of(person).find(
             EmailAddress, personID=person.id,
             status=EmailAddressStatus.PREFERRED).one()
 
@@ -423,9 +423,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname,
             hide_email_addresses=hide_email_addresses)
-        person = removeSecurityProxy(person)
-        email = removeSecurityProxy(email)
-        person._password_cleartext_cached = password
+        removeSecurityProxy(person)._password_cleartext_cached = password
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')
@@ -1837,8 +1835,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             singular = self.getUniqueString()
         potmsgset = potemplate.createMessageSetFromText(
             singular, plural, context, sequence)
-        naked_potmsgset = removeSecurityProxy(potmsgset)
-        naked_potmsgset.sync()
+        removeSecurityProxy(potmsgset).sync()
         return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
