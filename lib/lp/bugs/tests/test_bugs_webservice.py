@@ -11,10 +11,11 @@ import unittest
 from BeautifulSoup import BeautifulSoup
 from simplejson import dumps
 
-from zope.component import getMultiAdapter, getUtility
+from zope.component import getMultiAdapter
+from lazr.lifecycle.interfaces import IDoNotSnapshot
 
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
-from lp.bugs.interfaces.bugmessage import IBugMessageSet
+from lp.bugs.interfaces.bug import IBug
 from canonical.launchpad.ftests import login, logout
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
@@ -165,68 +166,36 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
     """
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(
-            TestPostBugWithLargeCollections, self).setUp('test@canonical.com')
-        TestCaseWithFactory.setUp(self)
-        self.bug = self.factory.makeBug()
-        self.webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
-        self.real_hard_limit_for_snapshot = snapshot.HARD_LIMIT_FOR_SNAPSHOT
-        snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
-
-    def tearDown(self):
-        snapshot.HARD_LIMIT_FOR_SNAPSHOT = self.real_hard_limit_for_snapshot
-        super(TestPostBugWithLargeCollections, self).tearDown()
-
-    def test_many_bug_messages(self):
-        # Many bug messages do not cause an OOPS for IBug POSTs.
-        login('foo.bar@canonical.com')
-        message_set = getUtility(IBugMessageSet)
-        for comment in range(5):
-            message_set.createMessage(
-                'subject', self.bug, self.bug.owner, content='contene')
-        logout()
-        response = self.webservice.named_post(
-            '/bugs/%d' % self.bug.id, 'subscribe',
-            person='http://api.launchpad.dev/beta/~name12')
-        self.failUnlessEqual(200, response.status)
+    def test_no_snapshots_for_large_collections(self):
+        # Ensure that no snapshots are made of the properties comments,
+        # bug subscriptions and (un)affected users.
+        for field_name in (
+            'subscriptions', 'users_affected', 'users_unaffected',
+            'users_affected_with_dupes', 'messages'):
+            self.failUnless(
+                IDoNotSnapshot.providedBy(IBug[field_name]),
+                'IBug.%s should not be included in snapshots, see bug 507642.'
+                % field_name)
 
     def test_many_subscribers(self):
         # Many subscriptions do not cause an OOPS for IBug POSTs.
-        login('foo.bar@canonical.com')
-        for count in range(5):
-            person = self.factory.makePerson()
-            self.bug.subscribe(person, person)
-        logout()
-        response = self.webservice.named_post(
-            '/bugs/%d' % self.bug.id, 'subscribe',
-            person='http://api.launchpad.dev/beta/~name12')
-        self.failUnlessEqual(200, response.status)
-
-    def test_many_affected_users(self):
-        # Many affected users do not cause an OOPS for IBug POSTs.
-        login('foo.bar@canonical.com')
-        for count in range(5):
-            person = self.factory.makePerson()
-            self.bug.markUserAffected(person, affected=True)
-        logout()
-        response = self.webservice.named_post(
-            '/bugs/%d' % self.bug.id, 'subscribe',
-            person='http://api.launchpad.dev/beta/~name12')
-        self.failUnlessEqual(200, response.status)
-
-    def test_many_unaffected_users(self):
-        # Many affected users do not cause an OOPS for IBug POSTs.
-        login('foo.bar@canonical.com')
-        for count in range(5):
-            person = self.factory.makePerson()
-            self.bug.markUserAffected(person, affected=False)
-        logout()
-        response = self.webservice.named_post(
-            '/bugs/%d' % self.bug.id, 'subscribe',
-            person='http://api.launchpad.dev/beta/~name12')
-        self.failUnlessEqual(200, response.status)
+        bug = self.factory.makeBug()
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        real_hard_limit_for_snapshot = snapshot.HARD_LIMIT_FOR_SNAPSHOT
+        snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
+        try:
+            login('foo.bar@canonical.com')
+            for count in range(5):
+                person = self.factory.makePersonNoCommit()
+                bug.subscribe(person, person)
+            logout()
+            response = webservice.named_post(
+                '/bugs/%d' % bug.id, 'subscribe',
+                person='http://api.launchpad.dev/beta/~name12')
+            self.failUnlessEqual(200, response.status)
+        finally:
+            snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
 
 
 def test_suite():
