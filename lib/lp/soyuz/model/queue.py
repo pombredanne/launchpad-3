@@ -234,12 +234,11 @@ class PackageUpload(SQLBase):
         uploads to be accepted.
 
         Before accepting binary uploads we check whether any of the binaries
-        already exists in the destination archive and raise an exception if
-        this is the case.
+        already exists in the destination archive and raise an exception
+        (QueueInconsistentStateError) if this is the case.
 
-        If any of the uploaded binary files are already published a
-        QueueInconsistentStateError is raised containing all filenames
-        that cannot be published.
+        The only way to find pre-existing binaries is to match on binary
+        package file names.
         """
         inner_query = """
             SELECT DISTINCT lfa.filename
