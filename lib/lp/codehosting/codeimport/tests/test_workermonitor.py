@@ -31,6 +31,7 @@ from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
+from canonical.twistedsupport import suppress_stderr
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
 
@@ -178,22 +179,6 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         def _logOopsFromFailure(self, failure):
             log.err(failure)
 
-    def getResultsForOurCodeImport(self):
-        """Return the `CodeImportResult`s for the `CodeImport` we created.
-        """
-        code_import = getUtility(ICodeImportSet).get(self.code_import_id)
-        return code_import.results
-
-    def getOneResultForOurCodeImport(self):
-        """Return the only `CodeImportResult` for the `CodeImport` we created.
-
-        This method fails the test if there is more than one
-        `CodeImportResult` for this `CodeImport`.
-        """
-        results = list(self.getResultsForOurCodeImport())
-        self.failUnlessEqual(len(results), 1)
-        return results[0]
-
     def assertOopsesLogged(self, exc_types):
         self.assertEqual(len(exc_types), len(self.worker_monitor._failures))
         for failure, exc_type in zip(self.worker_monitor._failures,
@@ -276,35 +261,42 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
             CodeImportResultStatus.SUCCESS).addCallback(
             check_file_uploaded)
 
-    def test_finishJobStillCreatesResultWhenLibrarianUploadFails(self):
+    @suppress_stderr
+    def test_finishJob_still_calls_finishJobID_if_upload_fails(self):
         # If the upload to the librarian fails for any reason, the
         # worker monitor still calls the finishJob workflow method,
         # but an OOPS is logged to indicate there was a problem.
         # Write some text so that we try to upload the log.
-        self.worker_monitor._log_file.write('some text')
+        job_id = self.factory.getUniqueInteger()
+        worker_monitor = self.makeWorkerMonitorWithJob(job_id)
+        worker_monitor._log_file_name = 'a'
+        worker_monitor._log_file.write('some text')
         # Make _createLibrarianFileAlias fail in a distinctive way.
-        self.worker_monitor._createLibrarianFileAlias = lambda *args: 1/0
-        def check_oops_logged_and_result_created(ignored):
-            self.assertOopsesLogged([ZeroDivisionError])
+        worker_monitor._createLibrarianFileAlias = lambda *args: 1/0
+        def check_finishJob_called(result):
             self.assertEqual(
-                len(list(self.getResultsForOurCodeImport())), 1)
-        return self.worker_monitor.finishJob(
+                [('finishJobID', job_id, 'SUCCESS', '')],
+                worker_monitor.codeimport_endpoint.calls)
+            errors = self.flushLoggedErrors(ZeroDivisionError)
+            self.assertEqual(1, len(errors))
+        return worker_monitor.finishJob(
             CodeImportResultStatus.SUCCESS).addCallback(
-            check_oops_logged_and_result_created)
+            check_finishJob_called)
 
-    def patchOutFinishJob(self):
+    def patchOutFinishJob(self, worker_monitor):
         calls = []
         def finishJob(status):
             calls.append(status)
             return defer.succeed(None)
-        self.worker_monitor.finishJob = finishJob
+        worker_monitor.finishJob = finishJob
         return calls
 
     def test_callFinishJobCallsFinishJobSuccess(self):
         # callFinishJob calls finishJob with CodeImportResultStatus.SUCCESS if
         # its argument is not a Failure.
-        calls = self.patchOutFinishJob()
-        self.worker_monitor.callFinishJob(None)
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        worker_monitor.callFinishJob(None)
         self.assertEqual(calls, [CodeImportResultStatus.SUCCESS])
 
     def test_callFinishJobCallsFinishJobFailure(self):
@@ -312,8 +304,9 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # and swallows the failure if its argument indicates that the
         # subprocess exited with an exit code of
         # CodeImportWorkerExitCode.FAILURE.
-        calls = self.patchOutFinishJob()
-        ret = self.worker_monitor.callFinishJob(
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        ret = worker_monitor.callFinishJob(
             makeFailure(
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.FAILURE))
@@ -327,8 +320,9 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # If the argument to callFinishJob indicates that the subprocess
         # exited with a code of CodeImportWorkerExitCode.SUCCESS_NOCHANGE, it
         # calls finishJob with a status of SUCCESS_NOCHANGE.
-        calls = self.patchOutFinishJob()
-        ret = self.worker_monitor.callFinishJob(
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        ret = worker_monitor.callFinishJob(
             makeFailure(
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.SUCCESS_NOCHANGE))
@@ -342,8 +336,9 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # If the argument to callFinishJob indicates that there was some other
         # failure that had nothing to do with the subprocess, it records
         # failure.
-        calls = self.patchOutFinishJob()
-        ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        ret = worker_monitor.callFinishJob(makeFailure(RuntimeError))
         self.assertEqual(calls, [CodeImportResultStatus.FAILURE])
         self.assertOopsesLogged([RuntimeError])
         # We return the deferred that callFinishJob returns -- if
@@ -354,8 +349,9 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # If the argument to callFinishJob indicates that the subprocess
         # exited with a code of CodeImportWorkerExitCode.SUCCESS_PARTIAL, it
         # calls finishJob with a status of SUCCESS_PARTIAL.
-        calls = self.patchOutFinishJob()
-        ret = self.worker_monitor.callFinishJob(
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        ret = worker_monitor.callFinishJob(
             makeFailure(
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.SUCCESS_PARTIAL))
@@ -368,10 +364,11 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
     def test_callFinishJobLogsTracebackOnFailure(self):
         # When callFinishJob is called with a failure, it dumps the traceback
         # of the failure into the log file.
-        ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        ret = worker_monitor.callFinishJob(makeFailure(RuntimeError))
         def check_log_file(ignored):
-            self.worker_monitor._log_file.seek(0)
-            log_text = self.worker_monitor._log_file.read()
+            worker_monitor._log_file.seek(0)
+            log_text = worker_monitor._log_file.read()
             self.assertIn('RuntimeError', log_text)
         return ret.addCallback(check_log_file)
 
@@ -379,9 +376,10 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # callFinishJob does not call finishJob if _call_finish_job is False.
         # This is to support exiting without fuss when the job we are working
         # on is deleted in the web UI.
-        calls = self.patchOutFinishJob()
-        self.worker_monitor._call_finish_job = False
-        self.worker_monitor.callFinishJob(None)
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        worker_monitor._call_finish_job = False
+        worker_monitor.callFinishJob(None)
         self.assertEqual(calls, [])
 
 
