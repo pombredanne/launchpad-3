@@ -67,6 +67,7 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     UICreatableBranchType,
     )
+from lp.code.errors import BranchMergeProposalExists
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals

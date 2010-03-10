@@ -392,13 +392,10 @@ class Branch(SQLBase):
             raise ValueError(
                 'reviewers and review_types must be equal length.')
         review_requests = zip(reviewers, review_types)
-        try:
-            return self.addLandingTarget(
-                registrant, target_branch, prerequisite_branch,
-                needs_review=needs_review, description=initial_comment,
-                commit_message=commit_message, review_requests=review_requests)
-        except BranchMergeProposalExists, e:
-            raise ValueError(e)
+        return self.addLandingTarget(
+            registrant, target_branch, prerequisite_branch,
+            needs_review=needs_review, description=initial_comment,
+            commit_message=commit_message, review_requests=review_requests)
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
