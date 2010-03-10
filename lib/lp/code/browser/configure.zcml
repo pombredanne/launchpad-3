@@ -224,6 +224,13 @@
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
+        name="+edit-description"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
+        class="lp.code.browser.branchmergeproposal.BranchMergeProposalDescriptionEditView"
+        facet="branches"
+        permission="launchpad.Edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+delete"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalDeleteView"
@@ -946,6 +953,11 @@
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
 
+    <browser:navigation
+        module="lp.code.browser.diff"
+        classes="
+            PreviewDiffNavigation"/>
+
     <browser:page
         name="+diff"
         for="lp.code.interfaces.diff.IPreviewDiff"
@@ -1054,6 +1066,12 @@
         for="lp.code.interfaces.diff.IPreviewDiff"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="lp.code.browser.diff.PreviewDiffFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.code.interfaces.diff.IDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.code.browser.diff.DiffFormatterAPI"
         name="fmt"
         />
 

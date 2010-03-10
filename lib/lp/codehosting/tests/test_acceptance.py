@@ -20,7 +20,7 @@ from lp.codehosting.tests.helpers import (
     adapt_suite, LoomTestMixin)
 from lp.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
-from lp.codehosting import get_bzr_path, get_bzr_plugins_path
+from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
@@ -136,8 +136,10 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         (mainly so we can test the loom support).
         """
         return self.run_bzr_subprocess(
-            args, env_changes={'BZR_SSH': 'paramiko',
-                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
+            args, env_changes={
+                'BZR_SSH': 'paramiko',
+                'BZR_PLUGIN_PATH': get_BZR_PLUGIN_PATH_for_subprocess()
+            },
             allow_plugins=True, retcode=retcode)
 
     def _run_bzr_error(self, args):

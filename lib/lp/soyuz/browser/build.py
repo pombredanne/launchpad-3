@@ -14,6 +14,7 @@ __all__ = [
     'BuildView',
     ]
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -21,13 +22,6 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin, ProxiedLibraryFileAlias)
-from canonical.lazr.utils import safe_hasattr
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuild, IBuildRescoreForm)
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,
     GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
@@ -35,7 +29,14 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from lazr.delegates import delegates
+from canonical.lazr.utils import safe_hasattr
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.build import (
+    BuildStatus, IBuild, IBuildRescoreForm)
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 
 
 class BuildUrl:
@@ -198,6 +199,18 @@ class BuildView(LaunchpadView):
 
         return files
 
+    @property
+    def dispatch_time_estimate_available(self):
+        """True if a dispatch time estimate is available for this build.
+
+        The build must be in state NEEDSBUILD and the associated job must be
+        in state WAITING.
+        """
+        return (
+            self.context.buildstate == BuildStatus.NEEDSBUILD and
+            self.context.buildqueue_record.job.status == JobStatus.WAITING)
+
+
 class BuildRetryView(BuildView):
     """View class for retrying `IBuild`s"""
 
@@ -312,6 +325,12 @@ class BuildRecordsView(LaunchpadView):
     DistroSeries, DistroArchSeries and SourcePackage view classes.
     """
     __used_for__ = IHasBuildRecords
+
+    page_title = 'Builds'
+
+    @property
+    def label(self):
+        return 'Builds for %s' % self.context.displayname
 
     def setupBuildList(self):
         """Setup a batched build records list.

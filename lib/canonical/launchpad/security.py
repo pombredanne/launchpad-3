@@ -42,6 +42,7 @@ from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
+from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirror)
@@ -118,6 +119,7 @@ from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.services.worlddata.interfaces.country import ICountry
 
 
 class AuthorizationBase:
@@ -295,7 +297,7 @@ class EditOAuthAccessToken(AuthorizationBase):
     usedfor = IOAuthAccessToken
 
     def checkAuthenticated(self, user):
-        return self.obj.person == user or user.in_admin
+        return self.obj.person == user.person or user.in_admin
 
 
 class EditOAuthRequestToken(EditOAuthAccessToken):
@@ -356,6 +358,11 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
         return (user.isOwner(self.obj) or user.in_admin or
                 user.isOwner(self.obj.distribution) or
                 user.inTeam(self.obj.distribution.mirror_admin))
+
+
+class ViewDistributionMirror(AnonymousAuthorization):
+    """Anyone can view an IDistributionMirror."""
+    usedfor = IDistributionMirror
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -832,6 +839,11 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
 class ViewDistroSeries(AnonymousAuthorization):
     """Anyone can view a DistroSeries."""
     usedfor = IDistroSeries
+
+
+class ViewCountry(AnonymousAuthorization):
+    """Anyone can view a Country."""
+    usedfor = ICountry
 
 
 class SeriesDrivers(AuthorizationBase):
@@ -1708,6 +1720,29 @@ class BranchMergeProposalView(AuthorizationBase):
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
 
 
+class PreviewDiffView(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IPreviewDiff
+
+    @property
+    def bmp_view(self):
+        return BranchMergeProposalView(self.obj.branch_merge_proposal)
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the preview diff?
+
+        The user can see a preview diff if they can see the merge proposal.
+        """
+        return self.bmp_view.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        """Is anyone able to view the branch merge proposal?
+
+        The user can see a preview diff if they can see the merge proposal.
+        """
+        return self.bmp_view.checkUnauthenticated()
+
+
 class CodeReviewVoteReferenceEdit(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ICodeReviewVoteReference
@@ -2071,19 +2106,13 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.in_admin
 
 
-class ViewSourcePackagePublishingHistory(AuthorizationBase):
+class ViewSourcePackagePublishingHistory(ViewArchive):
     """Restrict viewing of source publications."""
     permission = "launchpad.View"
     usedfor = ISourcePackagePublishingHistory
 
-    def checkAuthenticated(self, user):
-        view_archive = ViewArchive(self.obj.archive)
-        if view_archive.checkAuthenticated(user):
-            return True
-        return user.in_admin
-
-    def checkUnauthenticated(self):
-        return not self.obj.archive.private
+    def __init__(self, obj):
+        super(ViewSourcePackagePublishingHistory, self).__init__(obj.archive)
 
 
 class EditPublishing(AuthorizationBase):

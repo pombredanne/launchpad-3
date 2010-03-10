@@ -17,10 +17,6 @@ class SourcePackageBuildsView(BuildRecordsView):
     """A view for (distro series) source package builds."""
 
     @property
-    def page_title(self):
-        return smartquote("Builds for " + self.context.title)
-
-    @property
     def search_name(self):
         """Direct the builds-list template to omit the name search field."""
         return False

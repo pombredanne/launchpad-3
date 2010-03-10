@@ -18,13 +18,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import (
-    Bool, Int, Object, TextLine, Text)
+from zope.schema import Bool, Int, Object, Text
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from lp.buildmaster.interfaces.buildbase import IBuildBase
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory)
@@ -148,18 +146,6 @@ class IBuildView(IBuildBase):
         schema=Interface,
         required=True, readonly=True,
         description=_("The DistroArchSeries context for this build."))
-
-    upload_log = Object(
-        schema=ILibraryFileAlias, required=False,
-        title=_("The LibraryFileAlias containing the upload log for "
-                "build resulting in binaries that could not be processed "
-                "successfully. Otherwise it will be None."))
-
-    upload_log_url = exported(
-        TextLine(
-            title=_("Upload Log URL"), required=False,
-            description=_("A URL for failed upload logs."
-                          "Will be None if there was no failure.")))
 
     # Properties
     current_source_publication = exported(

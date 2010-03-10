@@ -161,6 +161,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return "%s/%s" % (self.product.name, self.name)
 
     @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.product.max_bug_heat
+
+    @property
     def drivers(self):
         """See IProductSeries."""
         drivers = set()
@@ -407,8 +412,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(distroseries=distroseries,
-            sourcepackagename=sourcepackagename, productseries=self,
+        pkg = Packaging(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename,
+            productseries=self,
             packaging=PackagingType.PRIME,
             owner=owner)
         pkg.sync()  # convert UTC_NOW to actual datetime

@@ -11,6 +11,7 @@ __all__ = [
     'ClaimReviewFailed',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
+    'UnknownBranchTypeError',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
@@ -59,3 +60,7 @@ class UserNotBranchReviewer(Exception):
 
 class WrongBranchMergeProposal(Exception):
     """The comment requested is not associated with this merge proposal."""
+
+
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""
