@@ -17,10 +17,13 @@ exec 2>&1
 
 export LANG=C LC_ALL=C
 
+CHMOD=/bin/chmod
 CHROOT=/usr/sbin/chroot
+CP=/bin/cp
 INSTALL=/usr/bin/install
 SU=/bin/su
 SUDO=/usr/bin/sudo
+TOUCH=/usr/bin/touch
 
 BUILDID=$1
 BRANCH_URL=$2
@@ -29,15 +32,19 @@ SLAVEBIN=/usr/share/launchpad-buildd/slavebin
 BUILD_CHROOT="$HOME/build-$BUILDID/chroot-autobuild"
 USER=$(whoami)
 
-POTTERY_PACKAGE=pottery
+BUILDD_PACKAGE=canonical/buildd
+POTTERY=$BUILDD_PACKAGE/pottery
 # We should be smarter about detecting the python version in the chroot.
-PYMODULES="$BUILD_CHROOT/usr/lib/pymodules/python2.6"
+PYMODULES=/usr/lib/pymodules/python2.6
 
-GENERATE_SCRIPT=generate_translation_templates.py
+GENERATE_SCRIPT=$PYMODULES/$POTTERY/generate_translation_templates.py
 
 # Copy pottery files to chroot.
-$INSTALL $POTTERY $PYMODULES
-$INSTALL "$SLAVEBIN/$GENERATE_SCRIPT" "$BUILD_CHROOT$HOME"
+$MKDIR -p $BUILD_CHROOT$PYMODULES/$BUILDD_PACKAGE
+$TOUCH $BUILD_CHROOT$PYMODULES/canonical/__init__.py
+$TOUCH $BUILD_CHROOT$PYMODULES/canonical/buildd/__init__.py
+$CP -r $POTTERY $BUILD_CHROOT$PYMODULES/$BUILDD_PACKAGE
+$CHMOD 755 $BUILD_CHROOT$GENERATE_SCRIPT
 
 # Enter chroot, switch back to unprivileged user, execute genration script.
-$SUDO $CHROOT $BUILD_CHROOT $SU - $USER -c $GENERATE_SCRIPT $BRNACH_URL
+$SUDO $CHROOT $BUILD_CHROOT $SU - $USER -c "$GENERATE_SCRIPT $BRANCH_URL"
