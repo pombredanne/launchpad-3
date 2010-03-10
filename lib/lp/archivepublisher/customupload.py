@@ -134,7 +134,7 @@ class CustomUpload:
             if (member_realpath != self.tmpdir and
                 not member_realpath.startswith(tmpdir_with_sep)):
                 raise CustomUploadTarballBadFile(
-                    self.tarfile_path, member_realpath)
+                    self.tarfile_path, member.name)
 
             if member.issym():
                 # This is a bit tricky.  We need to take the dirname of
