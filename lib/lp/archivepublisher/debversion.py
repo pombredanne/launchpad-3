@@ -10,57 +10,47 @@ special methods to make dealing with them sweet.
 
 __metaclass__ = type
 
+from debian_bundle import changelog
+
+import re
+
 # This code came from sourcerer.
 
-# Character comparison table for upstream and revision components
-cmp_table = "~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-.:"
+valid_epoch = re.compile(r'^[0-9]+$')
+valid_upstream = re.compile(r'^[0-9][A-Za-z0-9+:.~-]*$')
+valid_revision = re.compile(r'^[A-Za-z0-9+.~]+$')
 
-def strcut(str, idx, accept):
-    """Cut characters from str that are entirely in accept."""
-    ret = ""
-    while idx < len(str) and str[idx] in accept:
-        ret += str[idx]
-        idx += 1
+VersionError = changelog.VersionError
+class BadInputError(VersionError): pass
+class BadEpochError(BadInputError): pass
+class BadUpstreamError(BadInputError): pass
+class BadRevisionError(BadInputError): pass
 
-    return (ret, idx)
 
-def deb_order(str, idx):
-    """Return the comparison order of two characters."""
-    if idx >= len(str):
-        return 0
-    elif str[idx] == "~":
-        return -1
-    else:
-        return cmp_table.index(str[idx])
+class Version(changelog.Version):
 
-def deb_cmp_str(x, y):
-    """Compare two strings in a deb version."""
-    idx = 0
-    while (idx < len(x)) or (idx < len(y)):
-        result = deb_order(x, idx) - deb_order(y, idx)
-        if result < 0:
-            return -1
-        elif result > 0:
-            return 1
+    def __init__(self, ver):
 
-        idx += 1
+        ver = str(ver)
+        if not len(ver):
+            raise BadInputError, "Input cannot be empty"
 
-    return 0
+        changelog.Version.__init__(self, ver)
 
-def deb_cmp(x, y):
-    """Implement the string comparison outlined by Debian policy."""
-    x_idx = y_idx = 0
-    while x_idx < len(x) or y_idx < len(y):
-        # Compare strings
-        (x_str, x_idx) = strcut(x, x_idx, cmp_table)
-        (y_str, y_idx) = strcut(y, y_idx, cmp_table)
-        result = deb_cmp_str(x_str, y_str)
-        if result != 0: return result
+        if self.epoch is not None:
+            if not len(self.epoch):
+                raise BadEpochError, "Epoch cannot be empty"
+            if not valid_epoch.match(self.epoch):
+                raise BadEpochError, "Bad epoch format"
 
-        # Compare numbers
-        (x_str, x_idx) = strcut(x, x_idx, "0123456789")
-        (y_str, y_idx) = strcut(y, y_idx, "0123456789")
-        result = cmp(int(x_str or "0"), int(y_str or "0"))
-        if result != 0: return result
+        if self.debian_version is not None:
+            if self.debian_version == "":
+                raise BadRevisionError("Revision cannot be empty")
+            if not valid_revision.search(self.debian_version):
+                raise BadRevisionError("Bad revision format")
 
-    return 0
+        if not len(self.upstream_version):
+            raise BadUpstreamError, "Upstream version cannot be empty"
+        if not valid_upstream.search(self.upstream_version):
+            raise BadUpstreamError(
+                "Bad upstream version format %s" % self.upstream_version)
