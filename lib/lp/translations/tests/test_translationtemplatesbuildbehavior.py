@@ -5,6 +5,7 @@
 
 import logging
 from StringIO import StringIO
+import transaction
 from unittest import TestLoader
 
 from zope.component import getUtility
@@ -86,6 +87,7 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
 
     def _becomeBuilddMaster(self):
         """Log into the database as the buildd master."""
+        transaction.commit()
         self.layer.switchDbUser(config.builddmaster.dbuser)
 
     def _makeBehavior(self):
