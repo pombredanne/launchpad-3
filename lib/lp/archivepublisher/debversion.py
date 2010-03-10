@@ -10,12 +10,13 @@ special methods to make dealing with them sweet.
 
 __metaclass__ = type
 
+# This code came from sourcerer.
+
 from debian_bundle import changelog
 
 import re
 
-# This code came from sourcerer.
-
+# Regular expressions make validating things easy
 valid_epoch = re.compile(r'^[0-9]+$')
 valid_upstream = re.compile(r'^[0-9][A-Za-z0-9+:.~-]*$')
 valid_revision = re.compile(r'^[A-Za-z0-9+.~]+$')
@@ -28,7 +29,21 @@ class BadRevisionError(BadInputError): pass
 
 
 class Version(changelog.Version):
+    """Debian version number.
+    
+    This class is designed to be reasonably transparent and allow you
+    to write code like:
 
+    |   s.version >= '1.100-1'
+
+    The comparison will be done according to Debian rules, so '1.2' will
+    compare lower.
+
+    Properties:
+      epoch       Epoch
+      upstream    Upstream version
+      debian_version    Debian/local revision
+    """
     def __init__(self, ver):
 
         ver = str(ver)

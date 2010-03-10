@@ -23,14 +23,6 @@ from lp.services.scripts.base import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 
-def distroseries_sort_key(series):
-    """Sort `DistroSeries` by version.
-
-    See `debian_bundle.changelog.Version` for more
-    information.
-    """
-    return Version(series.version)
-
 
 class QueueBuilder(LaunchpadCronScript):
 
@@ -120,7 +112,8 @@ class QueueBuilder(LaunchpadCronScript):
                 raise LaunchpadScriptFailure("Could not find suite %s" % err)
             distroseries_set.add(distroseries)
 
-        return sorted(distroseries_set, key=distroseries_sort_key)
+        return sorted(distroseries_set,
+            key=lambda series: Version(series.version))
 
 
 class RetryDepwait(LaunchpadCronScript):
