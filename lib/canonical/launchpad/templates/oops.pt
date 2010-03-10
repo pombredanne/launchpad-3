@@ -45,7 +45,7 @@
           macros here.
         </tal:comment>
         <script type="text/javascript">
-          if (document.location.hostname.match('.dev')) {
+          if (document.location.hostname.match('edge.')) {
             redirect_notice_div = document.getElementById('redirect_notice');
             redirect_notice_div.style.display = "block";
           };
