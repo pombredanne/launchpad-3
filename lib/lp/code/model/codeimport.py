@@ -31,6 +31,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.launchpad.interfaces import IStore
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -265,10 +266,6 @@ class CodeImportSet:
             CodeImportJob.delete(code_import.import_job.id)
         CodeImport.delete(code_import.id)
 
-    def getAll(self):
-        """See `ICodeImportSet`."""
-        return CodeImport.select()
-
     def getActiveImports(self, text=None):
         """See `ICodeImportSet`."""
         query = self.composeQueryString(text)
@@ -334,6 +331,11 @@ class CodeImportSet:
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(branch=branch)
 
-    def search(self, review_status):
+    def search(self, review_status=None, rcs_type=None):
         """See `ICodeImportSet`."""
-        return CodeImport.selectBy(review_status=review_status)
+        clauses = []
+        if review_status is not None:
+            clauses.append(CodeImport.review_status == review_status)
+        if rcs_type is not None:
+            clauses.append(CodeImport.rcs_type == rcs_type)
+        return IStore(CodeImport).find(CodeImport, *clauses)

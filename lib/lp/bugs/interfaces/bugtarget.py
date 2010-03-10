@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -56,6 +56,10 @@ class IHasBugs(Interface):
         "A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
+    max_bug_heat = Attribute(
+        "The current highest bug heat value for this target.")
+    has_bugtasks = Attribute(
+        "True if at least one BugTask has ever been reported for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(
@@ -201,6 +205,13 @@ class IHasBugs(Interface):
             :statuses: Only bugs with these statuses will be counted. If
                        None, all statuses will be included.
         """
+
+    def setMaxBugHeat(heat):
+        """Set the max_bug_heat for this context."""
+
+    def recalculateMaxBugHeat():
+        """Recalculate and set the max_bug_heat for this context."""
+
 
 
 class IBugTarget(IHasBugs):

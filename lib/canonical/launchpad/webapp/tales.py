@@ -540,7 +540,8 @@ class ObjectFormatterAPI:
 
     def public_private_css(self):
         """Return the CSS class that represents the object's privacy."""
-        if IPrivacy.providedBy(self._context) and self._context.private:
+        privacy = IPrivacy(self._context, None)
+        if privacy is not None and privacy.private:
             return 'private'
         else:
             return 'public'
@@ -1348,7 +1349,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         file_size = NumberFormatterAPI(
             file_.libraryfile.content.filesize).bytes()
         if file_.description is not None:
-            description = file_.description
+            description = cgi.escape(file_.description)
         else:
             description = file_.libraryfile.filename
         link_title = "%s (%s)" % (description, file_size)
@@ -2893,7 +2894,7 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
-                    address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
+                    address, '<a href="%s" class="%s">%s</a>' % (
                         canonical_url(person), css_sprite, address))
 
         return text

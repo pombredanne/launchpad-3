@@ -96,6 +96,13 @@ class IBranchMergeProposal(IPrivacy):
             description=_(
                 "If True, this proposal is visible only to subscribers.")))
 
+    description = exported(
+        Text(title=_('Description'), required=False,
+             description=_(
+                "A detailed description of the changes that are being "
+                "addressed by the branch being proposed to be merged."),
+             max_length=50000))
+
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
@@ -211,9 +218,6 @@ class IBranchMergeProposal(IPrivacy):
     date_queued = exported(
         Datetime(
             title=_('Date Queued'), required=False, readonly=True))
-    # Cannote use Object as this would cause circular dependencies.
-    root_comment = Attribute(
-        _("The first message in discussion of this merge proposal"))
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)

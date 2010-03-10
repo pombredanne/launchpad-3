@@ -285,7 +285,7 @@ Do the test execution:
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem4)
     >>> a_builder.updateBuild(bqItem4)
-    CRITICAL:root:***** bob is MANUALDEPWAIT *****
+    CRITICAL:slave-scanner:***** bob is MANUALDEPWAIT *****
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -314,7 +314,7 @@ builder, but right state stored in Build entry:
     ...     WaitingSlave('BuildStatus.CHROOTFAIL'))
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem5)
     >>> a_builder.updateBuild(bqItem5)
-    CRITICAL:root:***** bob is CHROOTWAIT *****
+    CRITICAL:slave-scanner:***** bob is CHROOTWAIT *****
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -340,7 +340,7 @@ Create a mock slave so the builder can operate - one with a builder error.
     ...     WaitingSlave('BuildStatus.BUILDERFAIL'))
 
     >>> a_builder.updateBuild(bqItem6)
-    WARNING:root:***** bob has failed *****
+    WARNING:slave-scanner:***** bob has failed *****
 
     >>> from canonical.launchpad.ftests import sync
     >>> sync(a_builder)
@@ -404,6 +404,8 @@ next build round:
     >>> a_builder.updateBuild(bqItem8)
     >>> bqItem8.builder is None
     True
+    >>> print bqItem8.specific_job.build.buildstate.name
+    NEEDSBUILD
 
 Cleanup in preparation for the next test:
 
@@ -460,6 +462,7 @@ FAILEDTOUPLOAD:
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem10)
     >>> a_builder.updateBuild(bqItem10)
+    WARNING:slave-scanner:Build ... upload failed.
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -495,7 +498,7 @@ upload log information:
     ...
     X-Launchpad-Build-State: FAILEDTOUPLOAD
     ...
-    * Build Log: http://launchpad.dev/.../buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
+    * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
     ...
     Upload log:
     INFO    creating lockfile
@@ -583,7 +586,7 @@ Create a mock slave so the builder gets the right responses for this test.
     >>> bqItem11.builder.setSlaveForTesting(
     ...     WaitingSlave('BuildStatus.GIVENBACK'))
     >>> a_builder.updateBuild(bqItem11)
-    WARNING:root:***** 1-1 is GIVENBACK by bob *****
+    WARNING:slave-scanner:***** 1-1 is GIVENBACK by bob *****
 
 Ensure GIVENBACK build preserves the history for future use. (we
 can't be sure if logtail will contain any information, because it
@@ -856,11 +859,10 @@ permissive database user.
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = build.sourcepackagerelease
-    >>> secure_pub = removeSecurityProxy(
-    ...     build).current_source_publication.secure_record
+    >>> pub = removeSecurityProxy(build).current_source_publication
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
+    >>> pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
@@ -887,7 +889,7 @@ aside to convert these to unit-tests.
     >>> naked_build = removeSecurityProxy(
     ...     getUtility(IBuildSet).getByQueueEntry(new_candidate))
     >>> original_archive = naked_build.archive
-    >>> secure_pub = naked_build.current_source_publication.secure_record
+    >>> secure_pub = naked_build.current_source_publication
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> private_ppa = factory.makeArchive(private=True)
@@ -922,14 +924,12 @@ If we publish the source, the build candidate will be found again:
 
 If the source is subsequently deleted or superseded before the build
 starts it is also returned as a candidate so that the build can be
-superseded.  The current candidate's source is published twice, so
-we can supersede one and delete the other. This will have the effect of
+superseded.  We can supersede this publication which will have the effect of
 making the build be superseded and no candidate is returned.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> secure_pub = naked_build.current_source_publication.secure_record
+    >>> secure_pub = naked_build.current_source_publication
     >>> secure_pub.status = PackagePublishingStatus.DELETED
-    >>> secure_pub = naked_build.current_source_publication.secure_record
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
@@ -1264,6 +1264,7 @@ the restricted librarian.
     >>> build.upload_log = None
     >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
     >>> a_builder.updateBuild(candidate)
+    WARNING:slave-scanner:Build ... upload failed.
     >>> local_transaction.commit()
 
     >>> build.archive.private
