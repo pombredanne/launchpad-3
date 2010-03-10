@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
+# Author: Hennig Eggers <henning@canonical.com>
+
+# Buildd Slave tool to generate translation templates. Boiler plate code
+# copied from sbuild-package.
+
+# Expects build id as arg 1.
+# Expects branch url as arg 2.
+
+# Must run as user with password-less sudo ability.
+
+exec 2>&1
+
+export LANG=C LC_ALL=C
+
+CHROOT=/usr/sbin/chroot
+INSTALL=/usr/bin/install
+SU=/bin/su
+SUDO=/usr/bin/sudo
+
+BUILDID=$1
+BRANCH_URL=$2
+
+SLAVEBIN=/usr/share/launchpad-buildd/slavebin
+BUILD_CHROOT="$HOME/build-$BUILDID/chroot-autobuild"
+USER=$(whoami)
+
+POTTERY_PACKAGE=pottery
+# We should be smarter about detecting the python version in the chroot.
+PYMODULES="$BUILD_CHROOT/usr/lib/pymodules/python2.6"
+
+GENERATE_SCRIPT=generate_translation_templates.py
+
+# Copy pottery files to chroot.
+$INSTALL $POTTERY $PYMODULES
+$INSTALL "$SLAVEBIN/$GENERATE_SCRIPT" "$BUILD_CHROOT$HOME"
+
+# Enter chroot, switch back to unprivileged user, execute genration script.
+$SUDO $CHROOT $BUILD_CHROOT $SU - $USER -c $GENERATE_SCRIPT $BRNACH_URL

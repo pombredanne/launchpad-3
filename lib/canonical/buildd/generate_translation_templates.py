@@ -1,4 +1,4 @@
-#! /usr/bin/python2.5
+#! /usr/bin/python
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -7,7 +7,7 @@ __metaclass__ = type
 import os.path
 import sys
 
-from lp.translations.pottery.buildd import generate_pots
+from canonical.buildd.pottery import intltool
 
 class GenerateTranslationTemplates:
     """Script to generate translation templates from a branch."""
@@ -45,7 +45,7 @@ class GenerateTranslationTemplates:
     def generate(self):
         """Do It.  Generate templates."""
         self._getBranch()
-        pots = generate_pots(self.branch_dir)
+        pots = intltool.generate_pots(self.branch_dir)
         print "\n".join(
             [os.path.normpath(os.path.join(self.branch_dir, potpath))
                 for potpath in pots])
