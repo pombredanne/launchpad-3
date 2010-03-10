@@ -186,7 +186,7 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
         snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
         try:
             login('foo.bar@canonical.com')
-            for count in range(5):
+            for count in range(snapshot.HARD_LIMIT_FOR_SNAPSHOT + 1):
                 person = self.factory.makePersonNoCommit()
                 bug.subscribe(person, person)
             logout()
