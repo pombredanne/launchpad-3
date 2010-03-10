@@ -180,9 +180,9 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
             log.err(failure)
 
     def assertOopsesLogged(self, exc_types):
-        self.assertEqual(len(exc_types), len(self.worker_monitor._failures))
-        for failure, exc_type in zip(self.worker_monitor._failures,
-                                     exc_types):
+        failures = self.flushLoggedErrors()
+        self.assertEqual(len(exc_types), len(failures))
+        for failure, exc_type in zip(failures, exc_types):
             self.assert_(failure.check(exc_type))
 
     def makeWorkerMonitorWithJob(self, job_id=1, job_data=()):
@@ -235,7 +235,6 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # XXX
         job_id = self.factory.getUniqueInteger()
         worker_monitor = self.makeWorkerMonitorWithJob(job_id)
-        worker_monitor._log_file_name = 'a'
         self.assertEqual(worker_monitor._log_file.tell(), 0)
         def check_finishJob_called(result):
             self.assertEqual(
@@ -251,7 +250,6 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         log_text = self.factory.getUniqueString()
         worker_monitor = self.makeWorkerMonitorWithJob()
         worker_monitor._log_file.write(log_text)
-        worker_monitor._log_file_name = 'a'
         def check_file_uploaded(result):
             transaction.abort()
             url = worker_monitor.codeimport_endpoint.calls[0][3]
@@ -269,7 +267,6 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # Write some text so that we try to upload the log.
         job_id = self.factory.getUniqueInteger()
         worker_monitor = self.makeWorkerMonitorWithJob(job_id)
-        worker_monitor._log_file_name = 'a'
         worker_monitor._log_file.write('some text')
         # Make _createLibrarianFileAlias fail in a distinctive way.
         worker_monitor._createLibrarianFileAlias = lambda *args: 1/0
@@ -299,6 +296,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         worker_monitor.callFinishJob(None)
         self.assertEqual(calls, [CodeImportResultStatus.SUCCESS])
 
+    @suppress_stderr
     def test_callFinishJobCallsFinishJobFailure(self):
         # callFinishJob calls finishJob with CodeImportResultStatus.FAILURE
         # and swallows the failure if its argument indicates that the
@@ -332,6 +330,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
 
+    @suppress_stderr
     def test_callFinishJobCallsFinishJobArbitraryFailure(self):
         # If the argument to callFinishJob indicates that there was some other
         # failure that had nothing to do with the subprocess, it records
@@ -361,15 +360,21 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         # callFinishJob did not swallow the error, this will fail the test.
         return ret
 
+    @suppress_stderr
     def test_callFinishJobLogsTracebackOnFailure(self):
         # When callFinishJob is called with a failure, it dumps the traceback
         # of the failure into the log file.
         worker_monitor = self.makeWorkerMonitorWithJob()
         ret = worker_monitor.callFinishJob(makeFailure(RuntimeError))
         def check_log_file(ignored):
+            failures = self.flushLoggedErrors(RuntimeError)
+            self.assertEqual(1, len(failures))
+            failure = failures[0]
+            traceback_file = StringIO.StringIO()
+            failure.printTraceback(traceback_file)
             worker_monitor._log_file.seek(0)
             log_text = worker_monitor._log_file.read()
-            self.assertIn('RuntimeError', log_text)
+            self.assertIn(traceback_file.read(), log_text)
         return ret.addCallback(check_log_file)
 
     def test_callFinishJobRespects_call_finish_job(self):

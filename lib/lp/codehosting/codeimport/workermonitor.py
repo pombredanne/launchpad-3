@@ -131,6 +131,7 @@ class CodeImportWorkerMonitor:
         self._call_finish_job = True
         self._log_file = tempfile.TemporaryFile()
         self._branch_url = None
+        self._log_file_name = 'no-name-set.txt'
 
     def _logOopsFromFailure(self, failure):
         request = log_oops_from_failure(
