@@ -12,11 +12,11 @@
 import _pythonpath
 
 from canonical.config import config
-from lp.soyuz.scripts.expire_ppa_binaries import PPABinaryExpirer
+from lp.soyuz.scripts.expire_archive_files import ArchiveExpirer
 
 
 if __name__ == '__main__':
-    script = PPABinaryExpirer(
-        'expire-ppa-files', dbuser=config.binaryfile_expire.dbuser)
+    script = ArchiveExpirer(
+        'expire-archive-files', dbuser=config.binaryfile_expire.dbuser)
     script.lock_and_run()
 

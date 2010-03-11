@@ -96,8 +96,7 @@ def print_build_setup(builds):
             queue_entry.lastscore)
 
 
-def check_mintime_to_builder(
-    test, bq, min_time, time_stamp=datetime.utcnow()):
+def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
     # Monkey-patch BuildQueueSet._now() so it returns a constant time stamp
     # that's not too far in the future. This avoids spurious test failures.
@@ -113,7 +112,7 @@ def set_remaining_time_for_running_job(bq, remainder):
     """Set remaining running time for job."""
     offset = bq.estimated_duration.seconds - remainder
     bq.setDateStarted(
-        datetime.utcnow().replace(tzinfo=utc) - timedelta(seconds=offset))
+        datetime.now(utc) - timedelta(seconds=offset))
 
 
 def check_delay_for_job(test, the_job, delay):
@@ -143,7 +142,7 @@ def monkey_patch_the_now_property(buildqueue):
     # Use the date/time the job started if available.
     time_stamp = buildqueue.job.date_started
     if not time_stamp:
-        time_stamp = datetime.utcnow()
+        time_stamp = datetime.now(utc)
     buildqueue._now = lambda: time_stamp
     return time_stamp
 
