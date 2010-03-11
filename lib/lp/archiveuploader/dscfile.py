@@ -678,7 +678,6 @@ class DSCUploadedFile(NascentUploadFile):
 
 def findFile(source_dir, filename, logger):
     """Find and return any file under source_dir
-
     :param source_file: The directory where the source was extracted
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
@@ -695,6 +694,13 @@ def findFile(source_dir, filename, logger):
         if os.path.islink(fullpath):
             raise UploadError(
                 "Symbolic link for %s not allowed" % filename)
+        # Anything returned by this method should be less than 10MiB since it
+        # will be stored in the database assuming the source package isn't
+        # rejected before hand
+        if os.stat(fullpath).st_size > 10485760:
+            raise UploadError(
+                "%s file is larger than 10 MiB" % filename)
+            return
         else:
             return fullpath
 

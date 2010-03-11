@@ -8,7 +8,7 @@ __metaclass__ = type
 import os
 import unittest
 
-from lp.archiveuploader.dscfile import findCopyright, findChangelog
+from lp.archiveuploader.dscfile import findCopyright, findChangelog, findFile
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import mock_logger_quiet
 from lp.testing import TestCase
@@ -69,6 +69,24 @@ class TestDscFile(TestCase):
 
         self.assertEqual(len(errors), 0)
         self.assertEqual(self.dsc_file.changelog, changelog)
+
+
+    def testOversizedFile(self):
+        """Test that a copyright file larger than 10MiB will fail."""
+
+        dev_zero = open("/dev/zero", "r")
+        empty_file = dev_zero.read(20971520)
+        dev_zero.close()
+
+        file = open(self.changelog_file, "w")
+        file.write(empty_file)
+        file.close()
+
+        errors = list(findChangelog(
+            self.dsc_file, self.tmpdir, mock_logger_quiet))
+
+        self.assertEqual(len(errors), 1)
+        self.failUnless(isinstance(errors[0], UploadError))
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
