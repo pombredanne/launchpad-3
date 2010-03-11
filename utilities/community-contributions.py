@@ -494,8 +494,10 @@ class LogExCons(log.LogFormatter):
             # merged into the other. We only care about the initial
             # merge, which should be shallowest.
             if (lr.rev.revision_id not in ec.seen_revs or
-                lr.merge_depth < ec.seen_revs[lr.rev.revision_id][0].merge_depth):
-                ec.seen_revs[lr.rev.revision_id] = (lr, self.current_top_level_rev)
+                lr.merge_depth <
+                    ec.seen_revs[lr.rev.revision_id][0].merge_depth):
+                ec.seen_revs[lr.rev.revision_id] = (
+                    lr, self.current_top_level_rev)
 
 
 class BranchInfo:
