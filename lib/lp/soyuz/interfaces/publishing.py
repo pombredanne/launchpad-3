@@ -835,10 +835,6 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Priority Name"),
             required=False, readonly=True))
-    download_count = exported(
-        Int(
-            title=_("Download Count"),
-            required=False, readonly=True))
 
     def changeOverride(new_component=None, new_section=None,
                        new_priority=None):
@@ -859,6 +855,12 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         :return: a list of `IBinaryPackagePublishingHistory` records
             representing the binaries copied to the destination location.
         """
+
+    @export_read_operation()
+    def getDownloadCount():
+        """Get the download count of this binary package in this archive.
+
+        This is currently only meaningful for PPAs."""
 
 
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,

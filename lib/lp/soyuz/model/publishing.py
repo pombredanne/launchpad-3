@@ -856,8 +856,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                    distroseries.name,
                                    self.distroarchseries.architecturetag)
 
-    @property
-    def download_count(self):
+    def getDownloadCount(self):
         """See `IBinaryPackagePublishingHistory`."""
         return self.archive.getPackageDownloadTotal(self.binarypackagerelease)
 

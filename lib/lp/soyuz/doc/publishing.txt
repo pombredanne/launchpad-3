@@ -950,14 +950,14 @@ Generating respective "Packages" stanzas:
 Binary publishing records also have a download count, which contains
 the number of downloads of this binary package release in this archive.
 
-    >>> print bpph.download_count
+    >>> print bpph.getDownloadCount()
     0
 
     >>> from datetime import date
     >>> bpph.archive.updatePackageDownloadCount(
     ...     bpph.binarypackagerelease, date(2010, 2, 21), None, 10)
 
-    >>> print bpph.download_count
+    >>> print bpph.getDownloadCount()
     10
 
 

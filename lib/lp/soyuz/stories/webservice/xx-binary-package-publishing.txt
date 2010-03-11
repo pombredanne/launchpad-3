@@ -76,7 +76,6 @@ Each binary publication exposes a number of properties:
     date_superseded: None
     display_name: u'mozilla-firefox 1.0 in warty hppa'
     distro_arch_series_link: u'http://.../ubuntu/warty/hppa'
-    download_count: 0
     pocket: u'Release'
     priority_name: u'IMPORTANT'
     removal_comment: None
@@ -86,6 +85,12 @@ Each binary publication exposes a number of properties:
     section_name: u'base'
     self_link: u'http://.../~cprov/+archive/ppa/+binarypub/30'
     status: u'Published'
+
+We can also retrieve the total download count for the binary in this archive.
+
+    >>> webservice.named_get(
+    ...     pubs['entries'][0]['self_link'], 'getDownloadCount').jsonBody()
+    0
 
 
 Security
