@@ -83,6 +83,9 @@ class BranchMergeProposalJobType(DBEnumeratedType):
 
     CODE_REVIEW_COMMENT_EMAIL = DBItem(2, """
         Send the code review comment to the subscribers.
+
+        This job sends the email to the merge proposal subscribers and
+        reviewers.
         """)
 
 
@@ -400,7 +403,8 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
     @cachedproperty
     def code_review_comment(self):
         """Get the code review comment"""
-        return self.bmp.getComment(self.metadata['code_review_comment'])
+        return self.branch_merge_proposal.getComment(
+            self.metadata['code_review_comment'])
 
     @cachedproperty
     def original_email(self):

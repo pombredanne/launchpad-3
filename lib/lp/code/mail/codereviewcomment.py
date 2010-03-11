@@ -15,12 +15,13 @@ from canonical.launchpad.webapp import canonical_url
 
 from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.mail.branchmergeproposal import BMPMailer
-from lp.code.interfaces.branchmergeproposal import ICodeReviewCommentEmailJob
+from lp.code.interfaces.branchmergeproposal import (
+    ICodeReviewCommentEmailJobSource)
 
 
 def send(comment, event):
     """Send a copy of the code review comments to branch subscribers."""
-    getUtility(ICodeReviewCommentEmailJob).create(comment)
+    getUtility(ICodeReviewCommentEmailJobSource).create(comment)
 
 
 class CodeReviewCommentMailer(BMPMailer):
