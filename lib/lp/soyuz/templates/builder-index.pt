@@ -133,7 +133,7 @@
       </tal:build>
       <tal:nobuild condition="not: job/specific_job/build">
         Job of type
-        <tal:jobtype replace="job/specific_build/__class__/__name__" />
+        <tal:jobtype replace="job/specific_job/__class__/__name__" />
         with no associated Build.
       </tal:nobuild>
     </tal:job>
