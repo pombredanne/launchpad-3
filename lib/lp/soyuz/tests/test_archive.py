@@ -15,12 +15,15 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -103,7 +106,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
 
     def testReturnsOnlyPublishedPublications(self):
         # Publications that are not published will not be returned.
-        secure_src_hist = self.gedit_beta_src_hist.secure_record
+        secure_src_hist = self.gedit_beta_src_hist
         secure_src_hist.status = PackagePublishingStatus.PENDING
 
         results = self.archive_set.getPublicationsInArchives(
@@ -262,7 +265,7 @@ class TestSeriesWithSources(TestCaseWithFactory):
     def test_series_with_sources_ignore_non_published_records(self):
         # If all publishings in a series are deleted or superseded
         # the series will not be returned.
-        self.sources[0].secure_record.status = (
+        self.sources[0].status = (
             PackagePublishingStatus.DELETED)
 
         series = self.archive.series_with_sources
@@ -529,7 +532,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
         # the private method which is not defined on the interface.
         self.archive = self.factory.makeArchive()
         self.naked_archive = removeSecurityProxy(self.archive)
-        
+
         self.pub_1 = self.publisher.getPubSource(
             version='0.5.11~ppa1', archive=self.archive, sourcename="foo",
             status=PackagePublishingStatus.PUBLISHED)
@@ -551,12 +554,109 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
     def test_collectLatestPublishedSources_returns_published_only(self):
         # Set the status of the latest pub to DELETED and ensure that it
         # is not returned.
-        self.pub_2.secure_record.status = PackagePublishingStatus.DELETED
+        self.pub_2.status = PackagePublishingStatus.DELETED
 
         pubs = self.naked_archive._collectLatestPublishedSources(
             self.archive, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+
+
+class TestARMBuildsAllowed(TestCaseWithFactory):
+    """Ensure that ARM builds can be allowed and disallowed correctly."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestARMBuildsAllowed, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+        self.archive = self.factory.makeArchive()
+        self.archive_arch_set = getUtility(IArchiveArchSet)
+        self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+
+    def test_default(self):
+        """By default, ARM builds are not allowed."""
+        self.assertEquals(0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+    def test_get_uses_archivearch(self):
+        """Adding an entry to ArchiveArch for ARM and an archive will
+        enable arm_builds_allowed for that archive."""
+        self.assertFalse(self.archive.arm_builds_allowed)
+        self.archive_arch_set.new(self.archive, self.arm)
+        self.assertTrue(self.archive.arm_builds_allowed)
+
+    def test_get_uses_arm_only(self):
+        """Adding an entry to ArchiveArch for something other than ARM
+        does not enable arm_builds_allowed for that archive."""
+        self.assertFalse(self.archive.arm_builds_allowed)
+        self.archive_arch_set.new(self.archive,
+            getUtility(IProcessorFamilySet).getByName('amd64'))
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+    def test_set(self):
+        """The property remembers its value correctly and sets ArchiveArch."""
+        self.archive.arm_builds_allowed = True
+        allowed_restricted_families = self.archive_arch_set.getByArchive(
+            self.archive, self.arm)
+        self.assertEquals(1, allowed_restricted_families.count())
+        self.assertEquals(self.arm,
+            allowed_restricted_families[0].processorfamily)
+        self.assertTrue(self.archive.arm_builds_allowed)
+        self.archive.arm_builds_allowed = False
+        self.assertEquals(0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+
+class TestArchivePrivacySwitching(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Create a public and a private PPA."""
+        super(TestArchivePrivacySwitching, self).setUp()
+        self.public_ppa = self.factory.makeArchive()
+        self.private_ppa = self.factory.makeArchive()
+        self.private_ppa.buildd_secret = 'blah'
+        self.private_ppa.private = True
+
+    def make_ppa_private(self, ppa):
+        """Helper method to privatise a ppa."""
+        ppa.private = True
+        ppa.buildd_secret = "secret"
+
+    def make_ppa_public(self, ppa):
+        """Helper method to make a PPA public (and use for assertRaises)."""
+        ppa.private = False
+        ppa.buildd_secret = ''
+
+    def test_switch_privacy_no_pubs_succeeds(self):
+        # Changing the privacy is fine if there are no publishing
+        # records.
+        self.make_ppa_private(self.public_ppa)
+        self.assertTrue(self.public_ppa.private)
+
+        self.private_ppa.private = False
+        self.assertFalse(self.private_ppa.private)
+
+    def test_switch_privacy_with_pubs_fails(self):
+        # Changing the privacy is not possible when the archive already
+        # has published sources.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        publisher.getPubSource(archive=self.public_ppa)
+        publisher.getPubSource(archive=self.private_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_private, self.public_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

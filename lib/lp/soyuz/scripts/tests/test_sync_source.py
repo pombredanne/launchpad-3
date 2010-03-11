@@ -301,7 +301,7 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(
             out.splitlines(),
             ['Getting binaries for hoary...',
-             '[Updating] bar (0 [Ubuntu] < 1.0-1 [Debian])',
+             '[Updating] bar (None [Ubuntu] < 1.0-1 [Debian])',
              ' * Trying to add bar...',
              ])
 
@@ -376,7 +376,7 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(
             out.splitlines(),
             ['Getting binaries for hoary...',
-             '[Updating] sample1 (0 [Ubuntu] < 1.0-1 [Debian])',
+             '[Updating] sample1 (None [Ubuntu] < 1.0-1 [Debian])',
              ' * Trying to add sample1...',
              ])
 

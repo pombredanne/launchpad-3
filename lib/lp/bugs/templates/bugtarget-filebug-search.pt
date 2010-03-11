@@ -20,6 +20,8 @@
             Y.bugs.setup_dupe_finder();
         });
     </script>
+    <meta http-equiv="refresh" content="10"
+        tal:condition="view/extra_data_to_process"/>
   </metal:block>
 
   <div metal:fill-slot="heading">
@@ -40,8 +42,14 @@
       </tal:does-not-use-malone>
 
       <tal:uses-malone tal:condition="view/contextUsesMalone">
+        <div class="informational message"
+            tal:condition="view/extra_data_to_process"
+          >Please wait while bug data is processed. This page will
+          refresh every 10 seconds until processing is complete.</div>
+
         <div class="top-portlet"
-            tal:define="launchpad_form_id string:filebug-search-form">
+            tal:define="launchpad_form_id string:filebug-search-form"
+            tal:condition="not:view/extra_data_to_process">
           <div metal:use-macro="context/@@launchpad_form/form">
 
         <table metal:fill-slot="widgets">

@@ -30,6 +30,7 @@ from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
 from lp.code.enums import BranchType
+from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -409,15 +410,17 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         self.storage = frontend.getPullerEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
 
-    def assertNoBranchIsAquired(self):
+    def assertNoBranchIsAquired(self, *branch_types):
         """See `AcquireBranchToPullTests`."""
-        pull_info = self.storage.acquireBranchToPull()
+        branch_types = tuple(branch_type.name for branch_type in branch_types)
+        pull_info = self.storage.acquireBranchToPull(branch_types)
         self.assertEqual((), pull_info)
 
-    def assertBranchIsAquired(self, branch):
+    def assertBranchIsAquired(self, branch, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch = removeSecurityProxy(branch)
-        pull_info = self.storage.acquireBranchToPull()
+        branch_types = tuple(branch_type.name for branch_type in branch_types)
+        pull_info = self.storage.acquireBranchToPull(branch_types)
         default_branch = branch.target.default_stacked_on_branch
         if default_branch:
             default_branch_name = default_branch
@@ -437,21 +440,21 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
     def test_branch_type_returned_hosted(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, _, branch_type = pull_info
         self.assertEqual('HOSTED', branch_type)
 
     def test_branch_type_returned_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, _, branch_type = pull_info
         self.assertEqual('MIRRORED', branch_type)
 
     def test_branch_type_returned_import(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
         branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, _, branch_type = pull_info
         self.assertEqual('IMPORTED', branch_type)
 
@@ -459,7 +462,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         branch = self.factory.makeProductBranch()
         self.factory.enableDefaultStackingForProduct(branch.product)
         branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, default_stacked_on_branch, _ = pull_info
         self.assertEqual(
             default_stacked_on_branch,
@@ -475,10 +478,15 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
         mirrored_branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, default_stacked_on_branch, _ = pull_info
         self.assertEqual(
             '', default_stacked_on_branch)
+
+    def test_unknown_branch_type_name_raises(self):
+        self.assertRaises(
+            UnknownBranchTypeError, self.storage.acquireBranchToPull,
+            ('NO_SUCH_TYPE',))
 
 
 class BranchFileSystemTest(TestCaseWithFactory):

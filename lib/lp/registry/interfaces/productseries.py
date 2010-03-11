@@ -24,7 +24,7 @@ from canonical.launchpad.fields import (
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.code.interfaces.branch import IBranch
-from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
 from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers)
@@ -93,7 +93,8 @@ class IProductSeriesEditRestricted(Interface):
 
 
 class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                           IBugTarget, ISpecificationGoal, IHasMilestones):
+                           IBugTarget, ISpecificationGoal, IHasMilestones,
+                           IHasOfficialBugTags):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
