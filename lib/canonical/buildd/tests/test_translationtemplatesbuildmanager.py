@@ -74,7 +74,7 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
         return self.buildmanager._state
 
     def test_iterate(self):
-        # Two iteration steps are specific to this build manager.
+        # Three iteration steps are specific to this build manager.
         url = 'lp:~my/branch'
         # The build manager's iterate() kicks off the consecutive states
         # after INIT.
@@ -106,6 +106,16 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
             ]
         self.assertEqual(expected_command, self.buildmanager.commands[-1])
         self.assertFalse(self.slave.wasCalled('chrootFail'))
+
+        # UPLOAD: Send the templates to the queue.
+        self.buildmanager.iterate(0)
+        self.assertEqual(
+            TranslationTemplatesBuildState.UPLOAD, self.getState())
+        expected_command = [
+            'uploadpath', 'uploadpath', self.buildid, url,
+            ]
+        self.assertEqual(expected_command, self.buildmanager.commands[-1])
+        self.assertFalse(self.slave.wasCalled('buildFail'))
 
         # The control returns to the DebianBuildManager in the REAP state.
         self.buildmanager.iterate(0)
@@ -144,8 +154,28 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
         # after INIT.
         self.buildmanager.initiate({}, 'chroot.tar.gz', {'branch_url': url})
 
-        # Skip states to the INSTALL state.
+        # Skip states to the GENERATE state.
         self.buildmanager._state = TranslationTemplatesBuildState.GENERATE
+
+        # The buildmanager fails and iterates to the REAP state.
+        self.buildmanager.iterate(-1)
+        expected_command = [
+            'processscanpath', 'processscanpath', self.buildid
+            ]
+        self.assertEqual(
+            TranslationTemplatesBuildState.REAP, self.getState())
+        self.assertEqual(expected_command, self.buildmanager.commands[-1])
+        self.assertTrue(self.slave.wasCalled('buildFail'))
+
+    def test_iterate_fail_UPLOAD(self):
+        # See that a failing UPLOAD is handled properly.
+        url = 'lp:~my/branch'
+        # The build manager's iterate() kicks off the consecutive states
+        # after INIT.
+        self.buildmanager.initiate({}, 'chroot.tar.gz', {'branch_url': url})
+
+        # Skip states to the UPLOAD state.
+        self.buildmanager._state = TranslationTemplatesBuildState.UPLOAD
 
         # The buildmanager fails and iterates to the REAP state.
         self.buildmanager.iterate(-1)

@@ -10,6 +10,7 @@ from canonical.buildd.debian import DebianBuildManager, DebianBuildState
 class TranslationTemplatesBuildState(DebianBuildState):
     INSTALL = "INSTALL"
     GENERATE = "GENERATE"
+    UPLOAD = "UPLOAD"
 
 
 class TranslationTemplatesBuildManager(DebianBuildManager):
@@ -78,3 +79,5 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
             self._state = TranslationTemplatesBuildState.REAP
             self.doReapProcesses()
 
+    def iterate_UPLOAD(self, success):
+        pass
