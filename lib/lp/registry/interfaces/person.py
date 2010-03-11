@@ -631,12 +631,12 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = exported(
+    gpg_keys = exported(
         CollectionField(
             title=_("List of valid OpenPGP keys ordered by ID"),
             readonly=False, required=False,
             value_type=Reference(schema=IGPGKey)))
-    pendinggpgkeys = exported(
+    pending_gpg_keys = exported(
         CollectionField(
             title=_("Set of fingerprints pending confirmation"),
             readonly=False, required=False,

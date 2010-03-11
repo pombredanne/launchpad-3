@@ -2750,7 +2750,7 @@ for more information.
 We will select the only available IGPGKey from the sampledata.
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> [a_key] = foo_bar.gpgkeys
+    >>> [a_key] = foo_bar.gpg_keys
     >>> print a_key.displayname
     1024D/12345678
 

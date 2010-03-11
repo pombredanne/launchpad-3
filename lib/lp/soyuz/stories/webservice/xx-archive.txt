@@ -37,7 +37,7 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> [a_key] = foo_bar.gpgkeys
+    >>> [a_key] = foo_bar.gpg_keys
     >>> print a_key.fingerprint
     ABCDEF0123456789ABCDDCBA0000111112345678
 
