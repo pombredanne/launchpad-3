@@ -47,8 +47,8 @@
           # XXX mpt 20080222 bug=84913: This link should be changed to
           # the URL produced.
         </tal:XXX>
-        <a href="/+recently-imported-branches">over 1000
-        <abbr>CVS</abbr> and <abbr>SVN</abbr> projects</a>,
+        <a href="/+recently-imported-branches">over 2000
+        <abbr>CVS</abbr>, <abbr>SVN</abbr>, Git and Mercurial projects</a>,
         so you can use Bazaar with those too.
         (<a href="https://help.launchpad.net/Code">Read our guide</a>)
       </p>
