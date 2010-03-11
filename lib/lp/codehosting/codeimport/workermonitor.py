@@ -151,17 +151,21 @@ class CodeImportWorkerMonitor:
             raise failure.value
 
     def getWorkerArguments(self):
-        """Get XXX for the job we are working on."""
+        """Get arguments for the worker for the import we are working on.
+
+        This also sets the _branch_url and _log_file_name attributes for use
+        in the _logOopsFromFailure and finishJob methods respectively.
+        """
         deferred = self.codeimport_endpoint.callRemote(
             'getImportDataForJobID', self._job_id)
-        def _cb(result):
+        def _processResult(result):
             code_import_arguments, branch_url, log_file_name = result
             self._branch_url = branch_url
             self._log_file_name = log_file_name
             self._logger.info(
                 'Found source details: %s', code_import_arguments)
             return code_import_arguments
-        return deferred.addCallbacks(_cb, self._trap_nosuchcodeimportjob)
+        return deferred.addCallbacks(_processResult, self._trap_nosuchcodeimportjob)
 
     def updateHeartbeat(self, tail):
         """Call the updateHeartbeat method for the job we are working on."""
@@ -176,12 +180,14 @@ class CodeImportWorkerMonitor:
         This is a separate method that exists only to be patched in tests.
         """
         # This blocks, but never mind: nothing else is going on in the process
-        # by this point.
+        # by this point.  We could dispatch to a thread if we felt like it, or
+        # even come up with an asynchronous implementation of the librarian
+        # protocol (it's not very complicated).
         return getUtility(IFileUploadClient).remoteAddFile(
             name, size, file, contentType)
 
     def finishJob(self, status):
-        """Call the finishJob method for the job we are working on.
+        """Call the finishJobID method for the job we are working on.
 
         This method uploads the log file to the librarian first.
         """
@@ -233,6 +239,11 @@ class CodeImportWorkerMonitor:
         return None
 
     def _reasonToStatus(self, reason):
+        """Translate the 'reason' for process exit into a result status.
+
+        Different exit codes are presumed by Twisted to be errors, but are
+        different kinds of success for us.
+        """
         if isinstance(reason, failure.Failure):
             if reason.check(error.ProcessTerminated):
                 if reason.value.exitCode == \

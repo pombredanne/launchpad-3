@@ -58,6 +58,7 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         return self._updateHeartbeat(job_id, log_tail)
 
     def finishJobID(self, job_id, status_name, log_file_alias_url):
+        """See `ICodeImportScheduler`."""
         return self._finishJobID(job_id, status_name, log_file_alias_url)
 
     @return_fault
@@ -79,7 +80,6 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
 
     @return_fault
     def _finishJobID(self, job_id, status_name, log_file_alias_url):
-        """See `ICodeImportScheduler`."""
         job = self._getJob(job_id)
         status = CodeImportResultStatus.items[status_name]
         workflow = removeSecurityProxy(getUtility(ICodeImportJobWorkflow))
