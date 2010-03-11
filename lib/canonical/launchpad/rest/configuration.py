@@ -24,6 +24,7 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
     path_override = "api"
     active_versions = ["beta", "1.0", "devel"]
+    last_version_with_mutator_named_operations = "beta"
     view_permission = "launchpad.View"
     set_hop_by_hop_headers = True
 

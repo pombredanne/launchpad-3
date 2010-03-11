@@ -14,7 +14,7 @@ from zope.interface import implements, Interface
 from lazr.restful.interfaces import (
     IServiceRootResource, IWebServiceConfiguration)
 from lazr.restful.simple import RootResource
-from lazr.restful.tests.test_webservice import (
+from lazr.restful.testing.webservice import (
     IGenericCollection, IGenericEntry, WebServiceTestCase)
 
 from lp.testing import TestCase
