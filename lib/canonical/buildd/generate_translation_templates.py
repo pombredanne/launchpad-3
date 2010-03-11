@@ -6,7 +6,11 @@ __metaclass__ = type
 
 import os.path
 import sys
-from subprocess import call
+
+from bzrlib.branch import Branch
+from bzrlib.export import export
+
+from lp.translations.pottery.buildd import generate_pots
 
 
 class GenerateTranslationTemplates:
@@ -39,13 +43,17 @@ class GenerateTranslationTemplates:
         The branch is checked out to the location specified by
         `self.branch_dir`.
         """
-        # XXX JeroenVermeulen 2010-02-11 bug=520651: Read the contents
-        # of the branch using bzrlib.
+        branch = Branch.open(branch_url)
+        rev_tree = branch.basis_tree()
+        export(rev_tree, self.branch_dir)
 
     def generate(self):
         """Do It.  Generate templates."""
         self._getBranch()
-        # XXX JeroenVermeulen 2010-01-19 bug=509557: Actual payload goes here.
+        pots = generate_pots(self.branch_dir)
+        print "\n".join(
+            [os.path.normpath(os.path.join(self.branch_dir, potpath))
+                for potpath in pots])
         return 0
 
 

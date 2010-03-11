@@ -84,7 +84,17 @@ kbd {
   outline: 1px #666;
 }
 label {white-space: nowrap;}
-legend {font-weight: bold;}
+.long td {
+    padding-right: 1em;
+    }
+.long fieldset {
+    margin-top: 1em;
+    }
+.long legend {
+    color: #666;
+    font-weight: bold;
+    font-size: 123.1%;
+    }
 .listbox { /* a scrolling list of checkboxes or radio buttons */
   border: 1px solid #8cacbb;
   display: inline-block;
@@ -476,9 +486,6 @@ hr {
 /* At the top right of the page is a link to log in or a button to log out: */
 #logincontrol {
     float: right;
-}
-#logincontrol a:hover {
-    text-decoration: none;
 }
 
 /* push image a little bit down to make it line up better with the text */
@@ -943,13 +950,6 @@ a.update-retry {
 }
 
 /* PPA installation instructions slider.*/
-#pre-karmic-systems-slide-trigger {
-    cursor: pointer;
-    color: #093; /* for the underline on hover */
-}
-#pre-karmic-systems-slide-trigger:hover {
-    text-decoration: underline
-}
 #ppa-install-slide-trigger {
     cursor: pointer;
     color: #093; /* for the underline on hover */
@@ -1238,6 +1238,10 @@ div.watermark-apps-portlet span img {
     margin: 0;
 }
 
+.patches-view-cell {
+  padding-right: 1em;
+}
+
 /* --- Blueprints --- */
 
 body.tab-specifications #actions, body.tab-specifications .results {
@@ -1464,7 +1468,7 @@ ul.cross-reference {font-size: 1.25em;}
 
 div.popupTitle {
   background: #ffffdc;
-  padding: 0 1em;
+  padding: 0.5em 1em;
   border: 1px black solid;
   position: absolute;
   display: none;

@@ -13,7 +13,10 @@ __all__ = [
     'IProcessorFamilySet',
     ]
 
+from canonical.launchpad import _
+
 from zope.interface import Interface, Attribute
+from zope.schema import Bool
 
 class IProcessor(Interface):
     """The SQLObject Processor Interface"""
@@ -29,11 +32,21 @@ class IProcessorFamily(Interface):
     name = Attribute("The Processor Family Name")
     title = Attribute("The Processor Family Title")
     description = Attribute("The Processor Name Description")
-
     processors = Attribute("The Processors in this family.")
+    restricted = Bool(title=_("Whether this family is restricted."))
+
+    def addProcessor(name, title, description):
+        """Add a new processor to this family.
+
+        :param name: Name of the processor
+        :param title: Title of the processor
+        :param description: Description of the processor
+        :return: A `IProcessor`
+        """
 
 class IProcessorFamilySet(Interface):
     """Operations related to ProcessorFamily instances."""
+
     def getByName(name):
         """Return the ProcessorFamily instance with the matching name.
 
@@ -48,4 +61,14 @@ class IProcessorFamilySet(Interface):
         :param name: The name of the processor to look for.
 
         :return: A `IProcessorFamily` instance if found, None otherwise.
+        """
+
+    def new(name, title, description, restricted):
+        """Create a new processor family.
+
+        :param name: Name of the family.
+        :param title: Title for the family.
+        :param description: Extended description of the family
+        :param restricted: Whether the processor family is restricted
+        :return: a `IProcessorFamily`.
         """

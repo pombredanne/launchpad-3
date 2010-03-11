@@ -81,7 +81,7 @@ package release page:
     <Link text='cr.g7-37' url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
     >>> link.click()
     >>> browser.title
-    '\xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
+    'cr.g7-37 : \xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
 
 
 == Batched listing pages ==
@@ -169,15 +169,6 @@ Let's make a helper function to print the PPA packages from the page:
     ...     for row in rows:
     ...         print extract_text(row)
 
-And another helper function to set the private flag on a PPA:
-
-    >>> def set_private(name, private=True):
-    ...     admin_browser.open("http://launchpad.dev/~%s/+archive/ppa" % (
-    ...         name))
-    ...     admin_browser.getLink("Administer archive").click()
-    ...     admin_browser.getControl(name="field.private").value = private
-    ...     admin_browser.getControl(name="field.buildd_secret").value = "x"
-    ...     admin_browser.getControl("Save").click()
 
 Create some new source packages, source1 and source2, both created by cprov
 so that they appear in his +packages page.
@@ -186,6 +177,7 @@ so that they appear in his +packages page.
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.interfaces.publishing import (
@@ -194,6 +186,9 @@ so that they appear in his +packages page.
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> nopriv_private_ppa = factory.makeArchive(
+    ...     owner=nopriv, name="p3a", distribution=ubuntu, private=True)
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
@@ -207,14 +202,14 @@ so that they appear in his +packages page.
     >>> source2 = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='source2',
-    ...     archive=nopriv.archive)
+    ...     archive=nopriv_private_ppa)
     >>> source2.sourcepackagerelease.creator=cprov
 
     >>> flush_database_updates()
     >>> logout()
 
 "source1" is now published in cprov and mark's PPA.  "source2" is only
-published in no-priv's PPA.
+published in no-priv's Private PPA.
 
 Make user_browser a known user that does not conflict with "no-priv":
 
@@ -222,23 +217,14 @@ Make user_browser a known user that does not conflict with "no-priv":
 
 === Cprov's +related-software page ===
 
-So let's look at cprov's +related-software page which has two entries in
-the PPA section:
+For unprivileged users, cprov's displayed PPA packages only display
+the one in his own public PPA because source2 is only published
+in the private PPA of the "no-priv" user.
 
-    >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
-    >>> print_ppa_rows(user_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None - -
-    source2 PPA for No Privileges Person - Ubuntutest Breezy-autotest 666
-        ...ago None - -
-
-Now, let's make the PPA for "No Privileges Person" private:
-
-    >>> set_private("no-priv")
-
-For unprivileged users, cprov's displayed PPA packages are now reduced
-to the one in his own PPA because the other iceweasel is only published
-in the newly-private PPA of the "no-priv" user.
+XXX Michael Nelson 2010-02-26 bug=394276: The following should be
+a view test of PersonPPAPAckagesView.filterPPAPackageList(). They
+are not always testing what we think they are, as the lines match
+more packages than intended.
 
 The logged-in user's case:
 
@@ -262,20 +248,26 @@ both packages:
     >>> print_ppa_rows(nopriv_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    source2 PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+    source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    source2 PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+    source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
         ...ago None - -
 
-Let's make mark's archive private and view the page again.
+Let's move the publication of source1 from mark's public archive to his
+private one and the view the page again.
 
-    >>> set_private("mark")
-
+    >>> login('admin@canonical.com')
+    >>> mark_private_ppa = factory.makeArchive(
+    ...     owner=mark, name="p3a", distribution=ubuntu, private=True)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(source1_mark).archive = (
+    ...     mark_private_ppa)
+    >>> logout()
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
@@ -286,13 +278,20 @@ Let's make mark's archive private and view the page again.
     source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
-Notice that the source1 package in mark's PPA is still appearing
-because it is also published in some non-private archives, which
-override the private nature of mark's archive.
+Notice that the source1 package is still appearing because it is also
+published in some non-private archives, which override the private nature
+of mark's archive.
 
-Let's make cprov's archive private:
+Let's move the publication of source1 from cprov's public archive to
+his private one:
 
-    >>> set_private("cprov")
+    >>> login('admin@canonical.com')
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, name="p3a", distribution=ubuntu, private=True)
+    >>> removeSecurityProxy(source1).archive = (
+    ...     cprov_private_ppa)
+    >>> source1.sourcepackagerelease.upload_archive = cprov_private_ppa
+    >>> logout()
 
 It will now disppear from the listings because it's not published in any
 public archives.
@@ -311,7 +310,7 @@ Now we'll publish it in the primary archive.
     ...     ArchivePurpose.PRIMARY)
     >>> source1_ubuntu = source1.copyTo(
     ...     source1.distroseries, source1.pocket, primary)
-    >>> source1_ubuntu.secure_record.setPublished()
+    >>> source1_ubuntu.setPublished()
     >>> flush_database_updates()
     >>> logout()
 
@@ -320,12 +319,12 @@ archive is public.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 Even after the package is superseded, the package remains visibile in
@@ -338,12 +337,12 @@ the listings.
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(user_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(anon_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 
@@ -358,15 +357,15 @@ First list the packages in the PPA.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    source2 PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+    source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
 Then delete the 'source2' package.
 
     >>> admin_browser.open(
-    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages")
+    ...     "http://launchpad.dev/~no-priv/+archive/p3a/+delete-packages")
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['%s' % source2.id]
     >>> admin_browser.getControl(
@@ -394,8 +393,30 @@ appears.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-software")
     >>> print_ppa_rows(admin_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None - -
-    source2 PPA for No Priv... Person - Ubuntutest Breezy-autotest 666
+    source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
+Please note also that disabled archives are not viewable by anonymous users.
+
+    >>> def print_archive_package_rows(contents):
+    ...     package_table = find_tag_by_id(
+    ...         anon_browser.contents, 'packages_list')
+    ...     for ppa_row in package_table.findChildren('tr'):
+    ...         print extract_text(ppa_row)
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> print_archive_package_rows(anon_browser)
+    Package     Version     Uploaded by
+    ...
+    pmount      0.1-1       no signer (2007-07-09)
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov.archive.disable()
+    >>> flush_database_updates()
+    >>> logout()
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'browserDefault', 'launchpad.View')
