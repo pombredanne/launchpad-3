@@ -147,7 +147,8 @@ class FakeCodeImportScheduleEndpointProxy:
         self.calls = []
         self.jobs_dict = jobs_dict
         if no_such_job_exception is None:
-            no_such_job_exception = NoSuchCodeImportJob()
+            no_such_job_exception = xmlrpc.Fault(
+                faultCode=NoSuchCodeImportJob.error_code, faultString='')
         self.no_such_job_exception = no_such_job_exception
 
     def callRemote(self, method_name, *args):
@@ -237,6 +238,13 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         return self.assertFailure(
             worker_monitor.getWorkerArguments(), ZeroDivisionError)
 
+    def test_getWorkerArguments_arbitrary_fault_raises(self):
+        # XXX
+        worker_monitor = self.makeWorkerMonitorWithoutJob(
+            exception=xmlrpc.Fault(1, ''))
+        return self.assertFailure(
+            worker_monitor.getWorkerArguments(), xmlrpc.Fault)
+
     def test_updateHeartbeat(self):
         # XXX
         log_tail = self.factory.getUniqueString()
@@ -265,6 +273,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
     def test_finishJob_uploads_nonempty_file_to_librarian(self):
         # The worker monitor's finishJob method uploads the log file to the
         # librarian.
+        self.layer.force_dirty_database()
         log_text = self.factory.getUniqueString()
         worker_monitor = self.makeWorkerMonitorWithJob()
         worker_monitor._log_file.write(log_text)

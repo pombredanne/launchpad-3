@@ -14,10 +14,12 @@ import tempfile
 
 from twisted.internet import defer, error, reactor, task
 from twisted.python import failure
+from twisted.web import xmlrpc
 
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.librarian.interfaces import IFileUploadClient
 from canonical.twistedsupport.loggingsupport import (
     log_oops_from_failure)
@@ -141,9 +143,12 @@ class CodeImportWorkerMonitor:
             request.oopsid, failure.type.__name__, failure.value)
 
     def _trap_nosuchcodeimportjob(self, failure):
-        # XXX if ...
-        self._call_finish_job = False
-        raise ExitQuietly
+        failure.trap(xmlrpc.Fault)
+        if failure.value.faultCode == NoSuchCodeImportJob.error_code:
+            self._call_finish_job = False
+            raise ExitQuietly
+        else:
+            raise failure.value
 
     def getWorkerArguments(self):
         """Get XXX for the job we are working on."""
