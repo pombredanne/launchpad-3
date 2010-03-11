@@ -66,6 +66,9 @@ class IApportJobSource(IJobSource):
 class IProcessApportBlobJob(IRunnableJob):
     """A Job to process an Apport BLOB."""
 
+    def getFileBugData():
+        """Return the FileBugData parsed out of the blob by this job."""
+
 
 class IProcessApportBlobJobSource(IApportJobSource):
     """Interface for acquiring ProcessApportBlobJobs."""

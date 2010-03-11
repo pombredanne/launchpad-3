@@ -9,7 +9,10 @@ import os
 import transaction
 import unittest
 
+from sqlobject import SQLObjectNotFound
+
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -20,11 +23,13 @@ from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import (
     LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
-from lp.bugs.interfaces.apportjob import ApportJobType
-from lp.bugs.model.apportjob import (
-    ApportJob, ApportJobDerived, ProcessApportBlobJob)
-from lp.bugs.utilities.filebugdataparser import FileBugDataParser
-from lp.testing import TestCaseWithFactory
+from lp.bugs.interfaces.apportjob import (
+    ApportJobType, IProcessApportBlobJobSource)
+from lp.bugs.model.apportjob import ApportJob, ApportJobDerived
+from lp.bugs.utilities.filebugdataparser import (
+    FileBugData, FileBugDataParser)
+from lp.services.job.interfaces.job import JobStatus
+from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
 
@@ -81,10 +86,86 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
 
         self.blob = self.factory.makeBlob(blob_data)
 
+    def _assertFileBugDataMatchesDict(self, filebug_data, data_dict):
+        """Asser that the data in a FileBugData object matches a dict."""
+        self.assertEqual(
+            filebug_data.initial_summary, data_dict['initial_summary'],
+            "Initial summaries do not match")
+        self.assertEqual(
+            filebug_data.initial_tags, data_dict['initial_tags'],
+            "Values for initial_tags do not match")
+        self.assertEqual(
+            filebug_data.private, data_dict['private'],
+            "Values for private do not match")
+        self.assertEqual(
+            filebug_data.subscribers, data_dict['subscribers'],
+            "Values for subscribers do not match")
+        self.assertEqual(
+            filebug_data.extra_description,
+            data_dict['extra_description'],
+            "Values for extra_description do not match")
+        self.assertEqual(
+            filebug_data.comments, data_dict['comments'],
+            "Values for comments do not match")
+        self.assertEqual(
+            filebug_data.hwdb_submission_keys,
+            data_dict['hwdb_submission_keys'],
+            "Values for hwdb_submission_keys do not match")
+
+        # The attachments list of of the data_dict dict will be of
+        # the same length as the attachments list in the filebug_data
+        # object.
+        self.assertEqual(
+            len(filebug_data.attachments),
+            len(data_dict['attachments']),
+            "Lengths of attachment lists do not match.")
+
+        # The attachments list of the data_dict dict is a list of dicts
+        # containing data about the attachments to add to the bug once
+        # it has been filed.
+        for attachment_dict in data_dict['attachments']:
+            file_alias_id = attachment_dict['file_alias_id']
+            file_alias = getUtility(ILibraryFileAliasSet)[file_alias_id]
+            attachment = filebug_data.attachments[
+                data_dict['attachments'].index(attachment_dict)]
+
+            if attachment.get('content', None) is not None:
+                # If the FileBugData is coming from the parser directly,
+                # the attachments won't have been processed, so we check
+                # the unprocessed data against what the
+                # ProcessApportBlobJob has stored in the librarian.
+                file_content = attachment['content'].read()
+                librarian_file_content = file_alias.read()
+                self.assertEqual(
+                    file_content, librarian_file_content,
+                    "File content values do not match for attachment %s and "
+                    "LibrarianFileAlias %s" % (
+                        attachment['filename'], file_alias.filename))
+                self.assertEqual(
+                    attachment['filename'], file_alias.filename,
+                    "Filenames do not match for attachment %s and "
+                    "LibrarianFileAlias %s" % (
+                        attachment['filename'], file_alias.id))
+                self.assertEqual(
+                    attachment['content_type'], file_alias.mimetype,
+                    "Content types do not match for attachment %s and "
+                    "LibrarianFileAlias %s" % (
+                        attachment['filename'], file_alias.id))
+
+            if attachment.get('file_alias', None) is not None:
+                # If the attachment has a file_alias item, it will contain
+                # the LibrarianFileAlias referenced by the attachment's
+                # file_alias_id.
+                self.assertEqual(
+                    file_alias,
+                    attachment['file_alias'],
+                    "The attachment's file alias doesn't match it's "
+                    "file_alias_id")
+
     def test_run(self):
-        # ProcessApportBlobJob.run() extracts salient data from an
+        # IProcessApportBlobJobSource.run() extracts salient data from an
         # Apport BLOB and stores it in the job's metadata attribute.
-        job = ProcessApportBlobJob.create(self.blob)
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
         job.run()
         transaction.commit()
 
@@ -103,73 +184,16 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         self.blob.file_alias.open()
         data_parser = FileBugDataParser(self.blob.file_alias)
         filebug_data = data_parser.parse()
-
-        self.assertEqual(
-            filebug_data.initial_summary, processed_data['initial_summary'],
-            "Initial summaries do not match")
-        self.assertEqual(
-            filebug_data.initial_tags, processed_data['initial_tags'],
-            "Values for initial_tags do not match")
-        self.assertEqual(
-            filebug_data.private, processed_data['private'],
-            "Values for private do not match")
-        self.assertEqual(
-            filebug_data.subscribers, processed_data['subscribers'],
-            "Values for subscribers do not match")
-        self.assertEqual(
-            filebug_data.extra_description,
-            processed_data['extra_description'],
-            "Values for extra_description do not match")
-        self.assertEqual(
-            filebug_data.comments, processed_data['comments'],
-            "Values for comments do not match")
-        self.assertEqual(
-            filebug_data.hwdb_submission_keys,
-            processed_data['hwdb_submission_keys'],
-            "Values for hwdb_submission_keys do not match")
-
-        # The attachments list of of the processed_data dict will be of
-        # the same length as the attachments list in the filebug_data
-        # object.
-        self.assertEqual(
-            len(filebug_data.attachments),
-            len(processed_data['attachments']),
-            "Lengths of attachment lists do not match.")
-
-        # The attachments list of the processed_data dict contains the
-        # IDs of LibrarianFileAliases that contain the attachments
-        # themselves. The contents, filenames and filetypes of the files
-        # in the librarian will match the contents of the attachments.
-        for file_alias_id in processed_data['attachments']:
-            file_alias = getUtility(ILibraryFileAliasSet)[file_alias_id]
-            attachment = filebug_data.attachments[
-                processed_data['attachments'].index(file_alias_id)]
-
-            file_content = attachment['content'].read()
-            librarian_file_content = file_alias.read()
-            self.assertEqual(
-                file_content, librarian_file_content,
-                "File content values do not match for attachment %s and "
-                "LibrarianFileAlias %s" % (
-                    attachment['filename'], file_alias.filename))
-            self.assertEqual(
-                attachment['filename'], file_alias.filename,
-                "Filenames do not match for attachment %s and "
-                "LibrarianFileAlias %s" % (
-                    attachment['filename'], file_alias.id))
-            self.assertEqual(
-                attachment['content_type'], file_alias.mimetype,
-                "Content types do not match for attachment %s and "
-                "LibrarianFileAlias %s" % (
-                    attachment['filename'], file_alias.id))
+        self._assertFileBugDataMatchesDict(filebug_data, processed_data)
 
     def test_getByBlobUUID(self):
-        # ProcessApportBlobJob.getByBlobUUID takes a BLOB UUID as a
+        # IProcessApportBlobJobSource.getByBlobUUID takes a BLOB UUID as a
         # parameter and returns any jobs for that BLOB.
         uuid = self.blob.uuid
 
-        job = ProcessApportBlobJob.create(self.blob)
-        job_from_uuid = ProcessApportBlobJob.getByBlobUUID(uuid)
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
+        job_from_uuid = getUtility(
+            IProcessApportBlobJobSource).getByBlobUUID(uuid)
         self.assertEqual(
             job, job_from_uuid,
             "Job returend by getByBlobUUID() did not match original job.")
@@ -178,25 +202,34 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             "BLOB referenced by Job returned by getByBlobUUID() did not "
             "match original BLOB.")
 
+        # If the UUID doesn't exist, getByBlobUUID() will raise a
+        # SQLObjectNotFound error.
+        self.assertRaises(
+            SQLObjectNotFound,
+            getUtility(IProcessApportBlobJobSource).getByBlobUUID, 'foobar')
+
     def test_create_job_creates_only_one(self):
-        # ProcessApportBlobJob.create() will create only one
+        # IProcessApportBlobJobSource.create() will create only one
         # ProcessApportBlobJob for a given BLOB, no matter how many
         # times it is called.
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        job = ProcessApportBlobJob.create(self.blob)
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             1, len(current_jobs),
             "There should be only one ProcessApportBlobJob. Found %s" %
             len(current_jobs))
 
-        another_job = ProcessApportBlobJob.create(self.blob)
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        another_job = getUtility(IProcessApportBlobJobSource).create(self.blob)
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             1, len(current_jobs),
             "There should be only one ProcessApportBlobJob. Found %s" %
@@ -205,17 +238,20 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # If the job is complete, it will no longer show up in the list
         # of ready jobs. However, it won't be possible to create a new
         # job to process the BLOB because each BLOB can only have one
-        # ProcessApportBlobJob.
+        # IProcessApportBlobJobSource.
         job.job.start()
         job.job.complete()
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ready ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        yet_another_job = ProcessApportBlobJob.create(self.blob)
-        current_jobs = list(ProcessApportBlobJob.iterReady())
+        yet_another_job = getUtility(
+            IProcessApportBlobJobSource).create(self.blob)
+        current_jobs = list(
+            getUtility(IProcessApportBlobJobSource).iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no new ProcessApportBlobJobs. Found %s" %
@@ -228,7 +264,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
     def test_cronscript_succeeds(self):
         # The process-apport-blobs cronscript will run all pending
         # ProcessApportBlobJobs.
-        ProcessApportBlobJob.create(self.blob)
+        getUtility(IProcessApportBlobJobSource).create(self.blob)
         transaction.commit()
 
         retcode, stdout, stderr = run_script(
@@ -237,6 +273,27 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertIn(
             'INFO    Ran 1 IProcessApportBlobJobSource jobs.\n', stderr)
+
+    def test_getFileBugData(self):
+        # The IProcessApportBlobJobSource.getFileBugData() method
+        # returns the +filebug data parsed from the blob as a
+        # FileBugData object.
+        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
+        job.run()
+        transaction.commit()
+
+        # Rather irritatingly, the filebug_data object is wrapped in a
+        # security proxy, so we remove it for the purposes of this
+        # comparison.
+        filebug_data = job.getFileBugData()
+        self.assertTrue(
+            isinstance(removeSecurityProxy(filebug_data), FileBugData),
+            "job.getFileBugData() should return a FileBugData instance.")
+
+        # The attributes of the FileBugData match the data stored in the
+        # processed_data dict.
+        processed_data = job.metadata.get('processed_data', None)
+        self._assertFileBugDataMatchesDict(filebug_data, processed_data)
 
 
 class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
@@ -254,9 +311,12 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         self.blob_data = blob_file.read()
         blob_file.close()
 
-    def test_adding_blob_adds_job(self):
-        # Using the TemporaryBlobStorageAddView to upload a new BLOB
-        # will add a new ProcessApportBlobJob for that BLOB.
+        person = self.factory.makePerson()
+        self.product = self.factory.makeProduct()
+        login_person(person)
+
+    def _create_blob_and_job_using_storeblob(self):
+        """Helper method to create a BLOB and ProcessApportBlobJob."""
         view = create_initialized_view(
             getUtility(ILaunchpadRoot), '+storeblob')
 
@@ -265,15 +325,101 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         blob_uuid = view.store_blob(self.blob_data)
         transaction.commit()
 
-        # A new ProcessApportBlobJob will have been created for the
-        # BLOB.
+        return blob_uuid
+
+    def _create_and_traverse_filebug_view(self, blob_uuid):
+        """Create a +filebug view for a given blob id and return it."""
+        view = create_initialized_view(
+            self.product, '+filebug', path_info='/%s' % blob_uuid)
+
+        # We need to call publishTraverse() on the view to ensure that
+        # the extra_data_token attribute gets populated.
+        view.publishTraverse(view.request, blob_uuid)
+        return view
+
+    def test_adding_blob_adds_job(self):
+        # Using the TemporaryBlobStorageAddView to upload a new BLOB
+        # will add a new ProcessApportBlobJob for that BLOB.
+        blob_uuid = self._create_blob_and_job_using_storeblob()
         blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
-        job = ProcessApportBlobJob.getByBlobUUID(blob_uuid)
+        job = getUtility(IProcessApportBlobJobSource).getByBlobUUID(blob_uuid)
 
         self.assertEqual(
             blob, job.blob,
             "BLOB attached to Job returned by getByBlobUUID() did not match "
             "expected BLOB.")
+
+    def test_filebug_extra_data_processing_job(self):
+        # The +filebug view can retrieve the ProcessApportBlobJob for a
+        # given BLOB UUID. This is available via its
+        # extra_data_processing_job property.
+        blob_uuid = self._create_blob_and_job_using_storeblob()
+        view = self._create_and_traverse_filebug_view(blob_uuid)
+
+        job = getUtility(IProcessApportBlobJobSource).getByBlobUUID(blob_uuid)
+        job_from_view = view.extra_data_processing_job
+        self.assertEqual(job, job_from_view, "Jobs didn't match.")
+
+        # If a no UUID is passed to +filebug, its
+        # extra_data_processing_job property will return None.
+        view = create_initialized_view(self.product, '+filebug')
+        job_from_view = view.extra_data_processing_job
+        self.assertEqual(
+            None, job_from_view,
+            "Job returned by extra_data_processing_job should be None.")
+
+    def test_filebug_extra_data_to_process(self):
+        # The +filebug view has a property, extra_data_to_process, which
+        # indicates whether or not an Apport blob has been processed.
+        blob_uuid = self._create_blob_and_job_using_storeblob()
+        view = self._create_and_traverse_filebug_view(blob_uuid)
+
+        job_from_view = view.extra_data_processing_job
+
+        # Because the job hasn't yet been run the view's extra_data_to_process
+        # property will return True.
+        self.assertEqual(
+            JobStatus.WAITING, job_from_view.job.status,
+            "Job should be WAITING, is in fact %s" %
+            job_from_view.job.status.title)
+        self.assertTrue(
+            view.extra_data_to_process,
+            "view.extra_data_to_process should be True while job is WAITING.")
+
+        # If the job is started bug hasn't completed, extra_data_to_process
+        # will remain True.
+        job_from_view.job.start()
+        self.assertEqual(
+            JobStatus.RUNNING, job_from_view.job.status,
+            "Job should be RUNNING, is in fact %s" %
+            job_from_view.job.status.title)
+        self.assertTrue(
+            view.extra_data_to_process,
+            "view.extra_data_to_process should be True while job is RUNNING.")
+
+        # Once the job is complete, extra_data_to_process will be False
+        job_from_view.job.complete()
+        self.assertEqual(
+            JobStatus.COMPLETED, job_from_view.job.status,
+            "Job should be COMPLETED, is in fact %s" %
+            job_from_view.job.status.title)
+        self.assertFalse(
+            view.extra_data_to_process,
+            "view.extra_data_to_process should be False when job is "
+            "COMPLETED.")
+
+        # If there's no job - for example if someone visits the +filebug
+        # page normally, example - extra_data_to_process will always be
+        # False.
+        view = create_initialized_view(self.product, '+filebug')
+        self.assertEqual(
+            None, view.extra_data_processing_job,
+            "extra_data_processing_job should be None when there's no job "
+            "for a view.")
+        self.assertFalse(
+            view.extra_data_to_process,
+            "view.extra_data_to_process should be False when there is no "
+            "job.")
 
 
 def test_suite():

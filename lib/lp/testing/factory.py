@@ -69,13 +69,14 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.buildqueue import BuildQueue
 
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
     BranchType, CodeImportMachineState, CodeImportReviewStatus,
     CodeImportResultStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
-from lp.code.interfaces.branch import UnknownBranchTypeError
+from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -87,7 +88,7 @@ from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
-from lp.code.model.diff import Diff, PreviewDiff
+from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -126,9 +127,9 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
@@ -152,7 +153,7 @@ DIFF = """\
 @@ -121,6 +121,10 @@
                  'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
               ernqbayl=Gehr))
- 
+
 +    unf_pbasyvpgf = Obby(
 +        gvgyr=_('Unf pbasyvpgf'), ernqbayl=Gehr,
 +        qrfpevcgvba=_('Gur cerivrjrq zretr cebqhprf pbasyvpgf.'))
@@ -254,6 +255,31 @@ class ObjectFactory:
         if host is None:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
+
+    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
+                                    url=None, cvs_root=None, cvs_module=None):
+        if branch_id is None:
+            branch_id = self.getUniqueInteger()
+        if rcstype is None:
+            rcstype = 'svn'
+        if rcstype in ['svn', 'bzr-svn', 'hg']:
+            assert cvs_root is cvs_module is None
+            if url is None:
+                url = self.getUniqueURL()
+        elif rcstype == 'cvs':
+            assert url is None
+            if cvs_root is None:
+                cvs_root = self.getUniqueString()
+            if cvs_module is None:
+                cvs_module = self.getUniqueString()
+        elif rcstype == 'git':
+            assert cvs_root is cvs_module is None
+            if url is None:
+                url = self.getUniqueURL(scheme='git')
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return CodeImportSourceDetails(
+            branch_id, rcstype, url, cvs_root, cvs_module)
 
 
 class LaunchpadObjectFactory(ObjectFactory):
@@ -588,6 +614,38 @@ class LaunchpadObjectFactory(ObjectFactory):
                          productseries=productseries,
                          name=name)
 
+    def makeProcessor(self, family, name, title=None, description=None):
+        """Create a new processor.
+
+        :param family: Family of the processor
+        :param name: Name of the processor
+        :param title: Optional title
+        :param description: Optional description
+        :return: A `IProcessor`
+        """
+        if title is None:
+            title = "The %s processor" % name
+        if description is None:
+            description = "The %s and processor and compatible processors"
+        return family.addProcessor(name, title, description)
+
+    def makeProcessorFamily(self, name, title=None, description=None,
+                            restricted=False):
+        """Create a new processor family.
+        
+        :param name: Name of the family (e.g. x86)
+        :param title: Optional title of the family
+        :param description: Optional extended description
+        :param restricted: Whether the processor family is restricted
+        :return: A `IProcessorFamily`
+        """
+        if description is None:
+            description = "Description of the %s processor family" % name
+        if title is None:
+            title = "%s and compatible processors." % name
+        return getUtility(IProcessorFamilySet).new(name, title, description,
+            restricted=restricted)
+
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
         if milestone is None:
@@ -892,7 +950,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                                 set_state=None, prerequisite_branch=None,
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None,
-                                preview_diff=None, date_created=None):
+                                preview_diff=None, date_created=None,
+                                description=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -907,6 +966,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             target_branch = self.makeProductBranch(product)
             target = target_branch.target
 
+        # Fall back to initial_comment for description.
+        if description is None:
+            description = initial_comment
+
         if target_branch is None:
             target_branch = self.makeBranchTargetBranch(target)
         if source_branch is None:
@@ -916,7 +979,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         proposal = source_branch.addLandingTarget(
             registrant, target_branch,
             prerequisite_branch=prerequisite_branch, review_diff=review_diff,
-            initial_comment=initial_comment, date_created=date_created)
+            description=description, date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         if preview_diff is not None:
@@ -976,6 +1039,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         preview_diff.source_revision_id = self.getUniqueUnicode()
         preview_diff.target_revision_id = self.getUniqueUnicode()
         return preview_diff
+
+    def makeStaticDiff(self):
+        return StaticDiff.acquireFromText(
+            self.getUniqueUnicode(), self.getUniqueUnicode(),
+            self.getUniqueString())
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
@@ -1409,31 +1477,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             code_import, machine, requesting_user, log_excerpt, log_alias,
             result_status, date_started, date_finished)
 
-    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
-                                    url=None, cvs_root=None, cvs_module=None):
-        if branch_id is None:
-            branch_id = self.getUniqueInteger()
-        if rcstype is None:
-            rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'hg']:
-            assert cvs_root is cvs_module is None
-            if url is None:
-                url = self.getUniqueURL()
-        elif rcstype == 'cvs':
-            assert url is None
-            if cvs_root is None:
-                cvs_root = self.getUniqueString()
-            if cvs_module is None:
-                cvs_module = self.getUniqueString()
-        elif rcstype == 'git':
-            assert cvs_root is cvs_module is None
-            if url is None:
-                url = self.getUniqueURL(scheme='git')
-        else:
-            raise AssertionError("Unknown rcstype %r." % rcstype)
-        return CodeImportSourceDetails(
-            branch_id, rcstype, url, cvs_root, cvs_module)
-
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
                               merge_proposal=None):
@@ -1583,7 +1626,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IComponentSet).ensure(name)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
-                    purpose=None, enabled=True):
+                    purpose=None, enabled=True, private=False,
+                    virtualized=True, description=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1592,7 +1636,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             makePerson().
         :param name: Name of the archive, defaults to a random string.
         :param purpose: Supply ArchivePurpose, defaults to PPA.
-        :param enabled: Whether the archive should be enabled.
+        :param enabled: Whether the archive is enabled.
+        :param private: Whether the archive is created private.
+        :param virtualized: Whether the archive is virtualized.
+        :param description: A description of the archive.
         """
         if distribution is None:
             distribution = self.makeDistribution()
@@ -1611,9 +1658,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         if purpose == ArchivePurpose.PRIMARY:
             return distribution.main_archive
 
-        return getUtility(IArchiveSet).new(
+        archive = getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name, enabled=enabled)
+            distribution=distribution, name=name, enabled=enabled,
+            require_virtualized=virtualized, description=description)
+
+        if private:
+            archive.private = True
+            archive.buildd_secret = "sekrit"
+
+        return archive
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
@@ -1854,6 +1908,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
+    def makeMailingList(self, team, owner):
+        """Create a mailing list for the team."""
+        team_list = getUtility(IMailingListSet).new(team, owner)
+        team_list.startConstructing()
+        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        return team_list
+
     def makeTeamAndMailingList(
         self, team_name, owner_name,
         visibility=None,
@@ -1881,9 +1942,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
                 subscription_policy=subscription_policy)
-        team_list = getUtility(IMailingListSet).new(team, owner)
-        team_list.startConstructing()
-        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        team_list = self.makeMailingList(team, owner)
         return team, team_list
 
     def makeMirror(self, distribution, displayname, country=None,

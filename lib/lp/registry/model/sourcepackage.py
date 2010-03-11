@@ -12,11 +12,10 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from warnings import warn
-from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import classProvides, implements
 from zope.component import getUtility
 
+from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
@@ -337,8 +336,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         return IStore(SourcePackageRelease).find(
             SourcePackageRelease,
-            In(SourcePackageRelease.id, subselect)
-            ).order_by(Desc(
+            In(SourcePackageRelease.id, subselect)).order_by(Desc(
                 SQL("debversion_sort_key(SourcePackageRelease.version)")))
 
     @property
@@ -346,19 +344,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return self.sourcepackagename.name
 
     @property
-    def product(self):
-        # we have moved to focusing on productseries as the linker
-        warn('SourcePackage.product is deprecated, use .productseries',
-             DeprecationWarning, stacklevel=2)
-        ps = self.productseries
-        if ps is not None:
-            return ps.product
-        return None
-
-    @property
     def productseries(self):
         # See if we can find a relevant packaging record
-        packaging = self.packaging
+        packaging = self.direct_packaging
         if packaging is None:
             return None
         return packaging.productseries
@@ -366,16 +354,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def direct_packaging(self):
         """See `ISourcePackage`."""
-        # XXX flacoste 2008-02-28 For some crack reasons, it is possible
-        # for multiple productseries (of the same product) to state that they
-        # are packaged in the same source package. This creates all sort of
-        # weirdness documented in bug #196774. But in order to work around bug
-        # #181770, use a sort order that will be stable. I guess it makes the
-        # most sense to return the latest one.
-        return Packaging.selectFirstBy(
+        store = Store.of(self.sourcepackagename)
+        return store.find(
+            Packaging,
             sourcepackagename=self.sourcepackagename,
-            distroseries=self.distroseries,
-            orderBy=['packaging', '-datecreated'])
+            distroseries=self.distroseries).one()
 
     @property
     def packaging(self):
@@ -460,6 +443,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                 BugTask.sourcepackagename == self.sourcepackagename),
             user)
 
+    @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.distribution_sourcepackage.max_bug_heat
+
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
@@ -489,10 +477,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             target.datecreated = UTC_NOW
         else:
             # ok, we need to create a new one
-            Packaging(distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename,
-            productseries=productseries, owner=user,
-            packaging=PackagingType.PRIME)
+            Packaging(
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename,
+                productseries=productseries, owner=user,
+                packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
 
@@ -580,6 +569,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             include_status=[PackagePublishingStatus.PUBLISHED])
         if latest_publishing is not None:
             return latest_publishing.component
+        else:
+            return None
+
+    @property
+    def latest_published_component_name(self):
+        """See `ISourcePackage`."""
+        if self.latest_published_component is not None:
+            return self.latest_published_component.name
         else:
             return None
 
@@ -696,18 +693,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         uploads = [
             build.package_upload
             for build in builds
-            if build.package_upload
-            ]
+            if build.package_upload]
         custom_files = []
         for upload in uploads:
             custom_files += [
                 custom for custom in upload.customfiles
-                if custom.customformat == our_format
-                ]
+                if custom.customformat == our_format]
 
         custom_files.sort(key=attrgetter('id'))
         return [custom.libraryfilealias for custom in custom_files]
 
     def linkedBranches(self):
         """See `ISourcePackage`."""
-        return dict((p.name,b) for (p,b) in self.linked_branches)
+        return dict((p.name, b) for (p, b) in self.linked_branches)

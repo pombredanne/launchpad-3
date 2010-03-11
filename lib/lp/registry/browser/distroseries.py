@@ -31,9 +31,7 @@ from canonical.launchpad import helpers
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
-from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.browser.queue import QueueItemsView
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -179,12 +177,12 @@ class DistroSeriesOverviewMenu(
 
     def packaging(self):
         text = 'All upstream links'
-        summary = 'A listing of source pakages and their upstream projects'
+        summary = 'A listing of source packages and their upstream projects'
         return Link('+packaging', text, summary=summary, icon='info')
 
     def needs_packaging(self):
         text = 'Needs upstream links'
-        summary = 'A listing of source pakages without upstream projects'
+        summary = 'A listing of source packages without upstream projects'
         return Link('+needs-packaging', text, summary=summary, icon='info')
 
     # A search link isn't needed because the distro series overview
@@ -293,8 +291,7 @@ class SeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView,
-                       MilestoneOverlayMixin):
+class DistroSeriesView(MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
@@ -325,12 +322,27 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
             distro_url += '?no-redirect'
         return self.request.response.redirect(distro_url)
 
-    @property
-    def show_arch_selector(self):
-        """Display the architecture selector.
+    @cachedproperty
+    def num_linked_packages(self):
+        """The number of linked packagings for this distroseries."""
+        return len(self.context.packagings)
 
-        See `BuildRecordsView` for further details."""
-        return True
+    @property
+    def num_unlinked_packages(self):
+        """The number of unlinked packagings for this distroseries."""
+        return self.context.sourcecount - self.num_linked_packages
+
+    @cachedproperty
+    def recently_linked(self):
+        """Return the packages that were most recently linked upstream."""
+        return self.context.getMostRecentlyLinkedPackagings()
+
+    @cachedproperty
+    def needs_linking(self):
+        """Return a list of 10 packages most in need of upstream linking.""" 
+        # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
+        # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        return None
 
     milestone_can_release = False
 
@@ -474,7 +486,7 @@ class DistroSeriesPackagesView(LaunchpadView):
     @cachedproperty
     def cached_packagings(self):
         """The batched upstream packaging links."""
-        packagings = self.context.getPriorizedlPackagings()
+        packagings = self.context.getPrioritizedlPackagings()
         navigator = BatchNavigator(packagings, self.request, size=20)
         navigator.setHeadings('packaging', 'packagings')
         return navigator
@@ -489,7 +501,7 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
     @cachedproperty
     def cached_unlinked_packages(self):
         """The batched `ISourcePackage`s that needs packaging links."""
-        packages = self.context.getPriorizedUnlinkedSourcePackages()
+        packages = self.context.getPrioritizedUnlinkedSourcePackages()
         navigator = BatchNavigator(packages, self.request, size=20)
         navigator.setHeadings('package', 'packages')
         return navigator

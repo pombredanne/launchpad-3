@@ -13,6 +13,7 @@ __all__ = [
     'BugBecameQuestionEvent',
     'BugSet',
     'BugTag',
+    'FileBugData',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]
@@ -64,8 +65,8 @@ from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
     BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
 from lp.bugs.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, InvalidDuplicateValue,
-    UserCannotUnsubscribePerson)
+    IBug, IBugBecameQuestionEvent, IBugSet, IFileBugData,
+    InvalidDuplicateValue, UserCannotUnsubscribePerson)
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -99,6 +100,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.person import Person, ValidPersonCache
@@ -875,6 +877,10 @@ class Bug(SQLBase):
             distroseries=distro_series,
             sourcepackagename=source_package_name)
 
+        # When a new task is added the bug's heat becomes relevant to the
+        # target's max_bug_heat.
+        target.recalculateMaxBugHeat()
+
         return new_task
 
     def addWatch(self, bugtracker, remotebug, owner):
@@ -1528,6 +1534,8 @@ class Bug(SQLBase):
     def setHeat(self, heat):
         """See `IBug`."""
         self.heat = heat
+        for task in self.bugtasks:
+            task.target.recalculateMaxBugHeat()
 
 
 class BugSet:
@@ -1789,3 +1797,37 @@ class BugAffectsPerson(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     affected = BoolCol(notNull=True, default=True)
     __storm_primary__ = "bugID", "personID"
+
+
+class FileBugData:
+    """Extra data to be added to the bug."""
+    implements(IFileBugData)
+
+    def __init__(self, initial_summary=None, initial_tags=None,
+                 private=None, subscribers=None, extra_description=None,
+                 comments=None, attachments=None,
+                 hwdb_submission_keys=None):
+        if initial_tags is None:
+            initial_tags = []
+        if subscribers is None:
+            subscribers = []
+        if comments is None:
+            comments = []
+        if attachments is None:
+            attachments = []
+        if hwdb_submission_keys is None:
+            hwdb_submission_keys = []
+
+        self.initial_summary = initial_summary
+        self.private = private
+        self.extra_description = extra_description
+        self.initial_tags = initial_tags
+        self.subscribers = subscribers
+        self.comments = comments
+        self.attachments = attachments
+        self.hwdb_submission_keys = hwdb_submission_keys
+
+    def asDict(self):
+        """Return the FileBugData instance as a dict."""
+        return self.__dict__.copy()
+

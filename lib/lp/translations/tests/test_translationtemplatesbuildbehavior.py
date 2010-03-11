@@ -16,8 +16,8 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 
@@ -149,7 +149,6 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         queue_item = FakeBuildQueue(behavior)
         slave_status = behavior._builder.slave.status
         builder = behavior._builder
-        slave = builder.slave
 
         behavior.dispatchBuildToSlave(queue_item, logging)
 

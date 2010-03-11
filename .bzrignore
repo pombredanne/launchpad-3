@@ -58,3 +58,6 @@ lazr-js
 .subversion
 lib/canonical/buildd/launchpad-files
 .testrepository
+.memcache.pid
+./pipes
+tags.new

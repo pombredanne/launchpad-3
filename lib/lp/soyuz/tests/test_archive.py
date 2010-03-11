@@ -19,9 +19,12 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.binarypackagerelease import (
@@ -732,6 +735,186 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(3, self.archive, self.bpr_2, day, self.australia)
+
+
+class TestARMBuildsAllowed(TestCaseWithFactory):
+    """Ensure that ARM builds can be allowed and disallowed correctly."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestARMBuildsAllowed, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+        self.archive = self.factory.makeArchive()
+        self.archive_arch_set = getUtility(IArchiveArchSet)
+        self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+
+    def test_default(self):
+        """By default, ARM builds are not allowed."""
+        self.assertEquals(0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+    def test_get_uses_archivearch(self):
+        """Adding an entry to ArchiveArch for ARM and an archive will
+        enable arm_builds_allowed for that archive."""
+        self.assertFalse(self.archive.arm_builds_allowed)
+        self.archive_arch_set.new(self.archive, self.arm)
+        self.assertTrue(self.archive.arm_builds_allowed)
+
+    def test_get_uses_arm_only(self):
+        """Adding an entry to ArchiveArch for something other than ARM
+        does not enable arm_builds_allowed for that archive."""
+        self.assertFalse(self.archive.arm_builds_allowed)
+        self.archive_arch_set.new(self.archive,
+            getUtility(IProcessorFamilySet).getByName('amd64'))
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+    def test_set(self):
+        """The property remembers its value correctly and sets ArchiveArch."""
+        self.archive.arm_builds_allowed = True
+        allowed_restricted_families = self.archive_arch_set.getByArchive(
+            self.archive, self.arm)
+        self.assertEquals(1, allowed_restricted_families.count())
+        self.assertEquals(self.arm,
+            allowed_restricted_families[0].processorfamily)
+        self.assertTrue(self.archive.arm_builds_allowed)
+        self.archive.arm_builds_allowed = False
+        self.assertEquals(0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+
+class TestArchivePrivacySwitching(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Create a public and a private PPA."""
+        super(TestArchivePrivacySwitching, self).setUp()
+        self.public_ppa = self.factory.makeArchive()
+        self.private_ppa = self.factory.makeArchive()
+        self.private_ppa.buildd_secret = 'blah'
+        self.private_ppa.private = True
+
+    def make_ppa_private(self, ppa):
+        """Helper method to privatise a ppa."""
+        ppa.private = True
+        ppa.buildd_secret = "secret"
+
+    def make_ppa_public(self, ppa):
+        """Helper method to make a PPA public (and use for assertRaises)."""
+        ppa.private = False
+        ppa.buildd_secret = ''
+
+    def test_switch_privacy_no_pubs_succeeds(self):
+        # Changing the privacy is fine if there are no publishing
+        # records.
+        self.make_ppa_private(self.public_ppa)
+        self.assertTrue(self.public_ppa.private)
+
+        self.private_ppa.private = False
+        self.assertFalse(self.private_ppa.private)
+
+    def test_switch_privacy_with_pubs_fails(self):
+        # Changing the privacy is not possible when the archive already
+        # has published sources.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        publisher.getPubSource(archive=self.public_ppa)
+        publisher.getPubSource(archive=self.private_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_private, self.public_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
+
+
+class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
+    """Ensure that getBinaryPackageReleaseByFileName works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestGetBinaryPackageReleaseByFileName, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.archive = self.factory.makeArchive()
+        self.archive.require_virtualized = False
+
+        self.i386_pub, self.hppa_pub = self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.i386_indep_pub, self.hppa_indep_pub = (
+            self.publisher.getPubBinaries(
+                version="1.2.3-4", archive=self.archive, binaryname="bar-bin",
+                status=PackagePublishingStatus.PUBLISHED))
+
+    def test_returns_matching_binarypackagerelease(self):
+        # The BPR with a file by the given name should be returned.
+        self.assertEqual(
+            self.i386_pub.binarypackagerelease,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_i386.deb"))
+
+    def test_returns_correct_architecture(self):
+        # The architecture is taken into account correctly.
+        self.assertEqual(
+            self.hppa_pub.binarypackagerelease,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_hppa.deb"))
+
+    def test_works_with_architecture_independent_binaries(self):
+        # Architecture independent binaries with multiple publishings
+        # are found properly.
+        self.assertEqual(
+            self.i386_indep_pub.binarypackagerelease,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "bar-bin_1.2.3-4_all.deb"))
+
+    def test_returns_none_for_source_file(self):
+        # None is returned if the file is a source component instead.
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo_1.2.3-4.dsc"))
+
+    def test_returns_none_for_nonexistent_file(self):
+        # Non-existent files return None.
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "this-is-not-real_1.2.3-4_all.deb"))
+
+    def test_returns_none_for_duplicate_file(self):
+        # In the unlikely case of multiple BPRs in this archive with the same
+        # name (hopefully impossible, but it still happens occasionally due
+        # to bugs), None is returned.
+
+        # Publish the same binaries again. Evil.
+        self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_i386.deb"))
+
+    def test_returns_none_from_another_archive(self):
+        # Cross-archive searches are not performed.
+        self.assertIs(
+            None,
+            self.factory.makeArchive().getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_i386.deb"))
 
 
 def test_suite():
