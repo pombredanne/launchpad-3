@@ -8,7 +8,7 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
-from storm.locals import Int, Reference, Store, Storm, Unicode
+from storm.locals import Int, Reference, ReferenceSet, Store, Storm, Unicode
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
@@ -22,6 +22,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipedata import _SourcePackageRecipeData
+from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 
@@ -29,6 +30,15 @@ from lp.soyuz.interfaces.component import IComponentSet
 class NonPPABuildRequest(Exception):
     """A build was requested to a non-PPA and this is currently
     unsupported."""
+
+
+class _SourcePackageRecipeDistroSeries(Storm):
+    """Link table for many-to-many relationship."""
+
+    __storm_table__ = "SourcePackageRecipeDistroSeries"
+    id = Int(primary=True)
+    sourcepackagerecipe_id = Int(name='sourcepackagerecipe', allow_none=False)
+    distroseries_id = Int(name='distroseries', allow_none=False)
 
 
 class SourcePackageRecipe(Storm):
@@ -50,8 +60,9 @@ class SourcePackageRecipe(Storm):
     registrant_id = Int(name='registrant', allow_none=True)
     registrant = Reference(registrant_id, 'Person.id')
 
-    distroseries_id = Int(name='distroseries', allow_none=True)
-    distroseries = Reference(distroseries_id, 'DistroSeries.id')
+    distroseries = ReferenceSet(
+        id, _SourcePackageRecipeDistroSeries.sourcepackagerecipe_id,
+        _SourcePackageRecipeDistroSeries.distroseries_id, DistroSeries.id)
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(
@@ -88,7 +99,6 @@ class SourcePackageRecipe(Storm):
         _SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
-        sprecipe.distroseries = distroseries
         sprecipe.sourcepackagename = sourcepackagename
         sprecipe.name = name
         store.add(sprecipe)
