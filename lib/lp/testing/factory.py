@@ -423,14 +423,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname,
             hide_email_addresses=hide_email_addresses)
-        removeSecurityProxy(person)._password_cleartext_cached = password
+        naked_person = removeSecurityProxy(person)
+        naked_person._password_cleartext_cached = password
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
-            person.setLocation(latitude, longitude, time_zone, person)
+            naked_person.setLocation(latitude, longitude, time_zone, person)
+
+        # Make sure the non-security-proxied object is not returned.
+        del naked_person
 
         # To make the person someone valid in Launchpad, validate the
         # email.
