@@ -473,6 +473,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
         :param distroseries: A `IDistroSeries`
         :param pocket: A `PackagePublishingPocket`
+        :return: Reason why uploading is not possible or None
         """
 
     def checkUpload(person, distroseries, sourcepackagename, component, 

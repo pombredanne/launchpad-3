@@ -89,8 +89,7 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroup, IProjectGroupSet)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
-from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage,)
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from lp.blueprints.interfaces.specification import ISpecification
