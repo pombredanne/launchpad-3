@@ -17,11 +17,9 @@ from lp.soyuz.scripts.ftpmaster import (
     ObsoleteDistroseries, SoyuzScriptError)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory,
-    SecureSourcePackagePublishingHistory,
     SourcePackagePublishingHistory)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -104,19 +102,19 @@ class TestObsoleteDistroseries(unittest.TestCase):
         """Return a tuple of sources, binaries published in distroseries."""
         if distroseries is None:
             distroseries = self.warty
-        published_sources = SecureSourcePackagePublishingHistory.select("""
+        published_sources = SourcePackagePublishingHistory.select("""
             distroseries = %s AND
             status = %s AND
             archive IN %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             self.main_archive_ids))
-        published_binaries = SecureBinaryPackagePublishingHistory.select("""
-            SecureBinaryPackagePublishingHistory.distroarchseries =
+        published_binaries = BinaryPackagePublishingHistory.select("""
+            BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.DistroSeries = DistroSeries.id AND
             DistroSeries.id = %s AND
-            SecureBinaryPackagePublishingHistory.status = %s AND
-            SecureBinaryPackagePublishingHistory.archive IN %s
+            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.archive IN %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             self.main_archive_ids),
             clauseTables=["DistroArchSeries", "DistroSeries"])
@@ -132,7 +130,7 @@ class TestObsoleteDistroseries(unittest.TestCase):
     def testNothingToDoCase(self):
         """When there is nothing to do, we expect an exception."""
         obsoleter = self.getObsoleter()
-        self.warty.status = DistroSeriesStatus.OBSOLETE
+        self.warty.status = SeriesStatus.OBSOLETE
 
         # Get all the published sources in warty.
         published_sources, published_binaries = (
@@ -151,7 +149,7 @@ class TestObsoleteDistroseries(unittest.TestCase):
     def testObsoleteDistroseriesWorks(self):
         """Make sure the required publications are obsoleted."""
         obsoleter = self.getObsoleter()
-        self.warty.status = DistroSeriesStatus.OBSOLETE
+        self.warty.status = SeriesStatus.OBSOLETE
 
         # Get all the published sources in warty.
         published_sources, published_binaries = (

@@ -20,7 +20,7 @@ from lp.codehosting.tests.helpers import (
     adapt_suite, LoomTestMixin)
 from lp.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
-from lp.codehosting import get_bzr_path, get_bzr_plugins_path
+from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
@@ -89,15 +89,15 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         self.disable_directory_isolation()
         tac_handler = SSHServerLayer.getTacHandler()
         self.server = SSHCodeHostingServer(self.scheme, tac_handler)
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        self.server.start_server()
+        self.addCleanup(self.server.stop_server)
 
         # Prevent creation of in-process sftp:// and bzr+ssh:// transports --
         # such connections tend to leak threads and occasionally create
         # uncollectable garbage.
         ssh_denier = DenyingServer(['bzr+ssh://', 'sftp://'])
-        ssh_denier.setUp()
-        self.addCleanup(ssh_denier.tearDown)
+        ssh_denier.start_server()
+        self.addCleanup(ssh_denier.stop_server)
 
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')
@@ -136,8 +136,10 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         (mainly so we can test the loom support).
         """
         return self.run_bzr_subprocess(
-            args, env_changes={'BZR_SSH': 'paramiko',
-                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
+            args, env_changes={
+                'BZR_SSH': 'paramiko',
+                'BZR_PLUGIN_PATH': get_BZR_PLUGIN_PATH_for_subprocess()
+            },
             allow_plugins=True, retcode=retcode)
 
     def _run_bzr_error(self, args):

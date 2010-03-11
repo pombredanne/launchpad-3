@@ -213,12 +213,17 @@ class BugContextMenu(ContextMenu):
         else:
             text = 'Subscribe'
             icon = 'add'
-        return Link('+subscribe', text, icon=icon)
+        return Link('+subscribe', text, icon=icon, summary=(
+                'When you are subscribed, Launchpad will email you each time '
+                'this bug changes'))
 
     def addsubscriber(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
-        return Link('+addsubscriber', text, icon='add')
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this bugs '
+                'changes'))
 
     def nominate(self):
         """Return the 'Target/Nominate for release' Link."""
@@ -621,8 +626,7 @@ class BugEditView(BugEditViewBase):
                 confirm_action.label, confirm_action.__name__))
         for new_tag in newly_defined_tags:
             self.notifications.append(
-                'The tag "%s" hasn\'t yet been used by %s before.'
-                ' Is this a new tag? %s' % (
+                'The tag "%s" hasn\'t been used by %s before. %s' % (
                     new_tag, bugtarget.bugtargetdisplayname, confirm_button))
             self._confirm_new_tags = True
 
@@ -633,7 +637,7 @@ class BugEditView(BugEditViewBase):
             self.updateBugFromData(data)
             self.next_url = canonical_url(self.context)
 
-    @action('Yes, define new tag', name='confirm_tag')
+    @action('Create the new tag', name='confirm_tag')
     def confirm_tag_action(self, action, data):
         """Define a new tag."""
         self.actions['field.actions.change'].success(data)

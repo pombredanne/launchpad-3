@@ -14,16 +14,13 @@ import sys
 
 from bzrlib.errors import NotBranchError, ConnectionError
 # This non-standard import is necessary to hook up the event system.
-import zope.component.event
 from zope.component import getUtility
 
 from lp.code.interfaces.branchscanner import IBranchScanner
 from lp.codehosting.vfs import get_scanner_server
-from lp.codehosting.scanner import buglinks, email, mergedetection
-from lp.codehosting.scanner.bzrsync import (
-    BzrSync, schedule_diff_updates, schedule_translation_upload)
+from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.scanner.fixture import (
-    Fixtures, make_zope_event_fixture, run_with_fixture)
+    run_with_fixture, ServerFixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 
@@ -91,16 +88,8 @@ class BranchScanner:
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
-        event_handlers = [
-            email.queue_tip_changed_email_jobs,
-            buglinks.got_new_revision,
-            mergedetection.auto_merge_branches,
-            mergedetection.auto_merge_proposals,
-            schedule_diff_updates,
-            schedule_translation_upload,
-            ]
         server = get_scanner_server()
-        fixture = Fixtures([server, make_zope_event_fixture(*event_handlers)])
+        fixture = ServerFixture(server)
         self.log.info('Starting branch scanning')
         branches = getUtility(IBranchScanner).getBranchesToScan()
         run_with_fixture(fixture, self.scanBranches, branches)

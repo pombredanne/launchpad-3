@@ -14,7 +14,7 @@ from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
 from canonical.config import config
-from lp.codehosting import get_bzr_path, get_bzr_plugins_path
+from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 from lp.codehosting.sshserver.auth import LaunchpadAvatar
 from lp.codehosting.sshserver.session import (
     ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession)
@@ -299,7 +299,7 @@ class TestSessionIntegration(AvatarTestCase):
             "ISession(avatar) doesn't adapt to ExecOnlySession. "
             "Got %r instead." % (session,))
         self.assertEqual(
-            os.path.abspath(get_bzr_plugins_path()),
+            get_BZR_PLUGIN_PATH_for_subprocess(),
             session.environment['BZR_PLUGIN_PATH'])
         self.assertEqual(
             '%s@bazaar.launchpad.dev' % self.avatar.username,

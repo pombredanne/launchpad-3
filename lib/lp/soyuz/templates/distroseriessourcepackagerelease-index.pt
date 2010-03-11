@@ -50,10 +50,10 @@
    <div id="changesfile" tal:define="changesfile context/changesfile">
      <p tal:condition="changesfile">
         <a tal:attributes="href changesfile/http_url">
-           View changesfile
+           View changes file
         </a>
      </p>
-     <p tal:condition="not: changesfile">No changesfile available.</p>
+     <p tal:condition="not: changesfile">No changes file available.</p>
    </div>
 
 </div>

@@ -6,18 +6,17 @@
 __metaclass__ = type
 __all__ = []
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser
 from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 from zope.security.proxy import removeSecurityProxy
 
-class DocumentationLinksTest(TestCaseWithFactory):
+class DocumentationLinksTest(WindmillTestCase):
     """Test that the documentation links on translation pages work."""
 
     layer = TranslationsWindmillLayer
+    suite_name = "Translation documentation links"
 
     def createPOTemplateWithPOTMsgSets(self, productseries, name,
                                        number_of_potmsgsets):
@@ -37,11 +36,9 @@ class DocumentationLinksTest(TestCaseWithFactory):
         * makes sure it's hidden when you stay on the same translation;
         * makes sure it's shown again when you go to a different translation.
         """
-        client = WindmillTestClient("Translation documentation links")
+        client = self.client
 
-        start_url = 'http://translations.launchpad.dev:8085/'
         user = lpuser.TRANSLATIONS_ADMIN
-
 
         # Create a translation group with documentation to use in the test.
         group = self.factory.makeTranslationGroup(

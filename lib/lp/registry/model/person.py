@@ -81,9 +81,10 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+    BugTaskSearchParams, IBugTaskSet, IllegalRelatedBugTasksParams)
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConductSet)
@@ -107,11 +108,11 @@ from lp.registry.interfaces.person import (
     JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
     PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy)
-from canonical.launchpad.interfaces.personnotification import (
+from lp.registry.interfaces.personnotification import (
     IPersonNotificationSet)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.salesforce import (
     ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from lp.blueprints.interfaces.specification import (
@@ -127,7 +128,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtask import (
+    BugTask, get_related_bugtasks_search_params)
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
@@ -212,7 +214,7 @@ def validate_person_visibility(person, attr, value):
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
-    HasBranchesMixin, HasMergeProposalsMixin):
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -835,8 +837,33 @@ class Person(
         """No-op, to satisfy a requirement of HasBugsBase."""
         pass
 
+    @property
+    def max_bug_heat(self):
+        """Return None as this attribute is not implemented for a person.
+
+        XXX deryck 2010-02-28 bug=529846
+        This requires a DB patch to be done correctly, and we're
+        near release and tests are failing.
+        """
+        return None
+
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
+        if search_params is None and len(args) == 0:
+            # this method is called via webapi directly
+            # calling this method on a Person object directly via the
+            # webservice API means searching for user related tasks
+            user = kwargs.pop('user')
+            try:
+                search_params = get_related_bugtasks_search_params(
+                    user, self, **kwargs)
+            except IllegalRelatedBugTasksParams, e:
+                # dirty hack, marking an exception with a HTTP error
+                # only works if the exception is raised in the exported
+                # method, see docstring of
+                # `lazr.restful.declarations.webservice_error()`
+                raise e
+            return getUtility(IBugTaskSet).search(*search_params)
         if len(kwargs) > 0:
             # if keyword arguments are supplied, use the deault
             # implementation in HasBugsBase.
@@ -1047,6 +1074,15 @@ class Person(
             return True
         except SQLObjectNotFound:
             return False
+
+    @property
+    def is_probationary(self):
+        """See `IPerson`.
+
+        Users without karma have not demostrated their intentions may not
+        have the same privileges as users who have made contributions.
+        """
+        return not self.isTeam() and self.karma == 0
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None, datecreated=None):
@@ -1682,6 +1718,7 @@ class Person(
         for coc in self.signedcocs:
             coc.active = False
         for email in self.validatedemails:
+            email = IMasterObject(email)
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
@@ -2228,7 +2265,7 @@ class Person(
                                     upload_archive)
                     sourcepackagerelease.id
                 FROM sourcepackagerelease, archive,
-                    securesourcepackagepublishinghistory sspph
+                    sourcepackagepublishinghistory sspph
                 WHERE
                     sspph.sourcepackagerelease = sourcepackagerelease.id AND
                     sspph.archive = archive.id AND
@@ -2300,7 +2337,7 @@ class Person(
     def isBugContributorInTarget(self, user=None, target=None):
         """See `IPerson`."""
         assert (IBugTarget.providedBy(target) or
-                IProject.providedBy(target)), (
+                IProjectGroup.providedBy(target)), (
             "%s isn't a valid bug target." % target)
         search_params = BugTaskSearchParams(user=user, assignee=self)
         bugtask_count = target.searchTasks(search_params).count()
@@ -2345,7 +2382,7 @@ class Person(
     @property
     def hardware_submissions(self):
         """See `IPerson`."""
-        from canonical.launchpad.database.hwdb import HWSubmissionSet
+        from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
 
 
@@ -2838,6 +2875,8 @@ class PersonSet:
             (decorator_table.lower(), person_pointer_column.lower()))
 
     def _mergeBranches(self, cur, from_id, to_id):
+        # XXX MichaelHudson 2010-01-13 bug=506630: This code does not account
+        # for package branches.
         cur.execute('''
             SELECT product, name FROM Branch WHERE owner = %(to_id)d
             ''' % vars())
@@ -3347,6 +3386,10 @@ class PersonSet:
         # ones that *do* conflict.
         self._mergeBranches(cur, from_id, to_id)
         skip.append(('branch','owner'))
+
+        # XXX MichaelHudson 2010-01-13: Write _mergeSourcePackageRecipes!
+        #self._mergeSourcePackageRecipes(cur, from_id, to_id))
+        skip.append(('sourcepackagerecipe','owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)
         skip.append(('mailinglistsubscription', 'person'))

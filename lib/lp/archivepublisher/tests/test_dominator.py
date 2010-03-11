@@ -14,7 +14,7 @@ from zope.component import getUtility
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.publishing import Publisher
 from canonical.database.sqlbase import flush_database_updates
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -33,7 +33,7 @@ class TestDominator(TestNativePublishingBase):
          * Dominated: foo_1.0 & foo-bin_1.0_i386
          * Dominant: foo_1.1 & foo-bin_1.1_i386
 
-        Return the corresponding 'secure' records as a 4-tuple:
+        Return the corresponding publication records as a 4-tuple:
 
          (dominant_source, dominant_binary, dominated_source,
           dominated_binary)
@@ -54,13 +54,11 @@ class TestDominator(TestNativePublishingBase):
             pub_source=foo_11_source,
             status=PackagePublishingStatus.PUBLISHED)
 
-        dominant_source = self.getSecureSource(foo_11_source)
-        dominant_binaries = [self.getSecureBinary(pub)
-                             for pub in foo_11_binaries]
+        dominant_source = foo_11_source
+        dominant_binaries = [pub for pub in foo_11_binaries]
 
-        dominated_source = self.getSecureSource(foo_10_source)
-        dominated_binaries = [self.getSecureBinary(pub)
-                              for pub in foo_10_binaries]
+        dominated_source = foo_10_source
+        dominated_binaries = [pub for pub in foo_10_binaries]
 
         return (dominant_source, dominant_binaries[0],
                 dominated_source, dominated_binaries[0])
@@ -230,14 +228,13 @@ class TestDominator(TestNativePublishingBase):
         self.assertEqual(cprov_foo_binaries.count(), 2)
 
         # Manually supersede the hppa binary.
-        secure_hppa_pub = self.getSecureBinary(hppa_pub)
-        secure_hppa_pub.status = PackagePublishingStatus.SUPERSEDED
+        hppa_pub.status = PackagePublishingStatus.SUPERSEDED
         flush_database_updates()
 
         # Check if we can reach the i386 publication using
         # _getOtherBinaryPublications over the hppa binary.
-        [found] = list(dominator._getOtherBinaryPublications(secure_hppa_pub))
-        self.assertEqual(self.getSecureBinary(i386_pub), found)
+        [found] = list(dominator._getOtherBinaryPublications(hppa_pub))
+        self.assertEqual(i386_pub, found)
 
         # Create architecture specific publications for foo-bin_1.1 in
         # i386 & hppa.
@@ -249,14 +246,13 @@ class TestDominator(TestNativePublishingBase):
         [hppa_pub, i386_pub] = pub_binaries_archdep
 
         # Manually supersede the hppa publication.
-        secure_hppa_pub = self.getSecureBinary(hppa_pub)
-        secure_hppa_pub.status = PackagePublishingStatus.SUPERSEDED
+        hppa_pub.status = PackagePublishingStatus.SUPERSEDED
         flush_database_updates()
 
         # Check if there is no other publication of the hppa binary package
         # release.
         self.assertEqual(
-            dominator._getOtherBinaryPublications(secure_hppa_pub).count(),
+            dominator._getOtherBinaryPublications(hppa_pub).count(),
             0)
 
     def testDominationOfOldArchIndepBinaries(self):
@@ -404,7 +400,7 @@ class TestDominationOfObsoletedSeries(TestDomination):
     def setUp(self):
         TestDomination.setUp(self)
         self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.OBSOLETE)
+            SeriesStatus.OBSOLETE)
 
 
 def test_suite():

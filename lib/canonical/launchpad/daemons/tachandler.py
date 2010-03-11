@@ -1,22 +1,26 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test harness for TAC (Twisted Application Configuration) files.
-"""
+from __future__ import with_statement
+
+"""Test harness for TAC (Twisted Application Configuration) files."""
 
 __metaclass__ = type
 
 __all__ = ['TacTestSetup', 'ReadyService', 'TacException']
 
+
+# This file is used by launchpad-buildd, so it cannot import any
+# Launchpad code!
+import errno
 import sys
 import os
 import time
+from signal import SIGTERM, SIGKILL
 import subprocess
 
 from twisted.application import service
 from twisted.python import log
-
-from lp.services.osutils import kill_by_pidfile, remove_if_exists
 
 
 twistd_script = os.path.abspath(os.path.join(
@@ -39,6 +43,13 @@ class TacTestSetup:
         # previous runs. Although tearDown() should have been called already,
         # we can't guarantee it.
         self.tearDown()
+
+        # setUp() watches the logfile to determine when the daemon has fully
+        # started. If it sees an old logfile, then it will find the LOG_MAGIC
+        # string and return immediately, provoking hard-to-diagnose race
+        # conditions. Delete the logfile to make sure this does not happen.
+        self._removeFile(self.logfile)
+
         self.setUpRoot()
         args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
@@ -59,31 +70,87 @@ class TacTestSetup:
         if rv != 0:
             raise TacException('Error %d running %s' % (rv, args))
 
-        # Wait for the daemon to fully start (as determined by watching the
-        # log file). If it takes more than 20 seconds, we assume it's gone
-        # wrong, and raise TacException.
-        start = time.time()
-        while True:
-            if time.time() > start + 20:
-                raise TacException(
-                    'Unable to start %s. Check %s.'
-                    % (self.tacfile, self.logfile))
-            if os.path.exists(self.logfile):
-                if LOG_MAGIC in open(self.logfile, 'r').read():
-                    break
+        self._waitForDaemonStartup()
+
+    def _hasDaemonStarted(self):
+        """Has the daemon started?
+
+        Startup is recognized by the appearance of LOG_MAGIC in the log
+        file.
+        """
+        if os.path.exists(self.logfile):
+            with open(self.logfile, 'r') as logfile:
+                return LOG_MAGIC in logfile.read()
+        else:
+            return False
+
+    def _waitForDaemonStartup(self):
+        """ Wait for the daemon to fully start.
+
+        Times out after 20 seconds.  If that happens, the log file will
+        not be cleaned up so the user can post-mortem it.
+
+        :raises TacException: Timeout.
+        """
+        # Watch the log file for LOG_MAGIC to signal that startup has
+        # completed.
+        now = time.time()
+        deadline = now + 20
+        while now < deadline and not self._hasDaemonStarted():
             time.sleep(0.1)
+            now = time.time()
+
+        if now >= deadline:
+            raise TacException('Unable to start %s. Check %s.' % (
+                self.tacfile, self.logfile))
 
     def tearDown(self):
         self.killTac()
-        # setUp() watches the logfile to determine when the daemon has fully
-        # started. If it sees an old logfile, then it will find the LOG_MAGIC
-        # string and return immediately, provoking hard-to-diagnose race
-        # conditions. Delete the logfile to make sure this does not happen.
-        remove_if_exists(self.logfile)
+
+    def _removeFile(self, filename):
+        """Remove the given file if it exists."""
+        try:
+            os.remove(filename)
+        except OSError, e:
+            if e.errno != errno.ENOENT:
+                raise
 
     def killTac(self):
-        """Kill the TAC file, if it is running, and clean up any mess"""
-        kill_by_pidfile(self.pidfile)
+        """Kill the TAC file if it is running."""
+        pidfile = self.pidfile
+        if not os.path.exists(pidfile):
+            return
+
+        # Get the pid.
+        pid = open(pidfile, 'r').read().strip()
+        try:
+            pid = int(pid)
+        except ValueError:
+            # pidfile contains rubbish
+            return
+
+        # Kill the process.
+        try:
+            os.kill(pid, SIGTERM)
+        except OSError, e:
+            if e.errno in (errno.ESRCH, errno.ECHILD):
+                # Process has already been killed.
+                return
+
+        # Poll until the process has ended.
+        for i in range(50):
+            try:
+                os.kill(pid, 0)
+                time.sleep(0.1)
+            except OSError, e:
+                break
+        else:
+            # The process is still around, so terminate it violently.
+            try:
+                os.kill(pid, SIGKILL)
+            except OSError:
+                # Already terminated
+                pass
 
     def setUpRoot(self):
         """Override this.
@@ -93,11 +160,6 @@ class TacTestSetup:
         test failure (e.g. log files might contain helpful tracebacks).
         """
         raise NotImplementedError
-
-    # XXX cprov 2005-07-08:
-    # We don't really need those information as property,
-    # they can be implmented as simple attributes since they
-    # store static information. Sort it out soon.
 
     @property
     def root(self):

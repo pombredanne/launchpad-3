@@ -14,6 +14,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
+from lazr.restful.interfaces import IServiceRootResource
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -223,7 +224,14 @@ class IPersonRoles(Interface):
         """Is this person the owner of the object?"""
 
     def isDriver(obj):
-        """Is this person one of the drivers of the object?"""
+        """Is this person the driver of the object?"""
+
+    def isOneOfDrivers(obj):
+        """Is this person on of the drivers of the object?
+
+        Works on objects that implement 'IHasDrivers' but will default to
+        isDriver if it doesn't, i.e. check the driver attribute.
+        """
 
     def isOneOf(obj, attributes):
         """Is this person one of the roles in relation to the object?
@@ -395,7 +403,7 @@ class IReadZODBAnnotation(Interface):
         """Removes annotation at the given namespace."""
 
 
-class IWebServiceApplication(ILaunchpadApplication):
+class IWebServiceApplication(ILaunchpadApplication, IServiceRootResource):
     """Launchpad web service application root."""
 
 
@@ -612,7 +620,7 @@ class INotificationRecipientSet(Interface):
         should be a short code that will appear in an
         X-Launchpad-Message-Rationale header for automatic filtering.
 
-        :param person_or_email: An `IPerson` or email adress that is in the
+        :param person_or_email: An `IPerson` or email address that is in the
             recipients list.
 
         :raises UnknownRecipientError: if the person or email isn't in the

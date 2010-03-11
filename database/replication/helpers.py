@@ -44,6 +44,7 @@ AUTHDB_SEED = frozenset([
 LPMAIN_SEED = frozenset([
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
+    ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
     ('public', 'openidconsumerassociation'),
@@ -57,6 +58,7 @@ LPMAIN_SEED = frozenset([
     ('public', 'parsedapachelog'),
     ('public', 'shipitsurvey'),
     ('public', 'openidassociations'), # Remove this in April 2009 or later.
+    ('public', 'databasereplicationlag'),
     ])
 
 # Explicitly list tables that should not be replicated. This includes the
@@ -87,6 +89,13 @@ IGNORED_TABLES = set([
     'public.auth_group_permissions',
     'public.auth_user_groups',
     'public.auth_user_user_permissions',
+    'public.oauth_nonce',
+    'public.oauth_consumer',
+    'public.oauth_token',
+    'public.api_user',
+    'public.oauth_consumer_id_seq',
+    'public.api_user_id_seq',
+    'public.oauth_nonce_id_seq',
     ])
 
 # Calculate IGNORED_SEQUENCES
@@ -287,7 +296,7 @@ def get_all_cluster_nodes(con):
         assert len(node_ids) == 1, "Multiple nodes but no paths."
         master_node_id = node_ids[0]
         master_connection_string = ConnectionString(
-            config.database.main_master)
+            config.database.rw_main_master)
         master_connection_string.user = 'slony'
         return [Node(
             master_node_id, 'node%d_node' % master_node_id,

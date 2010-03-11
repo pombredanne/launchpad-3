@@ -27,17 +27,9 @@ transaction, since it doesn't need DB access.
     ...         print "initializeRemoteBugDB() called: %r" % (
     ...             remote_bug_ids, )
 
-    >>> class FakeTransaction:
-    ...     """Transaction class to track transaction boundaries."""
-    ...     def commit(self):
-    ...         print "COMMIT"
-    ...     def abort(self):
-    ...         print "ABORT"
-    ...     def begin(self):
-    ...         print "BEGIN"
-
+    >>> from lp.testing.faketransaction import FakeTransaction
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(FakeTransaction())
+    >>> bug_watch_updater = BugWatchUpdater(FakeTransaction(log_calls=True))
     >>> bug_watch_updater.updateBugWatches(
     ...     InitializingExternalBugTracker(), [])
     COMMIT
@@ -79,7 +71,7 @@ private _getExternalBugTrackersAndWatches() method, which returns a set of
     ...     bug_tracker_to_use = Bugzilla
     ...
     ...     def getExternalBugTrackerToUse(self):
-    ...         print "Getting external bugtracker to use..."
+    ...         print "Getting external bugtracker to use"
     ...         return self.bug_tracker_to_use(self.baseurl)
 
 We'll create a helper method to allow us to avoid having to connect to a
@@ -99,7 +91,7 @@ remote server.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     standard_bugzilla, [])
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
 
     >>> len(trackers_and_watches)
     1
@@ -118,7 +110,7 @@ parameter. For most calls, this remains unaltered and only one
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     standard_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
 
     >>> len(trackers_and_watches)
     1
@@ -154,7 +146,7 @@ doesn't have the Launchpad plugin installed.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
 
     >>> len(trackers_and_watches)
     1
@@ -182,6 +174,7 @@ connect to any servers.
     ...         }
     ...
     ...     def getProductsForRemoteBugs(self, bug_ids):
+    ...         print "Getting products for remote bugs"
     ...         mappings = {}
     ...         for bug_id in bug_ids:
     ...             if int(bug_id) in self.remote_bug_products:
@@ -228,7 +221,8 @@ another BugzillaAPI instance which has syncing disabled.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
+    Getting products for remote bugs
 
     >>> len(trackers_and_watches)
     2
@@ -269,7 +263,8 @@ watches will be returned for the two Bugzilla ExternalBugTrackers.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
+    Getting products for remote bugs
 
     >>> len(trackers_and_watches)
     2
@@ -297,6 +292,19 @@ watches will be returned for the two Bugzilla ExternalBugTrackers.
     >>> for watch in sorted(other_watches, key=attrgetter('remotebug')):
     ...     print watch.remotebug
     4
+
+If there are no syncable GNOME products, only one batch is returned,
+and the remote system is never asked about product information.
+
+    >>> bug_watch_updater = BugWatchUpdater(
+    ...     FakeTransaction(log_calls=True), syncable_gnome_products=[])
+
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     gnome_bugzilla, bug_watches)
+    Getting external bugtracker to use
+
+    >>> len(trackers_and_watches)
+    1
 
 
 === Checking the server DB time ===
@@ -401,6 +409,9 @@ logged saying that comments won't be imported.
 
 === Limiting which bug watches to update ===
 
+XXX: GavinPanella 2010-01-13 bug=507205: Move this section to
+checkwatches-batching.txt.
+
 In order to reduce the amount of data we have to transfer over the
 network, each IExternalBugTracker has the ability to filter out bugs
 that haven't been modified. The method responsible for this is
@@ -487,16 +498,12 @@ to the ExternalBugTracker's initializeRemoteBugDB() method.
     ...     external_bugtracker, bug_watches)
     COMMIT
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'2'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'3'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
     COMMIT
 
@@ -530,14 +537,10 @@ will then be passed on to initializeRemoteBugDB().
     last_checked: 2007-03-17 15:...:...
     getModifiedRemoteBugs() called: [u'1', u'2', u'3', u'4']
     initializeRemoteBugDB() called: [u'1', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
     COMMIT
-    BEGIN
-    BEGIN
 
 The bug watches that are deemed as not being modified are still marked
 as being checked.
@@ -585,16 +588,12 @@ initializeRemoteBugDB() since we do need to update them.
     last_checked: 2007-03-16 15:...:...
     getModifiedRemoteBugs() called: [u'1', u'4']
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'2'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'3'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
     COMMIT
 
@@ -612,16 +611,12 @@ always update all the bug watches.
     ...     TimeUnknownExternalBugTracker(), bug_watches)
     COMMIT
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'2'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'3'
     COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
     COMMIT
 
@@ -936,7 +931,7 @@ capable of dealing with multiple remote products.
 
 == Prioritisation of watches ==
 
-_getRemoteIdsToCheck() prioritises the IDs it returns. Bug watches which have
+_getRemoteIdsToCheck() prioritizes the IDs it returns. Bug watches which have
 comments to push or which have never been checked will always be returned in
 the remote_ids_to_check list, limited only by the batch_size of the bug
 tracker (see "Batched BugWatch Updating" in doc/checkwatches.txt).

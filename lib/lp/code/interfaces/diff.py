@@ -121,6 +121,10 @@ class IPreviewDiff(IDiff):
                 'The conflicts text describing any path or text conflicts.'),
              readonly=True))
 
+    has_conflicts = Bool(
+        title=_('Has conflicts'), readonly=True,
+        description=_('The previewed merge produces conflicts.'))
+
     # The schema for the Reference gets patched in _schema_circular_imports.
     branch_merge_proposal = exported(
         Reference(
@@ -132,3 +136,6 @@ class IPreviewDiff(IDiff):
                 'If the preview diff is stale, it is out of date when '
                 'compared to the tip revisions of the source, target, and '
                 'possibly prerequisite branches.')))
+
+    def getFileByName(filename):
+        """Return the file under +files with specified name."""

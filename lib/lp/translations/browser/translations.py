@@ -51,7 +51,7 @@ class HelpTranslateButtonView:
 class TranslationsMixin:
     """Provide Translations specific properties."""
 
-    @property
+    @cachedproperty
     def translatable_languages(self):
         """Return a set of the Person's translatable languages."""
         english = getUtility(ILaunchpadCelebrities).english

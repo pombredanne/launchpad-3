@@ -40,8 +40,8 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         svn_server = SubversionServer('repository_path')
-        svn_server.setUp()
-        self.addCleanup(svn_server.tearDown)
+        svn_server.start_server()
+        self.addCleanup(svn_server.stop_server)
         self.svn_branch_url = svn_server.makeBranch(
             'trunk', [('README', 'original')])
 
@@ -122,11 +122,11 @@ class TestCVSWorkingTree(TestCaseWithTransport):
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         self.cvs_server = CVSServer('repository_path')
-        self.cvs_server.setUp()
+        self.cvs_server.start_server()
         self.module_name = 'test_module'
         self.cvs_server.makeModule(
             self.module_name, [('README', 'Random content\n')])
-        self.addCleanup(self.cvs_server.tearDown)
+        self.addCleanup(self.cvs_server.stop_server)
 
     def test_path(self):
         # The local path is passed to the constructor and available as

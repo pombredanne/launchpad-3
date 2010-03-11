@@ -18,17 +18,16 @@ import operator
 
 from zope.component import getUtility
 
-from canonical.librarian.interfaces import ILibrarianClient
-
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-
-from lp.archivepublisher.utils import process_in_batches
 from canonical.buildd.utils import notes
+from canonical.config import config
+from canonical.librarian.interfaces import ILibrarianClient
+from lp.archivepublisher.utils import process_in_batches
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from lp.buildmaster.buildergroup import BuilderGroup
-from canonical.config import config
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.build import IBuildSet
 
 
 def determineArchitecturesToBuild(pubrec, legal_archseries,
@@ -138,7 +137,7 @@ class BuilddMaster:
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
         self._archseries = {}
-        self._logger.info("Buildd Master has been initialised")
+        self._logger.debug("Buildd Master has been initialised")
 
     def commit(self):
         self._tm.commit()
@@ -267,7 +266,7 @@ class BuilddMaster:
                 self._logger.debug(
                     "Creating buildqueue record for %s (%s) on %s"
                     % (name, version, tag))
-                build.createBuildQueueEntry()
+                build.queueBuild()
 
         self.commit()
 
@@ -280,15 +279,9 @@ class BuilddMaster:
             "scanActiveBuilders() found %d active build(s) to check"
             % queueItems.count())
 
-        build_set = getUtility(IBuildSet)
         for job in queueItems:
-            build = build_set.getByQueueEntry(job)
-            proc = build.distroarchseries.processorfamily
-            try:
-                builders = notes[proc]["builders"]
-            except KeyError:
-                continue
-            builders.updateBuild(job)
+            job.builder.updateBuild(job)
+            self.commit()
 
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""
