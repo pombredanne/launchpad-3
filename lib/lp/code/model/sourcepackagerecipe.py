@@ -101,21 +101,23 @@ class SourcePackageRecipe(Storm):
         sprecipe.owner = owner
         sprecipe.sourcepackagename = sourcepackagename
         sprecipe.name = name
+        for distroseries_item in distroseries:
+            sprecipe.distroseries.add(distroseries_item)
         store.add(sprecipe)
         return sprecipe
 
-    def requestBuild(self, archive, requester, pocket):
+    def requestBuild(self, archive, requester, distroseries, pocket):
         """See `ISourcePackageRecipe`."""
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
         reject_reason = check_upload_to_archive(
-            requester, self.distroseries, self.sourcepackagename,
+            requester, distroseries, self.sourcepackagename,
             archive, component, pocket)
         if reject_reason is not None:
             raise reject_reason
 
-        sourcepackage = self.distroseries.getSourcePackage(
+        sourcepackage = distroseries.getSourcePackage(
             self.sourcepackagename)
         build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
             self, requester, archive)

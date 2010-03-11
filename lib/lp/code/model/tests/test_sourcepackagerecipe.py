@@ -19,9 +19,13 @@ class TestSourcePackage(TestCaseWithFactory):
         """Test that the distroseries behaves as a set."""
         recipe = self.factory.makeSourcePackageRecipe()
         distroseries = self.factory.makeDistroSeries()
+        (old_distroseries,) = recipe.distroseries
         recipe.distroseries.add(distroseries)
-        self.assertEqual([distroseries], list(recipe.distroseries))
+        self.assertEqual(
+            set([distroseries, old_distroseries]), set(recipe.distroseries))
         recipe.distroseries.remove(distroseries)
+        self.assertEqual([old_distroseries], list(recipe.distroseries))
+        recipe.distroseries.clear()
         self.assertEqual([], list(recipe.distroseries))
 
 
