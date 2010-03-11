@@ -487,7 +487,10 @@ class LogExCons(log.LogFormatter):
         ex_cons = get_ex_cons(lr.rev.get_apparent_authors(), self.all_ex_cons)
         for ec in ex_cons:
             # If this is the shallowest sighting of a revision, note it
-            # in the ExCon.
+            # in the ExCon. We may see the revision at different depths
+            # in different branches, mostly when one of the trunks is
+            # merged into the other. We only care about the initial
+            # merge, which should be shallowest.
             if (lr.rev.revision_id not in ec.seen_revs or
                 lr.merge_depth < ec.seen_revs[lr.rev.revision_id][0].merge_depth):
                 ec.seen_revs[lr.rev.revision_id] = (lr, self.current_top_level_rev)
