@@ -33,6 +33,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
@@ -237,10 +238,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             readonly=True))
     cve_links = Attribute('Links between this bug and CVE entries.')
     subscriptions = exported(
-        CollectionField(
+        doNotSnapshot(CollectionField(
             title=_('Subscriptions.'),
             value_type=Reference(schema=Interface),
-            readonly=True))
+            readonly=True)))
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
@@ -303,23 +304,23 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         # general master bug.
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
-    users_affected = exported(CollectionField(
+    users_affected = exported(doNotSnapshot(CollectionField(
             title=_('Users affected (not including duplicates)'),
             value_type=Reference(schema=IPerson),
-            readonly=True))
-    users_unaffected = exported(CollectionField(
+            readonly=True)))
+    users_unaffected = exported(doNotSnapshot(CollectionField(
             title=_('Users explicitly marked as unaffected '
                     '(not including duplicates)'),
             value_type=Reference(schema=IPerson),
-            readonly=True))
+            readonly=True)))
     users_affected_count_with_dupes = exported(
       Int(title=_('The number of users affected by this bug '
                   '(including duplicates)'),
           required=True, readonly=True))
-    users_affected_with_dupes = exported(CollectionField(
+    users_affected_with_dupes = exported(doNotSnapshot(CollectionField(
             title=_('Users affected (including duplicates)'),
             value_type=Reference(schema=IPerson),
-            readonly=True))
+            readonly=True)))
 
     heat = exported(
         Int(title=_("The 'heat' of the bug"),
@@ -334,11 +335,11 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         "The number of comments on this bug, not including the initial "
         "comment.")
 
-    messages = CollectionField(
+    messages = doNotSnapshot(CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
             readonly=True,
-            value_type=Reference(schema=IMessage))
+            value_type=Reference(schema=IMessage)))
 
     indexed_messages = exported(
         CollectionField(
