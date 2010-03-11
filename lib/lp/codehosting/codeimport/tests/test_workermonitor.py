@@ -39,8 +39,7 @@ from canonical.twistedsupport.tests.test_processmonitor import (
 from lp.code.enums import (
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImportSet
-from lp.code.interfaces.codeimportjob import (
-    ICodeImportJobSet, ICodeImportJobWorkflow)
+from lp.code.interfaces.codeimportjob import ICodeImportJobSet
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.codehosting import load_optional_plugin
@@ -136,10 +135,20 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TrialTestCase):
 
 
 class FakeCodeImportScheduleEndpointProxy:
+    """A fake implementation of a proxy to `ICodeImportScheduler`.
 
-    def __init__(self, jobs_dict):
+    The only non-trivial implementation is for getImportDataForJobID, which
+    will return the information provided for a give job id in the passed in
+    `jobs_dict` or raise the specified exception (NoSuchCodeImportJob type by
+    default).
+    """
+
+    def __init__(self, jobs_dict, no_such_job_exception=None):
         self.calls = []
         self.jobs_dict = jobs_dict
+        if no_such_job_exception is None:
+            no_such_job_exception = NoSuchCodeImportJob()
+        self.no_such_job_exception = no_such_job_exception
 
     def callRemote(self, method_name, *args):
         method = getattr(self, '_remote_%s' % method_name, self._default)
@@ -157,8 +166,7 @@ class FakeCodeImportScheduleEndpointProxy:
         if job_id in self.jobs_dict:
             return self.jobs_dict[job_id]
         else:
-            raise NoSuchCodeImportJob()
-
+            raise self.no_such_job_exception
 
 
 class TestWorkerMonitorUnit(TrialTestCase, TestCase):
@@ -172,6 +180,7 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
+    # This works around a clash between the TrialTestCase and our TestCase.
     skip = None
 
     class WorkerMonitor(CodeImportWorkerMonitor):
@@ -191,9 +200,10 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
             job_id, QuietFakeLogger(),
             FakeCodeImportScheduleEndpointProxy({job_id: job_data}))
 
-    def makeWorkerMonitorWithoutJob(self):
+    def makeWorkerMonitorWithoutJob(self, exception=None):
         return self.WorkerMonitor(
-            1, QuietFakeLogger(), FakeCodeImportScheduleEndpointProxy({}))
+            1, QuietFakeLogger(),
+            FakeCodeImportScheduleEndpointProxy({}, exception))
 
     def test_getWorkerArguments(self):
         # XXX
@@ -214,11 +224,18 @@ class TestWorkerMonitorUnit(TrialTestCase, TestCase):
         return worker_monitor.getWorkerArguments().addCallback(
             check_branch_log)
 
-    def test_getWorkerArguments_job_not_found(self):
+    def test_getWorkerArguments_job_not_found_raises_exit_quietly(self):
         # XXX
         worker_monitor = self.makeWorkerMonitorWithoutJob()
         return self.assertFailure(
             worker_monitor.getWorkerArguments(), ExitQuietly)
+
+    def test_getWorkerArguments_endpoint_failure_raises(self):
+        # XXX
+        worker_monitor = self.makeWorkerMonitorWithoutJob(
+            exception=ZeroDivisionError())
+        return self.assertFailure(
+            worker_monitor.getWorkerArguments(), ZeroDivisionError)
 
     def test_updateHeartbeat(self):
         # XXX

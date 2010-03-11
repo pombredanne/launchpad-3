@@ -38,10 +38,26 @@ class ICodeImportScheduler(Interface):
         """
 
     def getImportDataForJobID(job_id):
-        """XXX."""
+        """Get data about the import with job id `job_id`.
+
+        :return: ``(worker_arguments, branch_url, log_file_name)`` where:
+            * ``worker_arguments`` are the arguments to pass to the code
+              import worker subprocess.
+           * ``branch_url`` is the URL of the import branch (only used to put
+             in OOPS reports)
+           * ``log_file_name`` is the name of the log file to create in the
+             librarian.
+        :raise NoSuchCodeImportJob: if no job with id `job_id` exists.
+        """
 
     def updateHeartbeat(job_id, log_tail):
-        """XXX."""
+        """Call `ICodeImportJobWorkflow.updateHeartbeat` for job `job_id`.
+
+        :raise NoSuchCodeImportJob: if no job with id `job_id` exists.
+        """
 
     def finishJobID(job_id, status_name, log_file_alias_url):
-        """XXX."""
+        """Call `ICodeImportJobWorkflow.finishJob` for job `job_id`.
+
+        :raise NoSuchCodeImportJob: if no job with id `job_id` exists.
+        """

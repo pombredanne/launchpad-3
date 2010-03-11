@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""XXX: Module docstring goes here."""
+"""Test for the methods of `ICodeImportScheduler`."""
 
 __metaclass__ = type
 
@@ -55,7 +55,8 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         self.assertEqual(code_import_job.id, job_id)
 
     def test_getImportDataForJobID(self):
-        # getImportDataForJobID
+        # getImportDataForJobID returns the worker arguments, branch url and
+        # log file name for an import corresponding to a particular job.
         code_import_job = self.makeCodeImportJob(running=True)
         code_import = removeSecurityProxy(code_import_job).code_import
         code_import_arguments, branch_url, log_file_name = \
@@ -80,6 +81,7 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         self.assertEqual(NoSuchCodeImportJob, fault.__class__)
 
     def test_updateHeartbeat(self):
+        # updateHeartbeat calls the updateHeartbeat job workflow method.
         code_import_job = self.makeCodeImportJob(running=True)
         log_tail = self.factory.getUniqueString()
         self.api.updateHeartbeat(code_import_job.id, log_tail)
@@ -88,6 +90,8 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         self.assertEqual(log_tail, code_import_job.logtail)
 
     def test_updateHeartbeat_not_found(self):
+        # updateHeartbeat returns a NoSuchCodeImportJob fault when there is no
+        # code import job with the given ID.
         fault = self.api.updateHeartbeat(-1, '')
         self.assertTrue(
             isinstance(fault, xmlrpclib.Fault),
@@ -95,7 +99,9 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
             % (fault,))
         self.assertEqual(NoSuchCodeImportJob, fault.__class__)
 
-    def test_finishJobID(self):
+    def test_finishJobID_no_log_file(self):
+        # finishJobID calls the finishJobID job workflow method.  Passing ''
+        # means no log file was uploaded to the librarian.
         code_import_job = self.makeCodeImportJob(running=True)
         code_import = code_import_job.code_import
         self.api.finishJobID(
@@ -106,6 +112,8 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
             code_import, 'date_last_successful', UTC_NOW)
 
     def test_finishJobID_with_log_file(self):
+        # finishJobID calls the finishJobID job workflow method and can parse
+        # a librarian file's http url to figure out its ID.
         code_import_job = self.makeCodeImportJob(running=True)
         code_import = code_import_job.code_import
         log_file_alias = self.factory.makeLibraryFileAlias()
@@ -116,6 +124,8 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
             log_file_alias, code_import.results[-1].log_file)
 
     def test_finishJobID_not_found(self):
+        # getImportDataForJobID returns a NoSuchCodeImportJob fault when there
+        # is no code import job with the given ID.
         fault = self.api.finishJobID(
             -1, CodeImportResultStatus.SUCCESS.name, '')
         self.assertTrue(

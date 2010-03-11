@@ -45,12 +45,23 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
             raise NoSuchCodeImportJob()
         return job
 
+    # Because you can't use a decorated function as the implementation of a
+    # method exported over XML-RPC, the implementations just thunk to an
+    # implementation wrapped with @return_fault.
+
     def getImportDataForJobID(self, job_id):
-        return self._g(job_id)
+        """See `ICodeImportScheduler`."""
+        return self._getImportDataForJobID(job_id)
+
+    def updateHeartbeat(self, job_id, log_tail):
+        """See `ICodeImportScheduler`."""
+        return self._updateHeartbeat(job_id, log_tail)
+
+    def finishJobID(self, job_id, status_name, log_file_alias_url):
+        return self._finishJobID(job_id, status_name, log_file_alias_url)
 
     @return_fault
-    def _g(self, job_id):
-        """See `ICodeImportScheduler`."""
+    def _getImportDataForJobID(self, job_id):
         job = self._getJob(job_id)
         arguments = CodeImportSourceDetails.fromCodeImport(
             job.code_import).asArguments()
@@ -59,31 +70,24 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         log_file_name = '%s.log' % branch.unique_name[1:].replace('/', '-')
         return (arguments, branch_url, log_file_name)
 
-    def updateHeartbeat(self, job_id, log_tail):
-        return self._u(job_id, log_tail)
-
     @return_fault
-    def _u(self, job_id, log_tail):
-        """See `ICodeImportScheduler`."""
+    def _updateHeartbeat(self, job_id, log_tail):
         job = self._getJob(job_id)
         workflow = removeSecurityProxy(getUtility(ICodeImportJobWorkflow))
         workflow.updateHeartbeat(job, log_tail)
         return 0
 
     @return_fault
-    def _f(self, job_id, status_name, log_file_alias_url):
+    def _finishJobID(self, job_id, status_name, log_file_alias_url):
+        """See `ICodeImportScheduler`."""
         job = self._getJob(job_id)
         status = CodeImportResultStatus.items[status_name]
         workflow = removeSecurityProxy(getUtility(ICodeImportJobWorkflow))
         if log_file_alias_url:
             library_file_alias_set = getUtility(ILibraryFileAliasSet)
-            # XXX this is so terrible:
+            # XXX This is so so so terrible:
             log_file_alias_id = int(log_file_alias_url.split('/')[-2])
             log_file_alias = library_file_alias_set[log_file_alias_id]
         else:
             log_file_alias = None
         workflow.finishJob(job, status, log_file_alias)
-
-    def finishJobID(self, job_id, status_name, log_file_alias_url):
-        """See `ICodeImportScheduler`."""
-        return self._f(job_id, status_name, log_file_alias_url)
