@@ -330,7 +330,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
             '%(url)s\n'
             '\nYou are subscribed to branch %(identity)s.\n'
             'To unsubscribe from this branch go to'
-            ' %(url)s/+edit-subscription.\n' % {
+            ' %(url)s/+edit-subscription\n' % {
                 'url': canonical_url(branch),
                 'identity': branch.bzr_identity
                 },

@@ -14,15 +14,15 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildqueue import BuildQueue, get_builder_data
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.model.buildqueue import BuildQueue, get_builder_data
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
@@ -98,6 +98,9 @@ def print_build_setup(builds):
 
 def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
+    # Monkey-patch BuildQueueSet._now() so it returns a constant time stamp
+    # that's not too far in the future. This avoids spurious test failures.
+    monkey_patch_the_now_property(bq)
     delay = bq._estimateTimeToNextBuilder()
     test.assertTrue(
         delay <= min_time,
@@ -109,7 +112,7 @@ def set_remaining_time_for_running_job(bq, remainder):
     """Set remaining running time for job."""
     offset = bq.estimated_duration.seconds - remainder
     bq.setDateStarted(
-        datetime.utcnow().replace(tzinfo=utc) - timedelta(seconds=offset))
+        datetime.now(utc) - timedelta(seconds=offset))
 
 
 def check_delay_for_job(test, the_job, delay):
@@ -131,8 +134,24 @@ def builders_for_job(job):
     return builder_data[(getattr(job.processor, 'id', None), job.virtualized)]
 
 
+def monkey_patch_the_now_property(buildqueue):
+    """Patch BuildQueue._now() so it returns a constant time stamp.
+
+    This avoids spurious test failures.
+    """
+    # Use the date/time the job started if available.
+    time_stamp = buildqueue.job.date_started
+    if not time_stamp:
+        time_stamp = datetime.now(utc)
+    buildqueue._now = lambda: time_stamp
+    return time_stamp
+
+
 def check_estimate(test, job, delay_in_seconds):
     """Does the dispatch time estimate match the expectation?"""
+    # Monkey-patch BuildQueueSet._now() so it returns a constant time stamp.
+    # This avoids spurious test failures.
+    time_stamp = monkey_patch_the_now_property(job)
     estimate = job.getEstimatedJobStartTime()
     if delay_in_seconds is None:
         test.assertEquals(
@@ -140,7 +159,7 @@ def check_estimate(test, job, delay_in_seconds):
             "An estimate should not be possible at present but one was "
             "returned (%s) nevertheless." % estimate)
     else:
-        estimate -= datetime.utcnow()
+        estimate -= time_stamp
         test.assertTrue(
             estimate.seconds <= delay_in_seconds,
             "The estimated delay deviates from the expected one (%s > %s)" %
@@ -495,9 +514,7 @@ class TestBuilderData(SingleArchBuildsBase):
 class TestMinTimeToNextBuilder(SingleArchBuildsBase):
     """Test estimated time-to-builder with builds targetting a single
     processor."""
-    # XXX Michael Nelson 20100223 bug=525329
-    # This is still failing spuriously.
-    def disabled_test_min_time_to_next_builder(self):
+    def test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
         # Test the estimation of the minimum time until a builder becomes
@@ -684,9 +701,7 @@ class MultiArchBuildsBase(TestBuildQueueBase):
 
 class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     """Test estimated time-to-builder with builds and multiple processors."""
-    # XXX Michael Nelson 20100223 bug=525329
-    # This is still failing spuriously.
-    def disabled_test_min_time_to_next_builder(self):
+    def test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
         # One of four builders for the 'apg' build is immediately available.
