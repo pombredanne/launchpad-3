@@ -25,7 +25,7 @@ class GenerateTranslationTemplates:
             and check out the branch to there.
         :param work_dir: The directory to work in. Must exist.
         """
-        self.work_dir= work_dir
+        self.work_dir = work_dir
         self.branch_spec = branch_spec
 
     def _getBranch(self):

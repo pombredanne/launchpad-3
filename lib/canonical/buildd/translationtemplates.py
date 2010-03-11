@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 import os
-import pwd
 
 from canonical.buildd.debian import DebianBuildManager, DebianBuildState
 
