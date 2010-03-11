@@ -11,7 +11,7 @@ import unittest
 from lp.testing import ZopeTestInSubProcess
 
 
-class PidRecordingLayer:
+class TestZopeTestInSubProcessLayer:
 
     def __init__(self, test):
         self.test = test
@@ -52,7 +52,7 @@ class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
         # Runs in the parent process.
         super(TestZopeTestInSubProcess, self).__init__(method_name)
         self.pid_in_init = os.getpid()
-        self.layer = PidRecordingLayer(self)
+        self.layer = TestZopeTestInSubProcessLayer(self)
 
     def setUp(self):
         # Runs in the child process.
