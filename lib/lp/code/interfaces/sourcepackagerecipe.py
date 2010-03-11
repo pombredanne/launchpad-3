@@ -11,7 +11,7 @@ __all__ = [
     'TooNewRecipeFormat',
     ]
 
-from lazr.restful.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
 from zope.schema import Datetime, TextLine
@@ -57,10 +57,10 @@ class ISourcePackageRecipe(IHasOwner):
     owner = Reference(
         IPerson, title=_("The person or team who can edit this recipe"),
         readonly=False)
-    distroseries = Reference(
-        IDistroSeries, title=_("The distroseries this recipe will build a "
-                               "source package for"),
-        readonly=True)
+    distroseries = CollectionField(
+        Reference(IDistroSeries), title=_("The distroseries this recipe will"
+            " build a source package for"),
+        readonly=False)
     sourcepackagename = Reference(
         ISourcePackageName, title=_("The name of the source package this "
                                     "recipe will build a source package"),
