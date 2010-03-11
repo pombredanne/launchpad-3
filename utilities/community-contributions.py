@@ -538,12 +538,10 @@ class LogExCons(log.LogFormatter):
 class BranchInfo:
     """A collection of information about a branch."""
 
-    def __init__(self, path, start_revno, loggerhead_path, name=None):
+    def __init__(self, path, loggerhead_path, name=None):
         """Create a new BranchInfo.
 
         :param path: Filesystem path to the branch.
-        :param start_revno: The revision number from which the scan should
-            start.
         :param loggerhead_path: The path to the branch on Launchpad's
             Loggerhead instance.
         :param name: Optional name to identify the branch's revisions in the
@@ -551,7 +549,6 @@ class BranchInfo:
         """
         self.path = path
         self.name = name
-        self.start_revno = start_revno
         self.loggerhead_path = loggerhead_path
 
 
@@ -628,10 +625,9 @@ def main():
     # each branch
     branches = (
         BranchInfo(
-            devel_path, 1, '~launchpad-pqm/launchpad/devel'),
+            devel_path, '~launchpad-pqm/launchpad/devel'),
         BranchInfo(
-            db_devel_path, 1, '~launchpad-pqm/launchpad/db-devel',
-            'db-devel'),
+            db_devel_path, '~launchpad-pqm/launchpad/db-devel', 'db-devel'),
         )
 
     lec = LogExCons()
@@ -640,8 +636,7 @@ def main():
         # Do everything.
         b = Branch.open(branch_info.path)
 
-        logger = log.Logger(b, {'start_revision' : branch_info.start_revno,
-                                'direction' : 'reverse',
+        logger = log.Logger(b, {'direction' : 'reverse',
                                 'levels' : 0, })
         if not quiet:
             print "Calculating (this may take a while)..."
