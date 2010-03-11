@@ -17,6 +17,7 @@ __metaclass__ = type
 
 __all__ = [
     'BranchMergeProposalJob',
+    'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
     'MergeProposalCreatedJob',
     'UpdatePreviewDiffJob',
@@ -78,6 +79,10 @@ class BranchMergeProposalJobType(DBEnumeratedType):
         Update the preview diff for the BranchMergeProposal.
 
         This job generates the preview diff for a BranchMergeProposal.
+        """)
+
+    CODE_REVIEW_COMMENT_EMAIL = DBItem(2, """
+        Send the code review comment to the subscribers.
         """)
 
 
