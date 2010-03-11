@@ -7,8 +7,8 @@ __all__ = ['PackageBuildFarmJob']
 
 from canonical.database.constants import UTC_NOW
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.soyuz.interfaces.build import BuildStatus
 
 
 class PackageBuildFarmJob(BuildFarmJob):
