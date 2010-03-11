@@ -581,7 +581,7 @@ def main():
         BranchInfo(
             args[0], 8976, '~launchpad-pqm/launchpad/devel'),
         BranchInfo(
-            args[1], 8327, '~launchpad-pqm/launchpad/db-devel', 'db-devel'),
+            args[1], 8326, '~launchpad-pqm/launchpad/db-devel', 'db-devel'),
         )
 
     lec = LogExCons()
