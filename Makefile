@@ -254,7 +254,7 @@ sync_branches: pull_branches scan_branches mpcreationjobs
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
 
-support_files: $(DEVEL_WADL_FILE) $(BZR_VERSION_INFO)
+support_files: $(API_INDEX) $(BZR_VERSION_INFO)
 
 # Intended for use on developer machines
 start: inplace stop support_files initscript-start
