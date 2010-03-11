@@ -14,6 +14,7 @@ __all__ = [
     'ArchiveNotPrivate',
     'ArchivePurpose',
     'CannotCopy',
+    'CannotSwitchPrivacy',
     'ComponentNotFound',
     'DistroSeriesNotFound',
     'IArchive',
@@ -76,6 +77,12 @@ class ArchiveDependencyError(Exception):
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
     webservice_error(400) #Bad request.
+
+
+class CannotSwitchPrivacy(Exception):
+    """Raised when switching the privacy of an archive that has
+    publishing records."""
+    webservice_error(400) # Bad request.
 
 
 class PocketNotFound(Exception):
@@ -145,17 +152,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))
 
-    publish = Bool(
-        title=_("Publish"), required=False,
-        description=_("Whether the archive is to be published or not."))
-
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is guarded by a validator.
     private = exported(
         Bool(
             title=_("Private"), required=False,
             description=_(
-                "Whether the archive is private to the owner or not.")))
+                "Whether the archive is private to the owner or not. "
+                "This can only be changed if the archive has not had "
+                "any sources published.")))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,
@@ -402,6 +407,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+    def getBinaryPackageReleaseByFileName(filename):
+        """Return the corresponding `IBinaryPackageRelease` in this context.
+
+        :param filename: The filename to look up.
+        :return: The `IBinaryPackageRelease` with the specified filename,
+            or None if it was not found.
         """
 
     def requestPackageCopy(target_location, requestor, suite=None,
@@ -1007,6 +1020,10 @@ class IArchiveAppend(Interface):
 class IArchiveEdit(Interface):
     """Archive interface for operations restricted by edit privilege."""
 
+    publish = Bool(
+        title=_("Publish"), required=False,
+        description=_("Whether the archive is to be published or not."))
+
     @operation_parameters(
         person=Reference(schema=IPerson),
         source_package_name=TextLine(
@@ -1103,6 +1120,9 @@ class IArchiveEdit(Interface):
 
     def disable():
         """Disable the archive."""
+
+    arm_builds_allowed = Bool(
+        title=_("Allow ARM builds for this archive"))
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):

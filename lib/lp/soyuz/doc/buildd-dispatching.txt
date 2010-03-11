@@ -61,7 +61,7 @@ Set IBuilder.builderok of all present builders:
 
 Clean up previous BuildQueue results from sampledata:
 
-    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+    >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> lost_job = getUtility(IBuildQueueSet).get(1)
     >>> lost_job.builder.name
     u'bob'

@@ -24,11 +24,13 @@ from canonical.launchpad.components.apihelpers import (
 
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription, IStructuralSubscriptionTarget)
-from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bug import IBug, IFrontPageBugAddForm
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
+from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -44,6 +46,8 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -68,7 +72,10 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.message import (
+    IIndexedMessage, IMessage, IUserToUserEmail)
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
@@ -83,11 +90,13 @@ IBranch['linkBug'].queryTaggedValue(
 IBranch['linkSpecification'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
 IBranch['product'].schema = IProduct
-IBranch['setTarget'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['project'].schema= IProduct
-IBranch['setTarget'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['source_package'].schema= \
-        ISourcePackage
+
+patch_plain_parameter_type(
+    IBranch, 'setTarget', 'project', IProduct)
+patch_plain_parameter_type(
+    IBranch, 'setTarget', 'source_package', ISourcePackage)
+patch_reference_property(IBranch, 'sourcepackage', ISourcePackage)
+
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
@@ -314,3 +323,54 @@ patch_reference_property(
     IStructuralSubscriptionTarget)
 
 IBuildBase['buildstate'].vocabulary = BuildStatus
+
+patch_reference_property(
+    ISourcePackageRelease, 'source_package_recipe_build', ISourcePackageRecipeBuild)
+
+# IHasBugs
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'assignee', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_reporter', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_supervisor', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_commenter', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_subscriber', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'owner', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'affected_user', IPerson)
+
+# IBugTask
+patch_reference_property(IBugTask, 'owner', IPerson)
+
+# IBugWatch
+patch_reference_property(IBugWatch, 'owner', IPerson)
+
+# IIndexedMessage
+patch_reference_property(IIndexedMessage, 'inside', IBugTask)
+
+# IMessage
+patch_reference_property(IMessage, 'owner', IPerson)
+
+# IUserToUserEmail
+patch_reference_property(IUserToUserEmail, 'sender', IPerson)
+patch_reference_property(IUserToUserEmail, 'recipient', IPerson)
+
+# IBug
+patch_plain_parameter_type(
+    IBug, 'addNomination', 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBug, 'canBeNominatedFor', 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBug, 'getNominationFor', 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBug, 'getNominations', 'target', IBugTarget)
+
+# IFrontPageBugAddForm
+patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
+
+# IBugTracker
+patch_reference_property(IBugTracker, 'owner', IPerson)

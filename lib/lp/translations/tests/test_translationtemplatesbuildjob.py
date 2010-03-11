@@ -6,19 +6,31 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 
 from lp.testing import TestCaseWithFactory
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, ISpecificBuildFarmJobClass)
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IBranchJob
+from lp.code.model.branchjob import BranchJob
+from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.codehosting.scanner import events
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.model.buildqueue import BuildQueue
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
 from lp.translations.model.translationtemplatesbuildjob import (
@@ -47,9 +59,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         verifyObject(IBranchJob, self.specific_job)
         verifyObject(IBuildFarmJob, self.specific_job)
 
-        # The class also implements a utility and
-        # ISpecificBuildFarmJobClass.
-        verifyObject(ITranslationTemplatesBuildJobSource, self.jobset)
+        # The class also implements ISpecificBuildFarmJobClass.
         verifyObject(ISpecificBuildFarmJobClass, TranslationTemplatesBuildJob)
 
         # Each of these jobs knows the branch it will operate on.
@@ -96,6 +106,185 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # For now, these jobs always score themselves at 1,000.  In the
         # future however the scoring system is to be revisited.
         self.assertEqual(1000, self.specific_job.score())
+
+
+class FakeTranslationTemplatesJobSource(TranslationTemplatesBuildJob):
+    """Fake utility class.
+
+    Allows overriding of _hasPotteryCompatibleSetup.
+
+    How do you fake a utility that is implemented as a class, not a
+    factory?  By inheriting from `TranslationTemplatesJob`, this class
+    "copies" the utility.  But you can make it fake the utility's
+    behavior by setting an attribute of the class (not an object!) at
+    the beginning of every test.
+    """
+    # Fake _hasPotteryCompatibleSetup, and if so, make it give what
+    # answer?
+    fake_pottery_compatibility = None
+
+    @classmethod
+    def _hasPotteryCompatibleSetup(cls, branch):
+        if cls.fake_pottery_compatibility is None:
+            # No fake compatibility setting call the real method.
+            return TranslationTemplatesBuildJob._hasPotteryCompatibleSetup(
+                branch)
+        else:
+            # Fake pottery compatibility.
+            return cls.fake_pottery_compatibility
+
+
+class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
+    """Test `TranslationTemplatesBuildJobSource`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestTranslationTemplatesBuildJobSource, self).setUp()
+        self.jobsource = FakeTranslationTemplatesJobSource
+        self.jobsource.fake_pottery_compabitility = None
+
+    def tearDown(self):
+        self._fakePotteryCompatibleSetup(compatible=None)
+        super(TestTranslationTemplatesBuildJobSource, self).tearDown()
+
+    def _makeTranslationBranch(self, fake_pottery_compatible=None):
+        """Create a branch that provides translations for a productseries."""
+        if fake_pottery_compatible is None:
+            self.useBzrBranches()
+            branch, tree = self.create_branch_and_tree()
+        else:
+            branch = self.factory.makeAnyBranch()
+        product = removeSecurityProxy(branch.product)
+        trunk = product.getSeries('trunk')
+        trunk.branch = branch
+        trunk.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+
+        self._fakePotteryCompatibleSetup(fake_pottery_compatible)
+
+        return branch
+
+    def _fakePotteryCompatibleSetup(self, compatible=True):
+        """Mock up branch compatibility check.
+
+        :param compatible: Whether the mock check should say that
+            branches have a pottery-compatible setup, or that they
+            don't.
+        """
+        self.jobsource.fake_pottery_compatibility = compatible
+
+    def test_baseline(self):
+        utility = getUtility(ITranslationTemplatesBuildJobSource)
+        verifyObject(ITranslationTemplatesBuildJobSource, utility)
+
+    def test_generatesTemplates(self):
+        # A branch "generates templates" if it is a translation branch
+        # for a productseries that imports templates from it; is not
+        # private; and has a pottery compatible setup.
+        # For convenience we fake the pottery compatibility here.
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+        self.assertTrue(self.jobsource.generatesTemplates(branch))
+
+    def test_not_pottery_compatible(self):
+        # If pottery does not see any files it can work with in the
+        # branch, generatesTemplates returns False.
+        branch = self._makeTranslationBranch()
+        self.assertFalse(self.jobsource.generatesTemplates(branch))
+    
+    def test_branch_not_used(self):
+        # We don't generate templates branches not attached to series.
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+
+        trunk = branch.product.getSeries('trunk')
+        removeSecurityProxy(trunk).branch = None
+
+        self.assertFalse(self.jobsource.generatesTemplates(branch))
+
+    def test_not_importing_templates(self):
+        # We don't generate templates when imports are disabled.
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+
+        trunk = branch.product.getSeries('trunk')
+        removeSecurityProxy(trunk).translations_autoimport_mode = (
+            TranslationsBranchImportMode.NO_IMPORT)
+
+        self.assertFalse(self.jobsource.generatesTemplates(branch))
+
+    def test_private_branch(self):
+        # We don't generate templates for private branches.
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+        removeSecurityProxy(branch).private = True
+        self.assertFalse(self.jobsource.generatesTemplates(branch))
+
+    def test_scheduleTranslationTemplatesBuild_subscribed(self):
+        # If the feature is enabled, a TipChanged event for a branch that
+        # generates templates will schedule a templates build.
+        branch = self._makeTranslationBranch()
+        commit = DirectBranchCommit(branch, to_mirror=True)
+        commit.writeFile('POTFILES.in', 'foo')
+        commit.commit('message')
+        notify(events.TipChanged(branch, None, False))
+        branchjobs = list(TranslationTemplatesBuildJob.iterReady())
+        self.assertEqual(1, len(branchjobs))
+        self.assertEqual(branch, branchjobs[0].branch)
+
+    def test_scheduleTranslationTemplatesBuild(self):
+        # If the feature is enabled, scheduleTranslationTemplatesBuild
+        # will schedule a templates build whenever a change is pushed to
+        # a branch that generates templates.
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+
+        self.jobsource.scheduleTranslationTemplatesBuild(branch)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        branchjobs = list(store.find(BranchJob, BranchJob.branch == branch))
+        self.assertEqual(1, len(branchjobs))
+        self.assertEqual(branch, branchjobs[0].branch)
+
+    def test_create(self):
+        branch = self._makeTranslationBranch(fake_pottery_compatible=True)
+
+        specific_job = self.jobsource.create(branch)
+
+        # A job is created with the branch URL in its metadata.
+        metadata = specific_job.metadata
+        self.assertIn('branch_url', metadata)
+        url = metadata['branch_url']
+        head = 'http://'
+        self.assertEqual(head, url[:len(head)])
+        tail = branch.name
+        self.assertEqual(tail, url[-len(tail):])
+
+
+class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
+    """Test `TranslationTemplatesBuildBehavior`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestTranslationTemplatesBuildBehavior, self).setUp()
+        self.jobset = getUtility(ITranslationTemplatesBuildJobSource)
+        self.branch = self.factory.makeBranch()
+        self.specific_job = self.jobset.create(self.branch)
+        self.behavior = IBuildFarmJobBehavior(self.specific_job)
+
+    def test_getChroot(self):
+        # _getChroot produces the current chroot for the current Ubuntu
+        # release, on the nominated architecture for
+        # architecture-independent builds.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        current_ubuntu = ubuntu.currentseries
+        distroarchseries = current_ubuntu.nominatedarchindep
+
+        # Set an arbitrary chroot file.
+        fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
+        distroarchseries.addOrUpdateChroot(fake_chroot_file)
+
+        chroot = self.behavior._getChroot()
+
+        self.assertNotEqual(None, chroot)
+        self.assertEqual(fake_chroot_file, chroot)
 
 
 def test_suite():

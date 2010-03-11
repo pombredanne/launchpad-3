@@ -62,6 +62,17 @@ and in particular, mozilla-firefox in Ubuntu has 'em:
     >>> ubuntu_firefox_bugs.count() > 0
     True
 
+== Person bugs ==
+
+To get all related tasks to a person call searchTasks() on the person
+object:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> user = getUtility(IPersonSet).getByName('name16')
+    >>> user_bugs = user.searchTasks(None, user=None)
+    >>> user_bugs.count() > 0
+    True
+
 == Dupes and Conjoined tasks ==
 
 You can set flags to omit duplicates:
@@ -962,8 +973,34 @@ return True for isUserAffected(foo_bar).
     >>> print reduce(
     ...     lambda x, y: x and y,
     ...     [task.bug.isUserAffected(foo_bar)
-    ...      for task in firefox.searchTasks(search_params)]) 
+    ...      for task in firefox.searchTasks(search_params)])
     True
+
+
+== Searching for bugs linked to branches ==
+
+We can search for bugs having branches linked to them.
+
+    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id, task.bug.linked_branches.count()
+    4 2
+    5 1
+
+Similary, we can search for bugs that do not have any linked branches.
+
+    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id, task.bug.linked_branches.count()
+    1 0
+    6 0
+    18 0
+    20 0
+    21 0
 
 
 == Ordering search results ==

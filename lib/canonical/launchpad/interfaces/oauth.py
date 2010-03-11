@@ -203,7 +203,7 @@ class IOAuthRequestToken(IOAuthToken):
     def review(user, permission, context=None):
         """Grant `permission` as `user` to this token's consumer.
 
-        :param context: An IProduct, IProject, IDistribution or
+        :param context: An IProduct, IProjectGroup, IDistribution or
             IDistributionSourcePackage in which the permission is valid. If
             None, the permission will be valid everywhere.
 

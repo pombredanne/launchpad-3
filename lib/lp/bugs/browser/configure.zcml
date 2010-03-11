@@ -413,13 +413,13 @@
         template="../templates/bugtask-portlet-milestonebugs.pt"/>
     <browser:page
         name="+filebug"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
         name="+filebug-advanced"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
@@ -1044,11 +1044,6 @@
             name="+bug-portlet-subscribers-ids"
             class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
             permission="zope.Public"/>
-        <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
-            class="lp.bugs.browser.bug.BugHeatView"
-            permission="zope.Public"
-            name="+bug-heat"/>
         <browser:navigation
             module="lp.bugs.browser.bug"
             classes="
