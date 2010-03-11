@@ -86,12 +86,6 @@ Each binary publication exposes a number of properties:
     self_link: u'http://.../~cprov/+archive/ppa/+binarypub/30'
     status: u'Published'
 
-We can also retrieve the total download count for the binary in this archive.
-
-    >>> webservice.named_get(
-    ...     pubs['entries'][0]['self_link'], 'getDownloadCount').jsonBody()
-    0
-
 
 Security
 ========
@@ -152,7 +146,13 @@ also fail in their quest.
 Download counts
 ===============
 
-Detailed download counts are available from the getDownloadCounts method.
+We can retrieve the total download count for the binary in this archive.
+
+    >>> webservice.named_get(
+    ...     pubs['entries'][0]['self_link'], 'getDownloadCount').jsonBody()
+    0
+
+Detailed download counts are also available from the getDownloadCounts method.
 
     >>> login("foo.bar@canonical.com")
 
@@ -160,7 +160,7 @@ Detailed download counts are available from the getDownloadCounts method.
     >>> from lp.services.worlddata.interfaces.country import ICountrySet
     >>> australia = getUtility(ICountrySet)['AU']
 
-    >>> firefox_db = cprov.archive.getAllPublishedBinaries(
+    >>> firefox_db = cprov_db.archive.getAllPublishedBinaries(
     ...     name='mozilla-firefox')[0]
     >>> firefox_db.archive.updatePackageDownloadCount(
     ...     firefox_db.binarypackagerelease, date(2010, 2, 21), australia, 10)
