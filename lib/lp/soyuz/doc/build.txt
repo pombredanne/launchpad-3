@@ -220,8 +220,9 @@ Transforming ubuntu primary archive in a private archive makes
 storeUploadLog() upload the given content as a restricted file.
 
     >>> login('foo.bar@canonical.com')
-    >>> active_build.archive.buildd_secret = "secret"
-    >>> active_build.archive.private = True
+    >>> original_archive = active_build.archive
+    >>> private_ppa = factory.makeArchive(private=True)
+    >>> removeSecurityProxy(active_build).archive = private_ppa
     >>> login(ANONYMOUS)
 
 Simply changing the archive privacy after the 'upload_log' is stored
@@ -249,11 +250,11 @@ restricted librarian instance.
     >>> print active_build.upload_log.restricted
     True
 
-Restore ubuntu main archive state to not affect the rest of the tests.
+Restore ubuntu main archive as the target to not affect the rest of the
+tests.
 
     >>> login('foo.bar@canonical.com')
-    >>> active_build.archive.buildd_secret = ''
-    >>> active_build.archive.private = False
+    >>> removeSecurityProxy(active_build).archive = original_archive
     >>> login(ANONYMOUS)
 
 Since ubuntu/warty is already released the failed build can't be
@@ -770,38 +771,46 @@ Log in as admin to avoid security on IBuild for the moment.
 
     >>> login('foo.bar@canonical.com')
 
-Let's make cprov's archive private (and hence its builds become private):
+Let's create a private PPA for cprov (and hence its builds become private):
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
-    >>> cprov.archive.buildd_secret = "secret"
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True, name='p3a',
+    ...     distribution=cprov.archive.distribution)
+    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> bob = getUtility(IBuilderSet)['bob']
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     archive=cprov_private_ppa, builder=bob,
+    ...     binaryname='privacycheck-bin')
     >>> flush_database_updates()
 
 The default set of builds with no user specified excludes private builds:
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
-    >>> bob = getUtility(IBuilderSet)['bob']
     >>> bob_builds = bob.getBuildRecords()
     >>> print_build_details(bob_builds)
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
     RELEASE
-    
+
     >>> bob_builds.count()
-    13
+    16
 
 If we include an admin user, we can see all the builds.  Here, we get
-three additional private builds for cprov:
+an additional private build for cprov:
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
+    cprov: i386 build of privacycheck 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -812,14 +821,15 @@ three additional private builds for cprov:
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
         RELEASE
-    
+
     >>> bob_builds.count()
-    16
+    17
 
 Cprov can also see his own builds of course:
 
     >>> bob_builds = bob.getBuildRecords(user=cprov)
     >>> print_build_details(bob_builds)
+    cprov: i386 build of privacycheck 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -832,7 +842,7 @@ Cprov can also see his own builds of course:
         RELEASE
 
     >>> bob_builds.count()
-    16
+    17
 
 Buildd admins specifically are not allowed to see private builds, which will
 be filtered from the list returned:
@@ -844,6 +854,9 @@ be filtered from the list returned:
     >>> bob_builds = bob.getBuildRecords(user=buildd_admin)
     >>> print_build_details(bob_builds)
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -852,7 +865,7 @@ be filtered from the list returned:
     RELEASE
 
     >>> bob_builds.count()
-    13
+    16
 
 You can filter on build state:
 
@@ -873,13 +886,6 @@ You can filter on build state and package name:
     ...    build_state=BuildStatus.FULLYBUILT, name='pmount', user=admin)
     >>> bob_pmount_ok_builds.count()
     4
-
-Restore cprov to non-private:
-
-    >>> login('foo.bar@canonical.com')
-    >>> removeSecurityProxy(cprov).archive.private = False
-    >>> flush_database_updates()
-    >>> login(ANONYMOUS)
 
 
 == AssertionErrors in IBuild ==
@@ -966,7 +972,7 @@ storeUploadLog() refuses to override any previously stored
     >>> failedtoupload_build.storeUploadLog('something')
     Traceback (most recent call last):
     ...
-    AssertionError: Upload log information already exist and cannot be
+    AssertionError: Upload log information already exists and cannot be
     overridden.
 
 It's only possible to store another 'upload_log' content once the
@@ -1169,26 +1175,12 @@ a CannotBeRescored exception is raised.
 IBuild's content class is wrapped in a Zope security wrapper that prevents
 access to private builds for unauthorised users.
 
-cprov's archive is private which makes its builds private.  We'll add
-an extra build that is not published anywhere but in his PPA.
-
-    >>> login('foo.bar@canonical.com')
-    >>> test_publisher.prepareBreezyAutotest()
-    >>> removeSecurityProxy(cprov).archive.private = True
-    >>> private_source_pub = test_publisher.getPubSource(
-    ...     status=PackagePublishingStatus.PUBLISHED,
-    ...     sourcename='privacy-test',
-    ...     architecturehintlist='i386',
-    ...     archive=cprov.archive)
-    >>> [private_build] = private_source_pub.createMissingBuilds()
-    >>> private_build.builder = bob
-    >>> flush_database_updates()
-
 Accessing the cprov builds when logged in as admin will see the records:
 
+    >>> login('admin@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    cprov: i386 build of privacy-test 666 in ubuntutest breezy-autotest...
+    cprov: i386 build of privacycheck 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -1200,7 +1192,7 @@ Likewise when logged in as cprov:
     >>> login('celso.providelo@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    cprov: i386 build of privacy-test 666 in ubuntutest breezy-autotest...
+    cprov: i386 build of privacycheck 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -1446,10 +1438,10 @@ being returned.
 
 == Getting the build records for a particular builder ==
 
-The getBuildsForBuilder method returns all the builds for the 
+The getBuildsForBuilder method returns all the builds for the
 specified builder ID, ordered from most-recently built.
 
-    Create some source packages with which to test the 
+    Create some source packages with which to test the
     getBuildsForBuilder method:
 
     >>> src_pkg_earlier = test_publisher.getPubSource(
@@ -1459,7 +1451,7 @@ specified builder ID, ordered from most-recently built.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='laterbuildsrc',
     ...     architecturehintlist='hppa i386')
-    
+
     Create the builds based on the source packages, with the builds
     for 'earlierbuildsrc' built one day before the 'laterbuildsrc':
 
@@ -1474,10 +1466,10 @@ specified builder ID, ordered from most-recently built.
     >>> later_builds = src_pkg_later.createMissingBuilds()
     >>> for build in later_builds:
     ...     build.datebuilt = eg_build_date
-    
+
     Ensure that the i386 builds are created by the 'frog' builder,
     while the hppa builds are created by 'bob' the builder:
-    
+
     >>> builds = earlier_builds + later_builds
     >>> for build in builds:
     ...     if build.processor.name == u'386':
@@ -1487,7 +1479,7 @@ specified builder ID, ordered from most-recently built.
 
     A call to getBuildsForBuilder returns only those builds that were
     built by the specified builder, ordered by datebuilt DESC:
-    
+
     >>> frog_builds = getUtility(IBuildSet).getBuildsForBuilder(
     ...     frog_builder.id)
     >>> print_build_details(frog_builds)

@@ -31,7 +31,7 @@ from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
 from canonical.twistedsupport.processmonitor import run_process_with_timeout
-
+from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 
 buildd_success_result_map = {
     'ensurepresent': True,
@@ -222,7 +222,7 @@ class BuilddManager(service.Service):
         Make it less verbose to avoid messing too much with the old code.
         """
         level = logging.INFO
-        logger = logging.getLogger('slave-scanner')
+        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
 
         # Redirect the output to the twisted log module.
         channel = logging.StreamHandler(log.StdioOnnaStick())
@@ -283,7 +283,7 @@ class BuilddManager(service.Service):
 
             Perform the finishing-cycle tasks mentioned above.
             """
-            self.logger.info('Scanning cycle finished.')
+            self.logger.debug('Scanning cycle finished.')
             # We are only interested in returned objects of type
             # BaseDispatchResults, those are the ones that needs evaluation.
             # None, resulting from successful chains, are discarded.
@@ -304,7 +304,7 @@ class BuilddManager(service.Service):
             # Return the evaluated events for testing purpose.
             return deferred_results
 
-        self.logger.info('Finishing scanning cycle.')
+        self.logger.debug('Finishing scanning cycle.')
         dl = defer.DeferredList(self._deferreds, consumeErrors=True)
         dl.addBoth(done)
         return dl
@@ -415,7 +415,7 @@ class BuilddManager(service.Service):
 
         See `RecordingSlave.resumeSlaveHost` for more details.
         """
-        self.logger.info('Resuming slaves: %s' % recording_slaves)
+        self.logger.debug('Resuming slaves: %s' % recording_slaves)
         self.remaining_slaves = recording_slaves
         if len(self.remaining_slaves) == 0:
             self.finishCycle()

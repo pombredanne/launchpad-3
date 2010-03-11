@@ -383,9 +383,6 @@ new commit message
         self.assertEqual(
             'Requester <requester@example.com>', mailer.from_address)
         self.assertEqual(
-            request.merge_proposal.root_comment,
-            mailer.comment)
-        self.assertEqual(
             request.merge_proposal.preview_diff,
             mailer.preview_diff)
         self.assertRecipientsMatches([request.recipient], mailer)

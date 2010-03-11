@@ -11,6 +11,8 @@ __all__ = [
 from email import message_from_string
 import tempfile
 
+from lp.bugs.model.bug import FileBugData
+
 
 class FileBugDataParser:
     """Parser for a message containing extra bug information.
@@ -88,7 +90,7 @@ class FileBugDataParser:
             data.subscribers = subscribers_string.lower().split()
         if 'HWDB-Submission' in headers:
             submission_string = unicode(headers['HWDB-Submission'])
-            data.hwdb_submission_keys = (
+            data.hwdb_submission_keys = sorted(
                 part.strip() for part in submission_string.split(','))
 
     def parse(self):
@@ -164,23 +166,3 @@ class FileBugDataParser:
                 # because some extra information is included.
                 continue
         return data
-
-
-class FileBugData:
-    """Extra data to be added to the bug."""
-
-    def __init__(self):
-        self.initial_summary = None
-        self.initial_summary = None
-        self.initial_tags = []
-        self.private = None
-        self.subscribers = []
-        self.extra_description = None
-        self.comments = []
-        self.attachments = []
-        self.hwdb_submission_keys = []
-
-    def asDict(self):
-        """Return the FileBugData instance as a dict."""
-        return self.__dict__.copy()
-

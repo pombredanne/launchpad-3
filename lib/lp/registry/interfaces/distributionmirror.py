@@ -42,6 +42,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.menu import structured
 from lp.services.worlddata.interfaces.country import ICountry
 
+
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
 

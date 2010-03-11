@@ -25,6 +25,8 @@ from canonical.launchpad.database.temporaryblobstorage import (
     TemporaryBlobStorage)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryStorageManager)
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
@@ -33,7 +35,8 @@ from lazr.delegates import delegates
 from lp.bugs.interfaces.apportjob import (
     ApportJobType, IApportJob, IApportJobSource, IProcessApportBlobJob,
     IProcessApportBlobJobSource)
-from lp.bugs.utilities.filebugdataparser import FileBugDataParser
+from lp.bugs.utilities.filebugdataparser import (
+    FileBugData, FileBugDataParser)
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
@@ -184,23 +187,21 @@ class ProcessApportBlobJob(ApportJobDerived):
     def getByBlobUUID(cls, uuid):
         """See `IApportJobSource`."""
         store = IStore(ApportJob)
-        blob = store.get(TemporaryBlobStorage, uuid == uuid)
         jobs_for_blob = store.find(
             ApportJob,
-            ApportJob.blob == blob,
+            ApportJob.job == Job.id,
             ApportJob.job_type == cls.class_job_type,
-            ApportJob.job == Job.id
+            ApportJob.blob_id == TemporaryBlobStorage.id,
+            TemporaryBlobStorage.uuid == uuid
             )
 
-        if jobs_for_blob.is_empty():
+        job_for_blob = jobs_for_blob.one()
+
+        if job_for_blob is None:
             raise SQLObjectNotFound(
                 "No ProcessApportBlobJob found for UUID %s" % uuid)
 
-        if jobs_for_blob.count() > 1:
-            raise AssertionError(
-                "There can only be one ProcessApportBlobJob for a BLOB.")
-
-        return cls(jobs_for_blob.any())
+        return cls(job_for_blob)
 
     def run(self):
         """See `IRunnableJob`."""
@@ -217,7 +218,7 @@ class ProcessApportBlobJob(ApportJobDerived):
         # data to the ApportJob table.
         if len(parsed_data_dict.get('attachments')) > 0:
             attachments = parsed_data_dict['attachments']
-            attachment_file_alias_ids = []
+            attachments_to_store = []
 
             for attachment in attachments:
                 file_content = attachment['content'].read()
@@ -225,13 +226,38 @@ class ProcessApportBlobJob(ApportJobDerived):
                     name=attachment['filename'], size=len(file_content),
                     file=StringIO(file_content),
                     contentType=attachment['content_type'])
-                attachment_file_alias_ids.append(file_alias.id)
+                attachments_to_store.append({
+                    'file_alias_id': file_alias.id,
+                    'description': attachment['description']})
 
             # We cheekily overwrite the 'attachments' value in the
             # parsed_data_dict so as to avoid trying to serialize file
             # objects to JSON.
-            parsed_data_dict['attachments'] = attachment_file_alias_ids
+            parsed_data_dict['attachments'] = attachments_to_store
 
         metadata = self.metadata
         metadata.update({'processed_data': parsed_data_dict})
         self.metadata = metadata
+
+    def getFileBugData(self):
+        """Return the parsed data as a FileBugData object."""
+        processed_data = self.metadata.get('processed_data', None)
+        if processed_data is not None:
+            attachment_data = []
+            for attachment in processed_data.get('attachments', []):
+                file_alias_id = attachment['file_alias_id']
+                file_alias = getUtility(ILibraryFileAliasSet)[file_alias_id]
+                attachment_data.append(
+                    dict(attachment, file_alias=file_alias))
+
+            return FileBugData(
+                initial_summary=processed_data['initial_summary'],
+                initial_tags=processed_data['initial_tags'],
+                private=processed_data['private'],
+                subscribers=processed_data['subscribers'],
+                extra_description=processed_data['extra_description'],
+                comments=processed_data['comments'],
+                hwdb_submission_keys=processed_data['hwdb_submission_keys'],
+                attachments=attachment_data)
+        else:
+            return FileBugData()

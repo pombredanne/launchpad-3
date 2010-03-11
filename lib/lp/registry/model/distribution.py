@@ -13,7 +13,7 @@ __all__ = [
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Desc, In, Join, SQL
+from storm.locals import Desc, In, Int, Join, SQL
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
@@ -34,7 +34,6 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
-from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
@@ -179,6 +178,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
     active = True # Required by IPillar interface.
+    max_bug_heat = Int()
 
     def __repr__(self):
         return "<%s '%s' (%s)>" % (
@@ -481,26 +481,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def __iter__(self):
         return iter(self.series)
-
-    @property
-    def bugCounter(self):
-        """See `IDistribution`."""
-        counts = []
-
-        severities = [BugTaskStatus.NEW,
-                      BugTaskStatus.CONFIRMED,
-                      BugTaskStatus.INVALID,
-                      BugTaskStatus.FIXRELEASED]
-
-        querystr = ("BugTask.distribution = %s AND "
-                 "BugTask.status = %s")
-
-        for severity in severities:
-            query = querystr % sqlvalues(self.id, severity.value)
-            count = BugTask.select(query).count()
-            counts.append(count)
-
-        return counts
 
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
