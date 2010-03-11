@@ -10,7 +10,6 @@ from canonical.buildd.debian import DebianBuildManager, DebianBuildState
 class TranslationTemplatesBuildState(DebianBuildState):
     INSTALL = "INSTALL"
     GENERATE = "GENERATE"
-    
 
 
 class TranslationTemplatesBuildManager(DebianBuildManager):
