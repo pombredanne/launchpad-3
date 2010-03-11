@@ -7,16 +7,20 @@
 __metaclass__ = type
 
 
-from lp.code.enums import CodeReviewNotificationLevel
+from zope.component import getUtility
+
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout import append_footer
-from lp.code.mail.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import canonical_url
+
+from lp.code.enums import CodeReviewNotificationLevel
+from lp.code.mail.branchmergeproposal import BMPMailer
+from lp.code.interfaces.branchmergeproposal import ICodeReviewCommentEmailJob
 
 
 def send(comment, event):
     """Send a copy of the code review comments to branch subscribers."""
-    CodeReviewCommentMailer.forCreation(comment, event.email).sendAll()
+    getUtility(ICodeReviewCommentEmailJob).create(comment)
 
 
 class CodeReviewCommentMailer(BMPMailer):

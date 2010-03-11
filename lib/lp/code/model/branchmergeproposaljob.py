@@ -36,8 +36,8 @@ from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
-from zope.security.proxy import removeSecurityProxy
 
+from canonical.cachedproperty import cachedproperty
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
 from canonical.launchpad.interfaces.message import IMessageJob
@@ -48,17 +48,20 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR)
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalJob, ICreateMergeProposalJob,
+    IBranchMergeProposalJob, ICodeReviewCommentEmailJob,
+    ICodeReviewCommentEmailJobSource, ICreateMergeProposalJob,
     ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
     IUpdatePreviewDiffJobSource,
     )
 from lp.code.mail.branchmergeproposal import BMPMailer
+from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.signedmessage import signed_message_from_string
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -216,6 +219,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
             ('target_branch', bmp.target_branch.unique_name)])
         return vars
 
+
 class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
     """See `IMergeProposalCreatedJob`."""
 
@@ -357,3 +361,47 @@ class CreateMergeProposalJob(BaseRunnableJob):
         message = self.getMessage()
         return ('creating a merge proposal from message with subject %s' %
                 message['Subject'])
+
+
+class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
+    """A job to send a code review comment.
+
+    Provides class methods to create and retrieve such jobs.
+    """
+
+    implements(ICodeReviewCommentEmailJob)
+    classProvides(ICodeReviewCommentEmailJobSource)
+
+    class_job_type = BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL
+
+    def run(self):
+        """See `IRunnableJob`"""
+        mailer = CodeReviewCommentMailer.forCreation(
+            self.code_review_comment, self.original_email)
+        mailer.sendAll()
+
+    @classmethod
+    def create(cls, code_review_comment):
+        """See `IBranchDiffJobSource`."""
+        metadata = cls.getMetadata(code_review_comment)
+        bmp = code_review_comment.branch_merge_proposal
+        job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
+        return cls(job)
+
+    @staticmethod
+    def getMetadata(code_review_comment):
+        return {'code_review_comment': code_review_comment.id}
+
+    @cachedproperty
+    def code_review_comment(self):
+        """Get the code review comment"""
+        return self.bmp.getComment(self.metadata['code_review_comment'])
+
+    @cachedproperty
+    def original_email(self):
+        """An email object of the original raw email if there was one."""
+        message = self.code_review_comment.message
+        if message.raw is None:
+            return None
+        return signed_message_from_string(message.raw.read())
+
