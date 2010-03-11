@@ -30,9 +30,18 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IMasterObject
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthToken, LoginTokenType)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError, GPGVerificationError,
+    IGPGHandler)
+from canonical.launchpad.interfaces.logintoken import (
+    IGPGKeyValidationForm, ILoginTokenSet)
+from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPrincipal
@@ -41,17 +50,11 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
+from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 
 from lp.registry.browser.team import HasRenewalPolicyMixin
 from lp.registry.interfaces.person import (
-    INewPersonForm, PersonCreationRationale)
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
-from canonical.launchpad.interfaces.authtoken import IAuthToken
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError,
-    GPGVerificationError, IEmailAddressSet, IGPGHandler,
-    IGPGKeyValidationForm, ILoginTokenSet, IPerson, IPersonSet, ITeam,
-    LoginTokenType)
+    INewPersonForm, IPerson, IPersonSet, ITeam, PersonCreationRationale)
 
 
 UTC = pytz.UTC
