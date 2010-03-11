@@ -38,6 +38,7 @@ from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
 from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -65,6 +66,7 @@ from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriber)
 from lp.soyuz.interfaces.archivedependency import (
     IArchiveDependency)
+from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
@@ -253,6 +255,9 @@ patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
+
+# IBuildFarmJob
+patch_reference_property(IBuildFarmJob, 'build', IBuild)
 
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries

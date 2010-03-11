@@ -19,7 +19,6 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.fields import Reference
-from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -91,7 +90,9 @@ class IBuildFarmJob(Interface):
             "For job types that do not care about virtualization please "
             "return None."))
 
-    build = Reference(IBuild, title=_("Build"))
+    # Really an IBuild; circular import fixed in
+    # _schema_circular_imports.py
+    build = Reference(Interface, title=_("Build"))
 
 
 class ISpecificBuildFarmJobClass(Interface):
