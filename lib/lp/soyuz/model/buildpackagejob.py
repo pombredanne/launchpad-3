@@ -17,11 +17,12 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 

@@ -22,6 +22,7 @@ from canonical.testing import (
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet)
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
@@ -29,8 +30,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import (
-    BuildSetStatus, BuildStatus)
+from lp.soyuz.interfaces.build import BuildSetStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
@@ -41,8 +41,8 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SourcePackagePublishingHistory,
+    BinaryPackagePublishingHistory)
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
@@ -1192,9 +1192,9 @@ class CopyPackageScriptTestCase(unittest.TestCase):
         """
         # Count the records in SSPPH and SBPPH to check later that they
         # increased by one each.
-        num_source_pub = SecureSourcePackagePublishingHistory.select(
+        num_source_pub = SourcePackagePublishingHistory.select(
             "True").count()
-        num_bin_pub = SecureBinaryPackagePublishingHistory.select(
+        num_bin_pub = BinaryPackagePublishingHistory.select(
             "True").count()
 
         # Fill the source package changelog so it can be processed
@@ -1215,9 +1215,9 @@ class CopyPackageScriptTestCase(unittest.TestCase):
         # in other tests.
         self.layer.txn.abort()
 
-        num_source_pub_after = SecureSourcePackagePublishingHistory.select(
+        num_source_pub_after = SourcePackagePublishingHistory.select(
             "True").count()
-        num_bin_pub_after = SecureBinaryPackagePublishingHistory.select(
+        num_bin_pub_after = BinaryPackagePublishingHistory.select(
             "True").count()
 
         self.assertEqual(num_source_pub + 1, num_source_pub_after)
@@ -1237,10 +1237,10 @@ class CopyPackageTestCase(TestCaseWithFactory):
         see checkCopies().
         """
         super(CopyPackageTestCase, self).setUp()
-        pending_sources = SecureSourcePackagePublishingHistory.selectBy(
+        pending_sources = SourcePackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.PENDING)
         self.sources_pending_ids = [pub.id for pub in pending_sources]
-        pending_binaries = SecureBinaryPackagePublishingHistory.selectBy(
+        pending_binaries = BinaryPackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.PENDING)
         self.binaries_pending_ids = [pub.id for pub in pending_binaries]
 
@@ -1480,7 +1480,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # If we ensure that the copied binaries are published, the
         # copy won't fail but will simply not copy anything.
         for bin_pub in copied[1:3]:
-            bin_pub.secure_record.setPublished()
+            bin_pub.setPublished()
 
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
@@ -2237,7 +2237,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         # Override the published ancestry source to 'universe'
         universe = getUtility(IComponentSet)['universe']
-        ancestry_source.secure_record.component = universe
+        ancestry_source.component = universe
 
         # Override the copied binarypackagerelease to 'universe'.
         for binary in ppa_binaries:
@@ -2359,7 +2359,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         def publish_copies(copies):
             for pub in copies:
-                pub.secure_record.status = PackagePublishingStatus.PUBLISHED
+                pub.status = PackagePublishingStatus.PUBLISHED
 
         changes_template = (
             "Format: 1.7\n"

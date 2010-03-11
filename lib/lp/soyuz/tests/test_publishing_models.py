@@ -10,7 +10,7 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.interfaces.publishing import (IPublishingSet,
     PackagePublishingStatus)
 from lp.soyuz.tests.test_build import BaseTestCaseWithThreeBuilds
@@ -66,7 +66,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             bpr, self.sources[0].archive,
             status=PackagePublishingStatus.SUPERSEDED)
         for bpph in bpphs:
-            bpph.secure_record.datepublished = UTC_NOW
+            bpph.datepublished = UTC_NOW
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
             self.sources)

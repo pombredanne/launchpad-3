@@ -81,7 +81,7 @@ package release page:
     <Link text='cr.g7-37' url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
     >>> link.click()
     >>> browser.title
-    '\xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
+    'cr.g7-37 : \xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
 
 
 == Batched listing pages ==
@@ -265,7 +265,7 @@ private one and the view the page again.
     >>> mark_private_ppa = factory.makeArchive(
     ...     owner=mark, name="p3a", distribution=ubuntu, private=True)
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(source1_mark.secure_record).archive = (
+    >>> removeSecurityProxy(source1_mark).archive = (
     ...     mark_private_ppa)
     >>> logout()
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
@@ -288,7 +288,7 @@ his private one:
     >>> login('admin@canonical.com')
     >>> cprov_private_ppa = factory.makeArchive(
     ...     owner=cprov, name="p3a", distribution=ubuntu, private=True)
-    >>> removeSecurityProxy(source1.secure_record).archive = (
+    >>> removeSecurityProxy(source1).archive = (
     ...     cprov_private_ppa)
     >>> source1.sourcepackagerelease.upload_archive = cprov_private_ppa
     >>> logout()
@@ -310,7 +310,7 @@ Now we'll publish it in the primary archive.
     ...     ArchivePurpose.PRIMARY)
     >>> source1_ubuntu = source1.copyTo(
     ...     source1.distroseries, source1.pocket, primary)
-    >>> source1_ubuntu.secure_record.setPublished()
+    >>> source1_ubuntu.setPublished()
     >>> flush_database_updates()
     >>> logout()
 
@@ -398,3 +398,25 @@ appears.
     source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
         ...ago None - -
 
+Please note also that disabled archives are not viewable by anonymous users.
+
+    >>> def print_archive_package_rows(contents):
+    ...     package_table = find_tag_by_id(
+    ...         anon_browser.contents, 'packages_list')
+    ...     for ppa_row in package_table.findChildren('tr'):
+    ...         print extract_text(ppa_row)
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    >>> print_archive_package_rows(anon_browser)
+    Package     Version     Uploaded by
+    ...
+    pmount      0.1-1       no signer (2007-07-09)
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov.archive.disable()
+    >>> flush_database_updates()
+    >>> logout()
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'browserDefault', 'launchpad.View')

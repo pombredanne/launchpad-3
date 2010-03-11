@@ -487,9 +487,6 @@ hr {
 #logincontrol {
     float: right;
 }
-#logincontrol a:hover {
-    text-decoration: none;
-}
 
 /* push image a little bit down to make it line up better with the text */
 #logincontrol img {
@@ -1241,6 +1238,10 @@ div.watermark-apps-portlet span img {
     margin: 0;
 }
 
+.patches-view-cell {
+  padding-right: 1em;
+}
+
 /* --- Blueprints --- */
 
 body.tab-specifications #actions, body.tab-specifications .results {
@@ -1467,7 +1468,7 @@ ul.cross-reference {font-size: 1.25em;}
 
 div.popupTitle {
   background: #ffffdc;
-  padding: 0 1em;
+  padding: 0.5em 1em;
   border: 1px black solid;
   position: absolute;
   display: none;

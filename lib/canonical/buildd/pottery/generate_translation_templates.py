@@ -7,7 +7,11 @@ __metaclass__ = type
 import os.path
 import sys
 
+from bzrlib.branch import Branch
+from bzrlib.export import export
+
 from canonical.buildd.pottery import intltool
+
 
 class GenerateTranslationTemplates:
     """Script to generate translation templates from a branch."""
@@ -39,8 +43,9 @@ class GenerateTranslationTemplates:
         The branch is checked out to the location specified by
         `self.branch_dir`.
         """
-        # XXX JeroenVermeulen 2010-02-11 bug=520651: Read the contents
-        # of the branch using bzrlib.
+        branch = Branch.open(branch_url)
+        rev_tree = branch.basis_tree()
+        export(rev_tree, self.branch_dir)
 
     def generate(self):
         """Do It.  Generate templates."""
