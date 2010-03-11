@@ -6,14 +6,25 @@
 __metaclass__ = type
 __all__ = [
     'bugcomment_to_entry',
+    'bugtask_to_privacy',
     ]
 
+from zope.component import getMultiAdapter
 from lazr.restful.interfaces import IEntry
 
-def bugcomment_to_entry(comment):
+
+def bugcomment_to_entry(comment, version):
     """Will adapt to the bugcomment to the real IMessage.
 
     This is needed because navigation to comments doesn't return
     real IMessage instances but IBugComment.
     """
-    return IEntry(comment.bugtask.bug.messages[comment.index])
+    return getMultiAdapter(
+        (comment.bugtask.bug.messages[comment.index], version), IEntry)
+
+def bugtask_to_privacy(bugtask):
+    """Adapt the bugtask to the underlying bug (which implements IPrivacy).
+
+    Needed because IBugTask does not implement IPrivacy.
+    """
+    return bugtask.bug

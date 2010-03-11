@@ -390,6 +390,7 @@
                 unassigned_bugtasks
                 new_bugtasks
                 all_bugtasks
+                has_bugtasks
                 getUsedBugTags
                 getUsedBugTagsWithOpenCounts
                 bugtargetdisplayname
@@ -407,7 +408,9 @@
                 official_bug_tags
                 findRelatedArchives
                 findRelatedArchivePublications
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                max_bug_heat
+                recalculateMaxBugHeat"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -909,6 +912,8 @@
                 destroySelf"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
         <allow
             interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
         <require

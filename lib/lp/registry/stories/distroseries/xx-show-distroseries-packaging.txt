@@ -17,12 +17,13 @@ The page lists the upstream packaging links.
     Source Package   Upstream Project   Upstream Contributor Connections
     netapplet
       NetApplet ... The Novell Network Applet
-        NetApplet ... project:  Bug supervisor: no   Bug tracker: yes
-        NetApplet trunk series:  Branch: no
+        GNOME...NetApplet...trunk
+        ...Bug supervisor: no   Bug tracker: yes Branch: no
     evolution
       Evolution ... Evolution is an email client, addressbook ...
-        Evolution ... project: Bug supervisor: no   Bug tracker: yes
-        Evolution trunk series: Branch: yes   Translations: no
+        GNOME...Evolution...trunk
+        ...Bug supervisor: no   Bug tracker: yes
+        Branch: yes   Translations: no
 
 Any use can see that this page is related to the needs packaging report. It
 is linked, but the link to this page is not enabled.
@@ -63,23 +64,27 @@ The "Packages that need upstream packaging links" lists the source packages
 that need upstream packaging links. The list is prioritized so that the
 packages with the greatest need are listed first.
 
-    >>> # XXX sinzui 2010-01-21 bug=487793: Enable this when the portlet
-    >>> # is added.
-    >>> #anon_browser.open('http://launchpad.dev/ubuntu/hoary')
-    >>> #anon_browser.getLink('Needs upstream links').click()
-    >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+needs-packaging')
+    >>> # Make a very hot bug to verify the text formatting rule.
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> login('admin@canonical.com')
+    >>> bug = getUtility(IBugSet).get(10)
+    >>> bug.setHeat(300)
+    >>> logout()
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary')
+    >>> anon_browser.getLink('Needs upstream links').click()
     >>> print anon_browser.title
     Needs upstream links : ...
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(find_tag_by_id(content, 'packages'))
     Source Package       Bugs     Translations
+    linux-source-2.6.15  1 bug    No strings
     pmount               No bugs  64 strings
     alsa-utils           No bugs  No strings
     cnews                No bugs  No strings
     libstdc++            No bugs  No strings
-    linux-source-2.6.15  1 bug    No strings
 
 The counts in the listing link to their respect bugs and translations
 pages.
