@@ -18,7 +18,7 @@
         <p>
           The packages are listed by priority based on the greatest need to
           forward bugs, sync translations, or specify the latest
-          development branch. 
+          development branch.
         </p>
 
         <ul id="related-pages" class="horizontal">
@@ -72,42 +72,7 @@
                     tal:condition="product/summary"
                     tal:content="product/summary"/>
                 </td>
-
-                <td>
-                  <dl>
-                    <dt>
-                      <a tal:replace="structure product/fmt:link" /> project:
-                    </dt>
-                    <dd title="Project bug supervisor">
-                      Bug supervisor:
-                      <tal:yes-no
-                        replace="structure product/bug_supervisor/image:boolean" />
-                    </dd>
-                    <dd title="Project bug tracker"
-                      tal:define="bool product/project|bugtracker|product/bugtracker|product/official_malone">
-                      Bug tracker:
-                      <tal:yes-no replace="structure bool/image:boolean"/>
-                    </dd>
-                  </dl>
-                </td>
-
-                <td>
-                  <dl>
-                    <dt style="margin-bottom: 6px;">
-                      <a tal:replace="structure series/fmt:link" />:
-                    </dt>
-                    <dd title="Series branch">
-                      Branch:
-                      <tal:yes-no replace="structure series/branch/image:boolean"/>
-                    </dd>
-                    <dd title="Series translations auto import"
-                      tal:condition="translations"
-                      tal:define="bool not:series/translations_autoimport_mode/enumvalue:NO_IMPORT">
-                      Translations:
-                      <tal:yes-no replace="structure bool/image:boolean"/>
-                    </dd>
-                  </dl>
-                </td>
+                <td tal:content="structure package/@@+upstream-connections"/>
               </tr>
             </tal:packaging>
           </tbody>

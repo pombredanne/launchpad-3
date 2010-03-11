@@ -17,12 +17,13 @@ The page lists the upstream packaging links.
     Source Package   Upstream Project   Upstream Contributor Connections
     netapplet
       NetApplet ... The Novell Network Applet
-        NetApplet ... project:  Bug supervisor: no   Bug tracker: yes
-        NetApplet trunk series:  Branch: no
+        GNOME...NetApplet...trunk
+        ...Bug supervisor: no   Bug tracker: yes Branch: no
     evolution
       Evolution ... Evolution is an email client, addressbook ...
-        Evolution ... project: Bug supervisor: no   Bug tracker: yes
-        Evolution trunk series: Branch: yes   Translations: no
+        GNOME...Evolution...trunk
+        ...Bug supervisor: no   Bug tracker: yes
+        Branch: yes   Translations: no
 
 Any use can see that this page is related to the needs packaging report. It
 is linked, but the link to this page is not enabled.

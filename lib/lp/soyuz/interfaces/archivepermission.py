@@ -323,7 +323,8 @@ class IArchivePermissionSet(Interface):
     def componentsForQueueAdmin(archive, person):
         """Return `ArchivePermission` for the person's queue admin components.
 
-        :param archive: The context `IArchive` for the permission check.
+        :param archive: The context `IArchive` for the permission check, or
+            an iterable of `IArchive`s.
         :param person: An `IPerson` for whom you want to find out which
             components he has access to.
 

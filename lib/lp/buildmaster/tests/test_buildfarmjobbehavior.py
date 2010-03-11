@@ -5,8 +5,8 @@
 
 from unittest import TestCase, TestLoader
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
-from lp.soyuz.interfaces.build import BuildStatus
 
 
 class FakeBuildFarmJob:
