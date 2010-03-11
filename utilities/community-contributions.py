@@ -217,11 +217,14 @@ class ContainerRevision():
     """A wrapper for a top-level LogRevision containing child LogRevisions."""
 
     def __init__(self, top_lr, branch_info):
+        """Create a new ContainerRevision.
+
+        :param top_lr: The top-level LogRevision.
+        :param branch_info: The BranchInfo for the containing branch.
+        """
         self.top_rev = top_lr       # e.g. LogRevision for r9371.
         self.contained_revs = []    # e.g. [ {9369.1.1}, {9206.4.4}, ... ],
                                     # where "{X}" means "LogRevision for X"
-
-        # The containing branch's tuple from the top-level dict.
         self.branch_info = branch_info
 
     def add_subrev(self, lr):
@@ -240,7 +243,7 @@ class ContainerRevision():
             date_str = "(NO DATE)"
 
         rev_url_base = "http://bazaar.launchpad.net/%s/revision/" % (
-            self.branch_info[2])
+            self.branch_info.loggerhead_path)
 
         # In loggerhead, you can use either a revision number or a
         # revision ID.  In other words, these would reach the same page:
@@ -271,10 +274,12 @@ class ContainerRevision():
                              "(it contains %d commits)''"
                              % (rev_id_url, len(self.contained_revs)))
 
+        name = self.branch_info.name
+
         text = [
             " * [[%s|r%s%s]] -- %s\n" % (
                 rev_id_url, self.top_rev.revno,
-                ' (%s)' % self.branch_info[0] if self.branch_info[0] else '',
+                ' (%s)' % name if name else '',
                 date_str),
             " {{{\n%s\n}}}\n" % message,
             " '''Commits:'''\n ",
@@ -488,6 +493,26 @@ class LogExCons(log.LogFormatter):
                 ec.seen_revs[lr.rev.revision_id] = (lr, self.current_top_level_rev)
 
 
+class BranchInfo:
+    """A collection of information about a branch."""
+
+    def __init__(self, path, start_revno, loggerhead_path, name=None):
+        """Create a new BranchInfo.
+
+        :param path: Filesystem path to the branch.
+        :param start_revno: The revision number from which the scan should
+            start.
+        :param loggerhead_path: The path to the branch on Launchpad's
+            Loggerhead instance.
+        :param name: Optional name to identify the branch's revisions in the
+            produced document.
+        """
+        self.path = path
+        self.name = name
+        self.start_revno = start_revno
+        self.loggerhead_path = loggerhead_path
+
+
 # XXX: Karl Fogel 2009-09-10: is this really necessary?  See bzrlib/log.py.
 log.log_formatter_registry.register('external_contributors', LogExCons,
                                     'Find non-Canonical contributors.')
@@ -516,7 +541,6 @@ in the Launchpad tree.''-~
 
 def main():
     quiet = False
-    target = None
     dry_run = False
 
     wiki_dest = "https://dev.launchpad.net/Contributions"
@@ -551,22 +575,22 @@ def main():
         usage()
         sys.exit(1)
 
-    # This dict maps branch paths to tuples of (label, start revno,
-    # loggerhead_path). If the label is empty or None, no label will be
-    # shown. The start revnos here are the first non-Canonical
-    # contribution to each branch
-    branches = {
-        args[0]: (None, 8976, '~launchpad-pqm/launchpad/devel'),
-        args[1]: ('db-devel', 8327, '~launchpad-pqm/launchpad/db-devel'),
-        }
+    # The start revnos here are the first non-Canonical contribution to
+    # each branch
+    branches = (
+        BranchInfo(
+            args[0], 8976, '~launchpad-pqm/launchpad/devel'),
+        BranchInfo(
+            args[1], 8327, '~launchpad-pqm/launchpad/db-devel', 'db-devel'),
+        )
 
     lec = LogExCons()
 
-    for target, branch_info in branches.items():
+    for branch_info in branches:
         # Do everything.
-        b = Branch.open(target)
+        b = Branch.open(branch_info.path)
 
-        logger = log.Logger(b, {'start_revision' : branch_info[1],
+        logger = log.Logger(b, {'start_revision' : branch_info.start_revno,
                                 'direction' : 'reverse',
                                 'levels' : 0, })
         if not quiet:
