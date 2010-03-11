@@ -2194,7 +2194,7 @@ class Person(
                       logintokenset.getPendingGPGKeys(requesterid=self.id)))
 
     @property
-    def inactivegpgkeys(self):
+    def inactive_gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)

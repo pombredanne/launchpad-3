@@ -644,7 +644,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             title=_("Set of fingerprints pending confirmation"),
             readonly=False, required=False,
             value_type=Reference(schema=IGPGKey)))
-    inactivegpgkeys = Attribute(
+    inactive_gpg_keys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(
         CollectionField(
