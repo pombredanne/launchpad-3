@@ -13,7 +13,9 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
+    'findFile',
     'findCopyright',
+    'findChangelog',
     ]
 
 import apt_pkg
@@ -530,15 +532,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield error
 
         # Now do the same for the changelog 
-        globpath = os.path.join(tmpdir, "*", "debian/changelog")
-        for fullpath in glob.glob(globpath):
-            if not os.path.exists(fullpath):
-                continue
-            self.logger.debug("Copying changelog contents.")
-            self.changelog = open(fullpath).read().strip()
-
-        if self.changelog is None:
-            yield UploadError("Failed to copy changelog file.")
+        for error in findChangelog(self, tmpdir, self.logger):
+            yield error
 
         self.logger.debug("Cleaning up source tree.")
         try:
@@ -681,30 +676,58 @@ class DSCUploadedFile(NascentUploadFile):
             yield error
 
 
-def findCopyright(dsc_file, source_dir, logger):
-    """Find and store any debian/copyright.
-    
-    :param dsc_file: A DSCFile object where the copyright will be stored.
+def findFile(source_dir, filename, logger):
+    """Find and return any file under source_dir
+
+    :param source_file: The directory where the source was extracted
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
+    :return fullpath: the full path of the file 
     """
+
     # Instead of trying to predict the unpacked source directory name,
     # we simply use glob to retrive everything like:
     # 'tempdir/*/debian/copyright'
-    globpath = os.path.join(source_dir, "*", "debian/copyright")
+    globpath = os.path.join(source_dir, "*", filename)
     for fullpath in glob.glob(globpath):
         if not os.path.exists(fullpath):
             continue
         if os.path.islink(fullpath):
-            yield UploadError(
-                "Symbolic link for debian/copyright not allowed")
-            return
-        logger.debug("Copying copyright contents.")
-        dsc_file.copyright = open(fullpath).read().strip()
+            raise UploadError(
+                "Symbolic link for %s not allowed" % filename)
+        else:
+            return fullpath
 
-    if dsc_file.copyright is None:
+def findCopyright(dsc_file, source_dir, logger):
+    """Find and store any debian/copyright.
+    :param dsc_file: A DSCFile object where the copyright will be stored.
+    :param source_dir: The directory where the source was extracted.
+    :param logger: A logger object for debug output.
+    """
+
+    copyright_file = findFile(source_dir, 'debian/copyright', logger);
+    if copyright_file is None:
         yield UploadWarning("No copyright file found.")
+        return
 
+    logger.debug("Copying copyright contents.")
+    dsc_file.copyright = open(copyright_file).read().strip()
+
+def findChangelog(dsc_file, source_dir, logger):
+    """Find and store any debian/changelog.
+    :param dsc_file: A DSCFile object where the copyright will be stored.
+    :param source_dir: The directory where the source was extracted.
+    :param logger: A logger object for debug output.
+    """
+
+    changelog_file = findFile(source_dir, 'debian/changelog', logger);
+    if changelog_file is None:
+        # Spec requires debian/changelog to always exist, bail out it doesn't
+        yield UploadError("No changelog file found.")
+        return
+
+    logger.debug("Copying changelog contents.")
+    dsc_file.changelog = open(changelog_file).read().strip()
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
                            bzip2_count):

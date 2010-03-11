@@ -34,10 +34,8 @@ class TestDscFile(TestCase):
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
         self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0], UploadError)
-        self.assertEqual(
-            errors[0].message,
-            "Symbolic link for debian/copyright not allowed")
+        self.FailUnlessRaises(UploadError, self.findCopyright, self.dsc_file,
+                              self.tmpdir, mock_logger_quiet)
 
     def testGoodDebianCopyright(self):
         copyright = "copyright for dummies"
