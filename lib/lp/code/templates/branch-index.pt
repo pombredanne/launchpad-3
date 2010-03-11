@@ -44,18 +44,18 @@
   <script type="text/javascript"
           tal:content="string:
     LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'code.branchstatus',
-              'code.branchmergeproposal.popupdiff',
-              'code.branch.subscription', function(Y) {
+              'lazr.choiceedit', 'lp.code.branchstatus',
+              'lp.code.branchmergeproposal.popupdiff',
+              'lp.code.branch.subscription', function(Y) {
 
         Y.on('load', function(e) {
-            var subscription_portlet = new Y.code.branch.subscription.SubscriptionWidget({
+            var subscription_portlet = new Y.lp.code.branch.subscription.SubscriptionWidget({
                 contentBox: '#portlet-subscribers'
             });
             subscription_portlet.render();
 
-            Y.branchstatus.connect_status(${view/status_config});
-            Y.code.branchmergeproposal.popupdiff.connect_diff_links();
+            Y.lp.code.branchstatus.connect_status(${view/status_config});
+            Y.lp.code.branchmergeproposal.popupdiff.connect_diff_links();
             },
             window);
     });
