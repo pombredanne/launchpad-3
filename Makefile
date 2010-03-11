@@ -30,7 +30,6 @@ BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
 WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
-DEVEL_WADL_FILE = $(APIDOC_DIR)/wadl-$(LPCONFIG)-devel.xml
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -60,17 +59,11 @@ newsampledata:
 hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(DEVEL_WADL_FILE): $(BZR_VERSION_INFO)
+$(APIDOC_INDEX): $(BZR_VERSION_INFO)
 	mkdir $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py "$(WADL_TEMPLATE)"
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
 	rmdir $(APIDOC_DIR).tmp
-
-$(API_INDEX): $(DEVEL_WADL_FILE)
-	bin/apiindex $(DEVEL_WADL_FILE) > $@.tmp
-	mv $@.tmp $@
-
-apidoc: compile $(API_INDEX)
 
 check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
@@ -330,7 +323,7 @@ clean: clean_js
 	$(RM) -r $(CODEHOSTING_ROOT)
 	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml \
 	    $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak
-	$(RM) $(APIDOC_DIR)/wadl*.xml $(API_INDEX)
+	$(RM) $(APIDOC_DIR)/wadl*.xml *.html
 	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak \
 	    $(APIDOC_DIR)/wadl-testrunner-devel.xml
 	$(RM) $(BZR_VERSION_INFO)
