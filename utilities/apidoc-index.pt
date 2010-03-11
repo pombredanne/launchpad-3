@@ -5,6 +5,10 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   i18n:domain="launchpad"
 >
+  <head>
+    <title>Launchpad Web Service API</title>
+  </head>
+
   <body>
 
     <h1>Launchpad web service API documentation</h1>
@@ -31,4 +35,3 @@
   </body>
 
 </html>
-
