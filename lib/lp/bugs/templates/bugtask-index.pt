@@ -69,14 +69,12 @@
     </metal:side>
 
     <tal:registering metal:fill-slot="registering">
-    <div tal:replace="cache:public,1 hour">
       Bug #<tal:block content="context/bug/id"/> reported by
       <tal:reporter replace="structure context/bug/owner/fmt:link" />
       <span
         tal:attributes="title context/bug/datecreated/fmt:datetime"
         tal:content="context/bug/datecreated/fmt:displaydate" />
       <tal:heat replace="structure view/bug_heat_html" />
-    </div>
     </tal:registering>
 
     <metal:heading fill-slot="heading" tal:define="context_menu context/menu:context">
