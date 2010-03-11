@@ -618,7 +618,7 @@
           <td style="white-space: nowrap">
             <span tal:content="structure view/widgets/has_branches" />
             <label style="font-weight: normal" for="field.has_branches">
-              Show only bugs with linked branches
+              Show bugs with linked branches
             </label>
           </td>
           <td>
@@ -628,7 +628,7 @@
           <td style="white-space: nowrap">
             <span tal:content="structure view/widgets/has_no_branches" />
             <label style="font-weight: normal" for="field.has_no_branches">
-              Show only bugs without linked branches
+              Show bugs without linked branches
             </label>
           </td>
           <td>

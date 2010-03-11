@@ -919,7 +919,7 @@ source-package releases for the archive. By default, all releases will
 be returned, but you can also ask for releases with builds in a certain
 state.
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> releases = cprov_archive.getSourcePackageReleases(
     ...     build_status=BuildStatus.FULLYBUILT)
     >>> for release in releases:
@@ -1037,7 +1037,6 @@ This method can return build records for sources matching the given
 
 Or return build records in a specific status:
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> cprov_archive.getBuildRecords(
     ...     build_state=BuildStatus.FULLYBUILT).count()
     3

@@ -404,6 +404,8 @@ next build round:
     >>> a_builder.updateBuild(bqItem8)
     >>> bqItem8.builder is None
     True
+    >>> print bqItem8.specific_job.build.buildstate.name
+    NEEDSBUILD
 
 Cleanup in preparation for the next test:
 
@@ -496,7 +498,7 @@ upload log information:
     ...
     X-Launchpad-Build-State: FAILEDTOUPLOAD
     ...
-    * Build Log: http://launchpad.dev/.../buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
+    * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
     ...
     Upload log:
     INFO    creating lockfile
@@ -546,7 +548,7 @@ Create a mock slave so the builder gets the right responses for this test.
 Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> build.buildstate = BuildStatus.FULLYBUILT
 
 Now the updateBuild should recognize this build record as a

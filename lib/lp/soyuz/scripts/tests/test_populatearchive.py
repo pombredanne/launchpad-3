@@ -17,15 +17,16 @@ from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet, PackageCopyStatus)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmaster import PackageLocationError, SoyuzScriptError
 from lp.soyuz.scripts.populate_archive import ArchivePopulator
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher

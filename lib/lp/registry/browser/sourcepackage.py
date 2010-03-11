@@ -55,7 +55,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, ReturnToReferrerMixin)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -74,9 +73,13 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroseries=self.context.distroseries,
             sourcepackagename=self.context.sourcepackagename)
 
-        if not check_permission(
-            'launchpad.TranslationsAdmin', sourcepackage_pots):
-            self.context.distroseries.checkTranslationsViewable()
+        # If we are able to view the translations for distribution series
+        # we should also be allowed to see them for a distribution
+        # source package.
+        # If not, raise TranslationUnavailable.
+        from lp.translations.browser.distroseries import (
+            check_distroseries_translations_viewable)
+        check_distroseries_translations_viewable(self.context.distroseries)
 
         return sourcepackage_pots
 
@@ -96,6 +99,7 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
+
     @property
     def text(self):
         return smartquote('"%s" source package') % (self.context.name)
