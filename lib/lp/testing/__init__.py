@@ -29,7 +29,7 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
-    'ZopeIsolatedTest',
+    'ZopeTestInSubProcess',
     ]
 
 import copy
@@ -590,7 +590,7 @@ class WindmillTestCase(TestCaseWithFactory):
         self.client.open(url=u'http://launchpad.dev:8085')
 
 
-class ZopeIsolatedTest:
+class ZopeTestInSubProcess:
     """Run tests in a sub-process, respecting Zope idiosyncrasies.
 
     Use this as a mixin with an interesting `TestCase` or `TestSuite`
@@ -631,7 +631,7 @@ class ZopeIsolatedTest:
             # obtain the result.
             result = testtools.MultiTestResult(
                 result, subunit.TestProtocolClient(fdwrite))
-            super(ZopeIsolatedTest, self).run(result)
+            super(ZopeTestInSubProcess, self).run(result)
             fdwrite.flush()
             sys.stdout.flush()
             sys.stderr.flush()

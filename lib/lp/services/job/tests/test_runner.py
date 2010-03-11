@@ -27,7 +27,7 @@ from lp.services.job.interfaces.job import JobStatus, IRunnableJob
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
     BaseRunnableJob, JobCronScript, JobRunner, TwistedJobRunner)
-from lp.testing import TestCaseWithFactory, ZopeIsolatedTest
+from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -301,7 +301,7 @@ class ListLogger:
         self.entries.append(input)
 
 
-class TestTwistedJobRunner(ZopeIsolatedTest, TestCaseWithFactory):
+class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -326,7 +326,7 @@ class TestTwistedJobRunner(ZopeIsolatedTest, TestCaseWithFactory):
         self.assertIn('Job ran too long.', oops.value)
 
 
-class TestJobCronScript(ZopeIsolatedTest, TestCaseWithFactory):
+class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
