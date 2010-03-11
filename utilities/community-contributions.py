@@ -9,7 +9,7 @@
 Trawl a Launchpad branch's history to detect contributions by non-Canonical
 developers, then update https://dev.launchpad.net/Contributions accordingly.
 
-Usage: community-contributions.py [options] DEVEL_PATH DB_DEVEL_PATH
+Usage: community-contributions.py [options] --devel=PATH --db-devel=DB_PATH
 
 Requirements:
        You need both the 'devel' and 'db-devel' branches of Launchpad
@@ -19,10 +19,12 @@ Requirements:
        you where to get it).
 
 Options:
-  -q            Print no non-essential messages.
-  -h, --help    Print this help.
-  --dry-run     Don't update the wiki, just print the new wiki page to stdout.
-  --draft-run   Update the wiki "/Draft" page instead of the real page.
+  -q               Print no non-essential messages.
+  -h, --help       Print this help.
+  --dry-run        Don't update the wiki, just print the new page to stdout.
+  --draft-run      Update the wiki "/Draft" page instead of the real page.
+  --devel=PATH     Specify the filesystem path to the 'devel' branch.
+  --db-devel=PATH  Specify the filesystem path to the 'db-devel' branch.
 """
 
 # General notes:
@@ -545,6 +547,8 @@ in the Launchpad tree.''-~
 def main():
     quiet = False
     dry_run = False
+    devel_path = None
+    db_devel_path = None
 
     wiki_dest = "https://dev.launchpad.net/Contributions"
 
@@ -554,7 +558,8 @@ def main():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], '?hq',
-                                   ['help', 'usage', 'dry-run', 'draft-run'])
+                                   ['help', 'usage', 'dry-run', 'draft-run',
+                                    'devel=', 'db-devel='])
     except getopt.GetoptError, e:
         sys.stderr.write("ERROR: " + str(e) + '\n\n')
         usage()
@@ -570,11 +575,15 @@ def main():
             dry_run = True
         elif opt == '--draft-run':
             wiki_dest += "/Draft"
+        elif opt == '--devel':
+            devel_path = value
+        elif opt == '--db-devel':
+            db_devel_path = value
 
     # Ensure we have the arguments we need.
-    if len(args) != 2:
+    if not devel_path or not db_devel_path:
         sys.stderr.write("ERROR: paths to Launchpad devel and db-devel "
-                         "branches required as arguments\n")
+                         "branches required as options\n")
         usage()
         sys.exit(1)
 
@@ -582,9 +591,10 @@ def main():
     # each branch
     branches = (
         BranchInfo(
-            args[0], 8976, '~launchpad-pqm/launchpad/devel'),
+            devel_path, 8976, '~launchpad-pqm/launchpad/devel'),
         BranchInfo(
-            args[1], 8326, '~launchpad-pqm/launchpad/db-devel', 'db-devel'),
+            db_devel_path, 8326, '~launchpad-pqm/launchpad/db-devel',
+            'db-devel'),
         )
 
     lec = LogExCons()
