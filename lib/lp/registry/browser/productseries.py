@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -20,6 +20,7 @@ __all__ = [
     'ProductSeriesOverviewNavigationMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
+    'ProductSeriesSetBranchView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesUbuntuPackagingView',
@@ -29,11 +30,13 @@ __all__ = [
 import cgi
 from operator import attrgetter
 
+from BeautifulSoup import BeautifulSoup
 from bzrlib.revision import NULL_REVISION
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.formlib import form
+from zope.interface import Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -41,7 +44,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.code.browser.branchref import BranchRef
+from canonical.launchpad.fields import URIField
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.blueprints.interfaces.specification import (
@@ -49,9 +52,11 @@ from lp.blueprints.interfaces.specification import (
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.helpers import browserLanguages
+from lp.code.browser.branchref import BranchRef
+from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.codeimport import (
-    ICodeImportSet)
+    ICodeImport, ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -76,12 +81,15 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
+
+from lazr.restful.interface import copy_field, use_template
 
 
 def quote(text):
@@ -644,7 +652,120 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         self.next_url = canonical_url(product)
 
 
-class ProductSeriesLinkBranchView(LaunchpadEditFormView):
+def _getBranchTypeVocabulary():
+    items = (
+        ('link-lp-bzr',
+         _("Link to a Bazaar branch already on Launchpad")),
+        ('create-new',
+         _("Create a new, empty branch in Launchpad and "
+           "link to this series")),
+        ('import-external',
+         _("Import a branch hosted somewhere else")),
+        )
+    terms = [
+        SimpleTerm(name, name, label) for name, label in items]
+    return SimpleVocabulary(terms)
+
+from lazr.enum import DBItem
+
+class RevisionControlSystemsExtended(RevisionControlSystems):
+    BZR = DBItem(99, """
+        Bazaar
+
+        External Bazaar branch.
+        """)
+
+class SetBranchForm(Interface):
+    """The fields presented on the form for setting a branch."""
+
+    use_template(
+        ICodeImport,
+        ['cvs_module'])
+
+    rcs_type = Choice(title=_("Type of RCS"),
+        required=True, vocabulary=RevisionControlSystemsExtended,
+        description=_(
+            "The version control system to import from. "))
+
+    repo_url = URIField(
+        title=_("Branch URL"), required=False,
+        description=_("The URL of the branch."),
+        allowed_schemes=["http", "https"],
+        allow_userinfo=False,
+        allow_port=True,
+        allow_query=False,
+        allow_fragment=False,
+        trailing_slash=False)
+
+    branch_location = copy_field(
+        IProductSeries['branch'],
+        __name__='branch_location',
+        title=_("Branch"),
+        description=_(
+            "The Bazaar branch for this series in Launchpad, "
+            "if one exists."),
+        )
+
+    branch_type = Choice(
+        title=_('Import type'),
+        vocabulary=_getBranchTypeVocabulary(),
+        description=_("The type of import"),
+        required=True)
+
+
+class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
+    """The view to set a branch for the ProductSeries."""
+
+    schema = SetBranchForm
+    # Set for_input to True to ensure fields marked read-only will be editable
+    # upon creation.
+    for_input = True
+
+    custom_widget('rcs_type', LaunchpadRadioWidget)
+    custom_widget('branch_type', LaunchpadRadioWidget)
+    initial_values = {
+        'rcs_type': RevisionControlSystems.BZR_SVN,
+        }
+
+    def setUpWidgets(self):
+        super(ProductSeriesSetBranchView, self).setUpWidgets()
+        #widget = self.widgets.get('branch')
+        #widget.setRenderedValue('trunkadunk')
+        # Extract the radio buttons from the rcs_type widget, so we can
+        # display them separately in the form.
+        soup = BeautifulSoup(self.widgets['rcs_type']())
+        fields = soup.findAll('input')
+        [cvs_button, svn_button, git_button, hg_button,
+         bzr_button, empty_marker] = [
+            field for field in fields
+            if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG',
+                                      'BZR', '1']]
+        cvs_button['onclick'] = 'updateWidgets()'
+        svn_button['onclick'] = 'updateWidgets()'
+        git_button['onclick'] = 'updateWidgets()'
+        hg_button['onclick'] = 'updateWidgets()'
+        bzr_button['onclick'] = 'updateWidgets()'
+        # The following attributes are used only in the page template.
+        self.rcs_type_cvs = str(cvs_button)
+        self.rcs_type_svn = str(svn_button)
+        self.rcs_type_git = str(git_button)
+        self.rcs_type_hg = str(hg_button)
+        self.rcs_type_bzr = str(bzr_button)
+        self.rcs_type_emptymarker = str(empty_marker)
+
+        soup = BeautifulSoup(self.widgets['branch_type']())
+        fields = soup.findAll('input')
+        (link_button, create_button, import_button, emptymarker) = fields
+        link_button['onclick'] = 'updateBranchType()'
+        create_button['onclick'] = 'updateBranchType()'
+        import_button['onclick'] = 'updateBranchType()'
+        self.branch_type_link = str(link_button)
+        self.branch_type_create = str(create_button)
+        self.branch_type_import = str(import_button)
+        self.branch_type_emptymarker = str(emptymarker)
+
+
+class ProductSeriesLinkBranchView(LaunchpadEditFormView, ProductSeriesView):
     """View to set the bazaar branch for a product series."""
 
     schema = IProductSeries
