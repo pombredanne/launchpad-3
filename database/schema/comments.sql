@@ -1332,6 +1332,12 @@ COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit 
 COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
 
+-- SourcePackageRecipeDistroSeries
+
+COMMENT ON TABLE SourcePackageRecipeDistroSeries IS 'Link table for sourcepackagerecipe and distroseries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.distroseries IS 'The primary key of the DistroSeries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The primary key of the SourcePackageRecipe.';
+
 -- SourcePackageRecipeBuild
 
 COMMENT ON TABLE SourcePackageRecipeBuild IS 'The build record for the process of building a source package as described by a recipe.';
