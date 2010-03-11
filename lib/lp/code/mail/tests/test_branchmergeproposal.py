@@ -315,7 +315,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
-            'lp://dev/~mary/super-product/bar updated', ctrl.subject)
+            'lp://dev/~mary/super-product/bar', ctrl.subject)
         url = canonical_url(mailer.merge_proposal)
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
@@ -382,9 +382,6 @@ new commit message
             request, request.merge_proposal, requester)
         self.assertEqual(
             'Requester <requester@example.com>', mailer.from_address)
-        self.assertEqual(
-            request.merge_proposal.root_comment,
-            mailer.comment)
         self.assertEqual(
             request.merge_proposal.preview_diff,
             mailer.preview_diff)

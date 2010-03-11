@@ -53,9 +53,13 @@ Our user requests the Catalan and Czech translations of a template.
 
 Now we request that the queue be processed.
 
-    >>> from lp.testing.faketransaction import FakeTransaction
+(Commits are needed to make the test requests seep through to the slave
+database).
+
+    >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
-    >>> process_queue(FakeTransaction(), MockLogger())
+    >>> transaction.commit()
+    >>> process_queue(transaction, MockLogger())
     log> Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
     log> Stored file at http://.../launchpad-export.tar.gz
@@ -185,7 +189,8 @@ Let's try requesting an export in MO format:
     >>> from lp.translations.interfaces.translationfileformat import (
     ...     TranslationFileFormat)
     >>> request_set.addRequest(person, None, [cs], TranslationFileFormat.MO)
-    >>> process_queue(FakeTransaction(), MockLogger())
+    >>> transaction.commit()
+    >>> process_queue(transaction, MockLogger())
     log> Exporting objects for Happy Downloader, related to template pmount
     in Ubuntu Hoary package "pmount"
     log> Stored file at http://.../cs_LC_MESSAGES_pmount.mo
