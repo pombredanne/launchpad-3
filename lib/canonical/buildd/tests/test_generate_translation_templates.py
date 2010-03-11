@@ -3,6 +3,7 @@
 
 import os
 from unittest import TestLoader
+import tarfile
 
 from lp.testing.fakemethod import FakeMethod
 
@@ -80,6 +81,25 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
         marker_file = file(os.path.join(generator.branch_dir, 'marker.txt'))
         self.assertEqual(marker_text, marker_file.read())
+
+    def test_templates_zipup(self):
+        # Create a tarball from pot files.
+        workdir = self.makeTemporaryDirectory()
+        branchdir = os.path.join(workdir, 'branchdir')
+        dummy_tar = os.path.join(
+            os.path.dirname(__file__),'dummy_templates.tar.gz')
+        tar = tarfile.open(dummy_tar, 'r|*')
+        tar.extractall(branchdir)
+        potnames = [name for name in tar.getnames() if not name.endswith('/')]
+        tar.close()
+
+        generator = GenerateTranslationTemplates(branchdir, workdir)
+        generator._getBranch()
+        generator._zipup(potnames)
+        tar = tarfile.open(os.path.join(workdir, 'templates.tar.gz'), 'r|*')
+        tarnames = tar.getnames()
+        tar.close()
+        self.assertContentEqual(potnames, tarnames)
 
     def test_script(self):
         tempdir = self.makeTemporaryDirectory()

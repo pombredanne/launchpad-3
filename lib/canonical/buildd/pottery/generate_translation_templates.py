@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import os.path
 import sys
+import tarfile
 
 from bzrlib.branch import Branch
 from bzrlib.export import export
@@ -48,13 +49,22 @@ class GenerateTranslationTemplates:
         rev_tree = branch.basis_tree()
         export(rev_tree, self.branch_dir)
 
+    def _zipup(self, files):
+        """Put files into tarball."""
+        zipname = os.path.join(self.work_dir, 'templates.tar.gz')
+        zipfile = tarfile.open(zipname, 'w|gz')
+        for path in files:
+            if path.endswith('/'):
+                continue
+            zipfile.add(os.path.join(self.branch_dir, path), path)
+        zipfile.close()
+
     def generate(self):
         """Do It.  Generate templates."""
         self._getBranch()
         pots = intltool.generate_pots(self.branch_dir)
-        print "\n".join(
-            [os.path.normpath(os.path.join(self.branch_dir, potpath))
-                for potpath in pots])
+        if len(pots) > 0:
+            self._zipup(pots)
         return 0
 
 
