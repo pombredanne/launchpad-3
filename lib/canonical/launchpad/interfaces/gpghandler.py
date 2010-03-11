@@ -207,8 +207,8 @@ class IGPGHandler(Interface):
     def retrieveActiveKey(fingerprint):
         """Retrieve key information, raise errors if the key is not active.
 
-        Exactly like `retrieveActiveKey` except raises errors if the key is
-        expired or has been revoked.
+        Exactly like `retrieveKey` except raises errors if the key is expired
+        or has been revoked.
 
         :param fingerprint: The key fingerprint, which must be an hexadecimal
             string.

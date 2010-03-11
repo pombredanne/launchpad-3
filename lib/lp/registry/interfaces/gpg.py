@@ -97,10 +97,12 @@ class IGPGKey(IHasOwner):
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
             vocabulary='GpgAlgorithm')
-    keyid = exported(TextLine(title=_("OpenPGP key ID"), required=True,
-            constraint=valid_keyid))
-    fingerprint = exported(TextLine(title=_("User Fingerprint"), required=True,
-            constraint=valid_fingerprint))
+    keyid = exported(
+        TextLine(title=_("OpenPGP key ID"), required=True,
+                 constraint=valid_keyid, readonly=True))
+    fingerprint = exported(
+        TextLine(title=_("User Fingerprint"), required=True,
+                 constraint=valid_fingerprint, readonly=True))
     active = Bool(title=_("Active"), required=True)
     displayname = Attribute("Key Display Name")
     keyserverURL = Attribute(
