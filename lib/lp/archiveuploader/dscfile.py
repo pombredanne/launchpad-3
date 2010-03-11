@@ -704,8 +704,11 @@ def findCopyright(dsc_file, source_dir, logger):
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
     """
-
-    copyright_file = findFile(source_dir, 'debian/copyright', logger);
+    try:
+        copyright_file = findFile(source_dir, 'debian/copyright', logger);
+    except UploadError, error:
+        yield error
+        return
     if copyright_file is None:
         yield UploadWarning("No copyright file found.")
         return
@@ -720,7 +723,11 @@ def findChangelog(dsc_file, source_dir, logger):
     :param logger: A logger object for debug output.
     """
 
-    changelog_file = findFile(source_dir, 'debian/changelog', logger);
+    try:
+        changelog_file = findFile(source_dir, 'debian/changelog', logger);
+    except UploadError, error:
+        yield error
+        return
     if changelog_file is None:
         # Spec requires debian/changelog to always exist, bail out it doesn't
         yield UploadError("No changelog file found.")
