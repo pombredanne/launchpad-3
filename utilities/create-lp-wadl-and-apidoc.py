@@ -41,7 +41,7 @@ def main(path_template):
     # Request the WADL from the root resource.
     # We do this by creating a request object asking for a WADL
     # representation.
-    for version in []:#config.active_versions:
+    for version in config.active_versions:
         url = urlparse.urljoin(allvhosts.configs['api'].rooturl, version)
         request = WebServiceTestRequest(version=version, environ={
             'SERVER_URL': url,
