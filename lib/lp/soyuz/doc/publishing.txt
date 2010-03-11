@@ -1204,15 +1204,12 @@ This `ResultSet` contains 3-element tuples as
     14
 
 This result are not ordered since it comes from SQL UNION, so call
-sites are responsible to order them appropriately. So, can can only
-check that they unpack as specified, a 3-element tuple.
-
-    >>> source, file, content = cprov_files.any()
+sites are responsible to order them appropriately.
 
     >>> ordered_filenames = sorted(
     ...    file.filename for source, file, content in cprov_files)
 
-    >>> print ordered_filenames[-1]
+    >>> print ordered_filenames[0]
     firefox_0.9.2.orig.tar.gz
 
 We can also retrieve just the binary files related with Celso's PPA
