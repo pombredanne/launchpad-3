@@ -12,6 +12,8 @@ __all__ = [
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
     'IBranchMergeProposalListingBatchNavigator',
+    'ICodeReviewCommentEmailJob',
+    'ICodeReviewCommentEmailJobSource',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
@@ -608,6 +610,22 @@ class IUpdatePreviewDiffJobSource(Interface):
 
     def contextManager():
         """Get a context for running this kind of job in."""
+
+
+class ICodeReviewCommentEmailJob(IRunnableJob):
+    """Interface for the job to send code review comment email."""
+
+    code_review_comment = Attribute('The code review comment.')
+
+
+class ICodeReviewCommentEmailJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
+
+    def create(code_review_comment):
+        """Create a job to email subscribers about the comment."""
+
+    def iterReady():
+        """Iterate through jobs needing to send email."""
 
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
