@@ -195,7 +195,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
 
     def makeApprovedImportWithRunningJob(self):
         code_import = self.makeApprovedImportWithPendingJob()
-        job = CodeImportJobSet().getJobForMachine('machine')
+        job = CodeImportJobSet().getJobForMachine('machine', 10)
         self.assertEqual(code_import.import_job, job)
         return code_import
 
@@ -424,6 +424,15 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         self.assertEqual(1, code_import.consecutive_failure_count)
 
     def test_consecutive_failure_count_succeed_succeed_no_changes(self):
+        # A code import that has succeeded then succeeded with no changes has
+        # a consecutive_failure_count of 0.
+        code_import = self.factory.makeCodeImport()
+        self.succeedImport(code_import)
+        self.succeedImport(
+            code_import, CodeImportResultStatus.SUCCESS_NOCHANGE)
+        self.assertEqual(0, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_succeed_succeed_partial(self):
         # A code import that has succeeded then succeeded with no changes has
         # a consecutive_failure_count of 0.
         code_import = self.factory.makeCodeImport()

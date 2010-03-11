@@ -315,7 +315,7 @@ class Branch(SQLBase):
     def addLandingTarget(self, registrant, target_branch,
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
-                         initial_comment=None, review_requests=None,
+                         description=None, review_requests=None,
                          review_diff=None, commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
@@ -369,11 +369,8 @@ class Branch(SQLBase):
             date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status, review_diff=review_diff,
-            commit_message=commit_message)
-
-        if initial_comment is not None:
-            bmp.createComment(
-                registrant, None, initial_comment, _notify_listeners=False)
+            commit_message=commit_message,
+            description=description)
 
         for reviewer, review_type in review_requests:
             bmp.nominateReviewer(
@@ -397,7 +394,7 @@ class Branch(SQLBase):
         review_requests = zip(reviewers, review_types)
         return self.addLandingTarget(
             registrant, target_branch, prerequisite_branch,
-            needs_review=needs_review, initial_comment=initial_comment,
+            needs_review=needs_review, description=initial_comment,
             commit_message=commit_message, review_requests=review_requests)
 
     def scheduleDiffUpdates(self):
@@ -609,7 +606,7 @@ class Branch(SQLBase):
 
         for bugbranch in self.bug_branches:
             deletion_operations.append(
-                DeletionCallable(bugbranch,
+                DeletionCallable(bugbranch.bug.default_bugtask,
                 _('This bug is linked to this branch.'),
                 bugbranch.destroySelf))
         for spec_link in self.spec_links:
@@ -1309,7 +1306,7 @@ def compose_public_url(scheme, unique_name, suffix=None):
     accepted_schemes.add('sftp')
     assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
     host = URI(config.codehosting.supermirror_root).host
-    path = '/' + unique_name
+    path = '/' + urlutils.escape(unique_name)
     if suffix is not None:
         path = os.path.join(path, suffix)
     return str(URI(scheme=scheme, host=host, path=path))

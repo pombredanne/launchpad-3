@@ -461,7 +461,7 @@ COMMENT ON COLUMN Diff.removed_lines_count IS 'The number of lines removed in th
 
 COMMENT ON TABLE DistributionSourcePackage IS 'Representing a sourcepackage in a distribution across all distribution series.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on a particular a source package in a distribution.';
-
+COMMENT ON COLUMN DistributionSourcePackage.max_bug_heat IS 'The highest heat value across bugs for this source package.';
 
 -- DistributionSourcePackageCache
 
@@ -474,7 +474,6 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgsummaries IS 'The aggrega
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggregated description of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
-
 
 -- DistroSeriesPackageCache
 
@@ -612,6 +611,7 @@ COMMENT ON COLUMN Product.bug_reporting_guidelines IS 'Guidelines to the end use
 COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has been approved by an administrator.';
 COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remote bug tracker.';
+COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -703,6 +703,7 @@ COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image 
 COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version of this product''s mugshot.';
 COMMENT ON COLUMN Project.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on products in this project.';
 COMMENT ON COLUMN Project.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
+COMMENT ON COLUMN Project.max_bug_heat IS 'The highest heat value across bugs for products in this project.';
 
 -- ProjectRelationship
 COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the ''label'' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
@@ -966,6 +967,7 @@ COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that h
 COMMENT ON COLUMN Distribution.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
 COMMENT ON COLUMN Distribution.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on this distribution.';
 COMMENT ON COLUMN Distribution.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
+COMMENT ON COLUMN Distribution.max_bug_heat IS 'The highest heat value across bugs for this distribution.';
 
 -- DistroSeries
 
@@ -1344,16 +1346,10 @@ COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder whi
 COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.archive IS 'The archive the source package will be uploaded to.';
-
--- SourcePackageRecipeBuildUpload
-
-COMMENT ON TABLE SourcePackageRecipeBuildUpload IS 'The record of uploading the source package built by a SourcePackageRecipeBuild to an archive.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.registrant IS 'Who requested the upload.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.sourcepackage_recipe_build IS 'Upload the output of this build.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.archive IS 'The archive to upload to.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.upload_log IS 'The output from uploading the source package to the archive.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.state IS 'The state of the upload.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.archive IS 'The archive the source package will be built in and uploaded to.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.pocket IS 'The pocket the source package will be built in and uploaded to.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.dependencies IS 'The missing build dependencies, if any.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.upload_log IS 'The output from uploading the source package to the archive.';
 
 -- SourcePackageRecipeBuildJob
 
@@ -1863,6 +1859,7 @@ COMMENT ON COLUMN DistributionMirror.status IS 'This mirror''s status.';
 COMMENT ON COLUMN DistributionMirror.whiteboard IS 'Notes on the current status of the mirror';
 COMMENT ON COLUMN DistributionMirror.date_created IS 'The date and time the mirror was created.';
 COMMENT ON COLUMN DistributionMirror.date_reviewed IS 'The date and time the mirror was reviewed.';
+COMMENT ON COLUMN DistributionMirror.country_dns_mirror IS 'Is the mirror a country DNS mirror?';
 
 -- MirrorDistroArchSeries
 COMMENT ON TABLE MirrorDistroArchSeries IS 'The mirror of the packages of a given Distro Arch Release.';

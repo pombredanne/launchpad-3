@@ -15,6 +15,7 @@ __all__ = [
     'IBugBecameQuestionEvent',
     'IBugDelta',
     'IBugSet',
+    'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
@@ -33,10 +34,10 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from lp.bugs.interfaces.bugattachment import IBugAttachment
-from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import  IPrivacy, NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
@@ -251,9 +252,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
-    linked_branches = Attribute(
-        "Branches associated with this bug, usually "
-        "branches on which this bug is being fixed.")
+    linked_branches = exported(
+        CollectionField(
+            title=_("Branches associated with this bug, usually "
+            "branches on which this bug is being fixed."),
+            value_type=Reference(schema=IBugBranch),
+            readonly=True))
     tags = exported(
         List(title=_("Tags"), description=_("Separated by whitespace."),
              value_type=Tag(), required=False))
@@ -606,7 +610,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """Create an INullBugTask and return it for the given parameters."""
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @call_with(owner=REQUEST_USER)
     @export_factory_operation(Interface, [])
     def addNomination(owner, target):
@@ -620,7 +624,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @export_read_operation()
     def canBeNominatedFor(target):
         """Can this bug nominated for this target?
@@ -631,7 +635,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @operation_returns_entry(Interface)
     @export_read_operation()
     def getNominationFor(target):
@@ -644,7 +648,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     @operation_parameters(
         target=Reference(
-            schema=IBugTarget, title=_('Target'), required=False),
+            schema=Interface, title=_('Target'), required=False),
         nominations=List(
             title=_("Nominations to search through."),
             value_type=Reference(schema=Interface), # IBugNomination
@@ -914,7 +918,7 @@ class IFrontPageBugAddForm(IBugAddForm):
     """Create a bug for any bug target."""
 
     bugtarget = Reference(
-        schema=IBugTarget, title=_("Where did you find the bug?"),
+        schema=Interface, title=_("Where did you find the bug?"),
         required=True)
 
 
@@ -1031,6 +1035,19 @@ class IBugSet(Interface):
         # XXX 2010-01-08 gmb bug=505850:
         #     Note, this method should go away when we have a proper
         #     permissions system for scripts.
+
+
+class IFileBugData(Interface):
+    """A class containing extra data to be used when filing a bug."""
+
+    initial_summary = Attribute("The initial summary for the bug.")
+    private = Attribute("Whether the bug should be private.")
+    extra_description = Attribute("A longer description of the bug.")
+    initial_tags = Attribute("The initial tags for the bug.")
+    subscribers = Attribute("The initial subscribers for the bug.")
+    comments = Attribute("Comments to add to the bug.")
+    attachments = Attribute("Attachments to add to the bug.")
+    hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
 
 
 class InvalidBugTargetType(Exception):

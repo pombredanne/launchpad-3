@@ -205,8 +205,8 @@ optionally followed by space characters.
     >>> parser._setDataFromHeaders(
     ...     data,
     ...     {'HWDB-Submission': ' submission-one, two\t,three ,  \nfour  '})
-    >>> list(data.hwdb_submission_keys)
-    [u'submission-one', u'two', u'three', u'four']
+    >>> data.hwdb_submission_keys
+    [u'four', u'submission-one', u'three', u'two']
 
 
 === Message Parts ===

@@ -7,7 +7,7 @@
 
 __metaclass__ = type
 
-__all__ = ['IBuildBase']
+__all__ = ['BUILDD_MANAGER_LOG_NAME', 'IBuildBase']
 
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Object, TextLine, Timedelta
@@ -16,12 +16,15 @@ from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.buildqueue import IBuildQueue
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
+
+
+BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 class IBuildBase(Interface):
@@ -109,6 +112,18 @@ class IBuildBase(Interface):
             title=_("Distribution"), required=True,
             description=_("Shortcut for its distribution.")))
 
+    upload_log = Object(
+        schema=ILibraryFileAlias, required=False,
+        title=_("The LibraryFileAlias containing the upload log for "
+                "build resulting in an upload that could not be processed "
+                "successfully. Otherwise it will be None."))
+
+    upload_log_url = exported(
+        TextLine(
+            title=_("Upload Log URL"), required=False,
+            description=_("A URL for failed upload logs."
+                          "Will be None if there was no failure.")))
+
     def getUploaderCommand(upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
 
@@ -145,6 +160,9 @@ class IBuildBase(Interface):
         Subclasses can override this as needed, and call it from custom status
         handlers, but it should not be called externally.
         """
+
+    def verifySuccessfulUpload():
+        """Verify that the upload of this build completed succesfully."""
 
     def storeUploadLog(content):
         """Store the given content as the build upload_log.
