@@ -700,7 +700,6 @@ def findFile(source_dir, filename, logger):
         if os.stat(fullpath).st_size > 10485760:
             raise UploadError(
                 "%s file is larger than 10 MiB" % filename)
-            return
         else:
             return fullpath
 
@@ -711,7 +710,7 @@ def findCopyright(dsc_file, source_dir, logger):
     :param logger: A logger object for debug output.
     """
     try:
-        copyright_file = findFile(source_dir, 'debian/copyright', logger);
+        copyright_file = findFile(source_dir, 'debian/copyright', logger)
     except UploadError, error:
         yield error
         return
@@ -730,7 +729,7 @@ def findChangelog(dsc_file, source_dir, logger):
     """
 
     try:
-        changelog_file = findFile(source_dir, 'debian/changelog', logger);
+        changelog_file = findFile(source_dir, 'debian/changelog', logger)
     except UploadError, error:
         yield error
         return
