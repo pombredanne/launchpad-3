@@ -273,7 +273,7 @@ class PackageUpload(SQLBase):
 
         store = IMasterStore(PackageUpload)
         result_set = store.execute(query)
-        known_filenames = result_set.get_all()
+        known_filenames = [row[0] for row in result_set.get_all()]
 
         # Do any of the files to be uploaded already exist in the destination
         # archive?
