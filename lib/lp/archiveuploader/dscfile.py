@@ -151,8 +151,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
     # Note that files is actually only set inside verify().
     files = None
-    # Copyrigth is only set inside unpackAndCheckSource().
+    # Copyright and changelog is only set inside unpackAndCheckSource().
     copyright = None
+    changelog = None
 
     def __init__(self, filepath, digest, size, component_and_section,
                  priority, package, version, changes, policy, logger):
@@ -537,6 +538,17 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if self.copyright is None:
             yield UploadWarning("No copyright file found.")
 
+        # Now do the same for the changelog 
+        globpath = os.path.join(tmpdir, "*", "debian/changelog")
+        for fullpath in glob.glob(globpath):
+            if not os.path.exists(fullpath):
+                continue
+            self.logger.debug("Copying changelog contents.")
+            self.changelog = open(fullpath).read().strip()
+
+        if self.changelog is None:
+            yield UploadError("Failed to copy changelog file.")
+
         self.logger.debug("Cleaning up source tree.")
         try:
             shutil.rmtree(tmpdir)
@@ -597,6 +609,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         pending = self._dict.copy()
         pending['simulated_changelog'] = self.changes.simulated_changelog
         pending['copyright'] = self.copyright
+        pending['changelog'] = self.changelog
 
         # We have no way of knowing what encoding the original copyright
         # file is in, unfortunately, and there is no standard, so guess.
@@ -628,6 +641,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             dsc_binaries=encoded['binary'],
             dsc_standards_version=encoded.get('standards-version'),
             component=self.component,
+            changelog=encoded.get('changelog'),
             changelog_entry=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,

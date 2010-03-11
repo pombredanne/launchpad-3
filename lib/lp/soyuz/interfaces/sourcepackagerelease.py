@@ -33,6 +33,7 @@ class ISourcePackageRelease(Interface):
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
+    changelog = Attribute("Changelog information for this SourcePackageRelease.")
     changelog_entry = Attribute("Source Package Change Log Entry")
     change_summary = Attribute(
         "The message on the latest change in this release. This is usually "

@@ -2082,6 +2082,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
+            changelog=None,
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
