@@ -13,7 +13,11 @@ from lp.testing import ZopeTestInSubProcess
 
 
 def record_pid(method):
-    """Decorator that records the pid at method invocation."""
+    """Decorator that records the pid at method invocation.
+
+    Will probably only DTRT with class methods or bound instance
+    methods.
+    """
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
         setattr(self, 'pid_in_%s' % method.__name__, os.getpid())
@@ -22,6 +26,18 @@ def record_pid(method):
 
 
 class TestZopeTestInSubProcessLayer:
+    """Helper to test `ZopeTestInSubProcess`.
+
+    Asserts that layers are set up and torn down in the expected way,
+    namely that setUp() and tearDown() are called in the parent
+    process, and testSetUp() and testTearDown() are called in the
+    child process.
+
+    The assertions for tearDown() and testTearDown() must be done here
+    because the test case runs before these methods are called. In the
+    interests of symmetry and clarity, the assertions for setUp() and
+    testSetUp() are done here too.
+    """
 
     @record_pid
     def __init__(self, test):
@@ -57,6 +73,11 @@ class TestZopeTestInSubProcessLayer:
 
 
 class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
+    """Test `ZopeTestInSubProcess`.
+
+    Assert that setUp(), test() and tearDown() are called in the child
+    process.
+    """
 
     @record_pid
     def __init__(self, method_name='runTest'):
@@ -70,7 +91,7 @@ class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
         super(TestZopeTestInSubProcess, self).setUp()
         self.failUnlessEqual(
             self.layer.pid_in_testSetUp, self.pid_in_setUp,
-            "test.setUp() not called in same process as layer.testSetUp().")
+            "setUp() not called in same process as layer.testSetUp().")
 
     @record_pid
     def test(self):
