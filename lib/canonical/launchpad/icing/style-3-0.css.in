@@ -525,14 +525,18 @@ ul.super-add-action li a {
     display: block;
     padding: 0.3em;
     }
+.involvement-service-links li.disabled {
+    color: #cccccc;
+    }
 .involvement-service-links li.disabled img {
-    margin-top: auto;
-    margin-bottom: auto;
-    border: 1px solid green;
+    margin-bottom: 0;
     }
 .involvement-service-links li.disabled span {
-    display: inline;
-    color: #cccccc;
+    margin-bottom: 0;
+    }
+.involvement-service-links li.disabled table {
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
     }
 .involvement-service-links a.bugs {
     color: #b9413e;
@@ -822,15 +826,21 @@ div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
     line-height: 18px;
 }
 .icon-only {
-    vertical-align: middle;
     border: 0;
     padding: 0;
-    height: 16px;
-    width: 16px;
-    background-color: inherit;
+    width: 14px;
+}
+div.icon-only {
+    height: 14px;
 }
 input[type="submit"].icon-only {
+    height: 14px;
+    background-color: inherit;
     cursor: pointer;
+}
+span.icon-only {
+    padding-right: 14px;
+    line-height: 14px;
 }
 .vertical .sprite {
     /* XXX: EdwinGrubbs 2009-10-29 bug=463032

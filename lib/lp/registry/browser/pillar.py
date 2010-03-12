@@ -132,6 +132,20 @@ class PillarView(LaunchpadView):
             link for link in self.involved_menu.values() if link.enabled],
             key=attrgetter('sort_key'))
 
+    @property
+    def visible_disabled_links(self):
+        """Important disabled links.
+
+        These are displayed to notify the user to provide configuration
+        info to enable the links.
+        """
+        important_links = [
+            self.involved_menu[name]
+            for name in ('report_bug', 'submit_code')]
+        return sorted([
+            link for link in important_links if not link.enabled],
+            key=attrgetter('sort_key'))
+
 
 provideAdapter(
     InvolvedMenu, [IInvolved], INavigationMenu, name="overview")

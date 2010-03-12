@@ -8,29 +8,32 @@
   <h2>Get Involved</h2>
 
   <ul class="involvement-service-links">
-    <li tal:define="link view/involved_menu/report_bug"
-        tal:condition="not: link/enabled"
-        class="disabled">
-      <span class="sprite icon-only warning-icon">&nbsp;</span>
-      <img style="float: right" src="/@@/gray-arrow-right.png" />
-      <span tal:content="link/text"/>
-    </li>
-    <li tal:define="link view/involved_menu/submit_code"
-        tal:condition="not: link/enabled"
-        class="disabled">
-      <span class="sprite icon-only warning-icon">&nbsp;</span>
-      <img style="float: right" src="/@@/gray-arrow-right.png" />
-      <span tal:content="link/text"/>
-    </li>
-
     <li tal:repeat="link view/enabled_links">
       <a tal:replace="structure link/fmt:link" />
     </li>
+
+    <tal:disabled repeat="link view/visible_disabled_links">
+      <li tal:condition="not: link/enabled"
+          title="This link needs to be configured."
+          class="disabled">
+        <div style="padding: 0.3em 0 0.3em 0.3em">
+          <div style="display: inline-block"
+               class="sprite icon-only warning-icon"></div>
+
+          <div style="height: 1.2em; float: right">
+            <div class="sprite warning-icon"
+                style="top: 50%; bottom: 50%; margin-top: -5px;
+                       position: relative;
+                       height: 9px; width: 14px; padding: 0"></div>
+          </div>
+
+          <span tal:content="link/text"/>
+        </div>
+      </li>
+    </tal:disabled>
   </ul>
-  <ul style="border-top: 0px solid black; margin-top: 10px">
-    <li style="padding-top: 5px; border-top: 0">
-      <a href="foo" style="padding: 0 0 0 18px; font-weight: normal" class="sprite edit">Configure code hosting</a>
-    </li>
+
+  <ul style="padding-top: 1em">
     <li tal:content="structure overview_menu/configure_bugtracker/fmt:link" />
   </ul>
 </div>

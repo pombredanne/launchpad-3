@@ -332,7 +332,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def configure_bugtracker(self):
-        text = 'Configure bugtracker'
+        text = 'Configure bug tracker'
         return Link('+configure-bugtracker', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
