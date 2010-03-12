@@ -14,17 +14,17 @@
 
     <tal:disabled repeat="link view/visible_disabled_links">
       <li tal:condition="not: link/enabled"
-          title="This link needs to be configured."
+          title="This service needs to be configured."
           class="disabled">
         <div style="padding: 0.3em 0 0.3em 0.3em">
           <div style="display: inline-block"
                class="sprite icon-only warning-icon"></div>
 
           <div style="height: 1.2em; float: right">
-            <div class="sprite warning-icon"
+            <img src="/@@/gray-arrow-right.png"
                 style="top: 50%; bottom: 50%; margin-top: -5px;
                        position: relative;
-                       height: 9px; width: 14px; padding: 0"></div>
+                       height: 9px; width: 14px; padding: 0"/>
           </div>
 
           <span tal:content="link/text"/>
