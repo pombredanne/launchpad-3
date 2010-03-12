@@ -7,8 +7,8 @@ __all__ = ['PackageBuildFarmJob']
 
 from canonical.database.constants import UTC_NOW
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.soyuz.interfaces.build import BuildStatus
 
 
 class PackageBuildFarmJob(BuildFarmJob):
@@ -27,4 +27,4 @@ class PackageBuildFarmJob(BuildFarmJob):
 
     def jobAborted(self):
         """See `IBuildFarmJob`."""
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.buildstate = BuildStatus.NEEDSBUILD

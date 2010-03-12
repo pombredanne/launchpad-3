@@ -31,6 +31,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
@@ -60,7 +61,8 @@ from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
     InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
-    PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    NoTokensForTeams, PocketNotFound, VersionRequiresName,
+    default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import (
@@ -68,7 +70,7 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -1256,6 +1258,11 @@ class Archive(SQLBase):
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # Tokens can only be created for individuals.
+        if person.is_team:
+            raise NoTokensForTeams(
+                "Subscription tokens can be created for individuals only.")
 
         # First, ensure that a current subscription exists for the
         # person and archive:
