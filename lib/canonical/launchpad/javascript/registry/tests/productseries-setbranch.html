@@ -1,0 +1,344 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+  <title>stroppy trunk series : Series trunk : stroppy</title>
+
+  <!-- YUI 3.0 Setup -->
+  <script type="text/javascript" src="../../../icing/yui/yui/yui.js"></script>
+  <script type="text/javascript" src="../../../icing/lazr/build/lazr.js"></script>
+  <link rel="stylesheet" href="../../../icing/yui/cssreset/reset.css"/>
+  <link rel="stylesheet" href="../../../icing/yui/cssfonts/fonts.css"/>
+  <link rel="stylesheet" href="../../../icing/yui/cssbase/base.css"/>
+  <link rel="stylesheet" href="../../test.css" />
+
+  <!-- The module under test -->
+  <script type="text/javascript" src="../productseries-setbranch.js"></script>
+
+  <!-- The test suite -->
+  <script type="text/javascript" src="test_productseries_setbranch.js"></script>
+</head>
+
+<body class="yui-skin-sam">
+
+  <form action="." name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
+
+    <table class="form">
+
+      <tbody>
+        <tr>
+          <td>
+            <label>
+              <input class="radioType" checked="checked"
+                     id="field.branch_type.0"
+                     name="field.branch_type" type="radio" value="link-lp-bzr"
+                     onclick="updateBranchType()">
+              Link to a Bazaar branch already in Launchpad
+            </label>
+              <table>
+                <tbody>
+                  <tr>
+      <TD colspan="2">
+
+          <LABEL for="field.branch_location">Branch:</LABEL>
+          <SPAN class="fieldRequired">(Optional)</SPAN>
+
+          <DIV>
+
+<INPUT type="text" value="" id="field.branch_location" name="field.branch_location" size="35" maxlength="" onkeypress="" style="" class="">
+
+
+
+
+
+<SPAN class="">(<A id="show-widget-field-branch_location" href="https://launchpad.dev/people/" class="js-action">Choose…</A>)</SPAN>
+<SCRIPT>
+YUI().use('node', 'lp.picker', 'plugin', function(Y) {
+    if (Y.UA.ie) {
+        return;
+    }
+
+    // Args from python.
+    var args = {"header": "Select a branch", "show_widget_id": "show-widget-field-branch_location", "vocabulary": "BranchRestrictedOnProduct", "input_id": "field.branch_location", "step_title": "Search", "extra_no_results_message": null};
+
+    // The vocabulary picker, created when used for the first time.
+    var picker = null;
+    function make_picker() {
+        var config = {
+            header: args.header,
+            step_title: args.step_title,
+            extra_no_results_message: args.extra_no_results_message
+        };
+        var picker = Y.lp.picker.create(args.vocabulary, config);
+        if (config.extra_no_results_message !== null) {
+            picker.before('resultsChange', function (e) {
+                var new_results = e.details[0].newVal;
+                if (new_results.length === 0) {
+                    picker.set('footer_slot',
+                               Y.Node.create(config.extra_no_results_message));
+                }
+                else {
+                    picker.set('footer_slot', null);
+                }
+            });
+        }
+        picker.plug(Y.lazr.TextFieldPickerPlugin,
+                    {input_element: '[id="' + args.input_id + '"]'});
+        return picker;
+    }
+
+    // Sort out the "Choose..." link.
+    var show_widget_node = Y.get('#' + args.show_widget_id);
+    show_widget_node.set('innerHTML', 'Choose&hellip;');
+    show_widget_node.addClass('js-action');
+    show_widget_node.get('parentNode').removeClass('unseen');
+    show_widget_node.on('click', function (e) {
+        if (picker === null) {
+            picker = make_picker();
+        }
+        picker.show();
+        e.preventDefault();
+    });
+});
+
+</SCRIPT>
+
+
+          </DIV>
+
+          <P class="formHelp">The Bazaar branch for this series in Launchpad, if one exists.</P>
+        </TD>
+      </TR>
+
+
+
+
+
+
+            </TBODY></TABLE>
+          </TD>
+        </TR>
+
+        <TR>
+          <TD>
+            <LABEL>
+              <INPUT class="radioType" id="field.branch_type.1" name="field.branch_type" type="radio" value="create-new" onclick="updateBranchType()">
+              Create a new, empty branch in Launchpad and link
+              to this series
+            </LABEL>
+          </TD>
+        </TR>
+
+        <TR>
+          <TD>
+            <LABEL>
+              <INPUT class="radioType" id="field.branch_type.2" name="field.branch_type" type="radio" value="import-external" onclick="updateBranchType()">
+              Import a branch hosted somewhere else
+            </LABEL>
+            <TABLE class="subordinate">
+
+
+
+      <TBODY><TR>
+      <TD colspan="2">
+
+          <LABEL for="field.repo_url">Branch URL:</LABEL>
+          <SPAN class="fieldRequired">(Optional)</SPAN>
+
+          <DIV>
+            <INPUT class="urlTextType textType" id="field.repo_url" name="field.repo_url" size="44" type="text" value="" disabled="">
+          </DIV>
+
+          <P class="formHelp">The URL of the branch.</P>
+        </TD>
+      </TR>
+
+
+
+
+
+
+
+              <TR>
+                <TD>
+                  <LABEL>
+                    <INPUT class="radioType" id="field.rcs_type.6" name="field.rcs_type" type="radio" value="BZR" onclick="updateWidgets()" disabled="">
+                    Bazaar, hosted externally
+                  </LABEL>
+                </TD>
+              </TR>
+
+              <TR>
+                <TD>
+                  <LABEL>
+                    <INPUT class="radioType" id="field.rcs_type.4" name="field.rcs_type" type="radio" value="GIT" onclick="updateWidgets()" disabled="">
+                    Git
+                  </LABEL>
+                </TD>
+              </TR>
+
+              <TR>
+                <TD>
+                  <LABEL>
+                    <INPUT class="radioType" id="field.rcs_type.3" name="field.rcs_type" type="radio" value="BZR_SVN" onclick="updateWidgets()" disabled="">
+                    SVN
+                  </LABEL>
+                </TD>
+              </TR>
+
+              <TR>
+                <TD>
+                  <LABEL>
+                    <INPUT class="radioType" id="field.rcs_type.5" name="field.rcs_type" type="radio" value="HG" onclick="updateWidgets()" disabled="">
+                    Mercurial
+                  </LABEL>
+                </TD>
+              </TR>
+
+              <TR>
+                <TD>
+                  <LABEL>
+                    <INPUT class="radioType" id="field.rcs_type.1" name="field.rcs_type" type="radio" value="CVS" onclick="updateWidgets()" disabled="">
+                    CVS
+                  </LABEL>
+                  <TABLE class="subordinate">
+
+
+
+      <TBODY><TR>
+      <TD colspan="2">
+
+          <LABEL for="field.cvs_module">Module:</LABEL>
+          <SPAN class="fieldRequired">(Optional)</SPAN>
+
+          <DIV>
+            <INPUT class="textType" id="field.cvs_module" name="field.cvs_module" size="20" type="text" value="" disabled="">
+          </DIV>
+
+          <P class="formHelp">The path to import within the repository. Usually, it is the name of the project.</P>
+        </TD>
+      </TR>
+
+
+
+
+
+
+                  </TBODY></TABLE>
+                </TD>
+              </TR>
+
+            </TBODY></TABLE>
+          </TD>
+        </TR>
+
+      </TBODY></TABLE>
+      <INPUT name="field.rcs_type-empty-marker" type="hidden" value="1">
+
+
+
+        <SCRIPT type="text/javascript"><!--
+setFocusByName('field.cvs_module');
+// --></SCRIPT>
+
+
+
+      </DIV>
+      <DIV class="actions" id="launchpad-form-actions">
+        <INPUT type="submit" id="field.actions.update" name="field.actions.update" value="Update" class="button">
+
+          or&nbsp;
+          <A href="https://launchpad.dev/zyc/trunk">Cancel</A>
+
+      </DIV>
+
+
+
+    </FORM>
+  </DIV>
+
+
+</DIV>
+          </DIV><!-- yui-b -->
+        </DIV><!-- yui-main -->
+
+        <!-- yui-b side -->
+      <!-- yui-t4 -->
+
+
+  <DIV id="footer" class="footer">
+    <DIV class="lp-arcana">
+        <DIV class="lp-branding">
+          <A href="https://launchpad.dev/"><IMG src="./setbranch_files/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"></A>
+          &nbsp;•&nbsp;
+          <A href="https://launchpad.dev/+tour">Take the tour</A>
+          &nbsp;•&nbsp;
+          <A href="https://help.launchpad.net/">Read the guide</A>
+          &nbsp;
+          <FORM id="globalsearch" method="get" accept-charset="UTF-8" action="https://launchpad.dev/+search">
+            <INPUT type="search" id="search-text" name="field.text">
+            <INPUT type="submit" value="" class="icon-only sprite search-icon">
+          </FORM>
+        </DIV>
+
+
+
+    </DIV>
+
+    <DIV class="colophon">
+      © 2004-2010
+      <A href="http://canonical.com/">Canonical&nbsp;Ltd.</A>
+      &nbsp;•&nbsp;
+      <A href="https://launchpad.dev/legal">Terms of use</A>
+      &nbsp;•&nbsp;
+      <A href="https://help.launchpad.net/Feedback">Contact us</A>
+      &nbsp;•&nbsp;
+      <A href="http://identi.ca/launchpadstatus">System status</A>
+      <SPAN id="lp-version">
+      &nbsp;•&nbsp;
+        <A href="https://help.launchpad.net/LaunchpadReleases">Launchpad 10.02 (r10456)</A>
+        devmode
+
+
+      </SPAN>
+    </DIV>
+  </DIV>
+
+    </DIV><!-- yui-d0-->
+
+    <DIV id="help-pane" class="invisible">
+      <DIV id="help-body">
+
+        <IFRAME id="help-pane-content" class="invisible" src="javascript:void(0);"></IFRAME>
+      </DIV>
+      <DIV id="help-footer">
+        <SPAN id="help-close"><BUTTON id="help-close-btn">Close</BUTTON></SPAN>
+      </DIV>
+    </DIV>
+
+
+
+    <SCRIPT>LP.client.links['me'] =
+                   '/~mark';</SCRIPT>
+
+
+  <SCRIPT>LP.client.cache['context'] =
+                 {"status": "Active Development", "branch_link": null, "display_name": "trunk", "name": "trunk", "driver_link": null, "title": "zyc trunk series", "http_etag": "\"41d1b0fa6ccc3ab1e875328f4b23c350bc2ad760\"", "project_link": "https://launchpad.dev/api/devel/zyc", "summary": "The \"trunk\" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.", "drivers_collection_link": "https://launchpad.dev/api/devel/zyc/trunk/drivers", "official_bug_tags": [], "owner_link": "https://launchpad.dev/api/devel/~mark", "active_milestones_collection_link": "https://launchpad.dev/api/devel/zyc/trunk/active_milestones", "date_created": "2010-03-09T00:10:51.443564+00:00", "self_link": "https://launchpad.dev/api/devel/zyc/trunk", "all_milestones_collection_link": "https://launchpad.dev/api/devel/zyc/trunk/all_milestones", "bug_reporting_guidelines": null, "resource_type_link": "https://launchpad.dev/api/devel/#project_series", "releases_collection_link": "https://launchpad.dev/api/devel/zyc/trunk/releases"};</SCRIPT>
+
+
+
+
+
+  <!--
+    Facet name: overview
+    Page type: main_only
+    Has global search: True
+    Has application tabs: True
+    Has side portlets: False
+
+    At least 25 queries issued in 0.10 seconds
+
+    Launchpad 10.02 (r10456)
+  -->
+
+
+</BODY></HTML>
