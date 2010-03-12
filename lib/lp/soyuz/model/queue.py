@@ -265,6 +265,7 @@ class PackageUpload(SQLBase):
             WHERE
                 bpph.archive = %s
                 AND bpph.distroarchseries = das.id
+                AND bpph.dateremoved IS NULL
                 AND das.distroseries = ds.id
                 AND ds.distribution = %s
                 AND bpph.binarypackagerelease = bpf.binarypackagerelease
