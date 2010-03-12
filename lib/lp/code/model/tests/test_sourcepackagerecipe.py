@@ -8,10 +8,10 @@ __metaclass__ = type
 import unittest
 
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import login_person, TestCaseWithFactory
 
 
-class TestSourcePackage(TestCaseWithFactory):
+class TestSourcePackageRecipe(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -28,6 +28,13 @@ class TestSourcePackage(TestCaseWithFactory):
         recipe.distroseries.clear()
         self.assertEqual([], list(recipe.distroseries))
 
+    def test_build_daily(self):
+        """Test that build_daily behaves as a bool."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.assertFalse(recipe.build_daily)
+        login_person(recipe.owner)
+        recipe.build_daily = True
+        self.assertTrue(recipe.build_daily)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

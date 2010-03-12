@@ -8,7 +8,8 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
-from storm.locals import Int, Reference, ReferenceSet, Store, Storm, Unicode
+from storm.locals import (
+    Bool, Int, Reference, ReferenceSet, Store, Storm, Unicode)
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
@@ -63,6 +64,8 @@ class SourcePackageRecipe(Storm):
     distroseries = ReferenceSet(
         id, _SourcePackageRecipeDistroSeries.sourcepackagerecipe_id,
         _SourcePackageRecipeDistroSeries.distroseries_id, DistroSeries.id)
+
+    build_daily = Bool()
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(

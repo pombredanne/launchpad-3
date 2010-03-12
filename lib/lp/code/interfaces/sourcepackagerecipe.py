@@ -14,7 +14,7 @@ __all__ = [
 from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Datetime, TextLine
+from zope.schema import Bool, Datetime, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
@@ -61,6 +61,8 @@ class ISourcePackageRecipe(IHasOwner):
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),
         readonly=False)
+    build_daily = Bool(
+        title=_("If true, the recipe should be built daily."))
     sourcepackagename = Reference(
         ISourcePackageName, title=_("The name of the source package this "
                                     "recipe will build a source package"),
