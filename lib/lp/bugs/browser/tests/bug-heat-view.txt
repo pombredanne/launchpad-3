@@ -55,9 +55,6 @@ distribution. In such cases, we want to explicitly specify the target, rather
 than use the bugtask's. We can do that by passing the target as a keyword
 parameter.
 
-Source packages, however, will always default to the distribution's max heat
-when viewed on a bug page.  The package context will be used for bug lists.
-
     >>> bug = factory.makeBug()
     >>> distro = factory.makeDistribution()
     >>> dsp = factory.makeDistributionSourcePackage(distribution=distro)
@@ -66,12 +63,12 @@ when viewed on a bug page.  The package context will be used for bug lists.
     >>> removeSecurityProxy(dsp).max_bug_heat = MAX_HEAT / 2
     >>> removeSecurityProxy(bug).heat = MAX_HEAT / 4
     >>> print_flames(dsp_task)
-    /@@/bug-heat-0.png
-    0 out of 4 heat flames
-    Heat: 1250
-    >>> print_flames(dsp_task, target=dsp)
     /@@/bug-heat-2.png
     2 out of 4 heat flames
+    Heat: 1250
+    >>> print_flames(dsp_task, target=distro)
+    /@@/bug-heat-0.png
+    0 out of 4 heat flames
     Heat: 1250
 
     >>> logout()
