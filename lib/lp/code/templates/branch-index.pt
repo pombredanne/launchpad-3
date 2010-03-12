@@ -27,25 +27,11 @@
     }
 
   </style>
-  <tal:devmode condition="devmode">
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branchlinks.js">
-    </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branchstatus.js">
-    </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/popupdiff.js">
-      </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/subscription.js">
-    </script>
-  </tal:devmode>
   <script type="text/javascript"
           tal:content="string:
     LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'lp.code.branchstatus',
-              'lp.code.branchmergeproposal.popupdiff',
+              'lazr.choiceedit', 'lp.code.branch.status',
+              'lp.code.branchmergeproposal.diff',
               'lp.code.branch.subscription', function(Y) {
 
         Y.on('load', function(e) {
@@ -54,8 +40,8 @@
             });
             subscription_portlet.render();
 
-            Y.lp.code.branchstatus.connect_status(${view/status_config});
-            Y.lp.code.branchmergeproposal.popupdiff.connect_diff_links();
+            Y.lp.code.branch.status.connect_status(${view/status_config});
+            Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             },
             window);
     });
