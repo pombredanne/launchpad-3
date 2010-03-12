@@ -4,7 +4,11 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
+__all__ = [
+    'BinaryPackageRelease',
+    'BinaryPackageReleaseDownloadCount',
+    'BinaryPackageReleaseSet'
+    ]
 
 
 from zope.interface import implements
