@@ -218,10 +218,10 @@ class PackageUpload(SQLBase):
                 raise QueueInconsistentStateError(info)
 
         self._checkForBinariesinDestinationArchive(
-            [pub.build for pub in self.builds])
-        for build in self.builds:
+            [queue_build.build for queue_build in self.builds])
+        for queue_build in self.builds:
             try:
-                build.checkComponentAndSection()
+                queue_build.checkComponentAndSection()
             except QueueBuildAcceptError, info:
                 raise QueueInconsistentStateError(info)
 
@@ -243,6 +243,7 @@ class PackageUpload(SQLBase):
         if len(builds) == 0:
             return
 
+        # Collects the binary file names for all builds.
         inner_query = """
             SELECT DISTINCT lfa.filename
             FROM
@@ -254,6 +255,8 @@ class PackageUpload(SQLBase):
                 AND bpf.libraryfile = lfa.id
         """ % sqlvalues([build.id for build in builds])
 
+        # Check whether any of the binary file names have already been
+        # published in the destination archive.
         query = """
             SELECT DISTINCT lfa.filename
             FROM
@@ -271,7 +274,7 @@ class PackageUpload(SQLBase):
         # Inject the inner query.
         query %= inner_query
 
-        store = IMasterStore(PackageUpload)
+        store = Store.of(self)
         result_set = store.execute(query)
         known_filenames = [row[0] for row in result_set.get_all()]
 
