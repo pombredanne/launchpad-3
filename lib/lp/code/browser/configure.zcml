@@ -1080,5 +1080,10 @@
         attribute_to_parent="owner"
         path_expression="string:+recipe/${name}"
         rootsite="code" />
+    <browser:url
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        attribute_to_parent="recipe"
+        path_expression="string:+build/${id}"
+        rootsite="code" />
 
 </configure>
