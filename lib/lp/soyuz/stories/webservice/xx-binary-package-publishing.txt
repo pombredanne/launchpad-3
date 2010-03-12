@@ -184,7 +184,7 @@ Detailed download counts are also available from the getDownloadCounts method.
     country_link: u'http://.../+countries/AU'
     day: u'2010-02-21'
     resource_type_link: u'http://.../#binary_package_release_download_count'
-    self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/...'
+    self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-21/AU'
 
 
 We can also filter by date.
@@ -202,7 +202,7 @@ We can also filter by date.
     country_link: None
     day: u'2010-02-23'
     resource_type_link: u'http://.../#binary_package_release_download_count'
-    self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/...'
+    self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-23/unknown'
 
 getDailyDownloadTotals returns a dict mapping dates to total counts.
 

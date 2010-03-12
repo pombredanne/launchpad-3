@@ -1364,11 +1364,11 @@ class Archive(SQLBase):
             ).one()
         return count or 0
 
-    def getPackageDownloadCountById(self, bprdc_id):
+    def getPackageDownloadCount(self, bpr, day, country):
         """See `IArchive`."""
         return Store.of(self).find(
-            BinaryPackageReleaseDownloadCount, archive=self, id=bprdc_id
-            ).one()
+            BinaryPackageReleaseDownloadCount, archive=self,
+            binary_package_release=bpr, day=day, country=country).one()
 
     def _setBuildStatuses(self, status):
         """Update the pending Build Jobs' status for this archive."""

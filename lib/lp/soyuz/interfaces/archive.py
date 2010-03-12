@@ -915,8 +915,8 @@ class IArchiveView(IHasBuildRecords):
         :return: A list of `IArchivePermission` records.
         """
 
-    def getPackageDownloadCountById(bprdc_id):
-        """Get the `IBinaryPackageDownloadCount` with the given ID."""
+    def getPackageDownloadCount(bpr, day, country):
+        """Get the `IBinaryPackageDownloadCount` with the given key."""
 
 
 class IArchiveAppend(Interface):
