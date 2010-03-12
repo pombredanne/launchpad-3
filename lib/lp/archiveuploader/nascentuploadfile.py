@@ -34,12 +34,12 @@ from lp.archiveuploader.utils import (
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
     re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import (

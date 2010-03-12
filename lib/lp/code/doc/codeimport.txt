@@ -98,10 +98,13 @@ three members of the vcs-imports team.
     New code import: firefox/trunk-cvs
     >>> print message['X-Launchpad-Message-Rationale']
     Operator @vcs-imports
-    >>> print message.get_payload()
-    A new code import has been requested by No Privileges Person:
+    >>> print message.get_payload(decode=True)
+    A new CVS code import has been requested by No Privileges Person:
         http://code.launchpad.dev/~no-priv/firefox/trunk-cvs
-    -- =
+    from
+        :pserver:anonymous@cvs.example.com:/cvsroot, hello
+    <BLANKLINE>
+    -- 
     You are getting this email because you are a member of the vcs-imports team.
 
 Creating a CodeImport object creates a corresponding CodeImportEvent.

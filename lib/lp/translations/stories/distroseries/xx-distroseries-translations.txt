@@ -46,9 +46,7 @@ And the page is not available either:
 ... but the link is available to administrators:
 
     >>> dtc_browser = setupDTCBrowser()
-
     >>> dtc_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-
     >>> dtc_browser.getLink('Change settings').click()
 
 Once the administrator hides all translations...
@@ -115,8 +113,8 @@ Translation pages for source packages are also unavailable to
 non-administrative users.
 
     >>> user_browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/+sources/evolution/'
-    ...     '+pots/evolution-2.2')
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+sources/evolution/+pots/evolution-2.2')
     Traceback (most recent call last):
     ...
     TranslationUnavailable: ...
@@ -126,7 +124,7 @@ administrators.
 
     >>> dtc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
-    ...     '+sources/evolution')
+    ...     '+sources/evolution/+pots/evolution-2.2')
 
 There is also an option to set/unset whether translation imports for a
 distribution should be deferred. That option is set also from the same

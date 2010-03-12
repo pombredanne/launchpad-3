@@ -678,7 +678,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
     packages.sort()
     for pkg in packages:
         stat_count += 1
-        dest_version = Suite.get(pkg, ["0", ""])[0]
+        dest_version = Suite.get(pkg, [None, ""])[0]
 
         if not Sources.has_key(pkg):
             if not Options.all:
@@ -694,8 +694,11 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
             continue
 
         source_version = Sources[pkg]["version"]
-        if apt_pkg.VersionCompare(dest_version, source_version) < 0:
-            if  not Options.force and dest_version.find("ubuntu") != -1:
+        if (dest_version is None
+                or apt_pkg.VersionCompare(dest_version, source_version) < 0):
+            if (dest_version is not None
+                    and (not Options.force
+                        and dest_version.find("ubuntu") != -1)):
                 stat_cant_update += 1
                 print ("[NOT Updating - Modified] %s_%s (vs %s)"
                        % (pkg, dest_version, source_version))
