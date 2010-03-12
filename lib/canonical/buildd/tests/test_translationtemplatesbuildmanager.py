@@ -52,6 +52,9 @@ class MockBuildManager(TranslationTemplatesBuildManager):
         self.commands.append([path]+command)
         return 0
 
+    def gatherResults(self):
+        pass
+
 
 class TestTranslationTemplatesBuildManagerIteration(TestCase):
     """Run TranslationTemplatesBuildManager through its iteration steps."""

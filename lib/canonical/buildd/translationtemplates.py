@@ -61,8 +61,11 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
 
     def gatherResults(self):
         """Gather the results of the build and add them to the file cache."""
-        if os.access(self._resultname, os.F_OK):
-            self._slave.addWaiting(self._resultname)
+        # The file is inside the chroot, in the home directory of the buildd
+        # user. Should be save to assume the home dirs are named identically.
+        path = os.path.join(self._chroot_path, self.home, self._resultname)
+        if os.access(path, os.F_OK):
+            self._slave.addWaiting(path)
 
     def iterate_INSTALL(self, success):
         """Installation was done."""
@@ -77,7 +80,10 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
             self.doUnmounting()
 
     def iterate_GENERATE(self, success):
+        """Template generation finshed."""
         if success == 0:
+            # It worked! Now let's bring in the harvest.
+            self.gatherResults()
             self._state = TranslationTemplatesBuildState.REAP
             self.doReapProcesses()
         else:
