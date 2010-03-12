@@ -20,13 +20,15 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
     """Test slave-side generate-translation-templates script."""
     layer = ZopelessDatabaseLayer
 
+    result_name = "translation-templates.tar.gz"
+
     def test_getBranch_url(self):
         # If passed a branch URL, the template generation script will
         # check out that branch into a directory called "source-tree."
         branch_url = 'lp://~my/translation/branch'
 
         generator = GenerateTranslationTemplates(
-            branch_url, self.makeTemporaryDirectory())
+            branch_url, self.result_name, self.makeTemporaryDirectory())
         generator._checkout = FakeMethod()
         generator._getBranch()
 
@@ -39,7 +41,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         branch_dir = '/home/me/branch'
 
         generator = GenerateTranslationTemplates(
-            branch_dir, self.makeTemporaryDirectory())
+            branch_dir, self.result_name, self.makeTemporaryDirectory())
         generator._checkout = FakeMethod()
         generator._getBranch()
 
@@ -75,7 +77,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         branch_url = branch.getPullURL()
 
         generator = GenerateTranslationTemplates(
-            branch_url, self.makeTemporaryDirectory())
+            branch_url, self.result_name, self.makeTemporaryDirectory())
         generator.branch_dir = self.makeTemporaryDirectory()
         generator._getBranch()
 
@@ -93,10 +95,11 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         potnames = [name for name in tar.getnames() if not name.endswith('/')]
         tar.close()
 
-        generator = GenerateTranslationTemplates(branchdir, workdir)
+        generator = GenerateTranslationTemplates(
+            branchdir, self.result_name, workdir)
         generator._getBranch()
         generator._make_tarball(potnames)
-        tar = tarfile.open(os.path.join(workdir, 'templates.tar.gz'), 'r|*')
+        tar = tarfile.open(os.path.join(workdir, self.result_name), 'r|*')
         tarnames = tar.getnames()
         tar.close()
         self.assertContentEqual(potnames, tarnames)
@@ -106,7 +109,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         workdir = self.makeTemporaryDirectory()
         (retval, out, err) = run_script(
             'lib/canonical/buildd/pottery/generate_translation_templates.py',
-            args=[tempdir, workdir])
+            args=[tempdir, self.result_name, workdir])
         self.assertEqual(0, retval)
 
 

@@ -17,17 +17,20 @@ from canonical.buildd.pottery import intltool
 class GenerateTranslationTemplates:
     """Script to generate translation templates from a branch."""
 
-    def __init__(self, branch_spec, work_dir):
+    def __init__(self, branch_spec, result_name, work_dir):
         """Prepare to generate templates for a branch.
 
         :param branch_spec: Either a branch URL or the path of a local
             branch.  URLs are recognized by the occurrence of ':'.  In
             the case of a URL, this will make up a path for the branch
             and check out the branch to there.
+        :param result_name: The name of the result tarball. Should end in
+            .tar.gz.
         :param work_dir: The directory to work in. Must exist.
         """
         self.work_dir = work_dir
         self.branch_spec = branch_spec
+        self.result_name = result_name
 
     def _getBranch(self):
         """Set `self.branch_dir`, and check out branch if needed."""
@@ -51,7 +54,7 @@ class GenerateTranslationTemplates:
 
     def _make_tarball(self, files):
         """Put files into tarball."""
-        tarname = os.path.join(self.work_dir, 'templates.tar.gz')
+        tarname = os.path.join(self.work_dir, self.result_name)
         tarball = tarfile.open(tarname, 'w|gz')
         for path in files:
             if path.endswith('/'):
@@ -69,14 +72,16 @@ class GenerateTranslationTemplates:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print "Usage: %s branch [workdir]" % sys.argv[0]
+    if len(sys.argv) < 3:
+        print "Usage: %s branch resultname [workdir]" % sys.argv[0]
         print "  'branch' is a branch URL or directory."
+        print "  'resultname' is the name of the result tarball."
         print "  'workdir' is a directory, defaults to HOME."
         sys.exit(1)
-    if len(sys.argv) == 3:
-        workdir = sys.argv[2]
+    if len(sys.argv) == 4:
+        workdir = sys.argv[3]
     else:
         workdir = os.environ['HOME']
-    script = GenerateTranslationTemplates(sys.argv[1], workdir)
+    script = GenerateTranslationTemplates(
+        sys.argv[1], sys.argv[2], workdir)
     sys.exit(script.generate())

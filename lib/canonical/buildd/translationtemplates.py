@@ -26,6 +26,8 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
         super(TranslationTemplatesBuildManager, self).__init__(slave, buildid)
         self._generatepath = slave._config.get(
             "translationtemplatesmanager", "generatepath")
+        self._resultname = slave._config.get(
+            "translationtemplatesmanager", "resultarchive")
 
     def initiate(self, files, chroot, extra_args):
         """See `BuildManager`."""
@@ -52,8 +54,15 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
 
     def doGenerate(self):
         """Generate templates."""
-        command = [self._generatepath, self._buildid, self._branch_url]
+        command = [
+            self._generatepath,
+            self._buildid, self._branch_url. self._resultname]
         self.runSubProcess(self._generatepath, command)
+
+    def gatherResults(self):
+        """Gather the results of the build and add them to the file cache."""
+        if os.access(self._resultname, os.F_OK):
+            self._slave.addWaiting(self._resultname)
 
     def iterate_INSTALL(self, success):
         """Installation was done."""
