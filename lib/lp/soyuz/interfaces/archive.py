@@ -30,6 +30,7 @@ __all__ = [
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
+    'NoTokensForTeams',
     'PocketNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
@@ -102,6 +103,11 @@ class AlreadySubscribed(Exception):
 
 class ArchiveNotPrivate(Exception):
     """Raised when creating an archive subscription for a public archive."""
+    webservice_error(400) # Bad request.
+
+
+class NoTokensForTeams(Exception):
+    """Raised when creating a token for a team, rather than a person."""
     webservice_error(400) # Bad request.
 
 
@@ -272,6 +278,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "The series variable is replaced with the series name of the "
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
+
+    arm_builds_allowed = Bool(
+        title=_("Allow ARM builds for this archive"))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -1106,9 +1115,6 @@ class IArchiveEdit(Interface):
 
     def disable():
         """Disable the archive."""
-
-    arm_builds_allowed = Bool(
-        title=_("Allow ARM builds for this archive"))
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):

@@ -283,7 +283,7 @@ class QueueItemsView(LaunchpadView):
             self.error = "Invalid component: %s" % component_override
             return
 
-        # Get a list of components that the user has rights to accept and
+        # Get a list of components for which the user has rights to
         # override to or from.
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
