@@ -94,12 +94,12 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
 
         self.assertEqual(buildqueue, behavior.getVerifiedBuildQueue(raw_id))
 
-    def test_getVerifiedBuild_malformed(self):
+    def test_getVerifiedBuildQueue_malformed(self):
         behavior = self._makeBehavior()
         self.assertRaises(
             CorruptBuildID, behavior.getVerifiedBuildQueue, 'bye!')
 
-    def test_getVerifiedBuild_notfound(self):
+    def test_getVerifiedBuildQueue_notfound(self):
         buildqueue = self._makeBuildQueue()
         behavior = self._makeBehavior()
         nonexistent_id = str(buildqueue.id + 99)

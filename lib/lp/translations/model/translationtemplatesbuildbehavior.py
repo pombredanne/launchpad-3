@@ -50,7 +50,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def verifySlaveBuildID(self, slave_build_id):
         """See `IBuildFarmJobBehavior`."""
         try:
-          branch_name, queue_item_id = slave_build_id.rsplit('-', 1)
+            branch_name, queue_item_id = slave_build_id.rsplit('-', 1)
         except ValueError:
             raise CorruptBuildID(
                 "Malformed translation templates build id: '%s'" % (

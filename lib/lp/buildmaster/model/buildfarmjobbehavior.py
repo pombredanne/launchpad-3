@@ -115,7 +115,15 @@ class BuildFarmJobBehaviorBase:
         return item
 
     def getVerifiedBuild(self, raw_id):
-        """See `IBuildFarmJobBehavior`."""
+        """Verify and retrieve the `Build` component of a slave build id.
+
+        By default, a `BuildFarmJob` has an identifying name of the form
+        "b-q", where b is the id of its `Build` and q is the id of its
+        `BuildQueue` record.
+
+        Use `getVerifiedBuild` to verify the "b" part, and retrieve the
+        associated `Build`.
+        """
         # Avoid circular import.
         from lp.soyuz.model.build import Build
 
@@ -123,7 +131,15 @@ class BuildFarmJobBehaviorBase:
             raw_id, Build, getUtility(IBuildSet).getByBuildID)
 
     def getVerifiedBuildQueue(self, raw_id):
-        """See `IBuildFarmJobBehavior`."""
+        """Verify and retrieve the `BuildQueue` component of a slave build id.
+
+        By default, a `BuildFarmJob` has an identifying name of the form
+        "b-q", where b is the id of its `Build` and q is the id of its
+        `BuildQueue` record.
+
+        Use `getVerifiedBuildQueue` to verify the "q" part, and retrieve
+        the associated `BuildQueue` object.
+        """
         return self._helpVerifyBuildIDComponent(
             raw_id, BuildQueue, getUtility(IBuildQueueSet).get)
 
@@ -138,7 +154,7 @@ class BuildFarmJobBehaviorBase:
         build = self.getVerifiedBuild(build_id)
         queue_item = self.getVerifiedBuildQueue(queue_item_id)
 
-        if build != queue_utem.specific_job.build:
+        if build != queue_item.specific_job.build:
             raise CorruptBuildID('Job build entry mismatch')
 
     def updateBuild(self, queueItem):
