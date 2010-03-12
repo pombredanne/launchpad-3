@@ -14,12 +14,10 @@ from canonical.testing import ZopelessDatabaseLayer
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -176,6 +174,18 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         behavior = self._makeBehavior()
         buildfarmjob = behavior.buildfarmjob
         job = buildfarmjob.job
+
+        # The test is that this not raise CorruptBuildID (or anything
+        # else, for that matter).
+        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
+
+    def test_verifySlaveBuildID_handles_dashes(self):
+        # TranslationTemplatesBuildBehavior.verifySlaveBuildID can deal
+        # with dashes in branch names.
+        behavior = self._makeBehavior()
+        buildfarmjob = behavior.buildfarmjob
+        job = buildfarmjob.job
+        buildfarmjob.branch.name = 'x-y-z--'
 
         # The test is that this not raise CorruptBuildID (or anything
         # else, for that matter).
