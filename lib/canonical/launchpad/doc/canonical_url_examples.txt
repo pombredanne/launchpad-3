@@ -366,3 +366,10 @@ the merge proposal)
     >>> canonical_url(celebs.ubuntu.getSpecification('media-integrity-check'))
     u'http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check'
 
+
+SourcePackageRecipes
+====================
+
+    >>> recipe = factory.makeRecipe()
+    >>> canonical_url(recipe)
+    u'http://code.launchpad.dev/~foo/+recipe/recipename'
