@@ -579,6 +579,7 @@
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
                     heat
+                    heat_last_updated
                     has_patches
                     latest_patch
                     latest_patch_uploaded"/>
