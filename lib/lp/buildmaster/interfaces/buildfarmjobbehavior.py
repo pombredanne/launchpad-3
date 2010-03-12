@@ -57,28 +57,6 @@ class IBuildFarmJobBehavior(Interface):
             of IBuilder.slaveStatus().
         """
 
-    def getVerifiedBuild(raw_id):
-        """Verify the `Build` id component of a slave build id.
-
-        By default, a `BuildFarmJob` has an identifying name of the form
-        "b-q", where b is the id of its `Build` and q is the id of its
-        `BuildQueue` record.
-
-        Use `getVerifiedBuild` to verify the "b" part, and retrieve the
-        associated `Build`.
-        """
-
-    def getVerifiedBuildQueue(raw_id):
-        """Verify the `BuildQueue` id component of a slave build id.
-
-        By default, a `BuildFarmJob` has an identifying name of the form
-        "b-q", where b is the id of its `Build` and q is the id of its
-        `BuildQueue` record.
-
-        Use `getVerifiedBuildQueue` to verify the "q" part, and retrieve
-        the associated `BuildQueue` object.
-        """
-
     def verifySlaveBuildID(slave_build_id):
         """Verify that a slave's build ID shows no signs of corruption.
 
