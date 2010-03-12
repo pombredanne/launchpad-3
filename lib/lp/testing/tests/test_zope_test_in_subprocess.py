@@ -110,9 +110,4 @@ class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTests(
-        loader.loadTestsFromTestCase(
-            TestZopeTestInSubProcess))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
