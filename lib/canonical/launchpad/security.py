@@ -49,8 +49,6 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguage)
 from lp.registry.interfaces.entitlement import IEntitlement
 from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
@@ -1299,6 +1297,11 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
              user.inTeam(translation_group.owner)))
 
 
+class ViewBugTracker(AnonymousAuthorization):
+    """Anyone can view a bug tracker."""
+    usedfor = IBugTracker
+
+
 class EditBugTracker(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
@@ -1362,7 +1365,8 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
-            self.obj.distroseries.main_archive, user.person)
+            self.obj.distroseries.distribution.all_distro_archives,
+            user.person)
         return permissions.count() > 0
 
 
@@ -1662,19 +1666,6 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
-
-
-class AdminDistroSeriesLanguage(AuthorizationBase):
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistroSeriesLanguage
-
-    def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistroSeriesLanguage` translations.
-
-        Distribution managers can also manage IDistroSeriesLanguage
-        """
-        return (AdminDistroSeriesTranslations(
-            self.obj.distroseries).checkAuthenticated(user))
 
 
 class BranchSubscriptionEdit(AuthorizationBase):
