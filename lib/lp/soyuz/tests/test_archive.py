@@ -22,6 +22,7 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archive import (
     IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -831,6 +832,87 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
 
         self.assertRaises(
             CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
+
+
+class TestGetBinaryPackageRelease(TestCaseWithFactory):
+    """Ensure that getBinaryPackageRelease works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestGetBinaryPackageRelease, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.archive = self.factory.makeArchive()
+        self.archive.require_virtualized = False
+
+        self.i386_pub, self.hppa_pub = self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.i386_indep_pub, self.hppa_indep_pub = (
+            self.publisher.getPubBinaries(
+                version="1.2.3-4", archive=self.archive, binaryname="bar-bin",
+                status=PackagePublishingStatus.PUBLISHED))
+
+        self.bpns = getUtility(IBinaryPackageNameSet)
+
+    def test_returns_matching_binarypackagerelease(self):
+        # The BPR with a file by the given name should be returned.
+        self.assertEqual(
+            self.i386_pub.binarypackagerelease,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['foo-bin'], '1.2.3-4', 'i386'))
+
+    def test_returns_correct_architecture(self):
+        # The architecture is taken into account correctly.
+        self.assertEqual(
+            self.hppa_pub.binarypackagerelease,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['foo-bin'], '1.2.3-4', 'hppa'))
+
+    def test_works_with_architecture_independent_binaries(self):
+        # Architecture independent binaries with multiple publishings
+        # are found properly.
+        # We use 'i386' as the arch tag here, since what we have in the DB
+        # is the *build* arch tag, not the one in the filename ('all').
+        self.assertEqual(
+            self.i386_indep_pub.binarypackagerelease,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['bar-bin'], '1.2.3-4', 'i386'))
+
+    def test_returns_none_for_nonexistent_binary(self):
+        # Non-existent files return None.
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['cdrkit'], '1.2.3-4', 'i386'))
+
+    def test_returns_none_for_duplicate_file(self):
+        # In the unlikely case of multiple BPRs in this archive with the same
+        # name (hopefully impossible, but it still happens occasionally due
+        # to bugs), None is returned.
+
+        # Publish the same binaries again. Evil.
+        self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['foo-bin'], '1.2.3-4', 'i386'))
+
+    def test_returns_none_from_another_archive(self):
+        # Cross-archive searches are not performed.
+        self.assertIs(
+            None,
+            self.factory.makeArchive().getBinaryPackageRelease(
+                self.bpns['foo-bin'], '1.2.3-4', 'i386'))
 
 
 class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):

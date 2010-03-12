@@ -1128,6 +1128,25 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def getBinaryPackageRelease(self, name, version, archtag):
+        """See `IArchive`."""
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        results = store.find(
+            BinaryPackageRelease,
+            BinaryPackageRelease.binarypackagename == name,
+            BinaryPackageRelease.version == version,
+            Build.id == BinaryPackageRelease.buildID,
+            DistroArchSeries.id == Build.distroarchseriesID,
+            DistroArchSeries.architecturetag == archtag,
+            BinaryPackagePublishingHistory.archive == self,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id).config(distinct=True)
+        if results.count() > 1:
+            return None
+        return results.one()
+
     def getBinaryPackageReleaseByFileName(self, filename):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         results = store.find(
