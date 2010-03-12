@@ -2007,6 +2007,82 @@ class LaunchpadObjectFactory(ObjectFactory):
     def getAnySourcePackageUrgency(self):
         return SourcePackageUrgency.MEDIUM
 
+    def makeSPR(self, archive=None, sourcepackagename=None, distroseries=None,
+                maintainer=None, creator=None, component=None, section=None,
+                urgency=None, version=None, builddepends=None,
+                builddependsindep=None, build_conflicts=None,
+                build_conflicts_indep=None, architecturehintlist='all',
+                dscsigningkey=None, dsc_maintainer_rfc822=None,
+                dsc_standards_version='3.6.2', dsc_format='1.0',
+                dsc_binaries='foo-bin', date_uploaded=UTC_NOW):
+        """Make a `SourcePackageRelease`."""
+
+        if distroseries is None:
+            if archive is None:
+                distribution = None
+            else:
+                distribution = archive.distribution
+            distroseries = self.makeDistroRelease(distribution=distribution)
+
+        if archive is None:
+            archive = self.makeArchive(
+                distribution=distroseries.distribution,
+                purpose=ArchivePurpose.PRIMARY)
+
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        spn = sourcepackagename
+
+        if component is None:
+            component = self.makeComponent()
+
+        if urgency is None:
+            urgency = self.getAnySourcePackageUrgency()
+
+        if section is None:
+            section = self.getUniqueString('section')
+        section = getUtility(ISectionSet).ensure(section)
+
+        if maintainer is None:
+            maintainer = self.makePerson()
+
+        maintainer_email = '%s <%s>' % (
+            maintainer.displayname,
+            maintainer.preferredemail.email)
+
+        if creator is None:
+            creator = self.makePerson()
+
+        if dscsigningkey is None:
+            gpg_key = self.makeGPGKey(creator)
+
+        if version is None:
+            version = self.getUniqueString('version')
+
+        return distroseries.createUploadedSourcePackageRelease(
+            sourcepackagename=spn,
+            maintainer=maintainer,
+            creator=creator,
+            component=component,
+            section=section,
+            urgency=urgency,
+            version=version,
+            builddepends=builddepends,
+            builddependsindep=builddependsindep,
+            build_conflicts=build_conflicts,
+            build_conflicts_indep=build_conflicts_indep,
+            architecturehintlist=architecturehintlist,
+            changelog_entry=None,
+            dsc=None,
+            copyright=self.getUniqueString(),
+            dscsigningkey=dscsigningkey,
+            dsc_maintainer_rfc822=maintainer_email,
+            dsc_standards_version=dsc_standards_version,
+            dsc_format=dsc_format,
+            dsc_binaries=dsc_binaries,
+            archive=archive,
+            dateuploaded=date_uploaded)
+
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
                                            distroseries=None, maintainer=None,
                                            creator=None, component=None,
@@ -2026,54 +2102,18 @@ class LaunchpadObjectFactory(ObjectFactory):
                                            dsc_format='1.0',
                                            dsc_binaries='foo-bin',
                                            ):
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
-        spn = sourcepackagename
-
-        if distroseries is None:
-            distroseries = self.makeDistroRelease()
-
-        if archive is None:
-            archive = self.makeArchive(
-                distribution=distroseries.distribution,
-                purpose=ArchivePurpose.PRIMARY)
-
-        if component is None:
-            component = self.makeComponent()
-
         if pocket is None:
             pocket = self.getAnyPocket()
 
         if status is None:
             status = PackagePublishingStatus.PENDING
 
-        if urgency is None:
-            urgency = self.getAnySourcePackageUrgency()
-
-        if section is None:
-            section = self.getUniqueString('section')
-        section = getUtility(ISectionSet).ensure(section)
-
-        if maintainer is None:
-            maintainer = self.makePerson()
-
-        maintainer_email = '%s <%s>' % (
-            maintainer.displayname,
-            maintainer.preferredemail.email)
-
-        if creator is None:
-            creator = self.makePerson()
-
-        if version is None:
-            version = self.getUniqueString('version')
-
-        gpg_key = self.makeGPGKey(creator)
-
-        spr = distroseries.createUploadedSourcePackageRelease(
-            sourcepackagename=spn,
+        spr = self.makeSPR(
+            archive=archive,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries,
             maintainer=maintainer,
-            creator=creator,
-            component=component,
+            creator=creator, component=component,
             section=section,
             urgency=urgency,
             version=version,
@@ -2082,27 +2122,22 @@ class LaunchpadObjectFactory(ObjectFactory):
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
-            changelog_entry=None,
-            dsc=None,
-            copyright=self.getUniqueString(),
-            dscsigningkey=gpg_key,
-            dsc_maintainer_rfc822=maintainer_email,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive, dateuploaded=date_uploaded)
+            date_uploaded=date_uploaded)
 
         sspph = SourcePackagePublishingHistory(
-            distroseries=distroseries,
+            distroseries=spr.distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
             section=spr.section,
             status=status,
-            datecreated=date_uploaded,
+            datecreated=spr.date_uploaded,
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            archive=archive)
+            archive=spr.archive)
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.

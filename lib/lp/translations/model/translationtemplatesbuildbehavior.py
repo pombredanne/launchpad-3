@@ -40,11 +40,22 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         self._builder.slave.cacheFile(logger, chroot)
         buildid = self.buildfarmjob.getName()
 
-        args = { 'branch_url': self.buildfarmjob.branch.url }
+        args = self.buildfarmjob.metadata
         filemap = {}
 
         self._builder.slave.build(
             buildid, self.build_type, chroot_sha1, filemap, args)
+
+    def verifySlaveBuildID(self, slave_build_id):
+        """See `IBuildFarmJobBehavior`."""
+        try:
+          branch_name, queue_item_id = slave_build_id.rsplit('-', 1)
+        except ValueError:
+            raise CorruptBuildID(
+                "Malformed translation templates build id: '%s'" % (
+                    slave_build_id))
+
+        self.getVerifiedBuildQueue(queue_item_id)
 
     def _getChroot(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.testing import TestCaseWithFactory
