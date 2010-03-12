@@ -24,6 +24,8 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
+from lp.code.interfaces.branch import IBranch
+
 
 class ForbiddenInstruction(Exception):
     """A forbidden instruction was found in the recipe."""
@@ -73,6 +75,10 @@ class ISourcePackageRecipe(IHasOwner):
 
     builder_recipe = Attribute(
         _("The bzr-builder data structure for the recipe."))
+
+    base_branch = Reference(
+        IBranch, title=_("The person who created this recipe"), readonly=True)
+    deb_version_template = TextLine()
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""

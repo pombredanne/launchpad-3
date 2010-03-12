@@ -1080,6 +1080,20 @@
         attribute_to_parent="owner"
         path_expression="string:+recipe/${name}"
         rootsite="code" />
+
+    <facet facet="branches">
+
+        <browser:defaultView
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            name="+index"
+            layer="canonical.launchpad.layers.CodeLayer"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeView"
+            name="+index"
+            template="../templates/sourcepackagerecipe-index.pt"
+            permission="zope.Public"/>
+    </facet>
     <browser:url
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
         attribute_to_parent="recipe"

@@ -32,8 +32,7 @@ class NonPPABuildRequest(Exception):
 
 
 class SourcePackageRecipe(Storm):
-    """See `ISourcePackageRecipe` and `ISourcePackageRecipeSource`."""
-
+    """See `ISourcePackageRecipe` and `ISourcePackageRecipeSource`.""" 
     __storm_table__ = 'SourcePackageRecipe'
 
     implements(ISourcePackageRecipe)
@@ -58,6 +57,14 @@ class SourcePackageRecipe(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     name = Unicode(allow_none=True)
+
+    @property
+    def base_branch(self):
+        return self._recipe_data.base_branch
+
+    @property
+    def deb_version_template(self):
+        return self._recipe_data.deb_version_template
 
     @property
     def _recipe_data(self):

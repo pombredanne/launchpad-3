@@ -6,3 +6,15 @@
 __metaclass__ = type
 
 __all__ = []
+
+from canonical.launchpad.webapp import (
+    LaunchpadView)
+
+class SourcePackageRecipeView(LaunchpadView):
+    """Default view of a SourcePackageRecipe."""
+
+    silly = 'silly'
+
+    @property
+    def base_branch(self):
+        return self.context._recipe_data.base_branch
