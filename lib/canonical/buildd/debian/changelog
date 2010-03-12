@@ -1,3 +1,9 @@
+launchpad-buildd (59) karmic; urgency=low
+
+  * Added translation template generation code (pottery).
+
+ -- Henning Eggers <henning@canonical.com>  Thu, 11 Mar 2010 12:59:25 +0100
+
 launchpad-buildd (58~1) karmic; urgency=low
 
   * Misc fixes to match APIs.
