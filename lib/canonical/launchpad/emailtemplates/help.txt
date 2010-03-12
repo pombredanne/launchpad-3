@@ -67,7 +67,7 @@ email when reporting a new bug.
 
 Here's an example bug report email:
 
-From: bug.reporter@gmail.com
+From: you@example.com
 To: new@bugs.launchpad.net
 Subject: Bug tracker email interface needs a screen cast
 
