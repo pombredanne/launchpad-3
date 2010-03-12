@@ -118,6 +118,10 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         self.assertEqual(
             'translation-templates', slave_status['test_build_type'])
         self.assertIn('branch_url', slave_status['test_build_args'])
+        # The slave receives the public http URL for the branch.
+        self.assertEqual(
+            behavior.buildfarmjob.branch.composePublicURL(),
+            slave_status['test_build_args']['branch_url'])
 
     def test_getChroot(self):
         # _getChroot produces the current chroot for the current Ubuntu
