@@ -45,6 +45,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
+from canonical.launchpad.validators import LaunchpadValidationError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.blueprints.interfaces.specification import (
@@ -77,7 +78,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -683,14 +685,14 @@ class SetBranchForm(Interface):
         ['cvs_module'])
 
     rcs_type = Choice(title=_("Type of RCS"),
-        required=True, vocabulary=RevisionControlSystemsExtended,
+        required=False, vocabulary=RevisionControlSystemsExtended,
         description=_(
             "The version control system to import from. "))
 
     repo_url = URIField(
         title=_("Branch URL"), required=False,
         description=_("The URL of the branch."),
-        allowed_schemes=["http", "https"],
+        allowed_schemes=["http", "https", "svn", "git"],
         allow_userinfo=False,
         allow_port=True,
         allow_query=False,
@@ -725,6 +727,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
     custom_widget('branch_type', LaunchpadRadioWidget)
     initial_values = {
         'rcs_type': RevisionControlSystems.BZR_SVN,
+        'branch_type': 'link-lp-bzr',
         }
 
     def setUpWidgets(self):
@@ -763,6 +766,54 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
         self.branch_type_create = str(create_button)
         self.branch_type_import = str(import_button)
         self.branch_type_emptymarker = str(emptymarker)
+
+    def validate(self, data):
+        extra_schemes = {
+            RevisionControlSystemsExtended.BZR_SVN:['svn'],
+            RevisionControlSystemsExtended.GIT:['git'],
+            }
+        rcs_type = data['rcs_type']
+        schemes = ['http', 'https'] + extra_schemes.get(rcs_type, [])
+        # Get the repository URL field.
+        repo_url_field = self.form_fields['repo_url']
+        repo_url_field.field.allowed_schemes = schemes
+        try:
+            repo_url_field.field._validate(data['repo_url'])
+        except LaunchpadValidationError, lve:
+            self.setFieldError('repo_url', str(lve))
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        print action
+        print data
+        self.next_url = canonical_url(self.context)
+        branch_type = data.get('branch_type')
+        if branch_type == 'link-lp-bzr':
+            branch_location = data.get('branch_location')
+            if branch_location is None:
+                # TODO: need to stay on the page or move this to the
+                # validator.
+                self.request.response.addErrorNotification(
+                    'No Launchpad branch specified.')
+                self.next_url = None
+
+            else:
+                self.request.response.addInfoNotification(
+                    'Launchpad branch %s linked to the series.' %
+                    branch_location.unique_name)
+
+        elif branch_type == 'create-new':
+            pass
+        elif branch_type == 'import-external':
+            pass
+        else:
+            raise UnexpectedFormData(branch_type)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class ProductSeriesLinkBranchView(LaunchpadEditFormView, ProductSeriesView):

@@ -118,10 +118,7 @@
 
       <script type="text/javascript">
         //<![CDATA[
-        function updateWidgets() {
-          /* Which rcs type radio button has been selected? */
-          var rcs_types = document.getElementsByName('field.rcs_type');
-          var form = rcs_types[0].form;
+        function getRcsType(rcs_types) {
           var rcs_type = 'None';
           for (var i = 0; i < rcs_types.length; i++) {
             if (rcs_types[i].checked) {
@@ -129,13 +126,24 @@
               break;
             }
           }
+          return rcs_type;
+        }
+
+        function updateWidgets() {
+          /* Which rcs type radio button has been selected? */
           // CVS
+          var rcs_types = document.getElementsByName('field.rcs_type');
+          var rcs_type = getRcsType(rcs_types);
+          var form = rcs_types[0].form;
           updateField(form['field.cvs_module'], rcs_type == 'CVS');
         }
+
         registerLaunchpadFunction(updateWidgets);
 
         function updateBranchType() {
           /* Which branch type radio button was selected? */
+          var rcs_types = document.getElementsByName('field.rcs_type');
+          var rcs_type = getRcsType(rcs_types);
           var types = document.getElementsByName('field.branch_type');
           var form = types[0].form;
           var type = 'None';
@@ -149,9 +157,14 @@
           updateField(form['field.branch_location'], type == 'link-lp-bzr')
           // New, empty branch -- do nothing
           // Import
-          updateField(form['field.repo_url'], type == 'import-external')
-          updateField(form['field.rcs_type'], type == 'import-external')
-          updateField(form['field.cvs_module'], type == 'import-external')
+          is_external = (type == 'import-external')
+          updateField(form['field.repo_url'], is_external)
+          updateField(form['field.cvs_module'],
+            (is_external & rcs_type == 'CVS'))
+          for (var i = 0; i < rcs_types.length; i++) {
+            updateField(rcs_types[i], is_external)
+          }
+
         }
         registerLaunchpadFunction(updateBranchType);
 
