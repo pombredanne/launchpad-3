@@ -217,8 +217,7 @@ class GPGHandler:
         result = context.import_(newkey)
 
         if len(result.imports) == 0:
-            raise GPGKeyNotFoundError(
-                'No GPG key found with the given content: %s' % content)
+            raise GPGKeyNotFoundError(content)
 
         # Check the status of all imported keys to see if any of them is
         # a secret key.  We can't rely on result.secret_imported here

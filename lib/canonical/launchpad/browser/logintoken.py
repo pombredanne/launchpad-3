@@ -502,19 +502,19 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
 
         person_url = canonical_url(requester)
         try:
-            key = gpghandler.retrieveKey(fingerprint)
+            key = gpghandler.retrieveActiveKey(fingerprint)
         except GPGKeyNotFoundError:
             self.addError(
                 structured(_(
-                'Launchpad could not import this OpenPGP key, because '
-                '${key}. Check that you published it correctly in the '
+                'Launchpad could not import the OpenPGP key %{fingerprint}. '
+                'Check that you published it correctly in the '
                 'global key ring (using <kbd>gpg --send-keys '
                 'KEY</kbd>) and that you entered the fingerprint '
                 'correctly (as produced by <kbd>gpg --fingerprint '
                 'YOU</kdb>). Try later or <a href="${url}/+editpgpkeys"> '
                 'cancel your request</a>.',
-                mapping=dict(key=key, url=person_url))))
-        except GPGKeyRevoked:
+                mapping=dict(fingerprint=fingerprint, url=person_url))))
+        except GPGKeyRevoked, e:
             # If key is globally revoked, skip the import and consume the
             # token.
             self.addError(
@@ -524,15 +524,15 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
                 'process to <a href="${url}/+editpgpkeys">find and '
                 'import</a> the new key.',
-                mapping=dict(key=key.keyid, url=person_url))))
-        except GPGKeyExpired:
+                mapping=dict(key=e.key.keyid, url=person_url))))
+        except GPGKeyExpired, e:
             self.addError(
                         structured(_(
                 'The key ${key} cannot be validated because it has expired. '
                 'Change the expiry date (in a terminal, enter '
                 '<kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> '
                 'then enter <kbd>expire</kbd>), and try again.',
-                mapping=dict(key=key.keyid))))
+                mapping=dict(key=e.key.keyid))))
         else:
             return key
 

@@ -30,11 +30,18 @@ class MoreThanOneGPGKeyFound(Exception):
 class GPGKeyNotFoundError(Exception):
     """The given GPG key was not found in the keyserver."""
 
+    def __init__(self, fingerprint, pubkey=None):
+        self.fingerprint = fingerprint
+        self.pubkey = pubkey
+        super(GPGKeyNotFoundError, self).__init__(
+            "No GPG key found with the given content: %s" % (fingerprint,))
+
 
 class GPGKeyRevoked(Exception):
     """The given GPG key was revoked."""
 
     def __init__(self, key):
+        self.key = key
         super(GPGKeyRevoked, self).__init__(
             "%s has been publicly revoked" % (key.keyid,))
 
@@ -43,7 +50,8 @@ class GPGKeyExpired(Exception):
     """The given GPG key has expired."""
 
     def __init__(self, key):
-        super(GPGKeyRevoked, self).__init__("%s has expired" % (key.keyid,))
+        self.key = key
+        super(GPGKeyExpired, self).__init__("%s has expired" % (key.keyid,))
 
 
 class SecretGPGKeyImportDetected(Exception):
