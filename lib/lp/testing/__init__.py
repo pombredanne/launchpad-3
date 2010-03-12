@@ -593,22 +593,12 @@ class WindmillTestCase(TestCaseWithFactory):
 class ZopeTestInSubProcess:
     """Run tests in a sub-process, respecting Zope idiosyncrasies.
 
-    Use this as a mixin with an interesting `TestCase` or `TestSuite`
-    subclass to quickly isolate tests with side-effects.
-
-    When mixed-in with a `TestCase`:
-
-      Each and every test *method* in the test case is run in a new,
-      forked, sub-process. This will slow down your tests, so use it
-      sparingly. However, when you need to, for example, start the
-      Twisted reactor (which cannot currently be safely stopped and
-      restarted in process) it is invaluable.
-
-    When mixed-in with a `TestSuite`:
-
-      All tests in this suite are run in a single, newly forked,
-      sub-process. This isolates the parent process from side-effects,
-      but the tests in this suite are not isolated from one another.
+    Use this as a mixin with an interesting `TestCase` to isolate
+    tests with side-effects. Each and every test *method* in the test
+    case is run in a new, forked, sub-process. This will slow down
+    your tests, so use it sparingly. However, when you need to, for
+    example, start the Twisted reactor (which cannot currently be
+    safely stopped and restarted in process) it is invaluable.
 
     This is basically a reimplementation of subunit's
     `IsolatedTestCase` or `IsolatedTestSuite`, but adjusted to work
