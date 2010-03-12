@@ -8,14 +8,13 @@ from unittest import TestLoader
 from zope.component import getUtility
 
 from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.testing import TestCaseWithFactory
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.model.build import Build
-from lp.testing import TestCaseWithFactory
 
 
 class FakeBuildFarmJob:
