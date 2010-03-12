@@ -10,7 +10,6 @@ from canonical.buildd.debian import DebianBuildManager, DebianBuildState
 class TranslationTemplatesBuildState(DebianBuildState):
     INSTALL = "INSTALL"
     GENERATE = "GENERATE"
-    UPLOAD = "UPLOAD"
 
 
 class TranslationTemplatesBuildManager(DebianBuildManager):
@@ -56,9 +55,6 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
         command = [self._generatepath, self._buildid, self._branch_url]
         self.runSubProcess(self._generatepath, command)
 
-    def doUpload(self):
-        """Upload generated templates to queue."""
-
     def iterate_INSTALL(self, success):
         """Installation was done."""
         if success == 0:
@@ -72,17 +68,6 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
             self.doUnmounting()
 
     def iterate_GENERATE(self, success):
-        if success == 0:
-            self._state = TranslationTemplatesBuildState.UPLOAD
-            self.doUpload()
-        else:
-            if not self.alreadyfailed:
-                self._slave.buildFail()
-                self.alreadyfailed = True
-            self._state = TranslationTemplatesBuildState.REAP
-            self.doReapProcesses()
-
-    def iterate_UPLOAD(self, success):
         if success == 0:
             self._state = TranslationTemplatesBuildState.REAP
             self.doReapProcesses()
