@@ -25,7 +25,7 @@ from zope.schema import Bool, Choice, List, Object, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Tag
 from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
+    BugBranchSearch, BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from lazr.enum import DBEnumeratedType
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
@@ -157,7 +157,12 @@ class IHasBugs(Interface):
                 u"Search for bugs which are linked to hardware reports "
                 "wich contain the given device or whcih contain a device"
                 "contolled by the given driver."),
-            required=False))
+            required=False),
+        linked_branches=Choice(
+            title=(
+                u"Search for bugs that are linked to branches or for bugs"
+                "that are not linked to branches."),
+            vocabulary=BugBranchSearch, required=False))
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
     def searchTasks(search_params, user=None,
