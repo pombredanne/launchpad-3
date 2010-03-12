@@ -297,6 +297,37 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertEquals(
             BuildStatus.NEEDSBUILD, build.buildstate)
 
+    def test_realiseUpload_for_overridden_component_archive(self):
+        # If the component of an upload is overridden to 'Partner' for
+        # example, then the new publishing record should be for the
+        # partner archive.
+        self.test_publisher.prepareBreezyAutotest()
+
+        # Get some sample changes file content for the new upload.
+        changes_file = open(
+            datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'))
+        changes_file_content = changes_file.read()
+        changes_file.close()
+
+        main_upload_release = self.test_publisher.getPubSource(
+            sourcename='main-upload', spr_only=True,
+            component='main', changes_file_content=changes_file_content)
+        package_upload = main_upload_release.package_upload
+
+        self.assertEqual("primary", main_upload_release.upload_archive.name)
+
+        # Override the SPR to partner and verify the change.
+        from lp.soyuz.interfaces.component import IComponentSet
+        partner_component = getUtility(IComponentSet)['partner']
+        main_upload_release.override(component=partner_component)
+        self.assertEqual(
+            "partner", main_upload_release.upload_archive.name)
+
+        # Now realise the upload and verify that the publishing is for
+        # the partner archive.
+        pub = package_upload.realiseUpload()[0]
+        self.assertEqual("partner", pub.archive.name)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
