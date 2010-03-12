@@ -8,7 +8,7 @@ __metaclass__ = type
 import os
 import unittest
 
-from lp.archiveuploader.dscfile import findCopyright, findChangelog
+from lp.archiveuploader.dscfile import findChangelog, findCopyright
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import mock_logger_quiet
 from lp.testing import TestCase

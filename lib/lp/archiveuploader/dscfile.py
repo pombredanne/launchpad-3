@@ -13,9 +13,9 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
-    'findFile',
-    'findCopyright',
     'findChangelog',
+    'findCopyright',
+    'findFile',
     ]
 
 import apt_pkg
@@ -531,7 +531,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         for error in findCopyright(self, tmpdir, self.logger):
             yield error
 
-        # Now do the same for the changelog 
+        # Now do the same for the changelog
         for error in findChangelog(self, tmpdir, self.logger):
             yield error
 
@@ -681,7 +681,7 @@ def findFile(source_dir, filename, logger):
     :param source_file: The directory where the source was extracted
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
-    :return fullpath: the full path of the file 
+    :return fullpath: the full path of the file
     """
 
     # Instead of trying to predict the unpacked source directory name,
