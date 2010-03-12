@@ -64,7 +64,7 @@ class GPGKeySet:
         lp_key = self.getByFingerprint(fingerprint)
         if lp_key:
             # Then the key already exists, so let's reactivate it.
-            lp_key.activate = True
+            lp_key.active = True
             lp_key.can_encrypt = can_encrypt
             return lp_key, False
         ownerID = requester.id
