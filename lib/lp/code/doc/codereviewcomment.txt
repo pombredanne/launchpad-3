@@ -65,7 +65,7 @@ Add some revisions to the source branch to make the jobs ready.
     >>> print len(jobs)
     3
 
-Since we don't care about these, lets mark them as done.
+Since we don't care about these, let's mark them as done.
 
     >>> for job in jobs:
     ...     job.start()
