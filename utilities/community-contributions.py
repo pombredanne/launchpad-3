@@ -621,8 +621,6 @@ def main():
         usage()
         sys.exit(1)
 
-    # The start revnos here are the first non-Canonical contribution to
-    # each branch
     branches = (
         BranchInfo(
             devel_path, '~launchpad-pqm/launchpad/devel'),
