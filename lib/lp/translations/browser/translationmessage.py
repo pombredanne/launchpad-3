@@ -416,14 +416,8 @@ class BaseTranslationView(LaunchpadView):
             # translation submitted, so we don't need to store anything.
             return None
 
-        # Read needsreview and diverge from the form, only if user
-        # has the rights to set them.
-        if self.user_is_official_translator:
-            force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
-            force_diverge = self.form_posted_diverge.get(potmsgset, False)
-        else:
-            force_suggestion = False
-            force_diverge = False
+        force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
+        force_diverge = self.form_posted_diverge.get(potmsgset, False)
 
         try:
             potmsgset.updateTranslation(
@@ -431,11 +425,14 @@ class BaseTranslationView(LaunchpadView):
                 is_imported=False, lock_timestamp=self.lock_timestamp,
                 force_suggestion=force_suggestion,
                 force_diverged=force_diverge)
-            if force_suggestion:
-                potmsgset.unsetCurrentTranslation(
-                    pofile=self.pofile,
-                    reviewer=self.user,
-                    lock_timestamp=self.lock_timestamp)
+
+            # If suggestions were forced and user has the rights to do it,
+            # reset the current translation.
+            if (force_suggestion and
+                self.user_is_official_translator):
+                potmsgset.resetCurrentTranslation(
+                    self.pofile, translations, self.lock_timestamp)
+
         except TranslationConflict:
             return (
                 u'Somebody else changed this translation since you started.'

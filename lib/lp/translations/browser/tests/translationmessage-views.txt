@@ -689,3 +689,4 @@ translation further, since it's already diverged.
     False
     >>> subview.shared_translationmessage == translationmessage
     True
+

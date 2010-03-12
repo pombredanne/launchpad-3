@@ -478,12 +478,12 @@ class TranslationMessageSet:
     implements(ITranslationMessageSet)
 
     def getByID(self, ID):
-        """See `ILanguageSet`."""
+        """See `ITranslationMessageSet`."""
         try:
             return TranslationMessage.get(ID)
         except SQLObjectNotFound:
             return None
 
     def selectDirect(self, where=None, order_by=None):
-        """See `ILanguageSet`."""
+        """See `ITranslationMessageSet`."""
         return TranslationMessage.select(where, orderBy=order_by)

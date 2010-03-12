@@ -140,3 +140,43 @@ parameter.
   [u'suggestion! ']
   >>> dummy.is_complete
   True
+
+The new suggestion should be forced as a new suggestion, even if it is
+actually a duplicate for a suggestion that was already reviewed in the past.
+
+After adding two translations, no suggestions will be displayed, and the last
+submitted translation will be the current translation.
+
+  >>> old_translation = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: u'old translation'}, is_imported=False,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> current_translation = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: u'current translation'}, is_imported=False,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> flush_database_updates()
+  >>> message = potmsgset.getCurrentTranslationMessage(upstream_evo, spanish)
+  >>> message == current_translation
+  True
+  >>> suggestions = potmsgset.getLocalTranslationMessages(
+  ...   upstream_evo, spanish)
+  >>> suggestions.count()
+  0
+
+After adding again the first submitted translation, but this time only as a
+suggestion, the current translation will be the same, but we will see it as
+a suggestion.
+  >>> new_suggestion = potmsgset.updateTranslation(
+  ...     pofile_es, carlos, {0: u'old translation'}, is_imported=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC), force_suggestion=False)
+  >>> flush_database_updates()
+  >>> message = potmsgset.getCurrentTranslationMessage(upstream_evo, spanish)
+  >>> message == current_translation
+  True
+  >>> suggestions = potmsgset.getLocalTranslationMessages(
+  ...   upstream_evo, spanish,
+  ...   include_dismissed=False, include_unreviewed=True)
+  >>> suggestions.count()
+  1
+  >>> suggestions[0].translations
+  [u'old translation']
+

@@ -852,12 +852,15 @@ class POTMsgSet(SQLBase):
                         distribution=pofile.potemplate.distribution,
                         sourcepackagename=pofile.potemplate.sourcepackagename)
         else:
-            # There is an existing matching message. Update it as needed.
-            # Also update validation status if needed
+            # There is an existing matching message.
+            # Update validation status if needed.
             matching_message.validation_status = validation_status
+            # Update as new suggestion if needed.
+            if just_a_suggestion:
+                matching_message.date_created = UTC_NOW
 
         if just_a_suggestion:
-            # An existing message is just a suggestion, warn if needed
+            # An existing message is just a suggestion, warn if needed.
             if warn_about_lock_timestamp:
                 raise TranslationConflict(
                     'The new translations were saved as suggestions to '
@@ -883,7 +886,7 @@ class POTMsgSet(SQLBase):
         matching_message.sync()
         return matching_message
 
-    def _checkNoTranslationConflict(self, message, lock_timestamp):
+    def _isNoTranslationConflict(self, message, lock_timestamp):
         """Checks if there is a translation conflict for message.
 
         If a translation conflict is detected, TranslationConflict is raised.
@@ -901,6 +904,32 @@ class POTMsgSet(SQLBase):
         else:
             return True
 
+    def _areSuggestionsEmpty(self, suggestions):
+        """Return true if all suggestions are empty strings or None."""
+
+        empty = True
+        for index in suggestions:
+            if (suggestions[index] is not None and suggestions[index] != ""):
+                empty = False
+                break
+        return empty
+
+    def _areSuggestionsIdenticalToTranslations(self, suggestions,
+                                               translations):
+        """Return true if suggestions are identical to translations.
+        
+        Suggestions are represented as a dictionary using plural form
+        as index, while translations are represented as a list ordered by
+        plural form.
+        """
+
+        identical = True     
+        for index in suggestions:
+            if (suggestions[index] != translations[index]):
+                identical = False
+                break
+        return identical
+
     def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
         """See `IPOTMsgSet`."""
         assert(lock_timestamp is not None)
@@ -910,26 +939,39 @@ class POTMsgSet(SQLBase):
             # Create an empty translation message.
             current = self.updateTranslation(
                 pofile, reviewer, [], False, lock_timestamp)
-        elif self._checkNoTranslationConflict(current, lock_timestamp):
+        elif self._isNoTranslationConflict(current, lock_timestamp):
             current.reviewer = reviewer
             current.date_reviewed = lock_timestamp
 
-    def unsetCurrentTranslation(self, pofile, reviewer, lock_timestamp):
+    def resetCurrentTranslation(self, pofile, suggestions, lock_timestamp):
         """See `IPOTMsgSet`."""
 
         assert(lock_timestamp is not None)
+
         current = self.getCurrentTranslationMessage(
-            self.potemplate, pofile.language, pofile.variant)
+            pofile.potemplate, pofile.language)
+
+        # Reset only if we don't have a conflict and 
+        # if no new suggestions were provided or
+        # the new suggestions are empty.
         if (current is not None and
-            self._checkNoTranslationConflict(current, lock_timestamp)):
-            # Create an empty translation message.
-            empty_translation = self.updateTranslation(
-                pofile, reviewer, [], False, lock_timestamp)
-            empty_translation.is_current = False
-#            current.date_created = (
-#                empty_translation.date_reviewed +
-#                datetime.timedelta(seconds=1))
-            current.potemplate = None
+            self._isNoTranslationConflict(current, lock_timestamp) and
+             (self._areSuggestionsEmpty(suggestions) or
+                  self._areSuggestionsIdenticalToTranslations(suggestions, 
+                    current.translations))):
+            current.is_current = False
+            # For diverged translation, converge the current translation
+            # together with all local translations diverged for the same
+            # language.
+            if current.potemplate is not None:
+                diverged_messages = self.getLocalTranslationMessages(
+                    current.potemplate, current.language,
+                    include_dismissed=False, include_unreviewed=True)
+                for message in diverged_messages:
+                    if (message.potemplate is not None and
+                        message.potemplate == current.potemplate):
+                        message.potemplate = None
+                current.potemplate = None
             pofile.date_changed = UTC_NOW
 
     def applySanityFixes(self, text):
