@@ -38,7 +38,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
 from canonical.launchpad.interfaces.message import IMessageJob
@@ -62,7 +61,6 @@ from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.mail.signedmessage import signed_message_from_string
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -288,7 +286,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         server.stop_server()
 
     def run(self):
-        """See `IRunnableJob`"""
+        """See `IRunnableJob`."""
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
         self.branch_merge_proposal.preview_diff = preview
@@ -378,19 +376,19 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
     """
 
     implements(ICodeReviewCommentEmailJob)
+
     classProvides(ICodeReviewCommentEmailJobSource)
 
     class_job_type = BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL
 
     def run(self):
-        """See `IRunnableJob`"""
-        mailer = CodeReviewCommentMailer.forCreation(
-            self.code_review_comment, self.original_email)
+        """See `IRunnableJob`."""
+        mailer = CodeReviewCommentMailer.forCreation(self.code_review_comment)
         mailer.sendAll()
 
     @classmethod
     def create(cls, code_review_comment):
-        """See `IBranchDiffJobSource`."""
+        """See `ICodeReviewCommentEmailJobSource`."""
         metadata = cls.getMetadata(code_review_comment)
         bmp = code_review_comment.branch_merge_proposal
         job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
@@ -400,17 +398,9 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
     def getMetadata(code_review_comment):
         return {'code_review_comment': code_review_comment.id}
 
-    @cachedproperty
+    @property
     def code_review_comment(self):
-        """Get the code review comment"""
+        """Get the code review comment."""
         return self.branch_merge_proposal.getComment(
             self.metadata['code_review_comment'])
-
-    @cachedproperty
-    def original_email(self):
-        """An email object of the original raw email if there was one."""
-        message = self.code_review_comment.message
-        if message.raw is None:
-            return None
-        return signed_message_from_string(message.raw.read())
 

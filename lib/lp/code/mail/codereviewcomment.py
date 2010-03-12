@@ -27,8 +27,7 @@ def send(comment, event):
 class CodeReviewCommentMailer(BMPMailer):
     """Send email about creation of a CodeReviewComment."""
 
-    def __init__(self, code_review_comment, recipients, original_email,
-                 message_id=None):
+    def __init__(self, code_review_comment, recipients, message_id=None):
         """Constructor."""
         self.code_review_comment = code_review_comment
         self.message = code_review_comment.message
@@ -40,6 +39,7 @@ class CodeReviewCommentMailer(BMPMailer):
             self, self.message.subject, None, recipients, merge_proposal,
             from_address, message_id=message_id)
         self.attachments = []
+        original_email = self.code_review_comment.getOriginalEmail()
         if original_email is not None:
             # The attachments for the code review comment are actually
             # library file aliases.
@@ -62,13 +62,13 @@ class CodeReviewCommentMailer(BMPMailer):
         self._generateBodyBits()
 
     @classmethod
-    def forCreation(klass, code_review_comment, original_email=None):
+    def forCreation(klass, code_review_comment):
         """Return a mailer for CodeReviewComment creation."""
         merge_proposal = code_review_comment.branch_merge_proposal
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         return klass(
-            code_review_comment, recipients, original_email,
+            code_review_comment, recipients,
             code_review_comment.message.rfc822msgid)
 
     def _getSubject(self, email):
