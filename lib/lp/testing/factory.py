@@ -2007,16 +2007,19 @@ class LaunchpadObjectFactory(ObjectFactory):
     def getAnySourcePackageUrgency(self):
         return SourcePackageUrgency.MEDIUM
 
-    def makeSPR(self, archive=None, sourcepackagename=None, distroseries=None,
-                maintainer=None, creator=None, component=None, section=None,
-                urgency=None, version=None, builddepends=None,
-                builddependsindep=None, build_conflicts=None,
-                build_conflicts_indep=None, architecturehintlist='all',
-                dscsigningkey=None, dsc_maintainer_rfc822=None,
-                dsc_standards_version='3.6.2', dsc_format='1.0',
-                dsc_binaries='foo-bin', date_uploaded=UTC_NOW):
+    def makeSourcePackageRelease(self, archive=None, sourcepackagename=None,
+                                 distroseries=None, maintainer=None,
+                                 creator=None, component=None, section=None,
+                                 urgency=None, version=None,
+                                 builddepends=None, builddependsindep=None,
+                                 build_conflicts=None,
+                                 build_conflicts_indep=None,
+                                 architecturehintlist='all',
+                                 dsc_maintainer_rfc822=None,
+                                 dsc_standards_version='3.6.2',
+                                 dsc_format='1.0', dsc_binaries='foo-bin',
+                                 date_uploaded=UTC_NOW):
         """Make a `SourcePackageRelease`."""
-
         if distroseries is None:
             if archive is None:
                 distribution = None
@@ -2031,7 +2034,6 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         if sourcepackagename is None:
             sourcepackagename = self.makeSourcePackageName()
-        spn = sourcepackagename
 
         if component is None:
             component = self.makeComponent()
@@ -2053,14 +2055,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         if creator is None:
             creator = self.makePerson()
 
-        if dscsigningkey is None:
-            gpg_key = self.makeGPGKey(creator)
-
         if version is None:
             version = self.getUniqueString('version')
 
         return distroseries.createUploadedSourcePackageRelease(
-            sourcepackagename=spn,
+            sourcepackagename=sourcepackagename,
             maintainer=maintainer,
             creator=creator,
             component=component,
@@ -2075,7 +2074,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
-            dscsigningkey=dscsigningkey,
+            dscsigningkey=None,
             dsc_maintainer_rfc822=maintainer_email,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
@@ -2102,13 +2101,26 @@ class LaunchpadObjectFactory(ObjectFactory):
                                            dsc_format='1.0',
                                            dsc_binaries='foo-bin',
                                            ):
+        """Make a `SourcePackagePublishingHistory`."""
+        if distroseries is None:
+            if archive is None:
+                distribution = None
+            else:
+                distribution = archive.distribution
+            distroseries = self.makeDistroRelease(distribution=distribution)
+
+        if archive is None:
+            archive = self.makeArchive(
+                distribution=distroseries.distribution,
+                purpose=ArchivePurpose.PRIMARY)
+
         if pocket is None:
             pocket = self.getAnyPocket()
 
         if status is None:
             status = PackagePublishingStatus.PENDING
 
-        spr = self.makeSPR(
+        spr = self.makeSourcePackageRelease(
             archive=archive,
             sourcepackagename=sourcepackagename,
             distroseries=distroseries,
@@ -2128,16 +2140,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             date_uploaded=date_uploaded)
 
         sspph = SourcePackagePublishingHistory(
-            distroseries=spr.distroseries,
+            distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
             section=spr.section,
             status=status,
-            datecreated=spr.date_uploaded,
+            datecreated=date_uploaded,
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            archive=spr.archive)
+            archive=archive)
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.

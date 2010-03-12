@@ -42,7 +42,8 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         archive = self.factory.makeArchive(
             distribution=distroseries.distribution)
         pocket = PackagePublishingPocket.RELEASE
-        spr = self.factory.makeSPR(distroseries=distroseries, archive=archive)
+        spr = self.factory.makeSourcePackageRelease(
+            distroseries=distroseries, archive=archive)
 
         return spr.createBuild(
             distroarchseries=distroarchseries, pocket=pocket, archive=archive)
