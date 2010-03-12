@@ -40,8 +40,7 @@ class TestZopeTestInSubProcessLayer:
     """
 
     @record_pid
-    def __init__(self, test):
-        self.test = test
+    def __init__(self):
         # These are needed to satisfy the requirements of the
         # byzantine Zope layer machinery.
         self.__name__ = self.__class__.__name__
@@ -52,12 +51,6 @@ class TestZopeTestInSubProcessLayer:
         # Runs in the parent process.
         assert self.pid_in___init__ == self.pid_in_setUp, (
             "layer.setUp() not called in parent process.")
-
-    @record_pid
-    def tearDown(self):
-        # Runs in the parent process.
-        assert self.pid_in___init__ == self.pid_in_tearDown, (
-            "layer.tearDown() not called in parent process.")
 
     @record_pid
     def testSetUp(self):
@@ -71,6 +64,12 @@ class TestZopeTestInSubProcessLayer:
         assert self.pid_in_testSetUp == self.pid_in_testTearDown, (
             "layer.testTearDown() not called in same process as testSetUp().")
 
+    @record_pid
+    def tearDown(self):
+        # Runs in the parent process.
+        assert self.pid_in___init__ == self.pid_in_tearDown, (
+            "layer.tearDown() not called in parent process.")
+
 
 class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
     """Test `ZopeTestInSubProcess`.
@@ -83,7 +82,7 @@ class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
     def __init__(self, method_name='runTest'):
         # Runs in the parent process.
         super(TestZopeTestInSubProcess, self).__init__(method_name)
-        self.layer = TestZopeTestInSubProcessLayer(self)
+        self.layer = TestZopeTestInSubProcessLayer()
 
     @record_pid
     def setUp(self):
