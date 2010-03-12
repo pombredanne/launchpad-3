@@ -3,7 +3,8 @@
 
 SET client_min_messages=ERROR;
 
-ALTER TABLE sourcepackagerecipe drop COLUMN distroseries;
+ALTER TABLE sourcepackagerecipe DROP COLUMN distroseries;
+ALTER TABLE sourcepackagerecipe ADD COLUMN build_daily BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE TABLE SourcePackageRecipeDistroSeries
 (
     id serial NOT NULL PRIMARY KEY,

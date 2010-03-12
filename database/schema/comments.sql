@@ -1331,6 +1331,7 @@ COMMENT ON COLUMN SourcePackageRecipe.registrant IS 'The person who created this
 COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit this recipe.';
 COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
+COMMENT ON COLUMN SourcePackageRecipe.build_daily IS 'If true, this recipe should be built daily.';
 
 -- SourcePackageRecipeDistroSeries
 
