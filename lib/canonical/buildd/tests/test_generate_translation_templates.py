@@ -82,7 +82,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         marker_file = file(os.path.join(generator.branch_dir, 'marker.txt'))
         self.assertEqual(marker_text, marker_file.read())
 
-    def test_templates_zipup(self):
+    def test_templates_tarball(self):
         # Create a tarball from pot files.
         workdir = self.makeTemporaryDirectory()
         branchdir = os.path.join(workdir, 'branchdir')
@@ -95,7 +95,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
         generator = GenerateTranslationTemplates(branchdir, workdir)
         generator._getBranch()
-        generator._zipup(potnames)
+        generator._make_tarball(potnames)
         tar = tarfile.open(os.path.join(workdir, 'templates.tar.gz'), 'r|*')
         tarnames = tar.getnames()
         tar.close()
