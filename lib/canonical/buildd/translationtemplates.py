@@ -56,7 +56,7 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
         """Generate templates."""
         command = [
             self._generatepath,
-            self._buildid, self._branch_url. self._resultname]
+            self._buildid, self._branch_url, self._resultname]
         self.runSubProcess(self._generatepath, command)
 
     def gatherResults(self):

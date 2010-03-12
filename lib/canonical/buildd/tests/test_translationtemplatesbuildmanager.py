@@ -102,7 +102,7 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
         self.assertEqual(
             TranslationTemplatesBuildState.GENERATE, self.getState())
         expected_command = [
-            'generatepath', 'generatepath', self.buildid, url,
+            'generatepath', 'generatepath', self.buildid, url, 'resultarchive'
             ]
         self.assertEqual(expected_command, self.buildmanager.commands[-1])
         self.assertFalse(self.slave.wasCalled('chrootFail'))
