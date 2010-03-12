@@ -1447,10 +1447,14 @@ class EditBuildRecord(AdminByBuilddAdmin):
                     user.inTeam(self.obj.archive.owner))
 
         # Primary or partner section here: is the user in question allowed
-        # to upload to the respective component? Allow user to retry build
-        # if so.
+        # to upload to the respective component, packageset or package? Allow
+        # user to retry build if so.
         archive = self.obj.archive
+        ap_set = getUtility(IArchivePermissionSet)
         if archive.canUpload(user.person, self.obj.current_component):
+            return True
+        elif ap_set.isSourceUploadAllowed(archive,
+            self.obj.sourcepackagerelease.sourcepackagename, user.person):
             return True
         else:
             return archive.canUpload(
