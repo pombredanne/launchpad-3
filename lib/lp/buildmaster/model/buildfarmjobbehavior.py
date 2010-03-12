@@ -117,6 +117,8 @@ class BuildFarmJobBehaviorBase:
     def getVerifiedBuild(self, raw_id):
         """Verify and retrieve the `Build` component of a slave build id.
 
+        This does part of the verification for `verifySlaveBuildID`.
+
         By default, a `BuildFarmJob` has an identifying name of the form
         "b-q", where b is the id of its `Build` and q is the id of its
         `BuildQueue` record.
@@ -132,6 +134,8 @@ class BuildFarmJobBehaviorBase:
 
     def getVerifiedBuildQueue(self, raw_id):
         """Verify and retrieve the `BuildQueue` component of a slave build id.
+
+        This does part of the verification for `verifySlaveBuildID`.
 
         By default, a `BuildFarmJob` has an identifying name of the form
         "b-q", where b is the id of its `Build` and q is the id of its
