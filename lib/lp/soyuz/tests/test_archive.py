@@ -628,6 +628,17 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
         self.assertCount(3, self.archive, self.bpr_1, day, self.new_zealand)
 
+    def test_country_can_be_none(self):
+        # The country can be None, indicating that it is unknown.
+        day = date(2010, 2, 20)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, None, 3)
+
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertCount(3, self.archive, self.bpr_1, day, None)
+
     def test_differentiates_between_days(self):
         # A different date will also cause a new entry to be created.
         day = date(2010, 2, 20)
