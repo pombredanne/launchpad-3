@@ -370,6 +370,6 @@ the merge proposal)
 SourcePackageRecipes
 ====================
 
-    >>> recipe = factory.makeRecipe()
+    >>> recipe = factory.makeSourcePackageRecipe()
     >>> canonical_url(recipe)
-    u'http://code.launchpad.dev/~foo/+recipe/recipename'
+    u'http://code.launchpad.dev/~person-name.../+recipe/generic-string...'
