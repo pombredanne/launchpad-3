@@ -100,7 +100,7 @@ class BuildFarmJobBehaviorBase:
             raise CorruptBuildID(
                 "%s %d is not available: %s" % (
                     type_name, numeric_id, reason))
-        except e:
+        except Exception, reason:
             raise CorruptBuildID(
                 "Error while looking up %s %d: %s" % (
                     type_name, numeric_id, reason))

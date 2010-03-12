@@ -14,10 +14,12 @@ from canonical.testing import ZopelessDatabaseLayer
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -162,6 +164,26 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         self.assertEqual(1, queue_item.destroySelf.call_count)
         self.assertEqual(1, builder.cleanSlave.call_count)
         self.assertEqual(0, behavior._uploadTarball.call_count)
+
+    def test_verifySlaveBuildID_success(self):
+        # TranslationTemplatesBuildJob.getName generates slave build ids
+        # that TranslationTemplatesBuildBehavior.verifySlaveBuildID
+        # accepts.
+        behavior = self._makeBehavior()
+        buildfarmjob = behavior.buildfarmjob
+        job = buildfarmjob.job
+
+        # The test is that this not raise CorruptBuildID (or anything
+        # else, for that matter).
+        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
+
+    def test_verifySlaveBuildID_malformed(self):
+        behavior = self._makeBehavior()
+        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, 'huh?')
+
+    def test_verifySlaveBuildID_notfound(self):
+        behavior = self._makeBehavior()
+        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, '1-1')
 
 
 def test_suite():
