@@ -20,27 +20,22 @@ import apt_pkg
 import os
 import tempfile
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from lazr.delegates import delegates
-from lp.soyuz.adapters.packagelocation import (
-    build_package_location)
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import (
-    BuildStatus, BuildSetStatus)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.adapters.packagelocation import build_package_location
+from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
+from lp.soyuz.interfaces.build import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackagePublishingHistory, active_publishing_status)
-from lp.soyuz.interfaces.queue import (
-    IPackageUpload, IPackageUploadSet)
+from lp.soyuz.interfaces.queue import IPackageUpload, IPackageUploadSet
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
-from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
-from lp.soyuz.scripts.processaccepted import (
-    close_bugs_for_sourcepublication)
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScript, SoyuzScriptError
+from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
 
 # XXX cprov 2009-06-12: This function could be incorporated in ILFA,

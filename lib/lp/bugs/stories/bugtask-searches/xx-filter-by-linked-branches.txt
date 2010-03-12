@@ -7,10 +7,10 @@ to any branches. Normally, both options are turned on.
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
     >>> anon_browser.getControl(
-    ...     'Show only bugs with linked branches').selected
+    ...     'Show bugs with linked branches').selected
     True
     >>> anon_browser.getControl(
-    ...     'Show only bugs without linked branches').selected
+    ...     'Show bugs without linked branches').selected
     True
 
 In this case all bugs are returned.
@@ -22,13 +22,13 @@ In this case all bugs are returned.
     4 Reflow problems with complex page layouts          Medium   New
     1 Firefox does not support SVG                       Low      New
 
-When we uncheck 'Show only bugs without linked branches', only bugs with
+When we uncheck 'Show bugs without linked branches', only bugs with
 linkes branches are returned.
 
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
     >>> without_branches = anon_browser.getControl(
-    ...     'Show only bugs without linked branches')
+    ...     'Show bugs without linked branches')
     >>> without_branches.selected = False
     >>> anon_browser.getControl('Search', index=1).click()
     >>> print_bugtasks(anon_browser.contents)
@@ -36,12 +36,12 @@ linkes branches are returned.
     4 Reflow problems with complex page layouts          Medium   New
 
 Similary, we can search for branches that don't have linked branches, if
-we uncheck 'Show only bugs with linked branches'.
+we uncheck 'Show bugs with linked branches'.
 
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
     >>> with_branches = anon_browser.getControl(
-    ...     'Show only bugs with linked branches')
+    ...     'Show bugs with linked branches')
     >>> with_branches.selected = False
     >>> anon_browser.getControl('Search', index=1).click()
     >>> print_bugtasks(anon_browser.contents)
@@ -52,10 +52,10 @@ If we uncheck both fields, all bugs are returned.
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bugs?advanced=1')
     >>> with_branches = anon_browser.getControl(
-    ...     'Show only bugs with linked branches')
+    ...     'Show bugs with linked branches')
     >>> with_branches.selected = False
     >>> without_branches = anon_browser.getControl(
-    ...     'Show only bugs without linked branches')
+    ...     'Show bugs without linked branches')
     >>> without_branches.selected = False
     >>> anon_browser.getControl('Search', index=1).click()
     >>> print_bugtasks(anon_browser.contents)

@@ -14,10 +14,10 @@ from canonical.testing import ZopelessDatabaseLayer
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 

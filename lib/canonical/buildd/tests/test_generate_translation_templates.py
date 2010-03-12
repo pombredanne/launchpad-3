@@ -6,7 +6,7 @@ from unittest import TestLoader
 
 from lp.testing.fakemethod import FakeMethod
 
-from canonical.buildd.generate_translation_templates import (
+from canonical.buildd.pottery.generate_translation_templates import (
     GenerateTranslationTemplates)
 
 from canonical.launchpad.ftests.script import run_script
@@ -24,7 +24,8 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         # check out that branch into a directory called "source-tree."
         branch_url = 'lp://~my/translation/branch'
 
-        generator = GenerateTranslationTemplates(branch_url)
+        generator = GenerateTranslationTemplates(
+            branch_url, self.makeTemporaryDirectory())
         generator._checkout = FakeMethod()
         generator._getBranch()
 
@@ -36,7 +37,8 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         # works directly in that directory.
         branch_dir = '/home/me/branch'
 
-        generator = GenerateTranslationTemplates(branch_dir)
+        generator = GenerateTranslationTemplates(
+            branch_dir, self.makeTemporaryDirectory())
         generator._checkout = FakeMethod()
         generator._getBranch()
 
@@ -71,7 +73,8 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         branch = self._createBranch({'marker.txt': marker_text})
         branch_url = branch.getPullURL()
 
-        generator = GenerateTranslationTemplates(branch_url)
+        generator = GenerateTranslationTemplates(
+            branch_url, self.makeTemporaryDirectory())
         generator.branch_dir = self.makeTemporaryDirectory()
         generator._getBranch()
 
@@ -80,9 +83,10 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
     def test_script(self):
         tempdir = self.makeTemporaryDirectory()
+        workdir = self.makeTemporaryDirectory()
         (retval, out, err) = run_script(
-            'lib/canonical/buildd/generate_translation_templates.py',
-            args=[tempdir])
+            'lib/canonical/buildd/pottery/generate_translation_templates.py',
+            args=[tempdir, workdir])
         self.assertEqual(0, retval)
 
 
