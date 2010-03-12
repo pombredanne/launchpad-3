@@ -176,7 +176,10 @@ Detailed download counts are also available from the getDownloadCounts method.
     ...     firefox['self_link'], 'getDownloadCounts').jsonBody()['entries']
     >>> len(counts)
     2
-    >>> pprint_entry(counts[1])
+
+A detailed count object can be retrieved by its URL.
+
+    >>> pprint_entry(webservice.get(counts[1]['self_link']).jsonBody())
     archive_link: u'http://.../~cprov/+archive/ppa'
     binary_package_name: u'mozilla-firefox'
     binary_package_version: u'1.0'
@@ -186,7 +189,6 @@ Detailed download counts are also available from the getDownloadCounts method.
     resource_type_link: u'http://.../#binary_package_release_download_count'
     self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-21/AU'
 
-
 We can also filter by date.
 
     >>> counts = webservice.named_get(
@@ -194,7 +196,8 @@ We can also filter by date.
     ...     start_date='2010-02-22').jsonBody()['entries']
     >>> len(counts)
     1
-    >>> pprint_entry(counts[0])
+
+    >>> pprint_entry(webservice.get(counts[0]['self_link']).jsonBody())
     archive_link: u'http://.../~cprov/+archive/ppa'
     binary_package_name: u'mozilla-firefox'
     binary_package_version: u'1.0'
@@ -204,8 +207,41 @@ We can also filter by date.
     resource_type_link: u'http://.../#binary_package_release_download_count'
     self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-23/unknown'
 
+But other URLs result in a 404.
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/moz')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/phoenix/1.0/hppa/2010-02-23/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.1/hppa/2010-02-23/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/foo/2010-02-23/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-25/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-23/XX')
+    HTTP/1.1 404 Not Found
+    ...
+
 getDailyDownloadTotals returns a dict mapping dates to total counts.
 
     >>> webservice.named_get(
     ...     firefox['self_link'], 'getDailyDownloadTotals').jsonBody()
     {u'2010-02-21': 10, u'2010-02-23': 8}
+
