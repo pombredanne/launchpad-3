@@ -36,7 +36,6 @@ from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
@@ -274,6 +273,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         server.start_server()
         yield
         server.stop_server()
+
+    def acquireLease(self, duration=600):
+        return self.job.acquireLease(duration)
 
     def run(self):
         """See `IRunnableJob`"""
