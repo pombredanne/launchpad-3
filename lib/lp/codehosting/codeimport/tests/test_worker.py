@@ -897,6 +897,12 @@ class PullingImportWorkerTests:
 
 
 class PartialTest:
+    """A test case for incremental imports.
+
+    When all foreign branch plugins support incremental imports, this can go
+    into PullingImportWorkerTests.  For now though, bzr-hg still lacks the
+    needed support.
+    """
 
     def test_partial(self):
         # Only config.codeimport.revisions_import_limit will be imported in a
