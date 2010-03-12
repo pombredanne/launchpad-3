@@ -896,8 +896,27 @@ class PullingImportWorkerTests:
         self.assertRaises(NotBranchError, worker.run)
 
 
+class PartialTest:
+
+    def test_partial(self):
+        # Only config.codeimport.revisions_import_limit will be imported in a
+        # given run.  When bzr-svn and bzr-hg support revision import limits,
+        # this test case can be moved up to PullingImportWorkerTests.
+        worker = self.makeImportWorker(self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')]))
+        self.makeForeignCommit(worker.source_details)
+        self.assertTrue(self.foreign_commit_count > 1)
+        self.pushConfig(
+            'codeimport', revisions_import_limit=self.foreign_commit_count-1)
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+
+
+
 class TestGitImport(WorkerTest, TestActualImportMixin,
-                    PullingImportWorkerTests):
+                    PullingImportWorkerTests, PartialTest):
 
     rcstype = 'git'
 
@@ -950,20 +969,6 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         return self.factory.makeCodeImportSourceDetails(
             rcstype='git', url=repository_path)
 
-    def test_partial(self):
-        # Only config.codeimport.revisions_import_limit will be imported in a
-        # given run.  When bzr-svn and bzr-hg support revision import limits,
-        # this test case can be moved up to PullingImportWorkerTests.
-        worker = self.makeImportWorker(self.makeSourceDetails(
-            'trunk', [('README', 'Original contents')]))
-        self.makeForeignCommit(worker.source_details)
-        self.assertTrue(self.foreign_commit_count > 1)
-        self.pushConfig(
-            'codeimport', revisions_import_limit=self.foreign_commit_count-1)
-        self.assertEqual(
-            CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
-        self.assertEqual(
-            CodeImportWorkerExitCode.SUCCESS, worker.run())
 
 
 class TestMercurialImport(WorkerTest, TestActualImportMixin,
@@ -1018,7 +1023,8 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
-                       TestActualImportMixin, PullingImportWorkerTests):
+                       TestActualImportMixin, PullingImportWorkerTests,
+                       PartialTest):
 
     rcstype = 'bzr-svn'
 

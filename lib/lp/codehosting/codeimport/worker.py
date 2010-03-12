@@ -524,8 +524,8 @@ class PullingImportWorker(ImportWorker):
     def getExtraPullArgs(self):
         """Return extra arguments to `InterBranch.pull`.
 
-        This method only really exists because only bzr-git supports the
-        'limit' argument to this method.  When bzr-svn and bzr-hg plugin do
+        This method only really exists because only bzr-git and bzr-svn
+        support the 'limit' argument to this method.  When bzr-hg plugin does
         too, this method can go away.
         """
         return {}
@@ -651,6 +651,10 @@ class HgImportWorker(PullingImportWorker):
 
 class BzrSvnImportWorker(PullingImportWorker):
     """An import worker for importing Subversion via bzr-svn."""
+
+    def getExtraPullArgs(self):
+        """See `PullingImportWorker.getExtraPullArgs`."""
+        return {'limit': config.codeimport.revisions_import_limit}
 
     @property
     def format_classes(self):
