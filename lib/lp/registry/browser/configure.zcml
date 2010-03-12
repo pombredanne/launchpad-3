@@ -1457,6 +1457,13 @@
             template="../../app/templates/generic-edit.pt"/>
     </browser:pages>
     <browser:page
+        name="+configure-bugtracker"
+        for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
+        class="lp.registry.browser.product.ProductConfigureBugTrackerView"
+        permission="launchpad.Edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
         name="+edit"
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"

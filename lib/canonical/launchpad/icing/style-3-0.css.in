@@ -515,37 +515,46 @@ ul.super-add-action li a {
     text-decoration: underline;
     }
 
-.involvement li {
+.involvement-service-links li {
     border-top: 1px solid #d0d0d0;
     padding: 0;
     font-size: 108%;
     font-weight: bold;
     }
-.involvement a {
+.involvement-service-links a {
     display: block;
     padding: 0.3em;
     }
-.involvement a.bugs {
+.involvement-service-links li.disabled img {
+    margin-top: auto;
+    margin-bottom: auto;
+    border: 1px solid green;
+    }
+.involvement-service-links li.disabled span {
+    display: inline;
+    color: #cccccc;
+    }
+.involvement-service-links a.bugs {
     color: #b9413e;
     background: url(/@@/bugs-arrow-right.png) right center no-repeat;
     }
-.involvement a.answers {
+.involvement-service-links a.answers {
     color: #5265b2;
     background: url(/@@/answers-arrow-right.png) right center no-repeat;
     }
-.involvement a.translations {
+.involvement-service-links a.translations {
     color: #c5458e;
     background: url(/@@/translations-arrow-right.png) right center no-repeat;
     }
-.involvement a.code {
+.involvement-service-links a.code {
     color: #d39f57;
     background: url(/@@/code-arrow-right.png) right center no-repeat;
     }
-.involvement a.blueprints {
+.involvement-service-links a.blueprints {
     color: #5ba4c6;
     background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
     }
-.involvement a:hover {
+.involvement-service-links a:hover {
     text-decoration: none;
     background-color: #eee;
     }
@@ -812,13 +821,15 @@ div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
     padding: 2px 0 5px 18px;
     line-height: 18px;
 }
-input[type="submit"].icon-only {
+.icon-only {
     vertical-align: middle;
     border: 0;
     padding: 0;
     height: 16px;
     width: 16px;
     background-color: inherit;
+}
+input[type="submit"].icon-only {
     cursor: pointer;
 }
 .vertical .sprite {

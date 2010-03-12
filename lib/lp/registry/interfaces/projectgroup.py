@@ -252,12 +252,10 @@ class IProjectGroupPublic(
 
     bug_reporting_guidelines = exported(
         Text(
-            title=(
-                u"If I\N{right single quotation mark}m reporting a bug, "
-                u"I should include, if possible"),
+            title=u"$displayname bug reporting guidelines",
             description=(
                 u"These guidelines will be shown to "
-                "anyone reporting a bug."),
+                "anyone reporting a bug for $displayname."),
             required=False,
             max_length=50000))
 

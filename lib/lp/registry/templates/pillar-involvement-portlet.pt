@@ -2,12 +2,35 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="involvement" class="portlet involvement"
-  tal:condition="view/has_involvement">
+  tal:condition="view/has_involvement"
+  tal:define="overview_menu context/menu:overview"
+  >
   <h2>Get Involved</h2>
 
-  <ul>
+  <ul class="involvement-service-links">
+    <li tal:define="link view/involved_menu/report_bug"
+        tal:condition="not: link/enabled"
+        class="disabled">
+      <span class="sprite icon-only warning-icon">&nbsp;</span>
+      <img style="float: right" src="/@@/gray-arrow-right.png" />
+      <span tal:content="link/text"/>
+    </li>
+    <li tal:define="link view/involved_menu/submit_code"
+        tal:condition="not: link/enabled"
+        class="disabled">
+      <span class="sprite icon-only warning-icon">&nbsp;</span>
+      <img style="float: right" src="/@@/gray-arrow-right.png" />
+      <span tal:content="link/text"/>
+    </li>
+
     <li tal:repeat="link view/enabled_links">
       <a tal:replace="structure link/fmt:link" />
     </li>
+  </ul>
+  <ul style="border-top: 0px solid black; margin-top: 10px">
+    <li style="padding-top: 5px; border-top: 0">
+      <a href="foo" style="padding: 0 0 0 18px; font-weight: normal" class="sprite edit">Configure code hosting</a>
+    </li>
+    <li tal:content="structure overview_menu/configure_bugtracker/fmt:link" />
   </ul>
 </div>

@@ -331,6 +331,11 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def configure_bugtracker(self):
+        text = 'Configure bugtracker'
+        return Link('+configure-bugtracker', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def branding(self):
         text = 'Change branding'
         return Link('+branding', text, icon='edit')
@@ -374,6 +379,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     facet = 'overview'
     links = [
         'edit',
+        'configure_bugtracker',
         'reassign',
         'top_contributors',
         'distributions',
@@ -1128,6 +1134,39 @@ class ProductBrandingView(BrandingChangeView):
         return canonical_url(self.context)
 
 
+class ProductConfigureBugTrackerView(ReturnToReferrerMixin,
+                                     LaunchpadEditFormView):
+    """View class to configure the bug tracker for a project."""
+
+    implements(IProductEditMenu)
+
+    label = "Configure bug tracker"
+    page_title = label
+    schema = IProduct
+    field_names = [
+        "bugtracker",
+        "enable_bug_expiration",
+        "remote_product",
+        "bug_reporting_guidelines",
+        ]
+    custom_widget('bugtracker', ProductBugTrackerWidget)
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The contraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
@@ -1140,15 +1179,11 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "title",
         "summary",
         "description",
-        "bug_reporting_guidelines",
         "project",
         "official_codehosting",
-        "bugtracker",
-        "enable_bug_expiration",
         "official_blueprints",
         "official_rosetta",
         "official_answers",
-        "remote_product",
         "homepageurl",
         "sourceforgeproject",
         "freshmeatproject",
@@ -1161,7 +1196,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "license_info",
         ]
     custom_widget('licenses', LicenseWidget)
-    custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('license_info', GhostWidget)
 
     @property
@@ -1188,18 +1222,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if field_name == 'license_info':
             return False
         return super(ProductEditView, self).showOptionalMarker(field_name)
-
-    def validate(self, data):
-        """Constrain bug expiration to Launchpad Bugs tracker."""
-        # enable_bug_expiration is disabled by JavaScript when bugtracker
-        # is not 'In Launchpad'. The contraint is enforced here in case the
-        # JavaScript fails to activate or run. Note that the bugtracker
-        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
-        # 'In a registered bug tracker' : IBugTracker}.
-        bugtracker = data.get('bugtracker', None)
-        if bugtracker is None or IBugTracker.providedBy(bugtracker):
-            data['enable_bug_expiration'] = False
-        ProductLicenseMixin.validate(self, data)
 
     @action("Change", name='change')
     def change_action(self, action, data):
