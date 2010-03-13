@@ -371,9 +371,11 @@ Patches View by Person and Team
 
 The patches view works for people and teams.
 
+    # Must remove the security proxy because IPerson.name is protected.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> submitter_name = removeSecurityProxy(patch_submitter).name
     >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/~%s/+patches' % (
-    ...         patch_submitter.name,))
+    ...     'http://bugs.launchpad.dev/~%s/+patches' % submitter_name)
 
     >>> show_patches_view(anon_browser.contents)
     Bug                  Importance  Status        Project          Patch Age

@@ -371,6 +371,11 @@ person/team.
     >>> print_self_link_of_entries(webservice.get(wikis_link).jsonBody())
     http://.../~salgado/+wikiname/2
 
+They can be listed by anonymous clients.
+
+    >>> print_self_link_of_entries(anon_webservice.get(wikis_link).jsonBody())
+    http://.../~salgado/+wikiname/2
+
 Wiki names are first-class objects with their own URLs and
 representations too.
 
@@ -455,6 +460,11 @@ The same for IRC nicknames
     >>> print irc_ids_link
     http://.../~mark/irc_nicknames
     >>> print_self_link_of_entries(webservice.get(irc_ids_link).jsonBody())
+    http://.../~mark/+ircnick/1
+
+Anonymous listing is possible.
+
+    >>> print_self_link_of_entries(anon_webservice.get(irc_ids_link).jsonBody())
     http://.../~mark/+ircnick/1
 
 IRC IDs are first-class objects with their own URLs and representations
