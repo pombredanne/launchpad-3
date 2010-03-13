@@ -259,8 +259,12 @@ class SoyuzTestPublisher:
                        pocket=PackagePublishingPocket.RELEASE,
                        format=BinaryPackageFormat.DEB,
                        scheduleddeletiondate=None, dateremoved=None,
-                       distroseries=None, archive=None,
-                       pub_source=None, builder=None):
+                       distroseries=None,
+                       archive=None,
+                       pub_source=None,
+                       version='666',
+                       architecturespecific=False,
+                       builder=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -270,9 +274,15 @@ class SoyuzTestPublisher:
 
         if pub_source is None:
             sourcename = "%s" % binaryname.split('-')[0]
+            if architecturespecific:
+                architecturehintlist = 'any'
+            else:
+                architecturehintlist = 'all'
+
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
-                archive=archive, distroseries=distroseries)
+                archive=archive, distroseries=distroseries,
+                version=version, architecturehintlist=architecturehintlist)
         else:
             archive = pub_source.archive
 
