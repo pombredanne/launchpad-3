@@ -250,15 +250,11 @@ class IPOTMsgSet(Interface):
         If a translation conflict is detected, TranslationConflict is raised.
         """
 
-    def resetCurrentTranslation(pofile, suggestions, lock_timestamp):
+    def resetCurrentTranslation(pofile, lock_timestamp):
         """Reset the currently used translation.
 
-        If the new suggestions are empty or identical to the current
-        translation, reset the current translation and mark as "need review"
-        all suggestions associated with this message.
-        
+        Reset means setting the "is_current"
         :param pofile: a `POFile` to dismiss suggestions from.
-        :param suggestions: the newly submitted suggestions.
         :param lock_timestamp: the timestamp when we checked the values we
             want to update.
 

@@ -429,9 +429,13 @@ class BaseTranslationView(LaunchpadView):
             # If suggestions were forced and user has the rights to do it,
             # reset the current translation.
             if (force_suggestion and
-                self.user_is_official_translator):
+                self.user_is_official_translator and
+                (self._areSuggestionsEmpty(translations) or
+                 (translationmessage is not None and
+                  self._areSuggestionsIdenticalToTranslations(translations, 
+                    translationmessage.translations)))):
                 potmsgset.resetCurrentTranslation(
-                    self.pofile, translations, self.lock_timestamp)
+                    self.pofile, self.lock_timestamp)
 
         except TranslationConflict:
             return (
@@ -446,6 +450,32 @@ class BaseTranslationView(LaunchpadView):
         else:
             self._observeTranslationUpdate(potmsgset)
             return None
+
+    def _areSuggestionsEmpty(self, suggestions):
+        """Return true if all suggestions are empty strings or None."""
+
+        empty = True
+        for index in suggestions:
+            if (suggestions[index] is not None and suggestions[index] != ""):
+                empty = False
+                break
+        return empty
+
+    def _areSuggestionsIdenticalToTranslations(self, suggestions,
+                                               translations):
+        """Return true if suggestions are identical to translations.
+        
+        Suggestions are represented as a dictionary using plural form
+        as index, while translations are represented as a list ordered by
+        plural form.
+        """
+
+        identical = True     
+        for index in suggestions:
+            if (suggestions[index] != translations[index]):
+                identical = False
+                break
+        return identical
 
     def _prepareView(self, view_class, current_translation_message, error):
         """Collect data and build a TranslationMessageView for display."""

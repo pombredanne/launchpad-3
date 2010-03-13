@@ -902,30 +902,20 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
                 self.potemplate, self.pofile.language,
                 include_dismissed=False, include_unreviewed=False))
 
-    def test_resetCurrentTranslation_no_current(self):
-        # Trying to reset the current translation when in fact there is no
-        # current translation will not change anything.
+    def test_resetCurrentTranslation_shared(self):
+        # Reseting a shared current translation will change iscurrent=False
+        # and there will be no other current translations for this POTMsgSet.
         pass
 
-    def test_resetCurrentTranslation_with_empty(self):
-        # Trying to reset the current translation when the new suggestion is
-        # emtpy, will reset the translation.
-        # POFile date_changed will also be updated.
+    def test_resetCurrentTranslation_diverged_not_imported(self):
+        # Reseting a diverged current translation that was not imported, will
+        # change is_current to False and will make it shared.
         pass
 
-    def test_resetCurrentTranslation_with_identical(self):
-        # Trying to reset the current translation when the new suggestion is
-        # identical with the current one, will reset the translation.
-        pass
-
-    def test_resetCurrentTranslation_with_different(self):
-        # Trying to reset the current translation when the new suggestion is
-        # different than the current one, will not reset the translation.
-        pass
-
-    def test_resetCurrentTranslation_when_diverged(self):
-        # Trying to reset the current translation when this is diverged, will
-        # converge it, together with all other diverged suggestions.
+    def test_resetCurrentTranslation_diverged_imported(self):
+        # Reseting a diverged current translation that was imported in
+        # Launchpad will change iscurrent to False but the translation
+        # message will be still diverged.
         pass
 
 
