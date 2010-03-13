@@ -69,6 +69,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.buildqueue import BuildQueue
 
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
@@ -129,7 +130,6 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
@@ -381,8 +381,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         a commit, despite all changes now being available in the main
         store.
         """
-        person = removeSecurityProxy(person) # Need to poke person's privates
-        person._preferredemail_cached = Store.of(person).find(
+        naked_person = removeSecurityProxy(person)
+        naked_person._preferredemail_cached = Store.of(person).find(
             EmailAddress, personID=person.id,
             status=EmailAddressStatus.PREFERRED).one()
 
@@ -423,16 +423,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname,
             hide_email_addresses=hide_email_addresses)
-        person = removeSecurityProxy(person)
-        email = removeSecurityProxy(email)
-        person._password_cleartext_cached = password
+        naked_person = removeSecurityProxy(person)
+        naked_person._password_cleartext_cached = password
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
-            person.setLocation(latitude, longitude, time_zone, person)
+            naked_person.setLocation(latitude, longitude, time_zone, person)
+
+        # Make sure the non-security-proxied object is not returned.
+        del naked_person
 
         # To make the person someone valid in Launchpad, validate the
         # email.
@@ -442,7 +444,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 Account, person.accountID)
             account.status = AccountStatus.ACTIVE
 
-        email.status = email_address_status
+        removeSecurityProxy(email).status = email_address_status
 
         # Ensure updated ValidPersonCache
         flush_database_updates()
@@ -1837,8 +1839,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             singular = self.getUniqueString()
         potmsgset = potemplate.createMessageSetFromText(
             singular, plural, context, sequence)
-        naked_potmsgset = removeSecurityProxy(potmsgset)
-        naked_potmsgset.sync()
+        removeSecurityProxy(potmsgset).sync()
         return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,

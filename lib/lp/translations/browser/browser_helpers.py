@@ -30,16 +30,16 @@ def contract_rosetta_escapes(text):
     """Replace Rosetta escape sequences with the real characters."""
     return helpers.text_replaced(text, {'[tab]': '\t',
                                         r'\[tab]': '[tab]',
-                                        '[nbsp]' : u'\u00a0',
-                                        r'\[nbsp]' : '[nbsp]' })
+                                        '[nbsp]': u'\u00a0',
+                                        r'\[nbsp]': '[nbsp]'})
 
 
 def expand_rosetta_escapes(unicode_text):
     """Replace characters needing a Rosetta escape sequences."""
     escapes = {u'\t': TranslationConstants.TAB_CHAR,
                u'[tab]': TranslationConstants.TAB_CHAR_ESCAPED,
-               u'\u00a0' : TranslationConstants.NO_BREAK_SPACE_CHAR,
-               u'[nbsp]' : TranslationConstants.NO_BREAK_SPACE_CHAR_ESCAPED }
+               u'\u00a0': TranslationConstants.NO_BREAK_SPACE_CHAR,
+               u'[nbsp]': TranslationConstants.NO_BREAK_SPACE_CHAR_ESCAPED}
     return helpers.text_replaced(unicode_text, escapes)
 
 
@@ -187,5 +187,3 @@ def parse_cformat_string(string):
         raise UnrecognisedCFormatString(string)
 
     return segments
-
-

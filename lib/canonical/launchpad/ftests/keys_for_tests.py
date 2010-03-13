@@ -53,7 +53,7 @@ def import_public_key(email_addr):
     if not person:
         return
 
-    for gpgkey in person.gpgkeys:
+    for gpgkey in person.gpg_keys:
         if gpgkey.fingerprint == key.fingerprint:
             # If the key's already added to the database, do nothing.
             return
