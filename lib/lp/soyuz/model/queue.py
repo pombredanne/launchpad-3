@@ -1260,7 +1260,7 @@ class PackageUpload(SQLBase):
             source.sourcepackagerelease.override(
                 component=new_component, section=new_section)
 
-        # We override our own archive to, as it is used to create
+        # We override our own archive too, as it is used to create
         # the SPPH during publish().
         self.archive = self.distroseries.distribution.getArchiveByComponent(
             new_component.name)
@@ -1350,7 +1350,7 @@ class PackageUploadBuild(SQLBase):
         for binary_package in self.build.binarypackages:
             for binary_file in binary_package.files:
                 try:
-                    published_binary = distribution.getFileByName(
+                    distribution.getFileByName(
                         binary_file.libraryfile.filename, source=False,
                         archive=self.packageupload.archive)
                 except NotFoundError:
@@ -1517,7 +1517,6 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
-        section = self.sourcepackagerelease.section
 
         if self.packageupload.is_delayed_copy:
             # For a delayed copy the component will not yet have
