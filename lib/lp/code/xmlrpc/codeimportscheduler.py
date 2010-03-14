@@ -42,7 +42,7 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         job_set = removeSecurityProxy(getUtility(ICodeImportJobSet))
         job = removeSecurityProxy(job_set.getById(job_id))
         if job is None:
-            raise NoSuchCodeImportJob()
+            raise NoSuchCodeImportJob(job_id)
         return job
 
     # Because you can't use a decorated function as the implementation of a

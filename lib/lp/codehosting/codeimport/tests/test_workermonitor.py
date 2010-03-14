@@ -681,7 +681,6 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
         This implementation does it in-process.
         """
-        self.layer.switchDbUser('codeimportworker')
         monitor = CIWorkerMonitorForTesting(
             job_id, QuietFakeLogger(),
             xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
