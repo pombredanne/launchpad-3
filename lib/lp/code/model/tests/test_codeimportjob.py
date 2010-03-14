@@ -14,6 +14,8 @@ import unittest
 
 from sqlobject.sqlbuilder import SQLConstant
 
+import transaction
+
 from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
@@ -893,7 +895,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         log_alias_id = getUtility(ILibrarianClient).addFile(
            'import_log.txt', len(log_data),
            StringIO.StringIO(log_data), 'text/plain')
-        self.layer.txn.commit()
+        transaction.commit()
         log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
         result = self.getResultForJob(job, log_alias=log_alias)
 

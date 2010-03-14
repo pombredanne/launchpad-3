@@ -480,7 +480,7 @@ class NoSuchCodeImportJob(LaunchpadFault):
     """Raised by `ICodeImportScheduler` methods when a job is not found."""
 
     error_code = 360
-    msg_template = 'Job %(job_id) not found.'
+    msg_template = 'Job %(job_id)d not found.'
 
     def __init__(self, job_id):
         LaunchpadFault.__init__(self, job_id=job_id)
