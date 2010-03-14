@@ -1539,11 +1539,12 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
-        debug(logger, "Publishing source %s/%s to %s/%s" % (
+        debug(logger, "Publishing source %s/%s to %s/%s in the %s archive" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.packageupload.distroseries.distribution.name,
-            self.packageupload.distroseries.name))
+            self.packageupload.distroseries.name,
+            self.packageupload.archive.name))
 
         return getUtility(IPublishingSet).newSourcePublication(
             archive=self.packageupload.archive,
