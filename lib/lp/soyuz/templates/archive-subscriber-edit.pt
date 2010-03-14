@@ -12,12 +12,6 @@
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
   </metal:block>
 
-  <div metal:fill-slot="heading">
-      <h1 tal:content="CONTEXTS/fmt:pagetitle">
-        Edit access for Joe Smith
-      </h1>
-  </div>
-
   <div metal:fill-slot="main">
     <div class="top-portlet">
       <p>You can update the expiry or description for the granted access,

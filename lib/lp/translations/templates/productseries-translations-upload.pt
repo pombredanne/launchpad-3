@@ -10,28 +10,43 @@
 
 <div metal:fill-slot="main">
 
-  <p
-    class="not-translated-in-launchpad"
-    tal:condition="not: context/product/official_rosetta">
+  <div class="top-portlet">
+    <tal:permissions replace="
+        structure
+        context/product/@@+portlet-not-using-launchpad"/>
+  </div>
 
-    <strong>
-      This project is not configured to use Launchpad for translations.
-    </strong>
-    <tal:admin_or_owner condition="context/product/required:launchpad.Edit">
-      You can change this in the
-      <a tal:attributes="href string:${context/product/fmt:url}/+edit">
-        project settings</a>. (<a href="/+help/getting-started-for-your-project.html" target="help">Getting started with translating your project in Launchpad</a>)
-    </tal:admin_or_owner>
-  </p>
   <p>
-    Upload either a single file (<code>.pot</code> /
-    <code>.po</code>) or a tar file containing a PO template and a set of PO
-    files (<code>.tar</code>, <code>.tar.gz</code>, <code>.tgz</code> or
+    Here you can upload translation files for your project, either
+    individually or as part of a tarball (<code>.tar</code>, <code>.tar.gz</code>, <code>.tgz</code> or
     <code>.tar.bz2</code>).
-    The files you upload will be reviewed by an admin before they appear in
-    Launchpad. (<a href="https://help.launchpad.net/Translations/ImportPolicy"
-    >Read the translations import policy</a>)
   </p>
+
+  <p>
+    <strong>Note:</strong> it's quicker and easier to <a tal:attributes="
+    href string:${context/fmt:url}/+translations-settings">import from a
+    Bazaar branch</a> instead (<a href="/+help/importing-from-bzr.html"
+    target="help">More about importing from Bazaar</a>)
+  </p>
+
+  <p>
+    When uploading a tarball or importing from a Bazaar branch, you must
+    follow our <a href="https://help.launchpad.net/Translations/YourProject/ImportPolicy"
+    >translations import policy</a>. At a minimum, your tarball or branch must:
+  </p>
+
+  <ul class="bulleted">
+    <li>contain at least one <code>.pot</code> file with English strings,
+    rather than message IDs or another language</li>
+    <li>give each template its own directory (<a href="/+help/directory-example.html"
+    target="help">see an example directory layout</a>).</li>
+  </ul>
+
+  <p>
+    Any templates you upload may be reviewed by an admin before they appear
+    in Launchpad.
+  </p>
+
 
   <form action="+translations-upload" method="post"
         enctype="multipart/form-data" class="translations">

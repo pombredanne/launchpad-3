@@ -193,10 +193,10 @@ subscribed to Spanish questions.
 
     >>> browser.getLink('Play DVDs in Totem').click()
     >>> print extract_text(browser.title)
-    Questions : Ubuntu
+    Question #10 : ...
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
-    Language: English
+    Language: English ...
 
     >>> portlet = find_tag_by_id(browser.contents, 'subscribers')
     >>> print extract_text(portlet)
@@ -210,10 +210,10 @@ Question:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/12')
     >>> print browser.title
-    Questions : Ubuntu
+    Question #12 : ...
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
-    Language: Spanish
+    Language: Spanish ...
 
     >>> portlet = find_tag_by_id(browser.contents, 'subscribers')
     >>> print extract_text(portlet).encode('ASCII', 'backslashreplace')

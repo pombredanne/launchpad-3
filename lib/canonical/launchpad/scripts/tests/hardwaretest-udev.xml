@@ -184,10 +184,19 @@ E: MODALIAS=scsi:t-0x05
          is stored in the same format as the DMI data:
          /path/to/file:filecontent
     -->
-    <sysfs-attributes>/sys/devices/pci0000:00/0000:00:1f.1/host3/target3:0:0/3:0:0:0/vendor:HL-DT-ST
-/sys/devices/pci0000:00/0000:00:1f.1/host3/target3:0:0/3:0:0:0/model:DVDRAM GSA-4083N
-/sys/devices/pci0000:00/0000:00:1f.1/host3/target3:0:0/3:0:0:0/type:5
-    </sysfs-attributes>
+    <sysfs-attributes>
+P: /devices/LNXSYSTM:00/LNXPWRBN:00/input/input0
+A: modalias=input:b0019v0000p0001e0000-e0,1,k74,ramlsfw
+A: uniq=
+A: phys=LNXPWRBN/button/input0
+A: name=Power Button
+
+P: /devices/LNXSYSTM:00/device:00/PNP0A08:00/device:03/input/input8
+A: modalias=input:b0019v0000p0006e0000-e0,1,kE0,E1,E3,F0,F1,F2,F3,F4,F5,ramlsfw
+A: uniq=
+A: phys=/video/input0
+A: name=Video Bus
+</sysfs-attributes>
 
     <!-- processors: Data about processors installed in a system.
              The data is retrieved from /proc/cpuinfo.

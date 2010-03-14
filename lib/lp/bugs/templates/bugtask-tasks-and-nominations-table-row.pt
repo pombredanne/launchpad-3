@@ -7,7 +7,8 @@
           tasklink view/taskLink;
           row_id string:tasksummary${context/id};
           form_row_id string:task${context/id}">
-  <tr tal:attributes="class view/getTaskRowCSSClass; id row_id">
+  <tr tal:define="editstatus_url string:${context/fmt:url}/+editstatus"
+      tal:attributes="class view/getTaskRowCSSClass; id row_id">
     <td class="icon left right">
       <metal:expander
           metal:define-macro="expander"
@@ -68,10 +69,12 @@
       <div class="status-content"
            style="width: 100%; float: left">
         <a href="+editstatus"
-           tal:attributes="class string:value status${context/status/name}"
+           tal:attributes="class string:value status${context/status/name};
+                           href editstatus_url"
            style="float: left"
            tal:content="context/status/title" />
-        <a href="+editstatus" style="margin-left: 3px">
+        <a href="+editstatus" style="margin-left: 3px"
+           tal:attributes="href editstatus_url">
           <img class="editicon" src="/@@/edit" />
         </a>
       </div>
@@ -82,10 +85,12 @@
       <div class="importance-content"
            style="width: 100%; float: left">
         <a href="+editstatus"
-           tal:attributes="class string:value importance${context/importance/name}"
+           tal:attributes="class string:value importance${context/importance/name};
+                           href editstatus_url"
            style="float: left"
            tal:content="context/importance/title" />
-        <a href="+editstatus" style="margin-left: 3px">
+        <a href="+editstatus" style="margin-left: 3px"
+           tal:attributes="href editstatus_url">
           <img class="editicon" src="/@@/edit" />
         </a>
       </div>
@@ -143,25 +148,31 @@
            style="width: 100%; float: left">
         <tal:not-milestoned condition="python: not context.milestone and
                                                view.user_can_edit_milestone">
-          <a href="+editstatus"> 
+          <a href="+editstatus" tal:attributes="href editstatus_url">
             <img class="addicon" src="/@@/add" />
           </a>
-          <a href="+editstatus" class="nulltext js-action">Target to milestone</a>
-          <a href="+editstatus" class="value" style="display:none" />
-          <a href="+editstatus">
+          <a href="+editstatus" class="nulltext js-action"
+             tal:attributes="href editstatus_url">Target to milestone</a>
+          <a href="+editstatus" class="value" style="display:none"
+             tal:attributes="href editstatus_url" />
+          <a href="+editstatus"
+             tal:attributes="href editstatus_url">
             <img class="editicon" style="display:none" src="/@@/edit" />
           </a>
         </tal:not-milestoned>
         <tal:milestoned condition="context/milestone">
-          <a href="+editstatus">
+          <a href="+editstatus"
+             tal:attributes="href editstatus_url">
             <img class="addicon" style="display:none" src="/@@/add" />
           </a>
-          <a href="+editstatus" style="display:none" class="nulltext js-sction">
+          <a href="+editstatus" style="display:none" class="nulltext js-sction"
+             tal:attributes="href editstatus_url">
             Target to milestone
           </a>
           <a tal:attributes="href context/milestone/fmt:url" class="value"
              tal:content="context/milestone/title" />
-          <a href="+editstatus" tal:condition="view/user_can_edit_milestone">
+          <a href="+editstatus" tal:condition="view/user_can_edit_milestone"
+             tal:attributes="href editstatus_url">
             <img class="editicon" src="/@@/edit" />
           </a>
         </tal:milestoned>
@@ -174,7 +185,7 @@
           class="bugtasks-table-row-init-script"
           tal:condition="not:view/many_bugtasks"
           tal:content="string:
-    YUI().use('event', 'bugs.bugtask_index', function(Y) {
+    LPS.use('event', 'bugs.bugtask_index', function(Y) {
         Y.on('load',
              function(e) {
                  Y.bugs.setup_bugtask_row(${view/js_config});

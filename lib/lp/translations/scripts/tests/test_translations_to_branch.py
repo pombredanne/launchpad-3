@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Acceptance test for the translations-export-to-branch script."""
@@ -11,10 +11,19 @@ from textwrap import dedent
 
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import ZopelessAppServerLayer
 
 from lp.testing import map_branch_contents, TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
+
+from lp.translations.scripts.translations_to_branch import (
+    ExportTranslationsToBranch)
+
+
+class GruesomeException(Exception):
+    """CPU on fire.  Or some other kind of failure, like."""
 
 
 class TestExportTranslationsToBranch(TestCaseWithFactory):
@@ -118,6 +127,64 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
         self.assertEqual(
             None, re.search("INFO\s+Committed [0-9]+ file", stderr))
+
+    def test_exportToBranches_handles_nonascii_exceptions(self):
+        # There's an exception handler in _exportToBranches that must
+        # cope well with non-ASCII exception strings.
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        boom = u'\u2639'
+        exporter._exportToBranch = FakeMethod(failure=GruesomeException(boom))
+
+        exporter._exportToBranches([self.factory.makeProductSeries()])
+
+        self.assertEqual(1, exporter._exportToBranch.call_count)
+
+        exporter.logger.output_file.seek(0)
+        message = exporter.logger.output_file.read()
+        self.assertTrue(message.startswith("ERROR"))
+        self.assertTrue("GruesomeException" in message)
+
+
+class TestExportToStackedBranch(TestCaseWithFactory):
+    """Test workaround for bzr bug 375013."""
+    # XXX JeroenVermeulen 2009-10-02 bug=375013: Once bug 375013 is
+    # fixed, this entire test can go.
+    layer = ZopelessAppServerLayer
+
+    def _setUpBranch(self, db_branch, tree, message):
+        """Set the given branch and tree up for use."""
+        bzr_branch = tree.branch
+        last_revno, last_revision_id = bzr_branch.last_revision_info()
+        removeSecurityProxy(db_branch).last_scanned_id = last_revision_id
+
+    def setUp(self):
+        super(TestExportToStackedBranch, self).setUp()
+        self.useBzrBranches()
+
+        base_branch, base_tree = self.create_branch_and_tree(
+            'base', name='base', hosted=True)
+        self._setUpBranch(base_branch, base_tree, "Base branch.")
+
+        stacked_branch, stacked_tree = self.create_branch_and_tree(
+            'stacked', name='stacked', hosted=True)
+        stacked_tree.branch.set_stacked_on_url('/' + base_branch.unique_name)
+        stacked_branch.stacked_on = base_branch
+        self._setUpBranch(stacked_branch, stacked_tree, "Stacked branch.")
+
+        self.stacked_branch = stacked_branch
+
+    def test_export_to_shared_branch(self):
+        # The script knows how to deal with stacked branches.
+        # Otherwise, this would fail.
+        script = ExportTranslationsToBranch('reupload', test_args=['-q'])
+        committer = script._prepareBranchCommit(self.stacked_branch)
+        try:
+            self.assertNotEqual(None, committer)
+            committer.writeFile('x.txt', 'x')
+            committer.commit("x!")
+        finally:
+            committer.unlock()
 
 
 def test_suite():

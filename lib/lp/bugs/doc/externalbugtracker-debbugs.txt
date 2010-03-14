@@ -38,6 +38,13 @@ DebBugs, of course, implements IExternalBugTracker.
     >>> verifyObject(IExternalBugTracker, external_debbugs)
     True
 
+Because we keep a local copy of the DebBugs database we don't need to
+worry about batching bug watch updates for performance reasons, so
+DebBugs instances don't have a batch_size limit.
+
+    >>> print external_debbugs.batch_size
+    None
+
 
 == Retrieving bug status from the debbugs database ==
 
@@ -95,7 +102,7 @@ tested later.
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> external_debbugs.sync_comments = False
-    >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
+    >>> bug_watch_ids = sorted([bug_watch.id for bug_watch in bug_watches])
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
     INFO:...:Updating 5 watches for 5 bugs on http://...
 
@@ -103,10 +110,10 @@ tested later.
     >>> for bug_watch_id in bug_watch_ids:
     ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    280883: done grave woody security
     304014: open important
     327452: done critical patch security
     327549: open important security
-    280883: done grave woody security
     308994: open important
 
 The lastchecked attribute got updated for each bug watch, so no more
@@ -354,7 +361,7 @@ DebBugs implements all of these.
 getCommentIds() will return a list of the comment IDs for a given remote
 bug. DebBugs comment IDs are RFC822 message IDs.
 
-    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch.remotebug)
     >>> print comment_ids
     ['<20040309081430.98BF411EE67@tux>']
 
@@ -364,7 +371,7 @@ imported. Comments which have no useable date will not be imported.
     >>> external_debbugs.debbugs_db._data_file = (
     ...     'debbugs-comment-with-no-date.txt')
 
-    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch.remotebug)
     >>> print comment_ids
     []
 
@@ -389,7 +396,7 @@ copies of the same comment.
 
 However, getCommentIds() will only return the comment ID once.
 
-    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch.remotebug)
     >>> print comment_ids
     ['<20040309081430.98BF411EE67@tux>']
 
@@ -405,7 +412,7 @@ given comment ID.
 
     >>> comment_id = comment_ids[0]
     >>> poster_name, poster_email = external_debbugs.getPosterForComment(
-    ...     bug_watch, comment_id)
+    ...     bug_watch.remotebug, comment_id)
     >>> print "%s <%s>" % (poster_name, poster_email)
     Teun Vink <teun@tux.office.luna.net>
 
@@ -420,7 +427,7 @@ owner, so we'll turn Teun Vink into a Person.
     ...     comment='when importing comments for %s.' % bug_watch.title)
 
     >>> message = external_debbugs.getMessageForComment(
-    ...     bug_watch, comment_id, poster)
+    ...     bug_watch.remotebug, comment_id, poster)
 
     >>> print message.owner.displayname
     Teun Vink
@@ -438,13 +445,13 @@ therefore more likely to be accurate.
     >>> external_debbugs.debbugs_db._data_file = (
     ...     'debbugs-comment-with-received-date.txt')
 
-    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch.remotebug)
     >>> print comment_ids
     ['<yetanothermessageid@launchpad>']
 
     >>> external_debbugs.fetchComments(bug_watch, comment_ids)
     >>> message = external_debbugs.getMessageForComment(
-    ...     bug_watch, comment_ids[0], poster)
+    ...     bug_watch.remotebug, comment_ids[0], poster)
 
     >>> print message.datecreated
     2008-05-30 21:18:12+00:00
@@ -470,11 +477,11 @@ default to using the Date header again.
     >>> external_debbugs.debbugs_db._data_file = (
     ...     'debbugs-comment-with-no-useful-received-date.txt')
 
-    >>> comment_ids = external_debbugs.getCommentIds(bug_watch)
+    >>> comment_ids = external_debbugs.getCommentIds(bug_watch.remotebug)
 
     >>> external_debbugs.fetchComments(bug_watch, comment_ids)
     >>> message = external_debbugs.getMessageForComment(
-    ...     bug_watch, comment_ids[0], poster)
+    ...     bug_watch.remotebug, comment_ids[0], poster)
 
     >>> print message.datecreated
     2007-12-14 18:54:30+00:00

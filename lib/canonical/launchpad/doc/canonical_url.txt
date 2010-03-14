@@ -520,6 +520,15 @@ request has to be passed in explicitly.
     >>> canonical_url(countryset_instance, request=api_request)
     u'http://api.launchpad.dev/countries'
 
+It is often the case that the web application wants to provide URLs that will
+be written out onto the pages that the Javascript can process using the
+LP.client code to get access to the object entries using the API.  In these
+cases, the "force_local_path" parameter can be passed to canonical_url to have
+only the relative local path returned.
+
+    >>> canonical_url(countryset_instance, force_local_path=True)
+    u'/countries'
+
 
 == The end ==
 

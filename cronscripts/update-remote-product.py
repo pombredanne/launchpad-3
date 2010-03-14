@@ -1,14 +1,14 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0403
-
 """Cron job to update Product.remote_product using bug watch information.  """
 
-import time
+# pylint: disable-msg=W0403
 import _pythonpath
+
+import time
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript

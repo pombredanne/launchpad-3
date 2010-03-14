@@ -9,10 +9,10 @@ __all__ = [
 ]
 
 from zope.component import getUtility
-from zope.interface import implements
+
+from lazr.restful.simple import BaseWebServiceConfiguration
 
 from canonical.config import config
-from lazr.restful.interfaces import IWebServiceConfiguration
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import (
     WebServiceClientRequest, WebServicePublication)
@@ -20,12 +20,12 @@ from canonical.launchpad.webapp.servers import (
 from canonical.launchpad import versioninfo
 
 
-class LaunchpadWebServiceConfiguration:
-    implements(IWebServiceConfiguration)
+class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
     path_override = "api"
-    service_version_uri_prefix = "beta"
+    active_versions = ["beta", "1.0", "devel"]
     view_permission = "launchpad.View"
+    set_hop_by_hop_headers = True
 
     @property
     def use_https(self):

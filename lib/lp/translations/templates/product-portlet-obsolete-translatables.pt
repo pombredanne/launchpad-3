@@ -6,7 +6,7 @@
 
 <div class="portlet" id="portlet-obsolete-translatable-series"
      tal:condition="context/obsolete_translatable_series">
-  <h2>All product series with obsolete templates</h2>
+  <h3>All product series with obsolete templates</h3>
 
   <div class="portletBody portletContent">
     <ul>

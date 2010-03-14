@@ -14,16 +14,16 @@ a bug task.
     ...     if not bugwatch.bugtasks]
 
     >>> from zope.component import getMultiAdapter
-    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> linked_bugwatch_view = getMultiAdapter(
-    ...     (linked_bugwatches.pop(), TestRequest()), name='+edit')
+    ...     (linked_bugwatches.pop(), LaunchpadTestRequest()), name='+edit')
     >>> linked_bugwatch_view.initialize()
     >>> [action.label for action in linked_bugwatch_view.actions
     ...  if action.available()]
     ['Change']
 
     >>> unlinked_bugwatch_view = getMultiAdapter(
-    ...     (unlinked_bugwatches.pop(), TestRequest()), name='+edit')
+    ...     (unlinked_bugwatches.pop(), LaunchpadTestRequest()), name='+edit')
     >>> unlinked_bugwatch_view.initialize()
     >>> [action.label for action in unlinked_bugwatch_view.actions
     ...  if action.available()]

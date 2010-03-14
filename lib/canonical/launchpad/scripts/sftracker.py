@@ -304,11 +304,11 @@ class TrackerImporter:
         # pick a series to attach the milestone.  Pick 'trunk' or
         # 'main' if they exist.  Otherwise pick the first.
         # pylint: disable-msg=W0631
-        for series in self.product.serieses:
+        for series in self.product.series:
             if series.name in ['trunk', 'main']:
                 break
         else:
-            series = self.product.serieses[0]
+            series = self.product.series[0]
 
         milestone = series.newMilestone(name)
         Store.of(milestone).flush()

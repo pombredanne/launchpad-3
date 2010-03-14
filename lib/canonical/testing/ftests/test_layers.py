@@ -29,8 +29,8 @@ from canonical.testing.layers import (
     AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
     LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,
     LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
-    LayerProcessController, LibrarianLayer, ZopelessLayer)
-
+    LayerProcessController, LibrarianLayer, MemcachedLayer, ZopelessLayer)
+from lp.services.memcache.client import memcache_client_factory
 
 class BaseTestCase(unittest.TestCase):
     """Both the Base layer tests, as well as the base Test Case
@@ -45,6 +45,7 @@ class BaseTestCase(unittest.TestCase):
     want_launchpad_database = False
     want_functional_flag = False
     want_zopeless_flag = False
+    want_memcached = False
 
     def testBaseIsSetUpFlag(self):
         self.failUnlessEqual(BaseLayer.isSetUp, True)
@@ -138,6 +139,23 @@ class BaseTestCase(unittest.TestCase):
                 self.want_launchpad_database,
                 'Launchpad database should be available but is not.'
                 )
+
+    def testMemcachedWorking(self):
+        client = MemcachedLayer.client or memcache_client_factory()
+        key = "BaseTestCase.testMemcachedWorking"
+        client.forget_dead_hosts()
+        is_live = client.set(key, "live")
+        if self.want_memcached:
+            self.assertEqual(
+                is_live, True, "memcached not live when it should be.")
+        else:
+            self.assertEqual(
+                is_live, False, "memcached is live but should not be.")
+
+
+class MemcachedTestCase(BaseTestCase):
+    layer = MemcachedLayer
+    want_memcached = True
 
 
 class LibrarianTestCase(BaseTestCase):
@@ -270,6 +288,7 @@ class LaunchpadTestCase(BaseTestCase):
 
     want_launchpad_database = True
     want_librarian_running = True
+    want_memcached = True
 
 
 class FunctionalTestCase(BaseTestCase):
@@ -295,6 +314,7 @@ class LaunchpadFunctionalTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_functional_flag = True
+    want_memcached = True
 
 
 class LaunchpadZopelessTestCase(BaseTestCase):
@@ -304,6 +324,7 @@ class LaunchpadZopelessTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_zopeless_flag = True
+    want_memcached = True
 
 
 class LaunchpadScriptTestCase(BaseTestCase):
@@ -313,6 +334,7 @@ class LaunchpadScriptTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_zopeless_flag = True
+    want_memcached = True
 
     def testSwitchDbConfig(self):
         # Test that we can switch database configurations, and that we
@@ -337,6 +359,7 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
     want_librarian_running = True
     want_functional_flag = True
     want_zopeless_flag = False
+    want_memcached = True
 
     def testAppServerIsAvailable(self):
         # Test that the app server is up and running.

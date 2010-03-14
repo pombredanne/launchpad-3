@@ -28,6 +28,7 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
+from urlparse import urlparse
 
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -45,6 +46,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.browser.sourceslist import (
@@ -59,13 +61,11 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet, IPPAActivateForm, NoSuchPPA)
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.build import BuildSetStatus, IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from lp.soyuz.interfaces.packagecopyrequest import (
@@ -285,14 +285,28 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
             # See if "item" is a source package name.
             the_item = getUtility(ISourcePackageNameSet).queryByName(item)
         elif item_type == 'packageset':
-            # See if "item" is a package set.
-            the_item = getUtility(IPackagesetSet).getByName(item)
+            the_item = None
+            # Was a 'series' URL param passed?
+            series = get_url_param('series')
+            if series is not None:
+                # Get the requested distro series.
+                try:
+                    series = self.context.distribution[series]
+                except NotFoundError:
+                    series = None
+            if series is not None:
+                the_item = getUtility(IPackagesetSet).getByName(
+                    item, distroseries=series)
         else:
             the_item = None
 
         if the_item is not None:
-            return getUtility(IArchivePermissionSet).checkAuthenticated(
-                user, self.context, permission_type, the_item)[0]
+            result_set = getUtility(IArchivePermissionSet).checkAuthenticated(
+                user, self.context, permission_type, the_item)
+            if result_set.count() > 0:
+                return result_set[0]
+            else:
+                return None
         else:
             return None
 
@@ -391,7 +405,7 @@ class ArchiveMenuMixin:
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
-        text = 'Edit dependencies'
+        text = 'Edit PPA dependencies'
         return Link('+edit-dependencies', text, icon='edit')
 
 
@@ -545,17 +559,6 @@ class ArchiveViewBase(LaunchpadView):
             if not archive_dependency.dependency.enabled]
         can_edit = check_permission('launchpad.Edit', self.context)
         return can_edit and len(disabled_dependencies) > 0
-
-    @property
-    def ppa_reference(self):
-        """PPA reference as supported by `dput` and `software-properties`.
-
-        :raises AssertionError: if the context `IArchive` is not a PPA.
-        :return: a `str` as 'ppa:%(ppa.owner.name)/%(ppa.name)'
-        """
-        assert self.context.is_ppa, (
-            'PPA reference should not be used for non-PPA archives.')
-        return 'ppa:%s/%s' % (self.context.owner.name, self.context.name)
 
     @cachedproperty
     def package_copy_requests(self):
@@ -748,7 +751,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             id="displayname", title="Edit the displayname")
         return widget
 
-
     @property
     def sources_list_entries(self):
         """Setup and return the source list entries widget."""
@@ -781,10 +783,12 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 
         description = self.context.description
         if description is not None:
-            hide_email = formatter(self.context.description).obfuscate_email()
-            description = formatter(hide_email).text_to_html()
+            description = formatter(description).obfuscate_email()
         else:
             description = ''
+
+        if not (self.context.owner.is_probationary and self.context.is_ppa):
+            description = formatter(description).text_to_html()
 
         return TextAreaEditorWidget(
             self.context,
@@ -817,21 +821,29 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             'FULLYBUILT': 'Successfully built',
             'FULLYBUILT_PENDING': 'Successfully built',
             'NEEDSBUILD': 'Waiting to build',
-            'FAILEDTOBUILD': 'Failed to build',
+            'FAILEDTOBUILD': 'Failed to build:',
             'BUILDING': 'Currently building',
             }
 
         now = datetime.now(tz=pytz.UTC)
         for result_tuple in result_tuples:
             source_pub = result_tuple[0]
-            current_status = source_pub.getStatusSummaryForBuilds()['status']
+            status_summary = source_pub.getStatusSummaryForBuilds()
+            current_status = status_summary['status']
             duration = now - source_pub.datepublished
+
+            # We'd like to include the builds in the latest updates
+            # iff the build failed.
+            builds = []
+            if current_status == BuildSetStatus.FAILEDTOBUILD:
+                builds = status_summary['builds']
 
             latest_updates_list.append({
                 'title': source_pub.source_package_name,
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,
                 'duration': duration,
+                'builds': builds
                 })
 
         return latest_updates_list
@@ -1148,7 +1160,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                 continue
             token = '%s/%s' % (ppa.owner.name, ppa.name)
             terms.append(
-                SimpleTerm(ppa, token, ppa.displayname))
+                SimpleTerm(ppa, token, '%s (%s)' % (ppa.displayname, token)))
 
         return form.Fields(
             Choice(__name__='destination_archive',
@@ -1166,8 +1178,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         # a problem when we support PPAs for other distribution. If we do
         # it will be probably simpler to use the DistroSeries vocabulary
         # and validate the selected value before copying.
-        for series in self.context.distribution.serieses:
-            if series.status == DistroSeriesStatus.OBSOLETE:
+        for series in self.context.distribution.series:
+            if series.status == SeriesStatus.OBSOLETE:
                 continue
             terms.append(
                 SimpleTerm(series, str(series.name), series.displayname))
@@ -1294,6 +1306,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                   cssClass='highlight-selected')
     custom_widget('primary_components', LaunchpadRadioWidget,
                   cssClass='highlight-selected')
+
+    label = "Edit PPA dependencies"
+    page_title = label
 
     def initialize(self):
         self.cancel_url = canonical_url(self.context)
@@ -1624,17 +1639,27 @@ class ArchiveActivateView(LaunchpadFormView):
 
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
+    label = "Personal Package Archive Activation"
 
     @property
     def ubuntu(self):
         return getUtility(ILaunchpadCelebrities).ubuntu
 
+    @property
+    def initial_values(self):
+        """Set up default values for form fields."""
+        # Suggest a default value of "ppa" for the name for the
+        # first PPA activation.
+        if self.context.archive is None:
+            return {'name': 'ppa'}
+        return {}
+
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
         Reorder the fields in a way the make more sense to users and also
-        omit 'name' and present a checkbox for acknowledging the PPA-ToS
-        if the user is creating his first PPA.
+        present a checkbox for acknowledging the PPA-ToS if the user is
+        creating his first PPA.
         """
         LaunchpadFormView.setUpFields(self)
 
@@ -1643,7 +1668,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 'name', 'displayname', 'description')
         else:
             self.form_fields = self.form_fields.select(
-                'displayname', 'accepted', 'description')
+                'name', 'displayname', 'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
@@ -1733,6 +1758,15 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
     @action(_("Save"), name="save", validator="validate_save")
     def save_action(self, action, data):
+        # Archive is enabled and user wants it disabled.
+        if self.context.enabled == True and data['enabled'] == False:
+            self.context.disable()
+        # Archive is disabled and user wants it enabled.
+        if self.context.enabled == False and data['enabled'] == True:
+            self.context.enable()
+        # IArchive.enabled is a read-only property that cannot be set
+        # directly.
+        del(data['enabled'])
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
@@ -1746,7 +1780,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['displayname', 'description']
+    field_names = ['displayname', 'description', 'enabled', 'publish']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 
@@ -1754,7 +1788,10 @@ class ArchiveEditView(BaseArchiveEditView):
 class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
-                   'buildd_secret', 'authorized_size', 'relative_build_score']
+                   'buildd_secret', 'authorized_size', 'relative_build_score',
+                   'external_dependencies', 'arm_builds_allowed']
+
+    custom_widget('external_dependencies', TextAreaWidget, height=3)
 
     def validate_save(self, action, data):
         """Validate the save action on ArchiveAdminView.
@@ -1763,6 +1800,14 @@ class ArchiveAdminView(BaseArchiveEditView):
         this is a private archive.
         """
         form.getWidgetsData(self.widgets, 'field', data)
+
+        if data.get('private') != self.context.private:
+            # The privacy is being switched.
+            if self.context.getPublishedSources().count() > 0:
+                self.setFieldError(
+                    'private',
+                    'This archive already has published sources. It is '
+                    'not possible to switch the privacy.')
 
         if data.get('buildd_secret') is None and data['private']:
             self.setFieldError(
@@ -1773,11 +1818,43 @@ class ArchiveAdminView(BaseArchiveEditView):
             self.setFieldError(
                 'private',
                 'Private teams may not have public archives.')
-
         elif data.get('buildd_secret') is not None and not data['private']:
             self.setFieldError(
                 'buildd_secret',
                 'Do not specify for non-private archives')
+
+        # Check the external_dependencies field.
+        ext_deps =  data.get('external_dependencies')
+        if ext_deps is not None:
+            errors = self.validate_external_dependencies(ext_deps)
+            if len(errors) != 0:
+                error_text = "\n".join(errors)
+                self.setFieldError('external_dependencies', error_text)
+
+    def validate_external_dependencies(self, ext_deps):
+        """Validate the external_dependencies field.
+
+        :param ext_deps: The dependencies form field to check.
+        """
+        errors = []
+        # The field can consist of multiple entries separated by
+        # newlines, so process each in turn.
+        for dep in ext_deps.splitlines():
+            try:
+                deb, url, suite, components = dep.split(" ", 3)
+            except ValueError:
+                errors.append(
+                    "'%s' is not a complete and valid sources.list entry"
+                        % dep)
+                continue
+
+            if deb != "deb":
+                errors.append("%s: Must start with 'deb'" % dep)
+            url_components = urlparse(url)
+            if not url_components[0] or not url_components[1]:
+                errors.append("%s: Invalid URL" % dep)
+
+        return errors
 
     @property
     def owner_is_private_team(self):

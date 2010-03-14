@@ -49,7 +49,7 @@ Now, we'll POST the form. We should see a message that we have just
 subscribed.
 
     >>> browser.getControl('Subscribe').click()
-    >>> 'You have subscribed to this spec' in browser.contents
+    >>> 'You have subscribed to this blueprint' in browser.contents
     True
     >>> 'subscriber-essential' in browser.contents
     True
@@ -101,7 +101,7 @@ We load the subscription page, and now the button says "Unsubscribe".
     >>> unsubit.value
     'Unsubscribe'
     >>> unsubit.click()
-    >>> 'You have unsubscribed from this spec.' in browser.contents
+    >>> 'You have unsubscribed from this blueprint.' in browser.contents
     True
     >>> 'subscriber-inessential' in browser.contents
     False

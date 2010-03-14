@@ -39,6 +39,21 @@ returned as a X-Launchpad-Blob-Token header in the response as well:
 This token we can now pass to the +filebug page by appending it to the
 URL as an extra path component, like '+filebug/12345abcde'.
 
+We'll define a helper method here to make processing the uploaded blob
+easier.
+
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+
+    >>> def process_blob(token):
+    ...     login('foo.bar@canonical.com')
+    ...     job = getUtility(IProcessApportBlobJobSource).getByBlobUUID(
+    ...         token)
+    ...     job.job.start()
+    ...     job.run()
+    ...     job.job.complete()
+    ...     logout()
+
 == Guided +filebug ==
 
 The most common case will be that the user is sent to the guided
@@ -47,6 +62,25 @@ The most common case will be that the user is sent to the guided
     >>> filebug_url = (
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
     ...     '%s' % blob_token)
+    >>> user_browser.open(filebug_url)
+
+At first, the user will be shown a message telling them that the extra
+data is being processed.
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    Please wait while bug data is processed. This page will refresh
+    every 10 seconds until processing is complete.
+
+The page header contains a 10-second meta refresh tag.
+
+    >>> '<meta http-equiv="refresh" content="10"' in user_browser.contents
+    True
+
+Once the data has been processed, the +filebug process can continue as
+normal.
+
+    >>> process_blob(blob_token)
     >>> user_browser.open(filebug_url)
 
 A notification will be shown to inform the user that additional
@@ -127,6 +161,7 @@ that will be used to automatically fill in a suggested title.
     ...     extra_filebug_data_with_subject, 'not/important', 'not.important')
     >>> anon_browser.getControl(name='FORM_SUBMIT').click() # Don't change!
     >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
+    >>> process_blob(blob_token)
 
     >>> user_browser.open(
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
@@ -154,6 +189,7 @@ initialized with that value.
     ...     extra_filebug_data_with_subject, 'not/important', 'not.important')
     >>> anon_browser.getControl(name='FORM_SUBMIT').click() # Don't change!
     >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
+    >>> process_blob(blob_token)
 
     >>> user_browser.open(
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
@@ -222,6 +258,7 @@ Once we submit the bug report...
     ...     'not.important')
     >>> anon_browser.getControl(name='FORM_SUBMIT').click() # Don't change!
     >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
+    >>> process_blob(blob_token)
 
     >>> filebug_url = (
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'

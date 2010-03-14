@@ -6,8 +6,8 @@ the 'Renew' button.
 
     >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~name18/+member/mark')
-    >>> browser.title
-    "Mark Shuttleworth's membership status in Ubuntu Gnome Team"
+    >>> print browser.title
+    Mark Shuttleworth's membership : ...Ubuntu Gnome Team... team
     >>> content = find_main_content(browser.contents)
     >>> print extract_text(content.p)
     Mark Shuttleworth (mark) is an Expired Member of Ubuntu Gnome Team.

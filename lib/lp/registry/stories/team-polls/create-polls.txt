@@ -109,9 +109,9 @@ We're redirected to the newly created poll
     >>> team_admin_browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080'
     >>> team_admin_browser.title
-    'Poll: \xe2\x80\x9cDebian Project Leader Election 2080\xe2\x80\x9d'
+    'Debian Project Leader Election 2080 : \xe2\x80\x9cUbuntu Team\xe2\x80\x9d team'
     >>> print_location(team_admin_browser.contents)
-    Hierarchy: None displayed
+    Hierarchy:  ?Ubuntu Team? team > Debian Project Leader Election 2080
     Tabs:
     * Overview (selected) - http://launchpad.dev/~ubuntu-team
     * Branches - http://code.launchpad.dev/~ubuntu-team
@@ -148,11 +148,11 @@ Now lets try to insert a poll with the name of a existing one.
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
     There is 1 error.
     dpl-2080 is already in use by another poll in this team.
- 
+
 When creating a new poll, its start date must be at least 12 hours from
 now, so that the user creating it has a chance to add some options before
 the poll opens -- at that point new options cannot be added.
- 
+
     >>> team_admin_browser.getControl('The unique name').value = 'today'
     >>> from datetime import datetime
     >>> today = datetime.today().strftime('%Y-%m-%d')

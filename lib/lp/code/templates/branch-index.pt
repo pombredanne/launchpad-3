@@ -15,17 +15,37 @@
     #merge-summary {
       margin: 1em 0;
     }
+    #download-url dt, #upload-url dt {
+      font-weight: normal;
+    }
+    #download-url dd, #upload-url dd {
+      font-size: 120%;
+      font-weight: bold;
+    }
+    #download-url dd span.branch-url, #upload-url dd span.branch-url {
+      font-weight: normal;
+    }
+
   </style>
   <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/code/branchsubscription.js">
-  </script>
-  <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/code/branchlinks.js">
-  </script>
+          tal:content="string:
+    LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
+              'lazr.choiceedit', 'lp.code.branch.status',
+              'lp.code.branchmergeproposal.diff',
+              'lp.code.branch.subscription', function(Y) {
+
+        Y.on('load', function(e) {
+            var subscription_portlet = new Y.lp.code.branch.subscription.SubscriptionWidget({
+                contentBox: '#portlet-subscribers'
+            });
+            subscription_portlet.render();
+
+            Y.lp.code.branch.status.connect_status(${view/status_config});
+            Y.lp.code.branchmergeproposal.diff.connect_diff_links();
+            },
+            window);
+    });
+  "/>
 </metal:block>
 
 <body>
@@ -63,55 +83,46 @@
     <tal:branch-errors tal:replace="structure context/@@+messages" />
   </div>
 
-  <div class="yui-g">
-    <div class="yui-u first">
-      <div id="related-bugs-and-blueprints" class="portlet">
-        <h2>Related bugs and blueprints</h2>
-        <tal:related-bugs-specs
-            replace="structure context/@@++branch-related-bugs-specs" />
-      </div>
-    </div>
+  <div id="branch-description" tal:condition="context/description"
+       class="summary"
+       tal:content="structure context/description/fmt:text-to-html">
+    TODO: set the size properly
+    The description of the branch usually goes here, but will be used so
+    rarely that it only shows if there is a description set.  To set a
+    description, one must do so through the "Edit details" navigation
+    link.
+  </div>
 
-    <div class="yui-u">
-      <div class="portlet" id="branch-merges">
-        <h2>Branch merges</h2>
-        <tal:branch-pending-merges
-            replace="structure context/@@++branch-pending-merges" />
-      </div>
+  <div class="yui-g first">
+    <div id="branch-management" class="portlet">
+      <tal:branch-management
+          replace="structure context/@@++branch-management" />
     </div>
   </div>
 
+  <div class="yui-g" tal:condition="view/show_merge_links">
 
-  <div class="yui-g" tal:condition="context/description">
-    <div id="branch-description">
-      <h2>Description</h2>
-      <div tal:content="structure context/description/fmt:text-to-html">
-        The description of the branch usually goes here, but will be used so
-        rarely that it only shows if there is a description set.  To set a
-        description, one must do so through the "Edit details" navigation
-        link.
-      </div>
+    <div class="portlet" id="branch-merges">
+      <h2>Branch merges</h2>
+      <tal:branch-pending-merges
+          replace="structure context/@@++branch-pending-merges" />
+    </div>
+
+  </div>
+
+  <div class="yui-g">
+    <div id="branch-info" class="portlet">
+      <h2>Branch information</h2>
+      <tal:branch-info replace="structure context/@@++branch-information" />
     </div>
   </div>
 
-
   <div class="yui-g">
-
-    <div class="yui-u first">
-      <div id="branch-info" class="portlet">
-        <h2>Branch information</h2>
-        <tal:branch-info replace="structure context/@@++branch-information" />
-      </div>
+    <div id="related-bugs-and-blueprints" class="portlet">
+      <h2>Related bugs and blueprints</h2>
+      <tal:related-bugs-specs
+          replace="structure context/@@++branch-related-bugs-specs" />
     </div>
-
-    <div class="yui-u">
-      <div id="branch-management" class="portlet">
-        <h2>Branch management</h2>
-        <tal:branch-management
-            replace="structure context/@@++branch-management" />
-      </div>
-    </div>
-
   </div>
 
   <div id="branch-import-details"
@@ -138,10 +149,10 @@
 
   <div class="yui-g" tal:condition="view/pending_writes">
     <div class="portlet">
-      <div id="branch-pending-writes">
+      <div id="branch-pending-writes" class="pending-update">
         <h3>Updating branch...</h3>
         <p>
-          Launchpad is processing new changes to this branch and will be
+          Launchpad is processing new changes to this branch which will be
           available in a few minutes. Reload to see the changes.
         </p>
       </div>
@@ -174,28 +185,28 @@
     </ul>
   </div>
 
-      <div class="related">
+      <div id="nearby-branches" class="related">
 
   <h2>Nearby</h2>
   <ul>
     <li tal:condition="context/product">
-      <a tal:attributes="href context/product/fmt:url">
+      <a tal:attributes="href context/product/fmt:url:code">
         Other <tal:product replace="context/product/displayname" /> branches
       </a>
     </li>
     <li tal:condition="context/sourcepackage">
-      <a tal:attributes="href context/sourcepackage/fmt:url">
+      <a tal:attributes="href context/sourcepackage/fmt:url:code">
         Other <tal:product replace="context/sourcepackage/displayname" /> branches
       </a>
     </li>
     <li>
-      <a tal:attributes="href context/owner/fmt:url">
+      <a tal:attributes="href context/owner/fmt:url:code">
         Other branches owned by <tal:person
         replace="context/owner/fmt:displayname">Owner</tal:person>
       </a>
     </li>
     <li tal:condition="not:view/owner_is_registrant">
-      <a tal:attributes="href string:${context/registrant/fmt:url}/+registeredbranches">
+      <a tal:attributes="href string:${context/registrant/fmt:url:code}/+registeredbranches">
         Other branches registered by <tal:person
         replace="context/registrant/fmt:displayname">Registrant</tal:person>
       </a>

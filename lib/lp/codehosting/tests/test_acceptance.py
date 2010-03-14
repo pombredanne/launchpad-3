@@ -11,7 +11,7 @@ import unittest
 import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import multiply_tests, TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
@@ -20,7 +20,7 @@ from lp.codehosting.tests.helpers import (
     adapt_suite, LoomTestMixin)
 from lp.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
-from lp.codehosting import get_bzr_path, get_bzr_plugins_path
+from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
@@ -86,17 +86,18 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     def setUp(self):
         super(SSHTestCase, self).setUp()
+        self.disable_directory_isolation()
         tac_handler = SSHServerLayer.getTacHandler()
         self.server = SSHCodeHostingServer(self.scheme, tac_handler)
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        self.server.start_server()
+        self.addCleanup(self.server.stop_server)
 
         # Prevent creation of in-process sftp:// and bzr+ssh:// transports --
         # such connections tend to leak threads and occasionally create
         # uncollectable garbage.
         ssh_denier = DenyingServer(['bzr+ssh://', 'sftp://'])
-        ssh_denier.setUp()
-        self.addCleanup(ssh_denier.tearDown)
+        ssh_denier.start_server()
+        self.addCleanup(ssh_denier.stop_server)
 
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')
@@ -135,8 +136,10 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         (mainly so we can test the loom support).
         """
         return self.run_bzr_subprocess(
-            args, env_changes={'BZR_SSH': 'paramiko',
-                               'BZR_PLUGIN_PATH': get_bzr_plugins_path()},
+            args, env_changes={
+                'BZR_SSH': 'paramiko',
+                'BZR_PLUGIN_PATH': get_BZR_PLUGIN_PATH_for_subprocess()
+            },
             allow_plugins=True, retcode=retcode)
 
     def _run_bzr_error(self, args):
@@ -264,11 +267,7 @@ class SmokeTest(SSHTestCase):
         # Push up a new branch.
         remote_url = self.getTransportURL('~testuser/+junk/new-branch')
         self.push(self.first_tree, remote_url)
-        # XXX MichaelHudson, 2008-12-11: The way that getLastRevision is
-        # currently implemented doesn't work with empty branches.  When it can
-        # be rewritten to use revision-info, the next line can be re-enabled.
-        # See comment in getLastRevision for more.
-        #self.assertBranchesMatch(self.first_tree, remote_url)
+        self.assertBranchesMatch(self.first_tree, remote_url)
 
         # Commit to it.
         tree.commit('new revision', allow_pointless=True)
@@ -628,16 +627,7 @@ def make_smoke_tests(base_suite):
         if scenario[0] not in excluded_scenarios
         and not scenario[0].startswith('RemoteRepositoryFormat')]
     new_suite = unittest.TestSuite()
-    try:
-        from bzrlib.tests import multiply_tests
-        multiply_tests(base_suite, scenarios, new_suite)
-    except ImportError:
-        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
-        # once sourcecode/bzr has bzr.dev r4102.
-        from bzrlib.tests import adapt_tests, TestScenarioApplier
-        adapter = TestScenarioApplier()
-        adapter.scenarios = scenarios
-        adapt_tests(base_suite, adapter, new_suite)
+    multiply_tests(base_suite, scenarios, new_suite)
     return new_suite
 
 

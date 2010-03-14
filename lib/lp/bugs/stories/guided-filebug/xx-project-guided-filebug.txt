@@ -205,6 +205,18 @@ The user will also be presented with a link to the product's overview page:
 If we set up an external bug tracker for Testy Product, this will be reflected
 in the Test Group's filebug page.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+
+    >>> login('admin@canonical.com')
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> thunderbird_spn = factory.getOrMakeSourcePackageName('thunderbird')
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=thunderbird_spn, distroseries=hoary)
+    >>> logout()
+
     >>> admin_browser.open('http://launchpad.dev/testy/+edit')
     >>> admin_browser.getControl(name='field.bugtracker').value = ['external']
     >>> admin_browser.getControl(
@@ -230,7 +242,7 @@ And on the filebug page...
 Finally, we add Testy Product to a source package:
 
     >>> admin_browser.open('http://bugs.launchpad.dev/testy/trunk/+ubuntupkg')
-    >>> admin_browser.getControl(name='ubuntupkg').value = 'thunderbird'
+    >>> admin_browser.getControl('Source Package Name').value = 'thunderbird'
     >>> admin_browser.getControl('Update').click()
 
 And this is also shown on the filebug page:

@@ -2,19 +2,25 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  metal:use-macro="view/macro:page/main_only"
->
+  metal:use-macro="view/macro:page/main_only">
+
   <body>
+
+    <div metal:fill-slot="head_epilogue">
+      <metal:translations-js
+        use-macro="context/@@+translations-macros/translations-js" />
+      <metal:languages-table-js
+        use-macro="context/@@+translations-macros/languages-table-js" />
+    </div>
+
     <div metal:fill-slot="main">
-      <ul class="helplinks">
-        <li>
-          <a href="https://help.launchpad.net/Translations"
-             id="link-to-translations-help"
-             >Help for translations
-          </a>
-        </li>
-      </ul>
-      <div style="clear:both;"></div>
+      <div class="translation-help-links">
+        <a href="https://help.launchpad.net/Translations"
+           id="link-to-translations-help"
+           >Help for translations
+        </a>
+        <div></div><!-- to clear-up all floats -->
+      </div>
 
       <tal:no-languages condition="not:view/productserieslanguages">
         <div class="yui-b top-portlet">
@@ -31,11 +37,11 @@
           <a
                 tal:define="link context/menu:navigation/translationupload"
                 tal:attributes="href link/url"
-              >upload</a> templates and translations, or set up
+              >manually upload</a> templates and translations, or set up
               <a
                 tal:define="link context/menu:navigation/settings"
                 tal:attributes="href link/url"
-              >import from branches</a>
+              >automatic import from branches</a>
               (<a href="https://help.launchpad.net/Translations/ImportingFromBazaarBranches">read more</a>).
         </p>
         </div>
@@ -68,10 +74,10 @@
               <a tal:attributes="href context/menu:navigation/imports/url">
                 import queue</a>.
             </p>
-            <p tal:condition="context/required:launchpad.Edit">
-              To manage all the translation templates in
+            <p>
+              To see all the translation templates in
               <tal:series replace="context/displayname">trunk</tal:series>,
-              see the
+              go to the
               <a tal:attributes="href context/menu:navigation/templates/url">
                 full list of templates</a>.
             </p>
@@ -122,14 +128,16 @@
               <p>This project is currently not using any synchronization
                 with bazaar branches.</p>
               <tal:branch condition="context/branch">
-                <p>
+                <p tal:condition="context/required:launchpad.Edit">
                   <a tal:attributes="
                        href context/menu:navigation/requestbzrimport/url"
-                     tal:condition="context/required:launchpad.Edit"
                      class="add sprite">
                     Request an import from bazaar
                   </a> to do a one time import of all the templates and
-                  translations.
+                  translations from
+                  <a tal:replace="structure context/branch/fmt:link">
+                    branch
+                  </a>.
                 </p>
               </tal:branch>
               <div tal:condition="context/required:launchpad.Edit">

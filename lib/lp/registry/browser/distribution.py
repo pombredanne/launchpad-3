@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'DerivativeDistributionOverviewMenu',
     'DistributionAddView',
-    'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
@@ -54,10 +53,9 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.soyuz.browser.archive import traverse_distro_archive
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.request_country import (
@@ -71,11 +69,12 @@ from lp.registry.interfaces.distribution import (
     IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -295,7 +294,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
+    links = ['edit', 'branding', 'driver', 'search', 'members',
              'mirror_admin', 'reassign', 'addseries', 'series', 'milestones',
              'top_contributors',
              'builds', 'cdimage_mirrors', 'archive_mirrors',
@@ -359,10 +358,6 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
-    def allpkgs(self):
-        text = 'List all packages'
-        return Link('+allpackages', text, icon='info')
-
     @enabled_with_permission('launchpad.Edit')
     def members(self):
         text = 'Change members team'
@@ -421,7 +416,7 @@ class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
         return Link('+addseries', text, icon='add')
 
 
-class DistributionBugsMenu(ApplicationMenu):
+class DistributionBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistribution
     facet = 'bugs'
@@ -451,16 +446,12 @@ class DistributionBugsMenu(ApplicationMenu):
         text = 'Report a bug'
         return Link('+filebug', text, icon='bug')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
-
 
 class DistributionSpecificationsMenu(NavigationMenu,
                                      HasSpecificationsMenuMixin):
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
 class DistributionPackageSearchView(PackageSearchViewBase):
@@ -601,8 +592,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
         return self.has_exact_matches
 
-class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
-                       UsesLaunchpadMixin):
+class DistributionView(HasAnnouncementsView, FeedsMixin, UsesLaunchpadMixin):
     """Default Distribution view class."""
 
     def linkedMilestonesForSeries(self, series):
@@ -646,6 +636,13 @@ class DistributionPPASearchView(LaunchpadView):
 
     def initialize(self):
         self.name_filter = self.request.get('name_filter')
+        if isinstance(self.name_filter, list):
+            # This happens if someone hand-hacks the URL so that it has
+            # more than one name_filter field.  We could do something
+            # like form.getOne() so that the request would be rejected,
+            # but we can acutally do better and join the terms supplied
+            # instead.
+            self.name_filter = " ".join(self.name_filter)
         self.show_inactive = self.request.get('show_inactive')
 
     @property
@@ -711,16 +708,6 @@ class DistributionPPASearchView(LaunchpadView):
         archive_set = getUtility(IArchiveSet)
         return archive_set.getMostActivePPAsForDistribution(
             distribution=self.context)
-
-
-class DistributionAllPackagesView(LaunchpadView):
-    """A view to show all the packages in a distribution."""
-
-    def initialize(self):
-        results = self.context.getSourcePackageCaches()
-        self.batchnav = BatchNavigator(results, self.request)
-
-    label = 'All packages'
 
 
 class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
@@ -814,7 +801,7 @@ class DistributionSeriesView(LaunchpadView):
     def styled_series(self):
         """A list of dicts; keys: series, css_class, is_development_focus"""
         all_series = []
-        for series in self.context.serieses:
+        for series in self.context.series:
             all_series.append({
                 'series': series,
                 'css_class': self.getCssClass(series),
@@ -823,9 +810,9 @@ class DistributionSeriesView(LaunchpadView):
 
     def getCssClass(self, series):
         """The highlighted, unhighlighted, or dimmed CSS class."""
-        if series.status == DistroSeriesStatus.DEVELOPMENT:
+        if series.status == SeriesStatus.DEVELOPMENT:
             return 'highlighted'
-        elif series.status == DistroSeriesStatus.OBSOLETE:
+        elif series.status == SeriesStatus.OBSOLETE:
             return 'dimmed'
         else:
             return 'unhighlighted'

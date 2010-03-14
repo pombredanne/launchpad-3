@@ -16,7 +16,7 @@
           title="FOAF" href="+rdf"
           />
     </tal:valid_person_or_team>
-    <meta tal:condition="not: context/is_valid_person_or_team"
+    <meta tal:condition="view/is_probationary_or_invalid_user"
           name="robots" content="noindex,nofollow" />
     <tal:openid_delegation condition="view/is_delegated_identity">
       <link rel="openid.server"
@@ -84,26 +84,21 @@
 
     <div
       class="description"
-      tal:condition="context/homepage_content"
-      tal:content="structure context/homepage_content/fmt:text-to-html"
+      tal:condition="view/homepage_content"
+      tal:content="structure view/homepage_content"
     />
     <ul class="horizontal">
+      <tal:comment condition="nothing">
+        This link name is different from the menu, since it refers
+        to several pages that are all accessible when you click on this link.
+      </tal:comment>
       <li
         tal:define="link context/menu:overview/related_software_summary"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
-      <li
-        tal:define="link context/menu:overview/projects"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
-      <li
-        tal:define="link context/menu:overview/maintained"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
-      <li
-        tal:define="link context/menu:overview/ppa"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
+        tal:condition="link/enabled">
+        <a class="sprite info" tal:attributes="href link/fmt:url">
+          Related software and packages
+        </a>
+      </li>
       <li
         tal:define="link context/menu:overview/oauth_tokens"
         tal:condition="link/enabled"
@@ -165,13 +160,14 @@
       <tal:logged-in condition="request/lp:person">
         <tal:person condition="not: view/context_is_probably_a_team">
           <ul tal:condition="context/preferredemail">
-            <li class="mail">
+            <li>
+              <img src="/@@/private" alt=""
+                   tal:condition="view/email_address_visibility/are_allowed"/>
+              <img src="/@@/mail" alt=""
+                   tal:condition="view/email_address_visibility/are_public"/>
               <tal:email
-                replace="context/preferredemail/email">foo@bar.com</tal:email>
-              <a
-                tal:condition="context/required:launchpad.Edit"
-                tal:attributes="href overview_menu/editemailaddresses/url"
-              ><img tal:attributes="alt link/text" src="/@@/edit" /></a>
+                 replace="context/preferredemail/email">foo@bar.com</tal:email>
+              <a tal:replace="structure overview_menu/editemailaddresses/fmt:icon" />
             </li>
           </ul>
           <tal:editable tal:condition="context/required:launchpad.Edit">

@@ -13,12 +13,12 @@
     }
     </style>
     <script type="text/javascript">
-    YUI().use('node', 'event', function(Y){
+    LPS.use('node', 'event', function(Y){
         Y.on('domready', function(){
             // The pochanged option is only available for the PO format.
-            var formatlist = Y.get('#div_format select');
-            var checkbox = Y.get('#div_pochanged input');
-            var changedtext = Y.get('#div_pochanged span');
+            var formatlist = Y.one('#div_format select');
+            var checkbox = Y.one('#div_pochanged input');
+            var changedtext = Y.one('#div_pochanged span');
             function toggle_pochanged() {
                 if (formatlist.get('value') == 'PO') {
                     changedtext.removeClass('disabledpochanged');
@@ -71,7 +71,13 @@
               </label>
             </div>
           </div>
-          <p>
+          <tal:comment condition="nothing">
+            `user/preferredemail` can be None if someone is coming
+            directly from their email confirmation page, and that data
+            has not yet propagated from the auth store to the main LP
+            store.  See bug #462891 for details.
+          </tal:comment>
+          <p tal:condition="view/user/preferredemail">
             Once the file is ready for download, Launchpad will e-mail
             <code tal:content="view/user/preferredemail/email">user@domain</code>
             with a link to the file.

@@ -12,7 +12,6 @@ __all__ = [
     'PullerMonitorProtocol',
     ]
 
-
 import os
 from StringIO import StringIO
 import socket
@@ -237,10 +236,10 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
     def do_mirrorDeferred(self):
         self.reported_mirror_finished = True
 
-    def do_mirrorSucceeded(self, latest_revision):
+    def do_mirrorSucceeded(self, revid_before, revid_after):
         def mirrorSucceeded():
             d = defer.maybeDeferred(
-                self.listener.mirrorSucceeded, latest_revision)
+                self.listener.mirrorSucceeded, revid_before, revid_after)
             d.addCallback(self.reportMirrorFinished)
             return d
         self.runNotification(mirrorSucceeded)
@@ -366,10 +365,8 @@ class PullerMaster:
 
     def startMirroring(self):
         self.logger.info(
-            'Mirroring branch %d: %s to %s', self.branch_id, self.source_url,
-            self.destination_url)
-        return self.branch_puller_endpoint.callRemote(
-            'startMirroring', self.branch_id)
+            'Worker started on branch %d: %s to %s', self.branch_id,
+            self.source_url, self.destination_url)
 
     def mirrorFailed(self, reason, oops):
         self.logger.info('Recorded %s', oops)
@@ -377,13 +374,17 @@ class PullerMaster:
         return self.branch_puller_endpoint.callRemote(
             'mirrorFailed', self.branch_id, reason)
 
-    def mirrorSucceeded(self, revision_id):
+    def mirrorSucceeded(self, revid_before, revid_after):
+        if revid_before == revid_after:
+            was_noop = 'noop'
+        else:
+            was_noop = 'non-trivial'
         self.logger.info(
-            'Successfully mirrored branch %d %s to %s to rev %s',
-            self.branch_id, self.source_url, self.destination_url,
-            revision_id)
+            'Successfully mirrored %s branch %d %s to %s to from rev %s to %s'
+            ' (%s)', self.branch_type_name, self.branch_id, self.source_url,
+            self.destination_url, revid_before, revid_after, was_noop)
         return self.branch_puller_endpoint.callRemote(
-            'mirrorComplete', self.branch_id, revision_id)
+            'mirrorComplete', self.branch_id, revid_after)
 
     def log(self, message):
         self.logger.info('From worker: %s', message)
@@ -416,9 +417,10 @@ class JobScheduler:
     branches.
     """
 
-    def __init__(self, branch_puller_endpoint, logger):
+    def __init__(self, branch_puller_endpoint, logger, branch_type_names):
         self.branch_puller_endpoint = branch_puller_endpoint
         self.logger = logger
+        self.branch_type_names = branch_type_names
         self.actualLock = None
         self.name = 'branch-puller'
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
@@ -454,16 +456,17 @@ class JobScheduler:
 
     def _poll(self):
         deferred = self.branch_puller_endpoint.callRemote(
-            'acquireBranchToPull')
+            'acquireBranchToPull', self.branch_type_names)
         deferred.addCallback(self._turnJobTupleIntoTask)
         return deferred
 
     def run(self):
         consumer = ParallelLimitedTaskConsumer(
-            config.supermirror.maximum_workers)
+            config.supermirror.maximum_workers, logger=self.logger)
         self.consumer = consumer
         source = PollingTaskSource(
-            config.supermirror.polling_interval, self._poll)
+            config.supermirror.polling_interval, self._poll,
+            logger=self.logger)
         deferred = consumer.consume(source)
         deferred.addCallback(self._finishedRunning)
         return deferred

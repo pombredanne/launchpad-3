@@ -31,6 +31,8 @@ def validate_cvs_root(cvsroot):
         raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
+    if not root.hostname:
+        raise LaunchpadValidationError('CVS root is invalid.')
     if root.hostname.count('.') == 0:
         raise LaunchpadValidationError(
             'Please use a fully qualified host name.')
@@ -104,22 +106,9 @@ class ICodeImport(Interface):
             "The version control system to import from. "
             "Can be CVS or Subversion."))
 
-    svn_branch_url = URIField(title=_("Branch URL"), required=False,
-        description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
-        allowed_schemes=["http", "https", "svn"],
-        allow_userinfo=False, # Only anonymous access is supported.
-        allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
-        allow_fragment=False, # Fragment makes no sense in Subversion.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
-
-    git_repo_url = URIField(title=_("Repo URL"), required=False,
-        description=_(
-            "The URL of the git repository.  The MASTER branch will be "
-            "imported."),
-        allowed_schemes=["git"],
+    url = URIField(title=_("URL"), required=False,
+        description=_("The URL of the VCS branch."),
+        allowed_schemes=["http", "https", "svn", "git"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
         allow_query=False,    # Query makes no sense in Subversion.
@@ -198,13 +187,9 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None, git_repo_url=None,
-            review_status=None):
+    def new(registrant, product, branch_name, rcs_type, url=None,
+            cvs_root=None, cvs_module=None, review_status=None):
         """Create a new CodeImport."""
-
-    def getAll():
-        """Return an iterable of all CodeImport objects."""
 
     def getActiveImports(text=None):
         """Return an iterable of all 'active' CodeImport objects.
@@ -228,18 +213,17 @@ class ICodeImportSet(Interface):
     def getByCVSDetails(cvs_root, cvs_module):
         """Get the CodeImport with the specified CVS details."""
 
-    def getByGitDetails(git_repo_url):
-        """Get the CodeImport with the specified Git details."""
-
-    def getBySVNDetails(svn_branch_url):
-        """Get the CodeImport with the specified SVN details."""
+    def getByURL(url):
+        """Get the CodeImport with the url."""
 
     def delete(id):
         """Delete a CodeImport given its id."""
 
-    def search(review_status):
-        """Find the CodeImports of the given status.
+    def search(review_status=None, rcs_type=None):
+        """Find the CodeImports of the given status and type.
 
         :param review_status: An entry from the `CodeImportReviewStatus`
-                              schema.
+            schema, or None, which signifies 'any status'.
+        :param rcs_type: An entry from the `RevisionControlSystems`
+            schema, or None, which signifies 'any type'.
         """

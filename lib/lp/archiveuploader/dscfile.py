@@ -13,6 +13,7 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
+    'findCopyright',
     ]
 
 import apt_pkg
@@ -25,20 +26,26 @@ import tempfile
 
 from zope.component import getUtility
 
+from canonical.encoding import guess as guess_encoding
+from canonical.launchpad.interfaces import (
+    GPGVerificationError, IGPGHandler, IGPGKeySet,
+    ISourcePackageNameSet, NotFoundError)
+from canonical.librarian.utils import copy_and_close
 from lp.archiveuploader.nascentuploadfile import (
     UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
 from lp.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from lp.archiveuploader.utils import (
-    prefix_multi_line_string, safe_fix_maintainer, ParseMaintError,
-    re_valid_pkg_name, re_valid_version, re_issource)
-from canonical.encoding import guess as guess_encoding
+    determine_source_file_type, get_source_file_extension,
+    ParseMaintError, prefix_multi_line_string, re_is_component_orig_tar_ext,
+    re_issource, re_valid_pkg_name, re_valid_version, safe_fix_maintainer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces import (
-    GPGVerificationError, IGPGHandler, IGPGKeySet,
-    ISourcePackageNameSet, NotFoundError)
-from canonical.librarian.utils import copy_and_close
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 
 
 class SignableTagFile:
@@ -157,6 +164,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         Can raise UploadError.
         """
+        # Avoid circular imports.
+        from lp.archiveuploader.nascentupload import EarlyReturnUploadError
+
         SourceUploadFile.__init__(
             self, filepath, digest, size, component_and_section, priority,
             package, version, changes, policy, logger)
@@ -183,6 +193,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if 'format' not in self._dict:
             self._dict['format'] = "1.0"
 
+        if self.format is None:
+            raise EarlyReturnUploadError(
+                "Unsupported source format: %s" % self._dict['format'])
+
         if self.policy.unsigned_dsc_ok:
             self.logger.debug("DSC file can be unsigned.")
         else:
@@ -205,7 +219,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     @property
     def format(self):
         """Return the DSC format."""
-        return self._dict['format']
+        try:
+            return SourcePackageFormat.getTermByToken(
+                self._dict['format']).value
+        except LookupError:
+            return None
 
     @property
     def architecture(self):
@@ -228,6 +246,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         This method is an error generator, i.e, it returns an iterator over all
         exceptions that are generated while processing DSC file checks.
         """
+
         for error in SourceUploadFile.verify(self):
             yield error
 
@@ -265,10 +284,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield UploadError(
                 "%s: invalid version %s" % (self.filename, self.dsc_version))
 
-        if self.format != "1.0":
+        if not self.policy.distroseries.isSourcePackageFormatPermitted(
+            self.format):
             yield UploadError(
-                "%s: Format is not 1.0. This is incompatible with "
-                "dpkg-source." % self.filename)
+                "%s: format '%s' is not permitted in %s." %
+                (self.filename, self.format, self.policy.distroseries.name))
 
         # Validate the build dependencies
         for field_name in ['build-depends', 'build-depends-indep']:
@@ -323,8 +343,20 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         :raise: `NotFoundError` when the wanted file could not be found.
         """
-        if (self.policy.archive.purpose == ArchivePurpose.PPA and
-            filename.endswith('.orig.tar.gz')):
+        # We cannot check the archive purpose for partner archives here,
+        # because the archive override rules have not been applied yet.
+        # Uploads destined for the Ubuntu main archive and the 'partner'
+        # component will eventually end up in the partner archive though.
+        if (self.policy.archive.purpose == ArchivePurpose.PRIMARY and
+            self.component_name == 'partner'):
+            archives = [
+                getUtility(IArchiveSet).getByDistroPurpose(
+                distribution=self.policy.distro,
+                purpose=ArchivePurpose.PARTNER)]
+        elif (self.policy.archive.purpose == ArchivePurpose.PPA and
+            determine_source_file_type(filename) in (
+                SourcePackageFileType.ORIG_TARBALL,
+                SourcePackageFileType.COMPONENT_ORIG_TARBALL)):
             archives = [self.policy.archive, self.policy.distro.main_archive]
         else:
             archives = [self.policy.archive]
@@ -348,11 +380,37 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         We don't use the NascentUploadFile.verify here, only verify size
         and checksum.
         """
-        has_tar = False
+
+        file_type_counts = {
+            SourcePackageFileType.DIFF: 0,
+            SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            }
+        component_orig_tar_counts = {}
+        bzip2_count = 0
         files_missing = False
+
         for sub_dsc_file in self.files:
-            if sub_dsc_file.filename.endswith("tar.gz"):
-                has_tar = True
+            file_type = determine_source_file_type(sub_dsc_file.filename)
+
+            if file_type is None:
+                yield UploadError('Unknown file: ' + sub_dsc_file.filename)
+                continue
+
+            if file_type == SourcePackageFileType.COMPONENT_ORIG_TARBALL:
+                # Split the count by component name.
+                component = re_is_component_orig_tar_ext.match(
+                    get_source_file_extension(sub_dsc_file.filename)).group(1)
+                if component not in component_orig_tar_counts:
+                    component_orig_tar_counts[component] = 0
+                component_orig_tar_counts[component] += 1
+            else:
+                file_type_counts[file_type] += 1
+
+            if sub_dsc_file.filename.endswith('.bz2'):
+                bzip2_count += 1
+
             try:
                 library_file, file_archive = self._getFileByName(
                     sub_dsc_file.filename)
@@ -397,11 +455,16 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield error
                 files_missing = True
 
+        try:
+            file_checker = format_to_file_checker_map[self.format]
+        except KeyError:
+            raise AssertionError(
+                "No file checker for source format %s." % self.format)
 
-        if not has_tar:
-            yield UploadError(
-                "%s: does not mention any tar.gz or orig.tar.gz."
-                % self.filename)
+        for error in file_checker(
+            self.filename, file_type_counts, component_orig_tar_counts,
+            bzip2_count):
+            yield error
 
         if files_missing:
             yield UploadError(
@@ -462,18 +525,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # XXX cprov 20070713: We should access only the expected directory
         # name (<sourcename>-<no_epoch(no_revision(version))>).
 
-        # Instead of trying to predict the unpacked source directory name,
-        # we simply use glob to retrive everything like:
-        # 'tempdir/*/debian/copyright'
-        globpath = os.path.join(tmpdir, "*", "debian/copyright")
-        for fullpath in glob.glob(globpath):
-            if not os.path.exists(fullpath):
-                continue
-            self.logger.debug("Copying copyright contents.")
-            self.copyright = open(fullpath).read().strip()
-
-        if self.copyright is None:
-            yield UploadWarning("No copyright file found.")
+        for error in findCopyright(self, tmpdir, self.logger):
+            yield error
 
         self.logger.debug("Cleaning up source tree.")
         try:
@@ -495,7 +548,36 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         self.logger.debug("Done")
 
-    def storeInDatabase(self):
+    def findBuild(self):
+        """Find and return the SourcePackageRecipeBuild, if one is specified.
+
+        If by any chance an inconsistent build was found this method will
+        raise UploadError resulting in a upload rejection.
+        """
+        build_id = getattr(self.policy.options, 'buildid', None)
+        if build_id is None:
+            return None
+
+        build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
+
+        # The master verifies the status to confirm successful upload.
+        build.buildstate = BuildStatus.FULLYBUILT
+        # If this upload is successful, any existing log is wrong and
+        # unuseful.
+        build.upload_log = None
+
+        # Sanity check; raise an error if the build we've been
+        # told to link to makes no sense.
+        if (build.pocket != self.policy.pocket or
+            build.distroseries != self.policy.distroseries or
+            build.archive != self.policy.archive):
+            raise UploadError(
+                "Attempt to upload source specifying "
+                "recipe build %s, where it doesn't fit." % build.id)
+
+        return build
+
+    def storeInDatabase(self, build):
         """Store DSC information as a SourcePackageRelease record.
 
         It reencodes all fields extracted from DSC, the simulated_changelog
@@ -540,6 +622,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             changelog_entry=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,
+            source_package_recipe_build=build,
             copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
             )
@@ -584,3 +667,123 @@ class DSCUploadedFile(NascentUploadFile):
             yield error
 
 
+def findCopyright(dsc_file, source_dir, logger):
+    """Find and store any debian/copyright.
+    
+    :param dsc_file: A DSCFile object where the copyright will be stored.
+    :param source_dir: The directory where the source was extracted.
+    :param logger: A logger object for debug output.
+    """
+    # Instead of trying to predict the unpacked source directory name,
+    # we simply use glob to retrive everything like:
+    # 'tempdir/*/debian/copyright'
+    globpath = os.path.join(source_dir, "*", "debian/copyright")
+    for fullpath in glob.glob(globpath):
+        if not os.path.exists(fullpath):
+            continue
+        if os.stat(fullpath).st_size > 10485760:
+            yield UploadError(
+                "debian/copyright file too large, 10MiB max")
+            return
+        if os.path.islink(fullpath):
+            yield UploadError(
+                "Symbolic link for debian/copyright not allowed")
+            return
+        logger.debug("Copying copyright contents.")
+        dsc_file.copyright = open(fullpath).read().strip()
+
+    if dsc_file.copyright is None:
+        yield UploadWarning("No copyright file found.")
+
+
+def check_format_1_0_files(filename, file_type_counts, component_counts,
+                           bzip2_count):
+    """Check that the given counts of each file type suit format 1.0.
+
+    A 1.0 source must be native (with only one tar.gz), or have an orig.tar.gz
+    and a diff.gz. It cannot use bzip2 compression.
+    """
+    if bzip2_count > 0:
+        yield UploadError(
+            "%s: is format 1.0 but uses bzip2 compression."
+            % filename)
+
+    valid_file_type_counts = [
+        {
+            SourcePackageFileType.NATIVE_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+        {
+            SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.DIFF: 1,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+        },
+    ]
+
+    if (file_type_counts not in valid_file_type_counts or
+        len(component_counts) > 0):
+        yield UploadError(
+            "%s: must have exactly one tar.gz, or an orig.tar.gz and diff.gz"
+            % filename)
+
+
+def check_format_3_0_native_files(filename, file_type_counts,
+                                  component_counts, bzip2_count):
+    """Check that the given counts of each file type suit format 3.0 (native).
+
+    A 3.0 (native) source must have only one tar.*. Both gzip and bzip2
+    compression are permissible.
+    """
+
+    valid_file_type_counts = [
+        {
+            SourcePackageFileType.NATIVE_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+    ]
+
+    if (file_type_counts not in valid_file_type_counts or
+        len(component_counts) > 0):
+        yield UploadError("%s: must have only a tar.*." % filename)
+
+
+def check_format_3_0_quilt_files(filename, file_type_counts,
+                                 component_counts, bzip2_count):
+    """Check that the given counts of each file type suit format 3.0 (native).
+
+    A 3.0 (quilt) source must have exactly one orig.tar.*, one debian.tar.*,
+    and at most one orig-COMPONENT.tar.* for each COMPONENT. Both gzip and
+    bzip2 compression are permissible.
+    """
+
+    valid_file_type_counts = [
+        {
+            SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.DEBIAN_TARBALL: 1,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+    ]
+
+    if file_type_counts not in valid_file_type_counts:
+        yield UploadError(
+            "%s: must have only an orig.tar.*, a debian.tar.*, and "
+            "optionally orig-*.tar.*" % filename)
+
+    for component in component_counts:
+        if component_counts[component] > 1:
+            yield UploadError(
+                "%s: has more than one orig-%s.tar.*."
+                % (filename, component))
+
+
+format_to_file_checker_map = {
+    SourcePackageFormat.FORMAT_1_0: check_format_1_0_files,
+    SourcePackageFormat.FORMAT_3_0_NATIVE: check_format_3_0_native_files,
+    SourcePackageFormat.FORMAT_3_0_QUILT: check_format_3_0_quilt_files,
+    }

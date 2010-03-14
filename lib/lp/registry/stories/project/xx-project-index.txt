@@ -30,24 +30,15 @@ its development focus.
     Projects
     Gnome Applets ...
     Evolution ...
-    trunk series: 2.1.6,
     GNOME Terminal ...
     gnomebaker ...
-    trunk series: 2.1.7, 2.1.7
     NetApplet ...
-    trunk series: 1.0,
     ...
 
-And the projects, milestone, and releases are linked.
+The projects are linked.
 
     >>> print anon_browser.getLink('gnomebaker').url
     http://launchpad.dev/gnomebaker
-
-    >>> print anon_browser.getLink('1.0').url
-    http://launchpad.dev/netapplet/trunk/1.0
-
-    >>> print anon_browser.getLink('2.1.7').url
-    http://launchpad.dev/gnomebaker/trunk/2.1.7
 
 The project overview page contains a link to register new products with the
 project. It is only available to users which have 'Admin' privileges on the

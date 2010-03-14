@@ -16,14 +16,14 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.mentoringoffer import (
     IMentoringOffer, IMentoringOfferSet)
-from lp.registry.interfaces.milestone import IBugTask
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from canonical.launchpad.webapp import (
     ApplicationMenu, LaunchpadFormView, LaunchpadView, Link,
     StandardLaunchpadFacets, action, canonical_url)
@@ -163,7 +163,7 @@ class HasMentoringOffersView(LaunchpadView):
                 self.show_team = False
         elif (IDistribution.providedBy(self.context) or
               IProduct.providedBy(self.context) or
-              IProject.providedBy(self.context)):
+              IProjectGroup.providedBy(self.context)):
             self.is_pillar = True
         elif IMentoringOfferSet.providedBy(self.context):
             self.is_manager = True

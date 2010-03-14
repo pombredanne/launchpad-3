@@ -8,13 +8,21 @@
   <div metal:define-macro="form">
 
     <form action="."
-          tal:attributes="action view/action_url"
+          tal:attributes="action view/action_url;
+                          id launchpad_form_id|nothing;"
           name="launchpadform"
           method="post"
           enctype="multipart/form-data"
           accept-charset="UTF-8">
 
       <div metal:define-macro="formbody">
+        <tal:comment condition="nothing">
+          This field is used by the ReturnToReferrerMixin.
+        </tal:comment>
+        <input type="hidden"
+               name="_return_url"
+               tal:condition="view/_return_url | nothing"
+               tal:attributes="value view/_return_url" />
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
           This is the description of the form.

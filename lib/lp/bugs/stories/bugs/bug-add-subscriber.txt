@@ -32,7 +32,8 @@ By looking at the 'Subscribers' portlet, he sees that David Allouche is not
 currently subscribed to the bug:
 
     >>> from lp.bugs.tests.bug import (
-    ...     print_direct_subscribers, print_indirect_subscribers)
+    ...     print_also_notified, print_direct_subscribers,
+    ...     print_subscribers_from_duplicates)
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/bugs/1/'
@@ -40,8 +41,9 @@ currently subscribed to the bug:
     >>> print_direct_subscribers(user_browser.contents)
     Sample Person (Subscribed by Launchpad Janitor)
     Steve Alexander (Subscribed by Launchpad Janitor)
-    >>> print_indirect_subscribers(user_browser.contents)
+    >>> print_subscribers_from_duplicates(user_browser.contents)
     From duplicates:
+    >>> print_also_notified(user_browser.contents)
     Also notified:
     Foo Bar
     Mark Shuttleworth

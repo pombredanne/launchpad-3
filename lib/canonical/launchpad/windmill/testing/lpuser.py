@@ -6,6 +6,10 @@
 __metaclass__ = type
 __all__ = []
 
+import windmill
+
+from canonical.launchpad.windmill.testing import constants
+
 
 class LaunchpadUser:
     """Object representing well-known user on Launchpad."""
@@ -17,26 +21,24 @@ class LaunchpadUser:
 
     def ensure_login(self, client):
         """Ensure that this user is logged on the page under windmill."""
-        result = client.asserts.assertNode(
-            link=u'Log in / Register', assertion=False)
-        if not result['result']:
-            # User is probably logged in.
-            # Check under which name they are logged in.
-            result = client.commands.execJS(
-                code="""lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
-            if (result['result'] is not None and
-                result['result'].strip() == self.display_name):
-                # We are logged as that user.
-                return
-            client.click(name="logout")
-            client.waits.forPageLoad(timeout=u'20000')
-        client.click(link=u'Log in / Register')
-        client.waits.forPageLoad(timeout=u'20000')
-        client.waits.forElement(timeout=u'8000', id=u'email')
-        client.type(text=self.email, id=u'email')
-        client.type(text=self.password, id=u'password')
-        client.click(name=u'loginpage_submit_login')
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        lookup_user = (
+            """lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
+        result = client.commands.execJS(code=lookup_user)
+        if (result['result'] is not None and
+            result['result'].strip() == self.display_name):
+            # We are logged in as that user already.
+            return
+
+        current_url = client.commands.execJS(
+            code='windmill.testWin().location;')['result']['href']
+        base_url = windmill.settings['TEST_URL']
+        basic_auth_url = base_url.replace('http://', 'http://%s:%s@')
+        basic_auth_url = basic_auth_url + '+basiclogin'
+        client.open(url=basic_auth_url % (self.email, self.password))
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.open(url=current_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
 
 class AnonymousUser:
@@ -44,13 +46,26 @@ class AnonymousUser:
 
     def ensure_login(self, client):
         """Ensure that the user is surfing anonymously."""
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         result = client.asserts.assertNode(
             link=u'Log in / Register', assertion=False)
         if result['result']:
             return
-        client.waits.forElement(name="logout", timeout=u"100000")
-        client.click(name="logout")
-        client.waits.forPageLoad(timeout=u'100000')
+
+        # Open a page with invalid HTTP Basic Auth credentials just to
+        # invalidate the ones previously used.
+        current_url = client.commands.execJS(
+            code='windmill.testWin().location;')['result']['href']
+        current_url = current_url.replace('http://', 'http://foo:foo@')
+        client.open(url=current_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+
+
+def login_person(person, password, client):
+    """Create a LaunchpadUser for a person and password."""
+    user = LaunchpadUser(
+        person.displayname, person.preferredemail.email, password)
+    user.ensure_login(client)
 
 
 # Well Known Users

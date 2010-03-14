@@ -16,11 +16,7 @@ from bzrlib.smart import server
 from bzrlib.tests import (
     multiply_tests, TestCase, TestCaseWithTransport, TestLoader,
     TestNotApplicable)
-try:
-    from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
-except ImportError:
-    from bzrlib.tests.branch_implementations import (
-        TestCaseWithBzrDir, branch_scenarios)
+from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
 
 from lp.codehosting.bzrutils import (
     add_exception_logging_hook, DenyingServer, get_branch_stacked_on_url,
@@ -131,9 +127,9 @@ class TestDenyingServer(TestCaseWithTransport):
             branch.base.startswith('file://'),
             "make_branch() didn't make branch with file:// URL")
         file_denier = DenyingServer(['file://'])
-        file_denier.setUp()
+        file_denier.start_server()
         self.assertRaises(AssertionError, Branch.open, branch.base)
-        file_denier.tearDown()
+        file_denier.stop_server()
         # This is just "assertNotRaises":
         Branch.open(branch.base)
 
@@ -175,12 +171,16 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
     """Tests for `lp.codehosting.bzrutils.get_vfs_format_classes`.
     """
 
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self.disable_directory_isolation()
+
     def tearDown(self):
         # This makes sure the connections held by the branches opened in the
         # test are dropped, so the daemon threads serving those branches can
         # exit.
         gc.collect()
-        super(TestGetVfsFormatClasses, self).tearDown()
+        TestCaseWithTransport.tearDown(self)
 
     def test_get_vfs_format_classes(self):
         # get_vfs_format_classes for a returns the underlying format classes
@@ -188,8 +188,8 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # RemoteBranch.
         vfs_branch = self.make_branch('.')
         smart_server = server.SmartTCPServer_for_testing()
-        smart_server.setUp(self.get_vfs_only_server())
-        self.addCleanup(smart_server.tearDown)
+        smart_server.start_server(self.get_vfs_only_server())
+        self.addCleanup(smart_server.stop_server)
         remote_branch = Branch.open(smart_server.get_url())
         # Check that our set up worked: remote_branch is Remote and
         # source_branch is not.

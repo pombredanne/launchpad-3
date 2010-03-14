@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 
+from lazr.restful.fields import Reference
 from zope.schema import TextLine
 from zope.interface import Interface, Attribute
 
@@ -136,6 +137,15 @@ class ISourcePackageRelease(Interface):
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
 
+    # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
+    source_package_recipe_build = Reference(
+        schema=Interface,
+        description=_("The `SourcePackageRecipeBuild` which produced this "
+            "source package release, or None if it was created from a "
+            "traditional upload."),
+        title=_("Source package recipe build"),
+        required=False, readonly=True)
+
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
         in this package.
@@ -198,6 +208,15 @@ class ISourcePackageRelease(Interface):
             `PackageDiff` record matching the request being made.
 
         :return: the corresponding `IPackageDiff` record.
+        """
+
+    def getPackageSize():
+        """Get the size total (in KB) of files comprising this package.
+
+        Please note: empty packages (i.e. ones with no files or with
+        files that are all empty) have a size of zero.
+
+        :return: total size (in KB) of this package
         """
 
 

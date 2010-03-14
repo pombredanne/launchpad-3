@@ -14,8 +14,8 @@
             <span tal:replace="context/displayname">Ubuntu Linux</span>.
             Changing them here will affect every page related to
             <span tal:replace="context/displayname">Ubuntu Linux</span> as
-            <strong>exactly</strong> the well as listings which include it.
-            You must use correct size of image.
+            well as listings which include it.
+            You must use <strong>exactly</strong> the correct size of image.
           </p>
         </div>
       </div>

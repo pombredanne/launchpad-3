@@ -4,7 +4,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'DtdFile',
     'MozillaXpiImporter',
+    'MozillaZipImportParser',
     ]
 
 from cStringIO import StringIO
@@ -350,7 +352,8 @@ class PropertyFile:
             # This call unescapes everything so we don't need to care about
             # quotes escaping.
             try:
-                line = line.encode('unicode_escape').decode('unicode_escape')
+                string = line.encode('raw-unicode_escape')
+                line = string.decode('unicode_escape')
             except UnicodeDecodeError, exception:
                 raise TranslationFormatInvalidInputError(
                     filename=self.filename, line_number=line_num,

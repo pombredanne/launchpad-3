@@ -11,7 +11,7 @@
 <div metal:fill-slot="main"
      tal:define="user view/user;
                  is_ubuntu_coc_signer user/is_ubuntu_coc_signer|nothing;
-                 gpgkeys user/gpgkeys|nothing">
+                 gpgkeys user/gpg_keys|nothing">
 
       <h1>Ubuntu Codes of Conduct</h1>
       <p>

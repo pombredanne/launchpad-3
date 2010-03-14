@@ -10,7 +10,7 @@ __metaclass__ = type
 
 import unittest
 
-from twisted.internet import defer, error, task
+from twisted.internet import defer, error, reactor, task
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 

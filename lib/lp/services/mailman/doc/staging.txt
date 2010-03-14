@@ -34,9 +34,9 @@ informing them of their new list.  We can ignore these.
 
     >>> from lp.services.mailman.testing import helpers
     >>> helpers.apply_for_list(browser, 'staging-one')
-    >>> helpers.apply_for_list(browser, 'staging-two')
-
     >>> list_one = helpers.review_list('staging-one')
+
+    >>> helpers.apply_for_list(browser, 'staging-two')
     >>> list_two = helpers.review_list('staging-two')
 
 Anne subscribes to two mailing lists.  Bart and Cris both subscribe to only
@@ -198,7 +198,8 @@ launchpad.conf file.
     ...     stdout=PIPE, stderr=PIPE,
     ...     cwd=LayerProcessController.appserver_config.root,
     ...     env=dict(LPCONFIG='testrunner-appserver',
-    ...              PYTHONPATH=os.pathsep.join(sys.path)))
+    ...              PYTHONPATH=os.pathsep.join(sys.path),
+    ...              PATH=os.environ.get('PATH')))
     >>> stdout, stderr = proc.communicate()
 
     # Ignore stdout and stderr, but print the return code.  stdout should be

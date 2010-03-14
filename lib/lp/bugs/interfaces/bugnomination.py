@@ -34,7 +34,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.interfaces.validation import (
-    can_be_nominated_for_serieses)
+    can_be_nominated_for_series)
 
 
 class NominationError(Exception):
@@ -179,9 +179,9 @@ class IBugNominationSet(Interface):
 class IBugNominationForm(Interface):
     """The browser form for nominating bugs for series."""
 
-    nominatable_serieses = Set(
+    nominatable_series = Set(
         title=_("Series that can be nominated"), required=True,
-        value_type=Choice(vocabulary="BugNominatableSerieses"),
-        constraint=can_be_nominated_for_serieses)
+        value_type=Choice(vocabulary="BugNominatableSeries"),
+        constraint=can_be_nominated_for_series)
 
 

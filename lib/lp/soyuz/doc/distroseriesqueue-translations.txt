@@ -8,7 +8,7 @@ uploaded into the system.
   >>> from lp.soyuz.model.component import Component
   >>> from lp.soyuz.model.section import Section
   >>> from lp.soyuz.model.publishing import (
-  ...     SecureSourcePackagePublishingHistory)
+  ...     SourcePackagePublishingHistory)
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -57,7 +57,7 @@ queue:
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
   ...     '', '', '', '', dapper.main_archive, 'copyright ?!', '', '')
 
-  >>> publishing_history = SecureSourcePackagePublishingHistory(
+  >>> publishing_history = SourcePackagePublishingHistory(
   ...     distroseries=dapper.id,
   ...     sourcepackagerelease=source_package_release.id,
   ...     component=source_package_release.component.id,
@@ -65,7 +65,6 @@ queue:
   ...     status=PackagePublishingStatus.PUBLISHED,
   ...     datecreated=UTC_NOW,
   ...     pocket=PackagePublishingPocket.RELEASE,
-  ...     embargo=False,
   ...     archive=dapper.main_archive)
 
   # Do the upload into the system.
@@ -97,6 +96,14 @@ queue:
   >>> pmount_upload.is_rejected
   False
 
+At this point, no translations uploads have been registered for this
+package.
+
+  >>> from lp.registry.model.sourcepackage import SourcePackage
+  >>> dapper_pmount = SourcePackage(pmount_sourcepackagename, dapper)
+  >>> print len(dapper_pmount.getLatestTranslationsUploads())
+  0
+
   >>> success = pmount_upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Build ... found
@@ -115,6 +122,17 @@ queue:
   #NEW: pmount_0.9.7-2ubuntu2_amd64.deb
   #OK: pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz
 
+The upload now shows up as the latest translations upload for the
+package.
+
+  >>> latest_translations_uploads = list(
+  ...     dapper_pmount.getLatestTranslationsUploads())
+  >>> print len(latest_translations_uploads)
+  1
+
+We'll get back to that uploaded file later.
+
+  >>> latest_translations_upload = latest_translations_uploads[0]
 
   # Check the import queue content, it should be empty.
   >>> from lp.translations.interfaces.translationimportqueue import (
@@ -259,6 +277,7 @@ This time, we don't get any entry in the import queue.
   # component.
   >>> transaction.abort()
 
+
 == Translations from PPA build ==
 
 For now we simply ignore translations for archives other than the
@@ -376,3 +395,26 @@ Uploads by anyone else are treated as if importer is the packager.
   >>> translations_upload.packageupload = carlos_package_upload
   >>> translations_upload.publish_ROSETTA_TRANSLATIONS()
   Imported by: carlos
+
+
+=== Translations tarball ===
+
+The LibraryFileAlias returned by getLatestTranslationsUploads on the
+source package points to a tarball with translations files for the
+package.
+
+  >>> import tarfile
+  >>> from StringIO import StringIO
+  >>> tarball = StringIO(latest_translations_upload.read())
+  >>> archive = tarfile.open('', 'r|gz', tarball)
+  >>> translation_files = sorted([
+  ...     entry.name for entry in archive.getmembers()
+  ...     if entry.name.endswith('.po') or entry.name.endswith('.pot')
+  ...     ])
+  >>> for filename in translation_files:
+  ...     print filename
+  ./source/po/ca.po
+  ./source/po/cs.po
+  ./source/po/de.po
+  ...
+  ./source/po/pmount.pot

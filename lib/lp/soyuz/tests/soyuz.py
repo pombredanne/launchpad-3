@@ -7,18 +7,26 @@ __metaclass__ = type
 
 __all__ = [
     'SoyuzTestHelper',
+    'TestPackageDiffsBase',
     ]
+
+import unittest
 
 from zope.component import getUtility
 
-from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.ftests import syncUpdate
+from canonical.config import config
+from canonical.launchpad.database import LibraryFileAlias
+from canonical.launchpad.ftests import import_public_test_keys, syncUpdate
+from canonical.launchpad.testing.fakepackager import FakePackager
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.publishing import (
+    SourcePackagePublishingHistory,
+    BinaryPackagePublishingHistory)
 
 
 class SoyuzTestHelper:
@@ -64,7 +72,7 @@ class SoyuzTestHelper:
 
     def createPublishingForDistroSeries(self, sourcepackagerelease,
                                         distroseries):
-        """Return a list of `SecureSourcePackagePublishingHistory`.
+        """Return a list of `SourcePackagePublishingHistory`.
 
         The publishing records are created according the given
         `SourcePackageRelease` and `DistroSeries` for all
@@ -72,7 +80,7 @@ class SoyuzTestHelper:
         """
         sample_pub = []
         for status, archive, pocket in self.sample_publishing_data:
-            pub = SecureSourcePackagePublishingHistory(
+            pub = SourcePackagePublishingHistory(
                 sourcepackagerelease=sourcepackagerelease,
                 distroseries=distroseries,
                 component=sourcepackagerelease.component,
@@ -88,7 +96,7 @@ class SoyuzTestHelper:
 
     def createPublishingForDistroArchSeries(self, binarypackagerelease,
                                             distroarchseries):
-        """Return a list of `SecureBinaryPackagePublishingHistory`.
+        """Return a list of `BinaryPackagePublishingHistory`.
 
         The publishing records are created according the given
         `BinaryPackageRelease` and `DistroArchSeries` for all
@@ -96,7 +104,7 @@ class SoyuzTestHelper:
         """
         sample_pub = []
         for status, archive, pocket in self.sample_publishing_data:
-            pub = SecureBinaryPackagePublishingHistory(
+            pub = BinaryPackagePublishingHistory(
                 binarypackagerelease=binarypackagerelease,
                 distroarchseries=distroarchseries,
                 component=binarypackagerelease.component,
@@ -114,12 +122,75 @@ class SoyuzTestHelper:
     def checkPubList(self, expected, given):
         """Check if the given publication list matches the expected one.
 
-        We have to check ID, because the lookup returns contents of
-        IBinaryPackagePublishingHistory, a postgres view of
-        SecureBinaryPackagePublishinghistory, where we created the records.
-        The list order is also important.
-
         Return True if the lists matches, otherwise False.
         """
         return [p.id for p in expected] == [r.id for r in given]
+
+
+class TestPackageDiffsBase(unittest.TestCase):
+    """Base class facilitating tests related to package diffs."""
+    layer = LaunchpadZopelessLayer
+    dbuser = config.uploader.dbuser
+
+    def setUp(self):
+        """Setup proper DB connection and contents for tests
+
+        Connect to the DB as the 'uploader' user (same user used in the
+        script), upload the test packages (see `uploadTestPackages`) and
+        commit the transaction.
+
+        Store the `FakePackager` object used in the test uploads as `packager`
+        so the tests can reuse it if necessary.
+        """
+        self.layer.alterConnection(dbuser='launchpad')
+
+        fake_chroot = LibraryFileAlias.get(1)
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        warty = ubuntu.getSeries('warty')
+        warty['i386'].addOrUpdateChroot(fake_chroot)
+
+        self.layer.txn.commit()
+
+        self.layer.alterConnection(dbuser=self.dbuser)
+        self.packager = self.uploadTestPackages()
+        self.layer.txn.commit()
+
+    def uploadTestPackages(self):
+        """Upload packages for testing `PackageDiff` generation script.
+
+        Upload zeca_1.0-1 and zeca_1.0-2 sources, so a `PackageDiff` between
+        them is created.
+
+        Assert there is not pending `PackageDiff` in the DB before uploading
+        the package and also assert that there is one after the uploads.
+
+        :return: the FakePackager object used to generate and upload the test,
+            packages, so the tests can upload subsequent version if necessary.
+        """
+        # No pending PackageDiff available in sampledata.
+        self.assertEqual(self.getPendingDiffs().count(), 0)
+
+        import_public_test_keys()
+        # Use FakePackager to upload a base package to ubuntu.
+        packager = FakePackager(
+            'zeca', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+        packager.buildUpstream()
+        packager.buildSource()
+        packager.uploadSourceVersion('1.0-1', suite="warty-updates")
+
+        # Upload a new version of the source, so a PackageDiff can
+        # be created.
+        packager.buildVersion('1.0-2', changelog_text="cookies")
+        packager.buildSource(include_orig=False)
+        packager.uploadSourceVersion('1.0-2', suite="warty-updates")
+
+        # Check if there is exactly one pending PackageDiff record and
+        # It's the one we have just created.
+        self.assertEqual(self.getPendingDiffs().count(), 1)
+
+        return packager
+
+    def getPendingDiffs(self):
+        """Pending `PackageDiff` available."""
+        return getUtility(IPackageDiffSet).getPendingDiffs()
 

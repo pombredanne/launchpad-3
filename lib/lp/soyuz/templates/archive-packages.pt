@@ -23,7 +23,7 @@
       </tal:devmode>
       <script type="text/javascript" id="repository-size-update"
               tal:condition="view/archive_url">
-YUI().use('io-base', 'lazr.anim', 'node', 'soyuz-base',
+LPS.use('io-base', 'lazr.anim', 'node', 'soyuz-base',
           'soyuz.update_archive_build_statuses', function(Y) {
 
 
@@ -65,7 +65,7 @@ function dispatchUpdate () {
     in_progress_message = Y.soyuz.makeInProgressNode(
         'Fetching repository size ...')
 
-    var container = Y.get('#package-counters');
+    var container = Y.one('#package-counters');
     container.set('innerHTML', '');
     container.appendChild(in_progress_message);
 

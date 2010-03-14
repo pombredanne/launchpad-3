@@ -20,7 +20,7 @@
     <script type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
 
-      YUI().use('node', 'cookie', 'anim', 'lp.pofile', function(Y) {
+      LPS.use('node', 'cookie', 'anim', 'lp.pofile', function(Y) {
 
           var hide_notification = function(node) {
               var hide_anim = new Y.Anim({
@@ -38,8 +38,8 @@
           }
 
           var updateNotificationBox = function(e) {
-              var notice = Y.get('.important-notice-container');
-              var balloon = notice.query('.important-notice-balloon');
+              var notice = Y.one('.important-notice-container');
+              var balloon = notice.one('.important-notice-balloon');
               var dismiss_notice_cookie = ('translation-docs-for-' +
                                            documentation_cookie);
 
@@ -50,7 +50,7 @@
                  notice.setStyle('display', 'none');
               }
 
-              var cancel_button = notice.query(
+              var cancel_button = notice.one(
                   '.important-notice-cancel-button');
               // Cancel button starts out hidden.  If user has JavaScript,
               // then we want to show it.
@@ -142,21 +142,8 @@
         </div>
 
       <!--  Navigation -->
-      <ul class="horizontal" style="margin-top: 1em; margin-bottom: 1em;"
-           tal:define="navigation_menu context/menu:navigation">
-        <li
-            tal:define="link navigation_menu/download"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"></li>
-        <li
-            tal:define="link navigation_menu/upload"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"></li>
-        <li
-            tal:define="link navigation_menu/details"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"></li>
-        </ul>
+      <metal:nav-pofile-subpages 
+        use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
         <!-- View filter and suggestions from alternative language. -->
         <form method="get" style="text-align: left;" action="+translate">

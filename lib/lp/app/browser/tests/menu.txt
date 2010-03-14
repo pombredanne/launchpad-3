@@ -141,7 +141,7 @@ links.
 The generated markup is for a portlet with the global-actions id.
 
     >>> print menu_view.render()
-    <div id="global-actions" class="portlet">
+    <div id="global-actions" class="portlet vertical">
       <ul>
         <li>
           <span class="menu-link-edit_thing nolink

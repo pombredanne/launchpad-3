@@ -124,18 +124,20 @@ We also have a page under the launchpad root, called +editmylanguages,
 with launchpad.AnyPerson as permission. This is the page to which we
 direct non-logged in users to edit their preferred languages.
 
-    >>> anon_browser.handleErrors = True
-    >>> anon_browser.open('http://launchpad.dev/+editmylanguages')
-    >>> anon_browser.url
-    'http://launchpad.dev/+editmylanguages/+login'
+The launchpad.AnyPerson permission means that when an anonymous user goes
+to that page, they'll be asked to login.
 
-    >>> anon_browser.open('http://launchpad.dev/+editmylanguages/+login')
-    >>> anon_browser.getControl('E-mail address:', index=0).value = (
-    ...     'no-priv@canonical.com')
-    >>> anon_browser.getControl('Password:').value = 'test'
-    >>> anon_browser.getControl(name='loginpage_submit_login').click()
-    >>> anon_browser.url
-    'http://launchpad.dev/~no-priv/+editlanguages'
+    >>> anon_browser.open('http://launchpad.dev/+editmylanguages')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+But a logged in user will be sent straight to their /~user/+editlanguages
+page.
+
+    >>> browser.open('http://launchpad.dev/+editmylanguages')
+    >>> browser.url
+    'http://launchpad.dev/~name12/+editlanguages'
 
 
 == Adding languages to teams ==
@@ -172,8 +174,6 @@ Person's page to do it himself.
     >>> admin_browser.open('http://launchpad.dev/~no-priv')
     >>> admin_browser.title
     'No Privileges Person in Launchpad'
-
-    >>> admin_browser.getLink('Change details').click()
     >>> admin_browser.getLink('Set preferred languages').click()
     >>> print extract_text(
     ...     find_main_content(admin_browser.contents).find('h1'))

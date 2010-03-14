@@ -118,6 +118,7 @@ class BugComment:
 
         self.chunks = []
         self.bugattachments = []
+        self.patches = []
 
         if activity is None:
             activity = []
@@ -185,7 +186,8 @@ class BugComment:
             return False
         if self.title != other.title:
             return False
-        if self.bugattachments or other.bugattachments:
+        if (self.bugattachments or self.patches or other.bugattachments or
+            other.patches):
             # We shouldn't collapse comments which have attachments;
             # there's really no possible identity in that case.
             return False
@@ -195,7 +197,7 @@ class BugComment:
         """Return True if text_for_display is empty."""
 
         return (len(self.text_for_display) == 0 and
-            len(self.bugattachments) == 0)
+            len(self.bugattachments) == 0 and len(self.patches) == 0)
 
     @property
     def add_comment_url(self):

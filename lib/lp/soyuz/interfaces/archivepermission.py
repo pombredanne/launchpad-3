@@ -123,6 +123,13 @@ class IArchivePermission(Interface):
             title=_("Package set name"),
             required=True))
 
+    distro_series_name = exported(
+        TextLine(
+            title=_(
+                "The name of the distro series associated with the "
+                "package set."),
+            required=True))
+
 
 class IArchiveUploader(IArchivePermission):
     """Marker interface for URL traversal of uploader permissions."""
@@ -258,7 +265,8 @@ class IArchivePermissionSet(Interface):
             archive in question.
         """
 
-    def isSourceUploadAllowed(archive, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        archive, sourcepackagename, person, distroseries=None):
         """True if the person is allowed to upload the given source package.
 
         Return True if there exists a permission that combines
@@ -275,6 +283,9 @@ class IArchivePermissionSet(Interface):
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
+        :param distroseries: The `IDistroSeries` for which to check
+            permissions. If none is supplied then `currentseries` in
+            Ubuntu is assumed.
 
         :raises SourceNotFound: if a source package with the given
             name could not be found.
@@ -283,6 +294,9 @@ class IArchivePermissionSet(Interface):
 
     def uploadersForPackageset(archive, packageset, direct_permissions=True):
         """The `ArchivePermission` records for uploaders to the package set.
+
+        Please note: if a package set *name* is passed the respective
+                     package set in the current distro series will be used.
 
         :param archive: The archive the permission applies to.
         :param packageset: An `IPackageset` or a string package set name.
@@ -309,7 +323,8 @@ class IArchivePermissionSet(Interface):
     def componentsForQueueAdmin(archive, person):
         """Return `ArchivePermission` for the person's queue admin components.
 
-        :param archive: The context `IArchive` for the permission check.
+        :param archive: The context `IArchive` for the permission check, or
+            an iterable of `IArchive`s.
         :param person: An `IPerson` for whom you want to find out which
             components he has access to.
 
@@ -331,6 +346,9 @@ class IArchivePermissionSet(Interface):
 
     def newPackagesetUploader(archive, person, packageset, explicit=False):
         """Create and return a new `ArchivePermission` for an uploader.
+
+        Please note: if a package set *name* is passed the respective
+                     package set in the current distro series will be used.
 
         :param archive: The archive the permission applies to.
         :param person: An `IPerson` for whom you want to add permission.
@@ -378,6 +396,9 @@ class IArchivePermissionSet(Interface):
 
     def deletePackagesetUploader(archive, person, packageset, explicit=False):
         """Revoke upload permissions for a person.
+
+        Please note: if a package set *name* is passed the respective
+                     package set in the current distro series will be used.
 
         :param archive: The archive the permission applies to.
         :param person: An `IPerson` for whom you want to revoke permission.

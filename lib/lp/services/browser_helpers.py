@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'get_user_agent_distroseries',
+    'get_plural_text',
     ]
 
 import re
@@ -28,3 +29,10 @@ def get_user_agent_distroseries(user_agent_string):
     else:
         return None
 
+
+def get_plural_text(count, singular, plural):
+    """Return 'singular' if 'count' is 1, 'plural' otherwise."""
+    if count == 1:
+        return singular
+    else:
+        return plural
