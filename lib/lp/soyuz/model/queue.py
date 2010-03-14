@@ -1244,6 +1244,9 @@ class PackageUpload(SQLBase):
             # Nothing needs overriding, bail out.
             return False
 
+        if self.sources.count() == 0:
+            return False
+
         for source in self.sources:
             if (new_component not in allowed_components or
                 source.sourcepackagerelease.component not in
@@ -1257,7 +1260,12 @@ class PackageUpload(SQLBase):
             source.sourcepackagerelease.override(
                 component=new_component, section=new_section)
 
-        return self.sources.count() > 0
+        # We override our own archive to, as it is used to create
+        # the SPPH during publish().
+        self.archive = self.distroseries.distribution.getArchiveByComponent(
+            new_component.name)
+
+        return True
 
     def overrideBinaries(self, new_component, new_section, new_priority,
                          allowed_components):

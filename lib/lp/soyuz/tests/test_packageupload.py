@@ -317,9 +317,11 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         self.assertEqual("primary", main_upload_release.upload_archive.name)
 
-        # Override the SPR to partner and verify the change.
+        # Override the upload to partner and verify the change.
         partner_component = getUtility(IComponentSet)['partner']
-        main_upload_release.override(component=partner_component)
+        main_component = getUtility(IComponentSet)['main']
+        package_upload.overrideSource(
+            partner_component, None, [partner_component, main_component])
         self.assertEqual(
             "partner", main_upload_release.upload_archive.name)
 
