@@ -92,6 +92,13 @@ class SeriesStatus(DBEnumeratedType):
 class ISeriesMixin(IHasDrivers):
     """Methods & properties shared between distro & product series."""
 
+    active = exported(Bool(
+        title=_("Active"),
+        description=_(
+            "Whether or not this series is stable and supported, or "
+            "under current development. This excludes series which "
+            "are experimental or obsolete.")))
+
     summary = exported(
         Summary(title=_("Summary"),
              description=_('A single paragraph that explains the goals of '
@@ -109,7 +116,6 @@ class ISeriesMixin(IHasDrivers):
                 'from this series and the parent drivers.'),
             readonly=True,
             value_type=Reference(schema=IPerson)))
-
 
     bug_supervisor = CollectionField(
         title=_('Currently just a reference to the parent bug '

@@ -182,15 +182,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         intermediateTable='SectionSelection')
 
     @property
-    def active(self):
-        return self.status in [
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FROZEN,
-            SeriesStatus.CURRENT,
-            SeriesStatus.SUPPORTED,
-            ]
-
-    @property
     def named_version(self):
         return '%s (%s)' % (self.displayname, self.version)
 

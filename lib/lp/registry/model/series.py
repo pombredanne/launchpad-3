@@ -25,6 +25,15 @@ class SeriesMixin:
     summary = StringCol(notNull=True)
 
     @property
+    def active(self):
+        return self.status in [
+            SeriesStatus.DEVELOPMENT,
+            SeriesStatus.FROZEN,
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED,
+            ]
+
+    @property
     def bug_supervisor(self):
         """See `ISeriesMixin`."""
         return self.parent.bug_supervisor
