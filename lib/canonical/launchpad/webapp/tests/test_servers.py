@@ -1,6 +1,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# E1002 is for "Use super on an old style class", but it's not true as all
+# classes here should be new-style thanks to the "__metaclass__ = type" we
+# have at the top.
+# pylint: disable-msg=E1002
+
 __metaclass__ = type
 
 import StringIO
@@ -259,7 +264,6 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
         # named 'foo'.
         class GenericCollection:
             implements(IGenericCollection)
-            pass
 
         class MyRootResource(RootResource):
             def _build_top_level_objects(self):
