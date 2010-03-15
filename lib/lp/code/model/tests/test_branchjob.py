@@ -283,6 +283,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             hosted=True, format='knit')
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        db_branch_transport = get_transport(db_branch.getPullURL())
 
         # Add a fake backup.bzr dir
         source_branch_transport = get_transport(db_branch.getPullURL())
