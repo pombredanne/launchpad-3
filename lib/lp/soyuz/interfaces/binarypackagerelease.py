@@ -27,6 +27,7 @@ from lp.soyuz.interfaces.archive import IArchive
 from lp.services.worlddata.interfaces.country import ICountry
 
 
+
 class IBinaryPackageRelease(Interface):
     id = Int(title=_('ID'), required=True)
     binarypackagename = Int(required=True)
@@ -81,6 +82,7 @@ class IBinaryPackageRelease(Interface):
         All arguments are optional and can be set individually. A non-passed
         argument remains untouched.
         """
+
 
 class IBinaryPackageReleaseSet(Interface):
     """A set of binary packages"""

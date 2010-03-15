@@ -17,7 +17,7 @@
             tal:condition="person/preferredemail"
             tal:content="person/preferredemail/rdf_sha1"
             >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33</foaf:mbox_sha1sum>
-        <wot:hasKey tal:repeat="gpgkey person/gpgkeys">
+        <wot:hasKey tal:repeat="gpgkey person/gpg_keys">
           <wot:PubKey>
             <wot:hex_id tal:content="gpgkey/keyid">91CFA34D</wot:hex_id>
             <wot:length tal:content="gpgkey/keysize">1024</wot:length>
