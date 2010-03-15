@@ -7,8 +7,9 @@ The bug heat appears on the bug index page as four flames.
     ...     anon_browser.contents, 'registration').fetch('img')[0]
     <img src="/@@/bug-heat-0.png" alt="0 out of 4 heat flames" title="Heat: 0" />
 
-Packages should use the distribution as context when generating the
-flame icons for a bug page.
+Packages use their distribution as context when generating flame icons
+for a bug page, since a package of low heat value could be displayed
+with four flames if there are few reported bugs against the package.
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.webapp import canonical_url
