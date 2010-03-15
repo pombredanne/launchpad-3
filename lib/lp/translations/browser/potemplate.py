@@ -540,6 +540,7 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
 
     @property
     def _return_attribute_name(self):
+        """See 'ReturnToReferrerMixin'."""
         return "name"
 
 
