@@ -782,14 +782,22 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # XXX
         running_job = self.makeRunningJob()
         intervals = []
-        for i in range(config.codeimport.consecutive_failure_limit):
+        base_interval = running_job.code_import.effective_update_interval
+        expected_intervals = [
+            base_interval,
+            base_interval * 2,
+            base_interval * 4,
+            base_interval * 8]
+        for i in range(config.codeimport.consecutive_failure_limit - 1):
             code_import = running_job.code_import
             getUtility(ICodeImportJobWorkflow).finishJob(
                 running_job, CodeImportResultStatus.FAILURE, None)
             intervals.append(
-                code_import.import_job.date_due - running_job.date_due)
+                code_import.import_job.date_due - code_import.results[-1].date_job_started)
             running_job = code_import.import_job
-        self.assertEqual([], intervals)
+            getUtility(ICodeImportJobWorkflow).startJob(
+                running_job, self.machine)
+        self.assertEqual(expected_intervals, intervals)
 
     def test_doesntCreateNewJobIfCodeImportNotReviewed(self):
         # finishJob() creates a new CodeImportJob for the given CodeImport,
