@@ -145,10 +145,10 @@ class TestPublishDistro(TestNativePublishingBase):
         self.getPubSource(filecontent="flangetrousers", archive=archive)
         self.layer.txn.commit()
         pubconf = getPubConfig(archive)
-        tmp_path = "/tmp/tmpdistroot"
+        tmp_path = os.path.join(pubconf.archiveroot, "tmpdistroot")
         if os.path.exists(tmp_path):
             shutil.rmtree(tmp_path)
-        os.mkdir(tmp_path)
+        os.makedirs(tmp_path)
         myargs = ['-R', tmp_path]
         if archive.purpose == ArchivePurpose.PARTNER:
             myargs.append('--partner')

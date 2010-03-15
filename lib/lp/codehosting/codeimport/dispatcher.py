@@ -31,7 +31,7 @@ class CodeImportDispatcher:
     """
 
     worker_script = os.path.join(
-        config.root, 'scripts', 'code-import-worker-db.py')
+        config.root, 'scripts', 'code-import-worker-monitor.py')
 
     def __init__(self, logger, worker_limit, _sleep=time.sleep):
         """Initialize an instance.

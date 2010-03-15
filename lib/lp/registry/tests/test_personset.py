@@ -136,7 +136,8 @@ class TestPersonSetMerge(TestCaseWithFactory):
         self.assertEqual(0, self.cur.rowcount)
 
     def test__mergeMailingListSubscriptions_with_subscriptions(self):
-        self.from_person.mailing_list_auto_subscribe_policy = (
+        naked_person = removeSecurityProxy(self.from_person)
+        naked_person.mailing_list_auto_subscribe_policy = (
             MailingListAutoSubscribePolicy.ALWAYS)
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'test-mailinglist', 'team-owner')
