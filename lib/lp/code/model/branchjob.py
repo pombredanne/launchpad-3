@@ -345,7 +345,8 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch.unlock()
 
             # Move the branch in the old format to backup.bzr
-            upgrade_transport.delete_tree('backup.bzr')
+            if source_branch_transport.has('backup.bzr'):
+                source_branch_transport.delete_tree('backup.bzr')
             source_branch_transport.rename('.bzr', 'backup.bzr')
             source_branch_transport.mkdir('.bzr')
             upgrade_transport.clone('.bzr').copy_tree_to_transport(
