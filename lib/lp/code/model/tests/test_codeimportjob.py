@@ -14,6 +14,8 @@ import unittest
 
 from sqlobject.sqlbuilder import SQLConstant
 
+import transaction
+
 from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
@@ -702,24 +704,13 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         AssertFailureMixin, AssertEventMixin):
     """Unit tests for CodeImportJobWorkflow.finishJob."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestCodeImportJobWorkflowFinishJob, self).setUp()
         login_for_code_imports()
         self.machine = self.factory.makeCodeImportMachine()
         self.machine.setOnline()
-        self.switchDbUser_called = False
-
-    def tearDown(self):
-        super(TestCodeImportJobWorkflowFinishJob, self).tearDown()
-        self.assertTrue(
-            self.switchDbUser_called, "switchDbUser() not called!")
-
-    def switchDbUser(self):
-        self.layer.txn.commit()
-        self.layer.switchDbUser('codeimportworker')
-        self.switchDbUser_called = True
 
     def makeRunningJob(self, code_import=None):
         """Make and return a CodeImportJob object with state==RUNNING.
@@ -740,7 +731,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # Calling finishJob with a job whose state is not RUNNING is an error.
         code_import = self.factory.makeCodeImport()
         job = self.factory.makeCodeImportJob(code_import)
-        self.switchDbUser()
         self.assertFailure(
             "The CodeImportJob associated with %s is "
             "PENDING." % code_import.branch.unique_name,
@@ -754,7 +744,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # finishJob() deletes the job it is passed.
         running_job = self.makeRunningJob()
         running_job_id = running_job.id
-        self.switchDbUser()
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         self.assertEqual(
@@ -765,7 +754,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # scheduled appropriately far in the future.
         running_job = self.makeRunningJob()
         code_import = running_job.code_import
-        self.switchDbUser()
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         new_job = code_import.import_job
@@ -782,7 +770,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # now.
         running_job = self.makeRunningJob()
         code_import = running_job.code_import
-        self.switchDbUser()
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS_PARTIAL, None)
         new_job = code_import.import_job
@@ -800,7 +787,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             'david.allouche@canonical.com')
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.SUSPENDED}, ddaa)
-        self.switchDbUser()
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         self.assertTrue(code_import.import_job is None)
@@ -812,7 +798,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # Before calling finishJob() there are no CodeImportResults for the
         # given import...
         self.assertEqual(len(list(code_import.results)), 0)
-        self.switchDbUser()
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         # ... and after, there is exactly one.
@@ -841,13 +826,11 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # methods -- e.g. calling requestJob to set requesting_user -- but
         # using removeSecurityProxy and forcing here is expedient.
         setattr(removeSecurityProxy(job), from_field, value)
-        self.switchDbUser()
         result = self.getResultForJob(job)
         self.assertEqual(
             value, getattr(result, to_field),
             "Value %r in job field %r was not passed through to result field"
             " %r." % (value, from_field, to_field))
-        self.layer.switchDbUser('launchpad')
 
     def test_resultObjectFields(self):
         # The CodeImportResult object that finishJob creates contains all the
@@ -898,7 +881,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         status_jobs = []
         for status in CodeImportResultStatus.items:
             status_jobs.append((status, self.makeRunningJob()))
-        self.switchDbUser()
         for status, job in status_jobs:
             result = self.getResultForJob(job, status)
             self.assertEqual(result.status, status)
@@ -909,12 +891,11 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
 
         job = self.makeRunningJob()
 
-        self.switchDbUser()
         log_data = 'several\nlines\nof\nlog data'
         log_alias_id = getUtility(ILibrarianClient).addFile(
            'import_log.txt', len(log_data),
            StringIO.StringIO(log_data), 'text/plain')
-        self.layer.txn.commit()
+        transaction.commit()
         log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
         result = self.getResultForJob(job, log_alias=log_alias)
 
@@ -927,7 +908,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         code_import = running_job.code_import
         machine = running_job.machine
         new_events = NewEvents()
-        self.switchDbUser()
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         [finish_event] = list(new_events)
@@ -941,7 +921,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         status_jobs = []
         for status in CodeImportResultStatus.items:
             status_jobs.append((status, self.makeRunningJob()))
-        self.switchDbUser()
         for status, job in status_jobs:
             code_import = job.code_import
             self.assertTrue(code_import.date_last_successful is None)
@@ -958,7 +937,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         status_jobs = []
         for status in CodeImportResultStatus.items:
             status_jobs.append((status, self.makeRunningJob()))
-        self.switchDbUser()
         for status, job in status_jobs:
             code_import = job.code_import
             self.assertTrue(code_import.date_last_successful is None)
@@ -984,7 +962,6 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED, code_import.review_status)
         running_job = self.makeRunningJob(code_import)
-        self.switchDbUser()
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.FAILURE, None)
         self.assertEqual(
