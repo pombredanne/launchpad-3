@@ -16,21 +16,19 @@ This means that our services need to translate the external paths into
 internal paths.
 
 We also want to let users create new branches on Launchpad simply by pushing
-them up. We want Launchpad to detect when a branch has been changed and update
-our internal mirror.
+them up.
 
-This means our services must detect events like "make directory" and "unlock
-branch", translate them into Launchpad operations like "create branch" and
-"request mirror" and then actually perform those operations.
+This means our services must detect events like 'make directory' and 'unlock
+branch' and translate them into Launchpad operations like 'create branch' and
+'request mirror' before performing those operations.
 
 So, we have a `LaunchpadServer` which implements the core operations --
 translate a path, make a branch and request a mirror -- in terms of virtual
 paths.
 
-This server does most of its work by delegating to a `LaunchpadBranch` object.
-This object can be constructed from a virtual path and then operated on. It in
-turn delegates to the "authserver", an internal XML-RPC server that actually
-talks to the database.
+This server does most of its work by querying an XML-RPC server that provides
+the `IBranchFileSystem` interface and passing what that returns to a
+`ITransportDispatch` object.
 
 We hook the `LaunchpadServer` into Bazaar by implementing a
 `AsyncVirtualTransport`, a `bzrlib.transport.Transport` that wraps all of its
@@ -291,19 +289,20 @@ class BranchTransportDispatch:
 
 
 class TransportDispatch:
-    """Make transports for hosted, mirrored areas and virtual control dirs.
+    """Make transports for hosted branch areas and virtual control dirs.
 
     This transport dispatch knows about whether a particular branch should be
-    served from the hosted or mirrored area. It also knows how to serve .bzr
-    control directories for products (to enable default stacking).
+    served read-write or read-only. It also knows how to serve .bzr control
+    directories for products (to enable default stacking).
 
     This is used for the rich codehosting VFS that we serve publically.
     """
     implements(ITransportDispatch)
 
-    def __init__(self, hosted_transport, mirrored_transport):
-        self._hosted_dispatch = BranchTransportDispatch(hosted_transport)
-        self._mirrored_dispatch = BranchTransportDispatch(mirrored_transport)
+    def __init__(self, rw_transport):
+        self._rw_dispatch = BranchTransportDispatch(rw_transport)
+        self._ro_dispatch = BranchTransportDispatch(
+            get_readonly_transport(rw_transport))
         self._transport_factories = {
             BRANCH_TRANSPORT: self._makeBranchTransport,
             CONTROL_TRANSPORT: self._makeControlTransport,
@@ -317,13 +316,11 @@ class TransportDispatch:
 
     def _makeBranchTransport(self, id, writable, trailing_path=''):
         if writable:
-            dispatch = self._hosted_dispatch
+            dispatch = self._rw_dispatch
         else:
-            dispatch = self._mirrored_dispatch
+            dispatch = self._ro_dispatch
         transport, ignored = dispatch.makeTransport(
             (BRANCH_TRANSPORT, dict(id=id), trailing_path))
-        if not writable:
-            transport = get_readonly_transport(transport)
         return transport
 
     def _makeControlTransport(self, default_stack_on, trailing_path=None):
@@ -540,12 +537,9 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
 class LaunchpadServer(_BaseLaunchpadServer):
     """The Server used for the public SSH codehosting service.
 
-    This server provides a VFS that backs onto two transports: a 'hosted'
-    transport and a 'mirrored' transport. When users push up 'hosted'
-    branches, the branches are written to the hosted transport. Similarly,
-    whenever users access branches that they can write to, they are accessed
-    from the hosted transport. The mirrored transport is used for branches
-    that the user can only read.
+    This server provides a VFS that backs onto a transport that stores
+    branches by id.  The TransportDispatch object takes care of showing a
+    writeable or read-only view of each branch as appropriate.
 
     In addition to basic VFS operations, this server provides operations for
     creating a branch and requesting for a branch to be mirrored. The
@@ -555,8 +549,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
     asyncTransportFactory = AsyncLaunchpadTransport
 
-    def __init__(self, authserver, user_id, hosted_transport,
-                 mirror_transport):
+    def __init__(self, authserver, user_id, branch_transport):
         """Construct a `LaunchpadServer`.
 
         See `_BaseLaunchpadServer` for more information.
@@ -568,19 +561,13 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
         :param user_id: The database ID of the user to connect as.
 
-        :param hosted_transport: A Bazaar `Transport` that points to the
+        :param branch_transport: A Bazaar `Transport` that points to the
             "hosted" area of Launchpad. See module docstring for more
-            information.
-
-        :param mirror_transport: A Bazaar `Transport` that points to the
-            "mirrored" area of Launchpad. See module docstring for more
             information.
         """
         scheme = 'lp-%d:///' % id(self)
         super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
-        mirror_transport = get_readonly_transport(mirror_transport)
-        self._transport_dispatch = TransportDispatch(
-            hosted_transport, mirror_transport)
+        self._transport_dispatch = TransportDispatch(branch_transport)
 
     def createBranch(self, virtual_url_fragment):
         """Make a new directory for the given virtual URL fragment.
