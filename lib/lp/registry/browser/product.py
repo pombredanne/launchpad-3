@@ -22,6 +22,7 @@ __all__ = [
     'ProductEditPeopleView',
     'ProductEditView',
     'ProductFacets',
+    'ProductInvolvementView',
     'ProductNavigation',
     'ProductNavigationMenu',
     'ProductOverviewMenu',
@@ -85,6 +86,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.pillar import PillarView
 from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -508,11 +510,12 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         return Link('+securitycontact', text, icon='edit')
 
 
-class ProductSpecificationsMenu(NavigationMenu,
+class ProductSpecificationsMenu(NavigationMenu, ProductEditLinksMixin,
                                 HasSpecificationsMenuMixin):
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
+    links = ['configure_blueprints', 'listall', 'doc', 'assignments', 'new',
+             'register_sprint']
 
 
 def _cmp_distros(a, b):
@@ -1909,3 +1912,37 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
+
+
+class ProductInvolvementView(PillarView):
+    """Encourage configuration of involvement links for projects."""
+
+    @property
+    def configuration_links(self):
+        """The enabled involvement links."""
+        overview_menu = MenuAPI(self.context).overview
+        configuration_names = [
+            'configure_answers',
+            'configure_branches',
+            'configure_bugtracker',
+            'configure_translations',
+            ]
+        configuration_links = [
+            overview_menu[name] for name in configuration_names]
+        return sorted([
+            link for link in configuration_links if link.enabled],
+            key=attrgetter('sort_key'))
+
+    @property
+    def visible_disabled_links(self):
+        """Important disabled links.
+
+        These are displayed to notify the user to provide configuration
+        info to enable the links.
+        """
+        important_links = [
+            self.involved_menu[name]
+            for name in ('report_bug', 'submit_code')]
+        return sorted([
+            link for link in important_links if not link.enabled],
+            key=attrgetter('sort_key'))

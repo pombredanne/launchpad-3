@@ -3,7 +3,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="involvement" class="portlet"
   tal:condition="view/has_involvement"
-  tal:define="overview_menu context/menu:overview"
   >
   <h2>Get Involved</h2>
 

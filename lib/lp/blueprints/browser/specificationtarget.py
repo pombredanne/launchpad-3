@@ -42,7 +42,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.utils import smartquote
 
 
-class HasSpecificationsMenuMixin(object):
+class HasSpecificationsMenuMixin:
 
     def listall(self):
         """Return a link to show all blueprints."""

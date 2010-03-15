@@ -70,6 +70,9 @@ class PillarView(LaunchpadView):
     """A view for any `IPillar`."""
     implements(IInvolved)
 
+    configuration_links = []
+    visible_disabled_links = []
+
     def __init__(self, context, request):
         super(PillarView, self).__init__(context, request)
         self.official_malone = False
@@ -125,45 +128,11 @@ class PillarView(LaunchpadView):
     def involved_menu(self):
         return MenuAPI(self).navigation
 
-    @cachedproperty
-    def overview_menu(self):
-        return MenuAPI(self.context).overview
-
     @property
     def enabled_links(self):
         """The enabled involvement links."""
         return sorted([
             link for link in self.involved_menu.values() if link.enabled],
-            key=attrgetter('sort_key'))
-
-    @property
-    def configuration_links(self):
-        """The enabled involvement links."""
-        configuration_names = [
-            'configure_answers',
-            'configure_blueprints',
-            'configure_branches',
-            'configure_bugtracker',
-            'configure_translations',
-            ]
-        configuration_links = [
-            self.overview_menu[name] for name in configuration_names]
-        return sorted([
-            link for link in configuration_links if link.enabled],
-            key=attrgetter('sort_key'))
-
-    @property
-    def visible_disabled_links(self):
-        """Important disabled links.
-
-        These are displayed to notify the user to provide configuration
-        info to enable the links.
-        """
-        important_links = [
-            self.involved_menu[name]
-            for name in ('report_bug', 'submit_code')]
-        return sorted([
-            link for link in important_links if not link.enabled],
             key=attrgetter('sort_key'))
 
 

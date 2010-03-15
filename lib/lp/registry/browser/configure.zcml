@@ -495,6 +495,13 @@
         facet="overview"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
+    <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.registry.browser.product.ProductInvolvementView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
     <facet
         facet="overview">
         <browser:url
