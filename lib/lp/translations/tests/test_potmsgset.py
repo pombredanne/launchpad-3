@@ -902,21 +902,88 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
                 self.potemplate, self.pofile.language,
                 include_dismissed=False, include_unreviewed=False))
 
+
+class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
+    """Test retrieval and dismissal of translation suggestions."""
+
+    layer = ZopelessDatabaseLayer
+
+    def gen_now(self):
+        now = datetime.now(pytz.UTC)
+        while True:
+            yield now
+            now += timedelta(milliseconds=1)
+
+    def setUp(self):
+        # Create a product with all the boilerplate objects to be able to
+        # create TranslationMessage objects.
+        super(TestPOTMsgSetResetTranslation, self).setUp()
+        self.now = self.gen_now().next
+        self.foo = self.factory.makeProduct()
+        self.foo_main = self.factory.makeProductSeries(
+            name='main', product=self.foo)
+        self.foo.official_rosetta = True
+
+        self.potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_main, name="messages")
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
+                                                    sequence=1)
+        self.pofile = self.factory.makePOFile('eo', self.potemplate)
+
     def test_resetCurrentTranslation_shared(self):
         # Reseting a shared current translation will change iscurrent=False
         # and there will be no other current translations for this POTMsgSet.
-        pass
+
+        translation = self.factory.makeTranslationMessage(
+            self.pofile, self.potmsgset, translations=[u'Shared translation'],
+            reviewer=self.factory.makePerson(),
+            is_imported=False, force_diverged=False,
+            date_updated=self.now())
+
+        self.potmsgset.resetCurrentTranslation(self.pofile, self.now())
+        current = self.potmsgset.getCurrentTranslationMessage(
+            self.potemplate, self.pofile.language)
+        self.assertTrue(current is None)
+        self.assertFalse(translation.is_current)
+        self.assertFalse(translation.is_imported)
+        self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_not_imported(self):
         # Reseting a diverged current translation that was not imported, will
         # change is_current to False and will make it shared.
-        pass
+
+        translation = self.factory.makeTranslationMessage(
+            self.pofile, self.potmsgset, translations=[u'Diverged text'],
+            reviewer=self.factory.makePerson(),
+            is_imported=False, force_diverged=True,
+            date_updated=self.now())
+
+        self.potmsgset.resetCurrentTranslation(self.pofile, self.now())
+        current = self.potmsgset.getCurrentTranslationMessage(
+            self.potemplate, self.pofile.language)
+        self.assertTrue(current is None)
+        self.assertFalse(translation.is_current)
+        self.assertFalse(translation.is_imported)
+        self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_imported(self):
         # Reseting a diverged current translation that was imported in
         # Launchpad will change iscurrent to False but the translation
         # message will be still diverged.
-        pass
+
+        translation = self.factory.makeTranslationMessage(
+            self.pofile, self.potmsgset, translations=[u'Imported diverged'],
+            reviewer=self.factory.makePerson(),
+            is_imported=True, force_diverged=True,
+            date_updated=self.now())
+
+        self.potmsgset.resetCurrentTranslation(self.pofile, self.now())
+        current = self.potmsgset.getCurrentTranslationMessage(
+            self.potemplate, self.pofile.language)
+        self.assertTrue(current is None)
+        self.assertFalse(translation.is_current)
+        self.assertTrue(translation.is_imported)
+        self.assertTrue(translation.potemplate is not None)
 
 
 class TestPOTMsgSetCornerCases(TestCaseWithFactory):
