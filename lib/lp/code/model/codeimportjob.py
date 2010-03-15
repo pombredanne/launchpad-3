@@ -289,7 +289,8 @@ class CodeImportJobWorkflow:
         elif status == CodeImportResultStatus.SUCCESS_PARTIAL:
             interval = datetime.timedelta(0)
         elif failure_count > 0:
-            interval = code_import.effective_update_interval * (2**(failure_count - 1))
+            interval = (code_import.effective_update_interval *
+                        (2 ** (failure_count - 1)))
         else:
             interval = code_import.effective_update_interval
         # Only start a new one if the import is still in the REVIEWED state.
