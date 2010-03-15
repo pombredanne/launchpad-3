@@ -148,9 +148,11 @@ augments the IBuildSet.getStatusSummaryForBuilds() method to include the
 
 Create a helper for printing the build status summary:
 
+    >>> import operator
     >>> def print_build_status_summary(summary):
     ...     print summary['status'].title
-    ...     for build in summary['builds']:
+    ...     for build in sorted(
+    ...         summary['builds'], key=operator.attrgetter('title')):
     ...         print build.title
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
@@ -1376,7 +1378,6 @@ The returned ResultSet element is tuple containing:
 Last but not least the publishing set class allows for the bulk deletion
 of publishing history records.
 
-    >>> import operator
     >>> cprov_sources = sorted(list(
     ...     cprov.archive.getPublishedSources(
     ...     status=PackagePublishingStatus.PUBLISHED)),
