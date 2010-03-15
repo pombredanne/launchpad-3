@@ -294,7 +294,7 @@ class TestCase(testtools.TestCase):
         sql_class = type(sql_object)
         store = Store.of(sql_object)
         found_object = store.find(
-            sql_class, **({'id': sql_object.id, attribute_name: date}))
+            sql_class, **({'id': sql_object.id, attribute_name: date})).one()
         if found_object is None:
             self.fail(
                 "Expected %s to be %s, but it was %s."
