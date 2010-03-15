@@ -515,17 +515,17 @@ ul.super-add-action li a {
     text-decoration: underline;
     }
 
-.involvement-service-links li {
+.involvement li {
     border-top: 1px solid #d0d0d0;
     padding: 0;
     font-size: 108%;
     font-weight: bold;
     }
-.involvement-service-links a {
+.involvement a {
     display: block;
     padding: 0.3em;
     }
-.involvement-service-links li.disabled {
+.involvement li.disabled {
     color: #cccccc;
     }
 .involvement-service-links li.disabled img {
@@ -538,27 +538,27 @@ ul.super-add-action li a {
     padding-top: 0.3em;
     padding-bottom: 0.3em;
     }
-.involvement-service-links a.bugs {
+.involvement a.bugs {
     color: #b9413e;
     background: url(/@@/bugs-arrow-right.png) right center no-repeat;
     }
-.involvement-service-links a.answers {
+.involvement a.answers {
     color: #5265b2;
     background: url(/@@/answers-arrow-right.png) right center no-repeat;
     }
-.involvement-service-links a.translations {
+.involvement a.translations {
     color: #c5458e;
     background: url(/@@/translations-arrow-right.png) right center no-repeat;
     }
-.involvement-service-links a.code {
+.involvement a.code {
     color: #d39f57;
     background: url(/@@/code-arrow-right.png) right center no-repeat;
     }
-.involvement-service-links a.blueprints {
+.involvement a.blueprints {
     color: #5ba4c6;
     background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
     }
-.involvement-service-links a:hover {
+.involvement a:hover {
     text-decoration: none;
     background-color: #eee;
     }
