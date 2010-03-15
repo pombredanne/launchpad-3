@@ -34,7 +34,9 @@ The details include the project the entry is for, and who uploaded it.
 
     >>> product.displayname in details_text
     True
-    >>> uploader.displayname in details_text
+
+    # Must remove the security proxy because IPerson.displayname is protected.
+    >>> removeSecurityProxy(uploader).displayname in details_text
     True
 
 There's also a link to the file's contents.
