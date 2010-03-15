@@ -20,10 +20,10 @@ from lazr.restful.fields import Reference
 from zope.schema import Bool, Choice, Date, Int, Text, TextLine, Datetime
 from zope.interface import Interface, Attribute
 
-
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import valid_debian_version
 from lp.soyuz.interfaces.archive import IArchive
+
 
 class IBinaryPackageRelease(Interface):
     id = Int(title=_('ID'), required=True)
@@ -79,6 +79,7 @@ class IBinaryPackageRelease(Interface):
         All arguments are optional and can be set individually. A non-passed
         argument remains untouched.
         """
+
 
 class IBinaryPackageReleaseSet(Interface):
     """A set of binary packages"""
