@@ -778,6 +778,19 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         self.assertEqual(new_job.machine, None)
         self.assertSqlAttributeEqualsDate(new_job, 'date_due', UTC_NOW)
 
+    def test_failures_back_off(self):
+        # XXX
+        running_job = self.makeRunningJob()
+        intervals = []
+        for i in range(config.codeimport.consecutive_failure_limit):
+            code_import = running_job.code_import
+            getUtility(ICodeImportJobWorkflow).finishJob(
+                running_job, CodeImportResultStatus.FAILURE, None)
+            intervals.append(
+                code_import.import_job.date_due - running_job.date_due)
+            running_job = code_import.import_job
+        self.assertEqual([], intervals)
+
     def test_doesntCreateNewJobIfCodeImportNotReviewed(self):
         # finishJob() creates a new CodeImportJob for the given CodeImport,
         # unless the CodeImport has been suspended or marked invalid.

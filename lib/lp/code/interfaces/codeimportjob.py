@@ -16,6 +16,8 @@ __all__ = [
     'ICodeImportJobWorkflow',
     ]
 
+import datetime
+
 from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Object, Text
 
@@ -137,7 +139,7 @@ class ICodeImportJobSetPublic(Interface):
 class ICodeImportJobWorkflow(Interface):
     """Utility to manage `CodeImportJob` objects through their life cycle."""
 
-    def newJob(code_import):
+    def newJob(code_import, interval=datetime.timedelta(0)):
         """Create a `CodeImportJob` associated with a reviewed `CodeImport`.
 
         Call this method from `CodeImport.updateFromData` when the
@@ -221,6 +223,7 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: `code_import.import_job` is not None.
         :postcondition: `code_import.import_job.date_due` is
             import_job.date_due + code_import.effective_update_interval`.
+            XXX.
         :postcondition: A `CodeImportResult` was created.
         :postcondition: A FINISH `CodeImportEvent` was created.
         """
