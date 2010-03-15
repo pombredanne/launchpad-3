@@ -1,7 +1,18 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test `lp.testing.ZopeTestInSubProcess`."""
+"""Test `lp.testing.ZopeTestInSubProcess`.
+
+How does it do this?
+
+A `TestCase`, mixed-in with `ZopeTestInSubProcess`, is run by the Zope
+test runner. This test case sets its own layer, to keep track of the
+PIDs when certain methods are called. It also records pids for its own
+methods. Assertions are made as these methods are called to ensure that
+they are running in the correct process - the parent or the child.
+
+Recording of the PIDs is handled using the `record_pid` decorator.
+"""
 
 __metaclass__ = type
 
@@ -37,6 +48,9 @@ class TestZopeTestInSubProcessLayer:
     because the test case runs before these methods are called. In the
     interests of symmetry and clarity, the assertions for setUp() and
     testSetUp() are done here too.
+
+    This layer expects to be *instantiated*, which is not the norm for
+    Zope layers. See `TestZopeTestInSubProcess` for its use.
     """
 
     @record_pid
@@ -76,6 +90,11 @@ class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
 
     Assert that setUp(), test() and tearDown() are called in the child
     process.
+
+    Sets its own layer attribute. This layer is then responsible for
+    recording the PID at interesting moments. Specifically,
+    layer.testSetUp() must be called in the same process as
+    test.setUp().
     """
 
     @record_pid
