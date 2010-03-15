@@ -34,7 +34,7 @@
               <input class="radioType" checked="checked"
                      id="field.branch_type.0"
                      name="field.branch_type" type="radio" value="link-lp-bzr"
-                     onclick="updateBranchType()">
+                     onclick="onclickBranchType()">
               Link to a Bazaar branch already in Launchpad
             </label>
               <table>
@@ -64,7 +64,7 @@
             <label>
               <input class="radioType" id="field.branch_type.1"
                      name="field.branch_type"
-                     type="radio" value="create-new" onclick="updateBranchType()">
+                     type="radio" value="create-new" onclick="onclickBranchType()">
               Create a new, empty branch in Launchpad and link
               to this series
             </label>
@@ -77,7 +77,7 @@
               <input class="radioType" id="field.branch_type.2"
                      name="field.branch_type" type="radio"
                      value="import-external"
-                     onclick="updateBranchType()">
+                     onclick="onclickBranchType()">
               Import a branch hosted somewhere else
             </label>
             <table>
@@ -99,7 +99,7 @@
                     <label>
                       <input class="radioType" id="field.rcs_type.6"
                              name="field.rcs_type" type="radio" value="BZR"
-                             onclick="updateWidgets()" disabled="">
+                             onclick="onclickRcsType()" disabled="">
                       Bazaar, hosted externally
                     </label>
                   </td>
@@ -110,7 +110,7 @@
                     <label>
                       <input class="radioType" id="field.rcs_type.4"
                              name="field.rcs_type" type="radio" value="GIT"
-                             onclick="updateWidgets()" disabled="">
+                             onclick="onclickRcsType()" disabled="">
                       Git
                     </label>
                   </td>
@@ -122,7 +122,7 @@
                       <input class="radioType" id="field.rcs_type.3"
                              name="field.rcs_type" type="radio"
                              value="BZR_SVN"
-                             onclick="updateWidgets()" disabled="">
+                             onclick="onclickRcsType()" disabled="">
                       SVN
                     </label>
                   </td>
@@ -133,7 +133,7 @@
                     <label>
                       <input class="radioType" id="field.rcs_type.5"
                              name="field.rcs_type" type="radio" value="HG"
-                             onclick="updateWidgets()" disabled="">
+                             onclick="onclickRcsType()" disabled="">
                       Mercurial
                     </label>
                   </td>
@@ -144,7 +144,7 @@
                     <label>
                       <input class="radioType" id="field.rcs_type.1"
                              name="field.rcs_type" type="radio" value="CVS"
-                             onclick="updateWidgets()" disabled="">
+                             onclick="onclickRcsType()" disabled="">
                       CVS
                     </label>
 
