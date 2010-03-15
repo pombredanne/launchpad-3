@@ -20,6 +20,7 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.errors import NoSuchFile
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
@@ -345,8 +346,10 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch.unlock()
 
             # Move the branch in the old format to backup.bzr
-            if source_branch_transport.has('backup.bzr'):
+            try:
                 source_branch_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
             source_branch_transport.rename('.bzr', 'backup.bzr')
             source_branch_transport.mkdir('.bzr')
             upgrade_transport.clone('.bzr').copy_tree_to_transport(
