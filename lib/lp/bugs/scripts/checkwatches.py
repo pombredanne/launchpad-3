@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+from functools import wraps
 from copy import copy
 from datetime import datetime, timedelta
 import Queue as queue
@@ -158,6 +159,33 @@ def report_warning(message, properties=None, info=None):
         return report_oops(message, properties, info)
 
 
+def with_interaction(func):
+    """Wrap a method to ensure that it runs within an interaction.
+
+    If an interaction is already set up, this simply calls the
+    function. If no interaction exists, it will set one up, call the
+    function, then end the interaction.
+
+    This is intended to make sure the right thing happens whether or not
+    the function is run in a different thread.
+
+    It's intended for use with `BugWatchUpdater`, which provides
+    _login() and _logout() methods; these are the hooks that are
+    required.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if queryInteraction() is None:
+            self._login()
+            try:
+                return func(self, *args, **kwargs)
+            finally:
+                self._logout()
+        else:
+            return func(self, *args, **kwargs)
+    return wrapper
+
+
 class BugWatchUpdater(object):
     """Takes responsibility for updating remote bug watches."""
 
@@ -199,27 +227,7 @@ class BugWatchUpdater(object):
         """Tear down the Bug Watch Updater Interaction."""
         endInteraction()
 
-    def _interactionDecorator(self, func):
-        """Wrap a function to ensure that it runs within an interaction.
-
-        If an interaction is already set up, this simply calls the
-        function. If no interaction exists, it will set one up, call the
-        function, then end the interaction.
-
-        This is intended to make sure the right thing happens whether or not
-        the function is run in a different thread.
-        """
-        def wrapper(*args, **kwargs):
-            if queryInteraction() is None:
-                self._login()
-                try:
-                    return func(*args, **kwargs)
-                finally:
-                    self._logout()
-            else:
-                return func(*args, **kwargs)
-        return wrapper
-
+    @with_interaction
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
         """Yields functions that can be used to update each bug tracker."""
         # Set up an interaction as the Bug Watch Updater since the
@@ -241,8 +249,7 @@ class BugWatchUpdater(object):
                 thread_name = thread.getName()
                 thread.setName(bug_tracker_name)
                 try:
-                    run = self._interactionDecorator(self.updateBugTracker)
-                    return run(bug_tracker_id, batch_size)
+                    return self.updateBugTracker(bug_tracker_id, batch_size)
                 finally:
                     thread.setName(thread_name)
             return updater
@@ -310,6 +317,7 @@ class BugWatchUpdater(object):
         for thread in threads:
             thread.join()
 
+    @with_interaction
     def updateBugTracker(self, bug_tracker, batch_size):
         """Updates the given bug trackers's bug watches.
 
