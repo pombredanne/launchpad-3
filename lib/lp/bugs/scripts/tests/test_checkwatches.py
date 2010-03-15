@@ -29,7 +29,7 @@ from lp.bugs.scripts.checkwatches import (
     BugWatchUpdater, CheckWatchesErrorUtility, TwistedThreadScheduler)
 from lp.bugs.tests.externalbugtracker import (
     TestBugzillaAPIXMLRPCTransport, TestExternalBugTracker, new_bugtracker)
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
 
 
 def always_BugzillaAPI_get_external_bugtracker(bugtracker):
@@ -319,7 +319,8 @@ class BugWatchUpdaterForThreads(BugWatchUpdater):
         return [(ExternalBugTrackerForThreads(self.output_file), bug_watches)]
 
 
-class TestTwistedThreadSchedulerInPlace(TestCaseWithFactory):
+class TestTwistedThreadSchedulerInPlace(
+    ZopeTestInSubProcess, TestCaseWithFactory):
     """Test TwistedThreadScheduler in place.
 
     As in, driving as much of the bug watch machinery as is possible
