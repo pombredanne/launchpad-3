@@ -59,7 +59,7 @@ from lp.soyuz.interfaces.queue import (
     NonBuildableSourceUploadError, QueueBuildAcceptError,
     QueueInconsistentStateError, QueueSourceAcceptError,
     QueueStateWriteProtectedError)
-from lp.soyuz.model.pas import BuildDaemonPackagesArchSpecific
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (

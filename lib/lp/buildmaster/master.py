@@ -25,7 +25,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.buildergroup import BuilderGroup
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.model.pas import BuildDaemonPackagesArchSpecific
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 
 class BuilddMaster:
