@@ -19,5 +19,5 @@ http://launchpad.dev/+apidoc/{version}.html.
 
     >>> browser.open('http://launchpad.dev/+apidoc/devel.html')
     >>> print browser.title
-    Launchpad Web Service API
+    About this service
 
