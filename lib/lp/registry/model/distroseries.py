@@ -1255,7 +1255,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             BinaryPackagePublishingHistory.dateremoved == None).config(
-                distinct=True)
+                distinct=True).order_by(BinaryPackageName.name)
 
         number_of_updates = 0
         chunk_size = 0
