@@ -39,7 +39,7 @@ class TestPasswordReset(TestCaseWithFactory):
 
     def _create_deactivated_person(self):
         self.person = self.factory.makePerson(email=self.email)
-        removeSecurityProxy(self.person.deactivateAccount('Testing'))
+        removeSecurityProxy(self.person).deactivateAccount('Testing')
         # Get the account from the master DB to make sure it has the changes
         # we did above.
         self.account = IMasterObject(self.person.account)

@@ -30,6 +30,7 @@ __all__ = [
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
+    'NoTokensForTeams',
     'PocketNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
@@ -102,6 +103,11 @@ class AlreadySubscribed(Exception):
 
 class ArchiveNotPrivate(Exception):
     """Raised when creating an archive subscription for a public archive."""
+    webservice_error(400) # Bad request.
+
+
+class NoTokensForTeams(Exception):
+    """Raised when creating a token for a team, rather than a person."""
     webservice_error(400) # Bad request.
 
 
@@ -273,6 +279,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
 
+    arm_builds_allowed = Bool(
+        title=_("Allow ARM builds for this archive"))
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
@@ -407,6 +416,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+    def getBinaryPackageReleaseByFileName(filename):
+        """Return the corresponding `IBinaryPackageRelease` in this context.
+
+        :param filename: The filename to look up.
+        :return: The `IBinaryPackageRelease` with the specified filename,
+            or None if it was not found.
         """
 
     def requestPackageCopy(target_location, requestor, suite=None,

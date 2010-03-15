@@ -38,7 +38,6 @@ import calendar
 import re
 import pytz
 from cStringIO import StringIO
-from sets import Set
 from schoolbell.simple import SimpleCalendarEvent
 
 _utc_tz = pytz.timezone('UTC')
@@ -892,7 +891,7 @@ class VEvent:
         'RECUR': parse_recurrence_rule,
     }
 
-    singleton_properties = Set([
+    singleton_properties = set([
         'DTSTAMP',
         'DTSTART',
         'UID',
@@ -914,8 +913,8 @@ class VEvent:
         'URL',
     ])
 
-    rdate_types = Set(['DATE', 'DATE-TIME', 'PERIOD'])
-    exdate_types = Set(['DATE', 'DATE-TIME'])
+    rdate_types = set(['DATE', 'DATE-TIME', 'PERIOD'])
+    exdate_types = set(['DATE', 'DATE-TIME'])
 
     def __init__(self):
         self._props = {}
@@ -1080,7 +1079,7 @@ class VEvent:
                 del start_set[exdate]
 
         # Find out the set of all dates
-        date_set = Set(start_set)
+        date_set = set(start_set)
         duration = self.duration.days
         for d in start_set:
             for n in range(1, duration):

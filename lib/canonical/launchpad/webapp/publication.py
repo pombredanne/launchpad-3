@@ -34,7 +34,6 @@ from zope.app import zapi  # used to get at the adapters service
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryMultiAdapter
-from zope.component.interfaces import ComponentLookupError
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
@@ -210,8 +209,9 @@ class LaunchpadBrowserPublication(
     def maybeNotifyReadOnlyMode(self, request):
         """Hook to notify about read-only mode."""
         if is_read_only():
-            try:
-                INotificationResponse(request).addWarningNotification(
+            notification_response = INotificationResponse(request, None)
+            if notification_response is not None:
+                notification_response.addWarningNotification(
                     structured("""
                         Launchpad is undergoing maintenance and is in
                         read-only mode. <i>You cannot make any
@@ -219,8 +219,6 @@ class LaunchpadBrowserPublication(
                         href="http://blog.launchpad.net/maintenance">Launchpad
                         Blog</a> for details.
                         """))
-            except ComponentLookupError:
-                pass
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.

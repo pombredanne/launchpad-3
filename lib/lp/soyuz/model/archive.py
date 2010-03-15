@@ -31,6 +31,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
@@ -58,14 +59,16 @@ from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
     InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
-    PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    NoTokensForTeams, PocketNotFound, VersionRequiresName,
+    default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -76,8 +79,10 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus, IPublishingSet)
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.interfaces import (
@@ -191,6 +196,39 @@ class Archive(SQLBase):
     # is still relevant.
     external_dependencies = StringCol(
         dbName='external_dependencies', notNull=False, default=None)
+
+    def _get_arm_builds_enabled(self):
+        """Check whether ARM builds are allowed for this archive."""
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        arm = getUtility(IProcessorFamilySet).getByName('arm')
+        for (family, archive_arch) in restricted_families:
+            if family == arm:
+                return (archive_arch is not None)
+        # ARM doesn't exist or isn't restricted. Either way, there is no 
+        # need for an explicit association.
+        return False
+
+    def _set_arm_builds_enabled(self, value):
+        """Set whether ARM builds are enabled for this archive."""
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        arm = getUtility(IProcessorFamilySet).getByName('arm')
+        for (family, archive_arch) in restricted_families:
+            if family == arm:
+                if value:
+                    if archive_arch is not None:
+                        # ARM builds are already enabled
+                        return
+                    else:
+                        archive_arch_set.new(self, family)
+                else:
+                    if archive_arch is not None:
+                        Store.of(self).remove(archive_arch)
+                    else:
+                        pass # ARM builds are already disabled
+    arm_builds_allowed = property(_get_arm_builds_enabled,
+        _set_arm_builds_enabled)
 
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
@@ -1090,6 +1128,21 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def getBinaryPackageReleaseByFileName(self, filename):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        results = store.find(
+            BinaryPackageRelease,
+            BinaryPackageFile.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
+            LibraryFileAlias.filename == filename,
+            BinaryPackagePublishingHistory.archive == self,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id).config(distinct=True)
+        if results.count() > 1:
+            return None
+        return results.one()
+
     def requestPackageCopy(self, target_location, requestor, suite=None,
         copy_binaries=False, reason=None):
         """See `IArchive`."""
@@ -1184,6 +1237,11 @@ class Archive(SQLBase):
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # Tokens can only be created for individuals.
+        if person.is_team:
+            raise NoTokensForTeams(
+                "Subscription tokens can be created for individuals only.")
 
         # First, ensure that a current subscription exists for the
         # person and archive:

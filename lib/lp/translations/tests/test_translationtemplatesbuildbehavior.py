@@ -5,19 +5,21 @@
 
 import logging
 from StringIO import StringIO
+import transaction
 from unittest import TestLoader
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.config import config
+from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 
@@ -81,7 +83,12 @@ class FakeBuildQueue:
 class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
     """Test `TranslationTemplatesBuildBehavior`."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
+
+    def _becomeBuilddMaster(self):
+        """Log into the database as the buildd master."""
+        transaction.commit()
+        self.layer.switchDbUser(config.builddmaster.dbuser)
 
     def _makeBehavior(self):
         """Create a TranslationTemplatesBuildBehavior.
@@ -108,6 +115,7 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         behavior._getChroot = FakeChroot
         buildqueue_item = self._getBuildQueueItem(behavior)
 
+        self._becomeBuilddMaster()
         behavior.dispatchBuildToSlave(buildqueue_item, logging)
 
         slave_status = behavior._builder.slaveStatus()
@@ -149,7 +157,6 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         queue_item = FakeBuildQueue(behavior)
         slave_status = behavior._builder.slave.status
         builder = behavior._builder
-        slave = builder.slave
 
         behavior.dispatchBuildToSlave(queue_item, logging)
 
