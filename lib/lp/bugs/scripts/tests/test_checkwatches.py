@@ -258,7 +258,8 @@ class TestSerialScheduler(TestSchedulerBase, unittest.TestCase):
         self.scheduler.run()
 
 
-class TestTwistedThreadScheduler(TestSchedulerBase, unittest.TestCase):
+class TestTwistedThreadScheduler(
+    TestSchedulerBase, ZopeTestInSubProcess, unittest.TestCase):
     """Test TwistedThreadScheduler.
 
     By default, updateBugTrackers() runs jobs serially, but a
