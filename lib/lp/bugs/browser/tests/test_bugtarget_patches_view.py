@@ -25,7 +25,7 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.TRIAGED: True,
     BugTaskStatus.INPROGRESS: True,
     BugTaskStatus.FIXCOMMITTED: True,
-    BugTaskStatus.FIXRELEASED: True,
+    BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
     }
 
@@ -53,8 +53,8 @@ class TestBugTargetPatchView(TestBugTargetPatchCountBase):
         self.view = BugsPatchesView(self.product, LaunchpadTestRequest())
 
     def test_status_of_bugs_with_patches_shown(self):
-        # Bugs with patches that have the status INVALID, WONTFIX,
-        # UNKNOWN are not shown in the +patches view; all other
+        # Bugs with patches that have the status FIXRELEASED, INVALID,
+        # WONTFIX, UNKNOWN are not shown in the +patches view; all other
         # bugs are shown.
         number_of_bugs_shown = 0
         for bugtask_status in DISPLAY_BUG_STATUS_FOR_PATCHES:
@@ -76,8 +76,8 @@ class TestBugListingPortletStatsView(TestBugTargetPatchCountBase):
             self.product, LaunchpadTestRequest())
 
     def test_bugs_with_patches_count(self):
-        # Bugs with patches that have the status INVALID, WONTFIX,
-        # UNKNOWN are not counted in
+        # Bugs with patches that have the status FIXRELEASED, INVALID,
+        # WONTFIX, or UNKNOWN are not counted in
         # BugListingPortletStatsView.bugs_with_patches_count, bugs
         # with all other statuses are counted.
         number_of_bugs_shown = 0
