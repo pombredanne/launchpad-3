@@ -10,7 +10,8 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from lp.archiveuploader.permission import can_upload_to_archive
+from lp.archiveuploader.permission import (can_upload_to_archive,
+    check_upload_to_archive)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
@@ -1449,16 +1450,17 @@ class EditBuildRecord(AdminByBuilddAdmin):
         # Primary or partner section here: is the user in question allowed
         # to upload to the respective component, packageset or package? Allow
         # user to retry build if so.
-        archive = self.obj.archive
-        ap_set = getUtility(IArchivePermissionSet)
-        if archive.canUpload(user.person, self.obj.current_component):
-            return True
-        elif ap_set.isSourceUploadAllowed(archive,
-            self.obj.sourcepackagerelease.sourcepackagename, user.person):
+        # strict_component is True because the source package already exists,
+        # otherwise, how can they give it back?
+        check_perms = check_upload_to_archive(user.person,
+            self.obj.distroseries,
+            self.obj.sourcepackagerelease.sourcepackagename, self.obj.archive,
+            self.obj.current_component, self.obj.pocket,
+            strict_component=True)
+        if check_perms == None:
             return True
         else:
-            return archive.canUpload(
-                user.person, self.obj.sourcepackagerelease.sourcepackagename)
+            return False
 
 
 class ViewBuildRecord(EditBuildRecord):
