@@ -125,11 +125,31 @@ class PillarView(LaunchpadView):
     def involved_menu(self):
         return MenuAPI(self).navigation
 
+    @cachedproperty
+    def overview_menu(self):
+        return MenuAPI(self.context).overview
+
     @property
     def enabled_links(self):
         """The enabled involvement links."""
         return sorted([
             link for link in self.involved_menu.values() if link.enabled],
+            key=attrgetter('sort_key'))
+
+    @property
+    def configuration_links(self):
+        """The enabled involvement links."""
+        configuration_names = [
+            'configure_answers',
+            'configure_blueprints',
+            'configure_branches',
+            'configure_bugtracker',
+            'configure_translations',
+            ]
+        configuration_links = [
+            self.overview_menu[name] for name in configuration_names]
+        return sorted([
+            link for link in configuration_links if link.enabled],
             key=attrgetter('sort_key'))
 
     @property

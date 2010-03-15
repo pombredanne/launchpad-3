@@ -12,6 +12,11 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
+    'ProductConfigureAnswersView',
+    'ProductConfigureBlueprintsView',
+    'ProductConfigureBranchesView',
+    'ProductConfigureBugTrackerView',
+    'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
@@ -332,8 +337,28 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def configure_bugtracker(self):
-        text = 'Configure bug tracker'
+        text = 'Configure Launchpad Bugs'
         return Link('+configure-bugtracker', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_branches(self):
+        text = 'Configure Launchpad Branches'
+        return Link('+configure-branches', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_translations(self):
+        text = 'Configure Launchpad Translations'
+        return Link('+configure-translations', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_answers(self):
+        text = 'Configure Launchpad Answers'
+        return Link('+configure-answers', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_blueprints(self):
+        text = 'Configure Launchpad Blueprints'
+        return Link('+configure-blueprints', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -379,7 +404,11 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     facet = 'overview'
     links = [
         'edit',
+        'configure_answers',
+        'configure_blueprints',
+        'configure_branches',
         'configure_bugtracker',
+        'configure_translations',
         'reassign',
         'top_contributors',
         'distributions',
@@ -1134,15 +1163,23 @@ class ProductBrandingView(BrandingChangeView):
         return canonical_url(self.context)
 
 
-class ProductConfigureBugTrackerView(ReturnToReferrerMixin,
-                                     LaunchpadEditFormView):
+class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
+    implements(IProductEditMenu)
+    schema = IProduct
+
+    @property
+    def page_title(self):
+        return self.label
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+
+class ProductConfigureBugTrackerView(ProductConfigureBase):
     """View class to configure the bug tracker for a project."""
 
-    implements(IProductEditMenu)
-
     label = "Configure bug tracker"
-    page_title = label
-    schema = IProduct
     field_names = [
         "bugtracker",
         "enable_bug_expiration",
@@ -1162,9 +1199,41 @@ class ProductConfigureBugTrackerView(ReturnToReferrerMixin,
         if bugtracker is None or IBugTracker.providedBy(bugtracker):
             data['enable_bug_expiration'] = False
 
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
+
+class ProductConfigureBranchesView(ProductConfigureBase):
+    """View class to configure the Launchpad Branches for a project."""
+
+    label = "Configure Launchpad Branches"
+    field_names = [
+        "official_codehosting",
+        ]
+
+
+class ProductConfigureBlueprintsView(ProductConfigureBase):
+    """View class to configure the Launchpad Blueprints for a project."""
+
+    label = "Configure Launchpad Blueprints"
+    field_names = [
+        "official_blueprints",
+        ]
+
+
+class ProductConfigureTranslationsView(ProductConfigureBase):
+    """View class to configure the Launchpad Translations for a project."""
+
+    label = "Configure Launchpad Translations"
+    field_names = [
+        "official_rosetta",
+        ]
+
+
+class ProductConfigureAnswersView(ProductConfigureBase):
+    """View class to configure the Launchpad Answers for a project."""
+
+    label = "Configure Launchpad Answers"
+    field_names = [
+        "official_answers",
+        ]
 
 
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
@@ -1180,10 +1249,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "summary",
         "description",
         "project",
-        "official_codehosting",
-        "official_blueprints",
-        "official_rosetta",
-        "official_answers",
         "homepageurl",
         "sourceforgeproject",
         "freshmeatproject",

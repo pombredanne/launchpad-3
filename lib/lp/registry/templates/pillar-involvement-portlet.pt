@@ -34,6 +34,8 @@
   </ul>
 
   <ul style="padding-top: 1em">
-    <li tal:content="structure overview_menu/configure_bugtracker/fmt:link" />
+    <li tal:repeat="link view/configuration_links">
+      <a tal:replace="structure link/fmt:link" />
+    </li>
   </ul>
 </div>
