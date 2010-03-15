@@ -22,11 +22,14 @@ import os
 
 from twisted.internet import defer, reactor
 from twisted.python import log
+from twisted.web import xmlrpc
+
+from canonical.config import config
+from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor)
 from lp.services.scripts.base import LaunchpadScript
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class CodeImportWorker(LaunchpadScript):
@@ -35,22 +38,30 @@ class CodeImportWorker(LaunchpadScript):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
         set_up_oops_reporting(name, mangle_stdout=True)
 
+    def _init_db(self, implicit_begin, isolation):
+        # This script doesn't access the database.
+        pass
+
     def main(self):
+        arg, = self.args
+        job_id = int(arg)
         # XXX: MichaelHudson 2008-05-07 bug=227586: Setting up the component
         # architecture overrides $GNUPGHOME to something stupid.
         os.environ['GNUPGHOME'] = ''
-        reactor.callWhenRunning(self._run_reactor)
+        reactor.callWhenRunning(self._do_import, job_id)
         reactor.run()
 
-    def _run_reactor(self):
-        defer.maybeDeferred(self._main).addErrback(
+    def _do_import(self, job_id):
+        defer.maybeDeferred(self._main, job_id).addErrback(
             log.err).addCallback(
             lambda ignored: reactor.stop())
 
-    def _main(self):
-        arg, = self.args
-        return CodeImportWorkerMonitor(int(arg), self.logger).run()
+    def _main(self, job_id):
+        worker = CodeImportWorkerMonitor(
+            job_id, self.logger,
+            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
+        return worker.run()
 
 if __name__ == '__main__':
-    script = CodeImportWorker('codeimportworker', dbuser='codeimportworker')
+    script = CodeImportWorker('codeimportworker')
     script.run()
