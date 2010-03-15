@@ -220,10 +220,11 @@ class ICodeImportJobWorkflow(Interface):
             display for diagnostics. May be None.
         :precondition: `import_job`.state == RUNNING.
         :postcondition: `import_job` is deleted.
-        :postcondition: `code_import.import_job` is not None.
+        :postcondition: `code_import.import_job` is not None unless the job
+            has failed more than consecutive_failure_limit times in a row.
         :postcondition: `code_import.import_job.date_due` is
-            import_job.date_due + code_import.effective_update_interval`.
-            XXX.
+            import_job.date_due + code_import.effective_update_interval`, with
+            scaling to retry failing imports less often.
         :postcondition: A `CodeImportResult` was created.
         :postcondition: A FINISH `CodeImportEvent` was created.
         """
