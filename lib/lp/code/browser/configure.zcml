@@ -1099,5 +1099,16 @@
         attribute_to_parent="recipe"
         path_expression="string:+build/${id}"
         rootsite="code" />
-
+    <facet facet="branches">
+        <browser:defaultView
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            name="+index"
+            layer="canonical.launchpad.layers.CodeLayer"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeBuildView"
+            name="+index"
+            template="../templates/sourcepackagerecipe-index.pt"
+            permission="zope.Public"/>
+    </facet>
 </configure>

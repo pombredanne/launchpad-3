@@ -80,6 +80,8 @@ class ISourcePackageRecipe(IHasOwner):
         IBranch, title=_("The person who created this recipe"), readonly=True)
     deb_version_template = TextLine()
 
+    builds = Attribute("boo")
+
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
 

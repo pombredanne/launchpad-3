@@ -21,6 +21,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import _SourcePackageRecipeData
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
@@ -118,3 +119,7 @@ class SourcePackageRecipe(Storm):
             self, requester, archive)
         build.queueBuild()
         return build
+
+    def builds(self):
+        return Store.of(self).find(SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.recipe==self)

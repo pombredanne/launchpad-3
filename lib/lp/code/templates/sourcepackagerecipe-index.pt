@@ -21,8 +21,16 @@
 
 
 <div metal:fill-slot="main">
-    <h1 tal:content="context/name">Recipe Name</h1>
-    <h2>Description</h2>
+    <div class="yui-g first">
+    <div class="portlet">
+      <h2>Description</h2>
+      This recipe builds a foo for disto bar, with my secret squirrel changes.
+    </div>
+    </div>
+    <div class="yui-g">
+    <div class="yui-u first">
+    <div class="portlet">
+    <h2>Recipe Information</h2>
      <div class="two-column-list">
 
        <dl id="owner">
@@ -47,9 +55,26 @@
          </dd>
        </dl>
      </div>
-     <h2>Recipe contents</h2>
-     <pre tal:content="context/builder_recipe" />
-    </div>
+   </div>
+   </div>
+  <div class="yui-u">
+  <div class="portlet">
+   <h2>Build records</h2>
+     <ul>
+     <li tal:repeat="build context/builds">
+     <tal:status replace="build/@@+index/status" />
+     <tal:date replace="build/@@+index/date" />
+     </li>
+   </ul>
+  </div>
+  </div>
+  </div>
+
+    <div class='portlet'>
+      <h2>Recipe contents</h2>
+      <pre tal:content="context/builder_recipe" />
+  </div>
+  </div>
 
 </body>
 </html>
