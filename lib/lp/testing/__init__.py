@@ -625,16 +625,24 @@ class ZopeTestInSubProcess:
             fdwrite.flush()
             sys.stdout.flush()
             sys.stderr.flush()
-            # Exit hard.
+            # Exit hard to avoid running onexit handlers and to avoid
+            # anything that could suppress SystemExit; this exit must
+            # not be prevented.
             os._exit(0)
         else:
             # Parent.
             os.close(pwrite)
             fdread = os.fdopen(pread, 'rU')
-            # Accept the result from the child process. Skip all the
-            # Zope-specific result stuff by passing a super() of the
-            # result.
+            # Skip all the Zope-specific result stuff by using a
+            # super() of the result. This is because the Zope result
+            # object calls testSetUp() and testTearDown() on the
+            # layer, and handles post-mortem debugging. These things
+            # do not make sense in the parent process. More
+            # immediately, it also means that the results are not
+            # reported twice; they are reported on stdout by the child
+            # process, so they need to be suppressed here.
             result = super(ZopeTestResult, result)
+            # Accept the result from the child process.
             protocol = subunit.TestProtocolServer(result)
             protocol.readFrom(fdread)
             fdread.close()
