@@ -481,11 +481,13 @@ class CompletePackageUpload:
             return self.sources[0].sourcepackagerelease.upload_changesfile
         return self.context.changesfile
 
+    @property
     def package_sets(self):
         assert self.sourcepackagerelease, \
             "Can only be used on a source upload."
         return ' '.join(ps.name for ps in
             getUtility(IPackagesetSet).setsIncludingSource(
                 self.sourcepackagerelease.sourcepackagename,
+                distroseries=self.distroseries,
                 direct_inclusion=True))
 
