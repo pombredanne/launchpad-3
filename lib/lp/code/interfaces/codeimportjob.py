@@ -139,13 +139,18 @@ class ICodeImportJobSetPublic(Interface):
 class ICodeImportJobWorkflow(Interface):
     """Utility to manage `CodeImportJob` objects through their life cycle."""
 
-    def newJob(code_import, interval=datetime.timedelta(0)):
+    def newJob(code_import, interval=None):
         """Create a `CodeImportJob` associated with a reviewed `CodeImport`.
 
         Call this method from `CodeImport.updateFromData` when the
         review_status of `code_import` changes to REVIEWED.
 
         :param code_import: `CodeImport` object.
+        :param interval: Schedule the job this far ahead of the start of the
+            last update of this import.  Defaults to
+            ``code_import.effective_update_interval``.  This parameter is
+            ignored and the job scheduled for right now if this is the first
+            run of the import.
         :precondition: `code_import` has REVIEWED review_status.
         :precondition: `code_import` has no associated `CodeImportJob`.
         :return: A new `CodeImportJob` object associated to `code_import`.
