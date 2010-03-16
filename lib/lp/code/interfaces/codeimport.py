@@ -104,19 +104,19 @@ class ICodeImport(Interface):
     review_status = exported(
         Choice(
             title=_("Review Status"), vocabulary=CodeImportReviewStatus,
-            default=CodeImportReviewStatus.NEW,
+            default=CodeImportReviewStatus.NEW, readonly=True,
             description=_("Before a code import is performed, it is reviewed."
                 " Only reviewed imports are processed.")))
 
     rcs_type = exported(
-        Choice(title=_("Type of RCS"),
+        Choice(title=_("Type of RCS"), readonly=True,
             required=True, vocabulary=RevisionControlSystems,
             description=_(
                 "The version control system to import from. "
                 "Can be CVS or Subversion.")))
 
     url = exported(
-        URIField(title=_("URL"), required=False,
+        URIField(title=_("URL"), required=False, readonly=True,
             description=_("The URL of the VCS branch."),
             allowed_schemes=["http", "https", "svn", "git"],
             allow_userinfo=False, # Only anonymous access is supported.
@@ -126,19 +126,19 @@ class ICodeImport(Interface):
             trailing_slash=False)) # See http://launchpad.net/bugs/56357.
 
     cvs_root = exported(
-        TextLine(title=_("Repository"), required=False,
+        TextLine(title=_("Repository"), required=False, readonly=True,
             constraint=validate_cvs_root,
             description=_("The CVSROOT. "
                 "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome")))
 
     cvs_module = exported(
-        TextLine(title=_("Module"), required=False,
+        TextLine(title=_("Module"), required=False, readonly=True,
             constraint=validate_cvs_module,
             description=_("The path to import within the repository."
                 " Usually, it is the name of the project.")))
 
     date_last_successful = exported(
-        Datetime(title=_("Last successful"), required=False))
+        Datetime(title=_("Last successful"), required=False, readonly=True))
 
     update_interval = Timedelta(
         title=_("Update interval"), required=False, description=_(
