@@ -71,6 +71,10 @@ class ISourcePackageRecipe(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe."))
 
+    description = Text(
+        title=_('Description'), required=False,
+        description=_('A short description of the recipe.'))
+
     builder_recipe = Attribute(
         _("The bzr-builder data structure for the recipe."))
 

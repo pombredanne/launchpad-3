@@ -58,6 +58,7 @@ class SourcePackageRecipe(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     name = Unicode(allow_none=True)
+    description = StringCol(dbName='description')
 
     @property
     def _recipe_data(self):
