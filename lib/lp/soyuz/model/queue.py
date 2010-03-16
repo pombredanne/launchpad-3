@@ -1,4 +1,3 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -218,16 +217,76 @@ class PackageUpload(SQLBase):
             except QueueSourceAcceptError, info:
                 raise QueueInconsistentStateError(info)
 
-        for build in self.builds:
-            # as before, but for QueueBuildAcceptError
-            build.verifyBeforeAccept()
+        self._checkForBinariesinDestinationArchive(
+            [queue_build.build for queue_build in self.builds])
+        for queue_build in self.builds:
             try:
-                build.checkComponentAndSection()
+                queue_build.checkComponentAndSection()
             except QueueBuildAcceptError, info:
                 raise QueueInconsistentStateError(info)
 
         # if the previous checks applied and pass we do set the value
         self.status = PassthroughStatusValue(PackageUploadStatus.ACCEPTED)
+
+    def _checkForBinariesinDestinationArchive(self, builds):
+        """
+        Check for existing binaries (in destination archive) for all binary
+        uploads to be accepted.
+
+        Before accepting binary uploads we check whether any of the binaries
+        already exists in the destination archive and raise an exception
+        (QueueInconsistentStateError) if this is the case.
+
+        The only way to find pre-existing binaries is to match on binary
+        package file names.
+        """
+        if len(builds) == 0:
+            return
+
+        # Collects the binary file names for all builds.
+        inner_query = """
+            SELECT DISTINCT lfa.filename
+            FROM
+                binarypackagefile bpf, binarypackagerelease bpr,
+                libraryfilealias lfa
+            WHERE
+                bpr.build IN %s
+                AND bpf.binarypackagerelease = bpr.id
+                AND bpf.libraryfile = lfa.id
+        """ % sqlvalues([build.id for build in builds])
+
+        # Check whether any of the binary file names have already been
+        # published in the destination archive.
+        query = """
+            SELECT DISTINCT lfa.filename
+            FROM
+                binarypackagefile bpf, binarypackagepublishinghistory bpph,
+                distroarchseries das, distroseries ds, libraryfilealias lfa
+            WHERE
+                bpph.archive = %s
+                AND bpph.distroarchseries = das.id
+                AND bpph.dateremoved IS NULL
+                AND das.distroseries = ds.id
+                AND ds.distribution = %s
+                AND bpph.binarypackagerelease = bpf.binarypackagerelease
+                AND bpf.libraryfile = lfa.id
+                AND lfa.filename IN (%%s)
+        """ % sqlvalues(self.archive, self.distroseries.distribution)
+        # Inject the inner query.
+        query %= inner_query
+
+        store = Store.of(self)
+        result_set = store.execute(query)
+        known_filenames = [row[0] for row in result_set.get_all()]
+
+        # Do any of the files to be uploaded already exist in the destination
+        # archive?
+        if len(known_filenames) > 0:
+            filename_list = "\n\t%s".join(
+                [filename for filename in known_filenames])
+            raise QueueInconsistentStateError(
+                'The following files are already published in %s:\n%s' % (
+                    self.archive.displayname, filename_list))
 
     def setDone(self):
         """See `IPackageUpload`."""
@@ -1334,31 +1393,6 @@ class PackageUploadBuild(SQLBase):
             # At this point (uploads are already processed) sections are
             # guaranteed to exist in the DB. We don't care if sections are
             # not official.
-
-    def verifyBeforeAccept(self):
-        """See `IPackageUploadBuild`."""
-        distribution = self.packageupload.distroseries.distribution
-        known_filenames = []
-        # Check if the uploaded binaries are already published in the archive.
-        for binary_package in self.build.binarypackages:
-            for binary_file in binary_package.files:
-                try:
-                    published_binary = distribution.getFileByName(
-                        binary_file.libraryfile.filename, source=False,
-                        archive=self.packageupload.archive)
-                except NotFoundError:
-                    # Only unknown files are ok.
-                    continue
-
-                known_filenames.append(binary_file.libraryfile.filename)
-
-        # If any of the uploaded files are already present we have a problem.
-        if len(known_filenames) > 0:
-            filename_list = "\n\t%s".join(
-                [filename for filename in known_filenames])
-            raise QueueInconsistentStateError(
-                'The following files are already published in %s:\n%s' % (
-                    self.packageupload.archive.displayname, filename_list))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""

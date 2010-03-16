@@ -13,6 +13,7 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
+    'findCopyright',
     ]
 
 import apt_pkg
@@ -25,6 +26,11 @@ import tempfile
 
 from zope.component import getUtility
 
+from canonical.encoding import guess as guess_encoding
+from canonical.launchpad.interfaces import (
+    GPGVerificationError, IGPGHandler, IGPGKeySet,
+    ISourcePackageNameSet, NotFoundError)
+from canonical.librarian.utils import copy_and_close
 from lp.archiveuploader.nascentuploadfile import (
     UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
 from lp.archiveuploader.tagfiles import (
@@ -33,15 +39,13 @@ from lp.archiveuploader.utils import (
     determine_source_file_type, get_source_file_extension,
     ParseMaintError, prefix_multi_line_string, re_is_component_orig_tar_ext,
     re_issource, re_valid_pkg_name, re_valid_version, safe_fix_maintainer)
-from canonical.encoding import guess as guess_encoding
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
-from canonical.launchpad.interfaces import (
-    GPGVerificationError, IGPGHandler, IGPGKeySet,
-    ISourcePackageNameSet, NotFoundError)
-from canonical.librarian.utils import copy_and_close
 
 
 class SignableTagFile:
@@ -521,18 +525,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # XXX cprov 20070713: We should access only the expected directory
         # name (<sourcename>-<no_epoch(no_revision(version))>).
 
-        # Instead of trying to predict the unpacked source directory name,
-        # we simply use glob to retrive everything like:
-        # 'tempdir/*/debian/copyright'
-        globpath = os.path.join(tmpdir, "*", "debian/copyright")
-        for fullpath in glob.glob(globpath):
-            if not os.path.exists(fullpath):
-                continue
-            self.logger.debug("Copying copyright contents.")
-            self.copyright = open(fullpath).read().strip()
-
-        if self.copyright is None:
-            yield UploadWarning("No copyright file found.")
+        for error in findCopyright(self, tmpdir, self.logger):
+            yield error
 
         self.logger.debug("Cleaning up source tree.")
         try:
@@ -554,7 +548,36 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         self.logger.debug("Done")
 
-    def storeInDatabase(self):
+    def findBuild(self):
+        """Find and return the SourcePackageRecipeBuild, if one is specified.
+
+        If by any chance an inconsistent build was found this method will
+        raise UploadError resulting in a upload rejection.
+        """
+        build_id = getattr(self.policy.options, 'buildid', None)
+        if build_id is None:
+            return None
+
+        build = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
+
+        # The master verifies the status to confirm successful upload.
+        build.buildstate = BuildStatus.FULLYBUILT
+        # If this upload is successful, any existing log is wrong and
+        # unuseful.
+        build.upload_log = None
+
+        # Sanity check; raise an error if the build we've been
+        # told to link to makes no sense.
+        if (build.pocket != self.policy.pocket or
+            build.distroseries != self.policy.distroseries or
+            build.archive != self.policy.archive):
+            raise UploadError(
+                "Attempt to upload source specifying "
+                "recipe build %s, where it doesn't fit." % build.id)
+
+        return build
+
+    def storeInDatabase(self, build):
         """Store DSC information as a SourcePackageRelease record.
 
         It reencodes all fields extracted from DSC, the simulated_changelog
@@ -599,6 +622,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             changelog_entry=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,
+            source_package_recipe_build=build,
             copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
             )
@@ -641,6 +665,35 @@ class DSCUploadedFile(NascentUploadFile):
             self.checkSizeAndCheckSum()
         except UploadError, error:
             yield error
+
+
+def findCopyright(dsc_file, source_dir, logger):
+    """Find and store any debian/copyright.
+    
+    :param dsc_file: A DSCFile object where the copyright will be stored.
+    :param source_dir: The directory where the source was extracted.
+    :param logger: A logger object for debug output.
+    """
+    # Instead of trying to predict the unpacked source directory name,
+    # we simply use glob to retrive everything like:
+    # 'tempdir/*/debian/copyright'
+    globpath = os.path.join(source_dir, "*", "debian/copyright")
+    for fullpath in glob.glob(globpath):
+        if not os.path.exists(fullpath):
+            continue
+        if os.stat(fullpath).st_size > 10485760:
+            yield UploadError(
+                "debian/copyright file too large, 10MiB max")
+            return
+        if os.path.islink(fullpath):
+            yield UploadError(
+                "Symbolic link for debian/copyright not allowed")
+            return
+        logger.debug("Copying copyright contents.")
+        dsc_file.copyright = open(fullpath).read().strip()
+
+    if dsc_file.copyright is None:
+        yield UploadWarning("No copyright file found.")
 
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,

@@ -7,6 +7,7 @@ from datetime import timedelta
 import transaction
 import unittest
 
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import ZopelessDatabaseLayer
 from lp.translations.browser.sourcepackage import (
@@ -15,13 +16,13 @@ from lp.translations.browser.productseries import (
     ProductSeriesTranslationsExportView)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
+from lp.translations.model.poexportrequest import POExportRequest
 from lp.testing import TestCaseWithFactory
 
 
 def wipe_queue(queue):
     """Erase all export queue entries."""
-    while queue.entry_count > 0:
-        queue.popRequest()
+    IMasterStore(POExportRequest).execute("DELETE FROM POExportRequest")
 
 
 class BaseExportViewMixin(TestCaseWithFactory):

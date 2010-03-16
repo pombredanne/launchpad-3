@@ -822,10 +822,10 @@ class IBugTaskSearchBase(Interface):
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
     has_branches = Bool(
-        title=_('Show only bugs with linked branches'), required=False,
+        title=_('Show bugs with linked branches'), required=False,
         default=True)
     has_no_branches = Bool(
-        title=_('Show only bugs without linked branches'), required=False,
+        title=_('Show bugs without linked branches'), required=False,
         default=True)
 
 

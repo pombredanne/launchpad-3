@@ -13,7 +13,7 @@ distributions.
 The user is informed when no matches are found.
 
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'application-summary'))
+    ...     find_tag_by_id(anon_browser.contents, 'no-matches'))
     No projects matching ...whizzbar... were found...
 
 Launchpad shows up to config.launchpad.default_batch_size results; if there
@@ -31,21 +31,20 @@ the user to refine his search.
     >>> anon_browser.url
     'http://launchpad.dev/projects/+index?text=ubuntu'
 
-    >>> tags = find_tags_by_class(
-    ...     anon_browser.contents, "informational message")
-    >>> for tag in tags:
-    ...   print tag.renderContents()
-    More than 5 projects
-    were found, so we're displaying only the ones that are most relevant
-    to your search terms.
-    If the project you are looking for is not on the list below, please
-    do another search with more relevant search terms.
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(find_tag_by_id(content, 'search-summary'))
+    6 projects found matching ...ubuntu..., showing the most relevant 5
+
+    >>> print extract_text(find_tag_by_id(content, 'too-many-matches'))
+    More than 5 projects were found.
+    You can do another search with more relevant search terms.
+
+A lower search form is shown when there are matches.
+
+    >>> print find_tag_by_id(content, 'project-search-lower').name
+    form
 
 The search results contain projects, project-groups, and distributions.
-
-    >>> print extract_text(
-    ...     find_main_content(anon_browser.contents).findAll('p')[1])
-    6 projects found matching ...ubuntu..., showing the most relevant 5
 
     >>> def print_search_results(abrowser):
     ...     search_results = find_tag_by_id(
