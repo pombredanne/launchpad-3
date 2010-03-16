@@ -42,8 +42,6 @@ We can get some information about the import using this URL.
     >>> representation = response.jsonBody()
     >>> print representation['self_link'] == import_url
     True
-    >>> print representation['owner_link']
-    http://.../~import-owner
     >>> print representation['branch_link']
     http://.../~import-owner/scruff/import
     >>> print representation['review_status']

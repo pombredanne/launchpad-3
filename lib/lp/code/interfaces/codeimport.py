@@ -80,11 +80,10 @@ class ICodeImport(Interface):
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
 
-    owner = exported(
-        PublicPersonChoice(
-            title=_('Owner'), required=True, readonly=False,
-            vocabulary='ValidPersonOrTeam',
-            description=_("The community contact for this import.")))
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True, readonly=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The community contact for this import."))
 
     assignee = PublicPersonChoice(
         title=_('Assignee'), required=False, readonly=False,
