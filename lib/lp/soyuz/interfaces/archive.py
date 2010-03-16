@@ -279,6 +279,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
 
+    arm_builds_allowed = Bool(
+        title=_("Allow ARM builds for this archive"))
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
@@ -413,6 +416,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+    def getBinaryPackageReleaseByFileName(filename):
+        """Return the corresponding `IBinaryPackageRelease` in this context.
+
+        :param filename: The filename to look up.
+        :return: The `IBinaryPackageRelease` with the specified filename,
+            or None if it was not found.
         """
 
     def requestPackageCopy(target_location, requestor, suite=None,
@@ -635,6 +646,20 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: A `ResultSet` of distinct `SourcePackageReleases` for this
             archive.
         """
+
+    def updatePackageDownloadCount(bpr, day, country, count):
+        """Update the daily download count for a given package.
+
+        :param bpr: The `IBinaryPackageRelease` to update the count for.
+        :param day: The date to update the count for.
+        :param country: The `ICountry` to update the count for.
+        :param count: The new download count.
+
+        If there's no matching `IBinaryPackageReleaseDownloadCount` entry,
+        we create one with the given count.  Otherwise we just increase the
+        count of the existing one by the given amount.
+        """
+
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -1104,9 +1129,6 @@ class IArchiveEdit(Interface):
 
     def disable():
         """Disable the archive."""
-
-    arm_builds_allowed = Bool(
-        title=_("Allow ARM builds for this archive"))
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
