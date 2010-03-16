@@ -21,60 +21,57 @@
 
 
 <div metal:fill-slot="main">
-    <div class="yui-g first">
+  <div class="yui-g first">
     <div class="portlet">
       <h2>Description</h2>
-      This recipe builds a foo for disto bar, with my secret squirrel changes.
-    </div>
+        This recipe builds a foo for disto bar, with my Secret Squirrel
+        changes.
+      </div>
     </div>
     <div class="yui-g">
-    <div class="yui-u first">
-    <div class="portlet">
-    <h2>Recipe Information</h2>
-     <div class="two-column-list">
-
-       <dl id="owner">
-         <dt>Owner:</dt>
-         <dd tal:content="structure context/owner/fmt:link" />
-       </dl>
-       <dl id="base-branch">
-         <dt>Base branch:</dt>
-         <dd tal:content="structure context/base_branch/fmt:link"
-         />
-       </dl>
-       <dl id="debian-version">
-         <dt>Debian version:</dt>
-         <dd tal:content="context/deb_version_template" />
-       </dl>
-       <dl id="distros">
-         <dt>Distros:</dt>
-         <dd>
-         <ul>
-             <li tal:content="structure context/distroseries/fmt:link" />
-         </ul>
-         </dd>
-       </dl>
-     </div>
-   </div>
-   </div>
-  <div class="yui-u">
-  <div class="portlet">
-   <h2>Build records</h2>
-     <ul>
-     <li tal:repeat="build context/builds">
-     <tal:status replace="build/@@+index/status" />
-     <tal:date replace="build/@@+index/date" />
-     </li>
-   </ul>
-  </div>
-  </div>
-  </div>
-
+      <div class="yui-u first">
+        <div class="portlet">
+          <h2>Recipe Information</h2>
+          <div class="two-column-list">
+            <dl id="owner">
+              <dt>Owner:</dt>
+              <dd tal:content="structure context/owner/fmt:link" />
+            </dl>
+            <dl id="base-branch">
+              <dt>Base branch:</dt>
+              <dd tal:content="structure context/base_branch/fmt:link" />
+            </dl>
+            <dl id="debian-version">
+              <dt>Debian version:</dt>
+              <dd tal:content="context/deb_version_template" />
+            </dl>
+            <dl id="distros">
+              <dt>Distros:</dt>
+              <dd>
+                <ul>
+                  <li tal:content="structure context/distroseries/fmt:link" />
+                </ul>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <div class="yui-u">
+        <div class="portlet">
+          <h2>Build records</h2>
+          <ul>
+            <li tal:repeat="build context/builds">
+              <tal:status replace="build/@@+index/status" />
+              <tal:date replace="build/@@+index/date" />
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
     <div class='portlet'>
       <h2>Recipe contents</h2>
       <pre tal:content="context/builder_recipe" />
+    </div>
   </div>
-  </div>
-
 </body>
 </html>
