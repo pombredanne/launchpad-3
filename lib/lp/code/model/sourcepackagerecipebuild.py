@@ -38,7 +38,8 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
-    __storm_table__ = 'SourcePackageRecipeBuild' 
+    __storm_table__ = 'SourcePackageRecipeBuild'
+
     policy_name = 'recipe'
 
     implements(IBuildBase, ISourcePackageRecipeBuild)
