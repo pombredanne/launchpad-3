@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BinaryPackageRelease',
     'BinaryPackageReleaseDownloadCount',
-    'BinaryPackageReleaseSet'
+    'BinaryPackageReleaseSet',
     ]
 
 
