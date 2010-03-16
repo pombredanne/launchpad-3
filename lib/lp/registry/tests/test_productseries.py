@@ -17,6 +17,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
+from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 
 
 class TestProductSeriesDrivers(TestCaseWithFactory):
@@ -125,6 +128,71 @@ class TestProductSeriesDrivers(TestCaseWithFactory):
         self.product.project = None
         self.assertContentEqual(
             [self.product_driver], self.series.drivers)
+
+
+class TestProductSeriesSet(TestCaseWithFactory):
+    """Test ProductSeriesSet."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestProductSeriesSet, self).setUp()
+        self.ps_set = getUtility(IProductSeriesSet)
+
+    def _makeSeriesAndBranch(self):
+        self.productseries = self.factory.makeProductSeries()
+        self.branch = self.factory.makeProductBranch(
+            self.productseries.product)
+        self.productseries.branch = self.branch
+
+    def test_findByTranslationsImportBranch(self):
+        self._makeSeriesAndBranch()
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+
+        self.assertContentEqual(
+                [self.productseries],
+                self.ps_set.findByTranslationsImportBranch(self.branch))
+
+    def test_findByTranslationsImportBranch_no_autoimport(self):
+        self._makeSeriesAndBranch()
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.NO_IMPORT)
+
+        self.assertContentEqual(
+                [],
+                self.ps_set.findByTranslationsImportBranch(self.branch))
+
+    def test_findByTranslationsImportBranch_no_branch(self):
+        self._makeSeriesAndBranch()
+        self.productseries.branch = None
+
+        self.assertContentEqual(
+                [],
+                self.ps_set.findByTranslationsImportBranch(self.branch))
+
+    def test_findByTranslationsImportBranch_force_imoprt(self):
+        self._makeSeriesAndBranch()
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.NO_IMPORT)
+
+        self.assertContentEqual(
+                [self.productseries],
+                self.ps_set.findByTranslationsImportBranch(self.branch, True))
+
+    def test_findByTranslationsImportBranch_multiple_series(self):
+        self._makeSeriesAndBranch()
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        second_series = self.factory.makeProductSeries(
+            product=self.productseries.product)
+        second_series.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        second_series.branch = self.branch
+
+        self.assertContentEqual(
+                [self.productseries, second_series],
+                self.ps_set.findByTranslationsImportBranch(self.branch))
 
 
 def test_suite():
