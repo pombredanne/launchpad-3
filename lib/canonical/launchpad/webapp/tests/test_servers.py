@@ -1,13 +1,14 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=E1002
+
 __metaclass__ = type
 
 import StringIO
 import unittest
 
 from zope.component import getGlobalSiteManager, getUtility
-from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.interface import implements, Interface
 
@@ -260,7 +261,6 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
         # named 'foo'.
         class GenericCollection:
             implements(IGenericCollection)
-            pass
 
         class MyRootResource(RootResource):
             def _build_top_level_objects(self):
@@ -468,6 +468,19 @@ class TestLaunchpadBrowserRequest(TestCase):
             request.query_string_params,
             "The query_string_params dict correctly interprets encoded "
             "parameters.")
+
+    def test_isRedirectInhibited_without_cookie(self):
+        # When the request doesn't include the inhibit_beta_redirect cookie,
+        # isRedirectInhibited() returns False.
+        request = LaunchpadBrowserRequest('', {})
+        self.assertFalse(request.isRedirectInhibited())
+
+    def test_isRedirectInhibited_with_cookie(self):
+        # When the request includes the inhibit_beta_redirect cookie,
+        # isRedirectInhibited() returns True.
+        request = LaunchpadBrowserRequest(
+            '', dict(HTTP_COOKIE="inhibit_beta_redirect=1"))
+        self.assertTrue(request.isRedirectInhibited())
 
 
 def test_suite():
