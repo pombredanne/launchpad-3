@@ -57,7 +57,7 @@ Helper: find the current build's summary on a browser's current page.
     ...     return find_tag_by_id(browser.contents, 'current-build-summary')
 
 
-== Default access ==
+== Show summary ==
 
 The job's summary shows that what type of job this is.  It also links
 to the branch.
