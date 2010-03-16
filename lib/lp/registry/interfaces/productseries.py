@@ -334,6 +334,20 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no such series.
         """
 
+    def findByTranslationsImportBranch(
+            branch, force_translations_upload=False):
+        """Find all series importing from branch.
+
+        Returns all product series that have the given branch set as their
+        branch and that have translation imports enabled on it.
+        :param branch: The branch to filter for.
+        XXX: henninge 2010-03-16 bug=521095: The following parameter should
+        go away once force_translations_upload becomes a product series
+        instead of a boolean.
+        :param force_translations_upload: Actually ignore if translations are
+        enabled for this series.
+        """
+
 
 class NoSuchProductSeries(NameLookupFailed):
     """Raised when we try to find a product that doesn't exist."""
