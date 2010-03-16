@@ -6,13 +6,17 @@ __metaclass__ = type
 
 from copy import copy
 from datetime import datetime, timedelta
-import Queue as queue
 import socket
 import sys
 import threading
 import time
 
 import pytz
+
+from twisted.internet import reactor
+from twisted.internet.defer import DeferredList
+from twisted.internet.threads import deferToThreadPool
+from twisted.python.threadpool import ThreadPool
 
 from zope.component import getUtility
 from zope.event import notify
@@ -271,44 +275,28 @@ class BugWatchUpdater(object):
         self._logout()
 
     def updateBugTrackers(
-        self, bug_tracker_names=None, batch_size=None, num_threads=1):
+        self, bug_tracker_names=None, batch_size=None, scheduler=None):
         """Update all the bug trackers that have watches pending.
 
         If bug tracker names are specified in bug_tracker_names only
         those bug trackers will be checked.
 
-        The updates are run in threads, so that long running updates
-        don't block progress. However, by default the number of
-        threads is 1, to help with testing.
+        A custom scheduler can be passed in. This should inherit from
+        `BaseScheduler`. If no scheduler is given, `SerialScheduler`
+        will be used, which simply runs the jobs in order.
         """
         self.log.debug("Using a global batch size of %s" % batch_size)
 
-        # Put all the work on the queue. This is simpler than drip-feeding the
-        # queue, and avoids a situation where a worker thread exits because
-        # there's no work left and the feeding thread hasn't been scheduled to
-        # add work to the queue.
-        work = queue.Queue()
+        # Default to using the very simple SerialScheduler.
+        if scheduler is None:
+            scheduler = SerialScheduler()
+
+        # Schedule all the jobs to run.
         for updater in self._bugTrackerUpdaters(bug_tracker_names):
-            work.put(updater)
+            scheduler.schedule(updater, batch_size)
 
-        # This will be run once in each worker thread.
-        def do_work():
-            while True:
-                try:
-                    job = work.get(block=False)
-                except queue.Empty:
-                    break
-                else:
-                    job(batch_size)
-
-        # Start and join the worker threads.
-        threads = []
-        for run in xrange(num_threads):
-            thread = threading.Thread(target=do_work)
-            thread.start()
-            threads.append(thread)
-        for thread in threads:
-            thread.join()
+        # Run all the jobs.
+        scheduler.run()
 
     def updateBugTracker(self, bug_tracker, batch_size):
         """Updates the given bug trackers's bug watches.
@@ -1165,6 +1153,67 @@ class BugWatchUpdater(object):
         self.log.error("%s (%s)" % (message, oops_info.oopsid))
 
 
+class BaseScheduler:
+    """Run jobs according to a policy."""
+
+    def schedule(self, func, *args, **kwargs):
+        """Add a job to be run."""
+        raise NotImplementedError(self.schedule)
+
+    def run(self):
+        """Run the jobs."""
+        raise NotImplementedError(self.run)
+
+
+class SerialScheduler(BaseScheduler):
+    """Run jobs in order, one at a time."""
+
+    def __init__(self):
+        self._jobs = []
+
+    def schedule(self, func, *args, **kwargs):
+        self._jobs.append((func, args, kwargs))
+
+    def run(self):
+        jobs, self._jobs = self._jobs[:], []
+        for (func, args, kwargs) in jobs:
+            func(*args, **kwargs)
+
+
+class TwistedThreadScheduler(BaseScheduler):
+    """Run jobs in threads, chaperoned by Twisted."""
+
+    def __init__(self, num_threads, install_signal_handlers=True):
+        """Create a new `TwistedThreadScheduler`.
+
+        :param num_threads: The number of threads to allocate to the
+          thread pool.
+        :type num_threads: int
+
+        :param install_signal_handlers: Whether the Twisted reactor
+          should install signal handlers or not. This is intented for
+          testing - set to False to avoid layer violations - but may
+          be useful in other situations.
+        :type install_signal_handlers: bool
+        """
+        self._thread_pool = ThreadPool(0, num_threads)
+        self._install_signal_handlers = install_signal_handlers
+        self._jobs = []
+
+    def schedule(self, func, *args, **kwargs):
+        self._jobs.append(
+            deferToThreadPool(
+                reactor, self._thread_pool, func, *args, **kwargs))
+
+    def run(self):
+        jobs, self._jobs = self._jobs[:], []
+        jobs_done = DeferredList(jobs)
+        jobs_done.addBoth(lambda ignore: self._thread_pool.stop())
+        jobs_done.addBoth(lambda ignore: reactor.stop())
+        reactor.callWhenRunning(self._thread_pool.start)
+        reactor.run(self._install_signal_handlers)
+
+
 class CheckWatchesCronScript(LaunchpadCronScript):
 
     def add_my_options(self):
@@ -1203,9 +1252,16 @@ class CheckWatchesCronScript(LaunchpadCronScript):
         else:
             # Otherwise we just update those watches that need updating,
             # and we let the BugWatchUpdater decide which those are.
+            if self.options.jobs <= 1:
+                # Use the default scheduler.
+                scheduler = None
+            else:
+                # Run jobs in parallel.
+                scheduler = TwistedThreadScheduler(self.options.jobs)
             updater.updateBugTrackers(
-                self.options.bug_trackers, self.options.batch_size,
-                self.options.jobs)
+                self.options.bug_trackers,
+                self.options.batch_size,
+                scheduler)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)
