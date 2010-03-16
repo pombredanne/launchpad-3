@@ -607,6 +607,11 @@ class ZopeTestInSubProcess:
     """
 
     def run(self, result):
+        # The result must be an instance of Zope's TestResult because
+        # we construct a super() of it later on. Other result classes
+        # could be supported with a more general approach, but it's
+        # unlikely that any one approach is going to work for every
+        # class. It's better to fail early and draw attention here.
         assert isinstance(result, ZopeTestResult), (
             "result must be a Zope result object, not %r." % (result,))
         pread, pwrite = os.pipe()
