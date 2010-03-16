@@ -50,16 +50,7 @@ subscribers of the merge proposal.
 
     >>> from lp.code.interfaces.branchmergeproposal import (
     ...     ICodeReviewCommentEmailJobSource)
-
-Initially the source branch isn't consisered ready as it has no revisions, so
-the jobs aren't considered ready.
-
-    >>> jobs = list(getUtility(ICodeReviewCommentEmailJobSource).iterReady())
-    >>> print len(jobs)
-    0
-
-Add some revisions to the source branch to make the jobs ready.
-
+    >>> # Needed for now to make the iterReady show the jobs.
     >>> factory.makeRevisionsForBranch(merge_proposal.source_branch)
     >>> jobs = list(getUtility(ICodeReviewCommentEmailJobSource).iterReady())
     >>> print len(jobs)
