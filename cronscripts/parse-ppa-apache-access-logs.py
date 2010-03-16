@@ -39,7 +39,7 @@ class ParsePPAApacheLogs(ParseApacheLogs):
         return get_ppa_file_key(path)
 
     def getDownloadCountUpdater(self, file_id):
-        #"""See `ParseApacheLogs`."""
+        """See `ParseApacheLogs`."""
         person = self.person_set.getByName(file_id[0])
         if person is None:
             return
