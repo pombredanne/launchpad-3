@@ -4,13 +4,15 @@
 """Unit tests for TranslationTemplatesBuildBehavior."""
 
 import logging
+import os
 from StringIO import StringIO
+import tarfile
 from unittest import TestLoader
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -20,6 +22,10 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 
 
 class FakeChrootContent:
@@ -78,12 +84,10 @@ class FakeBuildQueue:
         self.destroySelf = FakeMethod()
 
 
-class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
-    """Test `TranslationTemplatesBuildBehavior`."""
+class TestTTBuildBehaviorBase(TestCaseWithFactory):
+    """Provide common test methods."""
 
-    layer = ZopelessDatabaseLayer
-
-    def _makeBehavior(self):
+    def makeBehavior(self):
         """Create a TranslationTemplatesBuildBehavior.
 
         Anything that might communicate with build slaves and such
@@ -95,6 +99,12 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         behavior._builder = FakeBuilder(slave)
         return behavior
 
+
+class TestTranslationTemplatesBuildBehavior(TestTTBuildBehaviorBase):
+    """Test `TranslationTemplatesBuildBehavior`."""
+
+    layer = ZopelessDatabaseLayer
+
     def _getBuildQueueItem(self, behavior):
         """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
         job = removeSecurityProxy(behavior.buildfarmjob.job)
@@ -104,7 +114,7 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         # dispatchBuildToSlave ultimately causes the slave's build
         # method to be invoked.  The slave receives the URL of the
         # branch it should build from.
-        behavior = self._makeBehavior()
+        behavior = self.makeBehavior()
         behavior._getChroot = FakeChroot
         buildqueue_item = self._getBuildQueueItem(behavior)
 
@@ -128,14 +138,14 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
         distroarchseries.addOrUpdateChroot(fake_chroot_file)
 
-        behavior = self._makeBehavior()
+        behavior = self.makeBehavior()
         chroot = behavior._getChroot()
 
         self.assertNotEqual(None, chroot)
         self.assertEqual(fake_chroot_file, chroot)
 
     def test_readTarball(self):
-        behavior = self._makeBehavior()
+        behavior = self.makeBehavior()
         buildqueue = FakeBuildQueue(behavior)
         path = behavior.templates_tarball_path
         self.assertEqual(
@@ -143,7 +153,7 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
             behavior._readTarball(buildqueue, {path: path}, logging))
 
     def test_updateBuild_WAITING(self):
-        behavior = self._makeBehavior()
+        behavior = self.makeBehavior()
         behavior._getChroot = FakeChroot
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
@@ -161,6 +171,50 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         self.assertEqual(1, queue_item.destroySelf.call_count)
         self.assertEqual(1, builder.cleanSlave.call_count)
         self.assertEqual(0, behavior._uploadTarball.call_count)
+
+
+class TestTTBuildBehaviorTranslationsQueue(TestTTBuildBehaviorBase):
+    """Test uploads to the import queue."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestTTBuildBehaviorTranslationsQueue, self).setUp()
+
+        self.queue = getUtility(ITranslationImportQueue)
+        self.productseries = self.factory.makeProductSeries()
+        self.branch = self.factory.makeProductBranch(
+            self.productseries.product)
+        self.productseries.branch = self.branch
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        self.dummy_tar = os.path.join(
+            os.path.dirname(__file__),'dummy_templates.tar.gz')
+
+    def _getPaths(self, entries):
+        return [entry.path for entry in entries]
+
+    def test_uploadTarball(self):
+        # Files from the tarball end up in the import queue.
+        behavior = self.makeBehavior()
+        behavior._uploadTarball(
+            self.branch, file(self.dummy_tar).read(), None)
+
+        entries = self.queue.getAllEntries(target=self.productseries)
+        self.assertContentEqual(
+            ['po/messages.pot',
+             'po-other/other.pot',
+             'po-thethird/templ3.pot'],
+            self._getPaths(entries))
+
+    def test_uploadTarball_owner(self):
+        # Files from the tarball are owned by the branch owner.
+        behavior = self.makeBehavior()
+        behavior._uploadTarball(
+            self.branch, file(self.dummy_tar).read(), None)
+
+        entries = self.queue.getAllEntries(target=self.productseries)
+        self.assertEqual(self.branch.owner, entries[0].importer)
 
 
 def test_suite():

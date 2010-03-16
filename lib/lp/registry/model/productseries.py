@@ -625,5 +625,5 @@ class ProductSeriesSet:
             conditions.append(
                 import_mode != TranslationsBranchImportMode.NO_IMPORT)
 
-        return Store.of(self).find(ProductSeries, And(*conditions))
+        return Store.of(branch).find(ProductSeries, And(*conditions))
 
