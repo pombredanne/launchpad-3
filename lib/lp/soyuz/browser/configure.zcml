@@ -799,7 +799,7 @@
         attribute_to_parent="archive"
         />
 
-    <!-- XXX JeroenVermeulen 2010-03-13 bug=???: This is buildmaster, not soyuz -->
+    <!-- XXX JeroenVermeulen 2010-03-13 bug=539395: This is buildmaster, not soyuz -->
     <browser:page
         for="lp.buildmaster.interfaces.buildqueue.IBuildQueue"
         name="+current"

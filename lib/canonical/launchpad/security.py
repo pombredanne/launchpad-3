@@ -1522,7 +1522,7 @@ class ViewBuildFarmJob(AuthorizationBase):
 
     def _checkBranchVisibility(self, user=None):
         """Is the user free to view any branches associated with this job?"""
-        if not IBuildFarmBranchJob.isProvidedBy(self.obj):
+        if not IBuildFarmBranchJob.providedBy(self.obj):
             return True
         else:
             return self.obj.branch.visibleByUser(user)
@@ -1531,9 +1531,11 @@ class ViewBuildFarmJob(AuthorizationBase):
         if not self._checkBranchVisibility(user):
             return False
 
-        if IBuildFarmBuildJob.isProvidedBy(self.obj):
+        if IBuildFarmBuildJob.providedBy(self.obj):
             if not self._getBuildPermission().checkAuthenticated(user):
                 return False
+
+        return True
 
     def checkUnauthenticated(self):
         if not self._checkBranchVisibility():
