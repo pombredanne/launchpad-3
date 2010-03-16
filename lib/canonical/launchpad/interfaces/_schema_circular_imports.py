@@ -41,6 +41,7 @@ from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
@@ -96,6 +97,7 @@ patch_plain_parameter_type(
 patch_plain_parameter_type(
     IBranch, 'setTarget', 'source_package', ISourcePackage)
 patch_reference_property(IBranch, 'sourcepackage', ISourcePackage)
+patch_reference_property(IBranch, 'code_import', ICodeImport)
 
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranch['subscribe'].queryTaggedValue(

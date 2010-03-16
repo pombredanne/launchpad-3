@@ -23,6 +23,9 @@ from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry, exported)
+
 
 def validate_cvs_root(cvsroot):
     try:
@@ -60,23 +63,28 @@ def validate_cvs_branch(branch):
 class ICodeImport(Interface):
     """A code import to a Bazaar Branch."""
 
+    export_as_webservice_entry()
+
     id = Int(readonly=True, required=True)
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    branch = Choice(
-        title=_('Branch'), required=True, readonly=True, vocabulary='Branch',
-        description=_("The Bazaar branch produced by the import system."))
+    branch = exported(
+        Choice(
+            title=_('Branch'), required=True, readonly=True,
+            vocabulary='Branch',
+            description=_("The Bazaar branch produced by the import system.")))
 
     registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
 
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The community contact for this import."))
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'), required=True, readonly=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The community contact for this import.")))
 
     assignee = PublicPersonChoice(
         title=_('Assignee'), required=False, readonly=False,
@@ -94,39 +102,44 @@ class ICodeImport(Interface):
         description=_("The series this import is registered as the "
                       "code for, or None if there is no such series."))
 
-    review_status = Choice(
-        title=_("Review Status"), vocabulary=CodeImportReviewStatus,
-        default=CodeImportReviewStatus.NEW,
-        description=_("Before a code import is performed, it is reviewed."
-            " Only reviewed imports are processed."))
+    review_status = exported(
+        Choice(
+            title=_("Review Status"), vocabulary=CodeImportReviewStatus,
+            default=CodeImportReviewStatus.NEW,
+            description=_("Before a code import is performed, it is reviewed."
+                " Only reviewed imports are processed.")))
 
-    rcs_type = Choice(title=_("Type of RCS"),
-        required=True, vocabulary=RevisionControlSystems,
-        description=_(
-            "The version control system to import from. "
-            "Can be CVS or Subversion."))
+    rcs_type = exported(
+        Choice(title=_("Type of RCS"),
+            required=True, vocabulary=RevisionControlSystems,
+            description=_(
+                "The version control system to import from. "
+                "Can be CVS or Subversion.")))
 
-    url = URIField(title=_("URL"), required=False,
-        description=_("The URL of the VCS branch."),
-        allowed_schemes=["http", "https", "svn", "git"],
-        allow_userinfo=False, # Only anonymous access is supported.
-        allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
-        allow_fragment=False, # Fragment makes no sense in Subversion.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
+    url = exported(
+        URIField(title=_("URL"), required=False,
+            description=_("The URL of the VCS branch."),
+            allowed_schemes=["http", "https", "svn", "git"],
+            allow_userinfo=False, # Only anonymous access is supported.
+            allow_port=True,
+            allow_query=False,    # Query makes no sense in Subversion.
+            allow_fragment=False, # Fragment makes no sense in Subversion.
+            trailing_slash=False)) # See http://launchpad.net/bugs/56357.
 
-    cvs_root = TextLine(title=_("Repository"), required=False,
-        constraint=validate_cvs_root,
-        description=_("The CVSROOT. "
-            "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome"))
+    cvs_root = exported(
+        TextLine(title=_("Repository"), required=False,
+            constraint=validate_cvs_root,
+            description=_("The CVSROOT. "
+                "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome")))
 
-    cvs_module = TextLine(title=_("Module"), required=False,
-        constraint=validate_cvs_module,
-        description=_("The path to import within the repository."
-            " Usually, it is the name of the project."))
+    cvs_module = exported(
+        TextLine(title=_("Module"), required=False,
+            constraint=validate_cvs_module,
+            description=_("The path to import within the repository."
+                " Usually, it is the name of the project.")))
 
-    date_last_successful = Datetime(
-        title=_("Last successful"), required=False)
+    date_last_successful = exported(
+        Datetime(title=_("Last successful"), required=False))
 
     update_interval = Timedelta(
         title=_("Update interval"), required=False, description=_(
