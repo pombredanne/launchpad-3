@@ -6,6 +6,7 @@
 
 from datetime import datetime, timedelta
 from pytz import utc
+from unittest import TestLoader
 
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
@@ -210,7 +211,6 @@ class TestBuildQueueSet(TestCaseWithFactory):
         self.assertTrue(
             self.buildqueueset.getActiveBuildJobs().is_empty(),
             "An active build job must have a builder.")
-
 
 
 class TestBuildQueueBase(TestCaseWithFactory):
@@ -1326,3 +1326,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         assign_to_builder(self, 'xxr-daptup', 1, None)
         postgres_build, postgres_job = find_job(self, 'postgres', '386')
         check_estimate(self, postgres_job, 120)
+
+
+def test_suite():
+    return TestLoader().loadTestsFromName(__name__)
