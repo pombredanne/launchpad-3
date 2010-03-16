@@ -38,6 +38,9 @@ from lp.services.job.model.job import Job
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
 
+UTC = timezone('UTC')
+
+
 def normalize_virtualization(virtualized):
     """Jobs with NULL virtualization settings should be treated the
        same way as virtualized jobs."""
@@ -126,7 +129,7 @@ class BuildQueue(SQLBase):
         if date_started is None:
             return None
         else:
-            return datetime.now(timezone('UTC')) - self.date_started
+            return self._now() - self.date_started
 
     def destroySelf(self):
         """Remove this record and associated job/specific_job."""
@@ -474,8 +477,8 @@ class BuildQueue(SQLBase):
 
     @staticmethod
     def _now():
-        """Provide utcnow() while allowing test code to monkey-patch this."""
-        return datetime.utcnow()
+        """Return current time (UTC).  Overridable for test purposes."""
+        return datetime.now(UTC)
 
 
 class BuildQueueSet(object):

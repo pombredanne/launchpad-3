@@ -2,12 +2,5 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
- * New test for BuildQueue.current_build_duration
  * Make sure BuildQueue visibility is tested in stories.
  * Mailing list discussion: set up browser/ and templates/ for buildmaster?
-
-Tests with failures:
-   test_estimation_binary_virtual_headjob (lp.buildmaster.tests.test_buildqueue.TestJobDispatchTimeEstimation)
-   test_min_time_to_next_builder (lp.buildmaster.tests.test_buildqueue.TestMinTimeToNextBuilder)
-   test_min_time_to_next_builder (lp.buildmaster.tests.test_buildqueue.TestMinTimeToNextBuilderMulti)
-

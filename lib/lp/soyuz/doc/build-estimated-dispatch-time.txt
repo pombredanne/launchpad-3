@@ -89,7 +89,7 @@ and not meant to be viewed or modified by an end user.
 The estimated start time for the pending job is either now or lies
 in the future.
 
-    >>> now = datetime.utcnow()
+    >>> now = datetime.now(UTC)
     >>> def job_start_estimate(build):
     ...     return build.buildqueue_record.getEstimatedJobStartTime()
     >>> estimate = job_start_estimate(alsa_build)
@@ -147,7 +147,7 @@ to mark's PPA.
 Since the 'iceweasel' build has a higher score (666) than the 'pmount'
 build (66) its estimated dispatch time is essentially "now".
 
-    >>> now = datetime.utcnow()
+    >>> now = datetime.now(UTC)
     >>> estimate = job_start_estimate(iceweasel_build)
     >>> estimate > now
     True
