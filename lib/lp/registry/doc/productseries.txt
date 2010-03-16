@@ -397,73 +397,44 @@ Now lets put the project back:
     >>> product.project = project.id
     >>> flush_database_updates()
 
-And lets see what happens if we have an explicit driver on any of
-project, product or series:
+And lets see what happens if we have explicit drivers:
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> edgar = getUtility(IPersonSet).getByName('edgar')
-    >>> danner = getUtility(IPersonSet).getByName('danner')
-    >>> jblack = getUtility(IPersonSet).getByName('jblack')
 
-    >>> project.driver = danner
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    danner
+Edgar becomes the driver of the project group and thus also drives the
+series.
 
-    >>> project.driver = None
-    >>> product.driver = edgar
+    >>> project.driver = edgar
     >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     edgar
 
-    >>> project.driver = None
-    >>> product.driver = None
+In addition cprov is made driver of the series. Both are drivers now.
+
     >>> series.driver = cprov
+    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    cprov
+    edgar
+
+With just a driver on the series, the owner of the project group is reported
+as driver, too.
+
+    >>> project.driver = None
     >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     carlos
     cprov
 
-OK, now let's test pairs of drivers:
+Without a poject group, the driver role falls back to the prouct owner.
 
-    >>> project.driver = None
-    >>> product.driver = edgar
-    >>> series.driver = cprov
+    >>> product.project = None
     >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     cprov
-    edgar
-
-    >>> project.driver = mark
-    >>> product.driver = danner
-    >>> series.driver = None
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    danner
     mark
-
-    >>> project.driver = jdub
-    >>> product.driver = None
-    >>> series.driver = edgar
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    edgar
-    jdub
-
-And finally the case where they are all set:
-
-    >>> project.driver = cprov
-    >>> product.driver = danner
-    >>> series.driver = edgar
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    cprov
-    danner
-    edgar
