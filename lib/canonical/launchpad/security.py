@@ -86,6 +86,8 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup, IProjectGroupSet)
+from lp.registry.interfaces.irc import IIrcID
+from lp.registry.interfaces.wikiname import IWikiName
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -1297,6 +1299,11 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
              user.inTeam(translation_group.owner)))
 
 
+class ViewBugTracker(AnonymousAuthorization):
+    """Anyone can view a bug tracker."""
+    usedfor = IBugTracker
+
+
 class EditBugTracker(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
@@ -1360,7 +1367,8 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
-            self.obj.distroseries.main_archive, user.person)
+            self.obj.distroseries.distribution.all_distro_archives,
+            user.person)
         return permissions.count() > 0
 
 
@@ -2226,6 +2234,14 @@ class EditEmailAddress(EditByOwnersOrAdmins):
             return True
         return super(EditEmailAddress, self).checkAccountAuthenticated(
             account)
+
+
+class ViewIrcID(AnonymousAuthorization):
+    usedfor = IIrcID
+
+
+class ViewWikiName(AnonymousAuthorization):
+    usedfor = IWikiName
 
 
 class EditArchivePermissionSet(AuthorizationBase):

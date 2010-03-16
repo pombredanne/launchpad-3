@@ -31,13 +31,12 @@ from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuild)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -321,8 +320,6 @@ patch_reference_property(
 patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
-
-IBuildBase['buildstate'].vocabulary = BuildStatus
 
 patch_reference_property(
     ISourcePackageRelease, 'source_package_recipe_build',
