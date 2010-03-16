@@ -1513,6 +1513,33 @@ class CodeImportFormatterAPI(CustomizableFormatter):
         return url
 
 
+class BuildBaseFormatterAPI(ObjectFormatterAPI):
+    """Adapter providing fmt support for `IBuildBase` objects."""
+    def _composeArchiveReference(self, archive):
+        if archive.is_ppa:
+            return " [%s/%s]" % (
+                cgi.escape(archive.owner.name), cgi.escape(archive.name))
+        else:
+            return ""
+
+    def icon(self, view_name):
+        if not check_permission('launchpad.View', self._context):
+            return '<img src="/@@/processing" alt="[build]" />'
+
+        return BuildImageDisplayAPI(self._context).icon()
+
+    def link(self, view_name, rootsite=None):
+        icon = self.icon(view_name)
+        build = self._context
+        if not check_permission('launchpad.View', build):
+            return '%s private source' % icon
+
+        url = self.url(view_name=view_name, rootsite=rootsite)
+        title = cgi.escape(build.title)
+        archive = self._composeArchiveReference(build.archive)
+        return '<a href="%s">%s%s</a>%s' % (url, icon, title, archive)
+
+
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 

@@ -90,10 +90,6 @@ class IBuildFarmJob(Interface):
             "For job types that do not care about virtualization please "
             "return None."))
 
-    # Really an IBuild; circular import fixed in
-    # _schema_circular_imports.py
-    build = Reference(Interface, title=_("Build"))
-
 
 class ISpecificBuildFarmJobClass(Interface):
     """Class interface provided by `IBuildFarmJob` classes.

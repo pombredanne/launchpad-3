@@ -506,4 +506,3 @@ class BuildRecordsView(LaunchpadView):
     @property
     def no_results(self):
         return self.form_submitted and not self.complete_builds
-

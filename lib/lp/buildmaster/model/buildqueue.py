@@ -14,6 +14,7 @@ __all__ = [
 from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
+from pytz import timezone
 
 from zope.component import getSiteManager, getUtility
 
@@ -120,6 +121,15 @@ class BuildQueue(SQLBase):
     def date_started(self):
         """See `IBuildQueue`."""
         return self.job.date_started
+
+    @property
+    def current_build_duration(self):
+        """See `IBuildQueue`."""
+        date_started = self.date_started
+        if date_started is None:
+            return None
+        else:
+            return datetime.now(timezone('UTC')) - self.date_started
 
     def destroySelf(self):
         """Remove this record and associated job/specific_job."""

@@ -19,10 +19,11 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, ISpecificBuildFarmJobClass)
+    BuildFarmJobType, ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.code.interfaces.branchjob import IBranchJob, IRosettaUploadJobSource
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
@@ -34,7 +35,7 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     Implementation-wise, this is actually a `BranchJob`.
     """
-    implements(IBranchJob, IBuildFarmJob)
+    implements(IBuildFarmBranchJob)
 
     class_job_type = BranchJobType.TRANSLATION_TEMPLATES_BUILD
 
