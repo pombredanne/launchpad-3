@@ -569,8 +569,12 @@ class QueueActionOverride(QueueAction):
         for queue_item in self.items:
             # We delegate to the queue_item itself to override any/all
             # of its sources.
-            queue_item.overrideSource(
-                component, section, [component, queue_item.component])
+            if queue_item.contains_source:
+                queue_item.overrideSource(
+                    component, section, [
+                        component,
+                        queue_item.sourcepackagerelease.component
+                        ])
             self.displayInfo(queue_item)
 
     def _override_binary(self):
