@@ -498,7 +498,7 @@
     <browser:page
         name="+get-involved"
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.registry.browser.product.ProductInvolvementView"
+        class="lp.registry.browser.pillar.ProductInvolvementView"
         facet="overview"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>

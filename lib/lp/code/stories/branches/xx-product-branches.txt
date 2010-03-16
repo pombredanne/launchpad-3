@@ -170,7 +170,7 @@ If the product specifies that it officially uses Launchpad code, then
 the 'Import your project' button is not shown.
 
     >>> admin_browser.open('http://launchpad.dev/gnome-terminal')
-    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getLink('Configure Launchpad Branches').click()
     >>> admin_browser.getControl(
     ...     'Code for this project is published in Bazaar branches '
     ...     'on Launchpad').click()

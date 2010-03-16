@@ -49,17 +49,17 @@ The view provides a list of enabled links that is rendered by the template.
     report_bug ask_question
 
     >>> print view.render()
-    <div id="involvement" class="portlet involvement">
+    <div id="involvement" class="portlet">
       <h2>Get Involved</h2>
-      <ul>
+      <ul class="involvement">
         <li>
-          <a href="..." class="...bugs">Report a bug</a>
+          <a href=... class="...bugs">Report a bug</a>
         </li>
         <li>
-          <a href="..." class="...answers">Ask a question</a>
+          <a href=... class="...answers">Ask a question</a>
         </li>
       </ul>
-    </div>
+    ...
 
 Products are are supported.
 

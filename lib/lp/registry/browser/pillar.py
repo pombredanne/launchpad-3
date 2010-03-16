@@ -134,3 +134,43 @@ class PillarView(LaunchpadView):
 
 provideAdapter(
     InvolvedMenu, [IInvolved], INavigationMenu, name="overview")
+
+
+# This class can't be moved into the browser/product.py file, since
+# the pillar-views.txt test will fail due to the MenuAPI adapter
+# for PillarView.enabled_links not working.
+class ProductInvolvementView(PillarView):
+    """Encourage configuration of involvement links for projects."""
+
+    has_involvement = True
+
+    @property
+    def configuration_links(self):
+        """The enabled involvement links."""
+        overview_menu = MenuAPI(self.context).overview
+        configuration_names = [
+            'configure_answers',
+            'configure_branches',
+            'configure_bugtracker',
+            'configure_translations',
+            ]
+        configuration_links = [
+            overview_menu[name] for name in configuration_names]
+        return sorted([
+            link for link in configuration_links if link.enabled],
+            key=attrgetter('sort_key'))
+
+    @property
+    def visible_disabled_links(self):
+        """Important disabled links.
+
+        These are displayed to notify the user to provide configuration
+        info to enable the links.
+        """
+        involved_menu = MenuAPI(self).navigation
+        important_links = [
+            involved_menu[name]
+            for name in ('report_bug', 'submit_code')]
+        return sorted([
+            link for link in important_links if not link.enabled],
+            key=attrgetter('sort_key'))

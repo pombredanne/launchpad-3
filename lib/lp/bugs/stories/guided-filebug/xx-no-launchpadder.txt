@@ -52,7 +52,8 @@ But we are advised to file bugs in the upstream bug tracker:
 The advice is slightly different if the upstream bug tracker is
 actually an email address.
 
-    >>> admin_browser.open('http://launchpad.dev/jokosher/+edit')
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/jokosher/+configure-bugtracker')
     >>> admin_browser.getControl(
     ...     'By emailing an upstream bug contact').selected = True
     >>> admin_browser.getControl(

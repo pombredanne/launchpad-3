@@ -4,14 +4,14 @@ Some helpful explanatory text - guidelines - can be set for
 distributions, product groups, products, and source packages.
 
     >>> contexts = [
-    ...     ('Ubuntu', 'ubuntu'),
-    ...     ('Mozilla', 'mozilla'),
-    ...     ('Firefox', 'firefox'),
-    ...     ('alsa-utils in Ubuntu', 'ubuntu/+source/alsa-utils'),
+    ...     ('Ubuntu', 'ubuntu', '+edit'),
+    ...     ('Mozilla', 'mozilla', '+edit'),
+    ...     ('Firefox', 'firefox', '+configure-bugtracker'),
+    ...     ('alsa-utils in Ubuntu', 'ubuntu/+source/alsa-utils', '+edit'),
     ...     ]
 
-    >>> for context_name, context_path in contexts:
-    ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
+    >>> for context_name, context_path, view in contexts:
+    ...     edit_url = 'http://launchpad.dev/%s/%s' % (context_path, view)
     ...     admin_browser.open(edit_url)
     ...     admin_browser.getControl(
     ...         name='field.bug_reporting_guidelines').value = (
@@ -31,7 +31,7 @@ page, because that page does not include a bug description field.
     ...     print extract_text(find_tag_by_id(
     ...         user_browser.contents, 'bug-reporting-guidelines'))
 
-    >>> for context_name, context_path in contexts:
+    >>> for context_name, context_path, view in contexts:
     ...     filebug_url = (
     ...         'http://launchpad.dev/%s/+filebug' % (context_path,))
     ...     user_browser.open(filebug_url)
@@ -43,7 +43,7 @@ page, because that page does not include a bug description field.
 But they are displayed once you've got to the step of entering a bug
 description.
 
-    >>> for context_name, context_path in contexts:
+    >>> for context_name, context_path, view in contexts:
     ...     filebug_url = (
     ...         'http://launchpad.dev/%s/+filebug' % (context_path,))
     ...     user_browser.open(filebug_url)
@@ -143,7 +143,7 @@ bug reporting guidelines can be changed, but admins do.
     ...     pass
 
     >>> edit_url_re = re.compile('/[+]edit$')
-    >>> for context_name, context_path in contexts:
+    >>> for context_name, context_path, view in contexts:
     ...     overview_url = 'http://launchpad.dev/%s' % (context_path,)
     ...     print '* ' + context_name
     ...     print '  - User:',
@@ -173,8 +173,8 @@ bug reporting guidelines can be changed, but admins do.
 Unprivileged cannot access the page for changing bug reporting
 guidelines.
 
-    >>> for context_name, context_path in contexts:
-    ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
+    >>> for context_name, context_path, view in contexts:
+    ...     edit_url = 'http://launchpad.dev/%s/%s' % (context_path, view)
     ...     print '* ' + context_name
     ...     try:
     ...         user_browser.open(edit_url)
