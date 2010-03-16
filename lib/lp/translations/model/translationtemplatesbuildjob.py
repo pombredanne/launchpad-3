@@ -102,7 +102,7 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         """See `ITranslationTemplatesBuildJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
-        # We don't have any JSON metadata for this BranchJob type.
+        # Pass public HTTP URL for the branch.
         metadata = {'branch_url': branch.composePublicURL()}
         branch_job = BranchJob(
             branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
