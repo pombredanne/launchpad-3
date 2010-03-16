@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,10 +8,11 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildBehaviorMismatch',
     'IBuildFarmJobBehavior',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 
 
 class BuildBehaviorMismatch(Exception):
@@ -23,13 +24,10 @@ class BuildBehaviorMismatch(Exception):
 
 class IBuildFarmJobBehavior(Interface):
 
-    status = Attribute(
-        "Generated status information for this particular job.")
-
     def setBuilder(builder):
         """Sets the associated builder reference for this instance."""
 
-    def logStartBuild(build_queue_item, logger):
+    def logStartBuild(logger):
         """Log the start of a specific build queue item.
 
         The form of the log message will vary depending on the type of build.
@@ -37,21 +35,20 @@ class IBuildFarmJobBehavior(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def dispatchBuildToSlave(build_queue_item, logger):
+    def dispatchBuildToSlave(build_queue_item_id, logger):
         """Dispatch a specific build to the slave.
 
-        :param build_queue_item: The `BuildQueueItem` that will be built.
-        :logger: A logger to be used to log diagnostic information.
+        :param build_queue_item_id: An identifier for the build queue item.
+        :param logger: A logger to be used to log diagnostic information.
         """
 
-    def verifyBuildRequest(build_queue_item, logger):
+    def verifyBuildRequest(logger):
         """Carry out any pre-build checks.
 
-        :param build_queue_item: The `BuildQueueItem` that is to be built.
-        :logger: A logger to be used to log diagnostic information.
+        :param logger: A logger to be used to log diagnostic information.
         """
 
-    def slaveStatus(self, raw_slave_status):
+    def slaveStatus(raw_slave_status):
         """Return a dict of custom slave status values for this behavior.
 
         :param raw_slave_status: The value returned by the build slave's
@@ -59,3 +56,18 @@ class IBuildFarmJobBehavior(Interface):
         :return: a dict of extra key/values to be included in the result
             of IBuilder.slaveStatus().
         """
+
+    def verifySlaveBuildID(slave_build_id):
+        """Verify that a slave's build ID shows no signs of corruption.
+
+        :param slave_build_id: The slave's build ID, as specified in
+           dispatchBuildToSlave.
+        :raises CorruptBuildID: if the build ID is determined to be corrupt.
+        """
+
+    def updateBuild(queueItem):
+        """Verify the current build job status.
+
+        Perform the required actions for each state.
+        """
+

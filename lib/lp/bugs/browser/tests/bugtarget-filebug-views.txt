@@ -78,8 +78,8 @@ possible duplicates for a bug asynchronously.
 For project groups, the URLs returned will refer to the default product
 for those project groups.
 
-    >>> from lp.registry.interfaces.project import IProjectSet
-    >>> gnome_project = getUtility(IProjectSet).getByName('gnome')
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> gnome_project = getUtility(IProjectGroupSet).getByName('gnome')
     >>> gnome_filebug_view = create_initialized_view(
     ...     gnome_project, '+filebug')
 
@@ -128,19 +128,28 @@ Librarian.
 
     >>> transaction.commit()
 
-Now, if we pass the token to the filebug view, the extra_data
-attribute will be set with the actual data. Also, the used parser will
-be available on the view itself. This is useful later, for doing
-cleanup.
+The data is processed by a ProcessApportBlobJob, which the filebug view
+can then access to get the parsed data. We'll define a helper method for
+processing the blob.
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> print filebug_view.data_parser
-    None
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+
+    >>> def process_blob(token):
+    ...     blob = getUtility(ITemporaryStorageManager).fetch(token)
+    ...     job = getUtility(IProcessApportBlobJobSource).create(blob)
+    ...     job.job.start()
+    ...     job.run()
+    ...     job.job.complete()
+    >>> process_blob(token)
+
+Now, if we pass the token to the filebug view, the extra_data
+attribute will be set with the actual data.
+
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(
+    ...     filebug_view.request, token) is filebug_view
     True
-    >>> filebug_view.data_parser
-    <...FileBugDataParser object at ...>
 
     >>> filebug_view.extra_data.extra_description
     u'This should be added to the description.'
@@ -194,9 +203,10 @@ to the bug.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.validate(bug_data) is None
     True
@@ -252,9 +262,10 @@ be specified using a Content-description header, but it's not required.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.validate(bug_data) is None
     True
@@ -328,9 +339,10 @@ message.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.extra_data.extra_description
     u'This bug should be private.'
@@ -383,9 +395,10 @@ We can also specify that a bug is public via the same field.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.extra_data.extra_description
     u'This bug should be public.'
@@ -438,9 +451,10 @@ identified by their Launchpad name or their e-mail address.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
 
     >>> filebug_view.extra_data.extra_description
@@ -502,9 +516,10 @@ certain people and teams to bugs when they are filed.
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
     >>> transaction.commit()
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> process_blob(token)
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
 
     >>> filebug_view.extra_data.extra_description
@@ -563,9 +578,9 @@ bug and that the bug has been marked as private.
 As already seen above, it's the FileBugViewBase's publishTraverse that
 finds the right blob to use.
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request,
+    ...     token) is filebug_view
     True
     >>> filebug_view.extra_data_token == token
     True
@@ -576,7 +591,7 @@ Since the view itself is returned, it will handle further traversals as
 well, so if we call the method again, it represents a URL like
 '.../+filebug/token/foo', which should raise a NotFound error.
 
-    >>> filebug_view.publishTraverse(request, token)
+    >>> filebug_view.publishTraverse(filebug_view.request, token)
     Traceback (most recent call last):
     ...
     NotFound:...
@@ -587,9 +602,8 @@ well, so if we call the method again, it represents a URL like
 If publishTraverse is called with a token that can't be found, a
 NotFound error is raised.
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, 'no-such-token')
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
+    >>> filebug_view.publishTraverse(filebug_view.request, 'no-such-token')
     Traceback (most recent call last):
     ...
     NotFound:...
@@ -606,7 +620,7 @@ can pass an empty request and pass the data dict to the methods
 directly.
 
     >>> login('no-priv@canonical.com')
-    >>> filebug_view = create_view(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None
     True
     >>> filebug_view.submit_bug_action.success(bug_data)
@@ -628,7 +642,7 @@ The base class allows security bugs to be filed.
     ...     title=u'Security bug', comment=u'Test description.',
     ...     security_related=True)
 
-    >>> filebug_view = create_view(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None
     True
     >>> filebug_view.submit_bug_action.success(bug_data)
@@ -647,7 +661,7 @@ Bug supervisors are offered several extra options when filing bugs.
 
     >>> login_person(person)
 
-    >>> filebug_view = create_view(product, LaunchpadTestRequest())
+    >>> filebug_view = create_initialized_view(product, '+filebug')
     >>> normal_fields = set(filebug_view.field_names)
     >>> product.setBugSupervisor(person, person)
     >>> supervisor_fields = set(filebug_view.field_names)

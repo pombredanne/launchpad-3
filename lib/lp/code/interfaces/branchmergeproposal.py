@@ -16,6 +16,8 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
+    'IUpdatePreviewDiffJobSource',
+    'notify_modified',
     ]
 
 
@@ -94,6 +96,13 @@ class IBranchMergeProposal(IPrivacy):
             description=_(
                 "If True, this proposal is visible only to subscribers.")))
 
+    description = exported(
+        Text(title=_('Description'), required=False,
+             description=_(
+                "A detailed description of the changes that are being "
+                "addressed by the branch being proposed to be merged."),
+             max_length=50000))
+
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
@@ -118,6 +127,9 @@ class IBranchMergeProposal(IPrivacy):
         IStaticDiff, title=_('The diff to be used for reviews.'),
         readonly=True)
 
+    next_preview_diff_job = Attribute(
+        'The next BranchMergeProposalJob that will update a preview diff.')
+
     preview_diff = exported(
         Reference(
             IPreviewDiff,
@@ -126,9 +138,9 @@ class IBranchMergeProposal(IPrivacy):
 
     reviewed_revision_id = exported(
         Text(
-            title=_("The revision id that has been approved by the reviewer.")
-            ),
-        exported_as='reviewed_revno')
+            title=_(
+                "The revision id that has been approved by the reviewer.")),
+        exported_as='reviewed_revid')
 
     commit_message = exported(
         Summary(
@@ -154,7 +166,7 @@ class IBranchMergeProposal(IPrivacy):
             required=False,
             description=_("The revision id that has been queued for "
                           "landing.")),
-        exported_as='queued_revno')
+        exported_as='queued_revid')
 
     merged_revno = exported(
         Int(
@@ -206,9 +218,6 @@ class IBranchMergeProposal(IPrivacy):
     date_queued = exported(
         Datetime(
             title=_('Date Queued'), required=False, readonly=True))
-    # Cannote use Object as this would cause circular dependencies.
-    root_comment = Attribute(
-        _("The first message in discussion of this merge proposal"))
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
@@ -256,7 +265,7 @@ class IBranchMergeProposal(IPrivacy):
         CollectionField(
             title=_('The votes cast or expected for this proposal'),
             value_type=Reference(schema=Interface), #ICodeReviewVoteReference
-            readonly=True
+            readonly=True,
             )
         )
 
@@ -264,7 +273,7 @@ class IBranchMergeProposal(IPrivacy):
         """True if it is valid for user update the proposal to next_state."""
 
     @call_with(user=REQUEST_USER)
-    @rename_parameters_as(revision_id='revno')
+    @rename_parameters_as(revision_id='revid')
     @operation_parameters(
         status=Choice(
             title=_("The new status of the merge proposal."),
@@ -279,8 +288,8 @@ class IBranchMergeProposal(IPrivacy):
 
         :param status: The new status of the merge proposal.
         :param user: The user making the change.
-        :param revision_id: The revno to provide to the underlying status
-            change method.
+        :param revision_id: The revision id to provide to the underlying
+            status change method.
         """
 
     def setAsWorkInProgress():
@@ -474,6 +483,10 @@ class IBranchMergeProposal(IPrivacy):
 class IBranchMergeProposalJob(Interface):
     """A Job related to a Branch Merge Proposal."""
 
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The tracking number for this job."))
+
     branch_merge_proposal = Object(
         title=_('The BranchMergeProposal this job is about'),
         schema=IBranchMergeProposal, required=True)
@@ -587,10 +600,18 @@ class IUpdatePreviewDiffJobSource(Interface):
     def create(bmp):
         """Create a job to update the diff for this merge proposal."""
 
+    def get(id):
+        """Return the UpdatePreviewDiffJob with this id."""
+
     def iterReady():
         """Iterate through jobs ready to update preview diffs."""
 
+    def contextManager():
+        """Get a context for running this kind of job in."""
 
+
+# XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
+# should be moved there.
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 

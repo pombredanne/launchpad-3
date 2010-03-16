@@ -14,6 +14,7 @@ __all__ = [
     'ArchiveNotPrivate',
     'ArchivePurpose',
     'CannotCopy',
+    'CannotSwitchPrivacy',
     'ComponentNotFound',
     'DistroSeriesNotFound',
     'IArchive',
@@ -29,6 +30,7 @@ __all__ = [
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
+    'NoTokensForTeams',
     'PocketNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
@@ -78,6 +80,12 @@ class CannotCopy(Exception):
     webservice_error(400) #Bad request.
 
 
+class CannotSwitchPrivacy(Exception):
+    """Raised when switching the privacy of an archive that has
+    publishing records."""
+    webservice_error(400) # Bad request.
+
+
 class PocketNotFound(Exception):
     """Invalid pocket."""
     webservice_error(400) #Bad request.
@@ -95,6 +103,11 @@ class AlreadySubscribed(Exception):
 
 class ArchiveNotPrivate(Exception):
     """Raised when creating an archive subscription for a public archive."""
+    webservice_error(400) # Bad request.
+
+
+class NoTokensForTeams(Exception):
+    """Raised when creating a token for a team, rather than a person."""
     webservice_error(400) # Bad request.
 
 
@@ -145,17 +158,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
         title=_("Enabled"), required=False,
         description=_("Whether the archive is enabled or not."))
 
-    publish = Bool(
-        title=_("Publish"), required=False,
-        description=_("Whether the archive is to be published or not."))
-
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is guarded by a validator.
     private = exported(
         Bool(
             title=_("Private"), required=False,
             description=_(
-                "Whether the archive is private to the owner or not.")))
+                "Whether the archive is private to the owner or not. "
+                "This can only be changed if the archive has not had "
+                "any sources published.")))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,
@@ -267,6 +278,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "The series variable is replaced with the series name of the "
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
+
+    arm_builds_allowed = Bool(
+        title=_("Allow ARM builds for this archive"))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -402,6 +416,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+    def getBinaryPackageReleaseByFileName(filename):
+        """Return the corresponding `IBinaryPackageRelease` in this context.
+
+        :param filename: The filename to look up.
+        :return: The `IBinaryPackageRelease` with the specified filename,
+            or None if it was not found.
         """
 
     def requestPackageCopy(target_location, requestor, suite=None,
@@ -896,8 +918,8 @@ class IArchiveAppend(Interface):
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
 
-        It will copy the most recent versions of the named sources to
-        the destination archive if necessary.
+        It will copy the most recent PUBLISHED versions of the named
+        sources to the destination archive if necessary.
 
         This operation will only succeeds when all requested packages
         are synchronised between the archives. If any of the requested
@@ -993,6 +1015,10 @@ class IArchiveAppend(Interface):
 class IArchiveEdit(Interface):
     """Archive interface for operations restricted by edit privilege."""
 
+    publish = Bool(
+        title=_("Publish"), required=False,
+        description=_("Whether the archive is to be published or not."))
+
     @operation_parameters(
         person=Reference(schema=IPerson),
         source_package_name=TextLine(
@@ -1083,6 +1109,12 @@ class IArchiveEdit(Interface):
         :param person: An `IPerson` whose permission should be revoked.
         :param component: An `IComponent` or textual component name.
         """
+
+    def enable():
+        """Enable the archive."""
+
+    def disable():
+        """Disable the archive."""
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):

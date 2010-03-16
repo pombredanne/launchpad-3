@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -32,12 +32,13 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IPersonRoles)
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries, DistroSeriesStatus)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPerson, validate_person_not_private_membership)
 from lp.registry.interfaces.product import IProduct
@@ -57,23 +58,13 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationImportQueueConflictError,
+    translation_import_queue_entry_age,
     UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
-from lp.translations.utilities.permission_helpers import (
-    is_admin_or_rosetta_expert)
 from canonical.librarian.interfaces import ILibrarianClient
-
-
-# Period to wait before entries with terminal statuses are removed from
-# the queue.
-entry_gc_age = {
-    RosettaImportStatus.DELETED: datetime.timedelta(days=3),
-    RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
-    RosettaImportStatus.FAILED: datetime.timedelta(days=30),
-}
 
 
 def is_gettext_name(path):
@@ -269,54 +260,72 @@ class TranslationImportQueueEntry(SQLBase):
         We get it based on the path it's stored or None.
         """
         pofile_set = getUtility(IPOFileSet)
-        return pofile_set.getPOFileByPathAndOrigin(
+        return pofile_set.getPOFilesByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename)
+            sourcepackagename=self.sourcepackagename).one()
 
-    def isUbuntuAndIsUserTranslationGroupOwner(self, user):
+    def canAdmin(self, roles):
         """See `ITranslationImportQueueEntry`."""
         # As a special case, the Ubuntu translation group owners can
         # manage Ubuntu uploads.
         if self.is_targeted_to_ubuntu:
             group = self.distroseries.distribution.translationgroup
-            if group is not None and user.inTeam(group.owner):
+            if group is not None and roles.inTeam(group.owner):
                 return True
+        # Rosetta experts and admins can administer the entry.
+        return roles.in_rosetta_experts or roles.in_admin
+
+    def _canEditExcludeImporter(self, roles):
+        """All people that can edit the entry except the importer."""
+        # Admin rights include edit rights.
+        if self.canAdmin(roles):
+            return True
+        # The maintainer and the drivers can edit the entry.
+        if self.productseries is not None:
+            return (roles.isOwner(self.productseries.product) or
+                    roles.isOneOfDrivers(self.productseries))
+        if self.distroseries is not None:
+            return (roles.isOwner(self.distroseries.distribution) or
+                    roles.isOneOfDrivers(self.distroseries))
         return False
 
-    def isUserUploaderOrOwner(self, user):
+    def canEdit(self, roles):
         """See `ITranslationImportQueueEntry`."""
-        if user.inTeam(self.importer):
+        # The importer can edit the entry.
+        if roles.inTeam(self.importer):
             return True
-        if self.productseries is not None:
-            return user.inTeam(self.productseries.product.owner)
-        if self.distroseries is not None:
-            return user.inTeam(self.distroseries.distribution.owner)
-        return False
+        return self._canEditExcludeImporter(roles)
 
     def canSetStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
         if user is None:
             # Anonymous user cannot do anything.
             return False
-        can_admin = (is_admin_or_rosetta_expert(user) or
-                     self.isUbuntuAndIsUserTranslationGroupOwner(user))
+        roles = IPersonRoles(user)
         if new_status == RosettaImportStatus.APPROVED:
             # Only administrators are able to set the APPROVED status, and
             # that's only possible if we know where to import it
             # (import_into not None).
-            return can_admin and self.import_into is not None
+            return self.canAdmin(roles) and self.import_into is not None
+        if new_status == RosettaImportStatus.NEEDS_INFORMATION:
+            # Only administrators are able to set the NEEDS_INFORMATION
+            # status.
+            return self.canAdmin(roles)
         if new_status == RosettaImportStatus.IMPORTED:
             # Only rosetta experts are able to set the IMPORTED status, and
             # that's only possible if we know where to import it
             # (import_into not None).
-            return (is_admin_or_rosetta_expert(user) and
+            return ((roles.in_admin or roles.in_rosetta_experts) and
                     self.import_into is not None)
         if new_status == RosettaImportStatus.FAILED:
             # Only rosetta experts are able to set the FAILED status.
-            return is_admin_or_rosetta_expert(user)
-        # All other statuses can bset set by all authorized persons.
-        return self.isUserUploaderOrOwner(user) or can_admin
+            return roles.in_admin or roles.in_rosetta_experts
+        if new_status == RosettaImportStatus.BLOCKED:
+            # Importers are not allowed to set BLOCKED
+            return self._canEditExcludeImporter(roles)
+        # All other statuses can be set set by all authorized persons.
+        return self.canEdit(roles)
 
     def setStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
@@ -941,38 +950,14 @@ class TranslationImportQueue:
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None):
         """See ITranslationImportQueue."""
-        # XXX: kiko 2008-02-08 bug=4473: This whole set of ifs is a
-        # workaround for bug 44773 (Python's gzip support sometimes fails to
-        # work when using plain tarfile.open()). The issue is that we can't
-        # rely on tarfile's smart detection of filetypes and instead need to
-        # hardcode the type explicitly in the mode. We simulate magic
-        # here to avoid depending on the python-magic package. We can
-        # get rid of this when http://bugs.python.org/issue1488634 is
-        # fixed.
-        #
-        # XXX: 2008-02-08 kiko bug=1982: Incidentally, this also works around
-        # bug #1982 (Python's bz2 support is not able to handle external file
-        # objects). That bug is worked around by using tarfile.open() which
-        # wraps the fileobj in a tarfile._Stream instance. We can get rid of
-        # this when we upgrade to python2.5 everywhere.
         num_files = 0
         conflict_files = []
-
-        if content.startswith('BZh'):
-            mode = "r|bz2"
-        elif content.startswith('\037\213'):
-            mode = "r|gz"
-        elif content[257:262] == 'ustar':
-            mode = "r|tar"
-        else:
-            # Not a tarball, we ignore it.
-            return (num_files, conflict_files)
 
         translation_importer = getUtility(ITranslationImporter)
 
         try:
-            tarball = tarfile.open('', mode, StringIO(content))
-        except tarfile.ReadError:
+            tarball = tarfile.open('', 'r|*', StringIO(content))
+        except (tarfile.CompressionError, tarfile.ReadError):
             # If something went wrong with the tarfile, assume it's
             # busted and let the user deal with it.
             return (num_files, conflict_files)
@@ -989,7 +974,7 @@ class TranslationImportQueue:
             if filename is None or filename == '':
                 continue
 
-            if posixpath.basename(filename).startswith('.'):
+            if translation_importer.isHidden(filename):
                 # Dotfile.  Probably an editor backup or somesuch.
                 continue
 
@@ -1235,8 +1220,8 @@ class TranslationImportQueue:
         """
         now = datetime.datetime.now(pytz.UTC)
         deletion_clauses = []
-        for status, gc_age in entry_gc_age.iteritems():
-            cutoff = now - gc_age
+        for status, max_age in translation_import_queue_entry_age.iteritems():
+            cutoff = now - max_age
             deletion_clauses.append(And(
                 TranslationImportQueueEntry.status == status,
                 TranslationImportQueueEntry.date_status_changed < cutoff))
@@ -1285,7 +1270,7 @@ class TranslationImportQueue:
                     Distribution.id = DistroSeries.distribution
                 WHERE DistroSeries.releasestatus = %s
                 LIMIT 100)
-            """ % quote(DistroSeriesStatus.OBSOLETE))
+            """ % quote(SeriesStatus.OBSOLETE))
         return cur.rowcount
 
     def cleanUpQueue(self):

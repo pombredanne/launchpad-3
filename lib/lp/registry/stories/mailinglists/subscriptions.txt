@@ -195,7 +195,7 @@ all.)
     >>> person_set = getUtility(IPersonSet)
     >>> jdub = person_set.getByName('jdub')
     >>> mark = person_set.getByName('mark')
-    >>> beta.addMember(jdub, reviewer=mark)
+    >>> ignored = beta.addMember(jdub, reviewer=mark)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
@@ -396,9 +396,23 @@ rosetta admins team has such a list and carlos is the owner.
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
     ...     find_portlet(browser.contents, 'Mailing list'))
-    Mailing list...
+    Mailing list
+    rosetta-admins@lists.launchpad.dev
+    Policy: You must be a team member to subscribe to the team mailing list.
+    Subscribe to mailing list
     View archive
     View subscribers...
+
+Non-members are not shown links to subscribe or unsubscribe.
+
+    >>> user_browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> print extract_text(
+    ...     find_portlet(user_browser.contents, 'Mailing list'))
+    Mailing list
+    rosetta-admins@lists.launchpad.dev
+    Policy: You must be a team member to subscribe to the team mailing list.
+    View archive
+    View subscribers
 
 The mailing list for Rosetta Admins has no subscribers.
 (Jeff Waugh has asked to subscribe but he's not considered a subscriber
@@ -424,9 +438,9 @@ list.
     >>> salgado = person_set.getByName('salgado')
     >>> jordi = person_set.getByName('jordi')
     >>> rosetta_admins = person_set.getByName('rosetta-admins')
-    >>> rosetta_admins.addMember(salgado, reviewer=mark)
+    >>> ignored = rosetta_admins.addMember(salgado, reviewer=mark)
     >>> rosetta_admins.mailing_list.subscribe(salgado)
-    >>> rosetta_admins.addMember(jordi, reviewer=mark)
+    >>> ignored = rosetta_admins.addMember(jordi, reviewer=mark)
     >>> rosetta_admins.mailing_list.subscribe(jordi)
     >>> logout()
     >>> browser.reload()

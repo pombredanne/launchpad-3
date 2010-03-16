@@ -243,6 +243,7 @@ Private Membership Teams cannot subscribe to private PPAs.
     >>> import transaction
     >>> transaction.abort()
 
+
 Structural Subscriptions
 ========================
 
@@ -279,7 +280,7 @@ Private teams can have structural subscriptions to distros.
     >>> sub = ubuntu.addSubscription(
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
-    <Distribution at ...>
+    <Distribution 'Ubuntu' (ubuntu)>
     >>> sub.bug_notification_level
     <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
 

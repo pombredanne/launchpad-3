@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export translation snapshots to bzr branches where requested."""
@@ -9,7 +9,8 @@ __all__ = ['ExportTranslationsToBranch']
 
 import os.path
 from datetime import datetime, timedelta
-from pytz import UTC
+
+import pytz
 
 from zope.component import getUtility
 
@@ -66,7 +67,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         branch = source.translations_branch
         jobsource = getUtility(IRosettaUploadJobSource)
         unfinished_jobs = jobsource.findUnfinishedJobs(
-            branch, since=datetime.now(UTC) - timedelta(days=1))
+            branch, since=datetime.now(pytz.UTC) - timedelta(days=1))
 
         if unfinished_jobs.any():
             raise ConcurrentUpdateError(
@@ -130,11 +131,11 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # The bzr timestamp is a float representing UTC-based seconds
         # since the epoch.  It stores the timezone as well, but we can
         # ignore it here.
-        return datetime.fromtimestamp(revision.timestamp, UTC)
+        return datetime.fromtimestamp(revision.timestamp, pytz.UTC)
 
     def _getLatestTranslationsCommit(self, branch):
         """Get date of last translations commit to `branch`, if any."""
-        cutoff_date = datetime.now(UTC) - self.previous_commit_cutoff_age
+        cutoff_date = datetime.now(pytz.UTC) - self.previous_commit_cutoff_age
 
         revno, current_rev = branch.last_revision_info()
         repository = branch.repository
@@ -237,10 +238,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 raise
             except Exception, e:
                 items_failed += 1
-                message = unicode(e)
-                if message == u'':
-                    message = e.__class__.__name__
-                self.logger.error("Failure: %s" % message)
+                self.logger.error("Failure: %s" % repr(e))
                 if self.txn:
                     self.txn.abort()
 
@@ -273,8 +271,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         productseries = productseries.order_by(ProductSeries.id)
 
         bzrserver = get_multi_server(write_hosted=True)
-        bzrserver.setUp()
+        bzrserver.start_server()
         try:
             self._exportToBranches(productseries)
         finally:
-            bzrserver.tearDown()
+            bzrserver.stop_server()

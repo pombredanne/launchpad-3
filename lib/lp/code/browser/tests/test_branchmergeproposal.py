@@ -351,26 +351,12 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         return view
 
     def _getSourceProposal(self):
-        # There will only be one proposal and it will be in needs review
-        # state.
+        # There will only be one proposal.
         landing_targets = list(self.source_branch.landing_targets)
         self.assertEqual(1, len(landing_targets))
         proposal = landing_targets[0]
         self.assertEqual(self.target_branch, proposal.target_branch)
-        self.assertEqual(BranchMergeProposalStatus.NEEDS_REVIEW,
-                         proposal.queue_status)
         return proposal
-
-    def assertNoComments(self, proposal):
-        # There should be no comments.
-        self.assertEqual([], list(proposal.all_comments))
-
-    def assertOneComment(self, proposal, comment_text):
-        # There should be one and only one comment with the text specified.
-        self.assertEqual(
-            [comment_text],
-            [comment.message.text_contents
-             for comment in proposal.all_comments])
 
     def assertNoPendingReviews(self, proposal):
         # There should be no votes recorded for the proposal.
@@ -393,22 +379,47 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         # This simplest case is where the user only specifies the target
         # branch, and not an initial comment or reviewer.
         view = self._createView()
-        view.register_action.success({'target_branch': self.target_branch})
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'needs_review': True})
         proposal = self._getSourceProposal()
         self.assertNoPendingReviews(proposal)
-        self.assertNoComments(proposal)
+        self.assertIs(None, proposal.description)
+
+    def test_register_work_in_progress(self):
+        # The needs review checkbox can be unchecked to create a work in
+        # progress proposal.
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'needs_review': False})
+        proposal = self._getSourceProposal()
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            proposal.queue_status)
+
+    def test_register_with_commit_message(self):
+        # A commit message can also be set during the register process.
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'needs_review': True,
+             'commit_message': 'Fixed the bug!'})
+        proposal = self._getSourceProposal()
+        self.assertEqual('Fixed the bug!', proposal.commit_message)
 
     def test_register_initial_comment(self):
-        # If the user specifies an initial comment, this is added to the
+        # If the user specifies a description, this is recorded on the
         # proposal.
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'comment': "This is the first comment."})
+             'comment': "This is the description.",
+             'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertNoPendingReviews(proposal)
-        self.assertOneComment(proposal, "This is the first comment.")
+        self.assertEqual(proposal.description, "This is the description.")
 
     def test_register_request_reviewer(self):
         # If the user requests a reviewer, then a pending vote is added to the
@@ -417,11 +428,12 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'reviewer': reviewer})
+             'reviewer': reviewer,
+             'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer)
-        self.assertNoComments(proposal)
+        self.assertIs(None, proposal.description)
 
     def test_register_request_review_type(self):
         # We can request a specific review type of the reviewer.  If we do, it
@@ -431,14 +443,15 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view.register_action.success(
             {'target_branch': self.target_branch,
              'reviewer': reviewer,
-             'review_type': 'god-like'})
+             'review_type': 'god-like',
+             'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertNoComments(proposal)
+        self.assertIs(None, proposal.description)
 
     def test_register_comment_and_review(self):
-        # The user can give an initial comment and request a review from
+        # The user can give a description and request a review from
         # someone.
         reviewer = self.factory.makePerson()
         view = self._createView()
@@ -446,11 +459,12 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
             {'target_branch': self.target_branch,
              'reviewer': reviewer,
              'review_type': 'god-like',
-             'comment': "This is the first comment."})
+             'comment': "This is the description.",
+             'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertOneComment(proposal, "This is the first comment.")
+        self.assertEqual(proposal.description, "This is the description.")
 
 
 class TestBranchMergeProposalView(TestCaseWithFactory):
@@ -472,7 +486,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         """Claiming a review works for members of the requested team."""
         review = self.makeTeamReview()
         albert = self.factory.makePerson()
-        albert.join(review.reviewer)
+        removeSecurityProxy(albert).join(review.reviewer)
         login_person(albert)
         view = create_initialized_view(self.bmp, '+index')
         view.claim_action.success({'review_id': review.id})
@@ -488,28 +502,26 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                           {'review_id': review.id})
 
     def test_preview_diff_text_with_no_diff(self):
-        """review_diff should be None when there is no context.review_diff."""
+        """preview_diff_text should be None if context has no preview_diff."""
         view = create_initialized_view(self.bmp, '+index')
         self.assertIs(None, view.preview_diff_text)
 
-    def test_review_diff_utf8(self):
-        """A review_diff in utf-8 should be converted to utf-8."""
+    def test_preview_diff_utf8(self):
+        """A preview_diff in utf-8 should decoded as utf-8."""
         text = ''.join(unichr(x) for x in range(255))
         diff_bytes = ''.join(unified_diff('', text)).encode('utf-8')
-        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
+        self.setPreviewDiff(diff_bytes)
         transaction.commit()
-        self.bmp.review_diff = diff
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('utf-8'),
                          view.preview_diff_text)
 
-    def test_review_diff_all_chars(self):
-        """review_diff should work on diffs containing all possible bytes."""
+    def test_preview_diff_all_chars(self):
+        """preview_diff should work on diffs containing all possible bytes."""
         text = ''.join(chr(x) for x in range(255))
         diff_bytes = ''.join(unified_diff('', text))
-        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
+        self.setPreviewDiff(diff_bytes)
         transaction.commit()
-        self.bmp.review_diff = diff
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          view.preview_diff_text)
@@ -523,6 +535,9 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def addBothDiffs(self):
         self.addReviewDiff()
         preview_diff_bytes = ''.join(unified_diff('', 'preview'))
+        return self.setPreviewDiff(preview_diff_bytes)
+
+    def setPreviewDiff(self, preview_diff_bytes):
         preview_diff = PreviewDiff.create(
             preview_diff_bytes, u'a', u'b', None, u'')
         removeSecurityProxy(self.bmp).preview_diff = preview_diff
@@ -613,6 +628,21 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             [revisions[0], revisions[1]],
             [revisions[2], revisions[3]]]
         self.assertRevisionGroups(bmp, expected_groups)
+
+    def test_include_superseded_comments(self):
+        for x, time in zip(range(3), time_counter()):
+            if x != 0:
+                self.bmp = self.bmp.resubmit(self.user)
+            self.bmp.createComment(
+                self.user, 'comment %d' % x, _date_created=time)
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual(
+            ['comment 0', 'comment 1', 'comment 2'],
+            [comment.comment.message.subject for comment
+             in view.conversation.comments])
+        self.assertFalse(view.conversation.comments[2].from_superseded)
+        self.assertTrue(view.conversation.comments[1].from_superseded)
+        self.assertTrue(view.conversation.comments[0].from_superseded)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

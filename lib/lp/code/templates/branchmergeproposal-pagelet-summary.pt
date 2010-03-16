@@ -6,7 +6,15 @@
   tal:define="context_menu context/menu:context">
 
   <tbody>
-    <tr>
+    <tal:comment condition="nothing">
+      <!--
+          Each of the rows in this table have an id that is strictly
+          alphabetical (according to ASCII).  This is used in the javascript
+          processing of the summary to determine which rows have been added,
+          and removed through AJAX requests.
+      -->
+    </tal:comment>
+    <tr id="summary-row-1-status">
       <th>Status:</th>
       <td id="branchmergeproposal-status-value">
         <span tal:attributes="class string:value mergestatus${context/queue_status/name}"
@@ -21,12 +29,14 @@
       </td>
     </tr>
     <tal:comment condition="nothing">
-      Only show the reviewed section if the state is not superseded.
-      Only show the reviewed revision if not rejected.
+      <!--
+          Only show the reviewed section if the state is not superseded.
+          Only show the reviewed revision if not rejected.
+      -->
     </tal:comment>
     <tal:not-superseded condition="not: context/queue_status/enumvalue:SUPERSEDED">
       <tal:reviewed condition="context/reviewer">
-        <tr>
+        <tr id="summary-row-2-reviewer">
           <th>
             <tal:rejected condition="context/queue_status/enumvalue:REJECTED">
               Rejected by:
@@ -42,7 +52,8 @@
             <tal:modified replace="context/date_reviewed/fmt:displaydate" />
           </td>
         </tr>
-        <tr tal:condition="not: context/queue_status/enumvalue:REJECTED">
+        <tr id="summary-row-3-approved-revision"
+            tal:condition="not: context/queue_status/enumvalue:REJECTED">
           <th>Approved revision:</th>
           <td>
             <tal:not-available condition="not: context/reviewed_revision_id">
@@ -57,11 +68,11 @@
       </tal:reviewed>
     </tal:not-superseded>
     <tal:queued condition="context/queue_status/enumvalue:QUEUED">
-      <tr>
+      <tr id="summary-row-4-queued-by">
         <th>Queued by:</th>
         <td tal:content="structure context/queuer/fmt:link">Some User</td>
       </tr>
-      <tr>
+      <tr id="summary-row-5-queued-revision">
         <th>Queued revision:</th>
         <td>
           <tal:not-available condition="not: context/queued_revision_id">
@@ -75,11 +86,12 @@
       </tr>
     </tal:queued>
     <tal:merged condition="context/queue_status/enumvalue:MERGED">
-      <tr tal:condition="context/merge_reporter">
+      <tr id="summary-row-6-merge-reporter"
+          tal:condition="context/merge_reporter">
         <th>Merge reported by:</th>
         <td tal:content="structure context/merge_reporter/fmt:link">Some User</td>
       </tr>
-      <tr>
+      <tr id="summary-row-7-merged-revision">
         <th>Merged at revision:</th>
         <td>
           <tal:not-available condition="not: context/merged_revno">
@@ -97,23 +109,25 @@
         </td>
       </tr>
     </tal:merged>
-    <tr>
+    <tr id="summary-row-8-source-branch">
       <th>Proposed branch:</th>
       <td tal:content="structure context/source_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
     </tr>
-    <tr>
+    <tr id="summary-row-9-target-branch">
       <th>Merge into:</th>
       <td tal:content="structure context/target_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
     </tr>
-    <tr tal:condition="context/prerequisite_branch">
+    <tr id="summary-row-a-prerequisite-branch"
+        tal:condition="context/prerequisite_branch">
       <th>Prerequisite:</th>
       <td tal:content="structure context/prerequisite_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
     </tr>
-    <tr tal:condition="context/preview_diff">
+    <tr id="summary-row-b-diff"
+        tal:condition="context/preview_diff">
       <th>Diff against target:</th>
       <td>
         <tal:diff replace="structure context/preview_diff/fmt:link"/>
-        <pre tal:condition="context/preview_diff/conflicts"
+        <pre tal:condition="context/preview_diff/has_conflicts"
              tal:content="context/preview_diff/conflicts"/>
       </td>
     </tr>

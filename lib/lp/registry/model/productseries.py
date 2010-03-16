@@ -50,7 +50,7 @@ from lp.translations.model.translationimportqueue import (
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import PackagingType
@@ -89,8 +89,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     status = EnumCol(
-        notNull=True, schema=DistroSeriesStatus,
-        default=DistroSeriesStatus.DEVELOPMENT)
+        notNull=True, schema=SeriesStatus,
+        default=SeriesStatus.DEVELOPMENT)
     name = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -159,6 +159,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def bugtargetname(self):
         """See IBugTarget."""
         return "%s/%s" % (self.product.name, self.name)
+
+    @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.product.max_bug_heat
 
     @property
     def drivers(self):
@@ -407,8 +412,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(distroseries=distroseries,
-            sourcepackagename=sourcepackagename, productseries=self,
+        pkg = Packaging(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename,
+            productseries=self,
             packaging=PackagingType.PRIME,
             owner=owner)
         pkg.sync()  # convert UTC_NOW to actual datetime

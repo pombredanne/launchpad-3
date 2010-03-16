@@ -349,7 +349,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IProject"
+        for="canonical.launchpad.interfaces.IProjectGroup"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
@@ -673,6 +673,12 @@
     to write -->
     <adapter
         for="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest"
+        provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
+        factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <adapter
+        for="canonical.launchpad.webapp.servers.LaunchpadTestRequest"
         provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
         />

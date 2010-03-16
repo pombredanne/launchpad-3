@@ -27,6 +27,10 @@ class NotFoundError(KeyError):
     """Launchpad object not found."""
 
 
+class GoneError(KeyError):
+    """Launchpad object is gone."""
+
+
 class NameLookupFailed(NotFoundError):
     """Raised when a lookup by name fails.
 
@@ -293,7 +297,7 @@ class NoCanonicalUrl(TypeError):
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
-    project = Attribute('IProject, or None')
+    project = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')
     distribution = Attribute('IDistribution, or None')
     distroseries = Attribute('IDistroSeries, or None')
@@ -752,6 +756,20 @@ class IDatabasePolicy(Interface):
     The publisher adapts the request to `IDatabasePolicy` to
     instantiate the policy for the current request.
     """
+    def __enter__():
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will install itself using the IStoreSelector
+        utility.
+        """
+
+    def __exit__(exc_type, exc_value, traceback):
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will uninstall itself using the IStoreSelector
+        utility.
+        """
+
     def getStore(name, flavor):
         """Retrieve a Store.
 

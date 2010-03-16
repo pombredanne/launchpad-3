@@ -16,7 +16,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from twisted.conch.interfaces import ISession
-from twisted.conch.ssh import channel, session
+from twisted.conch.ssh import channel, connection, session
 from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
 
@@ -128,6 +128,11 @@ class ExecOnlySession:
         if self._transport is not None:
             self._transport.closeStdin()
 
+    def errorWithMessage(self, protocol, msg):
+        protocol.session.writeExtended(
+            connection.EXTENDED_DATA_STDERR, msg)
+        protocol.loseConnection()
+
     def execCommand(self, protocol, command):
         """Executes `command` using `protocol` as the ProcessProtocol.
 
@@ -140,8 +145,7 @@ class ExecOnlySession:
         try:
             executable, arguments = self.getCommandToRun(command)
         except ForbiddenCommand, e:
-            protocol.write(str(e) + '\r\n')
-            protocol.loseConnection()
+            self.errorWithMessage(protocol, str(e) + '\r\n')
             return
         log.msg('Running: %r, %r, %r'
                 % (executable, arguments, self.environment))
@@ -174,8 +178,7 @@ class ExecOnlySession:
 
     def openShell(self, protocol):
         """See ISession."""
-        protocol.write("No shells on this server.\r\n")
-        protocol.loseConnection()
+        self.errorWithMessage(protocol, "No shells on this server.\r\n")
 
     def windowChanged(self, newWindowSize):
         """See ISession."""

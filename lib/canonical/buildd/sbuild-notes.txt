@@ -30,7 +30,7 @@ Process is as follows:
 
 1. unpack the chroot tarball (must unpack to chroot-autobuild)
    Failure -> BUILDERFAIL
-2. mount up the proc, devpts and ccache dirs
+2. mount up the proc, and devpts dirs
    Failure -> BUILDERFAIL
 3. do apt-get update, apt-get dist-upgrade in the chroot
    Failure -> CHROOTFAIL
@@ -40,7 +40,7 @@ Process is as follows:
               DEPFAIL / PACKAGEFAIL
 6. sudo ./kill-any-chrooted-processes.py
    Failure -> BUILDERFAIL
-7. umount the proc, devpts and ccache dirs
+7. umount the proc, and devpts dirs
    Failure -> BUILDERFAIL
 8. unlink the chroot (rm -rf or whatever as root)
    Failure -> BUILDERFAIL

@@ -277,12 +277,22 @@ class GettextPOExporterBase:
         """See `ITranslationFormatExporter`."""
         return export_translation_message(translation_message)
 
-    def _makeExportedHeader(self, translation_file, charset=None):
+    def _makeExportedHeader(self, translation_file):
         """Transform the header information into a format suitable for export.
 
         :return: Unicode string containing the header.
         """
         raise NotImplementedError
+
+    def _encode_file_content(self, translation_file, exported_content):
+        """Try to encode the file using the charset given in the header."""
+        file_content = (
+            self._makeExportedHeader(translation_file) +
+            u'\n\n' +
+            exported_content)
+        encoded_file_content = file_content.encode(
+            translation_file.header.charset)
+        return encoded_file_content
 
     def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
                                force_utf8=False):
@@ -310,10 +320,7 @@ class GettextPOExporterBase:
                         translation_file.language_code,
                         file_extension))
 
-            if force_utf8:
-                translation_file.header.charset = 'UTF-8'
-            chunks = [self._makeExportedHeader(translation_file)]
-
+            chunks = []
             seen_keys = {}
 
             for message in translation_file.messages:
@@ -335,49 +342,42 @@ class GettextPOExporterBase:
                 if (message.is_obsolete and
                     (ignore_obsolete or len(message.translations) == 0)):
                     continue
-                exported_message = self.exportTranslationMessageData(message)
-                try:
-                    encoded_text = exported_message.encode(
-                        translation_file.header.charset)
-                except UnicodeEncodeError, error:
-                    if translation_file.header.charset.upper() == 'UTF-8':
-                        # It's already UTF-8, we cannot do anything.
-                        raise UnicodeEncodeError(
-                            '%s:\n%s' % (file_path, str(error)))
+                chunks.append(self.exportTranslationMessageData(message))
 
-                    # This message cannot be represented in the current
-                    # encoding.
-                    if translation_file.path:
-                        file_description = translation_file.path
-                    elif translation_file.language_code:
-                        file_description = (
-                            "%s translation" % translation_file.language_code)
-                    else:
-                        file_description = "template"
-                    logging.info(
-                        "Can't represent %s as %s; using UTF-8 instead." % (
-                            file_description,
-                            translation_file.header.charset.upper()))
-
-                    old_charset = translation_file.header.charset
-                    translation_file.header.charset = 'UTF-8'
-                    # We need to update the header too.
-                    chunks[0] = self._makeExportedHeader(
-                        translation_file, old_charset)
-                    # Update already exported entries.
-                    for index, chunk in enumerate(chunks):
-                        chunks[index] = chunk.decode(
-                            old_charset).encode('UTF-8')
-                    encoded_text = exported_message.encode('UTF-8')
-
-                chunks.append(encoded_text)
-
-            exported_file_content = '\n\n'.join(chunks)
 
             # Gettext .po files are supposed to end with a new line.
-            exported_file_content += '\n'
+            exported_file_content = u'\n\n'.join(chunks) + u'\n'
 
-            storage.addFile(file_path, file_extension, exported_file_content)
+            # Try to encode the file
+            if force_utf8:
+                translation_file.header.charset = 'UTF-8'
+            try:
+                encoded_file_content = self._encode_file_content(
+                    translation_file, exported_file_content)
+            except UnicodeEncodeError:
+                if translation_file.header.charset.upper() == 'UTF-8':
+                    # It's already UTF-8, we cannot do anything.
+                    raise
+                # This file content cannot be represented in the current
+                # encoding.
+                if translation_file.path:
+                    file_description = translation_file.path
+                elif translation_file.language_code:
+                    file_description = (
+                        "%s translation" % translation_file.language_code)
+                else:
+                    file_description = "template"
+                logging.info(
+                    "Can't represent %s as %s; using UTF-8 instead." % (
+                        file_description,
+                        translation_file.header.charset.upper()))
+                # Use UTF-8 instead.
+                translation_file.header.charset = 'UTF-8'
+                # This either succeeds or raises UnicodeError.
+                encoded_file_content = self._encode_file_content(
+                    translation_file, exported_file_content)
+
+            storage.addFile(file_path, file_extension, encoded_file_content)
 
         return storage.export()
 
@@ -410,13 +410,11 @@ class GettextPOExporter(GettextPOExporterBase):
             TranslationFileFormat.PO,
             TranslationFileFormat.KDEPO]
 
-    def _makeExportedHeader(self, translation_file, charset=None):
+    def _makeExportedHeader(self, translation_file):
         """Create a standard gettext PO header, encoded as a message.
 
         :return: The header message as a unicode string.
         """
-        if charset is None:
-            charset = translation_file.header.charset
         header_translation_message = TranslationMessageData()
         header_translation_message.addTranslation(
             TranslationConstants.SINGULAR_FORM,
@@ -427,7 +425,7 @@ class GettextPOExporter(GettextPOExporterBase):
             header_translation_message.flags.update(['fuzzy'])
         exported_header = self.exportTranslationMessageData(
             header_translation_message)
-        return exported_header.encode(charset)
+        return exported_header
 
 
 class GettextPOChangedExporter(GettextPOExporterBase):
@@ -447,15 +445,13 @@ class GettextPOChangedExporter(GettextPOExporterBase):
         self.format = TranslationFileFormat.POCHANGED
         self.supported_source_formats = []
 
-    def _makeExportedHeader(self, translation_file, charset=None):
+    def _makeExportedHeader(self, translation_file):
         """Create a header for changed PO files.
         This is a reduced header containing a warning that this is an
         icomplete gettext PO file.
         :return: The header as a unicode string.
         """
-        if charset is None:
-            charset = translation_file.header.charset
-        return self.exported_header.encode(charset)
+        return self.exported_header
 
     def acceptSingularClash(self, previous_message, current_message):
         """See `GettextPOExporterBase`."""

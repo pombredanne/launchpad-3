@@ -14,6 +14,7 @@ __all__ = [
     'ITeamMembershipSet',
     'ITeamParticipation',
     'TeamMembershipStatus',
+    'UserCannotChangeMembershipSilently',
     ]
 
 from zope.schema import Bool, Choice, Datetime, Int, Text
@@ -34,13 +35,15 @@ from canonical.launchpad import _
 # admin to do so, depending on the team's renewal policy.
 DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
 
+
 class UserCannotChangeMembershipSilently(Unauthorized):
     """User not permitted to change membership status silently.
 
     Raised when a user tries to change someone's membership silently, and is not
     a Launchpad Administrator.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(401) # HTTP Error: 'Unauthorized'
+
 
 class TeamMembershipStatus(DBEnumeratedType):
     """TeamMembership Status
@@ -235,6 +238,8 @@ class ITeamMembership(Interface):
         transition.
 
         The given status must be different than the current status.
+
+        Return True if the status got changed, otherwise False.
         """
 
 

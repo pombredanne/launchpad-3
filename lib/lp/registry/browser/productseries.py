@@ -33,6 +33,9 @@ from bzrlib.revision import NULL_REVISION
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -56,26 +59,28 @@ from lp.registry.browser import StatusCount
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
+from lp.registry.interfaces.packaging import (
+    IPackaging, IPackagingUtil)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, StandardLaunchpadFacets,
-    stepthrough, stepto)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepthrough,
+    stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
-from lp.registry.browser.packaging import PackagingAddView
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 
 
@@ -158,8 +163,7 @@ class ProductSeriesOverviewMenu(
     facet = 'overview'
     links = [
         'edit', 'delete', 'driver', 'link_branch', 'branch_add', 'ubuntupkg',
-        'add_package', 'create_milestone', 'create_release',
-        'rdf', 'subscribe',
+        'create_milestone', 'create_release', 'rdf', 'subscribe',
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -201,17 +205,11 @@ class ProductSeriesOverviewMenu(
         summary = "Register a new Bazaar branch for this series' project"
         return Link('+addbranch', text, summary, icon='add')
 
-    @enabled_with_permission('launchpad.View')
+    @enabled_with_permission('launchpad.AnyPerson')
     def ubuntupkg(self):
         """Return a link to link this series to an ubuntu sourcepackage."""
         text = 'Link to Ubuntu package'
         return Link('+ubuntupkg', text, icon='add')
-
-    @enabled_with_permission('launchpad.View')
-    def add_package(self):
-        """Return a link to link this series to a sourcepackage."""
-        text = 'Link package'
-        return Link('+addpackage', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
@@ -311,7 +309,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def request_import_link(self):
         """A link to the page for requesting a new code import."""
-        return canonical_url(getUtility(ICodeImportSet), view_name='+new')
+        return canonical_url(self.context.product, view_name='+new-import')
 
     @property
     def user_branch_visible(self):
@@ -329,7 +327,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         them for obsolete series can be a problem if many series are being
         displayed.
         """
-        return self.context.status == DistroSeriesStatus.OBSOLETE
+        return self.context.status == SeriesStatus.OBSOLETE
 
     @cachedproperty
     def bugtask_status_counts(self):
@@ -364,9 +362,10 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         return None
 
 
-class ProductSeriesUbuntuPackagingView(PackagingAddView):
+class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
 
-    field_names = ['sourcepackagename']
+    schema = IPackaging
+    field_names = ['sourcepackagename', 'distroseries']
     page_title = 'Ubuntu source packaging'
     label = page_title
 
@@ -374,14 +373,42 @@ class ProductSeriesUbuntuPackagingView(PackagingAddView):
         """Set the static packaging information for this series."""
         super(ProductSeriesUbuntuPackagingView, self).__init__(
             context, request)
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self._ubuntu_series = ubuntu.currentseries
+        self._ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self._ubuntu_series = self._ubuntu.currentseries
         try:
             package = self.context.getPackage(self._ubuntu_series)
             self.default_sourcepackagename = package.sourcepackagename
         except NotFoundError:
             # The package has never been set.
             self.default_sourcepackagename = None
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        The packaging is restricted to ubuntu series and the default value
+        is the current development series.
+        """
+        super(ProductSeriesUbuntuPackagingView, self).setUpFields()
+        series_vocabulary = SimpleVocabulary(
+            [SimpleTerm(series, series.name, series.named_version)
+             for series in self._ubuntu.series])
+        choice = Choice(__name__='distroseries',
+            title=_('Series'),
+            default=self._ubuntu_series,
+            vocabulary=series_vocabulary,
+            description=_(
+                "Series where this package is published. The current series "
+                "is most important to the Ubuntu community."),
+            required=True)
+        field = form.Fields(choice, render_context=self.render_context)
+        self.form_fields = self.form_fields.omit(choice.__name__) + field
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`.
@@ -404,11 +431,54 @@ class ProductSeriesUbuntuPackagingView(PackagingAddView):
             self.default_distroseries.distribution)
 
     def validate(self, data):
+        productseries = self.context
         sourcepackagename = data.get('sourcepackagename', None)
+        distroseries = data.get('distroseries', self.default_distroseries)
+
         if sourcepackagename == self.default_sourcepackagename:
             # The data has not changed, so nothing else needs to be done.
             return
-        super(ProductSeriesUbuntuPackagingView, self).validate(data)
+
+        if sourcepackagename is None:
+            message = "You must choose the source package name."
+            self.setFieldError('sourcepackagename', message)
+        # Do not allow users it create links to unpublished Ubuntu packages.
+        elif distroseries.distribution.full_functionality:
+            source_package = distroseries.getSourcePackage(sourcepackagename)
+            if source_package.currentrelease is None:
+                message = ("The source package is not published in %s." %
+                    distroseries.displayname)
+                self.setFieldError('sourcepackagename', message)
+        else:
+            pass
+        packaging_util = getUtility(IPackagingUtil)
+        if packaging_util.packagingEntryExists(
+            productseries=productseries,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries):
+            # The series packaging conflicts with itself.
+            message = _(
+                "This series is already packaged in %s." %
+                distroseries.displayname)
+            self.setFieldError('sourcepackagename', message)
+        elif packaging_util.packagingEntryExists(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries):
+            # The series package conflicts with another series.
+            sourcepackage = distroseries.getSourcePackage(
+                sourcepackagename.name)
+            message = structured(
+                'The <a href="%s">%s</a> package in %s is already linked to '
+                'another series.' %
+                (canonical_url(sourcepackage),
+                 sourcepackagename.name,
+                 distroseries.displayname))
+            self.setFieldError('sourcepackagename', message)
+        else:
+            # The distroseries and sourcepackagename are not already linked
+            # to this series, or any other series.
+            pass
+
 
     @action('Update', name='continue')
     def continue_action(self, action, data):

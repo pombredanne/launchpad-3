@@ -24,7 +24,7 @@ from canonical.launchpad.webapp import (
     safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import enabled_with_permission
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class FAQCollectionMenu(NavigationMenu):
@@ -47,7 +47,7 @@ class FAQCollectionMenu(NavigationMenu):
     def create_faq(self):
         """Return a Link to create a new FAQ."""
         collection = IFAQCollection(self.context)
-        if IProject.providedBy(self.context):
+        if IProjectGroup.providedBy(self.context):
             url = ''
             enabled = False
         else:

@@ -14,8 +14,9 @@
       <div
         tal:condition="direct_subscriptions"
         tal:repeat="subscription direct_subscriptions"
-        tal:attributes="class subscription/css_name"
-      >
+        tal:attributes="
+            class subscription/css_name;
+            id string:direct-${subscription/css_name}">
         <metal:subscriber metal:define-macro="subscriber-row">
 
             <a

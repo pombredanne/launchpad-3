@@ -347,9 +347,10 @@ Adding an attachment will generate a notification that looks as follows:
     ...     def __init__(self, url):
     ...         self.http_url = url
     >>> class MockAttachment:
-    ...     def __init__(self, title, libraryfile):
+    ...     def __init__(self, title, libraryfile, is_patch=False):
     ...         self.title = title
     ...         self.libraryfile = libraryfile
+    ...         self.is_patch = is_patch
     >>> attachment = MockAttachment(
     ...     title="A screenshot of the problem",
     ...     libraryfile=MockLibraryFile('http://foo.com/screenshot.png'))
@@ -381,6 +382,42 @@ Removing an attachment generates a notification, too.
     ** Attachment removed: "A screenshot of the problem"
        http://foo.com/screenshot.png
     -----------------------------
+
+Adding an attachment and marking it as a patch generates a different
+notification.
+
+    >>> attachment = MockAttachment(
+    ...     title="A new icon for the application",
+    ...     libraryfile=MockLibraryFile('http://foo.com/new-icon.png'),
+    ...     is_patch=True)
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     attachment={'new' : attachment, 'old': None})
+    >>> for change in get_bug_changes(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
+    ** Patch added: "A new icon for the application"
+       http://foo.com/new-icon.png
+    -----------------------------
+
+Removing a patch also generates a different notification.
+
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     attachment={'old' : attachment, 'new': None})
+    >>> for change in get_bug_changes(bug_delta):
+    ...     notification = change.getBugNotification()
+    ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
+    ** Patch removed: "A new icon for the application"
+       http://foo.com/new-icon.png
+    -----------------------------
+
 
 = Generation of From: and Reply-To: addresses =
 

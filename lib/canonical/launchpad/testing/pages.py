@@ -14,23 +14,26 @@ import pdb
 import pprint
 import re
 import transaction
-import sys
 import unittest
 
 from BeautifulSoup import (
     BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
-from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from contrib.oauth import (
+    OAuthConsumer, OAuthRequest, OAuthSignatureMethod_PLAINTEXT, OAuthToken)
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
+from canonical.launchpad.interfaces import (
+    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
+    TeamMembershipStatus)
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
+    LayeredDocFileSuite, SpecialOutputChecker, stop, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
@@ -38,6 +41,7 @@ from canonical.testing import PageTestLayer
 from lazr.restful.testing.webservice import WebServiceCaller
 from lp.testing import ANONYMOUS, login, login_person, logout
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.registry.interfaces.person import NameAlreadyTaken
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -48,6 +52,7 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
     sending both Basic Auth and cookie credentials raises an exception
     (Bug 39881).
     """
+
     def __init__(self, *args, **kw):
         if kw.get('debug'):
             self._debug = True
@@ -95,10 +100,33 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         """
         if oauth_consumer_key is not None and oauth_access_key is not None:
             login(ANONYMOUS)
-            self.consumer = getUtility(IOAuthConsumerSet).getByKey(
-                oauth_consumer_key)
-            self.access_token = self.consumer.getAccessToken(
-                oauth_access_key)
+            consumers = getUtility(IOAuthConsumerSet)
+            self.consumer = consumers.getByKey(oauth_consumer_key)
+            if oauth_access_key == '':
+                # The client wants to make an anonymous request.
+                self.access_token = OAuthToken(oauth_access_key, '')
+                if self.consumer is None:
+                    # The client is trying to make an anonymous
+                    # request with a previously unknown consumer. This
+                    # is fine: we manually create a "fake"
+                    # OAuthConsumer (it's "fake" because it's not
+                    # really an IOAuthConsumer as returned by
+                    # IOAuthConsumerSet.getByKey) to be used in the
+                    # requests we make.
+                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
+            else:
+                if self.consumer is None:
+                    # Requests using this caller will be rejected by
+                    # the server, but we have a test that verifies
+                    # such requests _are_ rejected, so we'll create a
+                    # fake OAuthConsumer object.
+                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
+                    self.access_token = OAuthToken(oauth_access_key, '')
+                else:
+                    # The client wants to make an authorized request
+                    # using a recognized consumer key.
+                    self.access_token = self.consumer.getAccessToken(
+                        oauth_access_key)
             logout()
         else:
             self.consumer = None
@@ -106,6 +134,8 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
 
         self.handle_errors = handle_errors
         WebServiceCaller.__init__(self, handle_errors, domain, protocol)
+
+    default_api_version = "beta"
 
     def addHeadersTo(self, full_url, full_headers):
         if (self.consumer is not None and self.access_token is not None):
@@ -177,7 +207,9 @@ def extract_all_script_and_style_links(content):
 
 def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
+
     match_classes = set(class_.split())
+
     def class_matcher(value):
         if value is None:
             return False
@@ -237,6 +269,7 @@ def print_feedback_messages(content):
     for message in get_feedback_messages(content):
         print message
 
+
 def print_table(content, columns=None, skip_rows=None, sep="\t"):
     """Given a <table> print the content of each row.
 
@@ -256,6 +289,7 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
                 row_content.append(extract_text(item))
         if len(row_content) > 0:
             print sep.join(row_content)
+
 
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
@@ -350,9 +384,10 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
             #
             # The CData class does not override slicing though, so by slicing
             # node first, we're effectively turning it into a concrete unicode
-            # instance, which does not wrap the contents when its __unicode__()
-            # is called of course.  We could remove the unicode() call
-            # here, but we keep it for consistency and clarity purposes.
+            # instance, which does not wrap the contents when its
+            # __unicode__() is called of course.  We could remove the
+            # unicode() call here, but we keep it for consistency and clarity
+            # purposes.
             result.append(unicode(node[:]))
         elif isinstance(node, NavigableString):
             result.append(unicode(node))
@@ -430,7 +465,7 @@ def print_action_links(content):
 
 def print_navigation_links(content):
     """Print navigation menu urls."""
-    navigation_links  = find_tag_by_id(content, 'navigation-tabs')
+    navigation_links = find_tag_by_id(content, 'navigation-tabs')
     if navigation_links is None:
         print "No navigation links"
         return
@@ -500,7 +535,7 @@ def print_comments(page):
 
 def print_batch_header(soup):
     """Print the batch navigator header."""
-    navigation = soup.find('td', {'class' : 'batch-navigation-index'})
+    navigation = soup.find('td', {'class': 'batch-navigation-index'})
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
@@ -634,14 +669,49 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
-def stop():
-    # Temporarily restore the real stdout.
-    old_stdout = sys.stdout
-    sys.stdout = sys.__stdout__
+def setupDTCBrowser():
+    """Testbrowser configured for Distribution Translations Coordinators.
+
+    Ubuntu is the configured distribution.
+    """
+    login('foo.bar@canonical.com')
     try:
-        pdb.set_trace()
-    finally:
-        sys.stdout = old_stdout
+        dtg_member = LaunchpadObjectFactory().makePerson(
+            name='ubuntu-translations-coordinator',
+            email="dtg-member@ex.com", password="test")
+    except NameAlreadyTaken:
+        # We have already created the translations coordinator
+        pass
+    else:
+        dtg = LaunchpadObjectFactory().makeTranslationGroup(
+            name="ubuntu-translators",
+            title="Ubuntu Translators",
+            owner=dtg_member)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ubuntu.translationgroup = dtg
+    logout()
+    return setupBrowser(auth='Basic dtg-member@ex.com:test')
+
+
+def setupRosettaExpertBrowser():
+    """Testbrowser configured for Rosetta Experts."""
+
+    login('admin@canonical.com')
+    try:
+        rosetta_expert = LaunchpadObjectFactory().makePerson(
+            name='rosetta-experts-member',
+            email='re@ex.com', password='test')
+    except NameAlreadyTaken:
+        # We have already created an Rosetta expert
+        pass
+    else:
+        rosetta_experts_team = removeSecurityProxy(getUtility(
+            ILaunchpadCelebrities).rosetta_experts)
+        rosetta_experts_team.addMember(
+            rosetta_expert, reviewer=rosetta_experts_team,
+            status=TeamMembershipStatus.ADMIN)
+    logout()
+    return setupBrowser(auth='Basic re@ex.com:test')
 
 
 def setUpGlobs(test):
@@ -653,7 +723,11 @@ def setUpGlobs(test):
         'foobar123451432', 'salgado-read-nonprivate')
     test.globs['user_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', 'nopriv-read-nonprivate')
+    test.globs['anon_webservice'] = LaunchpadWebServiceCaller(
+        'launchpad-library', '')
     test.globs['setupBrowser'] = setupBrowser
+    test.globs['setupDTCBrowser'] = setupDTCBrowser
+    test.globs['setupRosettaExpertBrowser'] = setupRosettaExpertBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
     test.globs['user_browser'] = setupBrowser(
