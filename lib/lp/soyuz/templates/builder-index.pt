@@ -125,7 +125,7 @@
         </span>
       Current status</h2>
 
-      <p tal:define="builder context">
+      <p tal:define="builder context" id="current-build-summary">
         <metal:summary use-macro="template/macros/status-summary" />
       </p>
 
