@@ -31,8 +31,9 @@ from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.soyuz.interfaces.build import IBuild
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
+from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -69,6 +70,8 @@ from canonical.launchpad.interfaces.oauth import (
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.soyuz.interfaces.build import IBuild
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingEdit,
     ISourcePackagePublishingHistory)
@@ -1503,6 +1506,39 @@ class ViewBuildRecord(EditBuildRecord):
         # See comment above.
         auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
         return auth_spr.checkUnauthenticated()
+
+
+class ViewBuildFarmJob(AuthorizationBase):
+    """Permission to view an `IBuildFarmJob`.
+
+    This permission is based entirely on permission to view the
+    associated `IBuild` and/or `IBranch`.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBuildFarmJob
+
+    def _getBuildPermission(self):
+        return ViewBuildRecord(self.obj.build)
+
+    def _checkBranchVisibility(self, user=None):
+        """Is the user free to view any branches associated with this job?"""
+        if not IBuildFarmBranchJob.isProvidedBy(self.obj):
+            return True
+        else:
+            return self.obj.branch.visibleByUser(user)
+
+    def checkAuthenticated(self, user):
+        if not self._checkBranchVisibility(user):
+            return False
+
+        if IBuildFarmBuildJob.isProvidedBy(self.obj):
+            if not self._getBuildPermission().checkAuthenticated(user):
+                return False
+
+    def checkUnauthenticated(self):
+        if not self._checkBranchVisibility():
+            return False
+        return self._getBuildPermission().checkUnauthenticated()
 
 
 class AdminQuestion(AdminByAdminsTeam):

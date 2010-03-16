@@ -10,7 +10,7 @@
       tal:content="context/current_build_duration/fmt:exactduration" />
     ago.
   </p>
-  <tal:logtail condition="view/log_visible">
+  <tal:logtail condition="context/specific_job/required:launchpad.View">
     <h2>Buildlog</h2>
     <div tal:content="structure context/logtail/fmt:text-to-html"
          id="buildlog-tail"

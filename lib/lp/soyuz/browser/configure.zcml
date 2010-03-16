@@ -803,7 +803,7 @@
     <browser:page
         for="lp.buildmaster.interfaces.buildqueue.IBuildQueue"
         name="+current"
-        class="lp.soyuz.browser.buildqueue.BuildQueueStatusView"
+        class="canonical.launchpad.webapp.publisher.LaunchpadView"
         facet="overview"
         permission="launchpad.View"
         template="../templates/buildqueue-current.pt"/>
