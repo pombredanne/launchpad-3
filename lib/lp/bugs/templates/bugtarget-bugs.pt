@@ -68,7 +68,7 @@
                      tal:condition="link/enabled"
                      tal:attributes="href link/url; title link/text">
                     <img tal:attributes="alt link/text" src="/@@/edit" />
-                  </a> 
+                  </a>
                 </tal:edit-bug-supervisor>
               </span>
             </li>
@@ -96,7 +96,7 @@
           </ul>
         </div>
 
-      <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks">
+      <tal:has_bugtasks condition="context/has_bugtasks">
         <div class="search-box">
           <metal:search
             use-macro="context/@@+bugtarget-macros-search/simple-search-form"
@@ -105,7 +105,9 @@
         <script type="text/javascript"><!--
              $('field.searchtext').focus();
         --></script>
+      </tal:has_bugtasks>
 
+      <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks">
         <h2 style="margin-top: 1em">Hot bugs</h2>
 
         <table class="listing" id="hot-bugs"
@@ -154,8 +156,9 @@
       </tal:has_hot_bugs>
 
       <tal:no_hot_bugs condition="not: view/hot_bugs_info/bugtasks">
-        <p id="no-bugs-filed"><strong>There are currently no bugs filed against
-          <tal:project_title replace="context/title" />.</strong></p>
+        <p id="no-bugs-filed"><strong>There are currently no
+          <span tal:condition="context/has_bugtasks">hot</span> bugs filed
+          against <tal:project_title replace="context/title" />.</strong></p>
 
         <p id="no-bugs-report"><a href="+filebug">Report a bug.</a></p>
       </tal:no_hot_bugs>

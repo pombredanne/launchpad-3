@@ -175,8 +175,8 @@ from lp.registry.interfaces.wikiname import IWikiNameSet
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.build import IBuildSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
@@ -2695,7 +2695,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         It's shown when the person has OpenPGP keys registered or has rights
         to register new ones.
         """
-        return bool(self.context.gpgkeys) or (
+        return bool(self.context.gpg_keys) or (
             check_permission('launchpad.Edit', self.context))
 
     @cachedproperty

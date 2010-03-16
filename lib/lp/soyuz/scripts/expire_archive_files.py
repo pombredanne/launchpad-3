@@ -34,7 +34,7 @@ bzr-nightly-ppa
 """.split()
 
 
-class PPABinaryExpirer(LaunchpadCronScript):
+class ArchiveExpirer(LaunchpadCronScript):
     """Helper class for expiring old PPA binaries.
 
     Any PPA binary older than 30 days that is superseded or deleted
@@ -60,6 +60,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
         from lp.soyuz.interfaces.archive import ArchivePurpose
 
         stay_of_execution = '%d days' % num_days
+        archive_types = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
         # The subquery here has to repeat the checks for privacy and
         # blacklisting on *other* publications that are also done in
@@ -79,7 +80,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
                 AND spph.dateremoved < (
                     CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
                 AND spph.archive = archive.id
-                AND archive.purpose = %s
+                AND archive.purpose IN %s
                 AND lfa.expires IS NULL
             EXCEPT
             SELECT sprf.libraryfile
@@ -95,15 +96,15 @@ class PPABinaryExpirer(LaunchpadCronScript):
                 AND spph.archive = a.id
                 AND p.id = a.owner
                 AND (
-                    p.name IN %s
+                    (p.name IN %s AND a.purpose = %s)
                     OR a.private IS TRUE
-                    OR a.purpose != %s
+                    OR a.purpose NOT IN %s
                     OR dateremoved >
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
                     OR dateremoved IS NULL);
             """ % sqlvalues(
-                stay_of_execution, ArchivePurpose.PPA, self.blacklist,
-                ArchivePurpose.PPA, stay_of_execution))
+                stay_of_execution, archive_types, self.blacklist,
+                ArchivePurpose.PPA, archive_types, stay_of_execution))
 
         lfa_ids = results.get_all()
         return lfa_ids
@@ -114,6 +115,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
         from lp.soyuz.interfaces.archive import ArchivePurpose
 
         stay_of_execution = '%d days' % num_days
+        archive_types = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
         # The subquery here has to repeat the checks for privacy and
         # blacklisting on *other* publications that are also done in
@@ -131,9 +133,10 @@ class PPABinaryExpirer(LaunchpadCronScript):
                 AND bpr.id = bpf.binarypackagerelease
                 AND bpph.binarypackagerelease = bpr.id
                 AND bpph.dateremoved < (
-                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
+                    interval %(stay_of_execution)s)
                 AND bpph.archive = archive.id
-                AND archive.purpose = %s
+                AND archive.purpose IN %(archive_types)s
                 AND lfa.expires IS NULL
             EXCEPT
             SELECT bpf.libraryfile
@@ -149,15 +152,18 @@ class PPABinaryExpirer(LaunchpadCronScript):
                 AND bpph.archive = a.id
                 AND p.id = a.owner
                 AND (
-                    p.name IN %s
+                    (p.name IN %(blacklist)s AND a.purpose = %(ppa)s)
                     OR a.private IS TRUE
-                    OR a.purpose != %s
-                    OR dateremoved >
-                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
-                    OR dateremoved IS NULL);
+                    OR a.purpose NOT IN %(archive_types)s
+                    OR dateremoved > (
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
+                        interval %(stay_of_execution)s)
+                    OR dateremoved IS NULL)
             """ % sqlvalues(
-                stay_of_execution, ArchivePurpose.PPA, self.blacklist,
-                ArchivePurpose.PPA, stay_of_execution))
+                stay_of_execution=stay_of_execution,
+                archive_types=archive_types,
+                blacklist=self.blacklist,
+                ppa=ArchivePurpose.PPA))
 
         lfa_ids = results.get_all()
         return lfa_ids

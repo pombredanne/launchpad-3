@@ -42,14 +42,14 @@
     string:&lt;script id='branchlink-script' type='text/javascript'&gt;" />
     <!--
 
-    LPS.use('io-base', 'code.branchlinks', function(Y) {
+    LPS.use('io-base', 'lp.code.branch.bugspeclinks', function(Y) {
 
     if(Y.UA.ie) {
         return;
     }
 
     Y.on('domready', function() {
-        Y.code.branchlinks.connect_branchlinks();
+        Y.lp.code.branch.bugspeclinks.connect_branchlinks();
     });
 
     });
