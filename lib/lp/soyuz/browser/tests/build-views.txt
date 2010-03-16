@@ -171,8 +171,8 @@ So, create a user, a team, and the packageset:
     >>> joe = factory.makePerson(email='joe@example.com', password='test')
     >>> desktop = factory.makeTeam(name='desktop', owner=joe)
     >>> main_archive = test_publisher.distroseries.main_archive
-    >>> rebuild_ps = getUtility(IPackagesetSet).new(u'rebuild',
-    ...     u'Test package set', desktop, 
+    >>> rebuild_ps = getUtility(IPackagesetSet).new(
+    ...     u'rebuild', u'Test package set', desktop, 
     ...     distroseries=test_publisher.distroseries)
     >>> rebuild_spn = (failed_build.sourcepackagerelease.sourcepackagename,)
     >>> rebuild_ps.add(rebuild_spn)
