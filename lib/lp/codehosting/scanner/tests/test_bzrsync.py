@@ -658,6 +658,7 @@ class TestUpdatePreviewDiffJob(BzrSyncTestCase):
         revision_id = self.commitRevision()
         bmp = self.factory.makeBranchMergeProposal(
             source_branch=self.db_branch)
+        removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()

@@ -21,6 +21,7 @@ import urllib
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
+from lazr.uri import URI
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter, getMultiAdapter
@@ -42,27 +43,26 @@ from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProjectGroup, IDistributionSourcePackage, ISprint,
     LicenseStatus, NotFoundError)
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.code.interfaces.branch import IBranch
-from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
-from lp.registry.interfaces.person import IPerson, IPersonSet
+import canonical.launchpad.pagetitles
+from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
-import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import canonical_url, urlappend
-from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.interfaces.branch import IBranch
+from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 
 
 SEPARATOR = ' : '
