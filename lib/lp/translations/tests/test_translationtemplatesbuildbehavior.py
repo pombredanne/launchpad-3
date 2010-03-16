@@ -6,7 +6,6 @@
 import logging
 import os
 from StringIO import StringIO
-import tarfile
 from unittest import TestLoader
 
 from zope.component import getUtility

@@ -5,15 +5,9 @@
 
 __metaclass__ = type
 
-import datetime
-import os
-import pytz
-import shutil
-import tempfile
 from unittest import TestLoader
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
