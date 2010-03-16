@@ -33,7 +33,8 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin, HasCodeImportsMixin, HasMergeProposalsMixin)
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
@@ -169,7 +170,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
-              HasCustomLanguageCodesMixin, HasMergeProposalsMixin):
+              HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
+              HasCodeImportsMixin):
 
     """A Product."""
 
