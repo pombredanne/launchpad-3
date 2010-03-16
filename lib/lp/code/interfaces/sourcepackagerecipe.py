@@ -96,6 +96,13 @@ class ISourcePackageRecipe(IHasOwner):
         """
 
 
+class ISourcePackageRecipeData(Interface):
+
+    base_branch = Attribute('Base branch of the recipe')
+
+    deb_version_template = TextLine()
+
+
 class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.
     """

@@ -9,7 +9,7 @@ interfaces.
 """
 
 __metaclass__ = type
-__all__ = ['_SourcePackageRecipeData']
+__all__ = ['SourcePackageRecipeData']
 
 from bzrlib.plugins.builder.recipe import (
     BaseRecipeBranch, MergeInstruction, NestInstruction, RecipeBranch)
@@ -97,7 +97,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
         return branch
 
 
-class _SourcePackageRecipeData(Storm):
+class SourcePackageRecipeData(Storm):
     """The database representation of a BaseRecipeBranch from bzr-builder.
 
     This is referenced from the SourcePackageRecipe table as the 'recipe_data'

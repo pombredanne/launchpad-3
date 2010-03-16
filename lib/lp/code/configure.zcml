@@ -1004,6 +1004,12 @@
   <adapter factory="lp.code.model.recipebuilder.RecipeBuildBehavior"
            permission="zope.Public" />
 
+  <!-- SourcePackageRecipeData -->
+  <class
+     class="lp.code.model.sourcepackagerecipedata.SourcePackageRecipeData">
+    <allow
+    interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeData"/>
+  </class>
   <!-- SourcePackageRecipe -->
   <class
      class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">

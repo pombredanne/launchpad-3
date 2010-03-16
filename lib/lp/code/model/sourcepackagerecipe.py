@@ -8,6 +8,8 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
+from lazr.delegates import delegates
+
 from storm.locals import Int, Reference, Store, Storm, Unicode
 
 from zope.component import getUtility
@@ -18,11 +20,11 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.archiveuploader.permission import check_upload_to_archive
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource)
+    ISourcePackageRecipe, ISourcePackageRecipeSource, ISourcePackageRecipeData)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.code.model.sourcepackagerecipedata import _SourcePackageRecipeData
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 
@@ -33,11 +35,15 @@ class NonPPABuildRequest(Exception):
 
 
 class SourcePackageRecipe(Storm):
-    """See `ISourcePackageRecipe` and `ISourcePackageRecipeSource`.""" 
+    """See `ISourcePackageRecipe` and `ISourcePackageRecipeSource`."""
+
     __storm_table__ = 'SourcePackageRecipe'
 
     implements(ISourcePackageRecipe)
+
     classProvides(ISourcePackageRecipeSource)
+
+    delegates(ISourcePackageRecipeData, context='_recipe_data')
 
     id = Int(primary=True)
 
@@ -60,25 +66,17 @@ class SourcePackageRecipe(Storm):
     name = Unicode(allow_none=True)
 
     @property
-    def base_branch(self):
-        return self._recipe_data.base_branch
-
-    @property
-    def deb_version_template(self):
-        return self._recipe_data.deb_version_template
-
-    @property
     def _recipe_data(self):
         return Store.of(self).find(
-            _SourcePackageRecipeData,
-            _SourcePackageRecipeData.sourcepackage_recipe == self).one()
+            SourcePackageRecipeData,
+            SourcePackageRecipeData.sourcepackage_recipe == self).one()
 
     def _get_builder_recipe(self):
-        """Accesses of the recipe go to the _SourcePackageRecipeData."""
+        """Accesses of the recipe go to the SourcePackageRecipeData."""
         return self._recipe_data.getRecipe()
 
     def _set_builder_recipe(self, value):
-        """Setting of the recipe goes to the _SourcePackageRecipeData."""
+        """Setting of the recipe goes to the SourcePackageRecipeData."""
         self._recipe_data.setRecipe(value)
 
     builder_recipe = property(_get_builder_recipe, _set_builder_recipe)
@@ -93,7 +91,7 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        _SourcePackageRecipeData(builder_recipe, sprecipe)
+        SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.distroseries = distroseries

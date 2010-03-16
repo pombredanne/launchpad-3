@@ -22,7 +22,7 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def base_branch(self):
-        return self.context._recipe_data.base_branch
+        return self.context.recipe_data.base_branch
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):
