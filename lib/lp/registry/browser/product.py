@@ -1941,8 +1941,9 @@ class ProductInvolvementView(PillarView):
         These are displayed to notify the user to provide configuration
         info to enable the links.
         """
+        involved_menu = MenuAPI(self).navigation
         important_links = [
-            self.involved_menu[name]
+            involved_menu[name]
             for name in ('report_bug', 'submit_code')]
         return sorted([
             link for link in important_links if not link.enabled],

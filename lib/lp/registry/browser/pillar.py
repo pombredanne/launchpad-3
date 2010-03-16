@@ -15,7 +15,6 @@ from operator import attrgetter
 from zope.component.globalregistry import provideAdapter
 from zope.interface import implements, Interface
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp.menu import Link, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
@@ -124,15 +123,12 @@ class PillarView(LaunchpadView):
             or self.official_blueprints or self.official_rosetta
             or self.official_codehosting)
 
-    @cachedproperty
-    def involved_menu(self):
-        return MenuAPI(self).navigation
-
     @property
     def enabled_links(self):
         """The enabled involvement links."""
+        menuapi = MenuAPI(self)
         return sorted([
-            link for link in self.involved_menu.values() if link.enabled],
+            link for link in menuapi.navigation.values() if link.enabled],
             key=attrgetter('sort_key'))
 
 
