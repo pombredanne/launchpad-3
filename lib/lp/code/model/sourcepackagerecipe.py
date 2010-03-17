@@ -10,6 +10,7 @@ __all__ = [
 
 from storm.locals import Int, Reference, Store, Storm, Unicode
 
+from sqlobject import StringCol
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
