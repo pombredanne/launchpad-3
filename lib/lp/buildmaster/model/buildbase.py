@@ -141,6 +141,32 @@ class BuildBase:
 
         method(librarian, slave_status, logger)
 
+    def processUpload(self, leaf, logfilename, root, logger):
+        """Process an upload.
+        
+        :param leaf: Leaf for this particular upload
+        :param logfilename: Path to the log file to write to
+        :param root: Root directory for the uploads
+        :param logger: A logger object
+        """
+        uploader_command = self.getUploaderCommand(
+            leaf, logfilename)
+        logger.info("Invoking uploader on %s" % root)
+        logger.info("%s" % uploader_command)
+
+        uploader_process = subprocess.Popen(
+            uploader_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Nothing should be written to the stdout/stderr.
+        upload_stdout, upload_stderr = uploader_process.communicate()
+
+        # XXX cprov 2007-04-17: we do not check uploader_result_code
+        # anywhere. We need to find out what will be best strategy
+        # when it failed HARD (there is a huge effort in process-upload
+        # to not return error, it only happen when the code is broken).
+        uploader_result_code = uploader_process.returncode
+        logger.info("Uploader returned %d" % uploader_result_code)
+
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
 
@@ -189,25 +215,9 @@ class BuildBase:
             copy_and_close(slave_file, out_file)
 
         uploader_logfilename = os.path.join(upload_dir, UPLOAD_LOG_FILENAME)
-        uploader_command = self.getUploaderCommand(
-            upload_leaf, uploader_logfilename)
         logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
 
-        logger.info("Invoking uploader on %s" % root)
-        logger.info("%s" % uploader_command)
-
-        uploader_process = subprocess.Popen(
-            uploader_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # Nothing should be written to the stdout/stderr.
-        upload_stdout, upload_stderr = uploader_process.communicate()
-
-        # XXX cprov 2007-04-17: we do not check uploader_result_code
-        # anywhere. We need to find out what will be best strategy
-        # when it failed HARD (there is a huge effort in process-upload
-        # to not return error, it only happen when the code is broken).
-        uploader_result_code = uploader_process.returncode
-        logger.info("Uploader returned %d" % uploader_result_code)
+        self.processUpload(upload_leaf, uploader_logfilename, root, logger)
 
         # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):
