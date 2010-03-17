@@ -7,7 +7,7 @@ import sys
 import optparse
 
 from canonical.launchpad.scripts import logger, logger_options
-from lp.archiveuploader.poppyinterface import PoppyInterface
+from lp.archiveuploader.poppyinterface import Hooks
 from lp.poppy.server import run_server
 
 
@@ -43,13 +43,12 @@ def main():
     ident = "lucille upload server"
     numthreads = 4
 
-    iface = PoppyInterface(root, log, allow_user=options.allow_user,
-                           cmd=options.cmd,
-                           perms=options.permissions)
+    hooks = Hooks(root, log, allow_user=options.allow_user, cmd=options.cmd,
+                  perms=options.permissions)
 
     run_server(host, int(port), ident, numthreads,
-               iface.new_client_hook, iface.client_done_hook,
-               iface.auth_verify_hook)
+               hooks.new_client_hook, hooks.client_done_hook,
+               hooks.auth_verify_hook)
     return 0
 
 if __name__ == '__main__':

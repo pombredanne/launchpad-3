@@ -220,7 +220,7 @@ class UploadProcessor:
         """
         # Protecting listdir by a lock ensures that we only get
         # completely finished directories listed. See
-        # PoppyInterface for the other locking place.
+        # lp.archiveuploader.poppyinterface.Hooks for the other locking place.
         lockfile_path = os.path.join(fsroot, ".lock")
         fsroot_lock = GlobalLock(lockfile_path)
         mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
