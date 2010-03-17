@@ -18,6 +18,8 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
+    'IReviewRequestedEmailJob',
+    'IReviewRequestedEmailJobSource',
     'IUpdatePreviewDiffJobSource',
     'notify_modified',
     ]
@@ -611,6 +613,23 @@ class ICodeReviewCommentEmailJobSource(IJobSource):
 
     def create(code_review_comment):
         """Create a job to email subscribers about the comment."""
+
+
+class IReviewRequestedEmailJob(IRunnableJob):
+    """Interface for the job to sends review request emails."""
+
+    reviewer = Attribute('The person or team asked to do the review.')
+    requester = Attribute('The person who as asked for the review.')
+
+
+class IReviewRequestedEmailJobSource(IJobSource):
+    """Create or retrieve jobs that email review requests."""
+
+    def create(review_request):
+        """Create a job to email a review request.
+
+        :param review_request: A vote reference for the requested review.
+        """
 
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it

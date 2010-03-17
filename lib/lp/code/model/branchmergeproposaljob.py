@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -20,6 +20,7 @@ __all__ = [
     'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
     'MergeProposalCreatedJob',
+    'ReviewRequestedEmailJob',
     'UpdatePreviewDiffJob',
     ]
 
@@ -51,13 +52,16 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, ICodeReviewCommentEmailJob,
     ICodeReviewCommentEmailJobSource, ICreateMergeProposalJob,
     ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
-    IMergeProposalCreatedJobSource, IUpdatePreviewDiffJobSource,
+    IMergeProposalCreatedJobSource, IReviewRequestedEmailJob,
+    IReviewRequestedEmailJobSource, IUpdatePreviewDiffJobSource,
     )
+from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_multi_server, get_scanner_server
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
@@ -84,6 +88,13 @@ class BranchMergeProposalJobType(DBEnumeratedType):
 
         This job sends the email to the merge proposal subscribers and
         reviewers.
+        """)
+
+    REVIEW_REQUEST_EMAIL = DBItem(3, """
+        Send the review request email to the requested reviewer.
+
+        This job sends an email to the requested reviewer, or members of the
+        requested reviewer team asking them to review the proposal.
         """)
 
 
@@ -418,3 +429,65 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
         """Return a list of email-ids to notify about user errors."""
         commenter = self.code_review_comment.message.owner
         return [commenter.preferredemail]
+
+
+class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
+    """Send email to the reviewer telling them to review the proposal.
+
+    Provides class methods to create and retrieve such jobs.
+    """
+
+    implements(IReviewRequestedEmailJob)
+
+    classProvides(IReviewRequestedEmailJobSource)
+
+    class_job_type = BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL
+
+    def run(self):
+        """See `IRunnableJob`."""
+        reason = RecipientReason.forReviewer(
+            self.branch_merge_proposal, True, self.reviewer)
+        mailer = BMPMailer.forReviewRequest(
+            reason, self.branch_merge_proposal, self.requester)
+        mailer.sendAll()
+
+    @classmethod
+    def create(cls, review_request):
+        """See `IReviewRequestedEmailJobSource`."""
+        metadata = cls.getMetadata(review_request)
+        bmp = review_request.branch_merge_proposal
+        job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
+        return cls(job)
+
+    @staticmethod
+    def getMetadata(review_request):
+        return {
+            'reviewer': review_request.reviewer.name,
+            'requester': review_request.registrant.name,
+            }
+
+    @property
+    def reviewer(self):
+        """The person or team who has been asked to review."""
+        return getUtility(IPersonSet).getByName(self.metadata['reviewer'])
+
+    @property
+    def requester(self):
+        """The person who requested the review to be done."""
+        return getUtility(IPersonSet).getByName(self.metadata['requester'])
+
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars.extend([
+            ('reviewer', self.metadata['reviewer']),
+            ('requester', self.metadata['requester']),
+            ])
+        return vars
+
+    def getErrorRecipients(self):
+        """Return a list of email-ids to notify about user errors."""
+        recipients = []
+        if self.requester is not None:
+            recipients.append(self.requester.preferredemail)
+        return recipients

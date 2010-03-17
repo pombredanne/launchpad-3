@@ -933,6 +933,16 @@
   </class>
 
   <securedutility
+      component="lp.code.model.branchmergeproposaljob.ReviewRequestedEmailJob"
+      provides="lp.code.interfaces.branchmergeproposal.IReviewRequestedEmailJobSource">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IReviewRequestedEmailJobSource"/>
+  </securedutility>
+  <class class="lp.code.model.branchmergeproposaljob.ReviewRequestedEmailJob">
+    <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+    <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob" />
+  </class>
+
+  <securedutility
       component="lp.code.model.branchjob.BranchUpgradeJob"
       provides="lp.code.interfaces.branchjob.IBranchUpgradeJobSource">
     <allow interface="lp.code.interfaces.branchjob.IBranchUpgradeJobSource"/>
