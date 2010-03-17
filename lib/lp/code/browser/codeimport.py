@@ -124,7 +124,7 @@ class CodeImportView(LaunchpadView):
 
     def initialize(self):
         """See `LaunchpadView.initialize`."""
-        self.title = "Code Import for %s" % (self.context.target.name,)
+        self.title = "Code Import for %s" % (self.context.branch.target.name,)
 
 
 class CodeImportBaseView(LaunchpadFormView):
