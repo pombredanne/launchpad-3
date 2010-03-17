@@ -51,7 +51,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, ICodeReviewCommentEmailJob,
     ICodeReviewCommentEmailJobSource, ICreateMergeProposalJob,
     ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
-    IUpdatePreviewDiffJobSource,
+    IMergeProposalCreatedJobSource, IUpdatePreviewDiffJobSource,
     )
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
@@ -231,6 +231,8 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
     implements(IMergeProposalCreatedJob)
 
+    classProvides(IMergeProposalCreatedJobSource)
+
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
 
     def run(self, _create_preview=True):
@@ -404,3 +406,15 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
         return self.branch_merge_proposal.getComment(
             self.metadata['code_review_comment'])
 
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars.extend([
+            ('code_review_comment', self.metadata['code_review_comment']),
+            ])
+        return vars
+
+    def getErrorRecipients(self):
+        """Return a list of email-ids to notify about user errors."""
+        commenter = self.code_review_comment.message.owner
+        return [commenter.preferredemail]

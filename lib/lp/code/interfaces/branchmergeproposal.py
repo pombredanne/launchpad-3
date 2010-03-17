@@ -36,7 +36,7 @@ from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
-from lp.services.job.interfaces.job import IJob, IRunnableJob
+from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
@@ -572,31 +572,25 @@ class ICreateMergeProposalJob(IRunnableJob):
     """
 
 
-class ICreateMergeProposalJobSource(Interface):
+class ICreateMergeProposalJobSource(IJobSource):
     """Acquire MergeProposalJobs."""
 
     def create(message_bytes):
         """Return a CreateMergeProposalJob for this message."""
-
-    def iterReady():
-        """Iterate through jobs that are ready to run."""
 
 
 class IMergeProposalCreatedJob(IRunnableJob):
     """Interface for review diffs."""
 
 
-class IMergeProposalCreatedJobSource(Interface):
+class IMergeProposalCreatedJobSource(IJobSource):
     """Interface for acquiring MergeProposalCreatedJobs."""
 
     def create(bmp):
         """Create a MergeProposalCreatedJob for the specified Job."""
 
-    def iterReady():
-        """Iterate through all ready MergeProposalCreatedJobs."""
 
-
-class IUpdatePreviewDiffJobSource(Interface):
+class IUpdatePreviewDiffJobSource(IJobSource):
     """Create or retrieve jobs that update preview diffs."""
 
     def create(bmp):
@@ -605,12 +599,6 @@ class IUpdatePreviewDiffJobSource(Interface):
     def get(id):
         """Return the UpdatePreviewDiffJob with this id."""
 
-    def iterReady():
-        """Iterate through jobs ready to update preview diffs."""
-
-    def contextManager():
-        """Get a context for running this kind of job in."""
-
 
 class ICodeReviewCommentEmailJob(IRunnableJob):
     """Interface for the job to send code review comment email."""
@@ -618,14 +606,11 @@ class ICodeReviewCommentEmailJob(IRunnableJob):
     code_review_comment = Attribute('The code review comment.')
 
 
-class ICodeReviewCommentEmailJobSource(Interface):
+class ICodeReviewCommentEmailJobSource(IJobSource):
     """Create or retrieve jobs that update preview diffs."""
 
     def create(code_review_comment):
         """Create a job to email subscribers about the comment."""
-
-    def iterReady():
-        """Iterate through jobs needing to send email."""
 
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
