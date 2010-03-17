@@ -207,7 +207,7 @@ class PackagesMap:
                     log.exception("Invalid Sources stanza in %s" %
                                   info_set.sources_tagfile)
                     continue
-                self.src_map[src_name] = src_tmp
+                self.src_map.setdefault(src_name, []).append(src_tmp)
 
             # Check if it's in source-only mode, if so, skip binary index
             # mapping.
