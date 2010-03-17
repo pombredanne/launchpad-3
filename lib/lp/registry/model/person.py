@@ -2187,20 +2187,20 @@ class Person(
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
 
     @property
-    def pendinggpgkeys(self):
+    def pending_gpg_keys(self):
         """See `IPerson`."""
         logintokenset = getUtility(ILoginTokenSet)
         return sorted(set(token.fingerprint for token in
                       logintokenset.getPendingGPGKeys(requesterid=self.id)))
 
     @property
-    def inactivegpgkeys(self):
+    def inactive_gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)
 
     @property
-    def gpgkeys(self):
+    def gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)

@@ -12,10 +12,15 @@ Usage hint:
 
 import _pythonpath
 
+from cStringIO import StringIO
+import os
+import pkg_resources
+import subprocess
 import sys
 import urlparse
 
 from zope.component import getUtility
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -29,6 +34,9 @@ def main(path_template):
     WebServiceApplication.cached_wadl = None # do not use cached file version
     execute_zcml_for_scripts()
     config = getUtility(IWebServiceConfiguration)
+
+    stylesheet = pkg_resources.resource_filename(
+        'launchpadlib', 'wadl-to-refhtml.xsl')
 
     # Request the WADL from the root resource.
     # We do this by creating a request object asking for a WADL
@@ -52,6 +60,33 @@ def main(path_template):
         content = request.publication.getApplication(request)(request)
         f.write(content)
         f.close()
+
+        # Now, convert the WADL into an human-readable description and
+        # put the HTML in the same directory as the WADL.
+        directory, ignore = os.path.split(path_template)
+        html_filename = os.path.join(directory, version + ".html")
+        print "Writing apidoc for version %s to %s" % (
+            version, html_filename)
+        stdout = open(html_filename, "w")
+        subprocess.Popen(['xsltproc', stylesheet, filename], stdout=stdout)
+        stdout.close()
+
+    # Finally, create an index.html with links to all the HTML
+    # documentation files we just generated.
+    template_file = 'apidoc-index.pt'
+    template = PageTemplateFile(template_file)
+    namespace = template.pt_getContext()
+    namespace['config'] = config
+    versions_and_descriptions = []
+    for version in config.active_versions:
+        versions_and_descriptions.append(
+            dict(version=version,
+                 description=config.version_descriptions[version]))
+    namespace['versions_and_descriptions'] = versions_and_descriptions
+
+    f = open(os.path.join(directory, "index.html"), 'w')
+    f.write(template.pt_render(namespace))
+
     return 0
 
 if __name__ == '__main__':

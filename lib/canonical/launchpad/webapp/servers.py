@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231
+# pylint: disable-msg=W0231,E1002
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -578,6 +578,10 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
+
+    def isRedirectInhibited(self):
+        """Returns True if edge redirection has been inhibited."""
+        return self.cookies.get('inhibit_beta_redirect', '0') == '1'
 
     @cachedproperty
     def form_ng(self):
