@@ -287,6 +287,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         # Add a fake backup.bzr dir
         source_branch_transport = get_transport(db_branch.getPullURL())
         source_branch_transport.mkdir('backup.bzr')
+        source_branch_transport.clone('.bzr').copy_tree_to_transport(
+            source_branch_transport.clone('backup.bzr'))
 
         job = BranchUpgradeJob.create(db_branch)
         job.run()

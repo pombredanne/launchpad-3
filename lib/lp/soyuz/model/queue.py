@@ -35,7 +35,6 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.archiveuploader.utils import safe_fix_maintainer
-from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -60,6 +59,7 @@ from lp.soyuz.interfaces.queue import (
     NonBuildableSourceUploadError, QueueBuildAcceptError,
     QueueInconsistentStateError, QueueSourceAcceptError,
     QueueStateWriteProtectedError)
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (

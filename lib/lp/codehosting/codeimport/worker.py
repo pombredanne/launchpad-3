@@ -548,12 +548,13 @@ class PullingImportWorker(ImportWorker):
             else:
                 raise NotBranchError(self.source_details.url)
             foreign_branch = format.open(transport).open_branch()
+            foreign_branch_tip = foreign_branch.last_revision()
             inter_branch = InterBranch.get(foreign_branch, bazaar_tree.branch)
             pull_result = inter_branch.pull(
                 overwrite=True, **self.getExtraPullArgs())
             self.pushBazaarWorkingTree(bazaar_tree)
             last_imported_revison = bazaar_tree.branch.last_revision()
-            if last_imported_revison == foreign_branch.last_revision():
+            if last_imported_revison == foreign_branch_tip:
                 if pull_result.old_revid != pull_result.new_revid:
                     return CodeImportWorkerExitCode.SUCCESS
                 else:

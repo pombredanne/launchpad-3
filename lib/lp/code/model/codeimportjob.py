@@ -10,6 +10,8 @@ __all__ = [
     'CodeImportJobWorkflow',
     ]
 
+import datetime
+
 from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
 
 from zope.component import getUtility
@@ -140,7 +142,7 @@ class CodeImportJobWorkflow:
 
     implements(ICodeImportJobWorkflow)
 
-    def newJob(self, code_import, date_due=None):
+    def newJob(self, code_import, interval=None):
         """See `ICodeImportJobWorkflow`."""
         assert code_import.review_status == CodeImportReviewStatus.REVIEWED, (
             "Review status of %s is not REVIEWED: %s" % (
@@ -149,23 +151,22 @@ class CodeImportJobWorkflow:
             "Already associated to a CodeImportJob: %s" % (
             code_import.branch.unique_name))
 
+        if interval is None:
+            interval = code_import.effective_update_interval
+
         job = CodeImportJob(code_import=code_import, date_due=UTC_NOW)
 
-        if date_due is None:
-            # Find the most recent CodeImportResult for this CodeImport. We
-            # sort by date_created because we do not have an index on
-            # date_job_started in the database, and that should give the same
-            # sort order.
-            most_recent_result_list = list(CodeImportResult.selectBy(
-                code_import=code_import).orderBy(['-date_created']).limit(1))
+        # Find the most recent CodeImportResult for this CodeImport. We
+        # sort by date_created because we do not have an index on
+        # date_job_started in the database, and that should give the same
+        # sort order.
+        most_recent_result_list = list(CodeImportResult.selectBy(
+            code_import=code_import).orderBy(['-date_created']).limit(1))
 
-            if len(most_recent_result_list) != 0:
-                [most_recent_result] = most_recent_result_list
-                interval = code_import.effective_update_interval
-                date_due = most_recent_result.date_job_started + interval
-                job.date_due = max(job.date_due, date_due)
-        else:
-            job.date_due = date_due
+        if len(most_recent_result_list) != 0:
+            [most_recent_result] = most_recent_result_list
+            date_due = most_recent_result.date_job_started + interval
+            job.date_due = max(job.date_due, date_due)
 
         return job
 
@@ -281,15 +282,20 @@ class CodeImportJobWorkflow:
         # If the import has failed too many times in a row, mark it as
         # FAILING.
         failure_limit = config.codeimport.consecutive_failure_limit
-        if code_import.consecutive_failure_count >= failure_limit:
+        failure_count = code_import.consecutive_failure_count
+        if failure_count >= failure_limit:
             code_import.updateFromData(
                 dict(review_status=CodeImportReviewStatus.FAILING), None)
+        elif status == CodeImportResultStatus.SUCCESS_PARTIAL:
+            interval = datetime.timedelta(0)
+        elif failure_count > 0:
+            interval = (code_import.effective_update_interval *
+                        (2 ** (failure_count - 1)))
+        else:
+            interval = code_import.effective_update_interval
         # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
-            extra = {}
-            if status == CodeImportResultStatus.SUCCESS_PARTIAL:
-                extra['date_due'] = UTC_NOW
-            self.newJob(code_import, **extra)
+            self.newJob(code_import, interval=interval)
         # If the status was successful, update date_last_successful.
         if status in [CodeImportResultStatus.SUCCESS,
                       CodeImportResultStatus.SUCCESS_NOCHANGE]:
@@ -321,7 +327,7 @@ class CodeImportJobWorkflow:
             import_job, CodeImportResultStatus.RECLAIMED, None)
         # 3)
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
-            self.newJob(code_import, UTC_NOW)
+            self.newJob(code_import, datetime.timedelta(0))
         # 4)
         getUtility(ICodeImportEventSet).newReclaim(
             code_import, machine, job_id)
