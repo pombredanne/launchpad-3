@@ -77,34 +77,9 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
         self.assertEquals('foo',
             build_base.getUploadLogContent(os.getcwd(), "myleaf"))
 
-    def test_getUploaderCommand(self):
-        build_base = BuildBase()
-        upload_leaf = self.factory.getUniqueString('upload-leaf')
-        build_base.distroseries = self.factory.makeDistroSeries()
-        build_base.distribution = build_base.distroseries.distribution
-        build_base.pocket = self.factory.getAnyPocket()
-        build_base.id = self.factory.getUniqueInteger()
-        build_base.policy_name = self.factory.getUniqueString('policy-name')
-        config_args = list(config.builddmaster.uploader.split())
-        log_file = self.factory.getUniqueString('logfile')
-        config_args.extend(
-            ['--log-file', log_file,
-             '-d', build_base.distribution.name,
-             '-s', (build_base.distroseries.name
-                    + pocketsuffix[build_base.pocket]),
-             '-b', str(build_base.id),
-             '-J', upload_leaf,
-             '--context=%s' % build_base.policy_name,
-             os.path.abspath(config.builddmaster.root),
-             ])
-        uploader_command = build_base.getUploaderCommand(
-            os.path.abspath(config.builddmaster.root),
-            upload_leaf, log_file)
-        self.assertEqual(config_args, uploader_command)
-
 
 class TestProcessUpload(TestCaseWithFactory):
-    """Test the process-upload.py script."""
+    """Test the execution of process-upload."""
 
     layer = LaunchpadZopelessLayer
 

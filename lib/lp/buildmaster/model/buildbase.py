@@ -15,7 +15,6 @@ import datetime
 import logging
 import os
 import pytz
-import subprocess
 from cStringIO import StringIO
 
 from storm.store import Store
@@ -24,11 +23,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
+from canonical.database.sqlbase import (ZopelessTransactionManager,
     clear_current_connection_cache, cursor, flush_database_updates)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
+from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
@@ -65,25 +65,6 @@ class BuildBase:
     def getUploadDir(self, upload_leaf):
         """Return the directory that things will be stored in."""
         return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
-
-    def getUploaderCommand(self, root, upload_leaf, uploader_logfilename):
-        """See `IBuildBase`."""
-        uploader_command = list(config.builddmaster.uploader.split())
-
-        # add extra arguments for processing a binary upload
-        extra_args = [
-            "--log-file", "%s" % uploader_logfilename,
-            "-d", "%s" % self.distribution.name,
-            "-s", "%s" % (self.distroseries.name +
-                          pocketsuffix[self.pocket]),
-            "-b", "%s" % self.id,
-            "-J", "%s" % upload_leaf,
-            '--context=%s' % self.policy_name,
-            "%s" % root,
-            ]
-
-        uploader_command.extend(extra_args)
-        return uploader_command
 
     def _getProxiedFileURL(self, library_file):
         """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
@@ -148,23 +129,27 @@ class BuildBase:
         :param root: Root directory for the uploads
         :param logger: A logger object
         """
-        uploader_command = self.getUploaderCommand(
-                root, leaf, logfilename)
-        logger.info("Invoking uploader on %s" % root)
-        logger.info("%s" % uploader_command)
+        class ProcessUploadOptions(object):
 
-        uploader_process = subprocess.Popen(
-            uploader_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            def __init__(self, policy_name, distribution, distroseries, pocket,
+                         buildid):
+                self.dry_run = False
+                self.keep = False
+                self.no_mails = True
+                self.just_leaf = leaf
+                self.context = policy_name
+                self.distro = distribution.name
+                self.series = distroseries.name + pocketsuffix[pocket]
+                self.buildid = buildid
+                self.log_file = logfilename
+                self.announce = []
+                self.base_fsroot = root
 
-        # Nothing should be written to the stdout/stderr.
-        upload_stdout, upload_stderr = uploader_process.communicate()
-
-        # XXX cprov 2007-04-17: we do not check uploader_result_code
-        # anywhere. We need to find out what will be best strategy
-        # when it failed HARD (there is a huge effort in process-upload
-        # to not return error, it only happen when the code is broken).
-        uploader_result_code = uploader_process.returncode
-        logger.info("Uploader returned %d" % uploader_result_code)
+        options = ProcessUploadOptions(self.policy_name, self.distribution,
+            self.distroseries, self.pocket, self.id)
+        logger.info("Invoking uploader on %s for %s" % (root, leaf))
+        processor = UploadProcessor(options, ZopelessTransactionManager, logger)
+        processor.processUploadQueue()
 
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
