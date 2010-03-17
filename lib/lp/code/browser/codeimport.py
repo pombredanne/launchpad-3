@@ -23,6 +23,7 @@ from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import Interface
+from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -247,6 +248,12 @@ class NewCodeImportForm(Interface):
         description=_(
             "This will be used in the branch URL to identify the "
             "imported branch.  Examples: main, trunk."),
+        )
+
+    product = Choice(
+        title=_('Product'),
+        description=_("The Product to associate the code import with."),
+        vocabulary="Product",
         )
 
 
