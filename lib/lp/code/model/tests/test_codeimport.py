@@ -663,7 +663,7 @@ class TestGetActiveImports(TestCaseWithFactory):
         prod2_a = make_active_import(
             self.factory, product_name='prod2', branch_name='a')
         prod1_b = self.factory.makeCodeImport(
-            product=prod1_a.product, branch_name='b')
+            product=prod1_a.branch.product, branch_name='b')
         make_import_active(self.factory, prod1_b)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(
