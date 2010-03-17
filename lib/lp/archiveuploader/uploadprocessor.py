@@ -108,13 +108,13 @@ class PPAUploadPathError(Exception):
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
 
-    def __init__(self, base_fsroot, dryrun, nomails, keep, policy_for_distro,
+    def __init__(self, base_fsroot, dry_run, no_mails, keep, policy_for_distro,
                  ztm, log):
         """Create a new upload processor.
 
         :param base_fsroot: Root path for queue to use
-        :param dryrun: Run but don't commit changes to database
-        :param nomails: Don't send out any emails
+        :param dry_run: Run but don't commit changes to database
+        :param no_mails: Don't send out any emails
         :param keep: Leave the files in place, don't move them away
         :param policy_for_distro: callback to obtain Policy object for a
             distribution
@@ -122,15 +122,15 @@ class UploadProcessor:
         :param log: Logger to use for reporting
         """
         self.base_fsroot = base_fsroot
-        self.dryrun = dryrun
+        self.dry_run = dry_run
         self.keep = keep
         self.last_processed_upload = None
         self.log = log
-        self.nomails = nomails
+        self.no_mails = no_mails
         self._getPolicyForDistro = policy_for_distro
         self.ztm = ztm
 
-    def processUploadQueue(self, leafname=None):
+    def processUploadQueue(self, leaf_name=None):
         """Search for uploads, and process them.
 
         Uploads are searched for in the 'incoming' directory inside the
@@ -154,13 +154,13 @@ class UploadProcessor:
                            % (fsroot, uploads_to_process))
             for upload in uploads_to_process:
                 self.log.debug("Considering upload %s" % upload)
-                self.processUpload(fsroot, upload, leafname)
+                self.processUpload(fsroot, upload, leaf_name)
 
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
 
-    def processUpload(self, fsroot, upload, leafname=None):
+    def processUpload(self, fsroot, upload, leaf_name=None):
         """Process an upload's changes files, and move it to a new directory.
 
         The destination directory depends on the result of the processing
@@ -168,14 +168,14 @@ class UploadProcessor:
         is 'failed', otherwise it is the worst of the results from the
         individual changes files, in order 'failed', 'rejected', 'accepted'.
 
-        If the leafname option is set but its value is not the same as the
+        If the leaf_name option is set but its value is not the same as the
         name of the upload directory, skip it entirely.
 
         """
-        if (leafname is not None and
-            upload != leafname):
+        if (leaf_name is not None and
+            upload != leaf_name):
             self.log.debug("Skipping %s -- does not match %s" % (
-                upload, leafname))
+                upload, leaf_name))
             return
 
         upload_path = os.path.join(fsroot, upload)
@@ -410,7 +410,7 @@ class UploadProcessor:
             # when transaction is committed) this will cause any emails sent
             # sent by do_reject to be lost.
             notify = True
-            if self.dryrun or self.nomails:
+            if self.dry_run or self.no_mails:
                 notify = False
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
@@ -429,7 +429,7 @@ class UploadProcessor:
                 for msg in upload.rejections:
                     self.log.warn("\t%s" % msg)
 
-            if self.dryrun:
+            if self.dry_run:
                 self.log.info("Dry run, aborting transaction.")
                 self.ztm.abort()
             else:
@@ -448,7 +448,7 @@ class UploadProcessor:
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
         """
-        if self.keep or self.dryrun:
+        if self.keep or self.dry_run:
             self.log.debug("Keeping contents untouched")
             return
 

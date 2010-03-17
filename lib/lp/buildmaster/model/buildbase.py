@@ -121,11 +121,11 @@ class BuildBase:
 
         method(librarian, slave_status, logger)
 
-    def processUpload(self, leaf, logfilename, root, logger):
+    def processUpload(self, leaf, log_filename, root, logger):
         """Process an upload.
         
         :param leaf: Leaf for this particular upload
-        :param logfilename: Path to the log file to write to
+        :param log_filename: Path to the log file to write to
         :param root: Root directory for the uploads
         :param logger: A logger object
         """
@@ -137,7 +137,7 @@ class BuildBase:
                 self.distro = distribution.name
                 self.distroseries = distroseries.name + pocketsuffix[pocket]
                 self.buildid = buildid
-                self.log_file = logfilename
+                self.log_file = log_filename
                 self.announce = []
 
         options = ProcessUploadOptions(self.policy_name, self.distribution,
@@ -147,9 +147,9 @@ class BuildBase:
         # policy object in a more sensible way.
         policy = findPolicyByOptions(options)
         logger.info("Invoking uploader on %s for %s" % (root, leaf))
-        processor = UploadProcessor(root, False, True, False,
-            lambda distro: policy, ztm=ZopelessTransactionManager,
-            log=logger)
+        processor = UploadProcessor(root, dry_run=False, no_mails=True,
+            keep=False, policy_for_distro=lambda distro: policy,
+            ztm=ZopelessTransactionManager, log=logger)
         processor.processUploadQueue(leaf)
 
     def _handleStatus_OK(self, librarian, slave_status, logger):

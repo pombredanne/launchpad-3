@@ -115,11 +115,11 @@ class TestProcessUpload(TestCaseWithFactory):
             os.path.join(self.queue_location, "mylog"),
             self.queue_location, logger)
 
-        # directory tree in place.
+        # Directory tree in place.
         for directory in ['incoming', 'accepted', 'rejected', 'failed']:
             self.assertQueuePath(directory)
 
-        # just to check if local assertion is working as expect.
+        # Just to check if local assertion is working as expect.
         self.assertRaises(AssertionError, self.assertQueuePath, 'foobar')
 
 
