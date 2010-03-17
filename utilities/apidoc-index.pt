@@ -43,15 +43,11 @@
     <h2>Active versions</h2>
 
     <ul>
-      <li tal:repeat="version_and_description options/versions_and_descriptions">
-
-        <tal:version tal:define="version version_and_description/version;
-                         description version_and_description/description">
-
+      <li tal:repeat="version options/config/active_versions">
         <a tal:attributes="href string:$version.html"
            tal:content="version">Version name</a>:
-        <tal:description replace="description" />
-        </tal:version>
+        <tal:description
+           replace="options/config/version_descriptions/?version" />
       </li>
     </ul>
 

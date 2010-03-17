@@ -43,13 +43,8 @@ def main(path_template):
     # documentation files we're about to generate.
     template_file = 'apidoc-index.pt'
     template = PageTemplateFile(template_file)
-    versions_and_descriptions = [
-        dict(version=version,
-             description=config.version_descriptions[version])
-        for version in config.active_versions]
     f = open(os.path.join(directory, "index.html"), 'w')
-    f.write(template(versions_and_descriptions=versions_and_descriptions,
-                     config=config))
+    f.write(template(config=config))
 
     # Request the WADL from the root resource.
     # We do this by creating a request object asking for a WADL
