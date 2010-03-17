@@ -28,12 +28,20 @@ class TestDscFile(TestCase):
         self.changelog_file = os.path.join(self.dir_path, "changelog")
         self.dsc_file = self.MockDSCFile()
 
+    def removeTempFiles(self):
+        """Remove any test copyright file we may have lying around."""
+        if os.path.exists(self.copyright_file):
+            os.remove(self.copyright_file)
+        if os.path.exists(self.changelog_file):
+            os.remove(self.changelog_file)
+
     def testBadDebianCopyright(self):
         """Test that a symlink instead of a real file will fail."""
         os.symlink("/etc/passwd", self.copyright_file)
         errors = list(findCopyright(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
+        self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 1)
         self.failUnless(isinstance(errors[0], UploadError))
 
@@ -46,6 +54,8 @@ class TestDscFile(TestCase):
         errors = list(findCopyright(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
+
+        self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 0)
         self.assertEqual(self.dsc_file.copyright, copyright)
 
@@ -55,6 +65,7 @@ class TestDscFile(TestCase):
         errors = list(findChangelog(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
+        self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 1)
         self.failUnless(isinstance(errors[0], UploadError))
 
@@ -67,12 +78,14 @@ class TestDscFile(TestCase):
         errors = list(findChangelog(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
+
+        self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 0)
         self.assertEqual(self.dsc_file.changelog, changelog)
 
 
     def testOversizedFile(self):
-        """Test that a copyright file larger than 10MiB will fail."""
+        """Test that a file larger than 10MiB will fail."""
 
         dev_zero = open("/dev/zero", "r")
         empty_file = dev_zero.read(20971520)
@@ -85,8 +98,13 @@ class TestDscFile(TestCase):
         errors = list(findChangelog(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
-        self.assertEqual(len(errors), 1)
+        self.addCleanup(self.removeTempFiles)
+
         self.failUnless(isinstance(errors[0], UploadError))
+        self.assertIsInstance(errors[0], UploadError)
+        self.assertEqual(
+            errors[0].message,
+            "debian/changelog file too large, 10MiB max")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -8,7 +8,7 @@ __all__ = [
     'RecipeBuildBehavior',
     ]
 
-from zope.component import adapts
+from zope.component import adapts, getUtility
 from zope.interface import implements
 
 from lp.archiveuploader.permission import check_upload_to_pocket
@@ -18,7 +18,8 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob)
+    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildSource)
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
@@ -168,3 +169,11 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                 extra_info['logtail'] = raw_slave_status[2]
 
         return extra_info
+
+    def getVerifiedBuild(self, raw_id):
+        """See `IBuildFarmJobBehavior`."""
+        # This type of job has a build that is of type BuildBase but not
+        # actually a Build.
+        return self._helpVerifyBuildIDComponent(
+            raw_id, SourcePackageRecipeBuild,
+            getUtility(ISourcePackageRecipeBuildSource).getById)

@@ -41,7 +41,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.master import determineArchitecturesToBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -62,6 +61,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingStatus,
     PoolFileOverwriteError)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 

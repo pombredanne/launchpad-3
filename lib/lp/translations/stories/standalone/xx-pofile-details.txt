@@ -157,7 +157,8 @@ We'll create two new accounts to demonstrate this.
     >>> potmsgset.setSequence(template, 2)
     >>> translation = factory.makeTranslationMessage(pofile=pofile,
     ...     translator=translator, potmsgset=potmsgset)
-    >>> merged_translator.merged = translator
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(merged_translator).merged = translator
     >>> logout()
 
     >>> browser.open(

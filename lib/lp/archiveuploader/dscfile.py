@@ -699,7 +699,7 @@ def findFile(source_dir, filename, logger):
         # rejected before hand
         if os.stat(fullpath).st_size > 10485760:
             raise UploadError(
-                "%s file is larger than 10 MiB" % filename)
+                "%s file too large, 10MiB max" % filename)
         else:
             return fullpath
 
