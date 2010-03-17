@@ -27,7 +27,6 @@ from lp.soyuz.interfaces.archive import IArchive
 from lp.services.worlddata.interfaces.country import ICountry
 
 
-
 class IBinaryPackageRelease(Interface):
     id = Int(title=_('ID'), required=True)
     binarypackagename = Int(required=True)
