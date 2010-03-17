@@ -33,6 +33,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.interfaces import IStore
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
+from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
     BranchType, CodeImportJobState, CodeImportResultStatus,
@@ -60,6 +61,12 @@ class CodeImport(SQLBase):
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=True)
+    assignee = ForeignKey(
+        dbName='assignee', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
@@ -228,7 +235,7 @@ class CodeImportSet:
             registrant=registrant)
 
         code_import = CodeImport(
-            registrant=registrant, branch=import_branch,
+            registrant=registrant, owner=registrant, branch=import_branch,
             rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
             review_status=review_status)
