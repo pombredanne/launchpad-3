@@ -1,29 +1,16 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
-    <!-- XXX: This stanza might not be necessary. StuartBishop 2004/11/12. -->
-    <content class="canonical.widgets.SinglePopupWidget">
-        <allow interface="canonical.widgets.ISinglePopupWidget" />
-    </content>
-
-    <!-- Define the views needed by the popup widget
-       TODO: These should probably just be attached to the add and edit
-       forms (StuartBishop 2004/11/12)
-    -->
-    <browser:page
-        for="*"
-        class="canonical.widgets.popup.SinglePopupView"
-        allowed_interface="canonical.widgets.popup.ISinglePopupView"
-        permission="zope.Public"
-        name="popup-window"
-        template="templates/popup-window.pt"
-        /> 
-
-    <!-- The Zope3 WidgetInputError does not handle lists of validation
+    <!--
+        XXX: anonymous 2004-08-14: Feed back into Zope3.
+        The Zope3 WidgetInputError does not handle lists of validation
         exceptions, despite what its documentation says. Fix this in launchpad
         for now.
-        TODO: Feed back into Zope3
         -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
@@ -32,4 +19,5 @@
         factory=".exception.WidgetInputErrorView"
         permission="zope.Public"
         />
+
 </configure>

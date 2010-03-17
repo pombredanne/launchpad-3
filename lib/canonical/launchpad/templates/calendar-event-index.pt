@@ -1,6 +1,0 @@
-<tal:block define="canedit context/required:launchpad.Edit">
-  <tal:block replace="python:request.response.redirect('+edit')" />
-</tal:block>
-<tal:block condition="not:context/required:launchpad.Edit">
-  <tal:block replace="python:request.response.redirect('+display')" />
-</tal:block>

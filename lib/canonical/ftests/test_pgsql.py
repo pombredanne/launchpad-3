@@ -1,6 +1,9 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 import unittest
 from canonical.ftests.pgsql import PgTestCase, PgTestSetup, ConnectionWrapper
-import psycopg
+
 
 class TestPgTestCase(PgTestCase):
 
@@ -41,7 +44,7 @@ class TestOptimization(unittest.TestCase):
             con = PgTestSetup().connect()
             cur = con.cursor()
             # This tests that the table still exists, as well as modifying the
-            # db 
+            # db
             cur.execute('INSERT INTO foo VALUES (1)')
             con.commit()
         finally:

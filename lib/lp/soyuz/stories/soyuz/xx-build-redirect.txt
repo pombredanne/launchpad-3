@@ -1,0 +1,10 @@
+= URL redirection for build pages =
+
+When users go to the old build URLs, they are redirected to the equivalent
+new URLs.
+
+    >>> anon_browser.open("http://launchpad.dev/+builds/+build/18")
+    >>> anon_browser.url
+    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/18'
+
+  

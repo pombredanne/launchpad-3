@@ -1,9 +1,14 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """EmailAdress validator"""
 
 __metaclass__ = type
 
 import re
+
+from canonical.launchpad import _
+from canonical.launchpad.validators import LaunchpadValidationError
 
 
 def valid_email(emailaddr):
@@ -29,6 +34,8 @@ def valid_email(emailaddr):
     True
     >>> valid_email('user@z.de')
     True
+    >>> valid_email('bob=dobbs@example.com')
+    True
 
     >>> valid_email('user@z..de')
     False
@@ -44,7 +51,7 @@ def valid_email(emailaddr):
     >>> valid_email('keith@-risby-family.co.uk')
     False
     """
-    email_re = r"^[_\.0-9a-zA-Z-+]+@(([0-9a-zA-Z-]{1,}\.)*)[a-zA-Z]{2,}$"
+    email_re = r"^[_\.0-9a-zA-Z-+=]+@(([0-9a-zA-Z-]{1,}\.)*)[a-zA-Z]{2,}$"
     email_match = re.match(email_re, emailaddr)
     if not email_match:
         return False
@@ -56,3 +63,20 @@ def valid_email(emailaddr):
             return False
     return True
 
+
+def email_validator(emailaddr):
+    """Raise a LaunchpadValidationError if the email is invalid.
+
+    Otherwise, return True.
+
+    >>> email_validator('bugs@example.com')
+    True
+    >>> email_validator('not-valid')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: Invalid email 'not-valid'.
+    """
+    if not valid_email(emailaddr):
+        raise LaunchpadValidationError(_(
+                "Invalid email '${email}'.", mapping={'email': emailaddr}))
+    return True

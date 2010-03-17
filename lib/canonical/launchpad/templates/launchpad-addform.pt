@@ -1,7 +1,8 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:use-macro="view/macro:page/main_only"
 >
   <body>
 
@@ -17,10 +18,11 @@
 
   <div metal:define-macro="addform">
 
-    <form action="." 
-          tal:attributes="action request/URL" 
+    <form action="."
+          tal:attributes="action request/URL"
           method="post"
-          enctype="multipart/form-data">
+          enctype="multipart/form-data"
+          accept-charset="UTF-8">
 
       <div metal:define-macro="formbody">
 
@@ -41,8 +43,8 @@
            tal:condition="status"
            tal:content="status" />
 
-        <div class="row" 
-             metal:define-slot="extra_top" 
+        <div class="row"
+             metal:define-slot="extra_top"
              tal:replace="nothing">
             <div>Extra top</div>
             <div><input type="text" style="width:100%" /></div>
@@ -51,7 +53,7 @@
         <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
 
         <div class="row"
-             metal:define-slot="extra_bottom" 
+             metal:define-slot="extra_bottom"
              tal:replace="nothing">
           <div>Extra bottom</div>
           <div class="field"><input type="text" style="width:100%" /></div>
@@ -60,14 +62,12 @@
       </div>
       <div class="actions">
           <input type="submit"
-                 tabindex="1000"
                  value="Add"
-                 name="UPDATE_SUBMIT"
-                 i18n:attributes="value add-button" />
+                 name="UPDATE_SUBMIT" />
       </div>
 
-      <div class="row" 
-           metal:define-slot="extra_buttons" 
+      <div class="row"
+           metal:define-slot="extra_buttons"
            tal:replace="nothing">
       </div>
 

@@ -36,7 +36,7 @@ So, with textwrap:
 
 
 Note in the above example that the "...gets sent.\n\nit's..." got
-squished into being on the the same line, which is obviously not what
+squished into being on the same line, which is obviously not what
 we want.
 
 MailWrapper to the rescue!
@@ -237,3 +237,79 @@ dos-style line endings, we get the following result:
      'separated with dos-style line endings.',
      '',
      "Here's the second paragraph."]
+
+Sometimes certain paragraphs should not be wrapped, e.g. a line containing a
+long hyphenated URL.  Under normal circumstances, this will get wrapped.
+
+    >>> from canonical.launchpad.helpers import get_email_template
+    >>> template = get_email_template('new-held-message.txt')
+    >>> text = template % dict(
+    ...     user="Scarlett O'Hara",
+    ...     team='frankly-my-dear-i-dont-give-a-damn',
+    ...     subject='Thing',
+    ...     author_name='Rhett Butler',
+    ...     author_url='http://whatever.example.com/rhett',
+    ...     date='today',
+    ...     message_id='<aardvark>',
+    ...     # And this is the one we're really interested in.
+    ...     review_url=('http://launchpad.dev/~frankly-my-dear-i-'
+    ...                 'dont-give-a-damn/+review-moderation-messages'),
+    ...     )
+
+    >>> wrapper = MailWrapper(72)
+    >>> body = wrapper.format(text, force_wrap=True)
+    >>> print body
+    Hello Scarlett O'Hara,
+    <BLANKLINE>
+    frankly-my-dear-i-dont-give-a-damn has a new message requiring your
+    approval.
+    <BLANKLINE>
+        Subject: Thing
+        Author name: Rhett Butler
+        Author url: http://whatever.example.com/rhett
+        Date: today
+        Message-ID: <aardvark>
+    <BLANKLINE>
+    A message has been posted to the mailing list for your team, but this
+    message requires your approval before it will be sent to the list
+    members.  After reviewing the message, you may approve, discard or
+    reject it.
+    <BLANKLINE>
+    To review all messages pending approval, visit:
+    <BLANKLINE>
+        http://launchpad.dev/~frankly-my-dear-i-dont-give-a-damn/+review-
+    moderation-messages
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+
+But if we don't want the line with the url to be wrapped, we can pass in a
+callable to format().  This callable prevents wrapping when it returns False.
+The callable's argument is the pre-wrapped paragraph.
+
+    >>> def nowrap(paragraph):
+    ...     return paragraph.startswith('http://')
+
+    >>> body = wrapper.format(text, force_wrap=True, wrap_func=nowrap)
+    >>> print body
+    Hello Scarlett O'Hara,
+    <BLANKLINE>
+    frankly-my-dear-i-dont-give-a-damn has a new message requiring your approval.
+    <BLANKLINE>
+        Subject: Thing
+        Author name: Rhett Butler
+        Author url: http://whatever.example.com/rhett
+        Date: today
+        Message-ID: <aardvark>
+    <BLANKLINE>
+    A message has been posted to the mailing list for your team, but this
+    message requires your approval before it will be sent to the list
+    members.  After reviewing the message, you may approve, discard or
+    reject it.
+    <BLANKLINE>
+    To review all messages pending approval, visit:
+    <BLANKLINE>
+        http://launchpad.dev/~frankly-my-dear-i-dont-give-a-damn/+review-moderation-messages
+    <BLANKLINE>
+    Regards,
+    The Launchpad team

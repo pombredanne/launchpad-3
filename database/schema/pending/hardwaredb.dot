@@ -1,0 +1,122 @@
+/* dot -T png hardwaredb.dot > hardwaredb.png */
+digraph HardwareDatabase {
+    size="16,8"
+    len="2";
+    mindist="2";
+    overlap="false";
+    splines="polyline";
+    ratio="fill";
+
+    node [shape="record", style="filled", fillcolor="#ffffff"];
+    edge [labelfloat="true", labelangle=30, labeldistance=3];
+
+    subgraph cluster_upload {
+        rankdir="LR";
+        rank="same";
+        label="Populated on Submission Upload";
+        style=filled;
+        color="#ccffcc";
+        subgraph cluster_existing {
+            rankdir="LR";
+            rank="min";
+            style=filled;
+            color="#ccccff";
+            label="Existing Tables";
+            {rank="same"; Person;}
+            {rank="same"; LibraryFileAlias;}
+            {rank="same"; DistroArchSeries;}
+            {rank="max"; Language};
+            }
+        System; HWSubmission;
+        }
+    subgraph cluster_parsed {
+        label="Parsed from Submissions";
+        style="filled";
+        color="#ffccff";
+        rank="same";
+        {rank="min"; Test; VendorId; Vendor;}
+        {rank="same"; Answer; Device;}
+        {rank="same"; SubmissionDevice; DeviceTag;}
+        {rank="max"; DeviceDriver; Driver;}
+        }
+
+    /*  0..n -- crowodot
+        1..n -- crowtee
+        1..1 -- tee
+        0..1 -- odot
+    */
+
+    /* Anonymous submissions? */
+    Person -> HWSubmission [
+        arrowtail="odot", arrowhead="crowodot", headlabel="owner"];
+    DistroArchSeries -> HWSubmission [
+        arrowtail="tee", arrowhead="crowodot", headlabel="distroarchseries"];
+    HWSubmission -> SubmissionDevice [
+        arrowtail="tee", arrowhead="crowtee", headlabel="submission"];
+    HWSubmission -> LibraryFileAlias [
+        arrowhead="tee", arrowtail="odot", taillabel="raw_submission"];
+    HWSubmission [label="{HWSubmission | date_created timestamp | format integer | status integer | private boolean | contactable boolean | livecd boolean | submission_id text }"];
+
+    HWSubmission -> System [
+        arrowtail="crowtee", arrowhead="tee", taillabel="system"];
+    System [label="{System | fingerprint text}"];
+
+    SubmissionDevice -> SubmissionDevice [
+        arrowhead="odot", arrowtail="crowodot", headlabel="parent"];
+
+    Device -> SubmissionDevice [
+        arrowtail="tee", arrowhead="crowodot", headlabel="device"];
+    Device [label="{Device | private boolean | bus integer | bus_id text | official_name text | name text | display_name text}"];
+
+    Device -> VendorId [
+        arrowtail="crowodot", arrowhead="tee", taillabel="vendor_id"];
+    VendorId -> Vendor [
+        arrowtail="crowodot", arrowhead="tee", taillabel="vendor"];
+    Vendor [label="{Vendor | name text | displayname text}"];
+    VendorId [label="{VendorId | bus integer | bus_id text}"];
+
+    SubmissionDevice -> DeviceDriver [
+        arrowtail="crowodot", arrowhead="odot", taillabel="device_driver"];
+    DeviceDriver -> Driver [
+        arrowtail="crowodot", arrowhead="tee", taillabel="driver"];
+    Device -> DeviceDriver [arrowtail="tee", arrowhead="crowodot",
+        headlabel="device"];
+    Driver [label="{Driver | licence integer}"];
+
+    DeviceTag -> Device [
+        arrowtail="crowodot", arrowhead="tee", taillabel="device"];
+    DeviceTag  [label="{DeviceTag | tag text}"];
+
+    /* Device status, repopulated nightly */
+    /*
+    DistroArchSeries -> DeviceStatus [arrowtail="tee", arrowhead="crowodot"];
+    Device -> DeviceStatus [arrowtail="tee", arrowhead="crowodot"];
+    DeviceDriver -> DeviceStatus [arrowtail="odot", arrowhead="crowodot"];
+    DeviceStatus [label="{DeviceStatus | status integer}"];
+    */
+
+    Test -> Answer [
+        arrowtail="tee", arrowhead="crowodot", headlabel="test"];
+    Answer -> HWSubmission [
+        arrowtail="crowodot", arrowhead="tee", taillabel="submission"];
+    Answer -> Device [
+        arrowtail="crowodot", arrowhead="odot", taillabel="device"];
+    Language -> Answer [
+        arrowtail="tee", arrowhead="crowodot", headlabel="language"];
+    Test [label="{Test | namespace text | name text | version integer}"];
+    Answer [label="{Answer | result text | comment text}"];
+
+    /* Bug Linking to Hardware */
+    /*
+    Bug -> HWBug [arrowtail="tee", arrowhead="crowodot"];
+    HWBug -> HWSubmission [arrowhead="tee", arrowtail="crowodot"];
+    HWBug -> Device [arrowhead="odot", arrowtail="crowodot"];
+    */
+
+    /* Device aliases */
+    /*
+    DeviceAlias -> Device [arrowtail="crowodot", arrowhead="tee"];
+    DeviceAlias -> Vendor [arrowtail="crowodot", arrowhead="tee"];
+    */
+
+}

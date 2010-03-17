@@ -1,4 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Archive Override Check
 
 Given a distribution to run on, report any override inconsistence found.
@@ -12,15 +16,15 @@ import sys
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.ftpmaster import  PubSourceChecker
-from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket)
+from canonical.launchpad.interfaces import NotFoundError
+from canonical.lp import initZopeless
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.scripts.ftpmaster import PubSourceChecker
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 
@@ -36,7 +40,7 @@ def main():
     parser.add_option("-s", "--suite", action="store",
                       dest="suite", metavar="SUITE", default=None,
                       help=("Suite to consider, if not passed consider the "
-                            "currentrelease and the RELEASE pocket"))
+                            "currentseries and the RELEASE pocket"))
 
     (options, args) = parser.parse_args()
 
@@ -47,24 +51,24 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser='lucille', isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     try:
         try:
             distribution = getUtility(IDistributionSet)[options.distribution]
             if options.suite is None:
-                distrorelease = distribution.currentrelease
+                distroseries = distribution.currentseries
                 pocket = PackagePublishingPocket.RELEASE
             else:
-                distrorelease, pocket = distribution.getDistroReleaseAndPocket(
+                distroseries, pocket = distribution.getDistroSeriesAndPocket(
                     options.suite)
 
             log.debug("Considering: %s/%s/%s/%s."
-                      % (distribution.name, distrorelease.name, pocket.name,
-                         distrorelease.releasestatus.name))
+                      % (distribution.name, distroseries.name, pocket.name,
+                         distroseries.status.name))
 
-            checkOverrides(distrorelease, pocket, log)
+            checkOverrides(distroseries, pocket, log)
 
         except NotFoundError, info:
             log.error('Not found: %s' % info)
@@ -78,13 +82,13 @@ def main():
     return 0
 
 
-def checkOverrides(distrorelease, pocket, log):
+def checkOverrides(distroseries, pocket, log):
     """Initialize and handle PubSourceChecker.
 
     Iterate over PUBLISHED sources and perform PubSourceChecker.check()
     on each published Source/Binaries couple.
     """
-    spps = distrorelease.getSourcePackagePublishing(
+    spps = distroseries.getSourcePackagePublishing(
         status=PackagePublishingStatus.PUBLISHED,
         pocket=pocket)
 
@@ -96,10 +100,10 @@ def checkOverrides(distrorelease, pocket, log):
             spr.name, spr.version, spp.component.name, spp.section.name,
             spr.urgency.name)
 
-        for bpp in spp.publishedBinaries():
+        for bpp in spp.getPublishedBinaries():
             bpr = bpp.binarypackagerelease
             checker.addBinary(
-                bpr.name, bpr.version, bpp.distroarchrelease.architecturetag,
+                bpr.name, bpr.version, bpp.distroarchseries.architecturetag,
                 bpp.component.name, bpp.section.name, bpr.priority.name)
 
         checker.check()

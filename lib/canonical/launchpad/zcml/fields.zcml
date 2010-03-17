@@ -1,7 +1,10 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -33,6 +36,14 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.INoneableDescription"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.launchpad.browser.NoneableDescriptionWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.launchpad.fields.IWhiteboard"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.WhiteboardWidget"
@@ -57,73 +68,25 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItRecipientDisplayname"
+        for="canonical.launchpad.fields.INoneableTextLine"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItRecipientDisplaynameWidget"
+        factory="canonical.widgets.textwidgets.NoneableTextWidget"
         permission="zope.Public"
         />
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItOrganization"
+        for="canonical.launchpad.fields.IURIField"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItOrganizationWidget"
+        factory="canonical.widgets.textwidgets.URIWidget"
         permission="zope.Public"
         />
 
-    <view
+     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItCity"
+        for="canonical.launchpad.fields.ContentNameField"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItCityWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItProvince"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItProvinceWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItAddressline1"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItAddressline1Widget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItAddressline2"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItAddressline2Widget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItPhone"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItPhoneWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItReason"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItReasonWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.IShipItQuantity"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.ShipItQuantityWidget"
+        factory="canonical.widgets.textwidgets.LowerCaseTextWidget"
         permission="zope.Public"
         />
 

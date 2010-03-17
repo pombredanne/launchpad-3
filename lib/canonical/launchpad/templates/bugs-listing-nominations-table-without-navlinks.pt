@@ -1,0 +1,60 @@
+<form
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  method="post"
+  tal:attributes="action request/URL"
+  condition="context/batch">
+  <table class="listing" id="buglisting">
+    <thead>
+      <tr>
+        <th style="font-size: smaller"
+            tal:condition="view/canApproveNominations">
+          <div style="text-align: left">Accept</div>
+          <div style="text-align: center">Decline</div>
+          <div style="text-align: right">No change</div>
+        </th>
+        <th colspan="3">Summary</th>
+        <th tal:condition="context/show_column/packagename|nothing">
+          Package
+        </th>
+        <th>Importance</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="bugtask context/getBugListingItems">
+        <td tal:content="structure bugtask/review_action_widget"
+            tal:condition="view/canApproveNominations">
+          <input type="radio" value="accept" />
+          <input type="radio" value="decline" />
+          <input type="radio" value="no-change" />
+        </td>
+        <td class="icon right">
+          <img src="/@@/bug" tal:replace="structure bugtask/image:icon" />
+        </td>
+        <td
+          class="amount"
+          tal:content="bugtask/bug/id"
+        >42</td>
+        <td>
+          <a href="#"
+             tal:content="bugtask/bug/title"
+             tal:attributes="href bugtask/fmt:url">
+            drop-down list in search bar disappears when using blah blah blah
+          </a>
+          <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
+        </td>
+        <tal:sourcepackage tal:condition="context/show_column/packagename|nothing">
+          <td tal:condition="bugtask/sourcepackagename"
+              tal:content="structure bugtask/sourcepackagename/name"
+              >mozilla-firefox (Ubuntu)</td>
+          <td tal:condition="not: bugtask/sourcepackagename">&mdash;</td>
+        </tal:sourcepackage>
+        <td tal:content="bugtask/importance/title">Critical</td>
+        <td tal:content="bugtask/status/title">Confirmed</td>
+      </tr>
+    </tbody>
+  </table>
+  <tal:submit tal:replace="structure view/submit_action/render" />
+</form>

@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
 Calendaring for Launchpad
@@ -45,7 +46,7 @@ class MergedCalendar(CalendarMixin, EditableCalendarMixin):
             # calendar, rather than seeing an error page.
             return
         self.subscriptions = ICalendarSubscriptionSubset(self.owner)
-        self.title = _('Merged Calendar for %s') % self.owner.browsername
+        self.title = _('Merged Calendar for %s') % self.owner.displayname
 
     def __iter__(self):
         for calendar in self.subscriptions:

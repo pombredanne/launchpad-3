@@ -1,10 +1,19 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database constants."""
 
-from sqlobject.sqlbuilder import SQLConstant
+from storm.expr import SQL
 
-nowUTC = SQLConstant("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-UTC_NOW = nowUTC # All upper because this is the constants module
+UTC_NOW = SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
 
-DEFAULT = SQLConstant("DEFAULT")
+DEFAULT = SQL("DEFAULT")
+
+# We can't use infinity, as psycopg doesn't know how to handle it. And
+# neither does Python I guess.
+#NEVER_EXPIRES = SQL("'infinity'::TIMESTAMP")
+
+NEVER_EXPIRES = SQL("'3000-01-01'::TIMESTAMP WITHOUT TIME ZONE")
+
+THIRTY_DAYS_AGO = SQL(
+    "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '30 days'")

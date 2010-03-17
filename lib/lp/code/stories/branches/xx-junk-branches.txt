@@ -1,0 +1,53 @@
+Junk Branches
+=============
+
+Create a person and team.
+
+    >>> login(ANONYMOUS)
+    >>> eric = factory.makePerson(
+    ...     name='eric', password='test', email='eric@example.com')
+    >>> vikings = factory.makeTeam(name='vikings', owner=eric)
+    >>> logout()
+
+When creating a branch from a person, we have the option not to specify an
+associated product. A branch with no associated product is called a "junk"
+branch.
+
+    >>> browser = setupBrowser(auth="Basic eric@example.com:test")
+    >>> browser.open('http://code.launchpad.dev/~eric')
+    >>> browser.getLink("Register a branch").click()
+    >>> browser.getControl('Name').value = 'personal-junk'
+    >>> browser.getControl('Hosted').click()
+    >>> browser.getControl('Register Branch').click()
+
+Posting the form should succeed and redirect to the page of the newly created
+junk branch. Because it has no product, it has no link to other product
+branches.
+
+    >>> print browser.url
+    http://code.launchpad.dev/~eric/+junk/personal-junk
+    >>> print extract_text(find_tags_by_class(
+    ...     browser.contents, 'related', only_first=True))
+    Nearby
+    Other branches owned by Eric
+
+Junk branches do not support merge proposals, so the "Branch Merges" section of
+the page should not be shown.
+
+    >>> print find_tag_by_id(browser.contents, 'branch-merges')
+    None
+
+
+Team Junk Branches
+==================
+
+Junk branches can also be associated with a team.
+
+    >>> browser.open('http://code.launchpad.dev/~vikings')
+    >>> browser.getLink("Register a branch").click()
+    >>> browser.getControl('Name').value = 'team-junk'
+    >>> browser.getControl('Hosted').click()
+    >>> browser.getControl('Register Branch').click()
+
+    >>> print browser.url
+    http://code.launchpad.dev/~vikings/+junk/team-junk

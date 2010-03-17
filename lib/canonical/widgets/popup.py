@@ -1,57 +1,44 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Single selection widget using a popup to select one item from a huge number.
-"""
+# pylint: disable-msg=E0211
+
+"""Single selection widget using a popup to select one item from many."""
 
 __metaclass__ = type
 
-from zope.interface import Attribute, implements, Interface
-from zope.app import zapi
-from zope.app.form.browser.interfaces import ISimpleInputWidget
-from zope.app.form.browser.itemswidgets import ItemsWidgetBase, SingleDataHelper
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.schema.vocabulary import IVocabularyFactory
+import os
+import cgi
+import simplejson
 
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.vocabularies import IHugeVocabulary
+from zope.schema.interfaces import IChoice
+from zope.app.form.browser.itemswidgets import (
+    ItemsWidgetBase, SingleDataHelper)
+
+from z3c.ptcompat import ViewPageTemplateFile
+
+from canonical.launchpad.webapp import canonical_url
 from canonical.cachedproperty import cachedproperty
 
 
-class ISinglePopupWidget(ISimpleInputWidget):
-    # I chose to use onKeyPress because onChange only fires when focus
-    # leaves the element, and that's very inconvenient.
-    onKeyPress = Attribute('''Optional javascript code to be executed
-                              as text in input is changed''')
-    cssClass = Attribute('''CSS class to be assigned to the input widget''')
-    style = Attribute('''CSS style to be applied to the input widget''')
-    def formToken():
-        'The token representing the value to display, possibly invalid'
-    def popupHref():
-        'The contents to go into the href tag used to popup the select window'
-    def matches():
-        """List of tokens matching the current input.
+class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
+    """Wrapper for the lazr-js picker/picker.js widget."""
 
-        An empty list should be returned if 'too many' results are found.
-        """
+    __call__ = ViewPageTemplateFile('templates/form-picker.pt')
 
-class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
-    """Window popup widget for single item choices from a huge vocabulary.
+    popup_name = 'popup-vocabulary-picker'
 
-    The huge vocabulary must be registered by name in the vocabulary registry.
-    """
-    implements(ISinglePopupWidget)
-
-    # ZPT that renders our widget
-
-    __call__ = ViewPageTemplateFile('templates/popup.pt')
-
+    # Override inherited attributes for the form field.
+    displayWidth = '20'
+    displayMaxWidth = ''
     default = ''
-    displayWidth = 20
-    displayMaxWidth = None
-
     onKeyPress = ''
-    style = None
-    cssClass = None
+    style = ''
+    cssClass = ''
+
+    step_title = 'Search'
+    # Defaults to self.vocabulary.displayname.
+    header = None
 
     @cachedproperty
     def matches(self):
@@ -59,7 +46,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         user currently has entered in the form.
         """
         # Pull form value using the parent class to avoid loop
-        formValue = super(SinglePopupWidget, self)._getFormInput()
+        formValue = super(VocabularyPickerWidget, self)._getFormInput()
         if not formValue:
             return []
 
@@ -69,16 +56,14 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         if not isinstance(formValue, basestring):
             return [vocab.getTerm(formValue)]
 
-        # Search
-        search_results = vocab.search(formValue)
+        search_results = vocab.searchForTerms(formValue)
 
-        # If we have too many results to be useful in a list,
-        # return an empty list.
         if search_results.count() > 25:
+            # If we have too many results to be useful in a list, return
+            # an empty list.
             return []
 
-        # Or convert to a list
-        return [vocab.toTerm(item) for item in vocab.search(formValue)]
+        return search_results
 
     @cachedproperty
     def formToken(self):
@@ -91,75 +76,120 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         # Just return the existing invalid token
         return val
 
-    def popupHref(self):
-        template = (
-            '''javascript:'''
-            '''popup_window('@@popup-window?'''
-            '''vocabulary=%s&field=%s','''
-            ''''500','400')'''
-            ) % (self.context.vocabularyName, self.name)
-        if self.onKeyPress:
-            # XXX: I suspect onkeypress() here is non-standard, but it
-            # works for me, and enough researching for tonight. It may
-            # be better to use dispatchEvent or a compatibility function
-            # -- kiko, 2005-09-27
-            template += ("; document.getElementById('%s').onkeypress()" %
-                         self.name)
-        return template
+    def inputField(self):
+        d = {
+            'formToken' : cgi.escape(self.formToken, quote=True),
+            'name': self.name,
+            'displayWidth': self.displayWidth,
+            'displayMaxWidth': self.displayMaxWidth,
+            'onKeyPress': self.onKeyPress,
+            'style': self.style,
+            'cssClass': self.cssClass
+        }
+        return """<input type="text" value="%(formToken)s" id="%(name)s"
+                         name="%(name)s" size="%(displayWidth)s"
+                         maxlength="%(displayMaxWidth)s"
+                         onKeyPress="%(onKeyPress)s" style="%(style)s"
+                         class="%(cssClass)s" />""" % d
+    @property
+    def suffix(self):
+        return self.name.replace('.', '-')
+
+    @property
+    def show_widget_id(self):
+        return 'show-widget-%s' % self.suffix
+
+    @property
+    def extra_no_results_message(self):
+        """Extra message when there are no results.
+
+        Override this in subclasses.
+
+        :return: A string that will be passed to Y.Node.create()
+                 so it needs to be contained in a single HTML element.
+        """
+        return None
+
+    @property
+    def vocabulary_name(self):
+        """The name of the field's vocabulary."""
+        choice = IChoice(self.context)
+        if choice.vocabularyName is None:
+            # The webservice that provides the results of the search
+            # must be passed in the name of the vocabulary which is looked
+            # up by the vocabulary registry.
+            raise ValueError(
+                "The %r.%s interface attribute doesn't have its "
+                "vocabulary specified as a string, so it can't be loaded "
+                "by the vocabulary registry."
+                % (choice.context, choice.__name__))
+        return choice.vocabularyName
+
+    def chooseLink(self):
+        js_file = os.path.join(os.path.dirname(__file__),
+                               'templates/vocabulary-picker.js.template')
+        js_template = open(js_file).read()
+
+        if self.header is None:
+            header = self.vocabulary.displayname
+        else:
+            header = self.header
+
+        args = dict(
+            vocabulary=self.vocabulary_name,
+            header=header,
+            step_title=self.step_title,
+            show_widget_id=self.show_widget_id,
+            input_id=self.name,
+            extra_no_results_message=self.extra_no_results_message)
+        js = js_template % simplejson.dumps(args)
+        # If the YUI widget or javascript is not supported in the browser,
+        # it will degrade to being this "Find..." link instead of the
+        # "Choose..." link. This only works if a non-AJAX form is available
+        # for the field's vocabulary.
+        if self.nonajax_uri is None:
+            css = 'unseen'
+        else:
+            css = ''
+        return ('<span class="%s">(<a id="%s" href="/people/">'
+                'Find&hellip;</a>)</span>'
+                '\n<script>\n%s\n</script>'
+               ) % (css, self.show_widget_id, js)
+
+    @property
+    def nonajax_uri(self):
+        """Override in subclass to specify a non-AJAX URI for the Find link.
+
+        If None is returned, the find link will be hidden.
+        """
+        return None
 
 
-class ISinglePopupView(Interface):
+class PersonPickerWidget(VocabularyPickerWidget):
+    include_create_team_link = False
 
-    batch = Attribute('The BatchNavigator of the current results to display')
+    def chooseLink(self):
+        link = super(PersonPickerWidget, self).chooseLink()
+        if self.include_create_team_link:
+            link += ('or (<a href="/people/+newteam">'
+                     'Create a new team&hellip;</a>)')
+        return link
 
-    def title():
-        """Title to use on the popup page"""
-
-    def vocabulary():
-        """Return the IHugeVocabulary to display in the popup window"""
-
-    def search():
-        """Return the BatchNavigator of the current results to display"""
-
-    def hasMoreThanOnePage(self):
-        """Return True if there's more than one page with results."""
-
-    def currentTokenizedBatch(self):
-        """Return the ITokenizedTerms for the current batch."""
+    @property
+    def nonajax_uri(self):
+        return '/people/'
 
 
-class SinglePopupView(object):
-    implements(ISinglePopupView)
+class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
+    """A SinglePopupWidget with a custom error message.
 
-    _batchsize = 15
-    batch = None
+    This widget is used only when searching for an upstream that is also
+    affected by a given bug as the page it links to includes a link which
+    allows the user to register the upstream if it doesn't exist.
+    """
 
-    def title(self):
-        """See ISinglePopupView"""
-        return self.vocabulary().displayname
-
-    def vocabulary(self):
-        """See ISinglePopupView"""
-        factory = zapi.getUtility(IVocabularyFactory,
-            self.request.form['vocabulary'])
-        vocabulary = factory(self.context)
-        assert IHugeVocabulary.providedBy(vocabulary), (
-            'Invalid vocabulary %s' % self.request.form['vocabulary'])
-        return vocabulary
-
-    def search(self):
-        """See ISinglePopupView"""
-        search_text = self.request.get('search', None)
-        self.batch = BatchNavigator(self.vocabulary().search(search_text),
-                                    self.request, size=self._batchsize)
-        return self.batch
-
-    def hasMoreThanOnePage(self):
-        """See ISinglePopupView"""
-        return len(self.batch.batchPageURLs()) > 1
-
-    def currentTokenizedBatch(self):
-        """See ISinglePopupView"""
-        vocabulary = self.vocabulary()
-        return [vocabulary.toTerm(item) for item in self.batch.currentBatch()]
-
+    @property
+    def extra_no_results_message(self):
+        return ("<strong>Didn't find the project you were looking for? "
+                '<a href="%s/+affects-new-product">Register it</a>.</strong>'
+                % canonical_url(self.context.context))

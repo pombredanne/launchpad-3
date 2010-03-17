@@ -1,8 +1,10 @@
-Displaying Paragraphs of Text with ZPT
-======================================
+= Displaying Paragraphs of Text with ZPT =
 
 To display paragraphs of text in HTML, use fmt:text-to-html. For details,
 see <https://launchpad.canonical.com/DisplayingParagraphsOfText>.
+
+
+== Basics ==
 
     >>> from canonical.launchpad.ftests import test_tales
 
@@ -79,10 +81,33 @@ previous line.  This aids in the display of code samples:
     <p>This is a code sample written in Python.<br />
     &nbsp;&nbsp;&nbsp;&nbsp;def messageCount(self):<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.potemplate.messageCount()</p>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.potemplate<wbr></wbr>.messageCount(<wbr></wbr>)</p>
     <p>&nbsp;&nbsp;&nbsp;&nbsp;def currentCount(self, language=None):<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.currentCount</p>
+
+Testing a bunch of URL links.
+
+    >>> text = (
+    ...     'https://launchpad.net/ is the new Launchpad site\n'
+    ...     'http://example.com/something?foo=bar&hum=baz\n'
+    ...     'You can check the PPC md5sums at '
+    ...     'ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc'
+    ...     '/current/images/MD5SUMS\n'
+    ...     'irc://irc.freenode.net/#launchpad\n'
+    ...     '\n'
+    ...     'I have a Jabber account (jabber:foo@jabber.example.com)\n'
+    ...     'Foo Bar <mailto:foo.bar@example.net>')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a rel="nofollow" href="https://launchpad.net/">https:/<wbr></wbr>/launchpad.<wbr></wbr>net/</a> is the new Launchpad site<br />
+    <a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://<wbr></wbr>example.<wbr></wbr>com/something?<wbr></wbr>foo=bar&amp;<wbr></wbr>hum=baz</a><br />
+    You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.<wbr></wbr>ubuntu.<wbr></wbr>com/ubuntu/<wbr></wbr>dists/breezy/<wbr></wbr>main/installer-<wbr></wbr>powerpc/<wbr></wbr>current/<wbr></wbr>images/<wbr></wbr>MD5SUMS</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.<wbr></wbr>freenode.<wbr></wbr>net/#launchpad</a></p>
+    <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:<wbr></wbr>foo@jabber.<wbr></wbr>example.<wbr></wbr>com</a>)<br />
+    Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:<wbr></wbr>foo.bar@<wbr></wbr>example.<wbr></wbr>net</a>&gt;</p>
+
+
+== URL linkification ==
 
 fmt:text-to-html knows how to linkify URLs:
 
@@ -122,44 +147,48 @@ fmt:text-to-html knows how to linkify URLs:
     ...     'irc://irc.freenode.net/%23launchpad,isserver\n'
     ...     'mailto:noreply@launchpad.net\n'
     ...     'jabber:noreply@launchpad.net\n'
+    ...     'http://localhost/foo?xxx&\n'
+    ...     'http://localhost?testing=[square-brackets-in-query]\n'
     ... )
 
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://localhost:8086/bar/baz/foo.html</a><br />
-    <a rel="nofollow" href="ftp://localhost:8086/bar/baz/foo.bar.html">ftp://localhost:8086/bar/baz/foo.bar.html</a><br />
-    <a rel="nofollow" href="sftp://localhost:8086/bar/baz/foo.bar.html">sftp://localhost:8086/bar/baz/foo.bar.html</a>.<br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>;<br />
-    <a rel="nofollow" href="news://localhost:8086/bar/baz/foo.bar.html">news://localhost:8086/bar/baz/foo.bar.html</a>:<br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>?<br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>,<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;,<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;.<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;;<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;:<br />
-    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;?<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>)<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>),<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>).<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>);<br />
-    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>):<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a><br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>.<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>,<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>;<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>:<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p</a><br />
-    <a rel="nofollow" href="http://www.searchtools.com/test/urls/(parens).html">http://www.searchtools.com/test/urls/(parens).html</a><br />
-    <a rel="nofollow" href="http://www.searchtools.com/test/urls/-dash.html">http://www.searchtools.com/test/urls/-dash.html</a><br />
-    <a rel="nofollow" href="http://www.searchtools.com/test/urls/_underscore.html">http://www.searchtools.com/test/urls/_underscore.html</a><br />
-    <a rel="nofollow" href="http://www.searchtools.com/test/urls/period.x.html">http://www.searchtools.com/test/urls/period.x.html</a><br />
-    <a rel="nofollow" href="http://www.searchtools.com/test/urls/!exclamation.html">http://www.searchtools.com/test/urls/!exclamation.html</a><br />
-    <a rel="nofollow" href="http://www.searchtools.com/test/urls/~tilde.html">http://www.searchtools.com/test/urls/~tilde.html</a><br />
-    <a rel="nofollow" href="http://www.searchtools.com/test/urls/*asterisk.html">http://www.searchtools.com/test/urls/*asterisk.html</a><br />
-    <a rel="nofollow" href="irc://irc.freenode.net/launchpad">irc://irc.freenode.net/launchpad</a><br />
-    <a rel="nofollow" href="irc://irc.freenode.net/%23launchpad,isserver">irc://irc.freenode.net/%23launchpad,isserver</a><br />
-    <a rel="nofollow" href="mailto:noreply@launchpad.net">mailto:noreply@launchpad.net</a><br />
-    <a rel="nofollow" href="jabber:noreply@launchpad.net">jabber:noreply@launchpad.net</a></p>
+    <p><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>html</a><br />
+    <a rel="nofollow" href="ftp://localhost:8086/bar/baz/foo.bar.html">ftp://localhost<wbr></wbr>:8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a><br />
+    <a rel="nofollow" href="sftp://localhost:8086/bar/baz/foo.bar.html">sftp://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>.<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>;<br />
+    <a rel="nofollow" href="news://localhost:8086/bar/baz/foo.bar.html">news://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>:<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>?<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>,<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;,<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;.<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;;<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;:<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>&gt;?<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>)<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>),<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>).<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>);<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://<wbr></wbr>localhost:<wbr></wbr>8086/bar/<wbr></wbr>baz/foo.<wbr></wbr>bar.html</a>):<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a><br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a>.<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a>,<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a>;<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a</a>:<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p">http://<wbr></wbr>localhost/<wbr></wbr>bar/baz/<wbr></wbr>foo.bar.<wbr></wbr>html?a=<wbr></wbr>b&amp;b=a:b;<wbr></wbr>c@d_e%f~<wbr></wbr>g#h,j!k-<wbr></wbr>l+m$n*o'<wbr></wbr>p</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/(parens).html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/(parens)<wbr></wbr>.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/-dash.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/-dash.<wbr></wbr>html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/_underscore.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/_underscor<wbr></wbr>e.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/period.x.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/period.<wbr></wbr>x.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/!exclamation.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/!exclamati<wbr></wbr>on.html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/~tilde.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/~tilde.<wbr></wbr>html</a><br />
+    <a rel="nofollow" href="http://www.searchtools.com/test/urls/*asterisk.html">http://<wbr></wbr>www.searchtools<wbr></wbr>.com/test/<wbr></wbr>urls/*asterisk.<wbr></wbr>html</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/launchpad">irc://irc.<wbr></wbr>freenode.<wbr></wbr>net/launchpad</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/%23launchpad,isserver">irc://irc.<wbr></wbr>freenode.<wbr></wbr>net/%23launchpa<wbr></wbr>d,isserver</a><br />
+    <a rel="nofollow" href="mailto:noreply@launchpad.net">mailto:<wbr></wbr>noreply@<wbr></wbr>launchpad.<wbr></wbr>net</a><br />
+    <a rel="nofollow" href="jabber:noreply@launchpad.net">jabber:<wbr></wbr>noreply@<wbr></wbr>launchpad.<wbr></wbr>net</a><br />
+    <a rel="nofollow" href="http://localhost/foo?xxx&amp;">http://<wbr></wbr>localhost/<wbr></wbr>foo?xxx&amp;</a><br />
+    <a rel="nofollow" href="http://localhost?testing=[square-brackets-in-query]">http://<wbr></wbr>localhost?<wbr></wbr>testing=<wbr></wbr>[square-<wbr></wbr>brackets-<wbr></wbr>in-query]</a></p>
 
 
 The fmt:text-to-html formatter leaves a number of non-URIs unlinked:
@@ -168,9 +197,11 @@ The fmt:text-to-html formatter leaves a number of non-URIs unlinked:
     ...     'nothttp://launchpad.net/\n'
     ...     'http::No-cache=True\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>nothttp://launchpad.net/<br />
+    <p>nothttp:<wbr></wbr>//launchpad.<wbr></wbr>net/<br />
     http::No-cache=True</p>
 
+
+== Bug references ==
 
 fmt:text-to-html is also smart enough to convert bug references into
 links:
@@ -187,6 +218,9 @@ links:
     ...     'bug report 123\n'
     ...     'bug no. 123\n'
     ...     'bug#123\n'
+    ...     'bug-123\n'
+    ...     'bug-report-123\n'
+    ...     'bug=123\n'
     ...     'bug\n'
     ...     '#123\n'
     ...     'debug #52\n')
@@ -202,6 +236,9 @@ links:
     <a href="/bugs/123" title="No such bug">bug report 123</a><br />
     <a href="/bugs/123" title="No such bug">bug no. 123</a><br />
     <a href="/bugs/123" title="No such bug">bug#123</a><br />
+    <a href="/bugs/123" title="No such bug">bug-123</a><br />
+    <a href="/bugs/123" title="No such bug">bug-report-123</a><br />
+    <a href="/bugs/123" title="No such bug">bug=123</a><br />
     <a href="/bugs/123" title="No such bug">bug<br />
     #123</a><br />
     debug #52</p>
@@ -228,6 +265,33 @@ links:
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="/bugs/2" title="Blackhole Trash folder">bug 2</a></p>
 
+
+We linkify bugs that are in the Ubuntu convention for referring to bugs in
+Debian changelogs.
+
+    >>> text = 'LP: #123.\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>LP: <a href="/bugs/123" title="No such bug">#123</a>.</p>
+
+Works with multiple bugs:
+
+    >>> text = 'LP: #123, #2.\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>LP: <a href="/bugs/123" title="No such bug">#123</a>, <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+
+And with lower case 'lp' too:
+
+    >>> text = 'lp: #123, #2.\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>lp: <a href="/bugs/123" title="No such bug">#123</a>, <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+
+Even line breaks cannot stop the power of bug linking:
+
+    >>> text = 'LP:  #123,\n#2.\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>LP:  <a href="/bugs/123" title="No such bug">#123</a>,<br />
+    <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+
 To check a private bug, we need to log in and set a bug to be private.
 
     >>> from zope.component import getUtility
@@ -235,13 +299,97 @@ To check a private bug, we need to log in and set a bug to be private.
     >>> bugset = getUtility(IBugSet)
     >>> firefox_crashes = bugset.get(6)
     >>> login("test@canonical.com")
-    >>> firefox_crashes.private = True
+    >>> current_user = getUtility(ILaunchBag).user
+    >>> firefox_crashes.setPrivate(True, current_user)
+    True
+
+Bug.setPrivate adds all indirect subscribers to the bug as direct
+subscribers, but we want to see what the bug looks like if we're not a
+subscriber.
+
+    >>> firefox_crashes.unsubscribe(current_user, current_user)
 
 A private bug has a title "private bug".
 
     >>> text = 'bug 6\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="/bugs/6" title="private bug">bug 6</a></p>
+
+
+== FAQ references ==
+
+FAQ references are global, and also linkified:
+
+    >>> text = (
+    ...     'faq 1\n'
+    ...     'faq #2\n'
+    ...     'faq-2\n'
+    ...     'faq=2\n'
+    ...     'faq item 1\n'
+    ...     'faq  number  2\n'
+    ...     )
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="http://answers.launchpad.dev/ubuntu/+faq/1">faq 1</a><br />
+    <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq #2</a><br />
+    <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq-2</a><br />
+    <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq=2</a><br />
+    <a href="http://answers.launchpad.dev/ubuntu/+faq/1">faq item 1</a><br />
+    <a href="http://answers.launchpad.dev/ubuntu/+faq/2">faq  number  2</a></p>
+
+Except, that is, when the FAQ doesn't exist:
+
+    >>> text = (
+    ...     'faq 999\n'
+    ...     )
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>faq 999</p>
+
+
+== Branch references ==
+
+Branch references are linkified:
+
+    >>> text = (
+    ...     'lp:~foo/bar/baz\n'
+    ...     'lp:~foo/bar/bug-123\n'
+    ...     'lp:~foo/+junk/baz\n'
+    ...     'lp:~foo/ubuntu/jaunty/evolution/baz\n'
+    ...     'lp:foo/bar\n'
+    ...     'lp:foo\n'
+    ...     'lp:foo,\n'
+    ...     'lp:foo/bar.\n'
+    ...     'lp:foo/bar/baz\n'
+    ...     'lp:///foo\n'
+    ...     'lp:/foo\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/+branch/~foo/bar/baz">lp:~foo/bar/baz</a><br />
+    <a href="/+branch/~foo/bar/bug-123">lp:~foo/bar/bug-123</a><br />
+    <a href="/+branch/~foo/+junk/baz">lp:~foo/+junk/baz</a><br />
+    <a href="/+branch/~foo/ubuntu/jaunty/evolution/baz">lp:~foo/ubuntu/jaunty/evolution/baz</a><br />
+    <a href="/+branch/foo/bar">lp:foo/bar</a><br />
+    <a href="/+branch/foo">lp:foo</a><br />
+    <a href="/+branch/foo">lp:foo</a>,<br />
+    <a href="/+branch/foo/bar">lp:foo/bar</a>.<br />
+    <a href="/+branch/foo/bar/baz">lp:foo/bar/baz</a><br />
+    <a href="/+branch/foo">lp:///foo</a><br />
+    <a href="/+branch/foo">lp:/foo</a></p>
+
+Text that looks like a branch reference, but is followed only by digits is
+treated as a link to a bug.
+
+    >>> text = 'lp:1234'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/bugs/1234" title="No such bug">lp:1234</a></p>
+
+We are even smart enough to notice the trailing punctuation gunk and separate
+that from the link.
+
+    >>> text = 'lp:1234,'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/bugs/1234" title="No such bug">lp:1234</a>,</p>
+
+
+== OOPS references ==
 
 fmt:text-to-html is also smart enough to convert OOPS references into
 links. However, it only does this if the logged in person is a member of the
@@ -278,35 +426,39 @@ After login, a link:
     True
 
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS 38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS 38C23</a></p>
 
 OOPS references can take a number of forms:
 
     >>> text = 'oops 38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">oops 38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">oops 38C23</a></p>
 
     >>> text = 'OOPS-38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS-38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS-38C23</a></p>
 
     >>> text = 'OOPS C3'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/C3">OOPS C3</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=C3">OOPS C3</a></p>
 
     >>> text = 'OOPS   38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS   38C23</a></p>
+    <p><a href="https://lp-oops.canonical.com/oops.py/?oopsid=38C23">OOPS   38C23</a></p>
 
-It should work if the configuration value doesn't end with a slash:
+If the configuration value doesn't end with a slash, we won't add one. This
+lets us configure the URL to use query parameters.
 
     >>> from canonical.config import config
-    >>> old_config = config.launchpad.oops_root_url
-    >>> config.launchpad.oops_root_url = 'http://foo/bar'
+    >>> oops_root_url = """
+    ...     [launchpad]
+    ...     oops_root_url: http://foo/bar
+    ...     """
+    >>> config.push('oops_root_url', oops_root_url)
     >>> text = 'OOPS 38C23'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="http://foo/bar/38C23">OOPS 38C23</a></p>
-    >>> config.launchpad.oops_root_url = old_config
+    <p><a href="http://foo/bar38C23">OOPS 38C23</a></p>
+    >>> config_data = config.pop('oops_root_url')
 
 Check against false positives:
 
@@ -321,28 +473,8 @@ Reset login information.
     >>> getUtility(ILaunchBag).developer
     False
 
-Testing a bunch of URL links.
 
-    >>> text = (
-    ...     'https://launchpad.net/ is the new Launchpad site\n'
-    ...     'http://example.com/something?foo=bar&hum=baz\n'
-    ...     'You can check the PPC md5sums at '
-    ...     'ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc'
-    ...     '/current/images/MD5SUMS\n'
-    ...     'irc://irc.freenode.net/#launchpad\n'
-    ...     '\n'
-    ...     'I have a Jabber account (jabber:foo@jabber.example.com)\n'
-    ...     'Foo Bar <mailto:foo.bar@example.net>')
-    >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="https://launchpad.net/">https://launchpad.net/</a> is the new Launchpad site<br />
-    <a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://example.com/something?foo=bar&amp;hum=baz</a><br />
-    You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS</a><br />
-    <a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.freenode.net/#launchpad</a></p>
-    <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:foo@jabber.example.com</a>)<br />
-    Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:foo.bar@example.net</a>&gt;</p>
-
-regex helper functions
-----------------------
+== Regex helper functions ==
 
 The _substitute_matchgroup_for_spaces() static method is part of the
 fmt:text-to-html code.  It is a helper for writing regular expressions where
@@ -364,9 +496,17 @@ is dealing with bugs, and 'url' when it is dealing with URLs.
 First, let's try a match of nothing it understands.  This is a bug, so we get
 an AssertionError.
 
-    >>> matchobj = re.match('(?P<bug>xxx)?(?P<url>yyy)?(?P<oops>zzz)?', 'fish')
+    >>> matchobj = re.match(
+    ...     ('(?P<bug>xxx)?(?P<faq>www)?(?P<url>yyy)?(?P<oops>zzz)?'
+    ...      '(?P<lpbranchurl>www)?(?P<clbug>vvv)?'),
+    ...     'fish')
     >>> sorted(matchobj.groupdict().items())
-    [('bug', None), ('oops', None), ('url', None)]
+    [('bug', None),
+     ('clbug', None),
+     ('faq', None),
+      ('lpbranchurl', None),
+      ('oops', None),
+      ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
     Traceback (most recent call last):
     ...
@@ -410,3 +550,4 @@ title.
     [('bug', 'xxxx'), ('bugnum', '6'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
     '<a href="/bugs/6" title="private bug">xxxx</a>'
+

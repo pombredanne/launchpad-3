@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Module docstring goes here."""
 
@@ -12,7 +13,6 @@ __all__ = [
 from datetime import date, timedelta, datetime
 import re
 import os
-import os.path
 
 from pytz import utc
 
@@ -24,12 +24,12 @@ def referenced_oops():
     '''Return a set of OOPS codes that are referenced somewhere in the
     Launchpad database.
 
-    We currently check the entire Message store, Bugs, BugTasks and Tickets
+    We currently check the entire Message store, Bugs, BugTasks and Question
     '''
     # Note that the POSIX regexp syntax is subtly different to the Python,
     # and that we need to escape all \ characters to keep the SQL interpreter
     # happy.
-    posix_oops_match = r"~* '\\moops\\s*-?\\s*\\d*[a-z]+\\d+'"
+    posix_oops_match = r"~* '^(oops\\s*-?\\s*\\d*[a-z]+\\d+)|[^=]+(\\moops\\s*-?\\s*\\d*[a-z]+\\d+)'"
     query = """
         SELECT DISTINCT subject FROM Message
         WHERE subject %(posix_oops_match)s AND subject IS NOT NULL
@@ -44,7 +44,7 @@ def referenced_oops():
         WHERE statusexplanation %(posix_oops_match)s
         UNION ALL
         SELECT title || ' ' || description || ' ' || COALESCE(whiteboard,'')
-        FROM Ticket WHERE title %(posix_oops_match)s
+        FROM Question WHERE title %(posix_oops_match)s
             OR description %(posix_oops_match)s
             OR whiteboard %(posix_oops_match)s
         """ % vars()
@@ -92,11 +92,13 @@ def unwanted_oops_files(root_path, days, log=None):
 
 
 def old_oops_files(root_path, days):
-    '''Generate a list of all OOPS files found under root_path that
-       are older than 'days' days old.
-    
-       root_path defaults to the config.launchpad.errorreports.errordir
-    '''
+    """Generate a list of all OOPS files older than 'days' days old.
+
+    :param root_path: The directory that contains the OOPS files. The
+        cronscript will pass config.error_reports.error_dir if the root_path
+        was not specified on the command line.
+    :param days: The age the OOPS files must exceed to be considered old.
+    """
     now = date.today()
     for (dirpath, dirnames, filenames) in os.walk(root_path):
 

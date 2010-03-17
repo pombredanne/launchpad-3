@@ -1,5 +1,9 @@
-<div class="portlet">
-    <h4>Context</h4>
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet">
+    <h2>Context</h2>
 
     <table tal:define="bag view/bag">
         <tr>
@@ -8,14 +12,14 @@
         </tr>
         <tr>
             <td>Person</td>
-            <td tal:content="bag/person/browsername|nothing" />
+            <td tal:content="bag/person/displayname|nothing" />
         </tr>
         <tr>
-            <td>Project</td>
+            <td>Project Group</td>
             <td tal:content="bag/project/name|nothing" />
         </tr>
         <tr>
-            <td>Product</td>
+            <td>Project</td>
             <td tal:content="bag/product/name|nothing" />
         </tr>
         <tr>
@@ -23,8 +27,8 @@
             <td tal:content="bag/distribution/name|nothing" />
         </tr>
         <tr>
-            <td>DistroRelease</td>
-            <td tal:content="bag/distrorelease/name|nothing" />
+            <td>DistroSeries</td>
+            <td tal:content="bag/distroseries/name|nothing" />
         </tr>
         <tr>
             <td>Sourcepackage</td>
@@ -36,7 +40,7 @@
         </tr>
         <tr>
             <td>User</td>
-            <td tal:content="bag/user/browsername|nothing" />
+            <td tal:content="bag/user/displayname|nothing" />
         </tr>
     </table>
 </div>

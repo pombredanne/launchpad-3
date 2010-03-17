@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Creator: CorelDRAW -->
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="64px" height="64px" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd"
+viewBox="0 0 64 64">
+ <defs>
+  <style type="text/css">
+   <![CDATA[
+    .fil2 {fill:#70787E}
+    .fil3 {fill:white}
+    .fil4 {fill:url(#id0)}
+    .fil1 {fill:url(#id1)}
+    .fil0 {fill:url(#id2)}
+    .fil6 {fill:url(#id3)}
+    .fil5 {fill:url(#id4)}
+    .fil8 {fill:url(#id5)}
+    .fil7 {fill:url(#id6)}
+   ]]>
+  </style>
+  <linearGradient id="id0" gradientUnits="userSpaceOnUse" x1="29.8998" y1="39.1223" x2="34.9415" y2="39.1223">
+   <stop offset="0" style="stop-color:#323335"/>
+   <stop offset="1" style="stop-color:white"/>
+   <stop offset="1" style="stop-color:white"/>
+  </linearGradient>
+  <linearGradient id="id1" gradientUnits="userSpaceOnUse" x1="16.1663" y1="38.6625" x2="49.4892" y2="38.6625">
+   <stop offset="0" style="stop-color:#C0C2C8"/>
+   <stop offset="1" style="stop-color:white"/>
+   <stop offset="1" style="stop-color:white"/>
+  </linearGradient>
+  <linearGradient id="id2" gradientUnits="userSpaceOnUse" x1="11.5804" y1="12.2292" x2="53.1413" y2="12.2292">
+   <stop offset="0" style="stop-color:#C0C2C8"/>
+   <stop offset="1" style="stop-color:white"/>
+   <stop offset="1" style="stop-color:white"/>
+  </linearGradient>
+  <linearGradient id="id3" gradientUnits="userSpaceOnUse" x1="37.6789" y1="39.1223" x2="42.7209" y2="39.1223">
+   <stop offset="0" style="stop-color:#323335"/>
+   <stop offset="1" style="stop-color:white"/>
+   <stop offset="1" style="stop-color:white"/>
+  </linearGradient>
+  <linearGradient id="id4" gradientUnits="userSpaceOnUse" x1="22.1207" y1="39.1223" x2="27.1627" y2="39.1223">
+   <stop offset="0" style="stop-color:#323335"/>
+   <stop offset="1" style="stop-color:white"/>
+   <stop offset="1" style="stop-color:white"/>
+  </linearGradient>
+  <linearGradient id="id5" gradientUnits="userSpaceOnUse" x1="17.6335" y1="39.1223" x2="20.1546" y2="39.1223">
+   <stop offset="0" style="stop-color:#80888F"/>
+   <stop offset="1" style="stop-color:white"/>
+   <stop offset="1" style="stop-color:white"/>
+  </linearGradient>
+  <linearGradient id="id6" gradientUnits="userSpaceOnUse" x1="45.2962" y1="39.1223" x2="47.817" y2="39.1223">
+   <stop offset="0" style="stop-color:#323335"/>
+   <stop offset="1" style="stop-color:white"/>
+   <stop offset="1" style="stop-color:white"/>
+  </linearGradient>
+ </defs>
+ <g id="Capa_x0020_1">
+  <metadata id="CorelCorpID_0Corel-Layer"/>
+  <g id="_165648048">
+   <polygon id="cd" class="fil0" points="11.5804,11.8154 21.5005,11.8154 21.5005,7.20736 24.9673,7.20736 24.9673,5.55363 38.6739,5.55363 38.6739,7.20736 42.1843,7.20736 42.1843,11.8154 53.1413,11.8154 53.1413,18.9048 11.5804,18.9048 "/>
+   <polygon id="dc" class="fil1" points="16.1663,57.8877 49.4892,57.8877 49.4892,19.4377 16.1663,19.4377 "/>
+   <rect id="_28689672" class="fil2" x="26.086" y="9.96471" width="11.6354" height="1.85071"/>
+   <rect id="_28668608" class="fil2" x="11.4872" y="18.9047" width="41.6539" height="1.85071"/>
+   <rect id="_29096976" class="fil2" x="24.9673" y="3.70306" width="13.8501" height="1.85071"/>
+   <rect id="_28606136" class="fil2" x="11.5804" y="9.96471" width="10.6685" height="1.85071"/>
+   <rect id="_29090952" class="fil2" x="41.527" y="9.96471" width="11.5729" height="1.85071"/>
+   <rect id="_29091304" class="fil2" transform="matrix(6.13381E-016 -0.0192514 0.0926061 2.03871E-015 9.7195 19.8302)" width="460.645" height="19.9851"/>
+   <rect id="_29091656" class="fil2" transform="matrix(6.13381E-016 -0.0192514 0.0926061 2.03871E-015 53.1414 19.8302)" width="460.645" height="19.9851"/>
+   <rect id="_29895360" class="fil2" transform="matrix(6.13381E-016 -0.00962233 0.0926061 1.019E-015 20.5752 11.6399)" width="460.645" height="19.9851"/>
+   <rect id="_29894192" class="fil2" transform="matrix(6.13381E-016 -0.00962233 0.0926061 1.019E-015 41.3501 11.6399)" width="460.645" height="19.9851"/>
+   <rect id="_29895336" class="fil2" x="22.4049" y="5.52555" width="2.90116" height="1.85071"/>
+   <rect id="_30034328" class="fil2" x="38.5167" y="5.52555" width="2.90116" height="1.85071"/>
+   <rect id="_29894216" class="fil2" x="16.0404" y="58.0391" width="33.6219" height="1.85071"/>
+   <rect id="_29100240" class="fil2" transform="matrix(6.13381E-016 -0.0838024 0.0926061 8.8747E-015 14.3183 57.8873)" width="460.645" height="19.9851"/>
+   <rect id="_29571392" class="fil2" transform="matrix(6.13381E-016 -0.0838024 0.0926061 8.8747E-015 49.4892 57.8873)" width="460.645" height="19.9851"/>
+   <rect id="_29894240" class="fil3" x="25.3061" y="5.52555" width="13.2106" height="0.925356"/>
+   <rect id="_29099008" class="fil3" x="11.5804" y="11.8154" width="11.7987" height="0.848466"/>
+   <rect id="_29099432" class="fil3" x="40.3559" y="11.8154" width="12.7756" height="0.848466"/>
+   <rect id="_29894384" class="fil3" x="22.4846" y="7.36913" width="4.48506" height="0.925356"/>
+   <rect id="_29894792" class="fil3" x="36.9437" y="7.24684" width="4.48506" height="0.925356"/>
+   <rect id="_20401024" class="fil3" x="25.9432" y="11.9438" width="11.7987" height="0.848466"/>
+   <rect id="_28680152" class="fil3" x="11.5842" y="17.2904" width="41.5573" height="1.61437"/>
+   <rect id="_28178288" class="fil3" transform="matrix(2.15658E-015 -0.0493281 0.161561 2.5921E-015 11.6074 18.9042)" width="142.654" height="9.99212"/>
+   <rect id="_27990544" class="fil3" transform="matrix(2.15658E-015 -0.0493281 0.161561 2.5921E-015 51.4265 18.9042)" width="142.654" height="9.99212"/>
+   <rect id="_29715048" class="fil3" transform="matrix(2.22609E-015 -0.0183589 0.166768 9.6472E-016 25.3061 8.16706)" width="142.654" height="9.99212"/>
+   <rect id="_30349768" class="fil3" transform="matrix(2.22609E-015 -0.0183589 0.166768 9.6472E-016 36.8476 8.16706)" width="142.654" height="9.99212"/>
+   <rect id="_29900096" class="fil3" transform="matrix(8.32678E-016 -0.0314402 0.0926061 2.45263E-015 22.4914 12.2197)" width="142.654" height="9.99212"/>
+   <rect id="_28167152" class="fil3" transform="matrix(8.32678E-016 -0.0314402 0.0926061 2.45263E-015 40.3559 12.2197)" width="142.654" height="9.99212"/>
+   <polygon id="_28137136" class="fil4" points="29.8998,55.4731 34.9415,55.4731 34.9415,22.7718 29.8998,22.7718 "/>
+   <polygon id="_28137160" class="fil5" points="22.1207,55.4731 27.1627,55.4731 27.1627,22.7718 22.1207,22.7718 "/>
+   <polygon id="_28692464" class="fil6" points="37.6789,55.4731 42.7209,55.4731 42.7209,22.7718 37.6789,22.7718 "/>
+   <polygon id="_28561368" class="fil7" points="45.2962,55.4731 47.817,55.4731 47.817,22.7718 45.2962,22.7718 "/>
+   <polygon id="_1" class="fil8" points="17.6335,55.4731 20.1546,55.4731 20.1546,22.7718 17.6335,22.7718 "/>
+   <rect id="_0" class="fil3" x="16.1691" y="55.4735" width="33.3201" height="2.41386"/>
+  </g>
+ </g>
+</svg>

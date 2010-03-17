@@ -3,3 +3,4 @@
 -- 
 %(bug_title)s
 %(bug_url)s
+%(notification_rationale)s

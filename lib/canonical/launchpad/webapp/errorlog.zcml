@@ -1,28 +1,39 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
-    <content class="zope.app.error.RootErrorReportingUtility">
+    <class class="zope.error.error.RootErrorReportingUtility">
         <require
             permission="zope.Public"
-            interface="zope.app.error.interfaces.IErrorReportingUtility"
+            interface="zope.error.interfaces.IErrorReportingUtility"
             />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.webapp.errorlog.ErrorReport">
+    <class class="canonical.launchpad.webapp.errorlog.ErrorReport">
         <allow
             interface="canonical.launchpad.webapp.interfaces.IErrorReport"
             />
-    </content>
+    </class>
 
     <utility
-        provides="zope.app.error.interfaces.IErrorReportingUtility"
+        provides="zope.error.interfaces.IErrorReportingUtility"
         component="canonical.launchpad.webapp.errorlog.globalErrorUtility" 
         />
 
     <subscriber
         for="zope.app.publication.interfaces.IEndRequestEvent"
         handler="canonical.launchpad.webapp.errorlog.end_request"
+        />
+
+    <!-- Create a namespace to request an oops -->
+    <view
+        name="oops" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory="canonical.launchpad.webapp.errorlog.OopsNamespace"
         />
 
 </configure>

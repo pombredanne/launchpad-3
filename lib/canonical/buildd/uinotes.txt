@@ -47,7 +47,7 @@ each of the arch queues; also what packages are ahead of it.
 Distribution security team member
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Gets to see all the above; but also for restricted distroreleases
+Gets to see all the above; but also for restricted distroseries
 
 Distribution build manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -64,5 +64,5 @@ Pages we're likely to need
    info rather than a web page. [[TODO: Ask lamont about this]]
  o Build log viewer
  o Build queue viewer, optionally limited to a specific
-   build/sourcepackagerelease/sourcepackage/distrorelease/arch
+   build/sourcepackagerelease/sourcepackage/distroseries/arch
  o A way to give-back packages to re-try the build

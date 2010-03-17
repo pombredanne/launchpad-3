@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Methods dealing with interactions."""
 
@@ -7,11 +8,12 @@ __metaclass__ = type
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import implements
+from zope.publisher.interfaces import IPublicationRequest
 from zope.security.interfaces import IParticipation
 from zope.security.management import (
     endInteraction, newInteraction, queryInteraction)
 
-from canonical.launchpad.interfaces import IOpenLaunchBag
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
 
 def get_current_principal():
@@ -33,10 +35,15 @@ def setupInteraction(principal, login=None, participation=None):
     You can optionally pass in a participation to be used.  If no
     participation is given, a Participation is used.
     """
+    # If principal is None, this method acts just like endInteraction.
+    if principal is None:
+        endInteraction()
+        return
+
     if participation is None:
         participation = Participation()
 
-    # First end any running interaction, and start a new one
+    # First end any running interaction, and start a new one.
     endInteraction()
     newInteraction(participation)
 
@@ -46,7 +53,12 @@ def setupInteraction(principal, login=None, participation=None):
     else:
         launchbag.setLogin(login)
 
-    participation.principal = principal
+    if IPublicationRequest.providedBy(participation):
+        # principal is a read-only attribute on requests.
+        participation.setPrincipal(principal)
+    else:
+        # Try setting the attribute directly.
+        participation.principal = principal
 
 
 class Participation:

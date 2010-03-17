@@ -1,24 +1,30 @@
-#!/usr/bin/env python
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
+import _pythonpath
 
-import sys, re, time
-import os, os.path, errno
+import sys, time
+import os, errno
 import tabnanny
 from StringIO import StringIO
-import psycopg
+import psycopg2
 from subprocess import Popen, PIPE, STDOUT
 from signal import SIGKILL, SIGTERM
 from select import select
 
-# Die and kill the kids if no output for 10 minutes. Tune this if if your
-# slow arsed machine needs it. The main use for this is to keep the pqm
-# queue flowing without having to give it a lifeless enema.
-TIMEOUT = 10 * 60 
+# The TIMEOUT setting (expressed in seconds) affects how long a test will run
+# before it is deemed to be hung, and then appropriately terminated.
+# It's principal use is preventing a PQM job from hanging indefinitely and
+# backing up the queue.
+# e.g. Usage: TIMEOUT = 60 * 15
+# This will set the timeout to 15 minutes.
+TIMEOUT = 60 * 15
 
 def main():
-    """Call test.py with whatever arguments this script was run with.
+    """Call bin/test with whatever arguments this script was run with.
 
     If the tests ran ok (last line of stderr is 'OK<return>') then suppress
     output and exit(0).
@@ -28,8 +34,8 @@ def main():
     here = os.path.dirname(os.path.realpath(__file__))
 
     # Tabnanny
-    # NB. If tabnanny raises an exception, run 
-    # python /usr/lib/python2.4/tabnanny.py -vv lib/canonical
+    # NB. If tabnanny raises an exception, run
+    # python /usr/lib/python2.5/tabnanny.py -vv lib/canonical
     # for more detailed output.
     org_stdout = sys.stdout
     sys.stdout = StringIO()
@@ -42,21 +48,9 @@ def main():
         print '---- end tabnanny bitching ----'
         return 1
 
-    # Ensure ++resource++ URL's are all absolute - this ensures they
-    # are cache friendly
-    results = os.popen(
-        r"find lib/canonical -type f | grep -v '~$' | "
-        r"xargs grep '[^/]\(++resource++\|@@/\)'"
-        ).readlines()
-    if results:
-        print '---- non-absolute ++resource++ or @@/ URLs found ----'
-        print ''.join(results)
-        print '---- end non-absolute ++resource++ URLs found ----'
-        return 1
-
     # Sanity check PostgreSQL version. No point in trying to create a test
     # database when PostgreSQL is too old.
-    con = psycopg.connect('dbname=template1')
+    con = psycopg2.connect('dbname=template1')
     cur = con.cursor()
     cur.execute('show server_version')
     server_version = cur.fetchone()[0]
@@ -74,12 +68,12 @@ def main():
 
     # Drop the template database if it exists - the Makefile does this
     # too, but we can explicity check for errors here
-    con = psycopg.connect('dbname=template1')
+    con = psycopg2.connect('dbname=template1')
     con.set_isolation_level(0)
     cur = con.cursor()
     try:
         cur.execute('drop database launchpad_ftest_template')
-    except psycopg.ProgrammingError, x:
+    except psycopg2.ProgrammingError, x:
         if 'does not exist' not in str(x):
             raise
     cur.execute("""
@@ -95,7 +89,6 @@ def main():
         return 1
     cur.close()
     con.close()
-    
 
     # Build the template database. Tests duplicate this.
     here = os.path.dirname(os.path.realpath(__file__))
@@ -107,7 +100,7 @@ def main():
 
     # Sanity check the database. No point running tests if the
     # bedrock is crumbling.
-    con = psycopg.connect('dbname=launchpad_ftest_template')
+    con = psycopg2.connect('dbname=launchpad_ftest_template')
     cur = con.cursor()
     cur.execute('show search_path')
     search_path = cur.fetchone()[0]
@@ -141,13 +134,22 @@ def main():
     del cur
     con.close()
     del con
-    
 
     print 'Running tests.'
     os.chdir(here)
-    cmd = [sys.executable, 'test.py'] + sys.argv[1:]
-    print ' '.join(cmd)
-    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+    cmd = [
+        'xvfb-run',
+        '-s',
+        "'-screen 0 1024x768x24'",
+        os.path.join(here, 'bin', 'test')] + sys.argv[1:]
+    command_line = ' '.join(cmd)
+    print command_line
+
+    # Run the test suite and return the error code
+    #return call(cmd)
+
+    proc = Popen(
+        command_line, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
     proc.stdin.close()
 
     # Do proc.communicate(), but timeout if there's no activity on stdout or
@@ -159,12 +161,15 @@ def main():
         if len(rlist) == 0:
             if proc.poll() is not None:
                 break
-            print 'Tests hung - no output for %d seconds. Killing.' % TIMEOUT
+            print ("\nA test appears to be hung. There has been no output for"
+                " %d seconds. Sending SIGTERM." % TIMEOUT)
             killem(proc.pid, SIGTERM)
             time.sleep(3)
             if proc.poll() is not None:
-                print 'Not dead yet! - slaughtering mercilessly'
+                print ("\nSIGTERM did not work. Sending SIGKILL.")
                 killem(proc.pid, SIGKILL)
+            # Drain the subprocess's stdout and stderr.
+            sys.stdout.write(proc.stdout.read())
             break
 
         if proc.stdout in rlist:
@@ -175,7 +180,7 @@ def main():
 
     rv = proc.wait()
     if rv == 0:
-        print '\nSuccessfully run tests.'
+        print '\nSuccessfully ran all tests.'
     else:
         print '\nTests failed (exit code %d)' % rv
 
@@ -185,7 +190,7 @@ def main():
 def killem(pid, signal):
     """Kill the process group leader identified by pid and other group members
 
-    Note that test.py sets its process to a process group leader.
+    Note that bin/test sets its process to a process group leader.
     """
     try:
         os.killpg(os.getpgid(pid), signal)

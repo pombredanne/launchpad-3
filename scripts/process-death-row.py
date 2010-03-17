@@ -1,79 +1,36 @@
-#!/usr/bin/env python
-"""Death row kickoff script."""
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
+# Stop lint warning about relative import:
+# pylint: disable-msg=W0403
+"""Death row processor script.
+
+This script removes obsolete files from the selected archive(s) pool.
+
+You can select a specific distribution or let it default to 'ubuntu'.
+
+It operates in 2 modes:
+ * all distribution archive (PRIMARY and PARTNER) [default]
+ * all PPAs [--ppa]
+
+You can optionally specify a different 'pool-root' path which will be used
+as the base path for removing files, instead of the real archive pool root.
+This feature is used to inspect the removed files without actually modifying
+the archive tree.
+
+There is also a 'dry-run' mode that can be used to operate on the real
+archive tree without removing the files.
+"""
 import _pythonpath
 
-import logging
-from optparse import OptionParser
-
-from canonical.lp import initZopeless
-from canonical.launchpad.database import Distribution
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
-
-from canonical.archivepublisher.diskpool import DiskPool, Poolifier, POOL_DEBIAN
-from canonical.archivepublisher.config import Config, LucilleConfigError
-from canonical.archivepublisher.deathrow import DeathRow
-
-
-def getDeathRow(distroname, log):
-    distro = Distribution.byName(distroname)
-
-    log.debug("Grab Lucille config.")
-    try:
-        pubconf = Config(distro)
-    except LucilleConfigError, info:
-        log.error(info)
-        raise
-
-    log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(Poolifier(POOL_DEBIAN),
-                  pubconf.poolroot, logging.getLogger("DiskPool"))
-    # Set the diskpool's log level to INFO to suppress debug output
-    dp.logger.setLevel(20)
-    dp.scan()
-
-    log.debug("Preparing death row.")
-    return DeathRow(distro, dp, log)
-
-
-def main():
-    parser = OptionParser()
-    parser.add_option("-n", "--dry-run", action="store_true",
-                      dest="dry_run", metavar="", default=False,
-                      help=("Dry run: goes through the motions but "
-                            "commits to nothing."))
-    parser.add_option("-d", "--distribution",
-                      dest="distribution", metavar="DISTRO",
-                      help="Specified the distribution name.")
-
-    logger_options(parser)
-    (options, args) = parser.parse_args()
-    log = logger(options, "deathrow-distro")
-
-    log.debug("Initialising zopeless.")
-    # XXX Change this when we fix up db security
-    txn = initZopeless(dbuser='lucille')
-    execute_zcml_for_scripts()
-
-    distroname = options.distribution
-    death_row = getDeathRow(distroname, log)
-    try:
-        # Unpublish death row
-        log.debug("Unpublishing death row.")
-        death_row.reap(options.dry_run)
-
-        log.debug("Committing")
-        if options.dry_run:
-            txn.commit()
-        else:
-            txn.abort()
-    except:
-        log.exception("Bad muju while doing death-row unpublish")
-        txn.abort()
-        raise
+from canonical.config import config
+from lp.soyuz.scripts.processdeathrow import DeathRowProcessor
 
 
 if __name__ == "__main__":
-    main()
+    script = DeathRowProcessor(
+        'process-death-row', dbuser=config.archivepublisher.dbuser)
+    script.lock_and_run()
 

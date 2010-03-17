@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 LaunchBag
 
@@ -10,19 +12,37 @@ import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
-import zope.security.management
-import zope.thread
-from zope.app.session.interfaces import ISession
+from zope.security import management
+from zope import thread
 
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
-        IOpenLaunchBag, ILaunchBag,
-        ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution,
-        IDistroRelease, ISourcePackage, IBug, IDistroArchRelease,
-        ISpecification, IBugTask)
-from canonical.launchpad.webapp.interfaces import ILoggedInEvent
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+        IAccount, IBug, IDistribution, IDistroSeries, IPerson,
+        IProjectGroup, IProduct, ISourcePackage, IDistroArchSeries,
+        ISpecification, IBugTask, ILaunchpadCelebrities)
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
 
 _utc_tz = pytz.timezone('UTC')
+
+
+def get_principal():
+    """Return the principal for the current interaction."""
+    interaction = management.queryInteraction()
+    if interaction is None:
+        return None
+    principals = [
+        participation.principal
+        for participation in list(interaction.participations)
+        if participation.principal is not None
+        ]
+    if not principals:
+        return None
+    elif len(principals) > 1:
+        raise ValueError('Too many principals')
+    else:
+        return principals[0]
+
 
 class LaunchBag:
 
@@ -32,18 +52,18 @@ class LaunchBag:
     _registry = {
         ILaunchpadApplication: 'site',
         IPerson: 'person',
-        IProject: 'project',
+        IProjectGroup: 'project',
         IProduct: 'product',
         IDistribution: 'distribution',
-        IDistroRelease: 'distrorelease',
-        IDistroArchRelease: 'distroarchrelease',
+        IDistroSeries: 'distroseries',
+        IDistroArchSeries: 'distroarchseries',
         ISourcePackage: 'sourcepackage',
         ISpecification: 'specification',
         IBug: 'bug',
         IBugTask: 'bugtask',
         }
 
-    _store = zope.thread.local()
+    _store = thread.local()
 
     def setLogin(self, login):
         '''See IOpenLaunchBag.'''
@@ -52,7 +72,7 @@ class LaunchBag:
     @property
     def login(self):
         return getattr(self._store, 'login', None)
-    
+
     def setDeveloper(self, is_developer):
         '''See IOpenLaunchBag.'''
         self._store.developer = is_developer
@@ -62,23 +82,14 @@ class LaunchBag:
         return getattr(self._store, 'developer', False)
 
     @property
+    @block_implicit_flushes
+    def account(self):
+        return IAccount(get_principal(), None)
+
+    @property
+    @block_implicit_flushes
     def user(self):
-        interaction = zope.security.management.queryInteraction()
-        principals = [
-            participation.principal
-            for participation in list(interaction.participations)
-            if participation.principal is not None
-            ]
-        if not principals:
-            return None
-        elif len(principals) > 1:
-            raise ValueError, 'Too many principals'
-        else:
-            try:
-                person = IPerson(principals[0])
-            except TypeError:
-                person = None
-            return person
+        return IPerson(get_principal(), None)
 
     def add(self, obj):
         store = self._store
@@ -91,6 +102,7 @@ class LaunchBag:
         for attribute in self._registry.values():
             setattr(store, attribute, None)
         store.login = None
+        store.time_zone = None
 
     @property
     def site(self):
@@ -112,19 +124,19 @@ class LaunchBag:
 
     @property
     def product(self):
-        return self._store.product
+        return getattr(self._store, "product", None)
 
     @property
     def distribution(self):
-        return self._store.distribution
+        return getattr(self._store, "distribution", None)
 
     @property
-    def distrorelease(self):
-        return self._store.distrorelease
+    def distroseries(self):
+        return self._store.distroseries
 
     @property
-    def distroarchrelease(self):
-        return self._store.distroarchrelease
+    def distroarchseries(self):
+        return self._store.distroarchseries
 
     @property
     def sourcepackage(self):
@@ -150,15 +162,14 @@ class LaunchBag:
         return self._store.bugtask
 
     @property
-    def timezone(self):
-        user = self.user
-        if user and user.timezone:
-            try:
-                return pytz.timezone(user.timezone)
-            except KeyError:
-                pass # unknown timezone name
-        # fall back to UTC
-        return _utc_tz
+    def time_zone(self):
+        if getattr(self._store, "time_zone", None) is None:
+            if self.user and self.user.time_zone:
+                self._store.time_zone = pytz.timezone(self.user.time_zone)
+            else:
+                # fall back to UTC
+                self._store.time_zone = _utc_tz
+        return self._store.time_zone
 
 
 class LaunchBagView(object):
@@ -169,18 +180,15 @@ class LaunchBagView(object):
 
 
 def set_login_in_launchbag_when_principal_identified(event):
-    """Subscriber for IPrincipalIdentifiedEvent that sets 'login' in launchbag.
+    """This IPrincipalIdentifiedEvent subscriber sets 'login' in launchbag.
     """
     launchbag = getUtility(IOpenLaunchBag)
+    # Basic auths principal identified event is also an ILoggedInEvent.
+    # Cookie auth seperates these two events.
     loggedinevent = ILoggedInEvent(event, None)
     if loggedinevent is None:
         # We must be using session auth.
-        session = ISession(event.request)
-        authdata = session['launchpad.authenticateduser']
-        assert authdata['personid'] == event.principal.id, (
-            "Session authenticated user (%r) different from event's "
-            "principal (%r)." % (authdata['personid'], event.principal.id))
-        launchbag.setLogin(authdata['login'])
+        launchbag.setLogin(event.login)
     else:
         launchbag.setLogin(loggedinevent.login)
 

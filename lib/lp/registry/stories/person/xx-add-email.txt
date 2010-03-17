@@ -1,0 +1,169 @@
+= Registering email addresses =
+
+Users can have any number of email addresses registered in their Launchpad
+accounts, although we'll always communicate with them using their preferred
+one. In order to register a new email address users must follow a link sent
+by us to the address they want to add and confirm the registration.
+
+Sample Person will now add a couple email addresses to his account.
+
+    >>> from lp.services.mail import stub
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12')
+    >>> browser.getLink(url='+editemails').click()
+    >>> browser.url
+    'http://launchpad.dev/~name12/+editemails'
+
+    >>> browser.getControl('Add a new address').value = 'test2@canonical.com'
+    >>> browser.getControl('Add', index=1).click()
+
+    >>> browser.url
+    'http://launchpad.dev/%7Ename12/+editemails'
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    A confirmation message has been sent to...
+
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> assert not stub.test_emails
+
+Trying to add the same email again (while it's unconfirmed) will only cause
+a new email to be sent with a new link. The links in the old and new email are
+still accessible and will confirm the new address if/when the user follows
+them.
+
+    >>> browser.getControl('Add a new address').value = 'test2@canonical.com'
+    >>> browser.getControl('Add', index=1).click()
+
+    >>> browser.url
+    'http://launchpad.dev/%7Ename12/+editemails'
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    A confirmation message has been sent to...
+
+    # Extract the link (from the email we just sent) the user will have to
+    # use to finish the registration process.
+    >>> from canonical.launchpad.ftests.logintoken import (
+    ...     get_token_url_from_email)
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> token_url = get_token_url_from_email(raw_msg)
+    >>> token_url
+    'http://launchpad.dev/token/...'
+    >>> to_addrs
+    ['test2@canonical.com']
+    >>> assert not stub.test_emails
+
+Follow the token link, to confirm the new email address.
+
+    >>> browser.open(token_url)
+    >>> browser.url
+    'http://launchpad.dev/token/.../+validateemail'
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.url
+    'http://launchpad.dev/~name12'
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    Email address successfully confirmed.
+
+Now that the address is confirmed he sees it in the list of his confirmed
+addresses.
+
+    >>> from canonical.launchpad.testing.pages import strip_label
+
+    >>> browser.getLink(url='+editemails').click()
+    >>> confirmed = browser.getControl(name="field.VALIDATED_SELECTED")
+    >>> [strip_label(option) for option in confirmed.displayOptions]
+    ['test@canonical.com', 'test2@canonical.com', 'testing@canonical.com']
+
+If he tries to add it again, he'll get an error message explaining
+that it's already registered.
+
+    >>> browser.getControl('Add a new address').value = 'test2@canonical.com'
+    >>> browser.getControl('Add', index=1).click()
+    >>> browser.url
+    'http://launchpad.dev/%7Ename12/+editemails'
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    The email address 'test2@canonical.com' is already registered as your
+    email address...
+
+
+== Adding a second email address ==
+
+    >>> browser.getControl('Add a new address').value = 'sample@ubuntu.com'
+    >>> browser.getControl('Add', index=1).click()
+
+    >>> browser.url
+    'http://launchpad.dev/%7Ename12/+editemails'
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    A confirmation message has been sent to...
+
+    # Extract the link (from the email we just sent) the user will have to
+    # use to finish the registration process.
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> token_url = get_token_url_from_email(raw_msg)
+    >>> token_url
+    'http://launchpad.dev/token/...'
+    >>> to_addrs
+    ['sample@ubuntu.com']
+    >>> assert not stub.test_emails
+
+Follow the token link, to confirm the new email address.
+
+    >>> browser.open(token_url)
+    >>> browser.url
+    'http://launchpad.dev/token/.../+validateemail'
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.url
+    'http://launchpad.dev/~name12'
+
+    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    ...     print tag.renderContents()
+    Email address successfully confirmed.
+
+
+== Trying to register an already registered email address ==
+
+Email addresses can not be registered more than once in Launchpad, so if
+a given email address is registered by Joe, then Sample Person won't be
+able to register it for himself.  When that happens we tell the user the
+email is already registered and explain he may want to merge the other
+account if that's a duplicate.
+
+    >>> login(ANONYMOUS)
+    >>> person = factory.makePerson(email='joe@ubuntu.com')
+    >>> person_with_hidden_emails = factory.makePerson(
+    ...     email='joe2@ubuntu.com', hide_email_addresses=True)
+    >>> logout()
+    >>> browser.open('http://launchpad.dev/~name12/+editemails')
+    >>> browser.getControl('Add a new address').value = 'joe@ubuntu.com'
+    >>> browser.getControl('Add', index=1).click()
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    There is 1 error.
+    The email address 'joe@ubuntu.com' is already registered...
+    If you think that is a duplicated account, you can merge it...
+
+    >>> browser.open('http://launchpad.dev/~name12/+editemails')
+    >>> browser.getControl('Add a new address').value = 'joe2@ubuntu.com'
+    >>> browser.getControl('Add', index=1).click()
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    There is 1 error.
+    The email address 'joe2@ubuntu.com' is already registered...
+    If you think that is a duplicated account, you can merge it...
+
+If someone tries to add an already registered email address for a team,
+a similar error will be shown.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+contactaddress')
+    >>> browser.getControl('Another e-mail address').selected = True
+    >>> browser.getControl(
+    ...     name='field.contact_address').value = 'joe2@ubuntu.com'
+    >>> browser.getControl('Change').click()
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    There is 1 error.
+    joe2@ubuntu.com is already registered in Launchpad...

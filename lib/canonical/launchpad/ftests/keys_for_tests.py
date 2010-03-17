@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """OpenPGP keys used for testing.
 
 There are two GPG keys located in the 'gpgkeys' sub directory, one for
@@ -24,8 +26,8 @@ from zope.component import getUtility
 
 import gpgme
 
-from canonical.lp.dbschema import GPGKeyAlgorithm
-from canonical.launchpad.interfaces import IGPGKeySet, IGPGHandler, IPersonSet
+from canonical.launchpad.interfaces import (
+    IGPGKeySet, IGPGHandler, IPersonSet, GPGKeyAlgorithm)
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'gpgkeys')
 
@@ -36,6 +38,9 @@ def import_public_key(email_addr):
 
     pubkey = test_pubkey_from_email(email_addr)
     key = gpghandler.importPublicKey(pubkey)
+
+    # Strip out any '-passwordless' annotation from the email addresses.
+    email_addr = email_addr.replace('-passwordless', '')
 
     # Some of the keys shouldn't be inserted into the db.
     if email_addr.endswith('do-not-insert-into-db'):
@@ -48,11 +53,11 @@ def import_public_key(email_addr):
     if not person:
         return
 
-    for gpgkey in person.gpgkeys:
+    for gpgkey in person.gpg_keys:
         if gpgkey.fingerprint == key.fingerprint:
             # If the key's already added to the database, do nothing.
             return
-        
+
     # Insert the key into the database.
     getUtility(IGPGKeySet).new(
         ownerID=personset.getByEmail(email_addr).id,
@@ -64,7 +69,7 @@ def import_public_key(email_addr):
 
 def iter_test_key_emails():
     """Iterates over the email addresses for the keys in the gpgkeysdir."""
-    for name in os.listdir(gpgkeysdir):
+    for name in sorted(os.listdir(gpgkeysdir), reverse=True):
         if name.endswith('.pub'):
             yield name[:-4]
 
@@ -73,16 +78,14 @@ def import_public_test_keys():
     for email in iter_test_key_emails():
         import_public_key(email)
 
-def import_secret_test_key():
-    """Imports the secret key located in gpgkeysdir into local keyring."""
-    # We import the secret key manually here because this is the only place
-    # where we import a secret key and thus we don't need an API for this
-    # on GPGHandler.
-    seckey = open(os.path.join(gpgkeysdir, 'test@canonical.com.sec')).read()
-    context = gpgme.Context()
-    context.armor = True
-    newkey = StringIO(seckey)
-    result = context.import_(newkey)
+def import_secret_test_key(keyfile='test@canonical.com.sec'):
+    """Imports the secret key located in gpgkeysdir into local keyring.
+
+    :param keyfile: The name of the file to be imported.
+    """
+    gpghandler = getUtility(IGPGHandler)
+    seckey = open(os.path.join(gpgkeysdir, keyfile)).read()
+    return gpghandler.importSecretKey(seckey)
 
 def test_pubkey_file_from_email(email_addr):
     """Get the file name for a test pubkey by email address."""
@@ -102,10 +105,10 @@ def decrypt_content(content, password):
     """Return the decrypted content or None if failed
 
     content and password must be traditional strings. It's up to
-    the caller to encode or decode properly. 
+    the caller to encode or decode properly.
 
     :content: encrypted data content
-    :password: unicode password to unlock the secret key in question 
+    :password: unicode password to unlock the secret key in question
     """
     if isinstance(password, unicode):
         raise TypeError('Password cannot be Unicode.')
@@ -133,4 +136,3 @@ def decrypt_content(content, password):
         return None
 
     return plain.getvalue()
-

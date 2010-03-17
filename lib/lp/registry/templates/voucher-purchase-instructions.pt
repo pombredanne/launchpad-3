@@ -1,0 +1,21 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+
+  <p>Here are the steps to obtain a commercial subscription:</p>
+  <ol>
+    <li>Purchase a Launchpad subscription in the
+      <a tal:define="config modules/canonical.config/config"
+         tal:attributes="href config/commercial/purchase_subscription_url">
+        Canonical Shop</a>.
+    </li>
+    <li>You will receive an email that your order has been processed.</li>
+    <li>Then you may apply the purchased subscription to this project
+        on your
+      <a href="/people/+me/+vouchers"
+         tal:attributes="href string:${request/lp:person/fmt:url}/+vouchers">
+        voucher management page</a>.
+    </li>
+  </ol>
+</div>

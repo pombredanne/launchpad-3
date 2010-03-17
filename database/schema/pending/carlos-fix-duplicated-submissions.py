@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-# Copyright 2006 Canonical Ltd. All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import sys
 from optparse import OptionParser
@@ -54,7 +56,7 @@ def main(argv):
 
     # Setup zcml machinery to be able to use getUtility
     execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser=config.rosetta.rosettaadmin.dbuser)
+    ztm = initZopeless(dbuser=config.rosettaadmin.dbuser)
 
     # Get the list of POFiles.
     cur = cursor()
@@ -154,7 +156,8 @@ def main(argv):
             for duplicate in duplicated_ids:
                 # Remove all duplicates.
                 cur = cursor()
-                cur.execute("DELETE FROM POSubmission WHERE id = %d" % duplicate)
+                cur.execute(
+                    "DELETE FROM POSubmission WHERE id = %d" % duplicate)
             if needs_recalculate:
                 # We removed the latestsubmission for this
                 # entry, we need to recalculate it now that the

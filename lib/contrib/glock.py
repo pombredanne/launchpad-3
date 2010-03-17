@@ -105,14 +105,21 @@ class GlobalLock:
     '''
     RE_ERROR_MSG = re.compile ("^\[Errno ([0-9]+)\]")
 
-    def __init__(self, fpath, lockInitially=False):
+    def __init__(self, fpath, lockInitially=False, logger=None):
         ''' Creates (or opens) a global lock.
 
             @param fpath: Path of the file used as lock target. This is also
-                         the global id of the lock. The file will be created
-                         if non existent.
+                          the global id of the lock. The file will be created
+                          if non existent.
             @param lockInitially: if True locks initially.
+            @param logger: an optional logger object.
         '''
+        self.logger = logger
+        self.fpath = fpath
+        if os.path.exists(fpath):
+            self.previous_lockfile_present = True
+        else:
+            self.previous_lockfile_present = False
         if _windows:
             self.name = string.replace(fpath, '\\', '_')
             self.mutex = win32event.CreateMutex(None, lockInitially, self.name)
@@ -137,7 +144,7 @@ class GlobalLock:
     def __repr__(self):
         return '<Global lock @ %s>' % self.name
 
-    def acquire(self, blocking=True):
+    def acquire(self, blocking=False):
         """ Locks. Attemps to acquire a lock.
 
             @param blocking: If True, suspends caller until done. Otherwise,
@@ -149,6 +156,8 @@ class GlobalLock:
             @exception LockAlreadyAcquired: someone already has the lock and
                        the caller decided not to block.
         """
+        if self.logger:
+            self.logger.info('creating lockfile')
         if _windows:
             if blocking:
                 timeout = win32event.INFINITE
@@ -183,15 +192,35 @@ class GlobalLock:
                 fcntl.flock(self.fdlock, fcntl.LOCK_UN) # release global lock
                 raise LockAlreadyAcquired('Lock %s already acquired by '
                                           'someone else' % self.name)
+            if self.previous_lockfile_present and self.logger:
+                self.logger.warn("Stale lockfile detected and claimed.")
             #print 'got thread lock.' ##
 
-    def release(self):
+        self.is_locked = True
+
+    def release(self, skip_delete=False):
         ''' Unlocks. (caller must own the lock!)
+
+            @param skip_delete: don't try to delete the file. This can
+                be used when the original filename has changed; for
+                instance, if the lockfile is erased out-of-band, or if
+                the directory it contains has been renamed.
 
             @return: The lock count.
             @exception IOError: if file lock can't be released
             @exception NotOwner: Attempt to release somebody else's lock.
         '''
+        if not self.is_locked:
+            return
+        if not skip_delete:
+            if self.logger:
+                self.logger.debug('Removing lock file: %s', self.fpath)
+            os.unlink(self.fpath)
+        elif self.logger:
+            # At certain times the lockfile will have been removed or
+            # moved away before we call release(); log a message because
+            # this is unusual and could be an error.
+            self.logger.debug('Oops, my lock file disappeared: %s', self.fpath)
         if _windows:
             if ctypes:
                 result = ctypes.windll.kernel32.ReleaseMutex(self.mutex.handle)
@@ -221,6 +250,7 @@ class GlobalLock:
             except IOError: # (errno 13: permission denied)
                 raise GlobalLockError('Unlock of file "%s" failed\n' %
                                                             self.name)
+        self.is_locked = False
 
     def _errnoOf (self, message):
         match = self.RE_ERROR_MSG.search(str(message))

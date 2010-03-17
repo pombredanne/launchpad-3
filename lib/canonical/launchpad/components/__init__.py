@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
 > What is this package for? Is it a dumping ground for anything that doesn't
@@ -18,4 +19,3 @@ I don't think the distinction of "components" is currently useful.  So,
 it should be removed, and its contents distributed to better places in
 the code.
 """
-

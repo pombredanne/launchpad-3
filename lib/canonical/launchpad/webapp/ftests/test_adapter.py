@@ -1,17 +1,24 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Run launchpad.database functional doctests"""
 
 __metaclass__ = type
-
 import unittest
-from zope.testing.doctest import DocFileSuite, DocTestSuite
-from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
-
-from canonical.functional import FunctionalLayer
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from canonical.testing import LaunchpadFunctionalLayer
 
 def test_suite():
-    suite = DocFileSuite('test_adapter.txt',
-                     optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS)
-    suite.layer = FunctionalLayer
-    return suite
-
+    return unittest.TestSuite([
+        LayeredDocFileSuite(
+            'test_adapter.txt',
+            layer=LaunchpadFunctionalLayer),
+# XXX Julian 2009-05-13, bug=376171
+# Temporarily disabled because of intermittent failures.
+#       LayeredDocFileSuite(
+#            'test_adapter_timeout.txt',
+#            layer=PageTestLayer),
+        LayeredDocFileSuite(
+            'test_adapter_permissions.txt',
+            layer=LaunchpadFunctionalLayer),
+        ])

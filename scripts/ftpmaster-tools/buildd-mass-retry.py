@@ -1,10 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright Canonical Limited 2006
 
 """Tool for 'mass-retrying' build records.
 
-It supports build collections based distrorelease and/or distroarchrelease.
+It supports build collections based distroseries and/or distroarchseries.
 """
 
 __metaclass__ = type
@@ -16,15 +18,14 @@ import sys
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
+from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, BuildStatus)
+from canonical.lp import initZopeless
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 def main():
@@ -64,8 +65,9 @@ def main():
     log = logger(options, "build-mass-retry")
 
     log.debug("Intitialising connection.")
-    ztm = initZopeless(dbuser="fiera", isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser="fiera",
+                       isolation=ISOLATION_LEVEL_READ_COMMITTED)
 
     try:
         distribution = getUtility(IDistributionSet)[options.distribution]
@@ -75,26 +77,26 @@ def main():
 
     try:
         if options.suite is not None:
-            release, pocket = distribution.getDistroReleaseAndPocket(
+            series, pocket = distribution.getDistroSeriesAndPocket(
                 options.suite)
         else:
-            release = distribution.currentrelease
+            series = distribution.currentseries
             pocket = PackagePublishingPocket.RELEASE
     except NotFoundError, info:
         log.error("Suite not found: %s" % info)
         return 1
 
-    # store distrorelease as the current IHasBuildRecord provider
-    build_provider = release
+    # store distroseries as the current IHasBuildRecord provider
+    build_provider = series
 
     if options.architecture:
         try:
-            dar = release[options.architecture]
+            dar = series[options.architecture]
         except NotFoundError, info:
             log.error(info)
             return 1
 
-        # store distroarchrelease as the current IHasBuildRecord provider
+        # store distroarchseries as the current IHasBuildRecord provider
         build_provider = dar
 
     log.info("Initialising Build Mass-Retry for '%s/%s'"
@@ -106,7 +108,7 @@ def main():
         BuildStatus.CHROOTWAIT : options.chrootwait,
         }
 
-    # XXX cprov 20060831: one query per requested state
+    # XXX cprov 2006-08-31: one query per requested state
     # could organise it in a single one nicely if I have
     # an empty SQLResult instance, than only iteration + union()
     # would work.
@@ -116,7 +118,7 @@ def main():
 
         log.info("Processing builds in '%s'" % target_state.title)
         target_builds = build_provider.getBuildRecords(
-            status=target_state, pocket=pocket)
+            build_state=target_state, pocket=pocket)
 
         for build in target_builds:
 

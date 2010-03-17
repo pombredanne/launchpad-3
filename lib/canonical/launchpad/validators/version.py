@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -73,8 +74,8 @@ def valid_debian_version(version):
 
 
 def sane_version(version):
-    '''A sane version number for use by ProductRelease and DistroRelease.
-    
+    '''A sane version number for use by ProductRelease and DistroSeries.
+
     We may make it less strict if required, but it would be nice if we can
     enforce simple version strings because we use them in URLs
 
@@ -97,14 +98,14 @@ def sane_version(version):
     >>> sane_version('uncle sam')
     False
     >>> sane_version('uncle_sam')
-    False
+    True
     >>> sane_version('uncle-sam')
     True
     '''
     import re
     if re.search("""^(?ix)
         [0-9a-z]
-        ( [0-9a-z] | [0-9a-z.-]*[0-9a-z] )*
+        ( [0-9a-z] | [0-9a-z._-]*[0-9a-z] )*
         $""", version):
         return True
     return False

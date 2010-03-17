@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad build daemon job sequencer."""
 
@@ -7,11 +8,7 @@ __metaclass__ = type
 from canonical.config import config
 from twisted.internet import reactor, protocol
 
-try:
-    from twisted.mail.smtp import sendmail
-except:
-    from twisted.protocols.smtp import sendmail
-
+from twisted.mail.smtp import sendmail
 from twisted.python import log
 
 import time, os
@@ -40,18 +37,18 @@ Standard Output:
 class BuildSequencerJob(protocol.ProcessProtocol):
     """A job for the build sequencer to run."""
 
-    def __init__(self, sequencer, confsegment):
+    def __init__(self, sequencer, conf_section):
         """Initialise a job from the provided config segment."""
         self.sequencer = sequencer
-        self.name = confsegment.getSectionName()
-        command = confsegment.command
+        self.name = conf_section.category_and_section_names[1]
+        command = conf_section.command
         self.args = command.split()[1:]
         self.command = command.split()[0]
-        self.delay = confsegment.mindelay
-        self.forcelog = confsegment.alwayslog
+        self.delay = conf_section.mindelay
+        self.forcelog = conf_section.alwayslog
         self.getCurrentTime = sequencer.getCurrentTime
         self.updateDue()
-        
+
     def updateDue(self):
         """Update the due time to now+delay."""
         self.due = self.getCurrentTime() + self.delay
@@ -62,7 +59,7 @@ class BuildSequencerJob(protocol.ProcessProtocol):
         self.log = ""
         self.errlog = ""
         reactor.spawnProcess(self, self.command, self.args, env=os.environ)
-        
+
     def outReceived(self, data):
         """Pass on stdout data to the log."""
         self.log += data
@@ -109,7 +106,7 @@ class BuildSequencer:
         """Load the jobs from the configuration file"""
         self.jobs = []
         log.msg("Loading jobs...")
-        for job in config.buildsequencer.jobs:
+        for job in config.getByCategory('buildsequencer_job'):
             bsj = BuildSequencerJob(self, job)
             self.jobs.append(bsj)
             log.msg("   ...loaded " + bsj.name)

@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -6,7 +7,7 @@ from canonical.ftests.pgsql import PgTestSetup
 from zope.testing.doctest import DocTestSuite
 
 def setUp(test):
-    
+
     # Build a fresh, empty database and connect
     PgTestSetup().setUp()
     con = PgTestSetup().connect()

@@ -1,0 +1,50 @@
+= Person location =
+
+The location of a person is readable through the Web Service API, and can
+be set that way, too.
+
+We start with the case where there is no information about the user's
+location, at all.
+
+    >>> jdub = webservice.get("/~jdub").jsonBody()
+    >>> print jdub['time_zone']
+    None
+    >>> print jdub['latitude']
+    None
+    >>> print jdub['longitude']
+    None
+
+We show that we handle the case where there is no latitude or
+longitude information.
+
+    >>> marilize = webservice.get("/~marilize").jsonBody()
+    >>> print marilize['time_zone']
+    Africa/Maseru
+    >>> print marilize['latitude']
+    None
+    >>> print marilize['longitude']
+    None
+
+And here is an example, where we have location and time zone information for
+a user:
+
+    >>> kamion = webservice.get("/~kamion").jsonBody()
+    >>> print kamion['time_zone']
+    Europe/London
+    >>> print kamion['latitude']
+    52.2
+    >>> print kamion['longitude']
+    0.3
+
+It is also possible to set the location, if it is not yet locked by being
+provided by the user themselves.
+
+    >>> print webservice.get("/~jdub").jsonBody()['time_zone']
+    None
+    >>> print webservice.named_post(
+    ...     '/~jdub', 'setLocation', {},
+    ...     latitude='-34.6', longitude='157.0', time_zone='Australia/Sydney')
+    HTTP/1.1 200 Ok
+    ...
+    >>> webservice.get("/~jdub").jsonBody()['time_zone']
+    u'Australia/Sydney'

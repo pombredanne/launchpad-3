@@ -14,9 +14,8 @@ Defining Permissions in Launchpad
 =================================
 
 ********************************************************************************
-NOTE: If you think you want a permission added to Launchpad, talk to SteveA
-first! A new permission should only be defined if absolutely necessary, and
-only after approval from SteveA.
+NOTE: A new permission should only be defined if absolutely necessary, and
+it should be considered thoroughly in a code review.
 ********************************************************************************
 
 Occassionally, you'll find yourself in a situation where the existing
@@ -49,7 +48,7 @@ launchpad.Edit permission on objects that implement the IHasOwner interface:
         permission = 'launchpad.Edit'
         usedfor = IHasOwner
 
-        def checkPermission(self, person):
+        def checkAuthenticated(self, person):
             """Authorize the object owner."""
             if person.id == self.obj.owner.id:
                 return True
@@ -63,12 +62,12 @@ it's hooked up to IProduct, where IProduct is protected with the launchpad.Edit
 permission:
 
     <adapter
-        provides="canonical.launchpad.interfaces.IAuthorization"
+        provides="canonical.launchpad.webapp.interfaces.IAuthorization"
         for="canonical.launchpad.interfaces.IProduct"
         name="launchpad.Edit"
         factory="canonical.launchpad.security.EditByOwner"
         />
 
-In this example, the EditByOwner adapter's checkPermission method will be
+In this example, the EditByOwner adapter's checkAuthenticated method will be
 called to determine if the currently authenticated user is authorized to access
 whatever is protected by launchpad.Edit on an IProduct.

@@ -1,43 +1,36 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Interfaces for events."""
 
 __metaclass__ = type
+__all__ = [
+    'IBranchMergeProposalStatusChangeEvent',
+    'IJoinTeamEvent',
+    'IKarmaAssignedEvent',
+    'IMessageHeldEvent',
+    'INewBranchMergeProposalEvent',
+    'INewCodeReviewCommentEvent',
+    'IReviewerNominatedEvent',
+    'ITeamInvitationEvent',
+    ]
 
-from zope.app.event.interfaces import (
-    IObjectModifiedEvent, IObjectEvent, IObjectCreatedEvent)
+from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface, Attribute
 
+from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
-class ISQLObjectCreatedEvent(IObjectCreatedEvent):
-    """An SQLObject has been created."""
-    user = Attribute("The user who created the object.")
+class IJoinTeamEvent(Interface):
+    """A person/team joined (or tried to join) a team."""
 
-
-class ISQLObjectDeletedEvent(IObjectEvent):
-    """An SQLObject is being deleted."""
-    user = Attribute("The user who is making this change.")
+    person = Attribute("The person/team who joined the team.")
+    team = Attribute("The team.")
 
 
-class ISQLObjectModifiedEvent(IObjectModifiedEvent):
-    """An SQLObject has been modified."""
+class ITeamInvitationEvent(Interface):
+    """A new person/team has been invited to a team."""
 
-    object_before_modification = Attribute("The object before modification.")
-    edited_fields = Attribute(
-        "The list of fields that were edited. A field name may appear in this "
-        "list if it were shown on an edit form, but not actually changed.")
-    user = Attribute("The user who modified the object.")
-
-
-class ISQLObjectToBeModifiedEvent(IObjectEvent):
-    """An SQLObject is about to be modified."""
-
-    new_values = Attribute("A dict of fieldname -> newvalue pairs.")
-    user = Attribute("The user who will modify the object.")
-
-
-class IJoinTeamRequestEvent(Interface):
-    """An user requested to join a team."""
-
-    user = Attribute("The user who requested to join the team.")
+    member = Attribute("The person/team who was invited.")
     team = Attribute("The team.")
 
 
@@ -46,3 +39,28 @@ class IKarmaAssignedEvent(IObjectEvent):
 
     karma = Attribute("The Karma object assigned to the person.")
 
+
+class IMessageHeldEvent(IObjectCreatedEvent):
+    """A mailing list message has been held for moderator approval."""
+
+    mailing_list = Attribute('The mailing list the message is held for.')
+    message_id = Attribute('The Message-ID of the held message.')
+
+
+class IBranchMergeProposalStatusChangeEvent(IObjectEvent):
+    """A merge proposal has changed state."""
+    user = Attribute("The user who updated the proposal.")
+    from_state = Attribute("The previous queue_status.")
+    to_state = Attribute("The updated queue_status.")
+
+
+class INewBranchMergeProposalEvent(IObjectEvent):
+    """A new merge has been proposed."""
+
+
+class IReviewerNominatedEvent(IObjectEvent):
+    """A reviewer has been nominated."""
+
+
+class INewCodeReviewCommentEvent(IObjectEvent):
+    """A new comment has been added to the merge proposal."""

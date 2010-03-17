@@ -1,25 +1,26 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Module docstring goes here."""
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
+import logging
+import os.path
 import re
+from StringIO import StringIO
 import sys
 import time
-import unittest
-import logging
 from urllib2 import urlopen
-from StringIO import StringIO
-from datetime import datetime, timedelta
-from pytz import utc
 
+from pytz import utc
 import transaction
-from zope.testing import doctest
+
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing import LaunchpadFunctionalLayer
 
-import os.path
 
 this_directory = os.path.dirname(__file__)
 
@@ -32,12 +33,6 @@ def tearDown(test):
     logout()
 
 def test_suite():
-    suite = doctest.DocFileSuite(
-            'librarianformatter.txt', setUp=setUp, tearDown=tearDown,
-            optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
-            )
-    suite.layer = LaunchpadFunctionalLayer
-    return suite
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
+    return LayeredDocFileSuite(
+        'librarianformatter.txt', setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer)

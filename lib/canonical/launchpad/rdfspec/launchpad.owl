@@ -10,7 +10,8 @@
 <!ENTITY doaml "http://ns.balbinus.net/doaml#">
 ]>
 
-<!-- Copyright © 2005 Canonical Ltd. All rights reserved. -->
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE). -->
 
 <rdf:RDF
     xmlns:foaf="http://xmlns.com/foaf/0.1/"
@@ -124,7 +125,7 @@
     </rdfs:range>
     <rdfs:label>Creation date</rdfs:label>
     <rdfs:comment>
-        Date of creation in UTC timezone, in the form YYYY-MM-DD
+        Date of creation in UTC time zone, in the form YYYY-MM-DD
     </rdfs:comment>
 </owl:ObjectProperty>
 

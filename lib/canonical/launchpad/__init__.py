@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This deprecation causes a load of spurious DeprecationWarnings.
 # Hopefully this decision will be reversed before 3.3 is released causing
@@ -13,3 +14,6 @@ warnings.filterwarnings(
 from zope.i18nmessageid import MessageFactory
 _ = MessageFactory("launchpad")
 
+# Load versioninfo.py so that we get errors on start-up rather than waiting
+# for first page load.
+import canonical.launchpad.versioninfo

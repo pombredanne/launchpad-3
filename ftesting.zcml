@@ -1,8 +1,11 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:rdb="http://namespaces.zope.org/rdb"
-    xmlns:mail="http://namespaces.zope.org/mail"
-    xmlns:sqlos="http://namespaces.sqlobject.org/sqlos">
+    xmlns:mail="http://namespaces.zope.org/mail">
 
     <include file="zopeapp.zcml" />
     <!-- Session machinery -->
@@ -23,4 +26,5 @@
 
     <include file="securitypolicy.zcml" />
 
+    <include file="summarizerequests.zcml" />
 </configure>

@@ -6,7 +6,7 @@ basically the same as using email.message_from_string and passing
 SignedMessage as the _class parameter, but it also ensures that all
 the attributes are correctly set.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.mail import signed_message_from_string
     >>> from canonical.launchpad.interfaces.mail import ISignedMessage
     >>> msg = signed_message_from_string('To: someone\n\nHello.')

@@ -1,271 +1,373 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
 """
+# pylint: disable-msg=C0103
 
-import unittest
+from __future__ import with_statement
+
 import logging
 import os
+import unittest
 
-import transaction
-from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
-from zope.testing.doctest import DocFileSuite
 from zope.component import getUtility
-import sqlos.connection
+from zope.security.management import setSecurityPolicy
+from zope.testing.cleanup import cleanUp
 
 from canonical.config import config
-from canonical.functional import FunctionalDocFileSuite
-from canonical.testing import (
-        LaunchpadZopelessLayer, LaunchpadFunctionalLayer, LibrarianLayer,
-        DatabaseLayer, ZopelessLayer, FunctionalLayer, LaunchpadLayer,
-        )
-from canonical.launchpad.ftests.harness import (
-        LaunchpadTestSetup, LaunchpadZopelessTestSetup,
-        _disconnect_sqlos, _reconnect_sqlos
-        )
-from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
-from canonical.launchpad.mail import stub
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import commit
+from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.interfaces import (
+    IDistributionSet, ILanguageSet, IPersonSet)
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.testing import browser
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, setGlobs, tearDown)
+from lp.testing.mail_helpers import pop_notifications
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.tests import test_notifications
+from canonical.testing.layers import (
+    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
+    GoogleLaunchpadFunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
+
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
+def lobotomize_stevea():
+    """Set SteveA's email address' status to NEW.
 
+    Call this method first in a test's setUp where needed. Tests
+    using this function should be refactored to use the unaltered
+    sample data and this function eventually removed.
 
-def setGlobs(test):
-    test.globs['ANONYMOUS'] = ANONYMOUS
-    test.globs['login'] = login
-    test.globs['logout'] = logout
-    test.globs['ILaunchBag'] = ILaunchBag
-    test.globs['getUtility'] = getUtility
-    test.globs['transaction'] = transaction
-    test.globs['flush_database_updates'] = flush_database_updates
+    In the past, SteveA's account erroneously appeared in the old
+    ValidPersonOrTeamCache materialized view. This materialized view
+    has since been replaced and now SteveA is correctly listed as
+    invalid in the sampledata. This fix broke some tests testing
+    code that did not use the ValidPersonOrTeamCache to determine
+    validity.
+    """
+    from canonical.launchpad.database import EmailAddress
+    from canonical.launchpad.interfaces import EmailAddressStatus
+    stevea_emailaddress = EmailAddress.byEmail(
+            'steve.alexander@ubuntulinux.com')
+    stevea_emailaddress.status = EmailAddressStatus.NEW
+    commit()
 
-
-def setUp(test):
-    setGlobs(test)
-    # Set up an anonymous interaction.
-    login(ANONYMOUS)
-
-
-def tearDown(test):
-    logout()
 
 def poExportSetUp(test):
-    LaunchpadZopelessTestSetup(dbuser='poexport').setUp()
+    """Setup the PO export script tests."""
+    LaunchpadZopelessLayer.switchDbUser('poexport')
     setUp(test)
 
 def poExportTearDown(test):
+    """Tear down the PO export script tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
-    LaunchpadZopelessTestSetup().tearDown()
 
 def uploaderSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser='uploader').setUp()
-    setGlobs(test)
-    # Set up an anonymous interaction.
-    login(ANONYMOUS)
+    """setup the package uploader script tests."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser('uploader')
 
 def uploaderTearDown(test):
-    LaunchpadZopelessTestSetup().tearDown()
+    """Tear down the package uploader script tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
+    tearDown(test)
 
-def builddmasterSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser=config.builddmaster.dbuser).setUp()
-    setGlobs(test)
-    login(ANONYMOUS)
 
-def builddmasterTearDown(test):
-    LaunchpadZopelessTestSetup().tearDown()
+def archivepublisherSetUp(test):
+    """Setup the archive publisher script tests."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
 
-def importdSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser='importd').setUp()
+
+def branchscannerSetUp(test):
+    """Setup the user for the branch scanner tests."""
+    LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
     setUp(test)
 
-def importdTearDown(test):
+
+def branchscannerTearDown(test):
+    """Tear down the branch scanner tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
-    LaunchpadZopelessTestSetup().tearDown()
 
-def supportTrackerSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser=config.tickettracker.dbuser).setUp()
-    setGlobs(test)
+def uploadQueueSetUp(test):
+    lobotomize_stevea()
+    test_dbuser = config.uploadqueue.dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    setUp(test)
+    test.globs['test_dbuser'] = test_dbuser
+
+
+def layerlessTearDown(test):
+    """Clean up any Zope registrations."""
+    cleanUp()
+
+def _createUbuntuBugTaskLinkedToQuestion():
+    """Get the id of an Ubuntu bugtask linked to a question.
+
+    The Ubuntu team is set as the answer contact for Ubuntu, and no-priv
+    is used as the submitter..
+    """
+    login('test@canonical.com')
+    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
+    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ubuntu.addAnswerContact(ubuntu_team)
+    ubuntu_question = ubuntu.newQuestion(
+        sample_person, "Can't install Ubuntu",
+        "I insert the install CD in the CD-ROM drive, but it won't boot.")
+    no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    params = CreateBugParams(
+        owner=no_priv, title="Installer fails on a Mac PPC",
+        comment=ubuntu_question.description)
+    bug = ubuntu.createBug(params)
+    ubuntu_question.linkBug(bug)
+    [ubuntu_bugtask] = bug.bugtasks
+    login(ANONYMOUS)
+    # Remove the notifcations for the newly created question.
+    notifications = pop_notifications()
+    return ubuntu_bugtask.id
+
+def bugLinkedToQuestionSetUp(test):
+    """Setup the question and linked bug for testing."""
+    def get_bugtask_linked_to_question():
+        return getUtility(IBugTaskSet).get(bugtask_id)
+    setUp(test)
+    bugtask_id = _createUbuntuBugTaskLinkedToQuestion()
+    test.globs['get_bugtask_linked_to_question'] = (
+        get_bugtask_linked_to_question)
+    # Log in here, since we don't want to set up an non-anonymous
+    # interaction in the test.
+    login('no-priv@canonical.com')
+
+def uploaderBugLinkedToQuestionSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    bugLinkedToQuestionSetUp(test)
+    LaunchpadZopelessLayer.commit()
+    uploaderSetUp(test)
     login(ANONYMOUS)
 
-def supportTrackerTearDown(test):
-    LaunchpadZopelessTestSetup().tearDown()
-
-def peopleKarmaTearDown(test):
-    # We can't detect db changes made by the subprocess
-    LaunchpadTestSetup().force_dirty_database()
-
-def branchStatusSetUp(test):
-    test._authserver = AuthserverTacTestSetup()
-    test._authserver.setUp()
-
-def branchStatusTearDown(test):
-    test._authserver.tearDown()
-
-def bugNotificationSendingSetUp(test):
-    sqlos.connection.connCache = {}
-    # XXX: Note that the DB is already setup by the layer - this call just
-    # reconnects us as a different user. This should use a more obvious API.
-    # Note that the layer still tears things down as necessary
-    # -- StuartBishop 20060712
-    LaunchpadZopelessTestSetup(
-        dbuser=config.malone.bugnotification_dbuser).setUp()
-    setGlobs(test)
+def uploadQueueBugLinkedToQuestionSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    bugLinkedToQuestionSetUp(test)
+    LaunchpadZopelessLayer.commit()
+    uploadQueueSetUp(test)
     login(ANONYMOUS)
 
-def bugNotificationSendingTearDown(test):
-    logout()
-    LaunchpadZopelessTestSetup().tearDown()
+# XXX BarryWarsaw 2007-08-15 bug=132784: as a placeholder for improving
+# the harness for the mailinglist-xmlrpc.txt tests, or improving things so
+# that all this cruft isn't necessary.
 
-def LayeredDocFileSuite(*args, **kw):
-    '''Create a DocFileSuite with a layer.'''
-    layer = kw.pop('layer')
-    suite = DocFileSuite(*args, **kw)
-    suite.layer = layer
-    return suite
+def updateRemoteProductSetup(test):
+    """Setup to use the 'updateremoteproduct' db user."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
+
+def updateRemoteProductTeardown(test):
+    # Mark the DB as dirty, since we run a script in a sub process.
+    DatabaseLayer.force_dirty_database()
+    tearDown(test)
 
 
 # Files that have special needs can construct their own suite
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
     'old-testing.txt': LayeredDocFileSuite(
-            '../doc/old-testing.txt', optionflags=default_optionflags,
-            layer=FunctionalLayer
+            '../doc/old-testing.txt', layer=FunctionalLayer
             ),
 
-    'remove-upstream-translations-script.txt': DocFileSuite(
-            '../doc/remove-upstream-translations-script.txt',
-            optionflags=default_optionflags, setUp=setGlobs
+    'autodecorate.txt':
+        LayeredDocFileSuite('../doc/autodecorate.txt', layer=BaseLayer),
+
+
+    # And this test want minimal environment too.
+    'package-relationship.txt': LayeredDocFileSuite(
+            '../doc/package-relationship.txt',
+            stdout_logging=False, layer=None
             ),
 
-    # And these tests want minimal environments too.
-    'poparser.txt': DocFileSuite(
-            '../doc/poparser.txt', optionflags=default_optionflags
+    'webservice-configuration.txt': LayeredDocFileSuite(
+            '../doc/webservice-configuration.txt',
+            setUp=setGlobs, tearDown=layerlessTearDown, layer=None
             ),
+
 
     # POExport stuff is Zopeless and connects as a different database user.
-    # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
+    # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'poexport.txt': LayeredDocFileSuite(
-            '../doc/poexport.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer
-            ),
-    'poexport-template-tarball.txt': LayeredDocFileSuite(
-            '../doc/poexport-template-tarball.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessLayer
-            ),
-    'po_export_queue.txt': FunctionalDocFileSuite(
-            '../doc/po_export_queue.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'librarian.txt': FunctionalDocFileSuite(
-            '../doc/librarian.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'message.txt': FunctionalDocFileSuite(
+    'message.txt': LayeredDocFileSuite(
             '../doc/message.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
-    'cve-update.txt': FunctionalDocFileSuite(
-            '../doc/cve-update.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+    'close-account.txt': LayeredDocFileSuite(
+            '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
             ),
-    'nascentupload.txt': FunctionalDocFileSuite(
-            '../doc/nascentupload.txt',
-            setUp=uploaderSetUp, tearDown=uploaderTearDown,
-            layer=LaunchpadFunctionalLayer
-            ),
-    'build-notification.txt': LayeredDocFileSuite(
-            '../doc/build-notification.txt',
-            setUp=builddmasterSetUp, tearDown=builddmasterTearDown,
-            layer=ZopelessLayer, optionflags=default_optionflags
-            ),
-    'revision.txt': LayeredDocFileSuite(
-            '../doc/revision.txt',
-            setUp=importdSetUp, tearDown=importdTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer
-            ),
-    # XXX flacoste 20060915 This should use a LayeredDocFileSuite
-    # but we need to register a TestMailBox and set up the
-    # LaunchpadSecurityPolicy
-    'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
-            '../doc/support-tracker-emailinterface.txt',
+    'launchpadform.txt': LayeredDocFileSuite(
+            '../doc/launchpadform.txt',
             setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer
             ),
-    'person-karma.txt': FunctionalDocFileSuite(
-            '../doc/person-karma.txt',
-            setUp=setUp, tearDown=peopleKarmaTearDown,
-            optionflags=default_optionflags, layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            ),
-    'bugnotification-sending.txt': LayeredDocFileSuite(
-            '../doc/bugnotification-sending.txt',
-            optionflags=default_optionflags,
-            layer=ZopelessLayer, setUp=bugNotificationSendingSetUp,
-            tearDown=bugNotificationSendingTearDown
-            ),
-    'bugmail-headers.txt': LayeredDocFileSuite(
-            '../doc/bugmail-headers.txt',
-            optionflags=default_optionflags, layer=ZopelessLayer,
-            setUp=bugNotificationSendingSetUp,
-            tearDown=bugNotificationSendingTearDown),
-    'branch-status-client.txt': LayeredDocFileSuite(
-            '../doc/branch-status-client.txt',
-            setUp=branchStatusSetUp, tearDown=branchStatusTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'translationimportqueue.txt': FunctionalDocFileSuite(
-            '../doc/translationimportqueue.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'pofile-pages.txt': FunctionalDocFileSuite(
-            '../doc/pofile-pages.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'rosetta-karma.txt': FunctionalDocFileSuite(
-            '../doc/rosetta-karma.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'incomingmail.txt': FunctionalDocFileSuite(
-            '../doc/incomingmail.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            ),
-    'launchpadform.txt': FunctionalDocFileSuite(
-            '../doc/launchpadform.txt',
-            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
-            layer=FunctionalLayer
-            ),
-    'launchpadformharness.txt': FunctionalDocFileSuite(
+    'launchpadformharness.txt': LayeredDocFileSuite(
             '../doc/launchpadformharness.txt',
-            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'uri.txt': LayeredDocFileSuite(
+            '../doc/uri.txt',
+            setUp=setUp, tearDown=tearDown,
             layer=FunctionalLayer
             ),
-    'bug-export.txt': LayeredDocFileSuite(
-            '../doc/bug-export.txt',
-            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+    'notification-text-escape.txt': LayeredDocFileSuite(
+            '../doc/notification-text-escape.txt',
+            setUp=test_notifications.setUp,
+            tearDown=test_notifications.tearDown,
+            stdout_logging=False, layer=None
+            ),
+    # This test is actually run twice to prove that the AppServerLayer
+    # properly isolates the database between tests.
+    'launchpadlib.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=browser.setUp, tearDown=browser.tearDown,
+        ),
+    'launchpadlib2.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=browser.setUp, tearDown=browser.tearDown,
+        ),
+    # XXX gary 2008-12-08 bug=306246 bug=305858: Disabled test because of
+    # multiple spurious problems with layer and test.
+    # 'google-service-stub.txt': LayeredDocFileSuite(
+    #         '../doc/google-service-stub.txt',
+    #         layer=GoogleServiceLayer,
+    #         ),
+    'product-update-remote-product.txt': LayeredDocFileSuite(
+            '../doc/product-update-remote-product.txt',
+            setUp=updateRemoteProductSetup,
+            tearDown=updateRemoteProductTeardown,
             layer=LaunchpadZopelessLayer
+            ),
+    'product-update-remote-product-script.txt': LayeredDocFileSuite(
+            '../doc/product-update-remote-product-script.txt',
+            setUp=updateRemoteProductSetup,
+            tearDown=updateRemoteProductTeardown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'canonical_url.txt': LayeredDocFileSuite(
+            '../doc/canonical_url.txt',
+            setUp=setUp,
+            tearDown=tearDown,
+            layer=FunctionalLayer,
+            ),
+    'google-searchservice.txt': LayeredDocFileSuite(
+            '../doc/google-searchservice.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=GoogleLaunchpadFunctionalLayer,
             ),
     }
+
+
+class ProcessMailLayer(LaunchpadZopelessLayer):
+    """Layer containing the tests running inside process-mail.py."""
+
+
+    @classmethod
+    def testSetUp(cls):
+        """Fixture replicating the process-mail.py environment.
+
+        This zopeless script uses the regular security policy and
+        connects as a specific DB user.
+        """
+        cls._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+        LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
+    @classmethod
+    def testTearDown(cls):
+        """Tear down the test fixture."""
+        setSecurityPolicy(cls._old_policy)
+
+    doctests_without_logging = [
+        # XXX gary 2008-12-06 bug=305856: Spurious test failure
+        # discovered on buildbot, build 40.  Note that, to completely
+        # disable the test from running, the filename has been changed
+        # to emailinterface.txt.disabled, so when this test is
+        # reinstated it will be need to be changed back.
+        # '../../../lp/answers/doc/emailinterface.txt',
+        '../../../lp/bugs/tests/bugs-emailinterface.txt',
+        '../../../lp/bugs/doc/bugs-email-affects-path.txt',
+        '../doc/emailauthentication.txt',
+        ]
+
+    doctests_with_logging = [
+        '../doc/incomingmail.txt',
+        ]
+
+    @classmethod
+    def addTestsToSpecial(cls):
+        """Adds all the tests related to process-mail.py to special"""
+        for filepath in cls.doctests_without_logging:
+            filename = os.path.basename(filepath)
+            special[filename] = cls.createLayeredDocFileSuite(filepath)
+
+        for filepath in cls.doctests_with_logging:
+            filename = os.path.basename(filepath)
+            special[filename] = cls.createLayeredDocFileSuite(
+                filepath, stdout_logging=True)
+
+        # Adds a copy of some bug doctests that will be run with
+        # the processmail user.
+        def bugSetStatusSetUp(test):
+            setUp(test)
+            test.globs['test_dbuser'] = config.processmail.dbuser
+
+        special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
+                '../../../lp/bugs/doc/bug-set-status.txt',
+                setUp=bugSetStatusSetUp, tearDown=tearDown,
+                layer=cls,
+                stdout_logging=False)
+
+        def bugmessageSetUp(test):
+            setUp(test)
+            login('no-priv@canonical.com')
+
+        special['bugmessage.txt-processmail'] = LayeredDocFileSuite(
+                '../../../lp/bugs/doc/bugmessage.txt',
+                setUp=bugmessageSetUp, tearDown=tearDown,
+                layer=cls,
+                stdout_logging=False)
+
+    @classmethod
+    def createLayeredDocFileSuite(cls, filename, stdout_logging=False):
+        """Helper to create a doctest using this layer."""
+        return LayeredDocFileSuite(
+            filename,
+            setUp=setUp, tearDown=tearDown,
+            layer=cls,
+            stdout_logging=stdout_logging,
+            stdout_logging_level=logging.WARNING)
+
+
+ProcessMailLayer.addTestsToSpecial()
 
 
 def test_suite():
     suite = unittest.TestSuite()
 
     # Add special needs tests
-    keys = special.keys()
-    keys.sort()
-    for key in keys:
+    for key in sorted(special):
         special_suite = special[key]
         suite.addTest(special_suite)
 
@@ -288,14 +390,17 @@ def test_suite():
     filenames.sort()
     for filename in filenames:
         path = os.path.join('../doc/', filename)
-        one_test = FunctionalDocFileSuite(
+        one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer, optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer,
+            # 'icky way of running doctests with __future__ imports
+            globs={'with_statement': with_statement},
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)
 
     return suite
+
 
 if __name__ == '__main__':
     unittest.main(test_suite())

@@ -1,22 +1,20 @@
 
-Hello
+Here are the instructions for confirming the OpenPGP key registration that we
+received for use in Launchpad.
 
-We received a request from %(requester)s using email address 
-%(requesteremail)s, trying to confirm an OpenPGP key for use in 
-Launchpad.
+Requester details:
+
+    User name    : %(requester)s
+    Email address: %(requesteremail)s
 
 Key details:
 
-        %(fingerprint)s 
-        %(displayname)s
+    Fingerprint : %(fingerprint)s
+    Key type/ID : %(displayname)s
+
+UIDs:
 %(uids)s
 
 Please go here to finish adding the key to your Launchpad account:
 
     %(token_url)s
-
-Thanks,
-
-The Launchpad Team 
-launchpad@ubuntu.com
-

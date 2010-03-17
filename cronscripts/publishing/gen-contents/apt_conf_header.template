@@ -1,0 +1,21 @@
+Dir
+{
+   // Content archive stores the results and caches, since they are
+   // incompatible with the normal ones.
+   ArchiveDir "/srv/launchpad.net/ubuntu-contents/ubuntu";
+   CacheDir "/srv/launchpad.net/ubuntu-contents/ubuntu-cache";
+   OverrideDir "/srv/launchpad.net/ubuntu-contents/ubuntu-overrides";
+
+};
+
+Default
+{
+   FileMode 0664;
+}
+
+TreeDefault
+{
+   // Header for Contents file.
+   Contents::Header "/srv/launchpad.net/ubuntu-contents/ubuntu-misc/Contents.top";
+};
+

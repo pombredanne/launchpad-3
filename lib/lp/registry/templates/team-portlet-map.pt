@@ -1,0 +1,37 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-map" style="margin-bottom: 0px;"
+     tal:define="link context/menu:overview/map">
+<table>
+<tr><td>
+  <h2>
+    <span class="see-all">
+      <a tal:attributes="href link/fmt:url">View map and time zones</a>
+    </span>
+    Location
+  </h2>
+
+  <tal:can_view condition="context/required:launchpad.View">
+    <div style="width: 400px;" tal:condition="view/has_mapped_participants">
+      <div id="team_map_actions"
+        style="position:relative; z-index: 9999;
+               float:right; width: 8.5em; margin: 2px;
+               background-color: white;  padding-bottom:1px;"></div>
+      <div id="team_map_div" class="small-map"
+        style="height: 200px; border: 1px; margin-top: 4px;"></div>
+      <tal:mapscript replace="structure view/map_portlet_html" />
+    </div>
+
+    <tal:no-map tal:condition="not: view/has_mapped_participants">
+      <a tal:attributes="href link/target"
+        ><img src="/+icing/portlet-map-unknown.png" /></a>
+    </tal:no-map>
+  </tal:can_view>
+</td></tr>
+</table>
+</div>
+</tal:root>

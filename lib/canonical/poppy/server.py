@@ -1,24 +1,18 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import tempfile
+import asyncore
 import logging
-import os
 import sys
-
+import tempfile
 from time import time
 
-from zope.interface import implements
-from zope.server.interfaces.ftp import IFileSystem
-from zope.server.interfaces.ftp import IFileSystemAccess
 from zope.server.ftp.server import FTPServerChannel
 from zope.server.ftp.server import STORChannel as OriginalSTORChannel
-from zope.server.ftp import server as ftp
 from zope.server.taskthreads import ThreadedTaskDispatcher
 from zope.server.serverbase import ServerBase
-
-import ThreadedAsync
 
 from canonical.poppy.filesystem import UploadFileSystem
 
@@ -45,12 +39,12 @@ class Channel(FTPServerChannel):
         return self.uploadfilesystem
 
     def received(self, data):
-        # XXX This is a work-around for a bug in Zope 3's ServerChannelBase
+        # XXX Steve Alexander 2005-01-18 
+        #     This is a work-around for a bug in Zope 3's ServerChannelBase
         #     that it doesn't update self.last_activity.
         #     This method can be removed once Zope3 is fixed, and we're using
         #     that code.
         #     http://collector.zope.org/Zope3-dev/350
-        #     Steve Alexander, 2005-01-18
         self.record_activity()
         FTPServerChannel.received(self, data)
 
@@ -96,6 +90,18 @@ class Channel(FTPServerChannel):
         cdc = STORChannel(self, (path, mode, start))
         self.syncConnectData(cdc)
         self.reply('OPEN_CONN', (self.type_map[self.transfer_mode], path))
+
+    def cmd_cwd(self, args):
+        """Permissive 'cwd', creates any target directories requested.
+
+        It relies on the filesystem layer to create directories recursivelly.
+        """
+        path = self._generatePath(args)
+        if not self._getFileSystem().type(path) == 'd':
+            self._getFileSystem().mkdir(path)
+        self.cwd = path
+        self.reply('SUCCESS_250', 'CWD')
+
 
 class STORChannel(OriginalSTORChannel):
 
@@ -147,7 +153,7 @@ def run_server(host, port, ident, numthreads,
                     task_dispatcher=task_dispatcher)
     server.SERVER_IDENT = ident
     try:
-        ThreadedAsync.loop()
+        asyncore.loop()
     except KeyboardInterrupt:
         # Exit without spewing an exception.
         pass
@@ -158,7 +164,7 @@ def main():
     if len(args) != 1:
         print "usage: server.py port"
         return 1
-    port = args
+    port = int(args[0])
     host = "127.0.0.1"
     ident = "lucille upload server"
     numthreads = 4
@@ -176,7 +182,7 @@ def main():
     def client_done_hook(fsroot, host, port):
         print "client done:", fsroot, host, port
 
-    def auth_verify_hook(fsroot, user,passw):
+    def auth_verify_hook(fsroot, user, passw):
         print "Auth Verification hook:", fsroot, user, passw
         return True
 

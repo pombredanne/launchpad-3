@@ -1,32 +1,20 @@
 Page tests
 ==========
 
-Every subdirectory of this one is considered a 'story'. Each story
-is run against a fresh database instance, so we can easily avoid tests
-stomping on each other. A story might be a walkthrough of a particular use
-case, or a collection of tests based around some theme.
+Page tests are doctests used to test Launchpad's frontend, primarily
+using the zope testbrowser infrastructure.  All *.txt files found in
+subdirectories of lib/canonical/launchpad/pagetests are run as page
+tests, either independently or as part of a story.
 
-In each story directory, all .txt files are run as "page tests".
+Page tests whose names begin with a number (e.g. 42-foo.txt) will be
+run together with other numbered page tests in the same directory as a
+story.  This means that the database and librarian will not be reset
+until all the tests in the story have been run, allowing them to
+depend on state from previous tests in the story.
 
-A page test is a doctest that tests pages of the launchpad application.
+Unnumbered page tests (e.g. xx-bar.txt) in any subdirectory are run
+independently, with a database and librarian reset after each.
 
-The tests are run in ASCII sort-order, lowest first.  Each .txt file should
-be named starting with a two-digit number.  It doesn't matter if numbers
-are the same for several tests.  Typical names are:
-
-  10-set-up-example-project.txt
-  10-add-example-user.txt
-  20-browse-projects.txt
-  60-browse-users.txt
-
-The test runner will issue a warning if files are put into the story
-directory that do not match the NN-text-stuff.txt pattern.
-
-If your test does not depend on any other test, prefix it with "00".
-Then, it will be run first.
-If your test is not depended on by any other test, prefix it with "xx".
-That way, it will not be run unnecessarily when you want to run individual
-tests.
 
 Running page tests
 ==================
@@ -35,62 +23,106 @@ The page tests are run as part of the 'make check' to run all tests.
 
 You can run a single story by doing:
 
-  ./test.py lib pagetests.$dirname
+  ./test.py -vv --test=pagetests/$dirname
 
-The 'lib pagetests.' is a dead chicken that will be addressed at some point (bug
-#31287).
+This will run both the unnumbered tests in that directory and the
+numbered page tests.
 
-Running a single page test is not supported except for the standalone pagetests
-which can be run individually:
+Unnumbered page tests can be run individually with:
 
-  ./test.py lib $testname-without-txt
+  ./test.py -vv --test=xx-foo.txt
 
 e.g.
 
-  ./test.py lib xx-bug-index
+  ./test.py -vv --test=xx-bug-index.txt
 
-This will run that and only that standalone pagetest.
+A post-mortem debugger is available, which stops right after your first
+test error:
 
+  ./test.py -Dvv --test=xx-bug-index.txt
+
+You can also run tests inside specified subdirectories by using dotted
+paths:
+
+  ./test.py -vv . pagetests.rosetta
+  ./test.py -vv . pagetests.rosetta.xx-translation-credits
+  ./test.py -vv . doc.teammembership
+
+If you run with -vvv you also get timings output at the end of the test
+suite.
 
 Footnotes
 =========
 
-1. You can use the following authorization lines:
+There are a number of preconfigured testbrowser instances provided
+that can make the intent of a test more obvious:
+
+anon_browser:
+    Use this instance to test behaviour of pages when not logged in.
+user_browser:
+    Use this instance to test behaviour of pages when logged in as an
+    ordinary user.
+admin_browser:
+    Use this instance to test behaviour of pages when logged in as a
+    Launchpad administrator.
+
+If you are testing behaviour of a page when logged in as a specific
+user, use the "browser" instance and configure the authentication for
+that particular user.  Do not depend on the particular user account
+the above browser objects log in as for these tests.
+
+You can use the following authorization lines:
 
   for Foo Bar (an admin user):
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
 
   for Sample Person (a normal user):
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+
+  for No Privileges Person (a normal user who is not the owner of anything):
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+
+  for No Team Memberships (a person who is a member of NO teams):
+    >>> browser = setupBrowser(auth="Basic no-team-memberships@test.com:test")
+
+  for One Team Membership (a person who is a member of only one team, the
+                           simple-team which has no special privileges):
+    >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
 
   for Mark Shuttleworth: (launchpad admin, registry admin, mirror admin,
                           ubuntu team, testing spanish team)
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
 
   for Carlos: (launchpad admin, rosetta admin, ubuntu translators, testing
                spanish team)
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
 
   for Salgado: (launchpad admin)
-  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
 
   for Daf: (launchpad admin, rosetta admin)
-  ... Authorization: Basic ZGFmQGNhbm9uaWNhbC5jb206ZGFm
-
-  for Danner: (no memberships)
-  ... Authorization: Basic ZGFubmVyQG1peG1haWwuY29tOmRhbm5lcg==
-
-  for Edgar: (no memberships)
-  ... Authorization: Basic ZWRnYXJAbW9udGVwYXJhZGlzby5ocjplZGdhcg==
+    >>> browser = setupBrowser(auth='Basic daf@canonical.com:daf')
 
   for Jblack: (launchpad admins)
-  ... Authorization: Basic amFtZXMuYmxhY2t3ZWxsQHVidW50dWxpbnV4LmNvbTpqYmxhY2s=
+    >>> browser = setupBrowser(
+    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
 
   for Jdub: (ubuntu team)
-  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
+    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
 
   for Cprov (ubuntu team and launchpad-buildd-admin)
-  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
+    >>> browser = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
 
   for Marilize Coetzee (shipit admin)
-  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
+
+  for David Allouche (member of vcs-imports)
+    >>> browser = setupBrowser(auth='Basic david.allouche@canonical.com:test')
+
+  for Brad Crittenden (member of commercial-approvers)
+    >>> browser = setupBrowser(auth='Basic bac@canonical.com:test')
+
+  for Commercial Member (member of commercial-admins)
+    >>> browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')

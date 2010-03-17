@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for doing natural language phrase search using the
 full text index.
@@ -24,7 +25,7 @@ def nl_term_candidates(phrase):
     :phrase: a search phrase
     """
     cur = cursor()
-    cur.execute("SELECT ftq(%(phrase)s)" % sqlvalues(phrase=phrase))
+    cur.execute("SELECT ftq(%(phrase)s)::text" % sqlvalues(phrase=phrase))
     rs = cur.fetchall()
     assert len(rs) == 1, "ftq() returned more than one row"
     terms = rs[0][0]
@@ -34,7 +35,8 @@ def nl_term_candidates(phrase):
     return TS_QUERY_TERM_RE.findall(terms)
 
 
-def nl_phrase_search(phrase, table, constraints=''):
+def nl_phrase_search(phrase, table, constraints='',
+                     extra_constraints_tables=None):
     """Return the tsearch2 query that should be use to do a phrase search.
 
     This function implement an algorithm similar to the one used by MySQL
@@ -45,7 +47,8 @@ def nl_phrase_search(phrase, table, constraints=''):
     according to the full text indexation rules (lowercasing and stemming).
 
     Each term that is present in more than 50% of the candidate rows is also
-    eliminated from the query.
+    eliminated from the query. That term eliminatation is only done when there
+    are 5 candidate rows or more.
 
     The remaining terms are then ORed together. One should use the rank() or
     rank_cd() function to order the results from running that query. This will
@@ -60,20 +63,44 @@ def nl_phrase_search(phrase, table, constraints=''):
     :constraints: Additional SQL clause that limits the rows to a
     subset of the table.
 
+    :extra_constraints_tables: A list of additional table names that are
+    needed by the constraints clause.
+
     Caveat: The SQLBase class must define a 'fti' column .
     This is the column that is used for full text searching.
     """
-    terms = []
-    total = table.select(constraints).count()
+    total = table.select(
+        constraints, clauseTables=extra_constraints_tables).count()
     term_candidates = nl_term_candidates(phrase)
-    if total == 0:
+    if len(term_candidates) == 0:
+        return ''
+    if total < 5:
         return '|'.join(term_candidates)
-    for term in term_candidates:
-        where_clause = []
-        if constraints:
-            where_clause.append('(' + constraints + ')')
-        where_clause.append('fti @@ ftq(%s)' % quote(term))
-        matches = table.select(' AND '.join(where_clause)).count()
-        if float(matches) / total < 0.5:
-            terms.append(term)
+
+    # Build the query to get all the counts. We get all the counts in
+    # one query, using COUNT(CASE ...), since issuing separate queries
+    # with COUNT(*) is a lot slower.
+    count_template = (
+        'COUNT(CASE WHEN %(table)s.fti @@ ftq(%(term)s)'
+        ' THEN TRUE ELSE null END)')
+    select_counts = [
+        count_template % {'table': table.__storm_table__, 'term': quote(term)}
+        for term in term_candidates
+        ]
+    select_tables = [table.__storm_table__]
+    if extra_constraints_tables is not None:
+        select_tables.extend(extra_constraints_tables)
+    count_query = "SELECT %s FROM %s" % (
+        ', '.join(select_counts), ', '.join(select_tables))
+    if constraints != '':
+        count_query += " WHERE %s" % constraints
+    cur = cursor()
+    cur.execute(count_query)
+    counts = cur.fetchone()
+
+    # Remove words that are too common.
+    terms = [
+        term for count, term in zip(counts, term_candidates)
+        if float(count) / total < 0.5
+        ]
     return '|'.join(terms)

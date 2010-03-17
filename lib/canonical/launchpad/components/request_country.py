@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -6,7 +7,7 @@ import re
 from zope.component import getUtility
 from canonical.launchpad.interfaces import IGeoIP
 
-__all__ = ['request_country']
+__all__ = ['request_country', 'ipaddress_from_request']
 
 def request_country(request):
     """Adapt a request to the country in which the request was made.
@@ -19,7 +20,7 @@ def request_country(request):
     """
     ipaddress = ipaddress_from_request(request)
     if ipaddress is not None:
-        return getUtility(IGeoIP).country_by_addr(ipaddress)
+        return getUtility(IGeoIP).getCountryByAddr(ipaddress)
     return None
 
 _ipaddr_re = re.compile('\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?')
@@ -28,7 +29,7 @@ def ipaddress_from_request(request):
     """Determine the IP address for this request.
 
     Returns None if the IP address cannot be determined or is localhost.
-    
+
     The remote IP address is determined by the X-Forwarded-For: header,
     or failing that, the REMOTE_ADDR CGI environment variable.
 
@@ -62,7 +63,8 @@ def ipaddress_from_request(request):
     ipaddresses = [addr.strip() for addr in ipaddresses.split(',')]
     ipaddresses = [
         addr for addr in ipaddresses
-            if not (addr.startswith('127.') or _ipaddr_re.search(addr) is None)
+            if not (addr.startswith('127.')
+                    or _ipaddr_re.search(addr) is None)
         ]
 
     if ipaddresses:

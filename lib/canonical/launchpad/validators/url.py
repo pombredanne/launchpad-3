@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -29,8 +30,9 @@ def valid_absolute_url(name):
     # as well.
     from canonical.launchpad.webapp.url import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(name)
-    if scheme == 'sftp':
-        return True
+    # note that URL checking is also done inside the database, in
+    # trusted.sql, the valid_absolute_url function, and that code uses
+    # stdlib urlparse, not our customized version.
     if not (scheme and netloc):
         return False
     return True
@@ -66,7 +68,7 @@ def builder_url_validator(url):
     """Return True if the url is valid, or raise a LaunchpadValidationError"""
     if not valid_builder_url(url):
         raise LaunchpadValidationError(_(dedent("""
-            Invalid builder url '%s'. Builder urls must be
+            Invalid builder url '${url}'. Builder urls must be
             http://host/ or http://host:port/ only.
-            """)), url)
+            """), mapping={'url': url}))
     return True

@@ -1,5 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -25,6 +25,7 @@ class RequestWidget(object):
     hint = ''
     label = ''
     required = False
+    visible = False
 
     def __init__(self, context, request):
         # We are a View
@@ -82,7 +83,7 @@ class HiddenUserWidget(RequestWidget):
     implements(IUserWidget)
     def __init__(self, context, vocabulary, request=None):
         '''Construct the HiddenUserWidget.
-        
+
         Zope 3.2 changed the signature of widget constructors used
         with Choice fields. This broke a number of our widgets, and
         causes problems for widgets like this one that were being used
@@ -96,5 +97,3 @@ class HiddenUserWidget(RequestWidget):
 
     def getInputValue(self):
         return getUtility(ILaunchBag).user
-
-
