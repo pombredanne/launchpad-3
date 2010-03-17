@@ -36,14 +36,13 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe))
         build.buildstate = BuildStatus.FULLYBUILT
-        build.datebuilt = datetime(2010, 03, 17, tzinfo=utc)
+        build.datebuilt = datetime(2010, 03, 16, tzinfo=utc)
         browser = self.getUserBrowser(canonical_url(recipe))
         pattern = re.compile(dedent("""\
             Master Chef
             Branches
             Description
-            This recipe.*
-            changes.
+            This recipe .*changes.
             Recipe Information
             Owner:
             Master Chef
@@ -54,10 +53,9 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             Distros:
             Secret Squirrel
             Build records
-            Successful build
-            on 2010-03-17.*
+            Successful build.on 2010-03-16
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
-            lp://dev/~chef/chocolate/cake"""))
+            lp://dev/~chef/chocolate/cake"""), re.S)
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTrue(pattern.search(main_text), main_text)

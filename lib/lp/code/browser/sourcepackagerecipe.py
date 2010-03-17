@@ -56,11 +56,11 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         self.context.buildqueue_record.getEstimatedJobStartTime()
 
     @property
+    def estimate(self):
+        return (self.context.datebuilt is None and self.eta is not None)
+
+    @property
     def date(self):
-        if self.context.datebuilt is None:
-            if self.eta is None:
-                return ''
-            else:
-                return 'on %s (estimate)'
-        else:
-            return 'on %s' % self.context.datebuilt
+        if self.estimate:
+            return self.eta
+        return self.context.datebuilt

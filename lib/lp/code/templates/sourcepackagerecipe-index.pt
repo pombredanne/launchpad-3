@@ -62,7 +62,7 @@
           <ul>
             <li tal:repeat="build context/builds">
               <tal:status replace="build/@@+index/status" />
-              <tal:date replace="build/@@+index/date" />
+              <tal:date replace="build/@@+index/date/fmt:displaydate" />
             </li>
           </ul>
         </div>
