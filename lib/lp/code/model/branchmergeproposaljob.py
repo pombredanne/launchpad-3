@@ -1,15 +1,23 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+
 """Job classes related to BranchMergeProposals are in here.
 
 This includes both jobs for the proposals themselves, or jobs that are
 creating proposals, or diffs relating to the proposals.
 """
 
+
+from __future__ import with_statement
+
+
 __metaclass__ = type
+
+
 __all__ = [
     'BranchMergeProposalJob',
+    'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
     'MergeProposalCreatedJob',
     'UpdatePreviewDiffJob',
@@ -30,7 +38,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
 from canonical.launchpad.interfaces.message import IMessageJob
@@ -44,7 +51,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, ICodeReviewCommentEmailJob,
     ICodeReviewCommentEmailJobSource, ICreateMergeProposalJob,
     ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
-    IUpdatePreviewDiffJobSource,
+    IMergeProposalCreatedJobSource, IUpdatePreviewDiffJobSource,
     )
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
@@ -54,7 +61,6 @@ from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.mail.signedmessage import signed_message_from_string
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -71,6 +77,13 @@ class BranchMergeProposalJobType(DBEnumeratedType):
         Update the preview diff for the BranchMergeProposal.
 
         This job generates the preview diff for a BranchMergeProposal.
+        """)
+
+    CODE_REVIEW_COMMENT_EMAIL = DBItem(2, """
+        Send the code review comment to the subscribers.
+
+        This job sends the email to the merge proposal subscribers and
+        reviewers.
         """)
 
 
@@ -218,6 +231,8 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
     implements(IMergeProposalCreatedJob)
 
+    classProvides(IMergeProposalCreatedJobSource)
+
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
 
     def run(self, _create_preview=True):
@@ -273,7 +288,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         server.stop_server()
 
     def run(self):
-        """See `IRunnableJob`"""
+        """See `IRunnableJob`."""
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
         self.branch_merge_proposal.preview_diff = preview
@@ -323,23 +338,25 @@ class CreateMergeProposalJob(BaseRunnableJob):
         """See `ICreateMergeProposalJob`."""
         # Avoid circular import
         from lp.code.mail.codehandler import CodeHandler
-        message = self.getMessage()
-        # Since the message was checked as signed before it was saved in the
-        # Librarian, just create the principle from the sender and setup the
-        # interaction.
-        name, email_addr = parseaddr(message['From'])
-        authutil = getUtility(IPlacelessAuthUtility)
-        principal = authutil.getPrincipalByLogin(email_addr)
-        if principal is None:
-            raise AssertionError('No principal found for %s' % email_addr)
-        setupInteraction(principal, email_addr)
+        url = self.context.message_bytes.getURL()
+        with errorlog.globalErrorUtility.oopsMessage('Mail url: %r' % url):
+            message = self.getMessage()
+            # Since the message was checked as signed before it was saved in
+            # the Librarian, just create the principal from the sender and set
+            # up the interaction.
+            name, email_addr = parseaddr(message['From'])
+            authutil = getUtility(IPlacelessAuthUtility)
+            principal = authutil.getPrincipalByLogin(email_addr)
+            if principal is None:
+                raise AssertionError('No principal found for %s' % email_addr)
+            setupInteraction(principal, email_addr)
 
-        server = get_multi_server(write_hosted=True)
-        server.start_server()
-        try:
-            return CodeHandler().processMergeProposal(message)
-        finally:
-            server.stop_server()
+            server = get_multi_server(write_hosted=True)
+            server.start_server()
+            try:
+                return CodeHandler().processMergeProposal(message)
+            finally:
+                server.stop_server()
 
     def getOopsRecipients(self):
         message = self.getMessage()
@@ -361,19 +378,19 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
     """
 
     implements(ICodeReviewCommentEmailJob)
+
     classProvides(ICodeReviewCommentEmailJobSource)
 
     class_job_type = BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL
 
     def run(self):
-        """See `IRunnableJob`"""
-        mailer = CodeReviewCommentMailer.forCreation(
-            self.code_review_comment, self.original_email)
+        """See `IRunnableJob`."""
+        mailer = CodeReviewCommentMailer.forCreation(self.code_review_comment)
         mailer.sendAll()
 
     @classmethod
     def create(cls, code_review_comment):
-        """See `IBranchDiffJobSource`."""
+        """See `ICodeReviewCommentEmailJobSource`."""
         metadata = cls.getMetadata(code_review_comment)
         bmp = code_review_comment.branch_merge_proposal
         job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
@@ -383,16 +400,21 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
     def getMetadata(code_review_comment):
         return {'code_review_comment': code_review_comment.id}
 
-    @cachedproperty
+    @property
     def code_review_comment(self):
-        """Get the code review comment"""
-        return self.bmp.getComment(self.metadata['code_review_comment'])
+        """Get the code review comment."""
+        return self.branch_merge_proposal.getComment(
+            self.metadata['code_review_comment'])
 
-    @cachedproperty
-    def original_email(self):
-        """An email object of the original raw email if there was one."""
-        message = self.code_review_comment.message
-        if message.raw is None:
-            return None
-        return signed_message_from_string(message.raw.read())
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars.extend([
+            ('code_review_comment', self.metadata['code_review_comment']),
+            ])
+        return vars
 
+    def getErrorRecipients(self):
+        """Return a list of email-ids to notify about user errors."""
+        commenter = self.code_review_comment.message.owner
+        return [commenter.preferredemail]

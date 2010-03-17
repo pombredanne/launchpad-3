@@ -66,10 +66,14 @@ class ICodeReviewComment(Interface):
             attachments.
         """
 
+    def getOriginalEmail():
+        """An email object of the original raw email if there was one."""
+
     as_quoted_email = exported(
         TextLine(
             title=_('The message as quoted in email.'),
             readonly=True))
+
 
 
 class ICodeReviewCommentDeletion(Interface):

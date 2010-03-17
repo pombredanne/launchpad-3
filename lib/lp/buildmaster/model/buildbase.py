@@ -29,10 +29,10 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 from lp.registry.interfaces.pocket import pocketsuffix
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.model.buildqueue import BuildQueue
 
 
 UPLOAD_LOG_FILENAME = 'uploader.log'

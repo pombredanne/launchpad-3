@@ -46,6 +46,8 @@ class Factory(SSHFactory):
     to and disconnection from the SSH server.
     """
 
+    protocol = KeepAliveSettingSSHServerTransport
+
     def __init__(self, portal):
         # Although 'portal' isn't part of the defined interface for
         # `SSHFactory`, defining it here is how the `SSHUserAuthServer` gets
@@ -60,17 +62,7 @@ class Factory(SSHFactory):
         The protocol object we return is slightly modified so that we can hook
         into the 'connectionLost' event and log the disconnection.
         """
-        # If Conch let us customize the protocol class, we wouldn't need this.
-        # See http://twistedmatrix.com/trac/ticket/3443.
-        transport = KeepAliveSettingSSHServerTransport()
-        transport.supportedPublicKeys = self.privateKeys.keys()
-        if not self.primes:
-            log.msg('disabling diffie-hellman-group-exchange because we '
-                    'cannot find moduli file')
-            ske = transport.supportedKeyExchanges[:]
-            ske.remove('diffie-hellman-group-exchange-sha1')
-            transport.supportedKeyExchanges = ske
-        transport.factory = self
+        transport = SSHFactory.buildProtocol(self, address)
         transport._realConnectionLost = transport.connectionLost
         transport.connectionLost = (
             lambda reason: self.connectionLost(transport, reason))
