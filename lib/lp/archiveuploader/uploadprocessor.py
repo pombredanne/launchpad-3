@@ -108,16 +108,19 @@ class PPAUploadPathError(Exception):
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
 
-    def __init__(self, options, ztm, log):
-        self.options = options
-        self.ztm = ztm
-        self.log = log
+    def __init__(self, base_fsroot, dryrun, nomails, keep, options, ztm, log):
+        self.base_fsroot = base_fsroot
+        self.dryrun = dryrun
+        self.keep = keep
         self.last_processed_upload = None
+        self.log = log
+        self.nomails = nomails
+        self.ztm = ztm
 
-    def processUploadQueue(self):
+    def processUploadQueue(self, leafname=None):
         """Search for uploads, and process them.
 
-	Uploads are searched for in the 'incoming' directory inside the
+	    Uploads are searched for in the 'incoming' directory inside the
         base_fsroot.
 
         This method also creates the 'incoming', 'accepted', 'rejected', and
@@ -127,24 +130,24 @@ class UploadProcessor:
             self.log.debug("Beginning processing")
 
             for subdir in ["incoming", "accepted", "rejected", "failed"]:
-                full_subdir = os.path.join(self.options.base_fsroot, subdir)
+                full_subdir = os.path.join(self.base_fsroot, subdir)
                 if not os.path.exists(full_subdir):
                     self.log.debug("Creating directory %s" % full_subdir)
                     os.mkdir(full_subdir)
 
-            fsroot = os.path.join(self.options.base_fsroot, "incoming")
+            fsroot = os.path.join(self.base_fsroot, "incoming")
             uploads_to_process = self.locateDirectories(fsroot)
             self.log.debug("Checked in %s, found %s"
                            % (fsroot, uploads_to_process))
             for upload in uploads_to_process:
                 self.log.debug("Considering upload %s" % upload)
-                self.processUpload(fsroot, upload)
+                self.processUpload(fsroot, upload, leafname)
 
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
 
-    def processUpload(self, fsroot, upload):
+    def processUpload(self, fsroot, upload, leafname=None):
         """Process an upload's changes files, and move it to a new directory.
 
         The destination directory depends on the result of the processing
@@ -156,10 +159,10 @@ class UploadProcessor:
         name of the upload directory, skip it entirely.
 
         """
-        if (self.options.leafname is not None and
-            upload != self.options.leafname):
+        if (leafname is not None and
+            upload != leafname):
             self.log.debug("Skipping %s -- does not match %s" % (
-                upload, self.options.leafname))
+                upload, leafname))
             return
 
         upload_path = os.path.join(fsroot, upload)
@@ -395,7 +398,7 @@ class UploadProcessor:
             # when transaction is committed) this will cause any emails sent
             # sent by do_reject to be lost.
             notify = True
-            if self.options.dryrun or self.options.nomails:
+            if self.dryrun or self.nomails:
                 notify = False
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
@@ -414,7 +417,7 @@ class UploadProcessor:
                 for msg in upload.rejections:
                     self.log.warn("\t%s" % msg)
 
-            if self.options.dryrun:
+            if self.dryrun:
                 self.log.info("Dry run, aborting transaction.")
                 self.ztm.abort()
             else:
@@ -433,21 +436,21 @@ class UploadProcessor:
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
         """
-        if self.options.keep or self.options.dryrun:
+        if self.keep or self.dryrun:
             self.log.debug("Keeping contents untouched")
             return
 
         pathname = os.path.basename(upload)
 
         target_path = os.path.join(
-            self.options.base_fsroot, subdir_name, pathname)
+            self.base_fsroot, subdir_name, pathname)
         self.log.debug("Moving upload directory %s to %s" %
             (upload, target_path))
         shutil.move(upload, target_path)
 
         distro_filename = upload + ".distro"
         if os.path.isfile(distro_filename):
-            target_path = os.path.join(self.options.base_fsroot, subdir_name,
+            target_path = os.path.join(self.base_fsroot, subdir_name,
                                        os.path.basename(distro_filename))
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))

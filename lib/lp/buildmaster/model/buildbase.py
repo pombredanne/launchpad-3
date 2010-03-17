@@ -148,8 +148,10 @@ class BuildBase:
         options = ProcessUploadOptions(self.policy_name, self.distribution,
             self.distroseries, self.pocket, self.id)
         logger.info("Invoking uploader on %s for %s" % (root, leaf))
-        processor = UploadProcessor(options, ZopelessTransactionManager, logger)
-        processor.processUploadQueue()
+        processor = UploadProcessor(root, dryrun=False, 
+            nomails=True, keep=False, options=options,
+            ztm=ZopelessTransactionManager, log=logger)
+        processor.processUploadQueue(leaf)
 
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.

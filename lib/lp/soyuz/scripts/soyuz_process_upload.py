@@ -74,8 +74,10 @@ class ProcessUpload(LaunchpadScript):
                 "%s is not a directory" % self.options.base_fsroot)
 
         self.logger.debug("Initialising connection.")
-        UploadProcessor(
-            self.options, self.txn, self.logger).processUploadQueue()
+        processor = UploadProcessor(self.options.base_fsroot, 
+            self.options.dryrun, self.options.nomails, self.options.keep,
+            self.options, self.txn, self.logger)
+        processor.processUploadQueue(self.options.leafname)
 
     @property
     def lockfilename(self):
