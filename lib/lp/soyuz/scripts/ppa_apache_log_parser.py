@@ -8,7 +8,7 @@ import re
 from lp.archiveuploader.utils import re_isadeb
 
 
-DBUSER = 'ppalogparser'
+DBUSER = 'ppa-apache-log-parser'
 
 
 def get_ppa_file_key(path):

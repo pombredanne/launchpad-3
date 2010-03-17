@@ -638,6 +638,19 @@ class TestBlobCollection(TestCase):
         cur.execute("""SELECT currval('temporaryblobstorage_id_seq')""")
         self.expired_blob_id = cur.fetchone()[0]
 
+        # Add ApportJob and Job entries - these need to be removed
+        # too.
+        cur.execute("""
+            INSERT INTO Job (status, date_finished)
+            VALUES (0, CURRENT_TIMESTAMP - interval '2 days') RETURNING id
+            """)
+        self.expired_job_id = cur.fetchone()[0]
+        cur.execute("""
+            INSERT INTO ApportJob (job, blob, job_type)
+            VALUES (%s, %s, 0) RETURNING id
+            """, (self.expired_job_id, self.expired_blob_id))
+        self.expired_apportjob_id = cur.fetchone()[0]
+
         # Next a blob that has expired, but claimed and now linked to
         # elsewhere in the database
         cur.execute("""
