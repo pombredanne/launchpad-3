@@ -14,7 +14,7 @@ __all__ = [
 from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
-from pytz import timezone
+import pytz
 
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
@@ -36,9 +36,6 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
-
-
-UTC = timezone('UTC')
 
 
 def normalize_virtualization(virtualized):
@@ -129,7 +126,7 @@ class BuildQueue(SQLBase):
         if date_started is None:
             return None
         else:
-            return self._now() - self.date_started
+            return self._now() - date_started
 
     def destroySelf(self):
         """Remove this record and associated job/specific_job."""
@@ -478,7 +475,7 @@ class BuildQueue(SQLBase):
     @staticmethod
     def _now():
         """Return current time (UTC).  Overridable for test purposes."""
-        return datetime.now(UTC)
+        return datetime.now(pytz.UTC)
 
 
 class BuildQueueSet(object):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -1517,30 +1517,42 @@ class ViewBuildFarmJob(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBuildFarmJob
 
-    def _getBuildPermission(self):
-        return ViewBuildRecord(self.obj.build)
-
-    def _checkBranchVisibility(self, user=None):
-        """Is the user free to view any branches associated with this job?"""
-        if not IBuildFarmBranchJob.providedBy(self.obj):
-            return True
+    def _getBranch(self):
+        """Get `IBranch` associated with this job, if any."""
+        if IBuildFarmBranchJob.providedBy(self.obj):
+            return self.obj.branch
         else:
-            return self.obj.branch.visibleByUser(user)
+            return None
 
-    def checkAuthenticated(self, user):
-        if not self._checkBranchVisibility(user):
+    def _getBuild(self):
+        """Get `IBuildBase` associated with this job, if any."""
+        if IBuildFarmBuildJob.providedBy(self.obj):
+            return self.obj.build
+        else:
+            return None
+
+    def _checkBuildPermission(self, user=None):
+        """Check access to `IBuildBase` for this job."""
+        permission = ViewBuildRecord(self.obj.build)
+        if user is None:
+            return permission.checkUnauthenticated()
+        else:
+            return permission.checkAuthenticated(user)
+
+    def _checkAccess(self, user=None):
+        """Unified access check for anonymous and authenticated users."""
+        branch = self._getBranch()
+        if branch is not None and not branch.visibleByUser(user):
             return False
 
-        if IBuildFarmBuildJob.providedBy(self.obj):
-            if not self._getBuildPermission().checkAuthenticated(user):
-                return False
+        build = self._getBuild()
+        if build is not None and not self._checkBuildPermission(user):
+            return False
 
         return True
 
-    def checkUnauthenticated(self):
-        if not self._checkBranchVisibility():
-            return False
-        return self._getBuildPermission().checkUnauthenticated()
+    checkAuthenticated = _checkAccess
+    checkUnauthenticated = _checkAccess
 
 
 class AdminQuestion(AdminByAdminsTeam):
