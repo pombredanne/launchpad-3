@@ -23,7 +23,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_index(self):
+    def makeRecipe(self):
         chef = self.factory.makePersonNoCommit(displayname='Master Chef',
                 name='chef')
         chocolate = self.factory.makeProduct(name='chocolate')
@@ -31,13 +31,19 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             product=chocolate)
         distroseries = self.factory.makeDistroSeries(
             displayname='Secret Squirrel')
-        recipe = self.factory.makeSourcePackageRecipe(
+        return self.factory.makeSourcePackageRecipe(
             None, chef, distroseries, None, u'Cake Recipe', cake_branch)
+
+    def getMainText(self, recipe):
+        browser = self.getUserBrowser(canonical_url(recipe))
+        return extract_text(find_main_content(browser.contents))
+
+    def test_index(self):
+        recipe = self.makeRecipe()
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe))
         build.buildstate = BuildStatus.FULLYBUILT
         build.datebuilt = datetime(2010, 03, 16, tzinfo=utc)
-        browser = self.getUserBrowser(canonical_url(recipe))
         pattern = re.compile(dedent("""\
             Master Chef
             Branches
@@ -57,5 +63,31 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
             lp://dev/~chef/chocolate/cake"""), re.S)
-        main_text = extract_text(find_main_content(browser.contents))
+        main_text = self.getMainText(recipe)
+        self.assertTrue(pattern.search(main_text), main_text)
+
+    def test_index_no_suitable_builders(self):
+        recipe = self.makeRecipe()
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe))
+        pattern = re.compile(dedent("""\
+            Build records
+            No suitable builders
+            Recipe contents"""), re.S)
+        main_text = self.getMainText(recipe)
+        self.assertTrue(pattern.search(main_text), main_text)
+
+    def test_index_pending(self):
+        # Cannot test pending builds because ETA estimation does not work.
+        return
+        recipe = self.makeRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        buildjob = self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=build)
+        builder = self.factory.makeBuilder()
+        pattern = re.compile(dedent("""\
+            Build records
+            Pending build
+            Recipe contents"""), re.S)
+        main_text = self.getMainText(recipe)
         self.assertTrue(pattern.search(main_text), main_text)
