@@ -251,8 +251,8 @@ class NewCodeImportForm(Interface):
         )
 
     product = Choice(
-        title=_('Product'),
-        description=_("The Product to associate the code import with."),
+        title=_('Project'),
+        description=_("The Project to associate the code import with."),
         vocabulary="Product",
         )
 
