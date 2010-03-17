@@ -16,7 +16,6 @@ from lp.poppy.server import run_server
 
 
 def main():
-
     parser = optparse.OptionParser()
     logger_options(parser)
 
@@ -41,8 +40,6 @@ def main():
         return 1
 
     root, port = args
-    # host = "127.0.0.1"
-    # host = "82.211.81.167" # Drescher's public IP
     host = "0.0.0.0"
     ident = "lucille upload server"
     numthreads = 4
