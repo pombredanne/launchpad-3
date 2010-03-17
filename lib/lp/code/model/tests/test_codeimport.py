@@ -637,10 +637,10 @@ class TestGetActiveImports(TestCaseWithFactory):
         # Deactivating a product means that code imports associated to it are
         # no longer returned.
         code_import = make_active_import(self.factory)
-        self.failUnless(code_import.product.active)
+        self.failUnless(code_import.branch.product.active)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [code_import])
-        deactivate(code_import.product)
+        deactivate(code_import.branch.product)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [])
 
@@ -649,10 +649,10 @@ class TestGetActiveImports(TestCaseWithFactory):
         # products in it are no longer returned.
         code_import = make_active_import(
             self.factory, project_name="whatever")
-        self.failUnless(code_import.product.project.active)
+        self.failUnless(code_import.branch.product.project.active)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [code_import])
-        deactivate(code_import.product.project)
+        deactivate(code_import.branch.product.project)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [])
 
