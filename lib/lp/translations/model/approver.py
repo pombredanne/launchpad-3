@@ -136,6 +136,10 @@ class TranslationBranchApprover(object):
 class TranslationBuildApprover(object):
     """Automatic approval of automatically build translation files."""
 
+    def __init__(
+        self, productseries=None, distroseries=None, sourcepackagename=None):
+        """Bind the new approver to a productseries or sourcepackagename."""
+
     def approve(self, entry):
         """Approve a queue entry."""
 

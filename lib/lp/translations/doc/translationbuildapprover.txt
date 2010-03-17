@@ -9,7 +9,7 @@ TranslationBranchApprover.
     >>> productseries = factory.makeProductSeries()
     >>> importer_person = factory.makePerson()
     >>> from lp.translations.model.approver import TranslationBuildApprover
-    >>> approver = TranslationBuildApprover()
+    >>> approver = TranslationBuildApprover(productseries=productseries)
 
 It will approve all template files that it can derive a name from.
 
