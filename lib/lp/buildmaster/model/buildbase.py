@@ -24,7 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (ZopelessTransactionManager,
-    clear_current_connection_cache, cursor, flush_database_updates)
+    )
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
@@ -211,33 +211,7 @@ class BuildBase:
                 os.mkdir(failed_dir)
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
-        # The famous 'flush_updates + clear_cache' will make visible
-        # the DB changes done in process-upload, considering that the
-        # transaction was set with ISOLATION_LEVEL_READ_COMMITED
-        # isolation level.
-        cur = cursor()
-        cur.execute('SHOW transaction_isolation')
-        isolation_str = cur.fetchone()[0]
-        assert isolation_str == 'read committed', (
-            'BuildMaster/BuilderGroup transaction isolation should be '
-            'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
-
         original_slave = self.buildqueue_record.builder.slave
-
-        # XXX Robert Collins, Celso Providelo 2007-05-26 bug=506256:
-        # 'Refreshing' objects  procedure  is forced on us by using a
-        # different process to do the upload, but as that process runs
-        # in the same unix account, it is simply double handling and we
-        # would be better off to do it within this process.
-        flush_database_updates()
-        clear_current_connection_cache()
-
-        # XXX cprov 2007-06-15: Re-issuing removeSecurityProxy is forced on
-        # us by sqlobject refreshing the builder object during the
-        # transaction cache clearing. Once we sort the previous problem
-        # this step should probably not be required anymore.
-        self.buildqueue_record.builder.setSlaveForTesting(
-            removeSecurityProxy(original_slave))
 
         # Store build information, build record was already updated during
         # the binary upload.
