@@ -14,7 +14,7 @@ from zope.server.ftp.server import STORChannel as OriginalSTORChannel
 from zope.server.taskthreads import ThreadedTaskDispatcher
 from zope.server.serverbase import ServerBase
 
-from canonical.poppy.filesystem import UploadFileSystem
+from lp.poppy.filesystem import UploadFileSystem
 
 
 class Channel(FTPServerChannel):
