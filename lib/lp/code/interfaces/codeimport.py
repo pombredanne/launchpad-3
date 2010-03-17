@@ -80,26 +80,10 @@ class ICodeImport(Interface):
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
 
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The community contact for this import."))
-
     assignee = PublicPersonChoice(
         title=_('Assignee'), required=False, readonly=False,
         vocabulary='ValidPersonOrTeam',
         description=_("The person in charge of handling this import."))
-
-    product = Choice(
-        title=_("Project"), required=True,
-        readonly=True, vocabulary='Product',
-        description=_("The project this code import belongs to."))
-
-    series = Choice(
-        title=_("Series"),
-        readonly=True, vocabulary='ProductSeries',
-        description=_("The series this import is registered as the "
-                      "code for, or None if there is no such series."))
 
     review_status = exported(
         Choice(
