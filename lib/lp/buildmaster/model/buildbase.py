@@ -66,9 +66,8 @@ class BuildBase:
         """Return the directory that things will be stored in."""
         return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
 
-    def getUploaderCommand(self, upload_leaf, uploader_logfilename):
+    def getUploaderCommand(self, root, upload_leaf, uploader_logfilename):
         """See `IBuildBase`."""
-        root = os.path.abspath(config.builddmaster.root)
         uploader_command = list(config.builddmaster.uploader.split())
 
         # add extra arguments for processing a binary upload
@@ -150,7 +149,7 @@ class BuildBase:
         :param logger: A logger object
         """
         uploader_command = self.getUploaderCommand(
-            leaf, logfilename)
+                root, leaf, logfilename)
         logger.info("Invoking uploader on %s" % root)
         logger.info("%s" % uploader_command)
 

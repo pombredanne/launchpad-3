@@ -9,10 +9,13 @@ __metaclass__ = type
 
 from datetime import datetime
 import os
+import shutil
+import tempfile
 import unittest
 
 from canonical.config import config
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.scripts import BufferLogger
+from canonical.testing.layers import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.testing import TestCase, TestCaseWithFactory
@@ -95,8 +98,55 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
              os.path.abspath(config.builddmaster.root),
              ])
         uploader_command = build_base.getUploaderCommand(
+            os.path.abspath(config.builddmaster.root),
             upload_leaf, log_file)
         self.assertEqual(config_args, uploader_command)
+
+
+class TestProcessUpload(TestCaseWithFactory):
+    """Test the process-upload.py script."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.queue_location = tempfile.mkdtemp()
+        self.leaf = "theleaf"
+        os.mkdir(os.path.join(self.queue_location, self.leaf))
+        super(TestProcessUpload, self).setUp()
+        self.build_base = BuildBase()
+        self.build_base.distroseries = self.factory.makeDistroSeries()
+        self.build_base.distribution = self.build_base.distroseries.distribution
+        self.build_base.pocket = self.factory.getAnyPocket()
+        self.build_base.id = self.factory.getUniqueInteger()
+        self.build_base.policy_name = self.factory.getUniqueString('policy-name')
+
+    def tearDown(self):
+        shutil.rmtree(self.queue_location)
+        super(TestProcessUpload, self).tearDown()
+
+    def assertQueuePath(self, path):
+        """Check if given path exists within the current queue_location."""
+        probe_path = os.path.join(self.queue_location, path)
+        self.assertTrue(
+            os.path.exists(probe_path), "'%s' does not exist." % path)
+
+    def testSimpleRun(self):
+        """Try a simple process-upload run.
+
+        Observe it creating the required directory tree for a given
+        empty queue_location.
+        """
+        logger = BufferLogger()
+        self.build_base.processUpload(self.leaf,
+            os.path.join(self.queue_location, "mylog"),
+            self.queue_location, logger)
+
+        # directory tree in place.
+        for directory in ['incoming', 'accepted', 'rejected', 'failed']:
+            self.assertQueuePath(directory)
+
+        # just to check if local assertion is working as expect.
+        self.assertRaises(AssertionError, self.assertQueuePath, 'foobar')
 
 
 def test_suite():
