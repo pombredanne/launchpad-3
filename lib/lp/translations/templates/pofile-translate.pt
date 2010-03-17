@@ -22,13 +22,21 @@
       registerLaunchpadFunction(insertAllExpansionButtons);
 
       LPS.use('lp.pofile', function(Y) {
-          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
           Y.on('domready', Y.lp.pofile.updateNotificationBox);
+      });
+
+      LPS.use('lp.pofile', function(Y) {
+          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
+      });
+
+      LPS.use('lp.pofile', function(Y) {
           Y.on('domready', Y.lp.pofile.initializeKeyBindings);
           Y.on('domready', function(e) {
             Y.lp.pofile.setFocus(autofocus_field);
           });
       });
+
+
     </script>
     </div>
     <div metal:fill-slot="main">
