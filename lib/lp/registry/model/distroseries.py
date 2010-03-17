@@ -1221,7 +1221,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             BinaryPackagePublishingHistory.dateremoved == None).config(
-                distinct=True)
+                distinct=True).order_by(BinaryPackageName.name)
 
         number_of_updates = 0
         chunk_size = 0
@@ -1561,6 +1561,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         custom_results = PackageUpload.select(
             custom_where_clause, clauseTables=custom_clauseTables,
             orderBy=custom_orderBy)
+
+        # XXX StuartBishop 2010-03-11 bug=537335
+        # This method is attempting to return ordered results but
+        # failing. It is also referencing non-existing documentation
+        # in the docstring - this method does not exist in the IDistroSeries
+        # interface.
 
         return source_results.union(build_results.union(custom_results))
 
