@@ -1304,9 +1304,6 @@ class PackageUpload(SQLBase):
             # Nothing needs overriding, bail out.
             return False
 
-        if self.sources.count() == 0:
-            return False
-
         for source in self.sources:
             if (new_component not in allowed_components or
                 source.sourcepackagerelease.component not in
