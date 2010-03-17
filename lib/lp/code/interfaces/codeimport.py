@@ -80,11 +80,6 @@ class ICodeImport(Interface):
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
 
-    assignee = PublicPersonChoice(
-        title=_('Assignee'), required=False, readonly=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The person in charge of handling this import."))
-
     review_status = exported(
         Choice(
             title=_("Review Status"), vocabulary=CodeImportReviewStatus,
