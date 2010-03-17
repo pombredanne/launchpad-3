@@ -23,8 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (ZopelessTransactionManager,
-    )
+from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
