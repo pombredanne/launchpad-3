@@ -39,6 +39,8 @@ from canonical.launchpad.components.tokens import (
 from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -1326,6 +1328,19 @@ class Archive(SQLBase):
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
         return result_set
+
+    def updatePackageDownloadCount(self, bpr, day, country, count):
+        """See `IArchive`."""
+        store = Store.of(self)
+        entry = store.find(
+            BinaryPackageReleaseDownloadCount, archive=self,
+            binary_package_release=bpr, day=day, country=country).one()
+        if entry is None:
+            entry = BinaryPackageReleaseDownloadCount(
+                archive=self, binary_package_release=bpr, day=day,
+                country=country, count=count)
+        else:
+            entry.count += count
 
     def _setBuildStatuses(self, status):
         """Update the pending Build Jobs' status for this archive."""

@@ -8,10 +8,22 @@
 __metaclass__ = type
 
 __all__ = [
-    'SeriesStatus'
+    'SeriesStatus',
+    'ISeriesMixin',
     ]
 
+from zope.schema import Bool
+
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import exported
+
+from canonical.launchpad import _
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary)
+from canonical.launchpad.interfaces.launchpad import IHasDrivers
+from lp.registry.interfaces.person import IPerson
+
 
 class SeriesStatus(DBEnumeratedType):
     """Distro/Product Series Status
@@ -76,3 +88,43 @@ class SeriesStatus(DBEnumeratedType):
         haven't started working yet.
         """)
 
+
+class ISeriesMixin(IHasDrivers):
+    """Methods & properties shared between distro & product series."""
+
+    active = exported(Bool(
+        title=_("Active"),
+        description=_(
+            "Whether or not this series is stable and supported, or "
+            "under current development. This excludes series which "
+            "are experimental or obsolete.")))
+
+    summary = exported(
+        Summary(title=_("Summary"),
+             description=_('A single paragraph that explains the goals of '
+                           'of this series and the intended users. '
+                           'For example: "The 2.0 series of Apache '
+                           'represents the current stable series, '
+                           'and is recommended for all new deployments".'),
+             required=True))
+
+    drivers = exported(
+        CollectionField(
+            title=_(
+                'A list of the people or teams who are drivers for this '
+                'series. This list is made up of any drivers or owners '
+                'from this series and the parent drivers.'),
+            readonly=True,
+            value_type=Reference(schema=IPerson)))
+
+    bug_supervisor = CollectionField(
+        title=_('Currently just a reference to the parent bug '
+                'supervisor.'),
+        readonly=True,
+        value_type=Reference(schema=IPerson))
+
+    security_contact = PublicPersonChoice(
+        title=_('Security Contact'),
+        description=_('Currently just a reference to the parent '
+                      'security contact.'),
+        required=False, vocabulary='ValidPersonOrTeam')
