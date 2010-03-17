@@ -756,18 +756,8 @@ admins and commercial admins.
     >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
     >>> mark_archive['require_virtualized'] = False
     >>> response = modify_archive(admin_webservice, mark_archive)
-    >>> pprint_entry(webservice.get("/~mark/+archive/ppa").jsonBody())
-    dependencies_collection_link: u'http://api.launchpad.dev/beta/~mark/+archive/ppa/dependencies'
-    description: u'packages to help the humanity (you know, ubuntu)'
-    displayname: u'PPA for Mark Shuttleworth'
-    distribution_link: u'http://api.launchpad.dev/beta/ubuntu'
-    name: u'ppa'
-    owner_link: u'http://api.launchpad.dev/beta/~mark'
-    private: False
-    require_virtualized: False
-    resource_type_link: u'http://api.launchpad.dev/beta/#archive'
-    self_link: u'http://api.launchpad.dev/beta/~mark/+archive/ppa'
-    signing_key_fingerprint: None
+    >>> webservice.get("/~mark/+archive/ppa").jsonBody()['require_virtualized']
+    False
 
 Attempting to modify this flag without the necessary permissions will fail.
 
@@ -920,13 +910,6 @@ is already a current subscription:
 
 Modifying the privacy flag through the API is not allowed except for
 admins and commercial admins.
-
-    >>> import simplejson
-    >>> def modify_archive(service, archive):
-    ...     headers = {'Content-type': 'application/json'}
-    ...     return service(
-    ...         archive['self_link'], 'PUT', simplejson.dumps(archive),
-    ...         headers)
 
     >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
     >>> mark_archive['private'] = True
