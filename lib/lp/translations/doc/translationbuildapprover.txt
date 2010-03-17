@@ -13,6 +13,7 @@ TranslationBranchApprover.
 
 It will approve all template files that it can derive a name from.
 
+    >>> login("foo.bar@canonical.com")
     >>> def makeQueueEntry(path):
     ...     return queue.addOrUpdateEntry(
     ...         path, "#Dummy content.", False, importer_person,
@@ -20,14 +21,14 @@ It will approve all template files that it can derive a name from.
     >>> my_entry = makeQueueEntry("po/my_domain.pot")
     >>> print my_entry.status.title
     Needs Review
-    >>> approver.approve(my_entry)
+    >>> my_entry = approver.approve(my_entry)
     >>> print my_entry.status.title
     Approved
 
 Template files with generic names will not be approved.
 
     >>> generic_entry = makeQueueEntry("po/messages.pot")
-    >>> approver.approve(generic_entry)
+    >>> generic_entry = approver.approve(generic_entry)
     >>> print generic_entry.status.title
     Needs Review
 
@@ -39,7 +40,7 @@ otherwise it will create a new template.
     >>> print my_entry.potemplate.name
     my-domain
     >>> my_other_entry = makeQueueEntry("my_domain/messages.pot")
-    >>> approver.approve(my_other_entry)
+    >>> my_other_entry = approver.approve(my_other_entry)
     >>> print my_other_entry.status.title
     Approved
     >>> print my_entry.potemplate == my_other_entry.potemplate

@@ -139,7 +139,38 @@ class TranslationBuildApprover(object):
     def __init__(
         self, productseries=None, distroseries=None, sourcepackagename=None):
         """Bind the new approver to a productseries or sourcepackagename."""
+        assert((productseries is not None and
+                distroseries is None and sourcepackagename is None) or
+               (productseries is None and
+                distroseries is not None and sourcepackagename is not None))
+
+        self._potemplateset = getUtility(IPOTemplateSet).getSubset(
+            productseries=productseries,
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        if productseries is not None:
+            self.owner = productseries.product.owner
+        else:
+            self.owner = distroseries.distribution.owner
 
     def approve(self, entry):
         """Approve a queue entry."""
+        name = make_name_from_path(entry.path)
+        potemplate = self._potemplateset.getPOTemplateByPath(entry.path)
+        if potemplate is None:
+            if name == '':
+                # A generic or invalid name, no approval possible.
+                return entry
+            potemplate = self._potemplateset.getPOTemplateByName(name)
+        if potemplate is None:
+            domain = make_domain(entry.path)
+            potemplate = self._potemplateset.new(
+                name, domain, entry.path, self.owner)
+
+        # Approve the entry
+        entry.potemplate = potemplate
+        if entry.status == RosettaImportStatus.NEEDS_REVIEW:
+            entry.setStatus(RosettaImportStatus.APPROVED,
+                            getUtility(ILaunchpadCelebrities).rosetta_experts)
+        return entry
 
