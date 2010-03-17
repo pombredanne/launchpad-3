@@ -92,7 +92,7 @@ class TestProcessUpload(TestCaseWithFactory):
         self.build_base.distribution = self.build_base.distroseries.distribution
         self.build_base.pocket = self.factory.getAnyPocket()
         self.build_base.id = self.factory.getUniqueInteger()
-        self.build_base.policy_name = self.factory.getUniqueString('policy-name')
+        self.build_base.policy_name = "insecure"
 
     def tearDown(self):
         super(TestProcessUpload, self).tearDown()

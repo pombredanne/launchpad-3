@@ -231,10 +231,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         """
         build_candidate = self._createBuild('i386')
         self.options.buildid = str(build_candidate.id)
-        self.uploadprocessor = UploadProcessor(
-            self.options.base_fsroot, self.options.dryrun,
-            self.options.nomails, self.options.keep, 
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
         build_used = self._uploadBinary('i386')
 

@@ -136,15 +136,16 @@ class BuildBase:
                          buildid):
                 self.context = policy_name
                 self.distro = distribution.name
-                self.series = distroseries.name + pocketsuffix[pocket]
+                self.distroseries = distroseries.name + pocketsuffix[pocket]
                 self.buildid = buildid
                 self.log_file = logfilename
                 self.announce = []
 
         options = ProcessUploadOptions(self.policy_name, self.distribution,
             self.distroseries, self.pocket, self.id)
-        # XXX JRV 20100317: This shouldn't be needing to use an abstract
-        # options object without a clearly defined interface.
+        # XXX JRV 20100317: This should not create a mock options 
+        # object and derive the policy from that but rather create a
+        # policy object in a more sensible way.
         policy = findPolicyByOptions(options)
         logger.info("Invoking uploader on %s for %s" % (root, leaf))
         processor = UploadProcessor(root, False, True, False,
