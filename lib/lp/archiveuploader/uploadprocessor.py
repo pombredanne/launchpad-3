@@ -110,6 +110,17 @@ class UploadProcessor:
 
     def __init__(self, base_fsroot, dryrun, nomails, keep, policy_for_distro,
                  ztm, log):
+        """Create a new upload processor.
+
+        :param base_fsroot: Root path for queue to use
+        :param dryrun: Run but don't commit changes to database
+        :param nomails: Don't send out any emails
+        :param keep: Leave the files in place, don't move them away
+        :param policy_for_distro: callback to obtain Policy object for a
+            distribution
+        :param ztm: Database transaction to use
+        :param log: Logger to use for reporting
+        """
         self.base_fsroot = base_fsroot
         self.dryrun = dryrun
         self.keep = keep
@@ -122,7 +133,7 @@ class UploadProcessor:
     def processUploadQueue(self, leafname=None):
         """Search for uploads, and process them.
 
-	    Uploads are searched for in the 'incoming' directory inside the
+        Uploads are searched for in the 'incoming' directory inside the
         base_fsroot.
 
         This method also creates the 'incoming', 'accepted', 'rejected', and
@@ -247,7 +258,7 @@ class UploadProcessor:
             # Skip lockfile deletion, see similar code in poppyinterface.py.
             fsroot_lock.release(skip_delete=True)
 
-        sorted_dir_names =  sorted(
+        sorted_dir_names = sorted(
             dir_name
             for dir_name in dir_names
             if os.path.isdir(os.path.join(fsroot, dir_name)))
