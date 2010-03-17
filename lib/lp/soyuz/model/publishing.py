@@ -31,11 +31,17 @@ from sqlobject import ForeignKey, StringCol
 from storm.expr import Desc, In, LeftJoin
 from storm.store import Store
 
-from lp.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -45,22 +51,18 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.build import BuildSetStatus, IBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, IArchiveSafePublisher,
-    IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
-    IPublishingEdit, IPublishingSet, ISourcePackageFilePublishing,
-    ISourcePackagePublishingHistory, PackagePublishingPriority,
-    PackagePublishingStatus, PoolFileOverwriteError)
-from lp.soyuz.interfaces.build import BuildSetStatus, BuildStatus, IBuildSet
+    active_publishing_status, IBinaryPackageFilePublishing,
+    IBinaryPackagePublishingHistory, IPublishingSet,
+    ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
+    PackagePublishingPriority, PackagePublishingStatus,
+    PoolFileOverwriteError)
+from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -505,6 +507,22 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         the_url = self._proxied_urls((changes_lfa,), self.archive)[0]
         return the_url
 
+    def _getAllowedArchitectures(self, available_archs):
+        """Filter out any restricted architectures not specifically allowed 
+        for an archive.
+
+        :param available_archs: Architectures to consider
+        :return: Sequence of `IDistroArch` instances.
+        """
+        associated_proc_families = [
+            archivearch.processorfamily for archivearch 
+            in getUtility(IArchiveArchSet).getByArchive(self.archive)]
+        # Return all distroarches with unrestricted processor families or with
+        # processor families the archive is explicitly associated with.
+        return [distroarch for distroarch in available_archs
+            if not distroarch.processorfamily.restricted or 
+               distroarch.processorfamily in associated_proc_families]
+
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
@@ -514,6 +532,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if architectures_available is None:
             architectures_available = list(
                 self.distroseries.enabled_architectures)
+
+        architectures_available = self._getAllowedArchitectures(
+            architectures_available)
 
         build_architectures = determineArchitecturesToBuild(
             self, architectures_available, self.distroseries, pas_verify)

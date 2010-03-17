@@ -69,6 +69,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.buildqueue import BuildQueue
 
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
@@ -126,9 +127,9 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
@@ -152,7 +153,7 @@ DIFF = """\
 @@ -121,6 +121,10 @@
                  'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
               ernqbayl=Gehr))
- 
+
 +    unf_pbasyvpgf = Obby(
 +        gvgyr=_('Unf pbasyvpgf'), ernqbayl=Gehr,
 +        qrfpevcgvba=_('Gur cerivrjrq zretr cebqhprf pbasyvpgf.'))
@@ -380,8 +381,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         a commit, despite all changes now being available in the main
         store.
         """
-        person = removeSecurityProxy(person) # Need to poke person's privates
-        person._preferredemail_cached = Store.of(person).find(
+        naked_person = removeSecurityProxy(person)
+        naked_person._preferredemail_cached = Store.of(person).find(
             EmailAddress, personID=person.id,
             status=EmailAddressStatus.PREFERRED).one()
 
@@ -422,16 +423,18 @@ class LaunchpadObjectFactory(ObjectFactory):
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname,
             hide_email_addresses=hide_email_addresses)
-        person = removeSecurityProxy(person)
-        email = removeSecurityProxy(email)
-        person._password_cleartext_cached = password
+        naked_person = removeSecurityProxy(person)
+        naked_person._password_cleartext_cached = password
 
         assert person.password is not None, (
             'Password not set. Wrong default auth Store?')
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
-            person.setLocation(latitude, longitude, time_zone, person)
+            naked_person.setLocation(latitude, longitude, time_zone, person)
+
+        # Make sure the non-security-proxied object is not returned.
+        del naked_person
 
         # To make the person someone valid in Launchpad, validate the
         # email.
@@ -441,7 +444,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 Account, person.accountID)
             account.status = AccountStatus.ACTIVE
 
-        email.status = email_address_status
+        removeSecurityProxy(email).status = email_address_status
 
         # Ensure updated ValidPersonCache
         flush_database_updates()
@@ -612,6 +615,38 @@ class LaunchpadObjectFactory(ObjectFactory):
         return Milestone(product=product, distribution=distribution,
                          productseries=productseries,
                          name=name)
+
+    def makeProcessor(self, family, name, title=None, description=None):
+        """Create a new processor.
+
+        :param family: Family of the processor
+        :param name: Name of the processor
+        :param title: Optional title
+        :param description: Optional description
+        :return: A `IProcessor`
+        """
+        if title is None:
+            title = "The %s processor" % name
+        if description is None:
+            description = "The %s and processor and compatible processors"
+        return family.addProcessor(name, title, description)
+
+    def makeProcessorFamily(self, name, title=None, description=None,
+                            restricted=False):
+        """Create a new processor family.
+        
+        :param name: Name of the family (e.g. x86)
+        :param title: Optional title of the family
+        :param description: Optional extended description
+        :param restricted: Whether the processor family is restricted
+        :return: A `IProcessorFamily`
+        """
+        if description is None:
+            description = "Description of the %s processor family" % name
+        if title is None:
+            title = "%s and compatible processors." % name
+        return getUtility(IProcessorFamilySet).new(name, title, description,
+            restricted=restricted)
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
@@ -1593,7 +1628,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IComponentSet).ensure(name)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
-                    purpose=None, enabled=True):
+                    purpose=None, enabled=True, private=False,
+                    virtualized=True, description=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1602,7 +1638,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             makePerson().
         :param name: Name of the archive, defaults to a random string.
         :param purpose: Supply ArchivePurpose, defaults to PPA.
-        :param enabled: Whether the archive should be enabled.
+        :param enabled: Whether the archive is enabled.
+        :param private: Whether the archive is created private.
+        :param virtualized: Whether the archive is virtualized.
+        :param description: A description of the archive.
         """
         if distribution is None:
             distribution = self.makeDistribution()
@@ -1621,9 +1660,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         if purpose == ArchivePurpose.PRIMARY:
             return distribution.main_archive
 
-        return getUtility(IArchiveSet).new(
+        archive = getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name, enabled=enabled)
+            distribution=distribution, name=name, enabled=enabled,
+            require_virtualized=virtualized, description=description)
+
+        if private:
+            archive.private = True
+            archive.buildd_secret = "sekrit"
+
+        return archive
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
@@ -1793,8 +1839,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             singular = self.getUniqueString()
         potmsgset = potemplate.createMessageSetFromText(
             singular, plural, context, sequence)
-        naked_potmsgset = removeSecurityProxy(potmsgset)
-        naked_potmsgset.sync()
+        removeSecurityProxy(potmsgset).sync()
         return potmsgset
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
@@ -1864,6 +1909,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation.is_imported = is_imported
         translation.is_current = True
 
+    def makeMailingList(self, team, owner):
+        """Create a mailing list for the team."""
+        team_list = getUtility(IMailingListSet).new(team, owner)
+        team_list.startConstructing()
+        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        return team_list
+
     def makeTeamAndMailingList(
         self, team_name, owner_name,
         visibility=None,
@@ -1891,9 +1943,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
                 subscription_policy=subscription_policy)
-        team_list = getUtility(IMailingListSet).new(team, owner)
-        team_list.startConstructing()
-        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        team_list = self.makeMailingList(team, owner)
         return team, team_list
 
     def makeMirror(self, distribution, displayname, country=None,
@@ -1958,45 +2008,36 @@ class LaunchpadObjectFactory(ObjectFactory):
     def getAnySourcePackageUrgency(self):
         return SourcePackageUrgency.MEDIUM
 
-    def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
-                                           distroseries=None, maintainer=None,
-                                           creator=None, component=None,
-                                           section=None, urgency=None,
-                                           version=None, archive=None,
-                                           builddepends=None,
-                                           builddependsindep=None,
-                                           build_conflicts=None,
-                                           build_conflicts_indep=None,
-                                           architecturehintlist='all',
-                                           dateremoved=None,
-                                           date_uploaded=UTC_NOW,
-                                           pocket=None,
-                                           status=None,
-                                           scheduleddeletiondate=None,
-                                           dsc_standards_version='3.6.2',
-                                           dsc_format='1.0',
-                                           dsc_binaries='foo-bin',
-                                           ):
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
-        spn = sourcepackagename
-
+    def makeSourcePackageRelease(self, archive=None, sourcepackagename=None,
+                                 distroseries=None, maintainer=None,
+                                 creator=None, component=None, section=None,
+                                 urgency=None, version=None,
+                                 builddepends=None, builddependsindep=None,
+                                 build_conflicts=None,
+                                 build_conflicts_indep=None,
+                                 architecturehintlist='all',
+                                 dsc_maintainer_rfc822=None,
+                                 dsc_standards_version='3.6.2',
+                                 dsc_format='1.0', dsc_binaries='foo-bin',
+                                 date_uploaded=UTC_NOW):
+        """Make a `SourcePackageRelease`."""
         if distroseries is None:
-            distroseries = self.makeDistroRelease()
+            if archive is None:
+                distribution = None
+            else:
+                distribution = archive.distribution
+            distroseries = self.makeDistroRelease(distribution=distribution)
 
         if archive is None:
             archive = self.makeArchive(
                 distribution=distroseries.distribution,
                 purpose=ArchivePurpose.PRIMARY)
 
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+
         if component is None:
             component = self.makeComponent()
-
-        if pocket is None:
-            pocket = self.getAnyPocket()
-
-        if status is None:
-            status = PackagePublishingStatus.PENDING
 
         if urgency is None:
             urgency = self.getAnySourcePackageUrgency()
@@ -2018,10 +2059,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if version is None:
             version = self.getUniqueString('version')
 
-        gpg_key = self.makeGPGKey(creator)
-
-        spr = distroseries.createUploadedSourcePackageRelease(
-            sourcepackagename=spn,
+        return distroseries.createUploadedSourcePackageRelease(
+            sourcepackagename=sourcepackagename,
             maintainer=maintainer,
             creator=creator,
             component=component,
@@ -2036,12 +2075,70 @@ class LaunchpadObjectFactory(ObjectFactory):
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
-            dscsigningkey=gpg_key,
+            dscsigningkey=None,
             dsc_maintainer_rfc822=maintainer_email,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive, dateuploaded=date_uploaded)
+            archive=archive,
+            dateuploaded=date_uploaded)
+
+    def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
+                                           distroseries=None, maintainer=None,
+                                           creator=None, component=None,
+                                           section=None, urgency=None,
+                                           version=None, archive=None,
+                                           builddepends=None,
+                                           builddependsindep=None,
+                                           build_conflicts=None,
+                                           build_conflicts_indep=None,
+                                           architecturehintlist='all',
+                                           dateremoved=None,
+                                           date_uploaded=UTC_NOW,
+                                           pocket=None,
+                                           status=None,
+                                           scheduleddeletiondate=None,
+                                           dsc_standards_version='3.6.2',
+                                           dsc_format='1.0',
+                                           dsc_binaries='foo-bin',
+                                           ):
+        """Make a `SourcePackagePublishingHistory`."""
+        if distroseries is None:
+            if archive is None:
+                distribution = None
+            else:
+                distribution = archive.distribution
+            distroseries = self.makeDistroRelease(distribution=distribution)
+
+        if archive is None:
+            archive = self.makeArchive(
+                distribution=distroseries.distribution,
+                purpose=ArchivePurpose.PRIMARY)
+
+        if pocket is None:
+            pocket = self.getAnyPocket()
+
+        if status is None:
+            status = PackagePublishingStatus.PENDING
+
+        spr = self.makeSourcePackageRelease(
+            archive=archive,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries,
+            maintainer=maintainer,
+            creator=creator, component=component,
+            section=section,
+            urgency=urgency,
+            version=version,
+            builddepends=builddepends,
+            builddependsindep=builddependsindep,
+            build_conflicts=build_conflicts,
+            build_conflicts_indep=build_conflicts_indep,
+            architecturehintlist=architecturehintlist,
+            dsc_standards_version=dsc_standards_version,
+            dsc_format=dsc_format,
+            dsc_binaries=dsc_binaries,
+            date_uploaded=date_uploaded)
 
         sspph = SourcePackagePublishingHistory(
             distroseries=distroseries,

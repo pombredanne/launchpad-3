@@ -15,6 +15,7 @@ source package in each series of this distribution.
     The Hoary Hedgehog Release (active development)     Set upstream link
       1.0.9a-4ubuntu1 release (main) ... weeks ago
     The Warty Warthog Release (current stable release)  alsa-utils trunk series
+    ...
       1.0.8-1ubuntu1  release (main) ... weeks ago
       1.0.9a-4        release (main) ... weeks ago
 
@@ -26,9 +27,10 @@ A button is displayed to authenticated users to delete existing
 packaging links.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
-    >>> form = user_browser.getForm("delete_warty_alsa-utils_trunk")
-    >>> print form.getControl(name="field.actions.delete_packaging")
-    <ImageControl name='field.actions.delete_packaging' type='image'>
+    >>> link = user_browser.getLink(
+    ...     url='/ubuntu/warty/+source/alsa-utils/+remove-packaging')
+    >>> print link
+    <Link text='Remove upstream link'...
 
 This button is not displayed to anonymous users.
 
@@ -40,14 +42,16 @@ This button is not displayed to anonymous users.
 
 Clicking this button deletes the corresponding packaging association.
 
-    >>> form = user_browser.getForm("delete_warty_alsa-utils_trunk")
-    >>> form.getControl(name="field.actions.delete_packaging").click()
+    >>> link = user_browser.getLink(
+    ...     url='/ubuntu/warty/+source/alsa-utils/+remove-packaging')
+    >>> link.click()
+    >>> user_browser.getControl('Unlink').click()
     >>> content = user_browser.contents
     >>> for tag in find_tags_by_class(content, 'error'):
     ...     print extract_text(tag)
     >>> for tag in find_tags_by_class(content, 'informational'):
     ...     print extract_text(tag)
-    Removed upstream association between alsa-utils trunk and Warty.
+    Removed upstream association between alsa-utils trunk series and Warty.
     >>> print extract_text(find_tag_by_id(content, 'packages_list'))
     The Hoary Hedgehog Release (active development)     Set upstream link
       1.0.9a-4ubuntu1 release (main) ... weeks ago

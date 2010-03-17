@@ -81,6 +81,7 @@ class TestQueueStatus(WindmillTestCase):
             email="mike@example.com")
         branch = self.factory.makeBranch(owner=mike)
         second_branch = self.factory.makeBranch(product=branch.product)
+        self.factory.makeRevisionsForBranch(second_branch)
         merge_proposal = second_branch.addLandingTarget(mike, branch)
         transaction.commit()
 
@@ -99,12 +100,16 @@ class TestQueueStatus(WindmillTestCase):
             xpath=u'//div[contains(@class, "yui-ichoicelist-content")]')
 
         # Change the status to experimental.
-        client.click(link=u'Rejected')
+        client.click(link=u'Approved')
         client.waits.sleep(milliseconds=SLEEP)
 
         client.asserts.assertText(
             xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
-            validator=u'Rejected')
+            validator=u'Approved')
+
+        client.asserts.assertText(
+            xpath=u'//tr[@id="summary-row-3-approved-revision"]/td',
+            validator=u'5')
 
         # Reload the page and make sure the change sticks.
         client.open(url=merge_url)
@@ -114,7 +119,7 @@ class TestQueueStatus(WindmillTestCase):
             timeout=FOR_ELEMENT)
         client.asserts.assertText(
             xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
-            validator=u'Rejected')
+            validator=u'Approved')
 
 
 def test_suite():

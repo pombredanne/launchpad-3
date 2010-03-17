@@ -265,6 +265,10 @@
             permission="zope.Public"/>
         <adapter
             for="lp.bugs.interfaces.bugtask.IBugTask"
+            provides="canonical.launchpad.interfaces.launchpad.IPrivacy"
+            factory="lp.bugs.adapters.bug.bugtask_to_privacy"/>
+        <adapter
+            for="lp.bugs.interfaces.bugtask.IBugTask"
             provides="canonical.launchpad.interfaces.IBug"
             factory="lp.bugs.model.bugtask.BugTaskToBugAdapter"/>
         <adapter
@@ -575,6 +579,7 @@
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
                     heat
+                    heat_last_updated
                     has_patches
                     latest_patch
                     latest_patch_uploaded"/>

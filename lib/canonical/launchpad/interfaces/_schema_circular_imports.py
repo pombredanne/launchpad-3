@@ -24,18 +24,19 @@ from canonical.launchpad.components.apihelpers import (
 
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription, IStructuralSubscriptionTarget)
-from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bug import IBug, IFrontPageBugAddForm
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtarget import IHasBugs
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuild)
+from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
+from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -72,6 +73,8 @@ from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.message import (
+    IIndexedMessage, IMessage, IUserToUserEmail)
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
@@ -318,7 +321,53 @@ patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
 
-IBuildBase['buildstate'].vocabulary = BuildStatus
-
 patch_reference_property(
     ISourcePackageRelease, 'source_package_recipe_build', ISourcePackageRecipeBuild)
+
+# IHasBugs
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'assignee', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_reporter', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_supervisor', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_commenter', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_subscriber', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'owner', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'affected_user', IPerson)
+
+# IBugTask
+patch_reference_property(IBugTask, 'owner', IPerson)
+
+# IBugWatch
+patch_reference_property(IBugWatch, 'owner', IPerson)
+
+# IIndexedMessage
+patch_reference_property(IIndexedMessage, 'inside', IBugTask)
+
+# IMessage
+patch_reference_property(IMessage, 'owner', IPerson)
+
+# IUserToUserEmail
+patch_reference_property(IUserToUserEmail, 'sender', IPerson)
+patch_reference_property(IUserToUserEmail, 'recipient', IPerson)
+
+# IBug
+patch_plain_parameter_type(
+    IBug, 'addNomination', 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBug, 'canBeNominatedFor', 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBug, 'getNominationFor', 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBug, 'getNominations', 'target', IBugTarget)
+
+# IFrontPageBugAddForm
+patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
+
+# IBugTracker
+patch_reference_property(IBugTracker, 'owner', IPerson)

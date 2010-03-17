@@ -49,6 +49,7 @@ from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
+
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.interface import copy_field
@@ -61,41 +62,42 @@ from lazr.restful.declarations import (
     operation_returns_entry, rename_parameters_as, webservice_error)
 from lazr.restful.fields import CollectionField, Reference
 
-from canonical.launchpad import _
-
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload,
-    is_private_membership_person, is_public_person, LogoImageUpload,
+    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
-    StrippedTextLine)
+    StrippedTextLine, is_private_membership_person, is_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from lp.app.interfaces.headings import IRootContext
-from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
-from lp.registry.interfaces.irc import IIrcID
-from lp.registry.interfaces.jabber import IJabberID
-from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
+from canonical.launchpad.interfaces.validation import (
+    validate_new_person_email, validate_new_team_email)
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
+
+from lp.app.interfaces.headings import IRootContext
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications)
+from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+from lp.registry.interfaces.gpg import IGPGKey
+from lp.registry.interfaces.irc import IIrcID
+from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
     IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications)
 from lp.registry.interfaces.teammembership import (
     ITeamMembership, ITeamParticipation, TeamMembershipStatus)
-from canonical.launchpad.interfaces.validation import (
-    validate_new_team_email, validate_new_person_email)
 from lp.registry.interfaces.wikiname import IWikiName
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.worlddata.interfaces.language import ILanguage
 
 
 PRIVATE_TEAM_PREFIX = 'private-'
@@ -430,6 +432,9 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
+# XXX: salgado, 2010/03/05, bug=532688: This is currently used by c-i-p, so it
+# can't be removed yet.  As soon as we stop using c-i-p, though, we'll be able
+# to remove this.
 class IPersonChangePassword(Interface):
     """The schema used by Person +changepassword form."""
 
@@ -478,7 +483,7 @@ class IHasStanding(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy):
+                    IPrivacy, IHasBugs):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -629,9 +634,17 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
-    pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
-    inactivegpgkeys = Attribute(
+    gpg_keys = exported(
+        CollectionField(
+            title=_("List of valid OpenPGP keys ordered by ID"),
+            readonly=False, required=False,
+            value_type=Reference(schema=IGPGKey)))
+    pending_gpg_keys = exported(
+        CollectionField(
+            title=_("Set of fingerprints pending confirmation"),
+            readonly=False, required=False,
+            value_type=Reference(schema=IGPGKey)))
+    inactive_gpg_keys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(
         CollectionField(
@@ -1016,18 +1029,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
         To be used when membership changes are enacted. Only meant to be
         used between TeamMembership and Person objects.
-        """
-
-    def searchTasks(search_params, *args):
-        """Search IBugTasks with the given search parameters.
-
-        :search_params: a BugTaskSearchParams object
-        :args: any number of BugTaskSearchParams objects
-
-        If more than one BugTaskSearchParams is given, return the union of
-        IBugTasks which match any of them.
-
-        Return an iterable of matching results.
         """
 
     def getLatestMaintainedPackages():

@@ -10,7 +10,7 @@
 
       <div metal:fill-slot="main"
            tal:define="user request/lp:person;
-                       gpgkeys user/gpgkeys|nothing">
+                       gpgkeys user/gpg_keys|nothing">
 
         <h1>Sign the Ubuntu code of Conduct</h1>
 

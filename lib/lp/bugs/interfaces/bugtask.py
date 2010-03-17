@@ -28,6 +28,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
     'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
@@ -38,7 +39,6 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -63,7 +63,6 @@ from lp.bugs.interfaces.bugwatch import (
 from lp.soyuz.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -304,9 +303,6 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
 
-UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES = (
-    UNRESOLVED_BUGTASK_STATUSES + (BugTaskStatus.FIXRELEASED,))
-
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
     BugTaskStatus.INVALID,
@@ -364,6 +360,13 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
     webservice_error(400) #Bad request.
+
+
+class IllegalRelatedBugTasksParams(Exception):
+    """Exception raised when trying to overwrite all relevant parameters
+    in a search for related bug tasks"""
+    webservice_error(400) #Bad request.
+
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
@@ -495,13 +498,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
-    task_age = exported(
-        Int(title=_("Age of the bug task"),
+    task_age = Int(title=_("Age of the bug task"),
             description=_("The age of this task in seconds, a delta between "
-                         "now and the date the bug task was created."),
-            readonly=True))
+                         "now and the date the bug task was created."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson, readonly=True))
+        Reference(title=_("The owner"), schema=Interface, readonly=True))
     target = exported(Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
         readonly=True,
@@ -821,10 +822,10 @@ class IBugTaskSearchBase(Interface):
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
     has_branches = Bool(
-        title=_('Show only bugs with linked branches'), required=False,
+        title=_('Show bugs with linked branches'), required=False,
         default=True)
     has_no_branches = Bool(
-        title=_('Show only bugs without linked branches'), required=False,
+        title=_('Show bugs without linked branches'), required=False,
         default=True)
 
 

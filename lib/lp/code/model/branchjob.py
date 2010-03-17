@@ -20,6 +20,7 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.errors import NoSuchFile
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
@@ -49,12 +50,7 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
-from lp.codehosting.scanner import buglinks, email, mergedetection
-from lp.codehosting.scanner.fixture import (
-    Fixtures, ServerFixture, make_zope_event_fixture)
-from lp.codehosting.scanner.bzrsync import (
-    BzrSync, schedule_diff_updates, schedule_translation_templates_build,
-    schedule_translation_upload)
+from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
     get_scanner_server)
 from lp.services.job.model.job import Job
@@ -274,7 +270,7 @@ class BranchScanJob(BranchJobDerived):
 
     @classmethod
     def create(cls, branch):
-        """See `IBranchUpgradeJobSource`."""
+        """See `IBranchScanJobSource`."""
         branch_job = BranchJob(branch, BranchJobType.SCAN_BRANCH, {})
         return cls(branch_job)
 
@@ -290,21 +286,9 @@ class BranchScanJob(BranchJobDerived):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
         cls.server = get_scanner_server()
-        event_handlers = [
-            email.queue_tip_changed_email_jobs,
-            buglinks.got_new_revision,
-            mergedetection.auto_merge_branches,
-            mergedetection.auto_merge_proposals,
-            schedule_diff_updates,
-            schedule_translation_templates_build,
-            schedule_translation_upload,
-            ]
-        fixture = Fixtures([
-            ServerFixture(cls.server),
-            make_zope_event_fixture(*event_handlers)])
-        fixture.setUp()
+        cls.server.start_server()
         yield
-        fixture.tearDown()
+        cls.server.stop_server()
 
 
 class BranchUpgradeJob(BranchJobDerived):
@@ -341,8 +325,10 @@ class BranchUpgradeJob(BranchJobDerived):
         upgrade_branch_path = tempfile.mkdtemp()
         try:
             upgrade_transport = get_transport(upgrade_branch_path)
+            upgrade_transport.mkdir('.bzr')
             source_branch_transport = get_transport(self.branch.getPullURL())
-            source_branch_transport.copy_tree_to_transport(upgrade_transport)
+            source_branch_transport.clone('.bzr').copy_tree_to_transport(
+                upgrade_transport.clone('.bzr'))
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
             # Perform the upgrade.
@@ -360,9 +346,14 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch.unlock()
 
             # Move the branch in the old format to backup.bzr
-            upgrade_transport.delete_tree('backup.bzr')
+            try:
+                source_branch_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
             source_branch_transport.rename('.bzr', 'backup.bzr')
-            upgrade_transport.copy_tree_to_transport(source_branch_transport)
+            source_branch_transport.mkdir('.bzr')
+            upgrade_transport.clone('.bzr').copy_tree_to_transport(
+                source_branch_transport.clone('.bzr'))
 
             self.branch.requestMirror()
         finally:

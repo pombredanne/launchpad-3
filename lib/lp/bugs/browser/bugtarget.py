@@ -46,15 +46,13 @@ from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
-    PersonLatestBugsFeedLink)
+    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES)
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
@@ -1057,7 +1055,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     feed_types = (
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
         )
 
     # XXX: Bjorn Tillenius 2007-02-13:
@@ -1315,7 +1312,7 @@ class BugsPatchesView(LaunchpadView):
         return BatchNavigator(
             self.context.searchTasks(
                 None, user=self.user, order_by=orderby,
-                status=UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES,
+                status=UNRESOLVED_BUGTASK_STATUSES,
                 omit_duplicates=True, has_patch=True),
             self.request)
 
