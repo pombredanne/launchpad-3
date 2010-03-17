@@ -10,7 +10,8 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from lp.archiveuploader.permission import can_upload_to_archive
+from lp.archiveuploader.permission import (
+    can_upload_to_archive, check_upload_to_archive)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
@@ -49,8 +50,6 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguage)
 from lp.registry.interfaces.entitlement import IEntitlement
 from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
@@ -88,6 +87,8 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup, IProjectGroupSet)
+from lp.registry.interfaces.irc import IIrcID
+from lp.registry.interfaces.wikiname import IWikiName
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -1299,6 +1300,11 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
              user.inTeam(translation_group.owner)))
 
 
+class ViewBugTracker(AnonymousAuthorization):
+    """Anyone can view a bug tracker."""
+    usedfor = IBugTracker
+
+
 class EditBugTracker(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
@@ -1362,7 +1368,8 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
-            self.obj.distroseries.main_archive, user.person)
+            self.obj.distroseries.distribution.all_distro_archives,
+            user.person)
         return permissions.count() > 0
 
 
@@ -1448,14 +1455,16 @@ class EditBuildRecord(AdminByBuilddAdmin):
                     user.inTeam(self.obj.archive.owner))
 
         # Primary or partner section here: is the user in question allowed
-        # to upload to the respective component? Allow user to retry build
-        # if so.
-        archive = self.obj.archive
-        if archive.canUpload(user.person, self.obj.current_component):
-            return True
-        else:
-            return archive.canUpload(
-                user.person, self.obj.sourcepackagerelease.sourcepackagename)
+        # to upload to the respective component, packageset or package? Allow
+        # user to retry build if so.
+        # strict_component is True because the source package already exists,
+        # otherwise, how can they give it back?
+        check_perms = check_upload_to_archive(
+            user.person, self.obj.distroseries,
+            self.obj.sourcepackagerelease.sourcepackagename, self.obj.archive,
+            self.obj.current_component, self.obj.pocket,
+            strict_component=True)
+        return check_perms == None
 
 
 class ViewBuildRecord(EditBuildRecord):
@@ -1662,19 +1671,6 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
-
-
-class AdminDistroSeriesLanguage(AuthorizationBase):
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistroSeriesLanguage
-
-    def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistroSeriesLanguage` translations.
-
-        Distribution managers can also manage IDistroSeriesLanguage
-        """
-        return (AdminDistroSeriesTranslations(
-            self.obj.distroseries).checkAuthenticated(user))
 
 
 class BranchSubscriptionEdit(AuthorizationBase):
@@ -2241,6 +2237,14 @@ class EditEmailAddress(EditByOwnersOrAdmins):
             return True
         return super(EditEmailAddress, self).checkAccountAuthenticated(
             account)
+
+
+class ViewIrcID(AnonymousAuthorization):
+    usedfor = IIrcID
+
+
+class ViewWikiName(AnonymousAuthorization):
+    usedfor = IWikiName
 
 
 class EditArchivePermissionSet(AuthorizationBase):

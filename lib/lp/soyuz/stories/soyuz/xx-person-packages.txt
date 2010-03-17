@@ -81,7 +81,7 @@ package release page:
     <Link text='cr.g7-37' url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
     >>> link.click()
     >>> browser.title
-    '\xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
+    'cr.g7-37 : \xe2\x80\x9ccnews\xe2\x80\x9d package : Ubuntu'
 
 
 == Batched listing pages ==

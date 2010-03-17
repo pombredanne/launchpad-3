@@ -60,6 +60,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -510,7 +511,7 @@ class POTemplateViewPreferred(POTemplateView):
         return POTemplateView.pofiles(self, preferred_only=True)
 
 
-class POTemplateEditView(LaunchpadEditFormView):
+class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
@@ -538,12 +539,9 @@ class POTemplateEditView(LaunchpadEditFormView):
             naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
     @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+    def _return_attribute_name(self):
+        """See 'ReturnToReferrerMixin'."""
+        return "name"
 
 
 class POTemplateAdminView(POTemplateEditView):

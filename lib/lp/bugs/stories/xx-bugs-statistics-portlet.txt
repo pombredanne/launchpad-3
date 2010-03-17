@@ -30,7 +30,7 @@ general stats.
     3 Open bugs
     0 Critical bugs
     0 Bugs fixed elsewhere
-    1 New bugs
+    1 New bug
     2 Open CVE bugs - CVE reports
     0 Bugs with patches
 
@@ -53,13 +53,13 @@ bugs is also shown.
     0 Bugs assigned to me
     0 Critical bugs
     0 Bugs fixed elsewhere
-    1 New bugs
+    1 New bug
     2 Open CVE bugs - CVE reports
     0 Bugs with patches
 
 The content includes a link to the distribution CVE report.
 
-    >>> print user_browser.getLink('CVE reports').url
+    >>> print user_browser.getLink('CVE report').url
     http://bugs.launchpad.dev/debian/+cve
 
 
@@ -87,7 +87,7 @@ link to review nominations.
     0 Critical bugs
     0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bugs - CVE reports
+    1 Open CVE bug - CVE report
     0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
@@ -112,12 +112,12 @@ bugs is also shown.
     0 Critical bugs
     0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bugs - CVE reports
+    1 Open CVE bug - CVE report
     0 Bugs with patches
 
 The content includes a link to the distribution CVE report.
 
-    >>> print user_browser.getLink('CVE reports').url
+    >>> print user_browser.getLink('CVE report').url
     http://bugs.launchpad.dev/debian/woody/+cve
 
 
@@ -141,7 +141,7 @@ If the user is not logged-in general stats are shown.
     3 Open bugs
     0 Critical bugs
     0 Bugs fixed elsewhere
-    1 New bugs
+    1 New bug
     2 Open CVE bugs
     0 Bugs with patches
 
@@ -164,14 +164,14 @@ bugs is also shown.
     0 Bugs assigned to me
     0 Critical bugs
     0 Bugs fixed elsewhere
-    1 New bugs
+    1 New bug
     2 Open CVE bugs
     0 Bugs with patches
 
 Note that the "CVE reports" link is not shown above; distribution
 source packages do not have a CVE reports page.
 
-    >>> print user_browser.getLink('CVE reports').url
+    >>> print user_browser.getLink('CVE report').url
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -197,7 +197,7 @@ option to subscribe to bug mail.
     0 Critical bugs
     0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bugs
+    1 Open CVE bug
     0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
@@ -218,13 +218,13 @@ bugs is also shown.
     0 Critical bugs
     0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bugs
+    1 Open CVE bug
     0 Bugs with patches
 
 Note that the "CVE reports" link is not shown above; source packages
 do not have a CVE reports page.
 
-    >>> print user_browser.getLink('CVE reports').url
+    >>> print user_browser.getLink('CVE report').url
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -248,10 +248,10 @@ If the user is not logged-in general stats are shown.
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
     4 Open bugs
-    1 Critical bugs
+    1 Critical bug
     0 Bugs fixed elsewhere
     4 New bugs
-    1 Open CVE bugs
+    1 Open CVE bug
     0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
@@ -271,16 +271,16 @@ bugs is also shown.
     >>> print_bugfilters_portlet_filled(user_browser, path)
     4 Open bugs
     0 Bugs assigned to me
-    1 Critical bugs
+    1 Critical bug
     0 Bugs fixed elsewhere
     4 New bugs
-    1 Open CVE bugs
+    1 Open CVE bug
     0 Bugs with patches
 
 Note that the "CVE reports" link is not shown above; project groups do
 not have a CVE reports page.
 
-    >>> print user_browser.getLink('CVE reports').url
+    >>> print user_browser.getLink('CVE report').url
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -304,10 +304,10 @@ If the user is not logged-in general stats are shown.
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
     3 Open bugs
-    1 Critical bugs
+    1 Critical bug
     0 Bugs fixed elsewhere
     3 New bugs
-    1 Open CVE bugs - CVE reports
+    1 Open CVE bug - CVE report
     0 Bugs with patches
 
 Once the user has identified him or herself, information on assigned
@@ -327,14 +327,14 @@ bugs is also shown.
     >>> print_bugfilters_portlet_filled(user_browser, path)
     3 Open bugs
     0 Bugs assigned to me
-    1 Critical bugs
+    1 Critical bug
     0 Bugs fixed elsewhere
     3 New bugs
-    1 Open CVE bugs - CVE reports
+    1 Open CVE bug - CVE report
     0 Bugs with patches
 
 
 The content includes a link to the distribution CVE report.
 
-    >>> print user_browser.getLink('CVE reports').url
+    >>> print user_browser.getLink('CVE report').url
     http://bugs.launchpad.dev/firefox/+cve
