@@ -59,7 +59,7 @@ from zope.component import getUtility
 from lp.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from lp.archiveuploader.uploadpolicy import (
-    findPolicyByOptions, UploadPolicyError)
+    UploadPolicyError)
 from lp.soyuz.interfaces.archive import IArchiveSet, NoSuchPPA
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
@@ -108,13 +108,15 @@ class PPAUploadPathError(Exception):
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
 
-    def __init__(self, base_fsroot, dryrun, nomails, keep, options, ztm, log):
+    def __init__(self, base_fsroot, dryrun, nomails, keep, policy_for_distro,
+                 ztm, log):
         self.base_fsroot = base_fsroot
         self.dryrun = dryrun
         self.keep = keep
         self.last_processed_upload = None
         self.log = log
         self.nomails = nomails
+        self._getPolicyForDistro = policy_for_distro
         self.ztm = ztm
 
     def processUploadQueue(self, leafname=None):
@@ -324,8 +326,7 @@ class UploadProcessor:
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
                          "and update your configuration.")))
         self.log.debug("Finding fresh policy")
-        self.options.distro = distribution.name
-        policy = findPolicyByOptions(self.options)
+        policy = self._getPolicyForDistro(distribution)
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:

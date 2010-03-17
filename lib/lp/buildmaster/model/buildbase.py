@@ -28,6 +28,7 @@ from canonical.database.sqlbase import (ZopelessTransactionManager,
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
+from lp.archiveuploader.uploadpolicy import findPolicyByOptions
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -133,24 +134,22 @@ class BuildBase:
 
             def __init__(self, policy_name, distribution, distroseries, pocket,
                          buildid):
-                self.dry_run = False
-                self.keep = False
-                self.no_mails = True
-                self.just_leaf = leaf
                 self.context = policy_name
                 self.distro = distribution.name
                 self.series = distroseries.name + pocketsuffix[pocket]
                 self.buildid = buildid
                 self.log_file = logfilename
                 self.announce = []
-                self.base_fsroot = root
 
         options = ProcessUploadOptions(self.policy_name, self.distribution,
             self.distroseries, self.pocket, self.id)
+        # XXX JRV 20100317: This shouldn't be needing to use an abstract
+        # options object without a clearly defined interface.
+        policy = findPolicyByOptions(options)
         logger.info("Invoking uploader on %s for %s" % (root, leaf))
-        processor = UploadProcessor(root, dryrun=False, 
-            nomails=True, keep=False, options=options,
-            ztm=ZopelessTransactionManager, log=logger)
+        processor = UploadProcessor(root, False, True, False,
+            lambda distro: policy, ztm=ZopelessTransactionManager,
+            log=logger)
         processor.processUploadQueue(leaf)
 
     def _handleStatus_OK(self, librarian, slave_status, logger):

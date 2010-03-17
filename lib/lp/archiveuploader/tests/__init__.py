@@ -1,6 +1,10 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Tests for the archive uploader."""
+
+from __future__ import with_statement
+
 __metaclass__ = type
 
 __all__ = ['datadir', 'getPolicy', 'insertFakeChangesFile',
@@ -25,6 +29,7 @@ def datadir(path):
         raise ValueError("Path is not relative: %s" % path)
     return os.path.join(here, 'data', path)
 
+
 def insertFakeChangesFile(fileID, path=None):
     """Insert a fake changes file into the librarian.
 
@@ -34,10 +39,10 @@ def insertFakeChangesFile(fileID, path=None):
     """
     if path is None:
         path = datadir("ed-0.2-21/ed_0.2-21_source.changes")
-    changes_file_obj = open(path, 'r')
-    test_changes_file = changes_file_obj.read()
-    changes_file_obj.close()
+    with open(path, 'r') as changes_file_obj:
+        test_changes_file = changes_file_obj.read()
     fillLibrarianFile(fileID, content=test_changes_file)
+
 
 def insertFakeChangesFileForAllPackageUploads():
     """Ensure all the PackageUpload records point to a valid changes file."""
@@ -52,6 +57,7 @@ class MockUploadOptions:
         self.distro = distro
         self.distroseries = distroseries
         self.buildid = buildid
+
 
 def getPolicy(name='anything', distro='ubuntu', distroseries=None,
               buildid=None):

@@ -17,7 +17,6 @@ from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
 from canonical.testing.layers import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from lp.buildmaster.model.buildbase import BuildBase
-from lp.registry.interfaces.pocket import pocketsuffix
 from lp.testing import TestCase, TestCaseWithFactory
 
 
@@ -96,8 +95,8 @@ class TestProcessUpload(TestCaseWithFactory):
         self.build_base.policy_name = self.factory.getUniqueString('policy-name')
 
     def tearDown(self):
-        shutil.rmtree(self.queue_location)
         super(TestProcessUpload, self).tearDown()
+        shutil.rmtree(self.queue_location)
 
     def assertQueuePath(self, path):
         """Check if given path exists within the current queue_location."""

@@ -22,7 +22,8 @@ from email import message_from_string
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.archiveuploader.uploadpolicy import AbstractUploadPolicy
+from lp.archiveuploader.uploadpolicy import (AbstractUploadPolicy,
+    findPolicyByOptions)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -138,10 +139,12 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         super(TestUploadProcessorBase, self).tearDown()
 
     def getUploadProcessor(self, txn):
+        def getPolicy(distro):
+            self.options.distro = distro.name
+            return findPolicyByOptions(self.options)
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
-            self.options.nomails, self.options.keep, 
-            self.options, txn, self.log)
+            self.options.nomails, self.options.keep, getPolicy, txn, self.log)
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""
