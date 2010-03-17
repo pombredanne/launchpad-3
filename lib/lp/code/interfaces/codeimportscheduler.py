@@ -16,6 +16,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from zope.interface import Interface
 
+
 class ICodeImportSchedulerApplication(ILaunchpadApplication):
     """Code import scheduler application root."""
 
@@ -34,4 +35,29 @@ class ICodeImportScheduler(Interface):
         This method selects the most appropriate job for the machine,
         mark it as having started on said machine and return its id,
         or 0 if there are no jobs pending.
+        """
+
+    def getImportDataForJobID(job_id):
+        """Get data about the import with job id `job_id`.
+
+        :return: ``(worker_arguments, branch_url, log_file_name)`` where:
+            * ``worker_arguments`` are the arguments to pass to the code
+              import worker subprocess.
+           * ``branch_url`` is the URL of the import branch (only used to put
+             in OOPS reports)
+           * ``log_file_name`` is the name of the log file to create in the
+             librarian.
+        :raise NoSuchCodeImportJob: if no job with id `job_id` exists.
+        """
+
+    def updateHeartbeat(job_id, log_tail):
+        """Call `ICodeImportJobWorkflow.updateHeartbeat` for job `job_id`.
+
+        :raise NoSuchCodeImportJob: if no job with id `job_id` exists.
+        """
+
+    def finishJobID(job_id, status_name, log_file_alias_url):
+        """Call `ICodeImportJobWorkflow.finishJob` for job `job_id`.
+
+        :raise NoSuchCodeImportJob: if no job with id `job_id` exists.
         """

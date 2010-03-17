@@ -658,5 +658,89 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
             CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
 
 
+class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
+    """Ensure that getBinaryPackageReleaseByFileName works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestGetBinaryPackageReleaseByFileName, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.archive = self.factory.makeArchive()
+        self.archive.require_virtualized = False
+
+        self.i386_pub, self.hppa_pub = self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.i386_indep_pub, self.hppa_indep_pub = (
+            self.publisher.getPubBinaries(
+                version="1.2.3-4", archive=self.archive, binaryname="bar-bin",
+                status=PackagePublishingStatus.PUBLISHED))
+
+    def test_returns_matching_binarypackagerelease(self):
+        # The BPR with a file by the given name should be returned.
+        self.assertEqual(
+            self.i386_pub.binarypackagerelease,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_i386.deb"))
+
+    def test_returns_correct_architecture(self):
+        # The architecture is taken into account correctly.
+        self.assertEqual(
+            self.hppa_pub.binarypackagerelease,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_hppa.deb"))
+
+    def test_works_with_architecture_independent_binaries(self):
+        # Architecture independent binaries with multiple publishings
+        # are found properly.
+        self.assertEqual(
+            self.i386_indep_pub.binarypackagerelease,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "bar-bin_1.2.3-4_all.deb"))
+
+    def test_returns_none_for_source_file(self):
+        # None is returned if the file is a source component instead.
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo_1.2.3-4.dsc"))
+
+    def test_returns_none_for_nonexistent_file(self):
+        # Non-existent files return None.
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "this-is-not-real_1.2.3-4_all.deb"))
+
+    def test_returns_none_for_duplicate_file(self):
+        # In the unlikely case of multiple BPRs in this archive with the same
+        # name (hopefully impossible, but it still happens occasionally due
+        # to bugs), None is returned.
+
+        # Publish the same binaries again. Evil.
+        self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_i386.deb"))
+
+    def test_returns_none_from_another_archive(self):
+        # Cross-archive searches are not performed.
+        self.assertIs(
+            None,
+            self.factory.makeArchive().getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_i386.deb"))
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

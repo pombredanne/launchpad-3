@@ -34,7 +34,7 @@ If a bug tracker is disabled checkwatches won't try to update it.
     >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-   >>> login('foo.bar@canonical.com')
+    >>> login('foo.bar@canonical.com')
     >>> bug_tracker = LaunchpadObjectFactory().makeBugTracker(
     ...     'http://example.com')
     >>> bug_tracker.active = False
