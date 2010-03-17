@@ -61,7 +61,7 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(DEVEL_WADL_FILE): $(BZR_VERSION_INFO)
-	mkdir $(APIDOC_DIR).tmp
+	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
 	rmdir $(APIDOC_DIR).tmp

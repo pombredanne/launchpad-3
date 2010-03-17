@@ -197,7 +197,7 @@ class NewCodeImportForm(Interface):
 
     use_template(
         ICodeImport,
-        ['product', 'rcs_type', 'cvs_root', 'cvs_module'])
+        ['rcs_type', 'cvs_root', 'cvs_module'])
 
     svn_branch_url = URIField(
         title=_("Branch URL"), required=False,
