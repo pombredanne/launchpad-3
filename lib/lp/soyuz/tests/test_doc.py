@@ -200,6 +200,11 @@ special = {
         setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
         ),
+    'package-arch-specific.txt': LayeredDocFileSuite(
+        '../doc/package-arch-specific.txt',
+        setUp=builddmasterSetUp,
+        layer=LaunchpadZopelessLayer,
+        ),
     }
 
 

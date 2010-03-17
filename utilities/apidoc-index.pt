@@ -1,0 +1,37 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  i18n:domain="launchpad"
+>
+  <head>
+    <title>Launchpad Web Service API</title>
+  </head>
+
+  <body>
+
+    <h1>Launchpad web service API documentation</h1>
+
+    <p tal:content="structure config/service_description">
+      Description of the Launchpad web service.
+    </p>
+
+    <h2>Active versions</h2>
+
+    <ul>
+      <li tal:repeat="version_and_description versions_and_descriptions">
+
+        <tal:version tal:define="version version_and_description/version;
+                         description version_and_description/description">
+
+        <a tal:attributes="href string:$version.html"
+           tal:content="version">Version name</a>:
+        <tal:description replace="description" />
+        </tal:version>
+      </li>
+    </ul>
+
+  </body>
+
+</html>

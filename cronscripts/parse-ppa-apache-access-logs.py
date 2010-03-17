@@ -14,8 +14,8 @@ import functools
 from zope.component import getUtility
 
 from canonical.config import config
-# Importing from lp.registry.interfaces.person gives a circular import
-# somewhere.
+# XXX: wgrant 2010-03-16 bug=539496: Importing directly from
+# lp.registry.interfaces.person results in a circular import.
 from canonical.launchpad.interfaces import IPersonSet
 from lp.soyuz.interfaces.archive import NoSuchPPA
 from lp.soyuz.scripts.ppa_apache_log_parser import DBUSER, get_ppa_file_key
