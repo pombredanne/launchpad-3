@@ -6,13 +6,17 @@
 __metaclass__ = type
 
 
+from datetime import datetime
 from textwrap import dedent
 import re
 
+from pytz import utc
 from canonical.testing import DatabaseFunctionalLayer
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import extract_text, find_main_content
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.testing import (TestCaseWithFactory)
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -29,6 +33,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             displayname='Secret Squirrel')
         recipe = self.factory.makeSourcePackageRecipe(
             None, chef, distroseries, None, u'Cake Recipe', cake_branch)
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe))
+        build.buildstate = BuildStatus.FULLYBUILT
+        build.datebuilt = datetime(2010, 03, 17, tzinfo=utc)
         browser = self.getUserBrowser(canonical_url(recipe))
         pattern = re.compile(dedent("""\
             Master Chef
@@ -46,6 +54,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             Distros:
             Secret Squirrel
             Build records
+            Successful build
+            on 2010-03-17.*
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
             lp://dev/~chef/chocolate/cake"""))

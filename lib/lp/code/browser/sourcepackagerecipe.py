@@ -31,7 +31,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
     def status(self):
         description = {
             BuildStatus.NEEDSBUILD: 'Pending build',
-            BuildStatus.FULLYBUILT: 'Sucessful build',
+            BuildStatus.FULLYBUILT: 'Successful build',
             BuildStatus.FAILEDTOBUILD: 'Failed to build',
             BuildStatus.MANUALDEPWAIT:
                 'Could not build because of missing dependencies',
