@@ -108,6 +108,7 @@ time goes on.
     branch_format: None
     branch_type: u'Hosted'
     bzr_identity: u'lp://dev/~eric/fooix/trunk'
+    code_import_link: None
     control_format: None
     date_created: u'2009-01-01T00:00:00+00:00'
     date_last_modified: u'2009-01-01T00:00:00+00:00'
