@@ -1,0 +1,47 @@
+= TranslationBuildApprover =
+
+The TranslationBuildApprover is a much simpler approver than the
+TranslationBranchApprover.
+
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     ITranslationImportQueue)
+    >>> queue = getUtility(ITranslationImportQueue)
+    >>> productseries = factory.makeProductSeries()
+    >>> importer_person = factory.makePerson()
+    >>> from lp.translations.model.approver import TranslationBuildApprover
+    >>> approver = TranslationBuildApprover()
+
+It will approve all template files that it can derive a name from.
+
+    >>> def makeQueueEntry(path):
+    ...     return queue.addOrUpdateEntry(
+    ...         path, "#Dummy content.", False, importer_person,
+    ...         productseries=productseries)
+    >>> my_entry = makeQueueEntry("po/my_domain.pot")
+    >>> print my_entry.status.title
+    Needs Review
+    >>> approver.approve(my_entry)
+    >>> print my_entry.status.title
+    Approved
+
+Template files with generic names will not be approved.
+
+    >>> generic_entry = makeQueueEntry("po/messages.pot")
+    >>> approver.approve(generic_entry)
+    >>> print generic_entry.status.title
+    Needs Review
+
+If a template with that name exists, it will target the import entry to it,
+otherwise it will create a new template.
+
+    >>> print my_entry.potemplate.translation_domain
+    my_domain
+    >>> print my_entry.potemplate.name
+    my-domain
+    >>> my_other_entry = makeQueueEntry("my_domain/messages.pot")
+    >>> approver.approve(my_other_entry)
+    >>> print my_other_entry.status.title
+    Approved
+    >>> print my_entry.potemplate == my_other_entry.potemplate
+    True
+
