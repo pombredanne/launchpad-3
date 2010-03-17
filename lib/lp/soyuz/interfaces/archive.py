@@ -168,10 +168,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
                 "This can only be changed if the archive has not had "
                 "any sources published.")))
 
-    require_virtualized = Bool(
-        title=_("Require Virtualized Builder"), required=False,
-        description=_("Whether this archive requires its packages to be "
-                      "built on a virtual builder."))
+    require_virtualized = exported(
+        Bool(
+            title=_("Require Virtualized Builder"), required=False,
+            description=_("Whether this archive requires its packages to be "
+                          "built on a virtual builder."), readonly=False))
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,

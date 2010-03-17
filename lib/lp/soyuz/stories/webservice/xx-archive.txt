@@ -23,6 +23,7 @@ We publish a subset of their attributes.
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
+    require_virtualized: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
@@ -86,6 +87,7 @@ The archive has the following attributes:
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
     private: False
+    require_virtualized: False
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../ubuntutest/+archive/primary'
     signing_key_fingerprint: None
@@ -733,6 +735,46 @@ allowed to call the method at all.
     HTTP/1.1 401 Unauthorized
     ...
 
+== Non-virtualized archives ==
+
+Modifying the require_virtualized flag through the API is not allowed except for
+admins and commercial admins.
+
+    >>> import simplejson
+    >>> def modify_archive(service, archive):
+    ...     headers = {'Content-type': 'application/json'}
+    ...     return service(
+    ...         archive['self_link'], 'PUT', simplejson.dumps(archive),
+    ...         headers)
+
+    >>> login('foo.bar@canonical.com')
+    >>> admin_person = getUtility(IPersonSet).getByName('mark')
+    >>> admin_webservice = webservice_for_person(
+    ...     admin_person, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> logout()
+
+    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> mark_archive['require_virtualized'] = False
+    >>> response = modify_archive(admin_webservice, mark_archive)
+    >>> pprint_entry(webservice.get("/~mark/+archive/ppa").jsonBody())
+    dependencies_collection_link: u'http://api.launchpad.dev/beta/~mark/+archive/ppa/dependencies'
+    description: u'packages to help the humanity (you know, ubuntu)'
+    displayname: u'PPA for Mark Shuttleworth'
+    distribution_link: u'http://api.launchpad.dev/beta/ubuntu'
+    name: u'ppa'
+    owner_link: u'http://api.launchpad.dev/beta/~mark'
+    private: False
+    require_virtualized: False
+    resource_type_link: u'http://api.launchpad.dev/beta/#archive'
+    self_link: u'http://api.launchpad.dev/beta/~mark/+archive/ppa'
+    signing_key_fingerprint: None
+
+Attempting to modify this flag without the necessary permissions will fail.
+
+    >>> print modify_archive(user_webservice, mark_archive)
+    HTTP/1.1 400 Bad Request
+    ...
+    http_etag: You tried to modify a read-only attribute.
 
 == Private archives ==
 
@@ -767,6 +809,7 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    require_virtualized: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
@@ -779,6 +822,7 @@ the IArchive context, in this case only Celso has it.
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
+    require_virtualized: True
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
