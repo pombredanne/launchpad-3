@@ -145,7 +145,7 @@ class Server(ServerBase):
 
 
 def run_server(host, port, ident, numthreads,
-               new_client_hook, client_done_hook, auth_verify_hook = None):
+               new_client_hook, client_done_hook, auth_verify_hook=None):
     task_dispatcher = ThreadedTaskDispatcher()
     task_dispatcher.setThreadCount(numthreads)
     server = Server(host, port,

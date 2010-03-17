@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Lucille's primary interface to the upload mechanism
-
 import logging
 import shutil
 import os
@@ -11,8 +9,10 @@ import time
 
 from contrib.glock import GlobalLock
 
+
 class PoppyInterfaceFailure(Exception):
     pass
+
 
 class PoppyInterface:
 
