@@ -381,7 +381,8 @@ change description
         request = CodeReviewVoteReference(
             branch_merge_proposal=merge_proposal, reviewer=candidate,
             registrant=requester)
-        return RecipientReason.forReviewer(request, candidate), requester
+        reason = RecipientReason.forReviewer(merge_proposal, True, candidate)
+        return reason, requester
 
     def test_forReviewRequest(self):
         """Test creating a mailer for a review request."""

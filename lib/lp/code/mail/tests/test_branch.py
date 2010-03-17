@@ -59,8 +59,11 @@ class TestRecipientReason(TestCaseWithFactory):
 
     def test_forReviewer(self):
         """Test values when created from a branch subscription."""
-        ignored, vote_reference, subscriber = self.makeReviewerAndSubscriber()
-        reason = RecipientReason.forReviewer(vote_reference, subscriber)
+        merge_proposal, vote_reference, subscriber = (
+            self.makeReviewerAndSubscriber())
+        pending_review = vote_reference.comment is None
+        reason = RecipientReason.forReviewer(
+            merge_proposal, pending_review, subscriber)
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
         self.assertEqual(
@@ -68,7 +71,8 @@ class TestRecipientReason(TestCaseWithFactory):
 
     def test_getReasonReviewer(self):
         bmp, vote_reference, subscriber = self.makeReviewerAndSubscriber()
-        reason = RecipientReason.forReviewer(vote_reference, subscriber)
+        pending_review = vote_reference.comment is None
+        reason = RecipientReason.forReviewer(bmp, pending_review, subscriber)
         self.assertEqual(
             'You are requested to review the proposed merge of %s into %s.'
             % (bmp.source_branch.bzr_identity,

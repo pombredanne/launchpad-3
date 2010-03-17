@@ -15,8 +15,8 @@ from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.interfaces.branchmergeproposal import (
-    IMergeProposalCreatedJobSource)
-from lp.code.mail.branch import BranchMailer, RecipientReason
+    IMergeProposalCreatedJobSource, IReviewRequestedEmailJobSource)
+from lp.code.mail.branch import BranchMailer
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail.basemailer import BaseMailer
 
@@ -46,20 +46,7 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
 
 def send_review_requested_notifications(vote_reference, event):
     """Notify the reviewer that they have been requested to review."""
-    # XXX: rockstar - 9 Oct 2008 - If the reviewer is a team, don't send
-    # email.  This is to stop the abuse of a user spamming all members of
-    # a team by requesting them to review a (possibly unrelated) branch.
-    # Ideally we'd come up with a better solution, but I can't think of
-    # one yet.  In all other places we are emailing subscribers directly
-    # rather than people that haven't subscribed.
-    # See bug #281056. (affects IBranchMergeProposal)
-    if not vote_reference.reviewer.is_team:
-        reason = RecipientReason.forReviewer(
-            vote_reference, vote_reference.reviewer)
-        mailer = BMPMailer.forReviewRequest(
-            reason, vote_reference.branch_merge_proposal,
-            vote_reference.registrant)
-        mailer.sendAll()
+    getUtility(IReviewRequestedEmailJobSource).create(vote_reference)
 
 
 class BMPMailer(BranchMailer):
