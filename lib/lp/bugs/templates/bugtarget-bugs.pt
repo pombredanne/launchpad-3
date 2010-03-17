@@ -174,7 +174,7 @@
            >
           <a tal:condition="configure_bugtracker"
              tal:replace="structure configure_bugtracker/fmt:link"/>
-          <a condition="not: configure_bugtracker"
+          <a tal:condition="not: configure_bugtracker"
              tal:attributes="href string:${context/fmt:url/+edit}">
             Enable bug tracking.</a>
         </p>

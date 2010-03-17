@@ -61,7 +61,7 @@ The view provides a list of enabled links that is rendered by the template.
       </ul>
     ...
 
-Products are are supported.
+Products are supported.
 
     >>> product = factory.makeProduct(name='bread')
     >>> login_person(product.owner)
@@ -69,6 +69,24 @@ Products are are supported.
     >>> view = create_view(product, '+get-involved')
     >>> view.official_blueprints
     True
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    register_blueprint
+
+Products subclass the view to display disabled links to encourage
+configuring that service in Launchpad for the project. The project
+also has configuration links that make it easy to figure out where
+to configure each service.
+
+    >>> for link in view.visible_disabled_links:
+    ...     print link.name
+    report_bug
+    >>> for link in view.configuration_links:
+    ...     print link.name
+    configure_answers
+    configure_branches
+    configure_bugtracker
+    configure_translations
 
 Project are supported too, but they only display the applications used by
 their products.

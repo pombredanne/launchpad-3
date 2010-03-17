@@ -170,7 +170,7 @@ class ProductInvolvementView(PillarView):
         involved_menu = MenuAPI(self).navigation
         important_links = [
             involved_menu[name]
-            for name in ('report_bug', 'submit_code')]
+            for name in ['report_bug']]
         return sorted([
             link for link in important_links if not link.enabled],
             key=attrgetter('sort_key'))
