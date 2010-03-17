@@ -6,18 +6,21 @@
 import logging
 import os
 from StringIO import StringIO
+import transaction
 from unittest import TestLoader
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
+from canonical.config import config
+from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -102,7 +105,12 @@ class TestTTBuildBehaviorBase(TestCaseWithFactory):
 class TestTranslationTemplatesBuildBehavior(TestTTBuildBehaviorBase):
     """Test `TranslationTemplatesBuildBehavior`."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
+
+    def _becomeBuilddMaster(self):
+        """Log into the database as the buildd master."""
+        transaction.commit()
+        self.layer.switchDbUser(config.builddmaster.dbuser)
 
     def _getBuildQueueItem(self, behavior):
         """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
@@ -117,6 +125,7 @@ class TestTranslationTemplatesBuildBehavior(TestTTBuildBehaviorBase):
         behavior._getChroot = FakeChroot
         buildqueue_item = self._getBuildQueueItem(behavior)
 
+        self._becomeBuilddMaster()
         behavior.dispatchBuildToSlave(buildqueue_item, logging)
 
         slave_status = behavior._builder.slaveStatus()
@@ -124,6 +133,10 @@ class TestTranslationTemplatesBuildBehavior(TestTTBuildBehaviorBase):
         self.assertEqual(
             'translation-templates', slave_status['test_build_type'])
         self.assertIn('branch_url', slave_status['test_build_args'])
+        # The slave receives the public http URL for the branch.
+        self.assertEqual(
+            behavior.buildfarmjob.branch.composePublicURL(),
+            slave_status['test_build_args']['branch_url'])
 
     def test_getChroot(self):
         # _getChroot produces the current chroot for the current Ubuntu
@@ -170,6 +183,38 @@ class TestTranslationTemplatesBuildBehavior(TestTTBuildBehaviorBase):
         self.assertEqual(1, queue_item.destroySelf.call_count)
         self.assertEqual(1, builder.cleanSlave.call_count)
         self.assertEqual(0, behavior._uploadTarball.call_count)
+
+    def test_verifySlaveBuildID_success(self):
+        # TranslationTemplatesBuildJob.getName generates slave build ids
+        # that TranslationTemplatesBuildBehavior.verifySlaveBuildID
+        # accepts.
+        behavior = self.makeBehavior()
+        buildfarmjob = behavior.buildfarmjob
+        job = buildfarmjob.job
+
+        # The test is that this not raise CorruptBuildID (or anything
+        # else, for that matter).
+        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
+
+    def test_verifySlaveBuildID_handles_dashes(self):
+        # TranslationTemplatesBuildBehavior.verifySlaveBuildID can deal
+        # with dashes in branch names.
+        behavior = self.makeBehavior()
+        buildfarmjob = behavior.buildfarmjob
+        job = buildfarmjob.job
+        buildfarmjob.branch.name = 'x-y-z--'
+
+        # The test is that this not raise CorruptBuildID (or anything
+        # else, for that matter).
+        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
+
+    def test_verifySlaveBuildID_malformed(self):
+        behavior = self.makeBehavior()
+        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, 'huh?')
+
+    def test_verifySlaveBuildID_notfound(self):
+        behavior = self.makeBehavior()
+        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, '1-1')
 
 
 class TestTTBuildBehaviorTranslationsQueue(TestTTBuildBehaviorBase):

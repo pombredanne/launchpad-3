@@ -20,6 +20,7 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.errors import NoSuchFile
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
@@ -324,13 +325,11 @@ class BranchUpgradeJob(BranchJobDerived):
         upgrade_branch_path = tempfile.mkdtemp()
         try:
             upgrade_transport = get_transport(upgrade_branch_path)
+            upgrade_transport.mkdir('.bzr')
             source_branch_transport = get_transport(self.branch.getPullURL())
-            source_branch_transport.copy_tree_to_transport(upgrade_transport)
+            source_branch_transport.clone('.bzr').copy_tree_to_transport(
+                upgrade_transport.clone('.bzr'))
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
-
-            # If there's already a backup.bzr, delete it.
-            if upgrade_transport.has('backup.bzr'):
-                upgrade_transport.delete_tree('backup.bzr')
 
             # Perform the upgrade.
             upgrade(upgrade_branch.base)
@@ -347,9 +346,14 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch.unlock()
 
             # Move the branch in the old format to backup.bzr
-            upgrade_transport.delete_tree('backup.bzr')
+            try:
+                source_branch_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
             source_branch_transport.rename('.bzr', 'backup.bzr')
-            upgrade_transport.copy_tree_to_transport(source_branch_transport)
+            source_branch_transport.mkdir('.bzr')
+            upgrade_transport.clone('.bzr').copy_tree_to_transport(
+                source_branch_transport.clone('.bzr'))
 
             self.branch.requestMirror()
         finally:

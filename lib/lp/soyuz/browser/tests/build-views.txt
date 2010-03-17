@@ -161,6 +161,38 @@ retry it.
     >>> failed_build_view.user_can_retry_build
     True
 
+A person in a team that has rights to upload to a packageset can also retry it.
+
+So, create a user, a team, and the packageset:
+
+    >>> login('admin@canonical.com')
+    >>> from lp.soyuz.interfaces.packageset import IPackagesetSet
+    >>> from canonical.launchpad.interfaces import IArchivePermissionSet
+    >>> joe = factory.makePerson(email='joe@example.com', password='test')
+    >>> desktop = factory.makeTeam(name='desktop', owner=joe)
+    >>> main_archive = test_publisher.distroseries.main_archive
+    >>> rebuild_ps = getUtility(IPackagesetSet).new(
+    ...     u'rebuild', u'Test package set', desktop, 
+    ...     distroseries=test_publisher.distroseries)
+    >>> rebuild_spn = (failed_build.sourcepackagerelease.sourcepackagename,)
+    >>> rebuild_ps.add(rebuild_spn)
+
+Joe will not have permission to retry the build until we grant it:
+
+    >>> login('joe@example.com')
+    >>> failed_build_view = getMultiAdapter(
+    ...     (failed_build, empty_request), name="+index")
+    >>> failed_build_view.user_can_retry_build
+    False
+    >>> login('admin@canonical.com')
+    >>> perms = getUtility(IArchivePermissionSet).newPackagesetUploader(
+    ...     main_archive, desktop, rebuild_ps)
+    >>> login('joe@example.com')
+    >>> failed_build_view = getMultiAdapter(
+    ...     (failed_build, empty_request), name="+index")
+    >>> failed_build_view.user_can_retry_build
+    True
+
 See pagetests/soyuz/xx-build-record.txt for further information about
 the build-retry permission system.
 
