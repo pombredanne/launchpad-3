@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
+import resource
 import sys
 
 from bzrlib.commands import Command, register_command
@@ -89,6 +90,8 @@ class cmd_launchpad_server(Command):
         from lp.codehosting.bzrutils import install_oops_handler
         from lp.codehosting.vfs import get_lp_server
         install_oops_handler(user_id)
+        four_gig = int(4e9)
+        resource.setrlimit(resource.RLIMIT_AS, (four_gig, four_gig))
         lp_server = get_lp_server(
             int(user_id), branchfs_endpoint_url,
             upload_directory, mirror_directory)

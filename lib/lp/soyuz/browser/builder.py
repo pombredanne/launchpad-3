@@ -264,9 +264,10 @@ class BuilderHistoryView(BuildRecordsView):
 
     __used_for__ = IBuilder
 
+    page_title = 'Build history'
+
     @property
-    def page_title(self):
-        """Return a relevant page title for this view."""
+    def label(self):
         return smartquote(
             'Build history for "%s"' % self.context.title)
 
