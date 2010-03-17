@@ -262,10 +262,12 @@ We can invoke the cache updater directly on IDistroSeries:
 
   >>> updates = warty.updateCompletePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
-  DEBUG: Considering binary 'mozilla-firefox'
+  DEBUG: Considering binary 'at'
   ...
   DEBUG: Considering binary 'cdrkit'
   DEBUG: Creating new binary cache entry.
+  ...
+  DEBUG: Considering binary 'mozilla-firefox'
   ...
 
   >>> print updates

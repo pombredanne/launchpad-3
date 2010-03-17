@@ -19,19 +19,16 @@ from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import (
-    ContentNameField, NoneableDescription, ParticipatingPersonChoice,
-    PublicPersonChoice, Title)
+    ContentNameField, ParticipatingPersonChoice, Title)
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
-from lp.registry.interfaces.series import SeriesStatus
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers)
+from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
+from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     IHasMilestones, IMilestone)
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
@@ -92,9 +89,9 @@ class IProductSeriesEditRestricted(Interface):
         """Create a new milestone for this ProjectSeries."""
 
 
-class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                           IBugTarget, ISpecificationGoal, IHasMilestones,
-                           IHasOfficialBugTags):
+class IProductSeriesPublic(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -158,15 +155,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           'just returns the name.')),
         exported_as='display_name')
 
-    summary = exported(
-        NoneableDescription(title=_("Summary"),
-             description=_('A single paragraph that explains the goals of '
-                           'of this series and the intended users. '
-                           'For example: "The 2.0 series of Apache '
-                           'represents the current stable series, '
-                           'and is recommended for all new deployments".'),
-             required=True))
-
     releases = exported(
         CollectionField(
             title=_("An iterator over the releases in this "
@@ -200,28 +188,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                     "ordered by date expected."),
             readonly=True,
             value_type=Reference(schema=IMilestone)))
-
-    drivers = exported(
-        CollectionField(
-            title=_(
-                'A list of the people or teams who are drivers for this '
-                'series. This list is made up of any drivers or owners '
-                'from this project series, the project and if it exists, '
-                'the relevant project group.'),
-            readonly=True,
-            value_type=Reference(schema=IPerson)))
-
-    bug_supervisor = CollectionField(
-        title=_('Currently just a reference to the project bug '
-                'supervisor.'),
-        readonly=True,
-        value_type=Reference(schema=IPerson))
-
-    security_contact = PublicPersonChoice(
-        title=_('Security Contact'),
-        description=_('Currently just a reference to the project '
-                      'security contact.'),
-        required=False, vocabulary='ValidPersonOrTeam')
 
     branch = exported(
         ReferenceChoice(
@@ -316,7 +282,6 @@ class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
                      IStructuralSubscriptionTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
-
 
 
 class IProductSeriesSet(Interface):
