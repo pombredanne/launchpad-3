@@ -7,7 +7,7 @@ import sys
 import optparse
 
 from canonical.launchpad.scripts import logger, logger_options
-from lp.archiveuploader.poppyinterface import Hooks
+from lp.poppy.hooks import Hooks
 from lp.poppy.server import run_server
 
 
