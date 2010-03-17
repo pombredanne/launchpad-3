@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'TranslationBranchApprover',
+    'TranslationBuildApprover',
     ]
 
 import os.path
@@ -130,4 +131,11 @@ class TranslationBranchApprover(object):
             entry.setStatus(RosettaImportStatus.APPROVED,
                             getUtility(ILaunchpadCelebrities).rosetta_experts)
         return entry
+
+
+class TranslationBuildApprover(object):
+    """Automatic approval of automatically build translation files."""
+
+    def approve(self, entry):
+        """Approve a queue entry."""
 

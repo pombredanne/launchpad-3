@@ -16,8 +16,7 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from lp.testing import TestCaseWithFactory
-from lp.translations.model.translationbranchapprover import (
-    TranslationBranchApprover)
+from lp.translations.model.approver import TranslationBranchApprover
 
 
 def become_the_approver(layer):

@@ -6,8 +6,7 @@ from bazaar branches in Launchpad. It operates either on a product series or
 sourcepackagename within a distroseries but the productseries is the only use
 case in this scenario.
 
-    >>> from lp.translations.model.translationbranchapprover import (
-    ...     TranslationBranchApprover)
+    >>> from lp.translations.model.approver import TranslationBranchApprover
     >>> series = factory.makeProductSeries()
 
 The goal of the approval process is to match the files in the import queue

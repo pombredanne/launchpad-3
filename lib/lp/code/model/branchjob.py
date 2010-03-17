@@ -57,8 +57,7 @@ from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
 from lp.registry.interfaces.productseries import IProductSeriesSet
-from lp.translations.model.translationbranchapprover import (
-    TranslationBranchApprover)
+from lp.translations.model.approver import TranslationBranchApprover
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel)
