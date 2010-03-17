@@ -105,7 +105,7 @@ def authenticateEmail(mail):
         # verifySignature failed to verify the signature.
         raise InvalidSignature("Signature couldn't be verified: %s" % str(e))
 
-    for gpgkey in person.gpgkeys:
+    for gpgkey in person.gpg_keys:
         if gpgkey.fingerprint == sig.fingerprint:
             break
     else:

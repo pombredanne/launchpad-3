@@ -681,6 +681,10 @@ def findCopyright(dsc_file, source_dir, logger):
     for fullpath in glob.glob(globpath):
         if not os.path.exists(fullpath):
             continue
+        if os.stat(fullpath).st_size > 10485760:
+            yield UploadError(
+                "debian/copyright file too large, 10MiB max")
+            return
         if os.path.islink(fullpath):
             yield UploadError(
                 "Symbolic link for debian/copyright not allowed")

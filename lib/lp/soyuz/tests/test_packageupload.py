@@ -108,7 +108,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             self.test_publisher.ubuntutest.main_archive,
             self.test_publisher.breezy_autotest,
             PackagePublishingPocket.SECURITY,
-            self.test_publisher.person.gpgkeys[0])
+            self.test_publisher.person.gpg_keys[0])
 
         delayed_copy.addSource(source.sourcepackagerelease)
 
