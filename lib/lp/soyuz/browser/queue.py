@@ -485,9 +485,9 @@ class CompletePackageUpload:
     def package_sets(self):
         assert self.sourcepackagerelease, \
             "Can only be used on a source upload."
-        return ' '.join(ps.name for ps in
+        return ' '.join(sorted(ps.name for ps in
             getUtility(IPackagesetSet).setsIncludingSource(
                 self.sourcepackagerelease.sourcepackagename,
                 distroseries=self.distroseries,
-                direct_inclusion=True))
+                direct_inclusion=True)))
 
