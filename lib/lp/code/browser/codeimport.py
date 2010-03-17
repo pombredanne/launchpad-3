@@ -117,13 +117,13 @@ class CodeImportView(LaunchpadView):
     """The default view for `ICodeImport`.
 
     We present the CodeImport as a simple page listing all the details of the
-    import such as associated product and branch, who requested the import,
+    import such as target and branch, who requested the import,
     and so on.
     """
 
     def initialize(self):
         """See `LaunchpadView.initialize`."""
-        self.title = "Code Import for %s" % (self.context.product.name,)
+        self.title = "Code Import for %s" % (self.context.target.name,)
 
 
 class CodeImportBaseView(LaunchpadFormView):
@@ -343,8 +343,8 @@ class CodeImportNewView(CodeImportBaseView):
             <a href="%(product_url)s">%(product_name)s</a>
             with the name of
             <a href="%(branch_url)s">%(branch_name)s</a>.""",
-                       product_url=canonical_url(existing_branch.product),
-                       product_name=existing_branch.product.name,
+                       product_url=canonical_url(existing_branch.target),
+                       product_name=existing_branch.target.name,
                        branch_url=canonical_url(existing_branch),
                        branch_name=existing_branch.name))
 
