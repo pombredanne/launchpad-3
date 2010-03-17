@@ -778,6 +778,31 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         self.assertEqual(new_job.machine, None)
         self.assertSqlAttributeEqualsDate(new_job, 'date_due', UTC_NOW)
 
+    def test_failures_back_off(self):
+        # We wait for longer and longer between retrying failing imports, to
+        # make it less likely that an import is marked failing just because
+        # someone's DNS went down for a day.
+        running_job = self.makeRunningJob()
+        intervals = []
+        interval = running_job.code_import.effective_update_interval
+        expected_intervals = []
+        for i in range(config.codeimport.consecutive_failure_limit - 1):
+            expected_intervals.append(interval)
+            interval *= 2
+        # Fail an import a bunch of times and record how far in the future the
+        # next job was scheduled.
+        for i in range(config.codeimport.consecutive_failure_limit - 1):
+            code_import = running_job.code_import
+            getUtility(ICodeImportJobWorkflow).finishJob(
+                running_job, CodeImportResultStatus.FAILURE, None)
+            intervals.append(
+                code_import.import_job.date_due -
+                code_import.results[-1].date_job_started)
+            running_job = code_import.import_job
+            getUtility(ICodeImportJobWorkflow).startJob(
+                running_job, self.machine)
+        self.assertEqual(expected_intervals, intervals)
+
     def test_doesntCreateNewJobIfCodeImportNotReviewed(self):
         # finishJob() creates a new CodeImportJob for the given CodeImport,
         # unless the CodeImport has been suspended or marked invalid.

@@ -506,7 +506,7 @@ The batch size can be changed through the ws.size argument.
 
     >>> project_entries = sorted(
     ...     project_collection['entries'],
-    ...     key=itemgetter('display_name','name'))
+    ...     key=itemgetter('display_name', 'name'))
     >>> len(project_entries)
     25
 
