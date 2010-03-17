@@ -49,12 +49,12 @@ class TemplateNamesTest(unittest.TestCase):
 
     def test_make_name_invalid_chars(self):
         # Invalid characters are removed for template names.
-        self.assertEqual('my-domain', make_name('my - do@ #+*$&main'))
+        self.assertEqual('my-domain', make_name('my - do@ #*$&main'))
 
     def test_make_name_from_path(self):
         # Chain both methods for convenience.
         self.assertEqual('my-domain', make_name_from_path(
-            "po/My_Do+main/messages.pot"))
+            "po/My_Do@main/messages.pot"))
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

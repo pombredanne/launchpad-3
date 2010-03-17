@@ -30,7 +30,7 @@ removed.
     >>> from lp.translations.utilities.template import make_name
     >>> print make_name("My_Domain")
     my-domain
-    >>> print make_name("my +domain@home")
+    >>> print make_name("my #domain@home")
     mydomainhome
 
 Finally, the convenience function make_name_from_path chains the first two

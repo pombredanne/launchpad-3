@@ -10,11 +10,47 @@ __all__ = [
     ]
 
 
+import os
+
+from canonical.launchpad.validators.name import sanitize_name
+
+
+GENERIC_TEMPLATE_NAMES = [
+    'en-US.xpi',
+    'messages.pot',
+    'untitled.pot',
+    'template.pot',
+    ]
+GENERIC_TEMPLATE_DIRS = [
+    'po',
+    ]
+
+
 def make_domain(path):
-    pass
+    """Generate the translation domain name from the path of the template
+    file.
+
+    :returns: The translation domain name or an empty string if it could
+        not be determined.
+    """
+    dname, fname = os.path.split(path)
+    # Handle generic names and xpi cases
+    if fname not in GENERIC_TEMPLATE_NAMES:
+        domain, ext = os.path.splitext(fname)
+        return domain
+    dname1, dname2 = os.path.split(dname)
+    if dname2 not in GENERIC_TEMPLATE_DIRS:
+        return dname2
+    rest, domain = os.path.split(dname1)
+    return domain
+
 
 def make_name(domain):
-    pass
+    """Make a template name from a translation domain."""
+    return sanitize_name(domain.replace('_', '-').lower())
+
 
 def make_name_from_path(path):
-    pass
+    """Make a template name from a file path."""
+    return make_name(make_domain(path))
+

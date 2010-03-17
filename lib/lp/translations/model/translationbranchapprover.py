@@ -12,26 +12,17 @@ import os.path
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.validators.name import sanitize_name
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
+from lp.translations.utilities.template import (
+    make_domain, make_name, make_name_from_path)
 from lp.translations.utilities.translation_import import (
     TranslationImporter)
 
 
 class TranslationBranchApprover(object):
     """Automatic approval of translation import files."""
-
-    GENERIC_TEMPLATE_NAMES = [
-        'en-US.xpi',
-        'messages.pot',
-        'untitled.pot',
-        'template.pot',
-        ]
-    GENERIC_TEMPLATE_DIRS = [
-        'po',
-        ]
 
     def __init__(self, files, productseries=None,
                  distroseries=None, sourcepackagename=None):
@@ -66,7 +57,7 @@ class TranslationBranchApprover(object):
             if importer.isTemplateName(path):
                 potemplate = self._potemplateset.getPOTemplateByPath(path)
                 if potemplate is None:
-                    name = self.makeNameFromPath(path)
+                    name = make_name_from_path(path)
                     potemplate = self._potemplateset.getPOTemplateByName(name)
                 else:
                     name = potemplate.name
@@ -99,36 +90,6 @@ class TranslationBranchApprover(object):
         """
         return len(self._potemplates) - self._n_matched
 
-    @staticmethod
-    def makeDomain(path):
-        """Generate the translation domain name from the path of the template
-        file.
-
-        :returns: The translation domain name or an empty string if it could
-            not be determined.
-        """
-        dname, fname = os.path.split(path)
-        # Handle generic names and xpi cases
-        if fname not in TranslationBranchApprover.GENERIC_TEMPLATE_NAMES:
-            domain, ext = os.path.splitext(fname)
-            return domain
-        dname1, dname2 = os.path.split(dname)
-        if dname2 not in TranslationBranchApprover.GENERIC_TEMPLATE_DIRS:
-            return dname2
-        rest, domain = os.path.split(dname1)
-        return domain
-
-    @staticmethod
-    def makeName(domain):
-        """Make a template name from a translation domain."""
-        return sanitize_name(domain.replace('_', '-').lower())
-
-    @staticmethod
-    def makeNameFromPath(path):
-        """Make a template name from a file path."""
-        return TranslationBranchApprover.makeName(
-            TranslationBranchApprover.makeDomain(path))
-
     def approve(self, entry):
         """Check the given ImportQueueEntry against the internal approval
         list and set its values accordingly.
@@ -142,7 +103,7 @@ class TranslationBranchApprover(object):
         if not self._potemplates.has_key(entry.path):
             return entry
 
-        domain = self.makeDomain(entry.path)
+        domain = make_domain(entry.path)
         if self._potemplates[entry.path] is None:
             if self.unmatched_objects > 0:
                 # Unmatched entries in database, do not approve.
@@ -151,7 +112,7 @@ class TranslationBranchApprover(object):
             if domain == '':
                 return entry
             # No (possibly) matching entry found: create one.
-            name = self.makeName(domain)
+            name = make_name(domain)
             potemplate = self._potemplateset.new(
                 name, domain, entry.path, entry.importer)
             self._potemplates[entry.path] = potemplate
