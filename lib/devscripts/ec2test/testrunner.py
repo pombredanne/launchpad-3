@@ -400,6 +400,10 @@ class EC2TestRunner:
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database
         p('/var/launchpad/test/utilities/launchpad-database-setup $USER')
+        p('mkdir -p /var/tmp/launchpad_mailqueue/cur')
+        p('mkdir -p /var/tmp/launchpad_mailqueue/new')
+        p('mkdir -p /var/tmp/launchpad_mailqueue/tmp')
+        p('chmod -R a-w /var/tmp/launchpad_mailqueue/')
         # close ssh connection
         user_connection.close()
 
