@@ -253,7 +253,8 @@ class IPOTMsgSet(Interface):
     def resetCurrentTranslation(pofile, lock_timestamp):
         """Reset the currently used translation.
 
-        Reset means setting the "is_current"
+        This will set the "is_current" attribute to False and if the message
+        is diverge, will try to converge it.
         :param pofile: a `POFile` to dismiss suggestions from.
         :param lock_timestamp: the timestamp when we checked the values we
             want to update.

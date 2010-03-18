@@ -428,12 +428,14 @@ class BaseTranslationView(LaunchpadView):
 
             # If suggestions were forced and user has the rights to do it,
             # reset the current translation.
+            identical_suggestions = (translationmessage is not None
+                and self._areSuggestionsIdenticalToTranslations(
+                    translations, translationmessage.translations))
+            empty_suggestions = self._areSuggestionsEmpty(translations)
+            resetConditions = empty_suggestions or identical_suggestions
             if (force_suggestion and
                 self.user_is_official_translator and
-                (self._areSuggestionsEmpty(translations) or
-                 (translationmessage is not None and
-                  self._areSuggestionsIdenticalToTranslations(translations, 
-                    translationmessage.translations)))):
+                resetConditions):
                 potmsgset.resetCurrentTranslation(
                     self.pofile, self.lock_timestamp)
 
@@ -453,29 +455,23 @@ class BaseTranslationView(LaunchpadView):
 
     def _areSuggestionsEmpty(self, suggestions):
         """Return true if all suggestions are empty strings or None."""
-
-        empty = True
         for index in suggestions:
             if (suggestions[index] is not None and suggestions[index] != ""):
-                empty = False
-                break
-        return empty
+                return False
+        return True
 
     def _areSuggestionsIdenticalToTranslations(self, suggestions,
                                                translations):
         """Return true if suggestions are identical to translations.
-        
-        Suggestions are represented as a dictionary using plural form
-        as index, while translations are represented as a list ordered by
-        plural form.
-        """
 
-        identical = True     
+        Suggestions are represented as a dictionary using the plural form
+        as index, while translations are represented as a list ordered by
+        the plural form.
+        """
         for index in suggestions:
             if (suggestions[index] != translations[index]):
-                identical = False
-                break
-        return identical
+                return False
+        return True
 
     def _prepareView(self, view_class, current_translation_message, error):
         """Collect data and build a TranslationMessageView for display."""

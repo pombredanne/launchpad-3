@@ -884,7 +884,7 @@ class POTMsgSet(SQLBase):
         return matching_message
 
     def _isNoTranslationConflict(self, message, lock_timestamp):
-        """Checks if there is a translation conflict for message.
+        """Checks if there is a translation conflict for the message.
 
         If a translation conflict is detected, TranslationConflict is raised.
         """
@@ -910,7 +910,9 @@ class POTMsgSet(SQLBase):
             # Create an empty translation message.
             current = self.updateTranslation(
                 pofile, reviewer, [], False, lock_timestamp)
-        elif self._isNoTranslationConflict(current, lock_timestamp):
+        else:
+            # Check for translation conflicts and update review fields.
+            self._isNoTranslationConflict(current, lock_timestamp)
             current.reviewer = reviewer
             current.date_reviewed = lock_timestamp
 
@@ -930,8 +932,7 @@ class POTMsgSet(SQLBase):
             current.is_current = False
             # Converge the current translation only if it is diverged and not
             # imported.
-            if (current.potemplate is not None and
-                current.is_imported is False):
+            if current.potemplate is not None and not current.is_imported:
                 current.potemplate = None
             pofile.date_changed = UTC_NOW
 

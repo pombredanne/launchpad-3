@@ -4,7 +4,7 @@ Someone should review this translation usage
 Forcing suggestions
 -------------------
 
-When translation is restricted to a particular set of users
+When translating is restricted to a particular set of users
 (like Evolution product is restricted for Spanish), other users
 don't see a checkbox named 'Someone should review this translation'.
 
@@ -64,7 +64,7 @@ Reseting translations
 
 If the 'Someone should review this translation' checkbox is used without
 adding any new suggestions or adding an empty string, the current translation
-will be resetted causing all suggestions entered for this message to be listed
+will be reset causing all suggestions entered for this message to be listed
 again.
 
 A new translation is entered and checked that it was saved as the current

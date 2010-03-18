@@ -904,7 +904,7 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
 
 
 class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
-    """Test retrieval and dismissal of translation suggestions."""
+    """Test resetting the current translation."""
 
     layer = ZopelessDatabaseLayer
 
@@ -931,7 +931,7 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         self.pofile = self.factory.makePOFile('eo', self.potemplate)
 
     def test_resetCurrentTranslation_shared(self):
-        # Reseting a shared current translation will change iscurrent=False
+        # Resetting a shared current translation will change iscurrent=False
         # and there will be no other current translations for this POTMsgSet.
 
         translation = self.factory.makeTranslationMessage(
@@ -949,7 +949,7 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_not_imported(self):
-        # Reseting a diverged current translation that was not imported, will
+        # Resettting a diverged current translation that was not imported, will
         # change is_current to False and will make it shared.
 
         translation = self.factory.makeTranslationMessage(
@@ -967,7 +967,7 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_imported(self):
-        # Reseting a diverged current translation that was imported in
+        # Resetting a diverged current translation that was imported in
         # Launchpad will change iscurrent to False but the translation
         # message will be still diverged.
 
@@ -983,7 +983,7 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         self.assertTrue(current is None)
         self.assertFalse(translation.is_current)
         self.assertTrue(translation.is_imported)
-        self.assertTrue(translation.potemplate is not None)
+        self.assertFalse(translation.potemplate is None)
 
 
 class TestPOTMsgSetCornerCases(TestCaseWithFactory):
