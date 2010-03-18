@@ -178,6 +178,24 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
                 RosettaImportStatus.APPROVED,
                 RosettaImportStatus.NEEDS_REVIEW])
 
+    def test_approve_by_path(self):
+        # A file will be targeted to an existing template if the paths match.
+        filenames = [
+            'po-domain1/domain1.pot',
+            'po-domain2/domain2.pot',
+            ]
+        series = self.factory.makeProductSeries()
+        domain1_pot = self.factory.makePOTemplate(
+            productseries=series, name='name1', path=filenames[0])
+        domain2_pot = self.factory.makePOTemplate(
+            productseries=series, name='name2', path=filenames[1])
+        approver = TranslationBuildApprover(filenames, productseries=series)
+        entries = self._makeApprovedEntries(series, approver, filenames)
+
+        self._assertStatus(entries, [RosettaImportStatus.APPROVED])
+        self.assertEqual(domain1_pot, entries[0].potemplate)
+        self.assertEqual(domain2_pot, entries[1].potemplate)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
