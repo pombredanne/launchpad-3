@@ -9,7 +9,7 @@ TranslationBranchApprover.
     >>> productseries = factory.makeProductSeries()
     >>> importer_person = factory.makePerson()
     >>> from lp.translations.model.approver import TranslationBuildApprover
-    >>> approver = TranslationBuildApprover()
+    >>> approver = TranslationBuildApprover(productseries=productseries)
 
 It will approve all template files that it can derive a name from.
 
@@ -33,7 +33,8 @@ already a template. A template with the name of the product is created.
     >>> empty_product = factory.makeProduct(name='fooproduct')
     >>> empty_series = factory.makeProductSeries(product=empty_product)
     >>> first_entry = makeQueueEntry('po/messages.pot', empty_series)
-    >>> first_entry = approver.approve(first_entry)
+    >>> empty_approver = TranslationBuildApprover(productseries=empty_series)
+    >>> first_entry = empty_approver.approve(first_entry)
     >>> print first_entry.status.title
     Approved
     >>> print first_entry.potemplate.domain

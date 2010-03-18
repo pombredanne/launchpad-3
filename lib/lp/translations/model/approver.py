@@ -155,6 +155,11 @@ class TranslationBuildApprover(object):
 
     def approve(self, entry):
         """Approve a queue entry."""
+        assert (
+            entry.productseries == self._potemplateset.productseries and
+            entry.distroseries == self._potemplateset.distroseries and
+            entry.sourcepackagename == self._potemplateset.sourcepackagename
+            ),("Entry must be for same target as approver.")
         name = make_name_from_path(entry.path)
         potemplate = self._potemplateset.getPOTemplateByPath(entry.path)
         if potemplate is None:
