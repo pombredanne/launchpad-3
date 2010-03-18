@@ -137,7 +137,8 @@ class TranslationBuildApprover(object):
     """Automatic approval of automatically build translation files."""
 
     def __init__(
-        self, productseries=None, distroseries=None, sourcepackagename=None):
+        self, filenames,
+        productseries=None, distroseries=None, sourcepackagename=None):
         """Bind the new approver to a productseries or sourcepackagename."""
         assert((productseries is not None and
                 distroseries is None and sourcepackagename is None) or
