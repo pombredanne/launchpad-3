@@ -346,7 +346,7 @@ clean: clean_js
 			  /var/tmp/zeca
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
-	[ -w /var/tmp/launchpad_mailqueue ] && $(RM) -rf /var/tmp/launchpad_mailqueue
+	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
 
 
 realclean: clean
