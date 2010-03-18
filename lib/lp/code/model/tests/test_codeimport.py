@@ -10,6 +10,7 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.codehosting.codeimport.tests.test_workermonitor import (
     nuke_codeimport_sample_data)
@@ -127,7 +128,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         self.assertIsNot(None, code_import.import_job)
 
     def test_junk_code_import_rejected(self):
-        """A new hg import is always reviewed by default."""
+        """An import targetting someone's +junk is disallowed"""
         registrant = self.factory.makePerson()
         self.assertRaises(AssertionError, CodeImportSet().new,
             registrant=registrant,
@@ -136,6 +137,26 @@ class TestCodeImportCreation(TestCaseWithFactory):
             rcs_type=RevisionControlSystems.HG,
             url=self.factory.getUniqueURL(),
             review_status=None)
+
+    def test_create_source_package_import(self):
+        """Test that we can create an import targetting a source package."""
+        registrant = self.factory.makePerson()
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        code_import = CodeImportSet().new(
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        code_import = removeSecurityProxy(code_import)
+        self.assertEqual(registrant, code_import.registrant)
+        self.assertEqual(registrant, code_import.branch.owner)
+        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(source_package, code_import.branch.sourcepackage)
+        # And a job is still created
+        self.assertIsNot(None, code_import.import_job)
 
 
 class TestCodeImportDeletion(TestCaseWithFactory):
@@ -588,7 +609,6 @@ def make_active_import(factory, project_name=None, product_name=None,
 
 def make_import_active(factory, code_import, last_update=None):
     """Make `code_import` active as per `ICodeImportSet.getActiveImports`."""
-    from zope.security.proxy import removeSecurityProxy
     naked_import = removeSecurityProxy(code_import)
     if naked_import.review_status != CodeImportReviewStatus.REVIEWED:
         naked_import.updateFromData(
@@ -603,7 +623,6 @@ def make_import_active(factory, code_import, last_update=None):
 
 def deactivate(project_or_product):
     """Mark `project_or_product` as not active."""
-    from zope.security.proxy import removeSecurityProxy
     removeSecurityProxy(project_or_product).active = False
 
 
