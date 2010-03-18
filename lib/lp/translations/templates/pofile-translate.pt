@@ -18,12 +18,28 @@
       registerLaunchpadFunction(insertAllExpansionButtons);
 
       LPS.use('lp.pofile', function(Y) {
+        try {
           Y.on('domready', Y.lp.pofile.updateNotificationBox);
+        } catch (e) {
+          Y.log(e, "error");
+        }
+        try {
           Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
+        } catch (e) {
+          Y.log(e, "error");
+        }
+        try {
           Y.on('domready', Y.lp.pofile.initializeKeyBindings);
+        } catch (e) {
+          Y.log(e, "error");
+        }
+        try {
           Y.on('domready', function(e) {
             Y.lp.pofile.setFocus(autofocus_field);
           });
+        } catch (e) {
+          Y.log(e, "error");
+        }
       });
 
 
