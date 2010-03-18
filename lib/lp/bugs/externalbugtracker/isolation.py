@@ -5,43 +5,61 @@
 
 __metaclass__ = type
 __all__ = [
-    'is_transaction_in_progress',
+    'check_no_transaction',
     'ensure_no_transaction',
+    'is_transaction_in_progress',
     ]
-
-import psycopg2.extensions
 
 from functools import wraps
 
+import psycopg2.extensions
+
+from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-
-TRANSACTION_IN_PROGRESS_STATUSES = frozenset((
-        psycopg2.extensions.TRANSACTION_STATUS_ACTIVE,
-        psycopg2.extensions.TRANSACTION_STATUS_INTRANS,
-        psycopg2.extensions.TRANSACTION_STATUS_INERROR,
-    ))
+TRANSACTION_IN_PROGRESS_STATUSES = {
+    psycopg2.extensions.TRANSACTION_STATUS_ACTIVE: 'is active',
+    psycopg2.extensions.TRANSACTION_STATUS_INTRANS: 'has started',
+    psycopg2.extensions.TRANSACTION_STATUS_INERROR: 'has errored',
+    }
 
 
 class TransactionInProgress(Exception):
-    """Transactions may not be open at the same time as a blocking
-    operation."""
+    """Transactions may not be open at this time."""
+
+
+def gen_store_statuses():
+    """Yields (store_name, txn_status) tuples for all stores."""
+    for name, store in getUtility(IZStorm).iterstores():
+        raw_connection = store._connection._raw_connection
+        if raw_connection is None:
+            # Not connected.
+            yield name, None
+        else:
+            yield name, raw_connection.get_transaction_status()
 
 
 def is_transaction_in_progress():
-    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    raw_connection = store._connection._raw_connection
-    transaction_status = raw_connection.get_transaction_status()
-    return (transaction_status in TRANSACTION_IN_PROGRESS_STATUSES)
+    """Return True if a transaction is in progress for any store."""
+    return any(
+        status in TRANSACTION_IN_PROGRESS_STATUSES
+        for name, status in gen_store_statuses())
+
+
+def check_no_transaction():
+    """Raises TransactionInProgress if transaction is in progress."""
+    for name, status in gen_store_statuses():
+        if status in TRANSACTION_IN_PROGRESS_STATUSES:
+            desc = TRANSACTION_IN_PROGRESS_STATUSES[status]
+            raise TransactionInProgress(
+                "Transaction %s in %s store." % (desc, name))
 
 
 def ensure_no_transaction(func):
+    """Decorator that calls check_no_transaction before function."""
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if is_transaction_in_progress():
-            raise TransactionInProgress()
+        check_no_transaction()
         return func(*args, **kwargs)
     return wrapper
