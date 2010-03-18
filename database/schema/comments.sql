@@ -326,8 +326,8 @@ COMMENT ON COLUMN BugWatch.remote_lp_bug_id IS 'The bug in Launchpad that the re
 COMMENT ON TABLE BugWatchActivity IS 'This table contains a record of each update for a given bug watch. This allows us to track whether a given update was successful or not and, if not, the details of the error which caused the update to fail.';
 COMMENT ON COLUMN BugWatchActivity.bug_watch IS 'The bug_watch to which this activity entry relates.';
 COMMENT ON COLUMN BugWatchActivity.activity_date IS 'The datetime at which the activity occurred.';
-COMMENT ON COLUMN BugWatchActivity.error_type IS 'The type of error that caused the update to file. Legal values are defined in the BugWatchErrorType enumeration. An update is considered successful if its error_type is NULL.';
-COMMENT ON COLUMN BugWatchActivity.error_message IS 'The message (if any) associated with the error that caused the update to fail.';
+COMMENT ON COLUMN BugWatchActivity.result IS 'The result of the update. Legal values are defined in the BugWatchErrorType enumeration. An update is considered successful if its error_type is NULL.';
+COMMENT ON COLUMN BugWatchActivity.message IS 'The message (if any) associated with the update.';
 COMMENT ON COLUMN BugWatchActivity.oops_id IS 'The OOPS id, if any, associated with the error that caused the update to fail.';
 
 
