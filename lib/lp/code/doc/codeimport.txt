@@ -21,6 +21,7 @@ Code import set utility
 CodeImports are created and found using the ICodeImportSet interface,
 which is registered as a utility.
 
+    >>> from lp.code.interfaces.branchtarget import IBranchTarget
     >>> from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
