@@ -321,6 +321,16 @@ COMMENT ON COLUMN BugWatch.remote_importance IS 'The importance of the bug as re
 COMMENT ON COLUMN BugWatch.remote_lp_bug_id IS 'The bug in Launchpad that the remote bug is pointing at. This can be different than the BugWatch.bug column, since the same remote bug can be linked from multiple bugs in Launchpad, but the remote bug can only link to a single bug in Launchpad. The main use case for this column is to avoid having to query the remote bug tracker for this information, in order to decide whether we need to give this information to the remote bug tracker.';
 
 
+-- BugWatchActivity
+
+COMMENT ON TABLE BugWatchActivity IS 'This table contains a record of each update for a given bug watch. This allows us to track whether a given update was successful or not and, if not, the details of the error which caused the update to fail.';
+COMMENT ON COLUMN BugWatchActivity.bug_watch IS 'The bug_watch to which this activity entry relates.';
+COMMENT ON COLUMN BugWatchActivity.activity_date IS 'The datetime at which the activity occurred.';
+COMMENT ON COLUMN BugWatchActivity.result IS 'The result of the update. Legal values are defined in the BugWatchErrorType enumeration. An update is considered successful if its error_type is NULL.';
+COMMENT ON COLUMN BugWatchActivity.message IS 'The message (if any) associated with the update.';
+COMMENT ON COLUMN BugWatchActivity.oops_id IS 'The OOPS id, if any, associated with the error that caused the update to fail.';
+
+
 -- BugAffectsPerson
 
 COMMENT ON TABLE BugAffectsPerson IS 'This table maintains a mapping between bugs and users indicating that they are affected by that bug. The value is calculated and cached in the Bug.users_affected_count column.';
