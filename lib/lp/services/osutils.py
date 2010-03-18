@@ -43,6 +43,11 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
     # Poll until the process has ended.
     for i in range(num_polls):
         try:
+            # Reap the child process. Without this, os.kill will think that
+            # the child process is still running.
+            os.waitpid(pid, os.WNOHANG)
+            # Don't send a signal, but raise an error if the process doesn't
+            # exist. That is, if the process has been terminated.
             os.kill(pid, 0)
             time.sleep(poll_interval)
         except OSError, e:
