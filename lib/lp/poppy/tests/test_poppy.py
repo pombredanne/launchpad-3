@@ -13,27 +13,24 @@ import tempfile
 import unittest
 import StringIO
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import ZopelessDatabaseLayer
 from lp.poppy.tests import PoppyTestSetup
+from lp.testing import TestCase
 
 
-class TestPoppy(unittest.TestCase):
+class TestPoppy(TestCase):
     """Test if poppy.py daemon works properly."""
-
-    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up poppy in a temp dir."""
+        super(TestPoppy, self).setUp()
         self.root_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root_dir)
         self.port = 3421
         self.poppy = PoppyTestSetup(self.root_dir, port=self.port,
                                     cmd='echo CLOSED')
         self.poppy.startPoppy()
-
-    def tearDown(self):
-        """Purge poppy root directory."""
-        self.poppy.killPoppy()
-        shutil.rmtree(self.root_dir)
+        self.addCleanup(self.poppy.killPoppy)
 
     def getFTPConnection(self, login=True, user="ubuntu", password=""):
         """Build and return a FTP connection to the current poppy.
