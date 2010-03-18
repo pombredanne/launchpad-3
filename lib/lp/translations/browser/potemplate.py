@@ -60,6 +60,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -510,7 +511,7 @@ class POTemplateViewPreferred(POTemplateView):
         return POTemplateView.pofiles(self, preferred_only=True)
 
 
-class POTemplateEditView(LaunchpadEditFormView):
+class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
@@ -538,43 +539,9 @@ class POTemplateEditView(LaunchpadEditFormView):
             naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
     @property
-    def cancel_url(self):
-        if self.next_url == "DIRTY_HACK":
-            return canonical_url(self.context)
-        else:
-            return self.next_url
-
-    @property
-    def next_url(self):
-        """See `LaunchpadEditFormView`."""
-        # The referer header we want is only available before the view's
-        # form submits to itself. This field is a hidden input in the form.
-        referrer = self.request.form.get('next_url')
-
-        if referrer is None:
-            referrer = self.request.getHeader('referer')
-            # If we don't have a referrer in the HTTP header, if referrer
-            # contains the template name or if referrer is outside of our
-            # website, getting the next_url is delayed until the
-            # form is submitted.
-            # It is not computed before the submission, since from this form
-            # the template name can be changed and if referrer url depends on
-            # it, renaming will make the referrer an invalid URL.
-            if (referrer is None
-                or self.context.name in referrer
-                or not referrer.startswith(self.request.getApplicationURL())):
-                    # XXX: AdiRoiban 2010-02-32 bug=526998
-                    # Since 'referer' can depend on the object name, and
-                    # since from this form we can rename the object
-                    # I was forced  to use this dirty hack.
-                    return "DIRTY_HACK"
-
-        if (referrer is not None
-            and referrer.startswith(self.request.getApplicationURL())
-            and referrer != self.request.getHeader('location')):
-            return referrer
-        else:
-            return canonical_url(self.context)
+    def _return_attribute_name(self):
+        """See 'ReturnToReferrerMixin'."""
+        return "name"
 
 
 class POTemplateAdminView(POTemplateEditView):

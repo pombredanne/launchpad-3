@@ -1,7 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Lucille's primary interface to the upload mechanism
+__metaclass__ = type
 
 import logging
 import shutil
@@ -11,17 +11,19 @@ import time
 
 from contrib.glock import GlobalLock
 
+
 class PoppyInterfaceFailure(Exception):
     pass
 
-class PoppyInterface:
+
+class Hooks:
 
     clients = {}
 
     def __init__(self, targetpath, logger, allow_user, cmd=None,
                  targetstart=0, perms=None):
         self.targetpath = targetpath
-        self.logger = logging.getLogger("%s.PoppyInterface" % logger.name)
+        self.logger = logging.getLogger("%s.Hooks" % logger.name)
         self.cmd = cmd
         self.allow_user = allow_user
         self.targetcount = targetstart
