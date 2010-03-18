@@ -46,7 +46,7 @@ class PoppyTestSetup:
         """Kill the poppy instance dead."""
         if not self.alive:
             return
-        two_stage_kill(self.process.pid, num_polls=500)
+        two_stage_kill(self.process.pid)
         self.running = False
 
     @property
