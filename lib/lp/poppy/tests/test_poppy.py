@@ -7,13 +7,10 @@ __metaclass__ = type
 
 import ftplib
 import os
-import shutil
 import socket
-import tempfile
 import unittest
 import StringIO
 
-from canonical.testing import ZopelessDatabaseLayer
 from lp.poppy.tests import PoppyTestSetup
 from lp.testing import TestCase
 
@@ -24,8 +21,7 @@ class TestPoppy(TestCase):
     def setUp(self):
         """Set up poppy in a temp dir."""
         super(TestPoppy, self).setUp()
-        self.root_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.root_dir)
+        self.root_dir = self.makeTemporaryDirectory()
         self.port = 3421
         self.poppy = PoppyTestSetup(self.root_dir, port=self.port,
                                     cmd='echo CLOSED')
