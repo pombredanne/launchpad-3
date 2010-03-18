@@ -875,6 +875,15 @@ class BugWatchUpdater(object):
             except Exception, error:
                 # Restart transaction before recording the error.
                 self.txn.abort()
+                # Send the error to the log.
+                self.error(
+                    "Failure updating bug %r on %s (local bugs: %s)." %
+                            (remote_bug_id, bug_tracker_url, local_ids),
+                    properties=[
+                        ('URL', remote_bug_url),
+                        ('bug_id', remote_bug_id),
+                        ('local_ids', local_ids)] +
+                        self._getOOPSProperties(remotesystem))
                 self.txn.begin()
                 # We record errors against the bug watches and update
                 # their lastchecked dates so that we don't try to
@@ -886,16 +895,6 @@ class BugWatchUpdater(object):
                 # We need to commit the transaction, in case the next
                 # bug fails to update as well.
                 self.txn.commit()
-                # Send the error to the log too.
-                self.error(
-                    "Failure updating bug %r on %s (local bugs: %s)." %
-                            (remote_bug_id, bug_tracker_url, local_ids),
-                    properties=[
-                        ('URL', remote_bug_url),
-                        ('bug_id', remote_bug_id),
-                        ('local_ids', local_ids)] +
-                        self._getOOPSProperties(remotesystem))
-
             else:
                 # All is well, save it now.
                 self.txn.commit()
@@ -1141,9 +1140,9 @@ class BugWatchUpdater(object):
 
     def warning(self, message, properties=None, info=None):
         """Record a warning related to this bug tracker."""
-        report_warning(message, properties, info)
+        oops_info = report_warning(message, properties, info)
         # Also put it in the log.
-        self.log.warning(message)
+        self.log.warning("%s (%s)" % (message, oops_info.oopsid))
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
