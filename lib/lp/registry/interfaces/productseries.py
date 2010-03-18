@@ -301,7 +301,7 @@ class IProductSeriesSet(Interface):
 
     def findByTranslationsImportBranch(
             branch, force_translations_upload=False):
-        """Find all series importing from branch.
+        """Find all series importing translations from the branch.
 
         Returns all product series that have the given branch set as their
         branch and that have translation imports enabled on it.

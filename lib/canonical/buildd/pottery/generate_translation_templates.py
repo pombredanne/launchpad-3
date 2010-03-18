@@ -52,14 +52,14 @@ class GenerateTranslationTemplates:
         rev_tree = branch.basis_tree()
         export(rev_tree, self.branch_dir)
 
-    def _make_tarball(self, files):
-        """Put files into tarball."""
+    def _makeTarball(self, files):
+        """Put the given files into a tarball in the working directory."""
         tarname = os.path.join(self.work_dir, self.result_name)
         tarball = tarfile.open(tarname, 'w|gz')
+        files = [name for name in files if not name.endswith('/')]
         for path in files:
-            if path.endswith('/'):
-                continue
-            tarball.add(os.path.join(self.branch_dir, path), path)
+            full_path = os.path.join(self.branch_dir, path)
+            tarball.add(full_path, path)
         tarball.close()
 
     def generate(self):
@@ -67,7 +67,7 @@ class GenerateTranslationTemplates:
         self._getBranch()
         pots = intltool.generate_pots(self.branch_dir)
         if len(pots) > 0:
-            self._make_tarball(pots)
+            self._makeTarball(pots)
         return 0
 
 

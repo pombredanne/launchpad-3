@@ -8,6 +8,7 @@ import os
 from unittest import TestLoader
 
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 
 from canonical.buildd.translationtemplates import (
     TranslationTemplatesBuildManager, TranslationTemplatesBuildState)
@@ -52,8 +53,7 @@ class MockBuildManager(TranslationTemplatesBuildManager):
         self.commands.append([path]+command)
         return 0
 
-    def gatherResults(self):
-        pass
+    gatherResults = FakeMethod()
 
 
 class TestTranslationTemplatesBuildManagerIteration(TestCase):

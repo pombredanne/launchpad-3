@@ -387,7 +387,6 @@ If there is a project on the product, we would expect the project owner:
 If there is NO project on the product, then we expect the product owner:
 
     >>> product.project = None
-    >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     mark
@@ -397,7 +396,7 @@ Now lets put the project back:
     >>> product.project = project.id
     >>> flush_database_updates()
 
-And lets see what happens if we have explicit drivers:
+Edgar and cprov will be the drivers.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> edgar = getUtility(IPersonSet).getByName('edgar')
@@ -406,7 +405,6 @@ Edgar becomes the driver of the project group and thus also drives the
 series.
 
     >>> project.driver = edgar
-    >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     edgar
@@ -414,7 +412,6 @@ series.
 In addition cprov is made driver of the series. Both are drivers now.
 
     >>> series.driver = cprov
-    >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     cprov
@@ -424,16 +421,14 @@ With just a driver on the series, the owner of the project group is reported
 as driver, too.
 
     >>> project.driver = None
-    >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     carlos
     cprov
 
-Without a poject group, the driver role falls back to the prouct owner.
+Without a project group, the driver role falls back to the product owner.
 
     >>> product.project = None
-    >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     cprov

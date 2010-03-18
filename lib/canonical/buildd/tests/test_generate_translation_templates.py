@@ -98,7 +98,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         generator = GenerateTranslationTemplates(
             branchdir, self.result_name, workdir)
         generator._getBranch()
-        generator._make_tarball(potnames)
+        generator._makeTarball(potnames)
         tar = tarfile.open(os.path.join(workdir, self.result_name), 'r|*')
         tarnames = tar.getnames()
         tar.close()
