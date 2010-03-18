@@ -524,8 +524,8 @@ class PullingImportWorker(ImportWorker):
     def getExtraPullArgs(self):
         """Return extra arguments to `InterBranch.pull`.
 
-        This method only really exists because only bzr-git supports the
-        'limit' argument to this method.  When bzr-svn and bzr-hg plugin do
+        This method only really exists because only bzr-git and bzr-svn
+        support the 'limit' argument to this method.  When bzr-hg plugin does
         too, this method can go away.
         """
         return {}
@@ -548,12 +548,13 @@ class PullingImportWorker(ImportWorker):
             else:
                 raise NotBranchError(self.source_details.url)
             foreign_branch = format.open(transport).open_branch()
+            foreign_branch_tip = foreign_branch.last_revision()
             inter_branch = InterBranch.get(foreign_branch, bazaar_tree.branch)
             pull_result = inter_branch.pull(
                 overwrite=True, **self.getExtraPullArgs())
             self.pushBazaarWorkingTree(bazaar_tree)
             last_imported_revison = bazaar_tree.branch.last_revision()
-            if last_imported_revison == foreign_branch.last_revision():
+            if last_imported_revison == foreign_branch_tip:
                 if pull_result.old_revid != pull_result.new_revid:
                     return CodeImportWorkerExitCode.SUCCESS
                 else:
@@ -651,6 +652,10 @@ class HgImportWorker(PullingImportWorker):
 
 class BzrSvnImportWorker(PullingImportWorker):
     """An import worker for importing Subversion via bzr-svn."""
+
+    def getExtraPullArgs(self):
+        """See `PullingImportWorker.getExtraPullArgs`."""
+        return {'limit': config.codeimport.revisions_import_limit}
 
     @property
     def format_classes(self):

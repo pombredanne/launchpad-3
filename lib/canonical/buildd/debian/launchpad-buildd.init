@@ -29,7 +29,7 @@ d_start() {
     CONF=$1
     PIDFILE="$PIDROOT"/"$CONF".pid
     LOGFILE="$LOGROOT"/"$CONF".log
-    su - buildd -c "BUILDD_SLAVE_CONFIG=$CONFROOT/$CONF PYTHONPATH=/usr/share/launchpad-buildd twistd --no_save --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE"
+    su - buildd -c "BUILDD_SLAVE_CONFIG=$CONFROOT/$CONF PYTHONPATH=/usr/share/launchpad-buildd twistd --no_save --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE --umask 022"
 }
 
 #

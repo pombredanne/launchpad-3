@@ -95,15 +95,16 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
-    WARNING:root:Builder 'Lost Building Slave' rescued from
-    '1000-10000': 'Object not found'
+    WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000':
+    'Build 1000 is not available: 'Object not found''
 
 Then a lost slave in status 'WAITING':
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
-    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'Object not found'
+    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000':
+    'Build 1000 is not available: 'Object not found''
 
 Both got rescued, as expected.
 
