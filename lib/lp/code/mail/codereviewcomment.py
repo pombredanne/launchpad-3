@@ -15,8 +15,7 @@ from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.interfaces.branchmergeproposal import (
     ICodeReviewCommentEmailJobSource)
-from lp.services.mail import append_footer
-from lp.services.mail.sendmail import format_address
+from lp.services.mail.sendmail import append_footer, format_address
 
 
 def send(comment, event):
