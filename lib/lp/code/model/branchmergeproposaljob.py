@@ -52,8 +52,8 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, ICodeReviewCommentEmailJob,
     ICodeReviewCommentEmailJobSource, ICreateMergeProposalJob,
     ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
-    IMergeProposalCreatedJobSource, IMergeProposalUpdatedJob,
-    IMergeProposalUpdatedJobSource, IReviewRequestedEmailJob,
+    IMergeProposalCreatedJobSource, IMergeProposalUpdatedEmailJob,
+    IMergeProposalUpdatedEmailJobSource, IReviewRequestedEmailJob,
     IReviewRequestedEmailJobSource, IUpdatePreviewDiffJobSource,
     )
 from lp.code.mail.branch import RecipientReason
@@ -501,16 +501,16 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
         return recipients
 
 
-class MergeProposalUpdatedJob(BranchMergeProposalJobDerived):
+class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
     """Send email to the subscribers informing them of updated fields.
 
     When attributes of the merge proposal are edited, we inform the
     subscribers.
     """
 
-    implements(IMergeProposalUpdatedJob)
+    implements(IMergeProposalUpdatedEmailJob)
 
-    classProvides(IMergeProposalUpdatedJobSource)
+    classProvides(IMergeProposalUpdatedEmailJobSource)
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED
 

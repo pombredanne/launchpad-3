@@ -18,8 +18,8 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
-    'IMergeProposalUpdatedJob',
-    'IMergeProposalUpdatedJobSource',
+    'IMergeProposalUpdatedEmailJob',
+    'IMergeProposalUpdatedEmailJobSource',
     'IReviewRequestedEmailJob',
     'IReviewRequestedEmailJobSource',
     'IUpdatePreviewDiffJobSource',
@@ -634,13 +634,13 @@ class IReviewRequestedEmailJobSource(IJobSource):
         """
 
 
-class IMergeProposalUpdatedJob(IRunnableJob):
+class IMergeProposalUpdatedEmailJob(IRunnableJob):
     """Interface for the job to sends email about merge proposal updates."""
 
     xxx = Attribute('The xxx.')
 
 
-class IMergeProposalUpdatedJobSource(IJobSource):
+class IMergeProposalUpdatedEmailJobSource(IJobSource):
     """Create or retrieve jobs that email about merge proposal updates."""
 
     def create(xxx):
