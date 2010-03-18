@@ -45,7 +45,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
                 status = statuslist[index]
             self.assertEqual(
                 status, entry.status,
-                "Entry %s was not '%s'." % (entry.path, entry.status.title))
+                "Entry %s was not '%s'." % (entry.path, status.title))
 
     def test_approve_all_new(self):
         # The happy approval case, all new templates.
@@ -125,14 +125,28 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         filenames = [
             'po/messages.pot',
             ]
-        product = self.factory.makeProduct(name='fooproduct')
-        series = product.getSeries('trunk')
+        series = self.factory.makeProductSeries()
         pot = self.factory.makePOTemplate(productseries=series)
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
         self._assertStatus(entries, [RosettaImportStatus.APPROVED])
         self.assertEqual(pot, entries[0].potemplate)
+
+    def test_approve_generic_name_multiple(self):
+        # Generic names in combination with others don't get approved.
+        filenames = [
+            'po/messages.pot',
+            'mydomain/mydomain.pot',
+            ]
+        series = self.factory.makeProductSeries()
+        approver = TranslationBuildApprover(filenames, productseries=series)
+        entries = self._makeApprovedEntries(series, approver, filenames)
+
+        self._assertStatus(
+            entries,
+            [RosettaImportStatus.NEEDS_REVIEW, RosettaImportStatus.APPROVED])
+        self.assertEqual('mydomain', entries[1].potemplate.name)
 
 
 def test_suite():
