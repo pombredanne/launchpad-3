@@ -62,7 +62,7 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
     def gatherResults(self):
         """Gather the results of the build and add them to the file cache."""
         # The file is inside the chroot, in the home directory of the buildd
-        # user. Should be save to assume the home dirs are named identically.
+        # user. Should be safe to assume the home dirs are named identically.
         path = os.path.join(self._chroot_path, self.home, self._resultname)
         if os.access(path, os.F_OK):
             self._slave.addWaiting(path)
@@ -80,7 +80,7 @@ class TranslationTemplatesBuildManager(DebianBuildManager):
             self.doUnmounting()
 
     def iterate_GENERATE(self, success):
-        """Template generation finshed."""
+        """Template generation finished."""
         if success == 0:
             # It worked! Now let's bring in the harvest.
             self.gatherResults()

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ProductSeries and ProductSeriesSet."""
@@ -21,107 +21,109 @@ class TestProductSeriesDrivers(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def setUp(self):
-        """Setup a ProjectGroup, a Product and a ProductSeries."""
-        super(TestProductSeriesDrivers, self).setUp()
-        self.projectgroup = self.factory.makeProject()
+    def _makeProductAndSeries(self, with_project_group=True):
+        """Setup Product and a ProductSeries and an optional project group."""
+        if with_project_group:
+            self.projectgroup = self.factory.makeProject()
+        else:
+            self.projectgroup = None
         self.product = self.factory.makeProduct(project=self.projectgroup)
-        self.series = self.factory.makeProductSeries(product=self.product)
+        self.series = self.product.getSeries('trunk')
 
     def test_drivers_nodrivers_group(self):
         # With no drivers set, the project group owner is the driver.
+        self._makeProductAndSeries(with_project_group=True)
         self.assertContentEqual(
             [self.projectgroup.owner], self.series.drivers)
 
-    def test_drivers_nodrivers_prodcut(self):
+    def test_drivers_nodrivers_product(self):
         # With no drivers set and without a project group, the product
         # owner is the driver.
-        self.product.project = None
+        self._makeProductAndSeries(with_project_group=False)
         self.assertContentEqual(
             [self.product.owner], self.series.drivers)
 
-    def _setDrivers(self, group=False, product=False, series=False):
-        # Set drivers on all levels, as directed.
-        if group:
-            self.projectgroup_driver = self.factory.makePerson()
-            self.projectgroup.driver = self.projectgroup_driver
-        if product:
-            self.product_driver = self.factory.makePerson()
-            self.product.driver = self.product_driver
-        if series:
-            self.series_driver = self.factory.makePerson()
-            self.series.driver = self.series_driver
+    def _setDriver(self, object_with_driver):
+        """Make a driver for `object_with_driver`, and return the driver."""
+        object_with_driver.driver = self.factory.makePerson()
+        return object_with_driver.driver
+
 
     def test_drivers_group(self):
         # A driver on the group is reported as one of the drivers of the
         # series.
-        self._setDrivers(group=True)
+        self._makeProductAndSeries(with_project_group=True)
+        group_driver = self._setDriver(self.projectgroup)
         self.assertContentEqual(
-            [self.projectgroup_driver], self.series.drivers)
+            [group_driver], self.series.drivers)
 
     def test_drivers_group_product(self):
         # The driver on the group and the product are reported as the drivers
         # of the series.
-        self._setDrivers(group=True, product=True)
+        self._makeProductAndSeries(with_project_group=True)
+        group_driver = self._setDriver(self.projectgroup)
+        product_driver = self._setDriver(self.product)
         self.assertContentEqual(
-            [self.projectgroup_driver, self.product_driver],
-            self.series.drivers)
+            [group_driver, product_driver], self.series.drivers)
 
     def test_drivers_group_product_series(self):
-        # All drivers at all level are reported as the drivers of the series.
-        self._setDrivers(group=True, product=True, series=True)
+        # All drivers at all levels are reported as the drivers of the series.
+        self._makeProductAndSeries(with_project_group=True)
+        group_driver = self._setDriver(self.projectgroup)
+        product_driver = self._setDriver(self.product)
+        series_driver = self._setDriver(self.series)
         self.assertContentEqual(
-            [self.projectgroup_driver,
-             self.product_driver,
-             self.series_driver
-             ],
+            [group_driver, product_driver, series_driver],
             self.series.drivers)
 
     def test_drivers_product(self):
         # The product driver is the driver if there is no other.
-        self._setDrivers(product=True)
+        self._makeProductAndSeries(with_project_group=True)
+        product_driver = self._setDriver(self.product)
         self.assertContentEqual(
-            [self.product_driver],
-            self.series.drivers)
+            [product_driver], self.series.drivers)
 
     def test_drivers_series(self):
         # If only the series has a driver, the project group owner is
         # is reported, too.
-        self._setDrivers(series=True)
+        self._makeProductAndSeries(with_project_group=True)
+        series_driver = self._setDriver(self.series)
         self.assertContentEqual(
-            [self.projectgroup.owner, self.series_driver],
-            self.series.drivers)
+            [self.projectgroup.owner, series_driver], self.series.drivers)
 
     def test_drivers_product_series(self):
-        self._setDrivers(product=True, series=True)
+        self._makeProductAndSeries(with_project_group=True)
+        product_driver = self._setDriver(self.product)
+        series_driver = self._setDriver(self.series)
         self.assertContentEqual(
-            [self.product_driver, self.series_driver], self.series.drivers)
+            [product_driver, series_driver], self.series.drivers)
 
     def test_drivers_group_series(self):
-        self._setDrivers(group=True, series=True)
+        self._makeProductAndSeries(with_project_group=True)
+        group_driver = self._setDriver(self.projectgroup)
+        series_driver = self._setDriver(self.series)
         self.assertContentEqual(
-            [self.projectgroup_driver, self.series_driver],
-            self.series.drivers)
+            [group_driver, series_driver], self.series.drivers)
 
     def test_drivers_series_nogroup(self):
         # Without a project group, the product owner is reported as driver.
-        self._setDrivers(series=True)
-        self.product.project = None
+        self._makeProductAndSeries(with_project_group=False)
+        series_driver = self._setDriver(self.series)
         self.assertContentEqual(
-            [self.product.owner, self.series_driver],
-            self.series.drivers)
+            [self.product.owner, series_driver], self.series.drivers)
 
     def test_drivers_product_series_nogroup(self):
-        self._setDrivers(product=True, series=True)
-        self.product.project = None
+        self._makeProductAndSeries(with_project_group=False)
+        product_driver = self._setDriver(self.product)
+        series_driver = self._setDriver(self.series)
         self.assertContentEqual(
-            [self.product_driver, self.series_driver], self.series.drivers)
+            [product_driver, series_driver], self.series.drivers)
 
     def test_drivers_product_nogroup(self):
-        self._setDrivers(product=True)
-        self.product.project = None
+        self._makeProductAndSeries(with_project_group=False)
+        product_driver = self._setDriver(self.product)
         self.assertContentEqual(
-            [self.product_driver], self.series.drivers)
+            [product_driver], self.series.drivers)
 
 
 class TestProductSeriesSet(TestCaseWithFactory):
@@ -133,60 +135,85 @@ class TestProductSeriesSet(TestCaseWithFactory):
         super(TestProductSeriesSet, self).setUp()
         self.ps_set = getUtility(IProductSeriesSet)
 
-    def _makeSeriesAndBranch(self):
-        self.productseries = self.factory.makeProductSeries()
-        self.branch = self.factory.makeProductBranch(
-            self.productseries.product)
-        self.productseries.branch = self.branch
+    def _makeSeriesAndBranch(
+            self, import_mode, branch=None, link_branch=True):
+        productseries = self.factory.makeProductSeries()
+        productseries.translations_autoimport_mode = import_mode
+        if branch is None:
+            branch = self.factory.makeProductBranch(productseries.product)
+        if link_branch:
+            productseries.branch = branch
+        return (productseries, branch)
 
     def test_findByTranslationsImportBranch(self):
-        self._makeSeriesAndBranch()
-        self.productseries.translations_autoimport_mode = (
+        productseries, branch = self._makeSeriesAndBranch(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
 
         self.assertContentEqual(
-                [self.productseries],
-                self.ps_set.findByTranslationsImportBranch(self.branch))
+                [productseries],
+                self.ps_set.findByTranslationsImportBranch(branch))
+
+    def test_findByTranslationsImportBranch_full_import(self):
+        productseries, branch = self._makeSeriesAndBranch(
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
+
+        self.assertContentEqual(
+                [productseries],
+                self.ps_set.findByTranslationsImportBranch(branch))
 
     def test_findByTranslationsImportBranch_no_autoimport(self):
-        self._makeSeriesAndBranch()
-        self.productseries.translations_autoimport_mode = (
+        productseries, branch = self._makeSeriesAndBranch(
             TranslationsBranchImportMode.NO_IMPORT)
 
         self.assertContentEqual(
                 [],
-                self.ps_set.findByTranslationsImportBranch(self.branch))
+                self.ps_set.findByTranslationsImportBranch(branch))
 
     def test_findByTranslationsImportBranch_no_branch(self):
-        self._makeSeriesAndBranch()
-        self.productseries.branch = None
+        productseries, branch = self._makeSeriesAndBranch(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, link_branch=False)
 
         self.assertContentEqual(
                 [],
-                self.ps_set.findByTranslationsImportBranch(self.branch))
+                self.ps_set.findByTranslationsImportBranch(branch))
 
-    def test_findByTranslationsImportBranch_force_imoprt(self):
-        self._makeSeriesAndBranch()
-        self.productseries.translations_autoimport_mode = (
+    def test_findByTranslationsImportBranch_force_import(self):
+        productseries, branch = self._makeSeriesAndBranch(
             TranslationsBranchImportMode.NO_IMPORT)
 
         self.assertContentEqual(
-                [self.productseries],
-                self.ps_set.findByTranslationsImportBranch(self.branch, True))
+                [productseries],
+                self.ps_set.findByTranslationsImportBranch(branch, True))
 
-    def test_findByTranslationsImportBranch_multiple_series(self):
-        self._makeSeriesAndBranch()
-        self.productseries.translations_autoimport_mode = (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        second_series = self.factory.makeProductSeries(
-            product=self.productseries.product)
-        second_series.translations_autoimport_mode = (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        second_series.branch = self.branch
+    def test_findByTranslationsImportBranch_no_branch_force_import(self):
+        productseries, branch = self._makeSeriesAndBranch(
+            TranslationsBranchImportMode.NO_IMPORT, link_branch=False)
 
         self.assertContentEqual(
-                [self.productseries, second_series],
-                self.ps_set.findByTranslationsImportBranch(self.branch))
+                [],
+                self.ps_set.findByTranslationsImportBranch(branch, True))
+
+    def test_findByTranslationsImportBranch_multiple_series(self):
+        productseries, branch = self._makeSeriesAndBranch(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        second_series, branch = self._makeSeriesAndBranch(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, branch=branch)
+
+        self.assertContentEqual(
+                [productseries, second_series],
+                self.ps_set.findByTranslationsImportBranch(branch))
+
+    def test_findByTranslationsImportBranch_multiple_series_force(self):
+        # XXX henninge 2010-03-18 bug=521095: This will fail when the bug
+        # fixed. Please update the test accordingly.
+        productseries, branch = self._makeSeriesAndBranch(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        second_series, branch = self._makeSeriesAndBranch(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, branch=branch)
+
+        self.assertContentEqual(
+                [productseries, second_series],
+                self.ps_set.findByTranslationsImportBranch(branch, True))
 
 
 def test_suite():

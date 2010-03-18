@@ -13,8 +13,9 @@ import tempfile
 import unittest
 import StringIO
 
-from canonical.poppy.tests import PoppyTestSetup
 from canonical.testing import LaunchpadZopelessLayer
+from lp.poppy.tests import PoppyTestSetup
+
 
 class TestPoppy(unittest.TestCase):
     """Test if poppy.py daemon works properly."""

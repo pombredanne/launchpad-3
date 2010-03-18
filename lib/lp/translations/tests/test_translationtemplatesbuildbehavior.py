@@ -86,7 +86,7 @@ class FakeBuildQueue:
         self.destroySelf = FakeMethod()
 
 
-class TestTTBuildBehaviorBase(TestCaseWithFactory):
+class MakeBehaviorMixin(object):
     """Provide common test methods."""
 
     def makeBehavior(self):
@@ -102,7 +102,8 @@ class TestTTBuildBehaviorBase(TestCaseWithFactory):
         return behavior
 
 
-class TestTranslationTemplatesBuildBehavior(TestTTBuildBehaviorBase):
+class TestTranslationTemplatesBuildBehavior(
+        TestCaseWithFactory, MakeBehaviorMixin):
     """Test `TranslationTemplatesBuildBehavior`."""
 
     layer = LaunchpadZopelessLayer
@@ -217,7 +218,8 @@ class TestTranslationTemplatesBuildBehavior(TestTTBuildBehaviorBase):
         self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, '1-1')
 
 
-class TestTTBuildBehaviorTranslationsQueue(TestTTBuildBehaviorBase):
+class TestTTBuildBehaviorTranslationsQueue(
+        TestCaseWithFactory, MakeBehaviorMixin):
     """Test uploads to the import queue."""
 
     layer = LaunchpadZopelessLayer
@@ -245,13 +247,14 @@ class TestTTBuildBehaviorTranslationsQueue(TestTTBuildBehaviorBase):
             self.branch, file(self.dummy_tar).read(), None)
 
         entries = self.queue.getAllEntries(target=self.productseries)
-        self.assertContentEqual(
-            ['po/messages.pot',
-             'po-other/other.pot',
-             'po-thethird/templ3.pot'],
-            self._getPaths(entries))
+        expected_templates = [
+            'po/messages.pot',
+            'po-other/other.pot',
+            'po-thethird/templ3.pot'
+            ]
+        self.assertContentEqual(expected_templates, self._getPaths(entries))
 
-    def test_uploadTarball_owner(self):
+    def test_uploadTarball_importer(self):
         # Files from the tarball are owned by the branch owner.
         behavior = self.makeBehavior()
         behavior._uploadTarball(

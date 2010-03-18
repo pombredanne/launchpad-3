@@ -426,6 +426,13 @@
         />
 
     <adapter
+        for="lp.buildmaster.interfaces.buildbase.IBuildBase"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BuildBaseFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
