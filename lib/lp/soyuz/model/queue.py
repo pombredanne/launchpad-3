@@ -132,7 +132,8 @@ class LanguagePackEncountered(Exception):
 
 
 class PackageUpload(SQLBase):
-    """A Queue item for Lucille."""
+    """A Queue item for the archive uploader."""
+
     implements(IPackageUpload)
 
     _defaultOrder = ['id']
@@ -1354,7 +1355,7 @@ class PackageUpload(SQLBase):
 
 
 class PackageUploadBuild(SQLBase):
-    """A Queue item's related builds (for Lucille)."""
+    """A Queue item's related builds."""
     implements(IPackageUploadBuild)
 
     _defaultOrder = ['id']
@@ -1454,7 +1455,8 @@ class PackageUploadBuild(SQLBase):
 
 
 class PackageUploadSource(SQLBase):
-    """A Queue item's related sourcepackagereleases (for Lucille)."""
+    """A Queue item's related sourcepackagereleases."""
+
     implements(IPackageUploadSource)
 
     _defaultOrder = ['id']
