@@ -92,6 +92,18 @@ We can also retrieve the total download count for the binary in this archive.
     ...     pubs['entries'][0]['self_link'], 'getDownloadCount').jsonBody()
     0
 
+    >>> login("foo.bar@canonical.com")
+    >>> from datetime import date
+    >>> from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+    >>> bpph = BinaryPackagePublishingHistory.get(30)
+    >>> bpph.archive.updatePackageDownloadCount(
+    ...     bpph.binarypackagerelease, date(2010, 2, 21), None, 10)
+    >>> logout()
+
+    >>> webservice.named_get(
+    ...     pubs['entries'][0]['self_link'], 'getDownloadCount').jsonBody()
+    10
+
 
 Security
 ========
@@ -99,7 +111,6 @@ Security
 Create a private PPA for Celso with some binaries.
 
     >>> login("foo.bar@canonical.com")
-
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
