@@ -179,6 +179,11 @@ class TranslationBuildApprover(object):
                 if len(self._potemplateset) == 0:
                     # Create template from product or sourcepackagename name.
                     potemplate = self._makeGenericPOTemplate(entry.path)
+                elif len(self._potemplateset) == 1:
+                    # Use the one template that is there.
+                    # Can only be accessed through iterator.
+                    for pot in self._potemplateset:
+                        potemplate = pot
                 else:
                     # No approval possible.
                     return entry

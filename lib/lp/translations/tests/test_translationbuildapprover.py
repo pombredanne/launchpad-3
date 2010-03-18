@@ -127,8 +127,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             ]
         product = self.factory.makeProduct(name='fooproduct')
         series = product.getSeries('trunk')
-        pot = self.factory.makePOTemplate(
-            productseries=series, name='fooproduct')
+        pot = self.factory.makePOTemplate(productseries=series)
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
