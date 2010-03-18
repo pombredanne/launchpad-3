@@ -11,8 +11,9 @@ __all__ = [
     'value_string',
     ]
 
-from zope.security.proxy import isinstance as zope_isinstance
+
 from lazr.enum import BaseItem
+from zope.security.proxy import isinstance as zope_isinstance
 
 
 def iter_split(string, splitter):
@@ -35,7 +36,10 @@ def iter_split(string, splitter):
 
 
 def value_string(item):
-    """Return a unicode string representing an SQLObject value."""
+    """Return a unicode string representing value.
+
+    This text is special cased for enumerated types.
+    """
     if item is None:
         return '(not set)'
     elif zope_isinstance(item, BaseItem):
