@@ -153,6 +153,15 @@ class TranslationBuildApprover(object):
         else:
             self.owner = distroseries.distribution.owner
 
+    def _makeGenericPOTemplate(self, path):
+        """Create a potemplate when the path is generic."""
+        if self._potemplateset.productseries is not None:
+            domain = self._potemplateset.productseries.product.name
+        else:
+            domain = self._potemplateset.sourcepackagename.name
+        name = domain
+        return self._potemplateset.new(name, domain, path, self.owner)
+
     def approve(self, entry):
         """Approve a queue entry."""
         assert (
@@ -160,17 +169,24 @@ class TranslationBuildApprover(object):
             entry.distroseries == self._potemplateset.distroseries and
             entry.sourcepackagename == self._potemplateset.sourcepackagename
             ),("Entry must be for same target as approver.")
-        name = make_name_from_path(entry.path)
         potemplate = self._potemplateset.getPOTemplateByPath(entry.path)
         if potemplate is None:
-            if name == '':
-                # A generic or invalid name, no approval possible.
-                return entry
-            potemplate = self._potemplateset.getPOTemplateByName(name)
-        if potemplate is None:
             domain = make_domain(entry.path)
-            potemplate = self._potemplateset.new(
-                name, domain, entry.path, self.owner)
+            name = make_name(domain)
+            if name == '':
+                # A generic name, check if this is the first template.
+                if len(self._potemplateset) == 0:
+                    # Create template from product or sourcepackagename name.
+                    potemplate = self._makeGenericPOTemplate(entry.path)
+                else:
+                    # No approval possible.
+                    return entry
+            else:
+                potemplate = self._potemplateset.getPOTemplateByName(name)
+            if potemplate is None:
+                # Still no template found, create a new one.
+                potemplate = self._potemplateset.new(
+                    name, domain, entry.path, self.owner)
 
         # Approve the entry
         entry.potemplate = potemplate

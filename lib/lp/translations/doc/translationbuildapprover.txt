@@ -37,7 +37,7 @@ already a template. A template with the name of the product is created.
     >>> first_entry = empty_approver.approve(first_entry)
     >>> print first_entry.status.title
     Approved
-    >>> print first_entry.potemplate.domain
+    >>> print first_entry.potemplate.translation_domain
     fooproduct
     >>> print first_entry.potemplate.name
     fooproduct
