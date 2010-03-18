@@ -75,7 +75,7 @@ class TestPoppy(unittest.TestCase):
         upload_dir = contents[1]
         return os.path.join(self.root_dir, upload_dir, path)
 
-    def testLOGIN(self):
+    def test_LOGIN(self):
         """Check login procedure and the state of the toplevel lockfile.
 
         The toplevel lockfile should allow the process-upload runner (lp_queue,
@@ -90,7 +90,7 @@ class TestPoppy(unittest.TestCase):
         lockfile_path = os.path.join(self.root_dir, '.lock')
         self.assertEqual(os.stat(lockfile_path).st_mode, 0100664)
 
-    def testCWD(self):
+    def test_CWD(self):
         """Check automatic creation of directories 'cwd'ed in.
 
         Also ensure they are created with proper permission (g+rwxs)
@@ -107,7 +107,7 @@ class TestPoppy(unittest.TestCase):
         self.assertTrue(os.path.exists(wanted_path))
         self.assertEqual(os.stat(wanted_path).st_mode, 042775)
 
-    def testMKD(self):
+    def test_MKD(self):
         """Check recursive MKD (aka mkdir -p).
 
         Also ensure they are created with proper permission (g+rwxs)
@@ -128,7 +128,7 @@ class TestPoppy(unittest.TestCase):
         self.assertTrue(os.path.exists(wanted_path))
         self.assertEqual(os.stat(wanted_path).st_mode, 042775)
 
-    def testRMD(self):
+    def test_RMD(self):
         """Check recursive RMD (aka rmdir)"""
         conn = self.getFTPConnection()
         self.assertEqual(
@@ -143,7 +143,7 @@ class TestPoppy(unittest.TestCase):
         wanted_path = self._uploadPath('foo')
         self.assertFalse(os.path.exists(wanted_path))
 
-    def testSTOR(self):
+    def test_STOR(self):
         """Check if the parent directories are created during file upload.
 
         The uploaded file permissions are also special (g+rwxs).
@@ -160,7 +160,7 @@ class TestPoppy(unittest.TestCase):
         self.assertEqual(fs_content, "fake contents")
         self.assertEqual(os.stat(wanted_path).st_mode, 0102674)
 
-    def testUploadIsolation(self):
+    def test_uploadIsolation(self):
         """Check if poppy isolates the uploads properly.
 
         Upload should be done atomically, i.e., poppy should isolate the
