@@ -125,6 +125,14 @@ class ITranslationImporter(Interface):
             extension, is not considered a translation.
         """
 
+    def isHidden(path):
+        """Based on filename, is this a hidden file?
+
+        :param path: file name, possibly including directory component.
+        :return: Boolean: True if `path` contains either a hidden file
+            or a hidden directory.
+        """
+
     def getTranslationFileFormat(file_extension, file_contents):
         """Return the translation file format for the given file extension.
 

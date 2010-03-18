@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231
+# pylint: disable-msg=W0231,E1002
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -26,7 +26,7 @@ from zope.app.publication.requestpublicationregistry import (
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
@@ -41,10 +41,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces.feed import IFeed
-from lazr.restful.interfaces import IWebServiceConfiguration
+from lazr.restful.interfaces import (
+    IWebServiceConfiguration, IWebServiceVersion)
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication, IPrivateApplication, IWebServiceApplication)
 from canonical.launchpad.interfaces.oauth import (
@@ -576,6 +578,10 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
+
+    def isRedirectInhibited(self):
+        """Returns True if edge redirection has been inhibited."""
+        return self.cookies.get('inhibit_beta_redirect', '0') == '1'
 
     @cachedproperty
     def form_ng(self):
@@ -1121,6 +1127,17 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
     implements(canonical.launchpad.layers.FeedsLayer)
 
+
+# ---- testopenid
+
+class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.TestOpenIDLayer)
+
+
+class TestOpenIDBrowserPublication(LaunchpadBrowserPublication):
+    root_object_interface = ITestOpenIDApplication
+
+
 # ---- web service
 
 class WebServicePublication(WebServicePublicationMixin,
@@ -1265,7 +1282,7 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
     """
     implements(canonical.launchpad.layers.WebServiceLayer)
 
-    def __init__(self, body_instream=None, environ=None, **kw):
+    def __init__(self, body_instream=None, environ=None, version=None, **kw):
         test_environ = {
             'SERVER_URL': 'http://api.launchpad.dev',
             'HTTP_HOST': 'api.launchpad.dev',
@@ -1274,6 +1291,11 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
             test_environ.update(environ)
         super(WebServiceTestRequest, self).__init__(
             body_instream=body_instream, environ=test_environ, **kw)
+        if version is None:
+            version = getUtility(IWebServiceConfiguration).active_versions[-1]
+        self.version = version
+        version_marker = getUtility(IWebServiceVersion, name=version)
+        alsoProvides(self, version_marker)
 
 
 # ---- xmlrpc
@@ -1441,6 +1463,10 @@ def register_launchpad_request_publication_factories():
         XMLRPCRequestPublicationFactory(
             'xmlrpc', PublicXMLRPCRequest, PublicXMLRPCPublication)
         ]
+
+    if config.launchpad.enable_test_openid_provider:
+        factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
+                              TestOpenIDBrowserPublication))
 
     # We may also have a private XML-RPC server.
     private_port = None

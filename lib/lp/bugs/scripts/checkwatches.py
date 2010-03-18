@@ -6,13 +6,17 @@ __metaclass__ = type
 
 from copy import copy
 from datetime import datetime, timedelta
-import Queue as queue
 import socket
 import sys
 import threading
 import time
 
 import pytz
+
+from twisted.internet import reactor
+from twisted.internet.defer import DeferredList
+from twisted.internet.threads import deferToThreadPool
+from twisted.python.threadpool import ThreadPool
 
 from zope.component import getUtility
 from zope.event import notify
@@ -271,44 +275,28 @@ class BugWatchUpdater(object):
         self._logout()
 
     def updateBugTrackers(
-        self, bug_tracker_names=None, batch_size=None, num_threads=1):
+        self, bug_tracker_names=None, batch_size=None, scheduler=None):
         """Update all the bug trackers that have watches pending.
 
         If bug tracker names are specified in bug_tracker_names only
         those bug trackers will be checked.
 
-        The updates are run in threads, so that long running updates
-        don't block progress. However, by default the number of
-        threads is 1, to help with testing.
+        A custom scheduler can be passed in. This should inherit from
+        `BaseScheduler`. If no scheduler is given, `SerialScheduler`
+        will be used, which simply runs the jobs in order.
         """
         self.log.debug("Using a global batch size of %s" % batch_size)
 
-        # Put all the work on the queue. This is simpler than drip-feeding the
-        # queue, and avoids a situation where a worker thread exits because
-        # there's no work left and the feeding thread hasn't been scheduled to
-        # add work to the queue.
-        work = queue.Queue()
+        # Default to using the very simple SerialScheduler.
+        if scheduler is None:
+            scheduler = SerialScheduler()
+
+        # Schedule all the jobs to run.
         for updater in self._bugTrackerUpdaters(bug_tracker_names):
-            work.put(updater)
+            scheduler.schedule(updater, batch_size)
 
-        # This will be run once in each worker thread.
-        def do_work():
-            while True:
-                try:
-                    job = work.get(block=False)
-                except queue.Empty:
-                    break
-                else:
-                    job(batch_size)
-
-        # Start and join the worker threads.
-        threads = []
-        for run in xrange(num_threads):
-            thread = threading.Thread(target=do_work)
-            thread.start()
-            threads.append(thread)
-        for thread in threads:
-            thread.join()
+        # Run all the jobs.
+        scheduler.run()
 
     def updateBugTracker(self, bug_tracker, batch_size):
         """Updates the given bug trackers's bug watches.
@@ -637,7 +625,7 @@ class BugWatchUpdater(object):
 
         if batch_size is not None:
             # We'll recreate our remote_ids_to_check list so that it's
-            # prioritised. We always include remote ids with comments.
+            # prioritized. We always include remote ids with comments.
             actual_remote_ids_to_check = sorted(
                 remote_ids_with_comments[:batch_size])
 
@@ -867,10 +855,12 @@ class BugWatchUpdater(object):
                     if new_malone_importance is not None:
                         bug_watch.updateImportance(new_remote_importance,
                             new_malone_importance)
-                    if bug_watch.bug.duplicateof is None:
+                    if (bug_watch.bug.duplicateof is None and
+                        len(bug_watch.bugtasks) > 0):
                         # Only sync comments and backlink if the local
-                        # bug isn't a duplicate. This helps us to avoid
-                        # spamming upstream.
+                        # bug isn't a duplicate, *and* if the bug
+                        # watch is associated with a bug task. This
+                        # helps us to avoid spamming upstream.
                         if can_import_comments:
                             self.importBugComments(remotesystem, bug_watch)
                         if can_push_comments:
@@ -885,6 +875,15 @@ class BugWatchUpdater(object):
             except Exception, error:
                 # Restart transaction before recording the error.
                 self.txn.abort()
+                # Send the error to the log.
+                self.error(
+                    "Failure updating bug %r on %s (local bugs: %s)." %
+                            (remote_bug_id, bug_tracker_url, local_ids),
+                    properties=[
+                        ('URL', remote_bug_url),
+                        ('bug_id', remote_bug_id),
+                        ('local_ids', local_ids)] +
+                        self._getOOPSProperties(remotesystem))
                 self.txn.begin()
                 # We record errors against the bug watches and update
                 # their lastchecked dates so that we don't try to
@@ -896,16 +895,6 @@ class BugWatchUpdater(object):
                 # We need to commit the transaction, in case the next
                 # bug fails to update as well.
                 self.txn.commit()
-                # Send the error to the log too.
-                self.error(
-                    "Failure updating bug %r on %s (local bugs: %s)." %
-                            (remote_bug_id, bug_tracker_url, local_ids),
-                    properties=[
-                        ('URL', remote_bug_url),
-                        ('bug_id', remote_bug_id),
-                        ('local_ids', local_ids)] +
-                        self._getOOPSProperties(remotesystem))
-
             else:
                 # All is well, save it now.
                 self.txn.commit()
@@ -1151,9 +1140,9 @@ class BugWatchUpdater(object):
 
     def warning(self, message, properties=None, info=None):
         """Record a warning related to this bug tracker."""
-        report_warning(message, properties, info)
+        oops_info = report_warning(message, properties, info)
         # Also put it in the log.
-        self.log.warning(message)
+        self.log.warning("%s (%s)" % (message, oops_info.oopsid))
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
@@ -1161,6 +1150,67 @@ class BugWatchUpdater(object):
 
         # Also put it in the log.
         self.log.error("%s (%s)" % (message, oops_info.oopsid))
+
+
+class BaseScheduler:
+    """Run jobs according to a policy."""
+
+    def schedule(self, func, *args, **kwargs):
+        """Add a job to be run."""
+        raise NotImplementedError(self.schedule)
+
+    def run(self):
+        """Run the jobs."""
+        raise NotImplementedError(self.run)
+
+
+class SerialScheduler(BaseScheduler):
+    """Run jobs in order, one at a time."""
+
+    def __init__(self):
+        self._jobs = []
+
+    def schedule(self, func, *args, **kwargs):
+        self._jobs.append((func, args, kwargs))
+
+    def run(self):
+        jobs, self._jobs = self._jobs[:], []
+        for (func, args, kwargs) in jobs:
+            func(*args, **kwargs)
+
+
+class TwistedThreadScheduler(BaseScheduler):
+    """Run jobs in threads, chaperoned by Twisted."""
+
+    def __init__(self, num_threads, install_signal_handlers=True):
+        """Create a new `TwistedThreadScheduler`.
+
+        :param num_threads: The number of threads to allocate to the
+          thread pool.
+        :type num_threads: int
+
+        :param install_signal_handlers: Whether the Twisted reactor
+          should install signal handlers or not. This is intented for
+          testing - set to False to avoid layer violations - but may
+          be useful in other situations.
+        :type install_signal_handlers: bool
+        """
+        self._thread_pool = ThreadPool(0, num_threads)
+        self._install_signal_handlers = install_signal_handlers
+        self._jobs = []
+
+    def schedule(self, func, *args, **kwargs):
+        self._jobs.append(
+            deferToThreadPool(
+                reactor, self._thread_pool, func, *args, **kwargs))
+
+    def run(self):
+        jobs, self._jobs = self._jobs[:], []
+        jobs_done = DeferredList(jobs)
+        jobs_done.addBoth(lambda ignore: self._thread_pool.stop())
+        jobs_done.addBoth(lambda ignore: reactor.stop())
+        reactor.callWhenRunning(self._thread_pool.start)
+        reactor.run(self._install_signal_handlers)
 
 
 class CheckWatchesCronScript(LaunchpadCronScript):
@@ -1201,9 +1251,16 @@ class CheckWatchesCronScript(LaunchpadCronScript):
         else:
             # Otherwise we just update those watches that need updating,
             # and we let the BugWatchUpdater decide which those are.
+            if self.options.jobs <= 1:
+                # Use the default scheduler.
+                scheduler = None
+            else:
+                # Run jobs in parallel.
+                scheduler = TwistedThreadScheduler(self.options.jobs)
             updater.updateBugTrackers(
-                self.options.bug_trackers, self.options.batch_size,
-                self.options.jobs)
+                self.options.bug_trackers,
+                self.options.batch_size,
+                scheduler)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)

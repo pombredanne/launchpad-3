@@ -148,7 +148,7 @@ ubuntu/breezy-autotest/i386, which is empty:
     ...    IDistributionSet, IPersonSet)
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.model.publishing import (
-    ...     SecureBinaryPackagePublishingHistory)
+    ...     BinaryPackagePublishingHistory)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -163,7 +163,7 @@ as possible.
     >>> at_warty_i386 = warty['i386'].getBinaryPackage('at')
     >>> sample_bpr = at_warty_i386.currentrelease.binarypackagerelease
 
-    >>> SecureBinaryPackagePublishingHistory.selectBy(
+    >>> BinaryPackagePublishingHistory.selectBy(
     ...     distroarchseries=bt_i386, binarypackagerelease=sample_bpr).count()
     0
 
@@ -343,6 +343,20 @@ returned.
 
     >>> print_architectures(hoary.enabled_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
+
+The architecture also has a 'chroot_url' attribute directly referencing
+the file.
+
+    >>> print hoary.getDistroArchSeries('hppa').chroot_url
+    http://localhost:58000/.../filename...
+    >>> hoary.getDistroArchSeries('hppa').chroot_url == \
+    ...     chroot.http_url
+    True
+
+If there is no chroot, chroot_url will be None.
+
+    >>> print hoary.getDistroArchSeries('i386').chroot_url
+    None
 
 `DistroSeries.enabled_architectures` results are ordered
 alphabetically by 'architecturetag'.

@@ -14,6 +14,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
+from lazr.restful.interfaces import IServiceRootResource
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -33,7 +34,6 @@ __all__ = [
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'ICrowd',
     'IFeedsApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
@@ -243,25 +243,6 @@ class IPersonRoles(Interface):
         """
 
 
-class ICrowd(Interface):
-
-    def __contains__(person_or_team_or_anything):
-        """Return True if person_or_team_or_anything is in the crowd.
-
-        Note that a particular crowd can choose to answer 'True' to this
-        question, if that is what it is supposed to do.  So, crowds that
-        contain other crowds will want to allow the other crowds the
-        opportunity to answer __contains__ before that crowd does.
-        """
-
-    def __add__(crowd):
-        """Return a new ICrowd that is this crowd added to the given crowd.
-
-        The returned crowd contains the person or teams in
-        both this crowd and the given crowd.
-        """
-
-
 class IPrivateMaloneApplication(ILaunchpadApplication):
     """Private application root for malone."""
 
@@ -402,7 +383,7 @@ class IReadZODBAnnotation(Interface):
         """Removes annotation at the given namespace."""
 
 
-class IWebServiceApplication(ILaunchpadApplication):
+class IWebServiceApplication(ILaunchpadApplication, IServiceRootResource):
     """Launchpad web service application root."""
 
 
