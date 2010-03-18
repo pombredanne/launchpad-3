@@ -9,9 +9,21 @@ __all__ = [
     'ensure_no_transaction',
     ]
 
+import psycopg2.extensions
+
 from functools import wraps
 
-import transaction
+from zope.component import getUtility
+
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+
+
+TRANSACTION_IN_PROGRESS_STATUSES = frozenset((
+        psycopg2.extensions.TRANSACTION_STATUS_ACTIVE,
+        psycopg2.extensions.TRANSACTION_STATUS_INTRANS,
+        psycopg2.extensions.TRANSACTION_STATUS_INERROR,
+    ))
 
 
 class TransactionInProgress(Exception):
@@ -20,8 +32,10 @@ class TransactionInProgress(Exception):
 
 
 def is_transaction_in_progress():
-    # Accessing private attributes is naughty.
-    return len(transaction.get()._resources) != 0
+    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    raw_connection = store._connection._raw_connection
+    transaction_status = raw_connection.get_transaction_status()
+    return (transaction_status in TRANSACTION_IN_PROGRESS_STATUSES)
 
 
 def ensure_no_transaction(func):
