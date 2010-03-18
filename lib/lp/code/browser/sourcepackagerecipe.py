@@ -49,14 +49,14 @@ class SourcePackageRecipeBuildView(LaunchpadView):
 
     @property
     def eta(self):
-        """The datetime when the build job is estimated to complete."""
+        """The datetime when the build job is estimated to begin."""
         if self.context.buildqueue_record is None:
             return None
-        self.context.buildqueue_record.getEstimatedJobStartTime()
+        return self.context.buildqueue_record.getEstimatedJobStartTime()
 
     @property
     def date(self):
-        """The date when the build did or will complete."""
+        """The date when the build complete or will begin."""
         if self.estimate:
             return self.eta
         return self.context.datebuilt

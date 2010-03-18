@@ -1675,7 +1675,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
-                    virtualized=True, vm_host=None):
+                    virtualized=True, vm_host=None, manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -1699,7 +1699,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IBuilderSet).new(
             processor, url, name, title, description, owner, active,
-            virtualized, vm_host)
+            virtualized, vm_host, manual=manual)
 
     def makeRecipe(self, *branches):
         """Make a builder recipe that references `branches`.

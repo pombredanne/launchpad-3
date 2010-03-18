@@ -78,8 +78,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertTrue(pattern.search(main_text), main_text)
 
     def test_index_pending(self):
-        # Cannot test pending builds because ETA estimation does not work.
-        return
         recipe = self.makeRecipe()
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
         buildjob = self.factory.makeSourcePackageRecipeBuildJob(
@@ -87,7 +85,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         builder = self.factory.makeBuilder()
         pattern = re.compile(dedent("""\
             Build records
-            Pending build
+            Pending build.in .*\(estimated\)
             Recipe contents"""), re.S)
         main_text = self.getMainText(recipe)
         self.assertTrue(pattern.search(main_text), main_text)

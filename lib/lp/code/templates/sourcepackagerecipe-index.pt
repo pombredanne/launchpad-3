@@ -63,6 +63,9 @@
             <li tal:repeat="build context/builds">
               <tal:status replace="build/@@+index/status" />
               <tal:date replace="build/@@+index/date/fmt:displaydate" />
+              <tal:estimate condition="build/@@+index/estimate">
+              (estimated)
+              </tal:estimate>
             </li>
           </ul>
         </div>
