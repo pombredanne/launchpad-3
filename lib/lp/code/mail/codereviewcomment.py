@@ -9,14 +9,14 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.mail import format_address
-from canonical.launchpad.mailout import append_footer
 from canonical.launchpad.webapp import canonical_url
 
 from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.interfaces.branchmergeproposal import (
     ICodeReviewCommentEmailJobSource)
+from lp.services.mail import append_footer
+from lp.services.mail.sendmail import format_address
 
 
 def send(comment, event):
