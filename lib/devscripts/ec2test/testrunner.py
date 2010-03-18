@@ -303,8 +303,6 @@ class EC2TestRunner:
             self._smtp_password = config.get_user_option('smtp_password')
             self._from_email = config.username()
             if not self._from_email:
-                # XXX: JonathanLange 2009-10-04: Is this strictly true? I
-                # can't actually see where this is used.
                 raise ValueError(
                     'To send email, your bzr email address must be set '
                     '(use ``bzr whoami``).')
