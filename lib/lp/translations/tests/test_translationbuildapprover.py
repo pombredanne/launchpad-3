@@ -169,8 +169,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             ]
         series = self.factory.makeProductSeries()
         approver = TranslationBuildApprover(filenames, productseries=series)
-        filenames += ['po-domain3/domain3.pot']
-        entries = self._makeApprovedEntries(series, approver, filenames)
+        entries = self._makeApprovedEntries(
+            series, approver, filenames + ['po-domain3/domain3.pot'])
 
         self._assertStatus(
             entries, [

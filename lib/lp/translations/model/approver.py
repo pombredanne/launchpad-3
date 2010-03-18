@@ -188,6 +188,11 @@ class TranslationBuildApprover(object):
             entry.distroseries == self._potemplateset.distroseries and
             entry.sourcepackagename == self._potemplateset.sourcepackagename
             ),("Entry must be for same target as approver.")
+
+        if entry.path not in self.filenames:
+            # Only files that have been announced to the approver can ve
+            # approved.
+            return entry
         potemplate = self._potemplateset.getPOTemplateByPath(entry.path)
         if potemplate is None:
             domain = make_domain(entry.path)
