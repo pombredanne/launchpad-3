@@ -15,7 +15,7 @@ TranslationBranchApprover.
     >>> login("foo.bar@canonical.com")
 
 It will approve all template files that it can derive a name from. It will
-create a new template if is found by that name.
+create a new template if none is found by that name.
 
     >>> my_series = factory.makeProductSeries()
     >>> my_approver = TranslationBuildApprover(
@@ -61,6 +61,7 @@ template with the name of the product is created.
     fooproduct
 
 If there are other files or templates, generic names will not be approved.
+Only the valid ones will.
 
     >>> generic_series = factory.makeProductSeries()
     >>> generic_approver = TranslationBuildApprover(
@@ -70,4 +71,8 @@ If there are other files or templates, generic names will not be approved.
     >>> generic_entry = generic_approver.approve(generic_entry)
     >>> print generic_entry.status.title
     Needs Review
+    >>> valid_entry = makeQueueEntry("validdomain.pot", generic_series)
+    >>> valid_entry = generic_approver.approve(valid_entry)
+    >>> print valid_entry.status.title
+    Approved
 
