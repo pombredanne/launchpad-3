@@ -16,12 +16,12 @@ import errno
 import sys
 import os
 import time
-from signal import SIGTERM, SIGKILL
 import subprocess
 
 from twisted.application import service
 from twisted.python import log
 
+from lp.services.osutils import kill_by_pidfile
 
 twistd_script = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
@@ -118,39 +118,7 @@ class TacTestSetup:
     def killTac(self):
         """Kill the TAC file if it is running."""
         pidfile = self.pidfile
-        if not os.path.exists(pidfile):
-            return
-
-        # Get the pid.
-        pid = open(pidfile, 'r').read().strip()
-        try:
-            pid = int(pid)
-        except ValueError:
-            # pidfile contains rubbish
-            return
-
-        # Kill the process.
-        try:
-            os.kill(pid, SIGTERM)
-        except OSError, e:
-            if e.errno in (errno.ESRCH, errno.ECHILD):
-                # Process has already been killed.
-                return
-
-        # Poll until the process has ended.
-        for i in range(50):
-            try:
-                os.kill(pid, 0)
-                time.sleep(0.1)
-            except OSError, e:
-                break
-        else:
-            # The process is still around, so terminate it violently.
-            try:
-                os.kill(pid, SIGKILL)
-            except OSError:
-                # Already terminated
-                pass
+        kill_by_pidfile(pidfile)
 
     def setUpRoot(self):
         """Override this.
