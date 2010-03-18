@@ -212,6 +212,7 @@ class TranslationBuildApprover(object):
 
         # Approve the entry
         entry.potemplate = potemplate
+        potemplate.path = entry.path
         if entry.status == RosettaImportStatus.NEEDS_REVIEW:
             entry.setStatus(RosettaImportStatus.APPROVED,
                             getUtility(ILaunchpadCelebrities).rosetta_experts)

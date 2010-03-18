@@ -196,7 +196,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         self.assertEqual(domain1_pot, entries[0].potemplate)
         self.assertEqual(domain2_pot, entries[1].potemplate)
 
-    def test_approve_by_path_updated(self):
+    def test_approve_path_updated(self):
         # The path of an existing template will be updated with the path
         # from the entry..
         filenames = [
