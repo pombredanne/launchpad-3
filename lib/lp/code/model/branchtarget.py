@@ -95,6 +95,11 @@ class PackageBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return False
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         # Branches are mergable into a PackageTarget if the source package
@@ -182,6 +187,11 @@ class PersonBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return False
 
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return False
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         return False
@@ -258,6 +268,11 @@ class ProductBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         # Branches are mergable into a PackageTarget if the source package
@@ -310,6 +325,11 @@ class ProductSeriesBranchTarget(ProductBranchTarget):
     def context(self):
         """See `IBranchTarget`."""
         return self.productseries
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return False
 
 
 def get_canonical_url_data_for_target(branch_target):

@@ -176,6 +176,9 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             ubuntu_branches.teamowner)
         self.assertEqual(branch, self.target.default_merge_target)
 
+    def test_doesnt_support_code_imports(self):
+        self.assertFalse(self.target.supports_code_imports)
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -257,6 +260,9 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch = self.factory.makePersonalBranch(owner=self.original)
         self.target._retargetBranch(removeSecurityProxy(branch))
         self.assertEqual(self.target, branch.target)
+
+    def test_doesnt_support_code_imports(self):
+        self.assertFalse(self.target.supports_code_imports)
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -364,6 +370,9 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             setattr, self.original.development_focus, 'branch', branch)
         self.assertEqual(branch, self.target.default_merge_target)
 
+    def test_supports_code_imports(self):
+        self.assertTrue(self.target.supports_code_imports)
+
 
 class TestProductSeriesBranchTarget(TestCaseWithFactory):
 
@@ -377,6 +386,9 @@ class TestProductSeriesBranchTarget(TestCaseWithFactory):
     def test_adapter(self):
         target = IBranchTarget(self.original)
         self.assertIsInstance(target, ProductSeriesBranchTarget)
+
+    def test_doesnt_support_code_imports(self):
+        self.assertFalse(self.target.supports_code_imports)
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

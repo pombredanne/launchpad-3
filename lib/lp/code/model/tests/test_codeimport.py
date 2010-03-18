@@ -123,8 +123,19 @@ class TestCodeImportCreation(TestCaseWithFactory):
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
-        # No job is created for the import.
+        # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
+
+    def test_junk_code_import_rejected(self):
+        """A new hg import is always reviewed by default."""
+        registrant = self.factory.makePerson()
+        self.assertRaises(AssertionError, CodeImportSet().new,
+            registrant=registrant,
+            target=IBranchTarget(registrant),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
 
 
 class TestCodeImportDeletion(TestCaseWithFactory):
