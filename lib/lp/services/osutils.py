@@ -8,6 +8,7 @@ __all__ = [
     'remove_tree',
     'kill_by_pidfile',
     'remove_if_exists',
+    'two_stage_kill',
     ]
 
 import errno
@@ -21,6 +22,38 @@ def remove_tree(path):
     """Remove the tree at 'path' from disk."""
     if os.path.exists(path):
         shutil.rmtree(path)
+
+
+def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
+    """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
+
+    :param pid: The pid of the process to kill.
+    :param poll_interval: The polling interval used to check if the
+        process is still around.
+    :param num_polls: The number of polls to do before doing a SIGKILL.
+    """
+    # Kill the process.
+    try:
+        os.kill(pid, SIGTERM)
+    except OSError, e:
+        if e.errno in (errno.ESRCH, errno.ECHILD):
+            # Process has already been killed.
+            return
+
+    # Poll until the process has ended.
+    for i in range(num_polls):
+        try:
+            os.kill(pid, 0)
+            time.sleep(poll_interval)
+        except OSError, e:
+            break
+    else:
+        # The process is still around, so terminate it violently.
+        try:
+            os.kill(pid, SIGKILL)
+        except OSError:
+            # Already terminated
+            pass
 
 
 def kill_by_pidfile(pidfile_path):
@@ -39,28 +72,7 @@ def kill_by_pidfile(pidfile_path):
             # pidfile contains rubbish
             return
 
-        # Kill the process.
-        try:
-            os.kill(pid, SIGTERM)
-        except OSError, e:
-            if e.errno in (errno.ESRCH, errno.ECHILD):
-                # Process has already been killed.
-                return
-
-        # Poll until the process has ended.
-        for i in range(50):
-            try:
-                os.kill(pid, 0)
-                time.sleep(0.1)
-            except OSError, e:
-                break
-        else:
-            # The process is still around, so terminate it violently.
-            try:
-                os.kill(pid, SIGKILL)
-            except OSError:
-                # Already terminated
-                pass
+        two_stage_kill(pid)
     finally:
         remove_if_exists(pidfile_path)
 
