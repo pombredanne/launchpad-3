@@ -146,7 +146,7 @@ class BaseTestRunner:
                         result and 'FAILURE' or 'SUCCESS')
                     summary_file = open(self.logger.summary_filename, 'r')
                     bzrlib.email_message.EmailMessage.send(
-                        config, self.email[0], self.email,
+                        config, config.username(), self.email,
                         subject, summary_file.read())
                     summary_file.close()
         finally:
@@ -468,7 +468,7 @@ if __name__ == '__main__':
             # Handle exceptions thrown by the test() or daemonize() methods.
             if options.email:
                 bzrlib.email_message.EmailMessage.send(
-                    config, options.email[0],
+                    config, config.username(),
                     options.email,
                     'Test Runner FAILED', traceback.format_exc())
             raise
