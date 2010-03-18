@@ -256,51 +256,6 @@ class CodeImportSet:
             CodeImportJob.delete(code_import.import_job.id)
         CodeImport.delete(code_import.id)
 
-    def getActiveImports(self, text=None):
-        """See `ICodeImportSet`."""
-        query = self.composeQueryString(text)
-        return CodeImport.select(
-            query, orderBy=['product.name', 'branch.name'],
-            clauseTables=['Product', 'Branch'])
-
-    def composeQueryString(self, text=None):
-        """Build SQL "where" clause for `CodeImport` search.
-
-        :param text: Text to search for in the product and project titles and
-            descriptions.
-        """
-        conditions = [
-            "date_last_successful IS NOT NULL",
-            "review_status=%s" % sqlvalues(CodeImportReviewStatus.REVIEWED),
-            "CodeImport.branch = Branch.id",
-            "Branch.product = Product.id",
-            ]
-        if text == u'':
-            text = None
-
-        # First filter on text, if supplied.
-        if text is not None:
-            conditions.append("""
-                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
-                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
-
-        # Exclude deactivated products.
-        conditions.append('Product.active IS TRUE')
-
-        # Exclude deactivated projects, too.
-        conditions.append(
-            "((Product.project = Project.id AND Project.active) OR"
-            " Product.project IS NULL)")
-
-        # And build the query.
-        query = " AND ".join(conditions)
-        return """
-            codeimport.id IN
-            (SELECT codeimport.id FROM codeimport, branch, product, project
-             WHERE %s)
-            AND codeimport.branch = branch.id
-            AND branch.product = product.id""" % query
-
     def get(self, id):
         """See `ICodeImportSet`."""
         try:
