@@ -105,8 +105,8 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             able to upload to the archive.
         """
 
-    builds = CollectionField(title=_("Related SourcePackageRecpieBuilds."),
-        value_type=Reference(schema=Interface))
+    def getBuilds(pending=False):
+        """Return a ResultSet of all the specified builds."""
 
 
 class ISourcePackageRecipeSource(Interface):

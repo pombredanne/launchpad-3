@@ -15,9 +15,12 @@ from canonical.testing import DatabaseFunctionalLayer
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import extract_text, find_main_content
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
 from lp.testing import (TestCaseWithFactory)
+
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
 
@@ -77,11 +80,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         main_text = self.getMainText(recipe)
         self.assertTrue(pattern.search(main_text), main_text)
 
-    def test_index_pending(self):
-        recipe = self.makeRecipe()
+    def makeBuildJob(self, recipe):
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
         buildjob = self.factory.makeSourcePackageRecipeBuildJob(
             recipe_build=build)
+        return build
+
+    def test_index_pending(self):
+        recipe = self.makeRecipe()
+        buildjob = self.makeBuildJob(recipe)
         builder = self.factory.makeBuilder()
         pattern = re.compile(dedent("""\
             Build records
@@ -89,3 +96,30 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             Recipe contents"""), re.S)
         main_text = self.getMainText(recipe)
         self.assertTrue(pattern.search(main_text), main_text)
+
+    def test_builds(self):
+        """Ensure SourcePackageRecipe.builds is as described."""
+        recipe = self.makeRecipe()
+        build1 = self.makeBuildJob(recipe=recipe)
+        build2 = self.makeBuildJob(recipe=recipe)
+        build3 = self.makeBuildJob(recipe=recipe)
+        build4 = self.makeBuildJob(recipe=recipe)
+        build5 = self.makeBuildJob(recipe=recipe)
+        build6 = self.makeBuildJob(recipe=recipe)
+        view = SourcePackageRecipeView(recipe, LaunchpadTestRequest)
+        self.assertEqual(
+            set([build1, build2, build3, build4, build5, build6]),
+            set(view.builds))
+        def set_day(build, day):
+            removeSecurityProxy(build).datebuilt = datetime(
+                2010, 03, day, tzinfo=utc)
+        set_day(build1, 16)
+        set_day(build2, 15)
+        self.assertEqual(
+            set([build1, build3, build4, build5, build6]),
+            set(view.builds))
+        set_day(build3, 14)
+        set_day(build4, 13)
+        set_day(build5, 12)
+        set_day(build6, 11)
+        self.assertEqual([build5, build4, build3, build2, build1], view.builds)

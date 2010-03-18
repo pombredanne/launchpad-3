@@ -79,7 +79,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
     directory = Unicode(allow_none=True)
 
     recipe_data_id = Int(name='recipe_data', allow_none=False)
-    recipe_data = Reference(recipe_data_id, '_SourcePackageRecipeData.id')
+    recipe_data = Reference(recipe_data_id, 'SourcePackageRecipeData.id')
 
     parent_instruction_id = Int(name='parent_instruction', allow_none=True)
     parent_instruction = Reference(

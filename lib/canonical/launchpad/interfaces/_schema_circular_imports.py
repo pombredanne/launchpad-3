@@ -181,9 +181,6 @@ ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
-patch_collection_property(
-    ISourcePackageRecipe, 'builds', ISourcePackageRecipeBuild)
-
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
 # publishing.py

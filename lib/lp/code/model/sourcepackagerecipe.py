@@ -10,7 +10,7 @@ __all__ = [
 
 from lazr.delegates import delegates
 
-from storm.locals import Int, Reference, Store, Storm, Unicode
+from storm.locals import Desc, Int, Reference, Store, Storm, Unicode
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
@@ -119,7 +119,13 @@ class SourcePackageRecipe(Storm):
         build.queueBuild()
         return build
 
-    @property
-    def builds(self):
-        return Store.of(self).find(SourcePackageRecipeBuild,
-            SourcePackageRecipeBuild.recipe==self)
+    def getBuilds(self, pending=False):
+        if pending:
+            clauses = [SourcePackageRecipeBuild.datebuilt == None]
+        else:
+            clauses = [SourcePackageRecipeBuild.datebuilt != None]
+        result = Store.of(self).find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe==self,
+            *clauses)
+        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+        return result

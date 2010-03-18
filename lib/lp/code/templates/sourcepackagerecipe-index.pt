@@ -60,7 +60,7 @@
         <div class="portlet">
           <h2>Build records</h2>
           <ul>
-            <li tal:repeat="build context/builds">
+            <li tal:repeat="build view/builds">
               <tal:status replace="build/@@+index/status" />
               <tal:date replace="build/@@+index/date/fmt:displaydate" />
               <tal:estimate condition="build/@@+index/estimate">

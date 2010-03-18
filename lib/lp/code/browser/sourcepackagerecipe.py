@@ -11,6 +11,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from canonical.launchpad.webapp import (
     LaunchpadView)
 
+
 class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
@@ -19,6 +20,21 @@ class SourcePackageRecipeView(LaunchpadView):
         return self.context.name
 
     label = title
+
+    @property
+    def builds(self):
+        """A list of interesting builds.
+
+        All pending builds are shown, as well as 1-5 recent builds.
+        Recent builds are ordered by date completed.
+        """
+        builds = list(self.context.getBuilds(pending=True))
+        for build in self.context.getBuilds():
+            builds.append(build)
+            if len(builds) >= 5:
+                break
+        builds.reverse()
+        return builds
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):
