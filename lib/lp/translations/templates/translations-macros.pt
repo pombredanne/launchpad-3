@@ -69,7 +69,7 @@
       <td colspan="3"></td>
       <td class="icon left right">
         <tal:legal-warning condition="submission/legal_warning">
-          <a href="http://help.launchpad.net/Translations/ReusingPackagedTranslations"
+          <a href="https://help.launchpad.net/Translations/ReusingPackagedTranslations"
              class="legal-warning">
             <img alt="Legal warning" title="Do not use this translation before checking for license compatibility" src="/@@/warning" /></a>
         </tal:legal-warning>

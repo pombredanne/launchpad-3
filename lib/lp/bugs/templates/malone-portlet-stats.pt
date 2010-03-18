@@ -17,7 +17,7 @@
     </li>
     <li>
       <strong tal:content="context/shared_bug_count">7</strong> bugs are
-      <a href="http://help.launchpad.net/CrossProjectBugTracking">shared
+      <a href="https://help.launchpad.net/CrossProjectBugTracking">shared
       across multiple projects</a>
     </li>
     <li>
