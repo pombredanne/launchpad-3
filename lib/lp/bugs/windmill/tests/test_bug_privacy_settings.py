@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import unittest
@@ -25,6 +25,11 @@ PRIVACY_LINK = u'privacy-link'
 PRIVACY_TEXT = u'privacy-text'
 PRIVACY_TEXT_STRONG = u'//div[@id="privacy-text"]/strong'
 SECURITY_MESSAGE = u'security-message'
+IS_PRIVATE_CLASS = (
+    u"(function() {var classes = element.getAttribute('class').split(' '); "
+    "return classes.indexOf('private') >= 0"
+    " && "
+    "classes.indexOf('public') < 0})()")
 
 
 class TestSecurityOverlay(WindmillTestCase):
@@ -79,6 +84,11 @@ class TestSecurityOverlay(WindmillTestCase):
         client.asserts.assertElemJS(
             xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
 
+        # After the bug has been toggled to private, both the document
+        # as a whole and the privacy div have the class 'private' and
+        # do not have the class 'public'.
+        client.asserts.assertElemJS(id=u'document', js=IS_PRIVATE_CLASS)
+        client.asserts.assertElemJS(id=u'privacy', js=IS_PRIVATE_CLASS)
 
         # These text changes are made via Javascript, thus avoiding a
         # complete page load. Let's reload the page, to check that
