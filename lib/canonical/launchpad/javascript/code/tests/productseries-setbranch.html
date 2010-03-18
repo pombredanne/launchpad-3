@@ -174,5 +174,12 @@
     <a href="https://launchpad.dev/zyc/trunk">Cancel</a>
   </form>
   </div>
+  <script type="text/javascript">
+//<![CDATA[
+    YUI().use('lp.code.productseries_setbranch', function(Y) {
+      Y.on('domready', Y.lp.code.productseries_setbranch.setup);
+    });
+//]]>
+  </script>
 </body>
 </html>
