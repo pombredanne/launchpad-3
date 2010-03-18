@@ -401,9 +401,10 @@ class TwistedJobRunner(BaseJobRunner):
 class JobCronScript(LaunchpadCronScript):
     """Base class for scripts that run jobs."""
 
-    def __init__(self, runner_class=JobRunner):
+    def __init__(self, runner_class=JobRunner, test_args=None):
         self.dbuser = getattr(config, self.config_name).dbuser
-        super(JobCronScript, self).__init__(self.config_name, self.dbuser)
+        super(JobCronScript, self).__init__(
+            self.config_name, self.dbuser, test_args)
         self.runner_class = runner_class
 
     def main(self):
