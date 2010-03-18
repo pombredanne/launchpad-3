@@ -196,6 +196,21 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         self.assertEqual(domain1_pot, entries[0].potemplate)
         self.assertEqual(domain2_pot, entries[1].potemplate)
 
+    def test_approve_by_path_updated(self):
+        # The path of an existing template will be updated with the path
+        # from the entry..
+        filenames = [
+            'po-domain1/domain1.pot',
+            ]
+        series = self.factory.makeProductSeries()
+        domain1_pot = self.factory.makePOTemplate(
+            productseries=series, name='domain1', path='po/foo.pot')
+        approver = TranslationBuildApprover(filenames, productseries=series)
+        entries = self._makeApprovedEntries(series, approver, filenames)
+
+        self._assertStatus(entries, [RosettaImportStatus.APPROVED])
+        self.assertEqual(filenames[0], entries[0].potemplate.path)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
