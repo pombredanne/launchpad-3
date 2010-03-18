@@ -19,6 +19,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
     check_default_stacked_on, IBranchTarget)
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -35,6 +36,12 @@ class _BaseBranchTarget:
 
     def __ne__(self, other):
         return self.context != other.context
+
+    def newCodeImport(self, registrant, branch_name, rcs_type, url=None,
+            cvs_root=None, cvs_module=None):
+        return getUtility(ICodeImportSet).new(
+            registrant, self, branch_name, rcs_type, url=url,
+            cvs_root=cvs_root, cvs_module=cvs_module)
 
 
 class PackageBranchTarget(_BaseBranchTarget):
