@@ -1922,7 +1922,7 @@ COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for acce
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
-COMMENT ON COLUMN Archive.state IS 'The state of this archive, e.g. ACTIVE.  See the ArchiveState DBSchema item.';
+COMMENT ON COLUMN Archive.status IS 'The status of this archive, e.g. ACTIVE.  See the ArchiveState DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
 COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all source and binary names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
