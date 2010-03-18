@@ -20,7 +20,8 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.archiveuploader.permission import check_upload_to_archive
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource, ISourcePackageRecipeData)
+    ISourcePackageRecipe, ISourcePackageRecipeSource,
+    ISourcePackageRecipeData)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
