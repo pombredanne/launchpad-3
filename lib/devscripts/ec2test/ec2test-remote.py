@@ -404,8 +404,7 @@ if __name__ == '__main__':
         '-e', '--email', action='append', dest='email', default=None,
         help=('Email address to which results should be mailed.  Defaults to '
               'the email address from `bzr whoami`. May be supplied multiple '
-              'times. The first supplied email address will be used as the '
-              'From: address.'))
+              'times. `bzr whoami` will be used as the From: address.'))
     parser.add_option(
         '-s', '--submit-pqm-message', dest='pqm_message', default=None,
         help=('A base64-encoded pickle (string) of a pqm message '

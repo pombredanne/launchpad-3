@@ -301,8 +301,8 @@ class EC2TestRunner:
                     'here: https://wiki.canonical.com/EmailSetup .')
             self._smtp_username = config.get_user_option('smtp_username')
             self._smtp_password = config.get_user_option('smtp_password')
-            from_email = config.username()
-            if not from_email:
+            self._from_email = config.username()
+            if not self._from_email:
                 # XXX: JonathanLange 2009-10-04: Is this strictly true? I
                 # can't actually see where this is used.
                 raise ValueError(
@@ -330,6 +330,8 @@ class EC2TestRunner:
             as_user('mkdir .bazaar')
             bazaar_conf_file = user_connection.sftp.open(
                 ".bazaar/bazaar.conf", 'w')
+            bazaar_conf_file.write(
+                'email = %s\n' % (self._from_email,))
             bazaar_conf_file.write(
                 'smtp_server = %s\n' % (self._smtp_server,))
             if self._smtp_username:
