@@ -9,15 +9,17 @@ TranslationBranchApprover.
     >>> productseries = factory.makeProductSeries()
     >>> importer_person = factory.makePerson()
     >>> from lp.translations.model.approver import TranslationBuildApprover
-    >>> approver = TranslationBuildApprover(productseries=productseries)
+    >>> approver = TranslationBuildApprover()
 
 It will approve all template files that it can derive a name from.
 
     >>> login("foo.bar@canonical.com")
-    >>> def makeQueueEntry(path):
+    >>> def makeQueueEntry(path, series=None):
+    ...     if series is None:
+    ...         series = productseries
     ...     return queue.addOrUpdateEntry(
     ...         path, "#Dummy content.", False, importer_person,
-    ...         productseries=productseries)
+    ...         productseries=series)
     >>> my_entry = makeQueueEntry("po/my_domain.pot")
     >>> print my_entry.status.title
     Needs Review
@@ -25,7 +27,21 @@ It will approve all template files that it can derive a name from.
     >>> print my_entry.status.title
     Approved
 
-Template files with generic names will not be approved.
+Template files with generic names will only be approved, if there is not
+already a template. A template with the name of the product is created.
+
+    >>> empty_product = factory.makeProduct(name='fooproduct')
+    >>> empty_series = factory.makeProductSeries(product=empty_product)
+    >>> first_entry = makeQueueEntry('po/messages.pot', empty_series)
+    >>> first_entry = approver.approve(first_entry)
+    >>> print first_entry.status.title
+    Approved
+    >>> print first_entry.potemplate.domain
+    fooproduct
+    >>> print first_entry.potemplate.name
+    fooproduct
+
+Otherwise, generic names will not be approved.
 
     >>> generic_entry = makeQueueEntry("po/messages.pot")
     >>> generic_entry = approver.approve(generic_entry)
