@@ -45,7 +45,7 @@ class TestPoppy(unittest.TestCase):
         # poppy usually takes sometime to come up, we need to wait, or insist.
         while True:
             try:
-                reply = conn.connect("localhost", self.port)
+                conn.connect("localhost", self.port)
             except socket.error:
                 if not self.poppy.alive:
                     raise
@@ -215,6 +215,7 @@ class TestPoppy(unittest.TestCase):
             content = open(os.path.join(
                 self.root_dir, upload_dirs[index], "test")).read()
             self.assertEqual(content, expected_contents[index])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
