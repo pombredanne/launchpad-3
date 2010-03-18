@@ -299,17 +299,6 @@ class Archive(SQLBase):
         return dependencies
 
     @property
-    def expanded_archive_dependencies(self):
-        """See `IArchive`."""
-        archives = []
-        if self.is_ppa:
-            archives.append(self.distribution.main_archive)
-        archives.append(self)
-        archives.extend(
-            [archive_dep.dependency for archive_dep in self.dependencies])
-        return archives
-
-    @property
     def debug_archive(self):
         """See `IArchive`."""
         if self.purpose == ArchivePurpose.PRIMARY:
@@ -786,8 +775,14 @@ class Archive(SQLBase):
 
     def findDepCandidateByName(self, distroarchseries, name):
         """See `IArchive`."""
-        archives = [
-            archive.id for archive in self.expanded_archive_dependencies]
+        archives = []
+        if self.is_ppa:
+            archives.append(self.distribution.main_archive.id)
+        archives.append(self.id)
+        dep = ArchiveDependency.selectOneBy(archive=self)
+        while dep is not None:
+            archives.append(dep.dependency.id)
+            dep = ArchiveDependency.selectOneBy(archive=dep.dependency)
 
         query = """
             binarypackagename = %s AND
