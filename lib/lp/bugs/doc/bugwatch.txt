@@ -513,3 +513,12 @@ Bug watches can be removed using the removeWatch method.
     >>> bug.removeWatch(bug_watch, factory.makePerson())
     >>> [bug_watch.remotebug for bug_watch in bug.watches]
     []
+
+
+BugWatchActivity
+----------------
+
+The activity on a given bug watch is recorded in the BugWatchActivity
+table.
+
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchActivity

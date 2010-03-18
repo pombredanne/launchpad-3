@@ -293,3 +293,7 @@ class NoBugTrackerFound(Exception):
 
 class UnrecognizedBugTrackerURL(Exception):
     """The given URL isn't used by any bug tracker we support."""
+
+
+class IBugWatchActivity(Interface):
+    """A record of a single BugWatch update."""
