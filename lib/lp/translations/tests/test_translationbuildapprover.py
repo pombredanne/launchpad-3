@@ -133,7 +133,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         self._assertStatus(entries, [RosettaImportStatus.APPROVED])
         self.assertEqual(pot, entries[0].potemplate)
 
-    def test_approve_generic_name_multiple(self):
+    def test_approve_generic_name_multiple_files(self):
         # Generic names in combination with others don't get approved.
         filenames = [
             'po/messages.pot',
@@ -147,6 +147,19 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             entries,
             [RosettaImportStatus.NEEDS_REVIEW, RosettaImportStatus.APPROVED])
         self.assertEqual('mydomain', entries[1].potemplate.name)
+
+    def test_approve_generic_name_multiple_templates(self):
+        # Generic names don't get approved when more than one template exists.
+        filenames = [
+            'po/messages.pot',
+            ]
+        series = self.factory.makeProductSeries()
+        pot1 = self.factory.makePOTemplate(productseries=series)
+        pot2 = self.factory.makePOTemplate(productseries=series)
+        approver = TranslationBuildApprover(filenames, productseries=series)
+        entries = self._makeApprovedEntries(series, approver, filenames)
+
+        self._assertStatus(entries, [RosettaImportStatus.NEEDS_REVIEW])
 
 
 def test_suite():
