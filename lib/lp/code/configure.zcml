@@ -1013,7 +1013,8 @@
   <!-- SourcePackageRecipe -->
   <class
      class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">
-    <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
+    <allow
+    interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
     <require
        permission="launchpad.Edit"
        set_attributes="builder_recipe"/>

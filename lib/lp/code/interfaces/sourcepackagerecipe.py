@@ -7,14 +7,15 @@ __metaclass__ = type
 __all__ = [
     'ForbiddenInstruction',
     'ISourcePackageRecipe',
+    'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'TooNewRecipeFormat',
     ]
 
-from lazr.restful.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Datetime, TextLine
+from zope.schema import Datetime, Object, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
@@ -44,7 +45,20 @@ class TooNewRecipeFormat(Exception):
         self.newest_supported = newest_supported
 
 
-class ISourcePackageRecipe(IHasOwner):
+class ISourcePackageRecipeData(Interface):
+    """A recipe as database data, not text."""
+
+    base_branch = Object(
+        schema=IBranch, title=_("Base branch"), description=_(
+            "The base branch to use when building the recipe."))
+
+    deb_version_template = TextLine(
+        title=_('deb-version template'),
+        description = _(
+            'The template that will be used to generate a deb version.'),)
+
+
+class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     """An ISourcePackageRecipe describes how to build a source package.
 
     More precisely, it describes how to combine a number of branches into a
@@ -76,12 +90,6 @@ class ISourcePackageRecipe(IHasOwner):
     builder_recipe = Attribute(
         _("The bzr-builder data structure for the recipe."))
 
-    base_branch = Reference(
-        IBranch, title=_("The person who created this recipe"), readonly=True)
-    deb_version_template = TextLine()
-
-    builds = Attribute("boo")
-
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
 
@@ -95,12 +103,8 @@ class ISourcePackageRecipe(IHasOwner):
             able to upload to the archive.
         """
 
-
-class ISourcePackageRecipeData(Interface):
-
-    base_branch = Attribute('Base branch of the recipe')
-
-    deb_version_template = TextLine()
+    builds = CollectionField(title=_("Related SourcePackageRecpieBuilds."),
+        value_type=Reference(schema=Interface))
 
 
 class ISourcePackageRecipeSource(Interface):

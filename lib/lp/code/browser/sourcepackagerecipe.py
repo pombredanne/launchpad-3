@@ -20,15 +20,13 @@ class SourcePackageRecipeView(LaunchpadView):
 
     label = title
 
-    @property
-    def base_branch(self):
-        return self.context.recipe_data.base_branch
-
 
 class SourcePackageRecipeBuildView(LaunchpadView):
+    """Default view of a SourcePackageRecipeBuild."""
 
     @property
     def status(self):
+        """A human-friendly status string."""
         description = {
             BuildStatus.NEEDSBUILD: 'Pending build',
             BuildStatus.FULLYBUILT: 'Successful build',
@@ -51,16 +49,19 @@ class SourcePackageRecipeBuildView(LaunchpadView):
 
     @property
     def eta(self):
+        """The datetime when the build job is estimated to complete."""
         if self.context.buildqueue_record is None:
             return None
         self.context.buildqueue_record.getEstimatedJobStartTime()
 
     @property
-    def estimate(self):
-        return (self.context.datebuilt is None and self.eta is not None)
-
-    @property
     def date(self):
+        """The date when the build did or will complete."""
         if self.estimate:
             return self.eta
         return self.context.datebuilt
+
+    @property
+    def estimate(self):
+        """If true, the date value is an estimate."""
+        return (self.context.datebuilt is None and self.eta is not None)

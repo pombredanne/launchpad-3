@@ -39,7 +39,7 @@ class SourcePackageRecipe(Storm):
 
     __storm_table__ = 'SourcePackageRecipe'
 
-    implements(ISourcePackageRecipe)
+    implements(ISourcePackageRecipe, ISourcePackageRecipeData)
 
     classProvides(ISourcePackageRecipeSource)
 
@@ -118,6 +118,7 @@ class SourcePackageRecipe(Storm):
         build.queueBuild()
         return build
 
+    @property
     def builds(self):
         return Store.of(self).find(SourcePackageRecipeBuild,
             SourcePackageRecipeBuild.recipe==self)
