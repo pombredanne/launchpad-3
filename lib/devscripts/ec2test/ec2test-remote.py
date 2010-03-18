@@ -464,10 +464,11 @@ if __name__ == '__main__':
 
             runner.test()
         except:
+            config = bzrlib.config.GlobalConfig()
             # Handle exceptions thrown by the test() or daemonize() methods.
             if options.email:
                 bzrlib.email_message.EmailMessage.send(
-                    bzrlib.config.GlobalConfig(), options.email[0],
+                    config, options.email[0],
                     options.email,
                     'Test Runner FAILED', traceback.format_exc())
             raise

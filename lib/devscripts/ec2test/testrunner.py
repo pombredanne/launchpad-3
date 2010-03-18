@@ -183,11 +183,7 @@ class EC2TestRunner:
             (tree,
              bzrbranch,
              relpath) = BzrDir.open_containing_tree_or_branch(branch)
-            # if tree is None, remote...I'm assuming.
-            if tree is None:
-                config = GlobalConfig()
-            else:
-                config = bzrbranch.get_config()
+            config = bzrbranch.get_config()
 
             if pqm_message is not None or tree is not None:
                 # if we are going to maybe send a pqm_message, we're going to
