@@ -29,6 +29,7 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
+    'ZopeTestInSubProcess',
     ]
 
 import copy
@@ -38,6 +39,8 @@ import os
 from pprint import pformat
 import shutil
 import subprocess
+import subunit
+import sys
 import tempfile
 import time
 
@@ -62,6 +65,7 @@ import zope.event
 from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.launchpad.webapp import errorlog
 from canonical.config import config
@@ -584,6 +588,70 @@ class WindmillTestCase(TestCaseWithFactory):
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
         self.client.open(url=u'http://launchpad.dev:8085')
+
+
+class ZopeTestInSubProcess:
+    """Run tests in a sub-process, respecting Zope idiosyncrasies.
+
+    Use this as a mixin with an interesting `TestCase` to isolate
+    tests with side-effects. Each and every test *method* in the test
+    case is run in a new, forked, sub-process. This will slow down
+    your tests, so use it sparingly. However, when you need to, for
+    example, start the Twisted reactor (which cannot currently be
+    safely stopped and restarted in process) it is invaluable.
+
+    This is basically a reimplementation of subunit's
+    `IsolatedTestCase` or `IsolatedTestSuite`, but adjusted to work
+    with Zope. In particular, Zope's TestResult object is responsible
+    for calling testSetUp() and testTearDown() on the selected layer.
+    """
+
+    def run(self, result):
+        # The result must be an instance of Zope's TestResult because
+        # we construct a super() of it later on. Other result classes
+        # could be supported with a more general approach, but it's
+        # unlikely that any one approach is going to work for every
+        # class. It's better to fail early and draw attention here.
+        assert isinstance(result, ZopeTestResult), (
+            "result must be a Zope result object, not %r." % (result,))
+        pread, pwrite = os.pipe()
+        pid = os.fork()
+        if pid == 0:
+            # Child.
+            os.close(pread)
+            fdwrite = os.fdopen(pwrite, 'w', 1)
+            # Send results to both the Zope result object (so that
+            # layer setup and teardown are done properly, etc.) and to
+            # the subunit stream client so that the parent process can
+            # obtain the result.
+            result = testtools.MultiTestResult(
+                result, subunit.TestProtocolClient(fdwrite))
+            super(ZopeTestInSubProcess, self).run(result)
+            fdwrite.flush()
+            sys.stdout.flush()
+            sys.stderr.flush()
+            # Exit hard to avoid running onexit handlers and to avoid
+            # anything that could suppress SystemExit; this exit must
+            # not be prevented.
+            os._exit(0)
+        else:
+            # Parent.
+            os.close(pwrite)
+            fdread = os.fdopen(pread, 'rU')
+            # Skip all the Zope-specific result stuff by using a
+            # super() of the result. This is because the Zope result
+            # object calls testSetUp() and testTearDown() on the
+            # layer, and handles post-mortem debugging. These things
+            # do not make sense in the parent process. More
+            # immediately, it also means that the results are not
+            # reported twice; they are reported on stdout by the child
+            # process, so they need to be suppressed here.
+            result = super(ZopeTestResult, result)
+            # Accept the result from the child process.
+            protocol = subunit.TestProtocolServer(result)
+            protocol.readFrom(fdread)
+            fdread.close()
+            os.waitpid(pid, 0)
 
 
 def capture_events(callable_obj, *args, **kwargs):
