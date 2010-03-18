@@ -22,6 +22,7 @@ from canonical.testing import (
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet)
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
@@ -29,8 +30,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import (
-    BuildSetStatus, BuildStatus)
+from lp.soyuz.interfaces.build import BuildSetStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,

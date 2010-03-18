@@ -113,10 +113,10 @@ from lp.bugs.interfaces.bugtask import (
     IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
     IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES)
+    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -1083,7 +1083,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        return bugtask_heat_html(self.context)
+        if IDistributionSourcePackage.providedBy(self.context.target):
+            return bugtask_heat_html(
+                self.context, target=self.context.distribution)
+        else:
+            return bugtask_heat_html(self.context)
 
 
 def calculate_heat_display(heat, max_bug_heat):
@@ -1103,9 +1107,11 @@ def calculate_heat_display(heat, max_bug_heat):
         return min(heat_index, 4)
 
 
-def bugtask_heat_html(bugtask):
+def bugtask_heat_html(bugtask, target=None):
     """Render the HTML representing bug heat for a given bugask."""
-    max_bug_heat = bugtask.target.max_bug_heat
+    if target is None:
+        target = bugtask.target
+    max_bug_heat = target.max_bug_heat
     if max_bug_heat is None:
         max_bug_heat = 5000
     heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
@@ -1886,7 +1892,7 @@ class BugsStatsMixin(BugsInfoMixin):
         """A count of unresolved bugs with patches."""
         return self.context.searchTasks(
             None, user=self.user,
-            status=(UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES),
+            status=UNRESOLVED_BUGTASK_STATUSES,
             omit_duplicates=True, has_patch=True).count()
 
 
@@ -1979,7 +1985,8 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
-                 has_specification, has_patch, request=None):
+                 has_specification, has_patch, request=None,
+                 target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
         self.has_mentoring_offer = has_mentoring_offer
@@ -1987,6 +1994,7 @@ class BugTaskListingItem:
         self.has_specification = has_specification
         self.has_patch = has_patch
         self.request = request
+        self.target_context = target_context
 
     @property
     def last_significant_change_date(self):
@@ -1998,7 +2006,7 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        return bugtask_heat_html(self.bugtask)
+        return bugtask_heat_html(self.bugtask, target=self.target_context)
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -2006,8 +2014,10 @@ class BugListingBatchNavigator(TableBatchNavigator):
     # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
     # to a mixin so that MilestoneView and others can use it.
 
-    def __init__(self, tasks, request, columns_to_show, size):
+    def __init__(self, tasks, request, columns_to_show, size,
+                 target_context=None):
         self.request = request
+        self.target_context = target_context
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -2019,13 +2029,22 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
         badge_property = self.bug_badge_properties[bugtask]
+        if (IMaloneApplication.providedBy(self.target_context) or
+            IPerson.providedBy(self.target_context)):
+            # XXX Tom Berger bug=529846
+            # When we have a specific interface for things that have bug heat
+            # it would be better to use that for the check here instead.
+            target_context = None
+        else:
+            target_context = self.target_context
         return BugTaskListingItem(
             bugtask,
             badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
             badge_property['has_specification'],
             badge_property['has_patch'],
-            request=self.request)
+            request=self.request,
+            target_context=target_context)
 
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""
@@ -2428,7 +2447,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Return the batch navigator to be used to batch the bugtasks."""
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size)
+            size=config.malone.buglist_batch_size,
+            target_context=self.context)
 
     def buildBugTaskSearchParams(self, searchtext=None, extra_params=None):
         """Build the parameters to submit to the `searchTasks` method.

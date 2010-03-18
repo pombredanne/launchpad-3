@@ -714,6 +714,11 @@
             template="../templates/codeimport-new.pt"
             permission="launchpad.AnyPerson"/>
     </facet>
+    <browser:url
+        for="lp.code.interfaces.codeimport.ICodeImport"
+        attribute_to_parent="branch"
+        path_expression="string:+code-import"
+        rootsite="code"/>
     <browser:navigation
         module="lp.code.browser.codeimport"
         classes="
@@ -1074,5 +1079,16 @@
         factory="lp.code.browser.diff.DiffFormatterAPI"
         name="fmt"
         />
+
+    <browser:url
+        for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+        attribute_to_parent="owner"
+        path_expression="string:+recipe/${name}"
+        rootsite="code" />
+    <browser:url
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        attribute_to_parent="recipe"
+        path_expression="string:+build/${id}"
+        rootsite="code" />
 
 </configure>

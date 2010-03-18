@@ -8,6 +8,11 @@
     <strong>Translations for this series are currently hidden.</strong>
 
     <!-- Bounce regular users to "translations unavailable" page. -->
+    <tal:XXX condition="nothing">
+        20100224 adiroiban bug=527069: The following tal:omit-tag is only
+        used with the sole purpose of raising an exception.
+        There should be a better solution for this problem.
+    </tal:XXX>
     <metal:check-available tal:omit-tag="view/checkTranslationsViewable" />
   </p>
 
