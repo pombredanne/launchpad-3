@@ -52,7 +52,8 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, ICodeReviewCommentEmailJob,
     ICodeReviewCommentEmailJobSource, ICreateMergeProposalJob,
     ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
-    IMergeProposalCreatedJobSource, IReviewRequestedEmailJob,
+    IMergeProposalCreatedJobSource, IMergeProposalUpdatedJob,
+    IMergeProposalUpdatedJobSource, IReviewRequestedEmailJob,
     IReviewRequestedEmailJobSource, IUpdatePreviewDiffJobSource,
     )
 from lp.code.mail.branch import RecipientReason
@@ -95,6 +96,13 @@ class BranchMergeProposalJobType(DBEnumeratedType):
 
         This job sends an email to the requested reviewer, or members of the
         requested reviewer team asking them to review the proposal.
+        """)
+
+    MERGE_PROPOSAL_UPDATED = DBItem(4, """
+        Merge proposal updated
+
+        This job sends an email to the subscribers informing them of fields
+        that have been changed on the merge proposal itself.
         """)
 
 
@@ -450,6 +458,66 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
         mailer = BMPMailer.forReviewRequest(
             reason, self.branch_merge_proposal, self.requester)
         mailer.sendAll()
+
+    @classmethod
+    def create(cls, review_request):
+        """See `IReviewRequestedEmailJobSource`."""
+        metadata = cls.getMetadata(review_request)
+        bmp = review_request.branch_merge_proposal
+        job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
+        return cls(job)
+
+    @staticmethod
+    def getMetadata(review_request):
+        return {
+            'reviewer': review_request.reviewer.name,
+            'requester': review_request.registrant.name,
+            }
+
+    @property
+    def reviewer(self):
+        """The person or team who has been asked to review."""
+        return getUtility(IPersonSet).getByName(self.metadata['reviewer'])
+
+    @property
+    def requester(self):
+        """The person who requested the review to be done."""
+        return getUtility(IPersonSet).getByName(self.metadata['requester'])
+
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars =  BranchMergeProposalJobDerived.getOopsVars(self)
+        vars.extend([
+            ('reviewer', self.metadata['reviewer']),
+            ('requester', self.metadata['requester']),
+            ])
+        return vars
+
+    def getErrorRecipients(self):
+        """Return a list of email-ids to notify about user errors."""
+        recipients = []
+        if self.requester is not None:
+            recipients.append(self.requester.preferredemail)
+        return recipients
+
+
+class MergeProposalUpdatedJob(BranchMergeProposalJobDerived):
+    """Send email to the subscribers informing them of updated fields.
+
+    When attributes of the merge proposal are edited, we inform the
+    subscribers.
+    """
+
+    implements(IMergeProposalUpdatedJob)
+
+    classProvides(IMergeProposalUpdatedJobSource)
+
+    class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED
+
+    def run(self):
+        """See `IRunnableJob`."""
+
+        raise NotImplementedError('todo')
 
     @classmethod
     def create(cls, review_request):

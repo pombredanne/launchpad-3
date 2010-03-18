@@ -18,6 +18,8 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
+    'IMergeProposalUpdatedJob',
+    'IMergeProposalUpdatedJobSource',
     'IReviewRequestedEmailJob',
     'IReviewRequestedEmailJobSource',
     'IUpdatePreviewDiffJobSource',
@@ -631,6 +633,21 @@ class IReviewRequestedEmailJobSource(IJobSource):
         :param review_request: A vote reference for the requested review.
         """
 
+
+class IMergeProposalUpdatedJob(IRunnableJob):
+    """Interface for the job to sends email about merge proposal updates."""
+
+    xxx = Attribute('The xxx.')
+
+
+class IMergeProposalUpdatedJobSource(IJobSource):
+    """Create or retrieve jobs that email about merge proposal updates."""
+
+    def create(xxx):
+        """Create a job to email merge proposal updates to subscribers.
+
+        :param xxxx: 
+        """
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
 # should be moved there.
