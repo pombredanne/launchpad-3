@@ -23,8 +23,6 @@ records to disk, including configuration and indexes.
     ppa
     >>> print cprov_archive.purpose.name
     PPA
-    >>> print cprov_archive.status.name
-    ACTIVE
     >>> print cprov_archive.displayname
     PPA for Celso Providelo
     >>> cprov_archive.enabled
@@ -173,6 +171,28 @@ archives are published on disk.
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ('purpose', <Archive at ...>)
+
+'status' tracks the status of an Archive.  Its current values are only
+ACTIVE and DELETING.  ACTIVE is the normal value; DELETING is set when
+the user has requested the PPA to be deleted.  The actual deletion is done
+some time later in a zopeless script.
+
+It is only editable by someone with launchpad.Edit permissions:
+
+    >>> print cprov_archive.status.name
+    ACTIVE
+
+    >>> from lp.soyuz.interfaces.archive import ArchiveStatus
+    >>> cprov_archive.status = ArchiveStatus.DELETING
+    >>> print cprov_archive.status.name
+    DELETING
+
+    >>> login(ANONYMOUS)
+    >>> cprov_archive.status = ArchiveStatus.ACTIVE
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
 
 'name' is only editable by an LP administrator and only exposed via
 the ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still
