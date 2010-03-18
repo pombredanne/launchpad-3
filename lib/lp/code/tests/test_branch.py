@@ -236,7 +236,7 @@ class TestWriteToBranch(PermissionTest):
         # Even if a branch isn't owned by vcs-imports, vcs-imports members can
         # edit it if it has a code import associated with it.
         person = self.factory.makePerson()
-        branch = self.factory.makeCodeImport().branch
+        branch = self.factory.makeAnyCodeImport().branch
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         removeSecurityProxy(vcs_imports).addMember(
             person, vcs_imports.teamowner)
@@ -341,7 +341,7 @@ class TestWriteToBranch(PermissionTest):
         # work a little, whoever registered of a code import branch is allowed
         # to edit the branch, even if they aren't one of the owners.
         registrant = self.factory.makePerson()
-        code_import = self.factory.makeCodeImport(registrant=registrant)
+        code_import = self.factory.makeAnyCodeImport(registrant=registrant)
         branch = code_import.branch
         removeSecurityProxy(branch).setOwner(
             getUtility(ILaunchpadCelebrities).vcs_imports,

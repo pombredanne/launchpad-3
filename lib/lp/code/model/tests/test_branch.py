@@ -81,7 +81,7 @@ class TestCodeImport(TestCase):
 
     def test_branchCodeImport(self):
         """Ensure the codeImport property works correctly."""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         branch = code_import.branch
         self.assertEqual(code_import, branch.code_import)
         CodeImportSet().delete(code_import)
@@ -630,7 +630,7 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_codeImportCanStillBeDeleted(self):
         """A branch that has an attached code import can be deleted."""
-        code_import = LaunchpadObjectFactory().makeCodeImport()
+        code_import = LaunchpadObjectFactory().makeAnyCodeImport()
         branch = code_import.branch
         self.assertEqual(
             branch.canBeDeleted(), True,
@@ -954,14 +954,14 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithCodeImportRequirements(self):
         """Deletion requirements for a code import branch are right"""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         # Remove the implicit branch subscription first.
         code_import.branch.unsubscribe(code_import.branch.owner)
         self.assertEqual({}, code_import.branch.deletionRequirements())
 
     def test_branchWithCodeImportDeletion(self):
         """break_links allows deleting a code import branch."""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         code_import_id = code_import.id
         self.factory.makeCodeImportJob(code_import)
         code_import.branch.destroySelf(break_references=True)
@@ -1026,7 +1026,7 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_DeleteCodeImport(self):
         """DeleteCodeImport.__call__ must delete the CodeImport."""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         code_import_id = code_import.id
         self.factory.makeCodeImportJob(code_import)
         DeleteCodeImport(code_import)()

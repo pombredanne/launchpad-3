@@ -581,7 +581,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         cvs_server.makeModule('trunk', [('README', 'original\n')])
         self.foreign_commit_count = 2
 
-        return self.factory.makeCodeImport(
+        return self.factory.makeAnyCodeImport(
             cvs_root=cvs_server.getRoot(), cvs_module='trunk')
 
     def makeSVNCodeImport(self):
@@ -593,7 +593,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
             'trunk', [('README', 'contents')])
         self.foreign_commit_count = 2
 
-        return self.factory.makeCodeImport(svn_branch_url=url)
+        return self.factory.makeAnyCodeImport(svn_branch_url=url)
 
     def makeBzrSvnCodeImport(self):
         """Make a `CodeImport` that points to a real Subversion repository."""
@@ -605,7 +605,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
             'trunk', [('README', 'contents')])
         self.foreign_commit_count = 2
 
-        return self.factory.makeCodeImport(
+        return self.factory.makeAnyCodeImport(
             svn_branch_url=url, rcs_type=RevisionControlSystems.BZR_SVN)
 
     def makeGitCodeImport(self):
@@ -618,7 +618,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         self.git_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
 
-        return self.factory.makeCodeImport(git_repo_url=self.repo_path)
+        return self.factory.makeAnyCodeImport(git_repo_url=self.repo_path)
 
     def makeHgCodeImport(self):
         """Make a `CodeImport` that points to a real Mercurial repository."""
@@ -630,7 +630,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         self.hg_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
 
-        return self.factory.makeCodeImport(hg_repo_url=self.repo_path)
+        return self.factory.makeAnyCodeImport(hg_repo_url=self.repo_path)
 
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.

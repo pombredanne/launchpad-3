@@ -17,6 +17,7 @@ from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
@@ -39,7 +40,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new subversion code import should have NEW status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
             url=self.factory.getUniqueURL())
@@ -53,7 +54,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
             url=self.factory.getUniqueURL(),
@@ -68,7 +69,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new CVS code import should have NEW status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
@@ -83,7 +84,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
@@ -99,7 +100,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new git import is always reviewed by default."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
@@ -114,7 +115,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new hg import is always reviewed by default."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.HG,
             url=self.factory.getUniqueURL(),
@@ -133,12 +134,12 @@ class TestCodeImportDeletion(TestCaseWithFactory):
 
     def test_delete(self):
         """Ensure CodeImport objects can be deleted via CodeImportSet."""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         CodeImportSet().delete(code_import)
 
     def test_deleteIncludesJob(self):
         """Ensure deleting CodeImport objects deletes associated jobs."""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         login_person(getUtility(ILaunchpadCelebrities).vcs_imports.teamowner)
         code_import_job = self.factory.makeCodeImportJob(code_import)
         job_id = code_import_job.id
@@ -187,7 +188,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
             job.destroySelf()
 
     def makeApprovedImportWithPendingJob(self):
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             self.import_operator)
@@ -201,7 +202,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
 
     def test_approve(self):
         # Approving a code import will create a job for it.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             self.import_operator)
@@ -211,7 +212,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
 
     def test_suspend_no_job(self):
         # Suspending a new import has no impact on jobs.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         code_import.updateFromData(
             {'review_status':CodeImportReviewStatus.SUSPENDED},
             self.import_operator)
@@ -241,7 +242,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
 
     def test_invalidate_no_job(self):
         # Invalidating a new import has no impact on jobs.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         code_import.updateFromData(
             {'review_status':CodeImportReviewStatus.INVALID},
             self.import_operator)
@@ -271,7 +272,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
 
     def test_markFailing_no_job(self):
         # Marking a new import as failing has no impact on jobs.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         code_import.updateFromData(
             {'review_status':CodeImportReviewStatus.FAILING},
             self.import_operator)
@@ -307,7 +308,7 @@ class TestCodeImportResultsAttribute(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.code_import = self.factory.makeCodeImport()
+        self.code_import = self.factory.makeAnyCodeImport()
 
     def tearDown(self):
         super(TestCodeImportResultsAttribute, self).tearDown()
@@ -406,27 +407,27 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
 
     def test_consecutive_failure_count_zero_initially(self):
         # A new code import has a consecutive_failure_count of 0.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         self.assertEqual(0, code_import.consecutive_failure_count)
 
     def test_consecutive_failure_count_succeed(self):
         # A code import that has succeeded once has a
         # consecutive_failure_count of 0.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         self.succeedImport(code_import)
         self.assertEqual(0, code_import.consecutive_failure_count)
 
     def test_consecutive_failure_count_fail(self):
         # A code import that has failed once has a consecutive_failure_count
         # of 1.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         self.failImport(code_import)
         self.assertEqual(1, code_import.consecutive_failure_count)
 
     def test_consecutive_failure_count_succeed_succeed_no_changes(self):
         # A code import that has succeeded then succeeded with no changes has
         # a consecutive_failure_count of 0.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         self.succeedImport(code_import)
         self.succeedImport(
             code_import, CodeImportResultStatus.SUCCESS_NOCHANGE)
@@ -435,7 +436,7 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
     def test_consecutive_failure_count_succeed_succeed_partial(self):
         # A code import that has succeeded then succeeded with no changes has
         # a consecutive_failure_count of 0.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         self.succeedImport(code_import)
         self.succeedImport(
             code_import, CodeImportResultStatus.SUCCESS_NOCHANGE)
@@ -444,7 +445,7 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
     def test_consecutive_failure_count_fail_fail(self):
         # A code import that has failed twice has a consecutive_failure_count
         # of 2.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         self.failImport(code_import)
         self.failImport(code_import)
         self.assertEqual(2, code_import.consecutive_failure_count)
@@ -452,7 +453,7 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
     def test_consecutive_failure_count_fail_fail_succeed(self):
         # A code import that has failed twice then succeeded has a
         # consecutive_failure_count of 0.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         self.failImport(code_import)
         self.failImport(code_import)
         self.succeedImport(code_import)
@@ -461,7 +462,7 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
     def test_consecutive_failure_count_fail_succeed_fail(self):
         # A code import that has failed then succeeded then failed again has a
         # consecutive_failure_count of 1.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         self.failImport(code_import)
         self.succeedImport(code_import)
         self.failImport(code_import)
@@ -470,7 +471,7 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
     def test_consecutive_failure_count_succeed_fail_succeed(self):
         # A code import that has succeeded then failed then succeeded again
         # has a consecutive_failure_count of 0.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         self.succeedImport(code_import)
         self.failImport(code_import)
         self.succeedImport(code_import)
@@ -479,8 +480,8 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
     def test_consecutive_failure_count_other_import_non_interference(self):
         # The failure or success of other code imports does not affect
         # consecutive_failure_count.
-        code_import = self.factory.makeCodeImport()
-        other_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
+        other_import = self.factory.makeAnyCodeImport()
         self.failImport(code_import)
         self.assertEqual(1, code_import.consecutive_failure_count)
         self.failImport(other_import)
@@ -509,7 +510,7 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
         # tryFailingImportAgain only succeeds for imports that are FAILING.
         outcomes = {}
         for status in CodeImportReviewStatus.items:
-            code_import = self.factory.makeCodeImport()
+            code_import = self.factory.makeAnyCodeImport()
             code_import.updateFromData(
                 {'review_status': status}, self.factory.makePerson())
             try:
@@ -529,7 +530,7 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
     def test_resetsStatus(self):
         # tryFailingImportAgain sets the review_status of the import back to
         # REVIEWED.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.FAILING},
             self.factory.makePerson())
@@ -540,7 +541,7 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
 
     def test_requestsImport(self):
         # tryFailingImportAgain requests an import.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.FAILING},
             self.factory.makePerson())
@@ -565,7 +566,7 @@ def make_active_import(factory, project_name=None, product_name=None,
         project = None
     product = factory.makeProduct(
         name=product_name, displayname=product_name, project=project)
-    code_import = factory.makeCodeImport(
+    code_import = factory.makeProductCodeImport(
         product=product, branch_name=branch_name,
         svn_branch_url=svn_branch_url, cvs_root=cvs_root,
         cvs_module=cvs_module, git_repo_url=git_repo_url,
@@ -662,7 +663,7 @@ class TestGetActiveImports(TestCaseWithFactory):
             self.factory, product_name='prod1', branch_name='a')
         prod2_a = make_active_import(
             self.factory, product_name='prod2', branch_name='a')
-        prod1_b = self.factory.makeCodeImport(
+        prod1_b = self.factory.makeProductCodeImport(
             product=prod1_a.branch.product, branch_name='b')
         make_import_active(self.factory, prod1_b)
         results = getUtility(ICodeImportSet).getActiveImports()

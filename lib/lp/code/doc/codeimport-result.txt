@@ -38,7 +38,7 @@ it.
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
 
-    >>> sample_import = factory.makeCodeImport()
+    >>> sample_import = factory.makeAnyCodeImport()
 
 Then create a result object.
 

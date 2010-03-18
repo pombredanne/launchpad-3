@@ -102,7 +102,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
 
     def makeJob(self, state, date_due_delta, requesting_user=None):
         """Create a CodeImportJob object from a spec."""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         job = self.factory.makeCodeImportJob(code_import)
         if state == CodeImportJobState.RUNNING:
             getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
@@ -560,7 +560,7 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
         # CodeImportJobWorkflow.requestJob fails if the state of the
         # CodeImportJob is different from PENDING.
         person = self.factory.makePerson()
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         import_job = self.factory.makeCodeImportJob(code_import)
         # ICodeImportJob does not allow setting 'state', so we must
         # use removeSecurityProxy.
@@ -579,7 +579,7 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
     def test_alreadyRequested(self):
         # CodeImportJobWorkflow.requestJob fails if the job was requested
         # already, that is, if its requesting_user attribute is set.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         import_job = self.factory.makeCodeImportJob(code_import)
         person = self.factory.makePerson()
         other_person = self.factory.makePerson()
@@ -595,7 +595,7 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
     def test_requestFutureJob(self):
         # CodeImportJobWorkflow.requestJob sets requesting_user and
         # date_due if the current date_due is in the future.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         pending_job = self.factory.makeCodeImportJob(code_import)
         person = self.factory.makePerson()
         # Set date_due in the future. ICodeImportJob does not allow setting
@@ -617,7 +617,7 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
     def test_requestOverdueJob(self):
         # CodeImportJobWorkflow.requestJob only sets requesting_user if the
         # date_due is already past.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         pending_job = self.factory.makeCodeImportJob(code_import)
         person = self.factory.makePerson()
         # Set date_due in the past. ICodeImportJob does not allow setting
@@ -650,7 +650,7 @@ class TestCodeImportJobWorkflowStartJob(TestCaseWithFactory,
 
     def test_wrongJobState(self):
         # Calling startJob with a job whose state is not PENDING is an error.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         machine = self.factory.makeCodeImportMachine()
         job = self.factory.makeCodeImportJob(code_import)
         # ICodeImportJob does not allow setting 'state', so we must
@@ -669,7 +669,7 @@ class TestCodeImportJobWorkflowStartJob(TestCaseWithFactory,
     def test_offlineMachine(self):
         # Calling startJob with a machine which is not ONLINE is an error.
         machine = self.factory.makeCodeImportMachine()
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         job = self.factory.makeCodeImportJob(code_import)
         # Testing startJob failure.
         self.assertFailure(
@@ -691,7 +691,7 @@ class TestCodeImportJobWorkflowUpdateHeartbeat(TestCaseWithFactory,
     def test_wrongJobState(self):
         # Calling updateHeartbeat with a job whose state is not RUNNING is an
         # error.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         job = self.factory.makeCodeImportJob(code_import)
         self.assertFailure(
             "The CodeImportJob associated with %s is "
@@ -718,7 +718,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         This is suitable for passing into finishJob().
         """
         if code_import is None:
-            code_import = self.factory.makeCodeImport()
+            code_import = self.factory.makeAnyCodeImport()
         job = code_import.import_job
         if job is None:
             job = self.factory.makeCodeImportJob(code_import)
@@ -729,7 +729,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
 
     def test_wrongJobState(self):
         # Calling finishJob with a job whose state is not RUNNING is an error.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         job = self.factory.makeCodeImportJob(code_import)
         self.assertFailure(
             "The CodeImportJob associated with %s is "
@@ -870,7 +870,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         # Some result fields are tested in other tests:
         unchecked_result_fields.difference_update(['log_file', 'status'])
 
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         removeSecurityProxy(code_import).review_status = \
             CodeImportReviewStatus.REVIEWED
         self.assertFinishJobPassesThroughJobField(
@@ -976,7 +976,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
     def test_enoughFailuresMarksAsFailing(self):
         # If a code import fails config.codeimport.consecutive_failure_limit
         # times in a row, the import is marked as FAILING.
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         failure_limit = config.codeimport.consecutive_failure_limit
         for i in range(failure_limit - 1):
             running_job = self.makeRunningJob(code_import)

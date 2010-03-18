@@ -72,9 +72,9 @@ in the repository, known as the "module".
     >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
     >>> cvs_module = 'hello'
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> product = getUtility(IProductSet).getByName('firefox')
+    >>> target = IBranchTarget(getUtility(IProductSet).getByName('firefox'))
     >>> cvs_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-cvs',
+    ...     registrant=nopriv, target=target, branch_name='trunk-cvs',
     ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
@@ -131,7 +131,7 @@ retrieve the tree to import.
     >>> svn = RevisionControlSystems.SVN
     >>> svn_url = 'svn://svn.example.com/trunk'
     >>> svn_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-svn',
+    ...     registrant=nopriv, target=target, branch_name='trunk-svn',
     ...     rcs_type=svn, url=svn_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
@@ -160,7 +160,7 @@ imports are similar to the Subversion via cscvs imports.
     >>> bzr_svn = RevisionControlSystems.BZR_SVN
     >>> bzr_svn_url = 'svn://svn.example.com/for-bzr-svn/trunk'
     >>> bzr_svn_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-bzr-svn',
+    ...     registrant=nopriv, target=target, branch_name='trunk-bzr-svn',
     ...     rcs_type=bzr_svn, url=bzr_svn_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
@@ -182,7 +182,7 @@ retrieve the branch to import.
     >>> git = RevisionControlSystems.GIT
     >>> git_url = 'git://git.example.com/hello.git'
     >>> git_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-git',
+    ...     registrant=nopriv, target=target, branch_name='trunk-git',
     ...     rcs_type=git, url=git_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(git_import))
     True
@@ -209,7 +209,7 @@ retrieve the branch to import.
     >>> hg = RevisionControlSystems.HG
     >>> hg_url = 'http://hg.example.com/metallic'
     >>> hg_import = code_import_set.new(
-    ...     registrant=nopriv, product=product, branch_name='trunk-hg',
+    ...     registrant=nopriv, target=target, branch_name='trunk-hg',
     ...     rcs_type=hg, url=hg_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(hg_import))
     True
@@ -237,7 +237,7 @@ the review status.  This is done using the code import method
 'updateFromData'.  updateFromData returns a MODIFY CodeImportEvent if
 any changes were made, or None if not.
 
-    >>> code_import = factory.makeCodeImport(
+    >>> code_import = factory.makeProductCodeImport(
     ...     svn_branch_url='http://svn.example.com/project')
     >>> print code_import.review_status.title
     Pending Review

@@ -85,7 +85,7 @@ If we create a lot of imports, the listing view will be batched.
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('test@canonical.com')
     >>> for i in range(10):
-    ...     new_import = factory.makeCodeImport()
+    ...     new_import = factory.makeAnyCodeImport()
 
     >>> logout()
 

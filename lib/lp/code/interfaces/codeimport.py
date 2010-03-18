@@ -178,9 +178,12 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, product, branch_name, rcs_type, url=None,
+    def new(registrant, target, branch_name, rcs_type, url=None,
             cvs_root=None, cvs_module=None, review_status=None):
-        """Create a new CodeImport."""
+        """Create a new CodeImport.
+
+        :param target: An `IBranchTarget` that the code is associated with.
+        """
 
     def getActiveImports(text=None):
         """Return an iterable of all 'active' CodeImport objects.

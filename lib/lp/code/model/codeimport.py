@@ -205,7 +205,7 @@ class CodeImportSet:
 
     implements(ICodeImportSet)
 
-    def new(self, registrant, product, branch_name, rcs_type,
+    def new(self, registrant, target, branch_name, rcs_type,
             url=None, cvs_root=None, cvs_module=None, review_status=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
@@ -229,7 +229,7 @@ class CodeImportSet:
             else:
                 review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
-        namespace = get_branch_namespace(registrant, product)
+        namespace = target.getNamespace(registrant)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
             registrant=registrant)

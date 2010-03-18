@@ -62,7 +62,7 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
         # A new code import needs a real user as the sender for the outgoing
         # email.
         login_person(self.factory.makePerson())
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeAnyCodeImport()
         branch = code_import.branch
         removeSecurityProxy(branch).stacked_on = private_branch
         self.makeBranchScanned(branch)

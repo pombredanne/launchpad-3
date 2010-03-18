@@ -39,6 +39,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.branch import BranchExists, IBranch
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
@@ -333,7 +334,7 @@ class CodeImportNewView(CodeImportBaseView):
         cvs_root, cvs_module, url = self._getImportLocation(data)
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
-            product=product,
+            target=IBranchTarget(product),
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
             url=url,
