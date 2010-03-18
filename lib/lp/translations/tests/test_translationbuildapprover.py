@@ -161,6 +161,23 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
 
         self._assertStatus(entries, [RosettaImportStatus.NEEDS_REVIEW])
 
+    def test_approve_not_in_list(self):
+        # A file that is not the list of filenames is not approved.
+        filenames = [
+            'po-domain1/domain1.pot',
+            'po-domain2/domain2.pot',
+            ]
+        series = self.factory.makeProductSeries()
+        approver = TranslationBuildApprover(filenames, productseries=series)
+        filenames += ['po-domain3/domain3.pot']
+        entries = self._makeApprovedEntries(series, approver, filenames)
+
+        self._assertStatus(
+            entries, [
+                RosettaImportStatus.APPROVED,
+                RosettaImportStatus.APPROVED,
+                RosettaImportStatus.NEEDS_REVIEW])
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
