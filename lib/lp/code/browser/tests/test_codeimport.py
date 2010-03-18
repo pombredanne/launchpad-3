@@ -36,7 +36,7 @@ class TestImportDetails(TestCaseWithFactory):
     def test_bzr_svn_import(self):
         # The branch page for a bzr-svn-imported branch contains
         # a summary of the import details.
-        bzr_svn_import = self.factory.makeAnyCodeImport(
+        bzr_svn_import = self.factory.makeCodeImport(
             rcs_type=RevisionControlSystems.BZR_SVN)
         browser = self.getUserBrowser(canonical_url(bzr_svn_import.branch))
         svn_details = find_tag_by_id(browser.contents, 'svn-import-details')
@@ -46,7 +46,7 @@ class TestImportDetails(TestCaseWithFactory):
     def test_cscvs_svn_import(self):
         # The branch page for a cscvs-imported svn branch contains a summary
         # of the import details.
-        bzr_svn_import = self.factory.makeAnyCodeImport(
+        bzr_svn_import = self.factory.makeCodeImport(
             rcs_type=RevisionControlSystems.SVN)
         browser = self.getUserBrowser(canonical_url(bzr_svn_import.branch))
         svn_details = find_tag_by_id(browser.contents, 'svn-import-details')

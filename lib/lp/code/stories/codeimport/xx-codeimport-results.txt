@@ -6,8 +6,8 @@ on the branch index page with the other code import details.
     >>> login('test@canonical.com')
     >>> from canonical.launchpad.testing.codeimporthelpers import (
     ...     make_all_result_types)
-    >>> code_import_1 = factory.makeAnyCodeImport()
-    >>> code_import_2 = factory.makeAnyCodeImport()
+    >>> code_import_1 = factory.makeCodeImport()
+    >>> code_import_2 = factory.makeCodeImport()
 
 The make_all_result_types helper method adds a code import result of
 each possible status value.  There are more status values than are

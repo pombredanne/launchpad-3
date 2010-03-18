@@ -1371,10 +1371,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         return target.newFAQ(
             owner=target.owner, title=title, content='content')
 
-    def makeAnyCodeImport(self, **kwargs):
-        """Make a code import without caring what the target is."""
-        return self.makeProductCodeImport(**kwargs)
-
     def makeProductCodeImport(self, product=None, **kwargs):
         """Make a code import targetting a product."""
         if product is None:

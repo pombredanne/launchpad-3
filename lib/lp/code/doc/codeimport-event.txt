@@ -98,7 +98,7 @@ CodeImportEvent, we need to use the CodeImport constructor directly.
 First we create a Subversion import.
 
     >>> from lp.code.enums import RevisionControlSystems
-    >>> svn_import = factory.makeAnyCodeImport(
+    >>> svn_import = factory.makeCodeImport(
     ...     svn_branch_url='svn://svn.example.com/trunk')
 
 CodeImportSet.newCreate creates an event from the new CodeImport object
@@ -138,7 +138,7 @@ Different source details are recorded according to the type of the
 import source. For a CVS import, CVS details are recorded instead of the
 Subversion URL.
 
-    >>> cvs_import = factory.makeAnyCodeImport(
+    >>> cvs_import = factory.makeCodeImport(
     ...     cvs_root=':pserver:anonymous@cvs.example.com:/cvsroot',
     ...     cvs_module='hello')
     >>> cvs_create_event = event_set.newCreate(cvs_import, nopriv)
@@ -153,7 +153,7 @@ Subversion URL.
 
 And for a Git import, the git details are recorded.
 
-    >>> git_import = factory.makeAnyCodeImport(
+    >>> git_import = factory.makeCodeImport(
     ...     git_repo_url='git://git.example.org/main.git')
     >>> git_create_event = event_set.newCreate(git_import, nopriv)
     >>> print_items(git_create_event)
@@ -167,7 +167,7 @@ And for a Git import, the git details are recorded.
 
 And for a Mercurial import, the hg details are recorded.
 
-    >>> hg_import = factory.makeAnyCodeImport(
+    >>> hg_import = factory.makeCodeImport(
     ...     hg_repo_url='http://hg.example.org/main')
     >>> hg_create_event = event_set.newCreate(hg_import, nopriv)
     >>> print_items(hg_create_event)
