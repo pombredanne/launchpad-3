@@ -31,7 +31,7 @@ class TestPoppy(TestCase):
     def getFTPConnection(self, login=True, user="ubuntu", password=""):
         """Build and return a FTP connection to the current poppy.
 
-        Optionally log in with as 'annonymous' & empty password, or passed
+        Optionally log in with as 'anonymous' & empty password, or passed
         user/password.
         """
         conn = ftplib.FTP()
