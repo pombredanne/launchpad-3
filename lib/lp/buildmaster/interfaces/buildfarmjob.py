@@ -91,7 +91,6 @@ class IBuildFarmJob(Interface):
             "return None."))
 
 
-
 class ISpecificBuildFarmJobClass(Interface):
     """Class interface provided by `IBuildFarmJob` classes.
 

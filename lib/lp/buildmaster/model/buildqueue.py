@@ -14,6 +14,7 @@ __all__ = [
 from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
+import pytz
 
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
@@ -117,6 +118,15 @@ class BuildQueue(SQLBase):
     def date_started(self):
         """See `IBuildQueue`."""
         return self.job.date_started
+
+    @property
+    def current_build_duration(self):
+        """See `IBuildQueue`."""
+        date_started = self.date_started
+        if date_started is None:
+            return None
+        else:
+            return self._now() - date_started
 
     def destroySelf(self):
         """Remove this record and associated job/specific_job."""
@@ -464,8 +474,8 @@ class BuildQueue(SQLBase):
 
     @staticmethod
     def _now():
-        """Provide utcnow() while allowing test code to monkey-patch this."""
-        return datetime.utcnow()
+        """Return current time (UTC).  Overridable for test purposes."""
+        return datetime.now(pytz.UTC)
 
 
 class BuildQueueSet(object):
