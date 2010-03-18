@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'is_transaction_in_progress',
     'ensure_no_transaction',
     ]
 
