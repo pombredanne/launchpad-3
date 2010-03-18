@@ -1429,7 +1429,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImportEvent(self):
         """Create and return a CodeImportEvent."""
-        code_import = self.makeAnyCodeImport()
+        code_import = self.makeCodeImport()
         person = self.makePerson()
         code_import_event_set = getUtility(ICodeImportEventSet)
         return code_import_event_set.newCreate(code_import, person)
@@ -1440,7 +1440,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         This implies setting the import's review_status to REVIEWED.
         """
         if code_import is None:
-            code_import = self.makeAnyCodeImport()
+            code_import = self.makeCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
@@ -1464,7 +1464,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                              log_excerpt=None, log_alias=None, machine=None):
         """Create and return a new CodeImportResult."""
         if code_import is None:
-            code_import = self.makeAnyCodeImport()
+            code_import = self.makeCodeImport()
         if machine is None:
             machine = self.makeCodeImportMachine()
         requesting_user = None
