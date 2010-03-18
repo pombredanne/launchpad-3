@@ -324,7 +324,8 @@ patch_reference_property(
     IStructuralSubscriptionTarget)
 
 patch_reference_property(
-    ISourcePackageRelease, 'source_package_recipe_build', ISourcePackageRecipeBuild)
+    ISourcePackageRelease, 'source_package_recipe_build',
+    ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(
