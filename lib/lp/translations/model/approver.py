@@ -145,6 +145,7 @@ class TranslationBuildApprover(object):
                (productseries is None and
                 distroseries is not None and sourcepackagename is not None))
 
+        self.filenames = filenames
         self._potemplateset = getUtility(IPOTemplateSet).getSubset(
             productseries=productseries,
             distroseries=distroseries,
@@ -163,6 +164,23 @@ class TranslationBuildApprover(object):
         name = domain
         return self._potemplateset.new(name, domain, path, self.owner)
 
+    def _checkGenericPath(self, path):
+        """Perform checks to find a match for generic paths."""
+        if len(self.filenames) != 1:
+            # Generic paths can only be approved if they are alone.
+            return None
+        if len(self._potemplateset) == 0:
+            # Create template from product or sourcepackagename name.
+            return self._makeGenericPOTemplate(path)
+        elif len(self._potemplateset) == 1:
+            # Use the one template that is there.
+            # Can only be accessed through iterator.
+            for pot in self._potemplateset:
+                return pot
+        else:
+            # No approval possible if more than one template is available.
+            return None
+
     def approve(self, entry):
         """Approve a queue entry."""
         assert (
@@ -176,16 +194,9 @@ class TranslationBuildApprover(object):
             name = make_name(domain)
             if name == '':
                 # A generic name, check if this is the first template.
-                if len(self._potemplateset) == 0:
-                    # Create template from product or sourcepackagename name.
-                    potemplate = self._makeGenericPOTemplate(entry.path)
-                elif len(self._potemplateset) == 1:
-                    # Use the one template that is there.
-                    # Can only be accessed through iterator.
-                    for pot in self._potemplateset:
-                        potemplate = pot
-                else:
-                    # No approval possible.
+                potemplate = self._checkGenericPath(entry.path)
+                if potemplate is None:
+                    # Not approvable.
                     return entry
             else:
                 potemplate = self._potemplateset.getPOTemplateByName(name)
