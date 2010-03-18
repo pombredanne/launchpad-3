@@ -40,7 +40,7 @@ class SourcePackageRecipe(Storm):
 
     __storm_table__ = 'SourcePackageRecipe'
 
-    implements(ISourcePackageRecipe, ISourcePackageRecipeData)
+    implements(ISourcePackageRecipe)
 
     classProvides(ISourcePackageRecipeSource)
 
