@@ -105,7 +105,7 @@ class PackageBranchTarget(_BaseBranchTarget):
     @property
     def supports_code_imports(self):
         """See `IBranchTarget`."""
-        return False
+        return True
 
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
