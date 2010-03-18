@@ -23,6 +23,8 @@ records to disk, including configuration and indexes.
     ppa
     >>> print cprov_archive.purpose.name
     PPA
+    >>> print cprov_archive.status.name
+    ACTIVE
     >>> print cprov_archive.displayname
     PPA for Celso Providelo
     >>> cprov_archive.enabled
