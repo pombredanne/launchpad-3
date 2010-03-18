@@ -11,7 +11,7 @@ import socket
 import unittest
 import StringIO
 
-from lp.poppy.tests import PoppyTestSetup
+from lp.poppy.tests.helpers import PoppyTestSetup
 from lp.testing import TestCase
 
 
