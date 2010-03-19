@@ -5,15 +5,17 @@ __metaclass__ = type
 
 import os
 import select
-import signal
 import subprocess
 import sys
 import time
 
 from canonical.config import config
+from lp.services.osutils import two_stage_kill
+
 
 class SoyuzUploadError(Exception):
     """Used in the soyuz-upload test."""
+
 
 class PoppyTestSetup:
     """Provides a setup and teardown mechanism for a poppy subprocess instance.
@@ -34,28 +36,18 @@ class PoppyTestSetup:
     def startPoppy(self):
         """Start the poppy instance."""
         script = os.path.join(config.root, "daemons/poppy-upload.py")
-        self.process = subprocess.Popen([sys.executable, script,
-                                         "--allow-user", self.user,
-                                         "--cmd", self.cmd,
-                                         self.fsroot, self.port],
-                                        stdout=subprocess.PIPE)
+        self.process = subprocess.Popen(
+            [sys.executable, script, "--allow-user", self.user,
+             "--cmd", self.cmd, self.fsroot, self.port],
+            stdout=subprocess.PIPE)
         self.running = True
 
     def killPoppy(self):
         """Kill the poppy instance dead."""
         if not self.alive:
             return
-        os.kill(self.process.pid, signal.SIGTERM)
-        # Give poppy a chance to die
-        time.sleep(2)
-        # Look to see if it has died yet
-        ret = self.process.poll()
-        if ret is None:
-            # Poppy had not died, so send it SIGKILL
-            os.kill(self.process.pid, signal.SIGKILL)
-        # Finally return the result.
+        two_stage_kill(self.process.pid)
         self.running = False
-        return self.process.wait()
 
     @property
     def alive(self):

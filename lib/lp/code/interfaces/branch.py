@@ -855,8 +855,10 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     browse_source_url = Attribute(
         "The URL of the source browser for this branch.")
 
-    # Don't use Object -- that would cause an import loop with ICodeImport.
-    code_import = Attribute("The associated CodeImport, if any.")
+    # Really ICodeImport, but that would cause a circular import
+    code_import = exported(
+        Reference(
+            title=_("The associated CodeImport, if any."), schema=Interface))
 
     bzr_identity = exported(
         Text(

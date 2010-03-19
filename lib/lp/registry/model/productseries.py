@@ -597,3 +597,15 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
+
+    def findByTranslationsImportBranch(
+            self, branch, force_translations_upload=False):
+        """See IProductSeriesSet."""
+        conditions = [ProductSeries.branch == branch]
+        if not force_translations_upload:
+            import_mode = ProductSeries.translations_autoimport_mode
+            conditions.append(
+                import_mode != TranslationsBranchImportMode.NO_IMPORT)
+
+        return Store.of(branch).find(ProductSeries, And(*conditions))
+
