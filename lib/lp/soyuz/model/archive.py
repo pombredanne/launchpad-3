@@ -15,7 +15,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select
+from storm.expr import Or, And, Select, Sum
 from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
@@ -1341,6 +1341,16 @@ class Archive(SQLBase):
                 country=country, count=count)
         else:
             entry.count += count
+
+    def getPackageDownloadTotal(self, bpr):
+        """See `IArchive`."""
+        store = Store.of(self)
+        count = store.find(
+            Sum(BinaryPackageReleaseDownloadCount.count),
+            BinaryPackageReleaseDownloadCount.archive == self,
+            BinaryPackageReleaseDownloadCount.binary_package_release == bpr,
+            ).one()
+        return count or 0
 
     def _setBuildStatuses(self, status):
         """Update the pending Build Jobs' status for this archive."""

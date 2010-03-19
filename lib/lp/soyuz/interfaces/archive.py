@@ -662,6 +662,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         count of the existing one by the given amount.
         """
 
+    def getPackageDownloadTotal(bpr):
+        """Get the total download count for a given package."""
+
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
