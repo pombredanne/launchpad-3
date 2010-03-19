@@ -17,7 +17,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, Object, TextLine, Text
+from zope.schema import Choice, Datetime, Int, TextLine, Text
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _

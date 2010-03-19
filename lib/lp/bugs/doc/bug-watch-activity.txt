@@ -10,10 +10,12 @@ BugWatch's addActivity() method.
     >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces.lpstorm import IStore
     >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from lp.bugs.model.bugwatch import BugWatch, BugWatchActivity
+    >>> from lp.bugs.model.bugwatch import BugWatchActivity
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug_watch = factory.makeBugWatch(remote_bug='42')
+    # This commit is unavoidable, otherwise we lose the watch when we
+    # switch users.
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 

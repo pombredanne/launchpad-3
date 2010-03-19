@@ -15,7 +15,7 @@ import urllib
 from urlparse import urlunsplit
 
 from zope.event import notify
-from zope.interface import classProvides, implements, providedBy
+from zope.interface import implements, providedBy
 from zope.component import getUtility
 
 # SQL imports
