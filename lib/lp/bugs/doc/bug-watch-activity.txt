@@ -12,6 +12,11 @@ BugWatch's addActivity() method.
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> from lp.bugs.model.bugwatch import BugWatchActivity
 
+In order to create a BugWatch to test with we need to switch DB users.
+This is because the checkwatches DB user can't create BugWatches, whilst
+at the same time _only_ the checkwatches DB user can create
+BugWatchActivity instances.
+
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug_watch = factory.makeBugWatch(remote_bug='42')
     # This commit is unavoidable, otherwise we lose the watch when we
