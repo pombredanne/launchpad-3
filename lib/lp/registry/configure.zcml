@@ -107,6 +107,8 @@
         <allow
             interface="lp.registry.interfaces.distroseries.IDistroSeriesPublic"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="canonical.launchpad.interfaces.IHasQueueItems"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
@@ -1315,6 +1317,8 @@
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
