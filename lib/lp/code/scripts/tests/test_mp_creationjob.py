@@ -45,7 +45,8 @@ class TestDiffBMPs(TestCaseWithFactory):
         self.assertEqual(0, retcode)
         self.assertEqual('', stdout)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile:'
+            ' /var/lock/launchpad-merge-proposal-email-jobs.lock\n'
             'INFO    Ran 1 MergeProposalCreatedJobs.\n', stderr)
         self.assertIs(None, bmp.review_diff)
         self.assertIsNot(None, bmp.preview_diff)
