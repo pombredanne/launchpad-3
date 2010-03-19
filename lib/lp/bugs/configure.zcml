@@ -877,6 +877,19 @@
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchSet"/>
         </securedutility>
+
+        <!-- BugWatchActivity -->
+        <class
+            class="lp.bugs.model.bugwatch.BugWatchActivity">
+            <allow
+                interface="lp.bugs.interfaces.bugwatch.IBugWatchActivity"/>
+        </class>
+        <securedutility
+            class="lp.bugs.model.bugwatch.BugWatchActivity"
+            provides="lp.bugs.interfaces.bugwatch.IBugWatchActivitySet">
+            <allow
+                interface="lp.bugs.interfaces.bugwatch.IBugWatchActivitySet"/>
+        </securedutility>
     </facet>
     <subscriber
         for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"

@@ -521,4 +521,16 @@ BugWatchActivity
 The activity on a given bug watch is recorded in the BugWatchActivity
 table.
 
-    >>> from lp.bugs.interfaces.bugwatch import IBugWatchActivity
+    >>> from lp.bugs.interfaces.bugwatch import (
+    ...     IBugWatchActivity, IBugWatchActivitySet)
+
+We can create a new BugWatchActivity record for a bug watch using the
+IBugWatchActivitySet.create() method. This method only requires that a
+BugWatch be passed to it, since all other fields have default values or
+aren't required.
+
+    >>> bug_watch = factory.makeBugWatch(remote_bug='42')
+    >>> activity = getUtility(IBugWatchActivitySet).create(
+    ...     bug_watch=bug_watch)
+    >>> activity.bug_watch == bug_watch
+    True

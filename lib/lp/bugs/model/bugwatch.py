@@ -4,20 +4,26 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BugWatch', 'BugWatchSet']
+__all__ = [
+    'BugWatch',
+    'BugWatchActivity',
+    'BugWatchSet',
+    ]
 
 import re
 import urllib
 from urlparse import urlunsplit
 
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import classProvides, implements, providedBy
 from zope.component import getUtility
 
 # SQL imports
 from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
 
+from storm.base import Storm
 from storm.expr import Desc, In, Not
+from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -38,7 +44,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchErrorType, IBugWatch, IBugWatchSet, NoBugTrackerFound,
+    BugWatchErrorType, IBugWatch, IBugWatchActivity,
+    IBugWatchActivitySet, IBugWatchSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
@@ -611,3 +618,28 @@ class BugWatchSet(BugSetBase):
         if bug_watch_ids is not None:
             query = query.find(In(BugWatch.id, bug_watch_ids))
         return query
+
+
+class BugWatchActivity(Storm):
+    """See `IBugWatchActivity`."""
+
+    implements(IBugWatchActivity)
+    classProvides(IBugWatchActivitySet)
+
+    __storm_table__ = 'BugWatchActivity'
+
+    id = Int(primary=True)
+    bug_watch_id = Int(name='bug_watch')
+    bug_watch = Reference(bug_watch_id, BugWatch.id)
+    result = EnumCol(enum=BugWatchErrorType, notNull=True)
+    message = Unicode()
+    oops_id = Unicode()
+
+    def __init__(self, bug_watch=None):
+        super(BugWatchActivity, self).__init__()
+        self.bug_watch = bug_watch
+
+    @classmethod
+    def create(cls, bug_watch):
+        """See `IBugWatchActivitySet`."""
+        return cls(bug_watch)

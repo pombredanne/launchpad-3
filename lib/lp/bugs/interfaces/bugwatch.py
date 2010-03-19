@@ -16,7 +16,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, TextLine, Text
+from zope.schema import Choice, Datetime, Int, Object, TextLine, Text
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
@@ -297,3 +297,30 @@ class UnrecognizedBugTrackerURL(Exception):
 
 class IBugWatchActivity(Interface):
     """A record of a single BugWatch update."""
+
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The unique id of this activity record."))
+    bug_watch = Reference(
+        title=_('Bug watch'), required=True, readonly=True, schema=IBugWatch,
+        description=_(
+            "The BugWatch whose activity is recorded in this record"))
+    activity_date = Datetime(
+        title=_('Activity date'), required=True, readonly=True,
+        description=_("The date on which this activity occurred."))
+    result = Choice(
+        title=_('Result'), vocabulary=BugWatchErrorType, readonly=True,
+        description=_("The result of the activity."))
+    message = Text(
+        title=_('Message'), readonly=True,
+        description=_("The message associated with this activity."))
+    oops_id = Text(
+        title=_('OOPS ID'), readonly=True,
+        description=_("The OOPS ID associated with this activity."))
+
+
+class IBugWatchActivitySet(Interface):
+    """A set of BugWatchActivity records."""
+
+    def create(bug_watch):
+        """Create a new `IBugWatchActivity` record and return it."""
