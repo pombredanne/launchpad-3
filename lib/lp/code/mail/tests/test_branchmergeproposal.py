@@ -25,7 +25,7 @@ from lp.code.mail.branchmergeproposal import (
 from lp.code.model.branch import update_trigger_modified_fields
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
-    ReviewRequestedEmailJob)
+    MergeProposalUpdatedEmailJob, ReviewRequestedEmailJob)
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from canonical.launchpad.webapp import canonical_url
 from lp.testing import login_person, TestCaseWithFactory
@@ -280,95 +280,93 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         warning_text = "The attached diff has been truncated due to its size."
         self.assertTrue(warning_text in ctrl.body)
 
-    def test_forModificationNoModification(self):
+    def getProposalUpdatedEmailJob(self, merge_proposal):
+        """Return the merge proposal updated email job."""
+        jobs = list(
+            IStore(BranchMergeProposalJob).find(
+                BranchMergeProposalJob,
+                BranchMergeProposalJob.branch_merge_proposal ==
+                merge_proposal,
+                BranchMergeProposalJob.job_type ==
+                BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED))
+        if len(jobs) == 0:
+            return None
+        elif len(jobs) == 1:
+            return MergeProposalUpdatedEmailJob(jobs[0])
+        else:
+            self.fail('There are more than one jobs.')
+
+    def test_no_job_created_if_no_delta(self):
         """Ensure None is returned if no change has been made."""
         merge_proposal, person = self.makeProposalWithSubscriber()
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
-        self.assertEqual(None, BMPMailer.forModification(
-            old_merge_proposal, merge_proposal, merge_proposal.registrant))
+        event = ObjectModifiedEvent(
+            merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
+        send_merge_proposal_modified_notifications(merge_proposal, event)
+        self.assertIs(None, self.getProposalUpdatedEmailJob(merge_proposal))
 
-    def makeMergeProposalMailerModification(self):
+    def makeProposalUpdatedEmailJob(self):
         """Fixture method providing a mailer for a modified merge proposal"""
         merge_proposal, subscriber = self.makeProposalWithSubscriber()
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
         merge_proposal.requestReview()
         merge_proposal.commit_message = 'new commit message'
         merge_proposal.description = 'change description'
-        mailer = BMPMailer.forModification(
-            old_merge_proposal, merge_proposal, merge_proposal.registrant)
-        return mailer, subscriber
-
-    def test_forModificationWithModificationDelta(self):
-        """Ensure the right delta is filled out if there is a change."""
-        mailer, subscriber = self.makeMergeProposalMailerModification()
-        self.assertEqual('new commit message',
-            mailer.delta.commit_message)
+        event = ObjectModifiedEvent(
+            merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
+        send_merge_proposal_modified_notifications(merge_proposal, event)
+        job = self.getProposalUpdatedEmailJob(merge_proposal)
+        self.assertIsNot(None, job, 'Job was not created.')
+        return job, subscriber
 
     def test_forModificationHasMsgId(self):
         """Ensure the right delta is filled out if there is a change."""
-        mailer, subscriber = self.makeMergeProposalMailerModification()
-        assert mailer.message_id is not None, 'message_id not set'
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        mailer = BMPMailer.forModification(
+            merge_proposal, 'the diff', merge_proposal.registrant)
+        self.assertIsNot(None,  mailer.message_id, 'message_id not set')
 
     def test_forModificationWithModificationTextDelta(self):
         """Ensure the right delta is filled out if there is a change."""
-        mailer, subscriber = self.makeMergeProposalMailerModification()
+        job, subscriber = self.makeProposalUpdatedEmailJob()
         self.assertEqual(
             '    Status: Work in progress => Needs review\n\n'
             'Commit Message changed to:\n\nnew commit message\n\n'
             'Description changed to:\n\nchange description',
-            mailer.textDelta())
-
-    def test_generateEmail(self):
-        """Ensure that contents of modification mails are right."""
-        mailer, subscriber = self.makeMergeProposalMailerModification()
-        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
-        self.assertEqual('[Merge] '
-            'lp://dev/~bob/super-product/fix-foo-for-bar into '
-            'lp://dev/~mary/super-product/bar', ctrl.subject)
-        url = canonical_url(mailer.merge_proposal)
-        reason = mailer._recipients.getReason(
-            subscriber.preferredemail.email)[0].getReason()
-        self.assertEqual("""\
-The proposal to merge lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar has been updated.
-
-    Status: Work in progress => Needs review
-
-Commit Message changed to:
-
-new commit message
-
-Description changed to:
-
-change description
---\x20
-%s
-%s
-""" % (url, reason), ctrl.body)
+            job.delta_text)
 
     def test_send_merge_proposal_modified_notifications(self):
         """Should send emails when invoked with correct parameters."""
-        merge_proposal, subscriber = self.makeProposalWithSubscriber()
-        snapshot = BranchMergeProposalDelta.snapshot(merge_proposal)
-        merge_proposal.commit_message = 'new message'
-        event = ObjectModifiedEvent(merge_proposal, snapshot, None)
+        job, subscriber = self.makeProposalUpdatedEmailJob()
         pop_notifications()
-        send_merge_proposal_modified_notifications(merge_proposal, event)
+        job.run()
         emails = pop_notifications()
         self.assertEqual(3, len(emails),
                          'There should be three emails sent out.  One to the '
                          'explicit subscriber above, and one each to the '
                          'source branch owner and the target branch owner '
                          'who were implicitly subscribed to their branches.')
+        email = emails[0]
+        self.assertEqual('[Merge] '
+            'lp://dev/~bob/super-product/fix-foo-for-bar into\n\t'
+            'lp://dev/~mary/super-product/bar', email['subject'])
+        self.assertEqual(dedent("""\
+            The proposal to merge lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar has been updated.
 
-    def test_send_merge_proposal_modified_notifications_no_delta(self):
-        """Should not send emails if no delta."""
-        merge_proposal, subscriber = self.makeProposalWithSubscriber()
-        snapshot = BranchMergeProposalDelta.snapshot(merge_proposal)
-        event = ObjectModifiedEvent(merge_proposal, snapshot, None)
-        pop_notifications()
-        send_merge_proposal_modified_notifications(merge_proposal, event)
-        emails = pop_notifications()
-        self.assertEqual([], emails)
+                Status: Work in progress => Needs review
+
+            Commit Message changed to:
+
+            new commit message
+
+            Description changed to:
+
+            change description
+            --\x20
+            %s
+            You are subscribed to branch lp://dev/~bob/super-product/fix-foo-for-bar.
+            """) % canonical_url(job.branch_merge_proposal),
+                         email.get_payload(decode=True))
 
     def assertRecipientsMatches(self, recipients, mailer):
         """Assert that `mailer` will send to the people in `recipients`."""

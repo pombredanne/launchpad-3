@@ -516,46 +516,51 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
-
-        raise NotImplementedError('todo')
+        mailer = BMPMailer.forModification(
+            self.branch_merge_proposal, self.delta_text, self.editor)
+        mailer.sendAll()
 
     @classmethod
-    def create(cls, review_request):
+    def create(cls, merge_proposal, delta_text, editor):
         """See `IReviewRequestedEmailJobSource`."""
-        metadata = cls.getMetadata(review_request)
-        bmp = review_request.branch_merge_proposal
-        job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
+        metadata = cls.getMetadata(delta_text, editor)
+        job = BranchMergeProposalJob(
+            merge_proposal, cls.class_job_type, metadata)
         return cls(job)
 
     @staticmethod
-    def getMetadata(review_request):
-        return {
-            'reviewer': review_request.reviewer.name,
-            'requester': review_request.registrant.name,
-            }
+    def getMetadata(delta_text, editor):
+        metadata = {'delta_text': delta_text}
+        if editor is not None:
+            metadata['editor'] = editor.name;
+        return metadata
 
     @property
-    def reviewer(self):
-        """The person or team who has been asked to review."""
-        return getUtility(IPersonSet).getByName(self.metadata['reviewer'])
+    def editor(self):
+        """The person who updated the merge proposal."""
+        editor_name = self.metadata.get('editor')
+        if editor_name is None:
+            return None
+        else:
+            return getUtility(IPersonSet).getByName(editor_name)
 
     @property
-    def requester(self):
-        """The person who requested the review to be done."""
-        return getUtility(IPersonSet).getByName(self.metadata['requester'])
+    def delta_text(self):
+        """The changes that were made to the merge proposal."""
+        return self.metadata['delta_text']
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars =  BranchMergeProposalJobDerived.getOopsVars(self)
         vars.extend([
-            ('reviewer', self.metadata['reviewer']),
-            ('requester', self.metadata['requester']),
+            ('editor', self.metadata.get('editor', '(not set)')),
+            ('delta_text', self.metadata['delta_text']),
             ])
         return vars
 
     def getErrorRecipients(self):
         """Return a list of email-ids to notify about user errors."""
         recipients = []
-        if self.requester is not None:
-            recipients.append(self.requester.preferredemail)
+        if self.editor is not None:
+            recipients.append(self.editor.preferredemail)
         return recipients
