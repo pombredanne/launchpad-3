@@ -171,6 +171,36 @@
           </td>
         </tr>
 
+        <tr>
+          <td colspan="2">
+            <label for="field.branch_name">Branch name:</label>
+            <div>
+              <input class="textType" id="field.branch_name" name="field.branch_name" size="20" type="text" value=""  />
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td colspan="2">
+            <label for="field.branch_owner">Branch owner:</label>
+            <div>
+              <div class="value">
+                <select id="field.branch_owner" name="field.branch_owner" size="1" >
+                  <option value="mark">Mark Shuttleworth (mark)</option>
+                  <option value="guadamen">GuadaMen (guadamen)</option>
+                  <option value="hwdb-team">HWDB Team (hwdb-team)</option>
+                  <option value="admins">Launchpad Administrators (admins)</option>
+                  <option value="mailing-list-experts">Mailing List Experts (mailing-list-experts)</option>
+                  <option value="ubuntu-mirror-admins">Mirror Administrators (ubuntu-mirror-admins)</option>
+                  <option value="registry">Registry Administrators (registry)</option>
+                  <option value="testing-spanish-team">testing Spanish team (testing-spanish-team)</option>
+                  <option value="ubuntu-team">Ubuntu Team (ubuntu-team)</option>
+                </select>
+              </div>
+              <input name="field.branch_owner-empty-marker" type="hidden" value="1" />
+            </div>
+          </td>
+        </tr>
       </tbody>
     </table>
     <input type="submit" id="field.actions.update"
