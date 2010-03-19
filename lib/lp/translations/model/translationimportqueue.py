@@ -946,14 +946,44 @@ class TranslationImportQueue:
 
         return entry
 
+    def _getTranslationFileFromTar(self, tarinfo, path_filter):
+        """Check if the given file in the tarball is a translation file.
+
+        :return: The path to the file or None if not a translation file.
+        """
+        if not tarinfo.isfile():
+            # Don't be tricked into reading directories, symlinks,
+            # or worst of all: devices.
+            return None
+
+        path = posixpath.normpath(tarinfo.name)
+        if path_filter:
+            path = path_filter(path)
+        if path is None or path == '':
+            return None
+
+        translation_importer = getUtility(ITranslationImporter)
+        if translation_importer.isHidden(path):
+            # Dotfile.  Probably an editor backup or somesuch.
+            return None
+
+        base, ext = posixpath.splitext(path)
+        if ext not in translation_importer.supported_file_extensions:
+            # Doesn't look like a supported translation file type.
+            return None
+
+        if tarinfo.size == 0:
+            # Skip empty files.
+            return None
+
+        return path
+
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None):
+        potemplate=None, filename_filter=None, approver_class=None):
         """See ITranslationImportQueue."""
         num_files = 0
         conflict_files = []
-
-        translation_importer = getUtility(ITranslationImporter)
 
         try:
             tarball = tarfile.open('', 'r|*', StringIO(content))
@@ -962,40 +992,32 @@ class TranslationImportQueue:
             # busted and let the user deal with it.
             return (num_files, conflict_files)
 
+        # Build a list of files to upload.
+        upload_files = {}
         for tarinfo in tarball:
-            if not tarinfo.isfile():
-                # Don't be tricked into reading directories, symlinks,
-                # or worst of all: devices.
-                continue
+            path = self._getTranslationFileFromTar(tarinfo, filename_filter)
+            if path is not None:
+                upload_files[tarinfo.name] = path
+        tarball.close()
 
-            filename = posixpath.normpath(tarinfo.name)
-            if filename_filter:
-                filename = filename_filter(filename)
-            if filename is None or filename == '':
+        # Re-opening because wer are using sequential access ("r|*") which is
+        # so much faster.
+        tarball = tarfile.open('', 'r|*', StringIO(content))
+        for tarinfo in tarball:
+            if tarinfo.name not in upload_files:
                 continue
-
-            if translation_importer.isHidden(filename):
-                # Dotfile.  Probably an editor backup or somesuch.
-                continue
-
-            base, ext = posixpath.splitext(filename)
-            if ext not in translation_importer.supported_file_extensions:
-                # Doesn't look like a supported translation file type.
-                continue
-
             file_content = tarball.extractfile(tarinfo).read()
+            # We already checked tarinfo.size, so this should not fail.
+            assert len(file_content) > 0
 
-            if len(file_content) == 0:
-                # Empty.  Ignore.
-                continue
-
+            path = upload_files[tarinfo.name]
             entry = self.addOrUpdateEntry(
-                filename, file_content, is_published, importer,
+                path, file_content, is_published, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 potemplate=potemplate)
             if entry == None:
-                conflict_files.append(filename)
+                conflict_files.append(path)
             else:
                 num_files += 1
 
