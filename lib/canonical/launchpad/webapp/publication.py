@@ -38,7 +38,8 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.publisher.interfaces import IPublishTraverse, Retry
-from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
+from zope.publisher.interfaces.browser import (
+    IDefaultSkin, IBrowserRequest, IBrowserApplicationRequest)
 from zope.publisher.publish import mapply
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
@@ -63,6 +64,7 @@ from canonical.launchpad.webapp.dbpolicy import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
+from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -312,9 +314,9 @@ class LaunchpadBrowserPublication(
 
         The OffsiteFormPostError exception is raised if the following
         holds true:
-          1. the request method is POST
-          2. the HTTP referer header is not empty
-          3. the host portion of the referrer is not a registered vhost
+          1. the request method is POST *AND*
+          2. a. the HTTP referer header is empty *OR*
+             b. the host portion of the referrer is not a registered vhost
         """
         if request.method != 'POST':
             return
@@ -324,9 +326,35 @@ class LaunchpadBrowserPublication(
         # form posts.
         if request['PATH_INFO'] == '/+openid':
             return
+        if (IWebServiceClientRequest.providedBy(request) or
+            not IBrowserRequest.providedBy(request) or
+            'oauth_consumer_key' in request.form or
+            'oauth_token' in request.form or
+            request['PATH_INFO'] == '/+storeblob'):
+            # We only want to check for the referrer header if we are in
+            # the middle of a browser request.  If it is a webservice
+            # request (which extends a normal browser request) or an
+            # XMLRPC request (which doesn't), we can just return.
+            # Checking for an oauth request is messy, because it is
+            # still a browser request.  Even though it is far from
+            # satisfying, we check for the specified form fields because
+            # it works and another better approach has not yet come to
+            # light.
+            # XXX gary 2010-03-09 bug=535122
+            # Actually, the oauth_token should always be in a normal POST
+            # request with a REFERER header, so we should be able to remove
+            # that condition when the launchpadlib bug referenced above is
+            # fixed.
+            # XXX gary 2010-03-15 bug 539156
+            # Bug 538097 revealed the necessity of allowing +storeblob
+            # POST requests to be allowed.  This will probably be necessary to
+            # keep until we have an apport that does not make it necessary,
+            # and no legacy apports to support (so, for instance, we can't get
+            # rid of this exception until after Lucid is no longer supported).
+            return
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
-            return
+            raise OffsiteFormPostError('No value for REFERER header')
         # XXX: jamesh 2007-04-26 bug=98437:
         # The Zope testing infrastructure sets a default (incorrect)
         # referrer value of "localhost" or "localhost:9000" if no

@@ -1,9 +1,7 @@
 = Referrer Checking on Form Posts =
 
 To help mitigate cross site request forgery attacks, we check that the
-referrer for a form post is either not present or is a URI from one of
-the Launchpad sites.
-
+referrer for a form post exists and is a URI from one of the Launchpad sites.
 
 First a helper to set up a browser object that doesn't handle the
 "Referer" header automatically.  We need to poke into the internal
@@ -43,15 +41,39 @@ Similarly, posting with a garbage referer fails:
   OffsiteFormPostError: not a url
 
 
-We do allow the post if there is no referrer:
+It also fails if there is no referrer.
+
+Note that we have to set up a monkeypatch to test this in order to work
+around Zope bug 98437 (https://bugs.edge.launchpad.net/zope3/+bug/98437).
+
+  >>> from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
+  >>> original_init = LaunchpadBrowserRequest.__init__
+  >>> def __init__(self, body_instream, environ, response=None):
+  ...     if environ.get('HTTP_REFERER') == 'localhost':
+  ...         # When this line is not printed, the monkeypatch can be removed!
+  ...         print 'MONKEYPATCH ACTIVATED'
+  ...         del environ['HTTP_REFERER']
+  ...     original_init(self, body_instream, environ, response=None)
+  ...
+  >>> LaunchpadBrowserRequest.__init__ = __init__
 
   >>> browser = setupBrowserWithReferrer(None)
   >>> browser.open('http://launchpad.dev/people/+newteam')
+  MONKEYPATCH ACTIVATED
   >>> browser.getControl('Name', index=0).value = 'team3'
   >>> browser.getControl('Display Name').value = 'Team 3'
   >>> browser.getControl('Create').click()
-  >>> print browser.url
-  http://launchpad.dev/~team3
+  Traceback (most recent call last):
+    ...
+  OffsiteFormPostError: No value for REFERER header
+
+Though, to support apport, we let POST requests without a REFERER header
+go through to +storeblob.
+
+  >>> browser.post('http://launchpad.dev/+storeblob', 'x=1')
+  MONKEYPATCH ACTIVATED
+
+  >>> LaunchpadBrowserRequest.__init__ = original_init
 
 
 Or if the referrer is from a site managed by launchpad:
