@@ -25,11 +25,11 @@ from contrib.glock import GlobalLock
 from canonical.config import config
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
-from canonical.lp import initZopeless
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.interfaces import IDistributionSet, NotFoundError
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
+from canonical.lp import initZopeless
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 
 
 def main():
@@ -107,8 +107,8 @@ def check_builds(distroseries):
     via initialiseFromParent method.
     """
     # Avoid circular import.
+    from lp.buildmaster.interfaces.buildbase import BuildStatus
     from lp.registry.interfaces.pocket import PackagePublishingPocket
-    from lp.soyuz.interfaces.build import BuildStatus
 
     parentseries = distroseries.parent_series
 

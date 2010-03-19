@@ -126,58 +126,63 @@ PPAs have a 'link' formatter, which returns the appropriate HTML used
 for referring to them in other pages and a 'reference' formatter which
 displays the unique ppa reference.
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <a href="/~mark/+archive/ppa"
-       class="sprite ppa-icon">PPA for Mark Shuttleworth</a>
-    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
-    ppa:mark/ppa
+    >>> login('admin@canonical.com')
+    >>> owner = factory.makePerson(name="joe", displayname="Joe Smith")
+    >>> public_ppa = factory.makeArchive(
+    ...     name='ppa', private=False, owner=owner)
+    >>> login(ANONYMOUS)
+    >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
+    <a href="/~joe/+archive/ppa"
+       class="sprite ppa-icon">PPA for Joe Smith</a>
+    >>> print test_tales("ppa/fmt:reference", ppa=public_ppa)
+    ppa:joe/ppa
 
 Disabled PPAs links use a different icon and are only linkified for
 users with launchpad.View on them.
 
-    >>> login('foo.bar@canonical.com')
-    >>> mark.archive.disable()
+    >>> login('admin@canonical.com')
+    >>> public_ppa.disable()
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <a href="/~mark/+archive/ppa" class="sprite ppa-icon-inactive">PPA
-    for Mark Shuttleworth</a>
+    >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
+    <a href="/~joe/+archive/ppa" class="sprite ppa-icon-inactive">PPA
+    for Joe Smith</a>
 
     >>> login(ANONYMOUS)
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <span class="sprite ppa-icon-inactive">PPA for Mark Shuttleworth</span>
+    >>> print test_tales("ppa/fmt:link", ppa=public_ppa)
+    <span class="sprite ppa-icon-inactive">PPA for Joe Smith</span>
 
 Private PPAs links are not rendered for users without launchpad.View on
 them.
 
-    >>> login('foo.bar@canonical.com')
-    >>> mark.archive.enable()
-    >>> mark.archive.buildd_secret = 'x'
-    >>> mark.archive.private = True
+    >>> login('admin@canonical.com')
+    >>> private_ppa = factory.makeArchive(
+    ...     name='ppa', private=True, owner=owner)
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
-    <a href="/~mark/+archive/ppa" class="sprite ppa-icon">PPA
-    for Mark Shuttleworth</a>
+    >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
+    <a href="/~joe/+archive/ppa" class="sprite ppa-icon">PPA
+    for Joe Smith</a>
 
     >>> login(ANONYMOUS)
 
-    >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
+    >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
 
 Similarly, references to private PPAs are not rendered unless the user has
 a subscription to the PPA.
 
-    >>> login('foo.bar@canonical.com')
-    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
+    >>> ppa_user = factory.makePerson(name="jake", displayname="Jake Smith")
+    >>> login_person(ppa_user)
+    >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
 
-    >>> login('mark@example.com')
-    >>> foo = getUtility(IPersonSet).getByName('name16')
-    >>> ignore = mark.archive.newSubscription(foo, mark)
-    >>> login('foo.bar@canonical.com')
-    >>> print test_tales("ppa/fmt:reference", ppa=mark.archive)
-    ppa:mark/ppa
+    >>> login_person(owner)
+    >>> ignore = private_ppa.newSubscription(ppa_user, owner)
+    >>> login_person(ppa_user)
+    >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
+    ppa:joe/ppa
 
 We also have icons for builds which may have different dimensions.
 
+    >>> login('admin@canonical.com')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
@@ -192,7 +197,7 @@ The 'Needs building' build is 14x14:
 
 The 'building' build is 14x14:
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> build.buildstate = BuildStatus.BUILDING
     >>> print test_tales("build/image:icon", build=build)
     <img width="14" height="14"...src="/@@/processing" />
@@ -640,6 +645,16 @@ The url for the release file can be retrieved using fmt:url.
 
     >>> print test_tales("release_file/fmt:url", release_file=release_file)
     http://launchpad.dev/.../+download/test.txt
+
+HTML in the file description is escaped in the fmt:link.
+
+    >>> release_file.description = (
+    ...     '><script>XSS failed</script>')
+    >>> print test_tales("release_file/fmt:link", release_file=release_file)
+    <img ...
+    <a title="&gt;&lt;script&gt;XSS failed&lt;/script&gt; (4 bytes)"
+    href="http://launchpad.dev/.../+download/test.txt">test.txt</a> ...
+
 
 
 Product series
@@ -1122,22 +1137,22 @@ emphasise the linkage.
     >>> test_tales('foo/fmt:linkify-email',
     ...    foo='I am the mighty foo.bar@canonical.com hear me roar.')
     u'...<a href="http://launchpad.dev/~name16"
-      class="sprite person">&nbsp;foo.bar@canonical.com</a>...'
+      class="sprite person">foo.bar@canonical.com</a>...'
 
 Multiple addresses may be linkified at once:
 
     >>> test_tales('foo/fmt:linkify-email',
     ...     foo='foo.bar@canonical.com and cprov@ubuntu.com')
     u'<a href="http://launchpad.dev/~name16"
-      class="sprite person">&nbsp;foo.bar@canonical.com</a>
+      class="sprite person">foo.bar@canonical.com</a>
       and <a href="http://launchpad.dev/~cprov"
-        class="sprite person">&nbsp;cprov@ubuntu.com</a>'
+        class="sprite person">cprov@ubuntu.com</a>'
 
 Team addresses are linkified with a team icon:
 
     >>> test_tales('foo/fmt:linkify-email', foo='support@ubuntu.com')
     u'<a href="http://launchpad.dev/~ubuntu-team"
-      class="sprite team">&nbsp;support@ubuntu.com</a>'
+      class="sprite team">support@ubuntu.com</a>'
 
 Unknown email addresses are not altered in any way:
 

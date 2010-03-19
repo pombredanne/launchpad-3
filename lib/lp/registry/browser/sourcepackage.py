@@ -12,7 +12,8 @@ __all__ = [
     'SourcePackageFacets',
     'SourcePackageHelpView',
     'SourcePackageNavigation',
-    'SourcePackagePackaging',
+    'SourcePackageRemoveUpstreamView',
+    'SourcePackageUpstreamConnectionsView',
     'SourcePackageView',
     ]
 
@@ -40,7 +41,7 @@ from canonical.launchpad.browser.packagerelationship import (
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.packaging import IPackaging
+from lp.registry.interfaces.packaging import IPackaging, IPackagingUtil
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productseries import IProductSeries
@@ -49,12 +50,14 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, custom_widget, GetitemNavigation,
-    LaunchpadFormView, Link, redirection, StandardLaunchpadFacets, stepto)
+    ApplicationMenu, GetitemNavigation, Link, redirection,
+    StandardLaunchpadFacets, stepto)
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadFormView, ReturnToReferrerMixin)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
 from canonical.lazr.utils import smartquote
 
@@ -70,9 +73,13 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroseries=self.context.distroseries,
             sourcepackagename=self.context.sourcepackagename)
 
-        if not check_permission(
-            'launchpad.TranslationsAdmin', sourcepackage_pots):
-            self.context.distroseries.checkTranslationsViewable()
+        # If we are able to view the translations for distribution series
+        # we should also be allowed to see them for a distribution
+        # source package.
+        # If not, raise TranslationUnavailable.
+        from lp.translations.browser.distroseries import (
+            check_distroseries_translations_viewable)
+        check_distroseries_translations_viewable(self.context.distroseries)
 
         return sourcepackage_pots
 
@@ -92,6 +99,7 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
+
     @property
     def text(self):
         return smartquote('"%s" source package') % (self.context.name)
@@ -108,7 +116,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     usedfor = ISourcePackage
     facet = 'overview'
     links = [
-        'distribution_source_package', 'edit_packaging',
+        'distribution_source_package', 'edit_packaging', 'remove_packaging',
         'changelog', 'builds', 'set_upstream',
         ]
 
@@ -123,6 +131,10 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
+
+    def remove_packaging(self):
+        return Link(
+            '+remove-packaging', 'Remove upstream link', icon='remove')
 
     def set_upstream(self):
         return Link("+edit-packaging", "Set upstream link", icon="add")
@@ -143,7 +155,7 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
         return Link('+gethelp', 'Help and support options', icon='info')
 
 
-class SourcePackageChangeUpstreamStepOne(StepView):
+class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
     """A view to set the `IProductSeries` of a sourcepackage."""
     schema = Interface
     _field_names = []
@@ -167,9 +179,8 @@ class SourcePackageChangeUpstreamStepOne(StepView):
             IProductSeries['product'], default=default)
         self.form_fields += Fields(product_field)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    # Override ReturnToReferrerMixin.next_url.
+    next_url = None
 
     def main_action(self, data):
         """See `MultiStepView`."""
@@ -177,7 +188,7 @@ class SourcePackageChangeUpstreamStepOne(StepView):
         self.request.form['product'] = data['product']
 
 
-class SourcePackageChangeUpstreamStepTwo(StepView):
+class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
     """A view to set the `IProductSeries` of a sourcepackage."""
     schema = IProductSeries
     _field_names = ['product']
@@ -195,10 +206,6 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
     # to continue passing the variable in the form.
     custom_widget('product', DropdownWidget, visible=False)
     custom_widget('productseries', LaunchpadRadioWidget)
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
 
     def setUpFields(self):
         super(SourcePackageChangeUpstreamStepTwo, self).setUpFields()
@@ -261,12 +268,16 @@ class SourcePackageChangeUpstreamStepTwo(StepView):
             Fields(display_product_field, productseries_choice)
             + self.form_fields)
 
+    # Override ReturnToReferrerMixin.next_url until the main_action()
+    # is called.
+    next_url = None
+
     main_action_label = u'Change'
     def main_action(self, data):
         productseries = data['productseries']
         # Because it is part of a multistep view, the next_url can't
         # be set until the action is called, or it will skip the step.
-        self.next_url = canonical_url(self.context)
+        self.next_url = self._return_url
         if self.context.productseries == productseries:
             # There is nothing to do.
             return
@@ -280,6 +291,27 @@ class SourcePackageChangeUpstreamView(MultiStepView):
     label = SourcePackageChangeUpstreamStepOne.label
     total_steps = 2
     first_step = SourcePackageChangeUpstreamStepOne
+
+
+class SourcePackageRemoveUpstreamView(ReturnToReferrerMixin,
+                                      LaunchpadFormView):
+    """A view for removing the link to an upstream package."""
+
+    schema = Interface
+    field_names = []
+    label = 'Unlink an upstream project'
+    page_title = label
+
+    @action('Unlink')
+    def unlink(self, action, data):
+        old_series = self.context.productseries
+        getUtility(IPackagingUtil).deletePackaging(
+            self.context.productseries,
+            self.context.sourcepackagename,
+            self.context.distroseries)
+        self.request.response.addInfoNotification(
+            'Removed upstream association between %s and %s.' % (
+            old_series.title, self.context.distroseries.displayname))
 
 
 class SourcePackageView:
@@ -411,6 +443,7 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(SourcePackageAssociationPortletView, self).setUpFields()
+        self.request.annotations['show_edit_buttons'] = True
         # Find registered products that are similarly named to the source
         # package.
         product_vocab = getVocabularyRegistry().get(None, 'Product')
@@ -443,6 +476,10 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             'The project %s was linked to this source package.' %
             upstream.displayname)
         self.next_url = self.request.getURL()
+
+
+class SourcePackageUpstreamConnectionsView(LaunchpadView):
+    """A shared view with upstream connection info."""
 
     @property
     def has_bugtracker(self):

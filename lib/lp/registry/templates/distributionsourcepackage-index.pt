@@ -28,21 +28,6 @@
 </tal:side>
 
 <tal:main metal:fill-slot="main">
-  <p class="error message"
-     tal:condition="view/errors"
-     tal:content="view/error_count" />
-  <p class="error message"
-     tal:repeat="form_wide_error view/form_wide_errors"
-     tal:content="structure form_wide_error">
-     Schema validation errors.
-  </p>
-  <p class="error message"
-     tal:define="error python:view.getFieldError('packaging')"
-     tal:condition="error"
-     tal:content="structure error">
-     Field specific error for the hidden packaging field.
-  </p>
-
   <div class="top-portlet" id="bugs-and-questions-summary"
        tal:define="newbugs context/new_bugtasks/count;
                    open_questions view/open_questions/count">
@@ -141,25 +126,14 @@
           <a tal:attributes="href row/series_package/fmt:url"
              tal:content="row/distroseries/title"/>
           (<span tal:replace="row/distroseries/status/title/lower"/>)
-          <div style="float:right;">
+          <div style="float:right; white-space: nowrap">
             <a tal:condition="not: row/packaging"
                tal:replace="structure row/series_package/menu:overview/set_upstream/fmt:link"/>
             <tal:has_packaging condition="row/packaging">
               <img tal:replace="structure row/packaging/productseries/image:icon"/>
               <a tal:replace="structure row/packaging/productseries/fmt:link"/>
-              <form style="display: inline"
-                    method="POST"
-                    tal:condition="row/hidden_packaging_field"
-                    tal:attributes="action request/URL;
-                                    id row/delete_packaging_form_id">
-                <tal:hidden replace="structure row/hidden_packaging_field" />
-                <tal:action replace="structure view/renderDeletePackagingAction" />
-              </form>
-              <a tal:attributes="
-                href row/series_package/menu:overview/edit_packaging/url;
-                title string:Edit upsteam link">
-                <img src="/@@/edit"/>
-              </a>
+              <a tal:replace="structure row/series_package/menu:overview/edit_packaging/fmt:icon"/>
+              <a tal:replace="structure row/series_package/menu:overview/remove_packaging/fmt:icon" />
             </tal:has_packaging>
           </div><!--float right-->
         </td>

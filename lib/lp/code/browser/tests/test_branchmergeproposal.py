@@ -358,17 +358,6 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         self.assertEqual(self.target_branch, proposal.target_branch)
         return proposal
 
-    def assertNoComments(self, proposal):
-        # There should be no comments.
-        self.assertEqual([], list(proposal.all_comments))
-
-    def assertOneComment(self, proposal, comment_text):
-        # There should be one and only one comment with the text specified.
-        self.assertEqual(
-            [comment_text],
-            [comment.message.text_contents
-             for comment in proposal.all_comments])
-
     def assertNoPendingReviews(self, proposal):
         # There should be no votes recorded for the proposal.
         self.assertEqual([], list(proposal.votes))
@@ -395,7 +384,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
              'needs_review': True})
         proposal = self._getSourceProposal()
         self.assertNoPendingReviews(proposal)
-        self.assertNoComments(proposal)
+        self.assertIs(None, proposal.description)
 
     def test_register_work_in_progress(self):
         # The needs review checkbox can be unchecked to create a work in
@@ -420,17 +409,17 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         self.assertEqual('Fixed the bug!', proposal.commit_message)
 
     def test_register_initial_comment(self):
-        # If the user specifies an initial comment, this is added to the
+        # If the user specifies a description, this is recorded on the
         # proposal.
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'comment': "This is the first comment.",
+             'comment': "This is the description.",
              'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertNoPendingReviews(proposal)
-        self.assertOneComment(proposal, "This is the first comment.")
+        self.assertEqual(proposal.description, "This is the description.")
 
     def test_register_request_reviewer(self):
         # If the user requests a reviewer, then a pending vote is added to the
@@ -444,7 +433,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer)
-        self.assertNoComments(proposal)
+        self.assertIs(None, proposal.description)
 
     def test_register_request_review_type(self):
         # We can request a specific review type of the reviewer.  If we do, it
@@ -459,10 +448,10 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertNoComments(proposal)
+        self.assertIs(None, proposal.description)
 
     def test_register_comment_and_review(self):
-        # The user can give an initial comment and request a review from
+        # The user can give a description and request a review from
         # someone.
         reviewer = self.factory.makePerson()
         view = self._createView()
@@ -470,12 +459,12 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
             {'target_branch': self.target_branch,
              'reviewer': reviewer,
              'review_type': 'god-like',
-             'comment': "This is the first comment.",
+             'comment': "This is the description.",
              'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
-        self.assertOneComment(proposal, "This is the first comment.")
+        self.assertEqual(proposal.description, "This is the description.")
 
 
 class TestBranchMergeProposalView(TestCaseWithFactory):
@@ -497,7 +486,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         """Claiming a review works for members of the requested team."""
         review = self.makeTeamReview()
         albert = self.factory.makePerson()
-        albert.join(review.reviewer)
+        removeSecurityProxy(albert).join(review.reviewer)
         login_person(albert)
         view = create_initialized_view(self.bmp, '+index')
         view.claim_action.success({'review_id': review.id})
