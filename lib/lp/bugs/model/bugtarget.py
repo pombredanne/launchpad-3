@@ -201,7 +201,6 @@ class HasBugsBase:
         return dict(zip(statuses, counts))
 
 
-
 class BugTargetBase(HasBugsBase):
     """Standard functionality for IBugTargets.
 
