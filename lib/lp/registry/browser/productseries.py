@@ -55,6 +55,7 @@ from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.helpers import browserLanguages
 from lp.code.browser.branchref import BranchRef
 from lp.code.enums import RevisionControlSystems
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
@@ -91,6 +92,7 @@ from lp.registry.browser import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 
+from lazr.enum import DBItem
 from lazr.restful.interface import copy_field, use_template
 
 
@@ -668,14 +670,15 @@ def _getBranchTypeVocabulary():
         SimpleTerm(name, name, label) for name, label in items]
     return SimpleVocabulary(terms)
 
-from lazr.enum import DBItem
 
 class RevisionControlSystemsExtended(RevisionControlSystems):
+    """External RCS plus Bazaar."""
     BZR = DBItem(99, """
         Bazaar
 
         External Bazaar branch.
         """)
+
 
 class SetBranchForm(Interface):
     """The fields presented on the form for setting a branch."""
@@ -702,7 +705,7 @@ class SetBranchForm(Interface):
     branch_location = copy_field(
         IProductSeries['branch'],
         __name__='branch_location',
-        title=_("Branch"),
+        title=_('Branch'),
         description=_(
             "The Bazaar branch for this series in Launchpad, "
             "if one exists."),
@@ -713,6 +716,20 @@ class SetBranchForm(Interface):
         vocabulary=_getBranchTypeVocabulary(),
         description=_("The type of import"),
         required=True)
+
+    branch_name = copy_field(
+        IBranch['name'],
+        __name__='branch_name',
+        title=_('Branch name'),
+        description=_(''),
+        )
+
+    branch_owner = copy_field(
+        IBranch['owner'],
+        __name__='branch_owner',
+        title=_('Branch owner'),
+        description=_(''),
+        )
 
 
 class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):

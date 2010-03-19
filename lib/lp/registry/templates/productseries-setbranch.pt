@@ -113,6 +113,18 @@
           </td>
         </tr>
 
+        <table class="subordinate">
+          <tal:widget define="widget nocall:view/widgets/branch_name">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+        </table>
+
+        <table class="subordinate">
+          <tal:widget define="widget nocall:view/widgets/branch_owner">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+        </table>
+
       </table>
       <input tal:replace="structure view/rcs_type_emptymarker" />
 
@@ -120,11 +132,9 @@
   </div>
 
   <script type="text/javascript">
-//<![CDATA[
     YUI().use('lp.code.productseries_setbranch', function(Y) {
       Y.on('domready', Y.lp.code.productseries_setbranch.setup);
     });
-//]]>
   </script>
 
 </div>
