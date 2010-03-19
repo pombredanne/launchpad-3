@@ -202,9 +202,9 @@ ftest_build: build
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
-mpcreationjobs:
-	# Handle merge proposal creations.
-	$(PY) cronscripts/mpcreationjobs.py
+merge-proposal-email-jobs:
+	# Handle merge proposal email jobs.
+	$(PY) cronscripts/merge-proposal-email-jobs.py
 
 run: inplace stop
 	$(RM) thread*.request
@@ -249,7 +249,7 @@ scan_branches:
 	$(PY) cronscripts/scan_branches.py
 
 
-sync_branches: pull_branches scan_branches mpcreationjobs
+sync_branches: pull_branches scan_branches merge-proposal-email-jobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh

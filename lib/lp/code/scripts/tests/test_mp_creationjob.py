@@ -41,7 +41,7 @@ class TestDiffBMPs(TestCaseWithFactory):
         self.assertIs(None, bmp.preview_diff)
         transaction.commit()
         retcode, stdout, stderr = run_script(
-            'cronscripts/mpcreationjobs.py', [])
+            'cronscripts/merge-proposal-email-jobs.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual('', stdout)
         self.assertEqual(
@@ -57,7 +57,7 @@ class TestDiffBMPs(TestCaseWithFactory):
         job = MergeProposalCreatedJob.create(bmp)
         transaction.commit()
         retcode, stdout, stderr = run_script(
-            'cronscripts/mpcreationjobs.py', [])
+            'cronscripts/merge-proposal-email-jobs.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual('', stdout)
         self.assertIn(

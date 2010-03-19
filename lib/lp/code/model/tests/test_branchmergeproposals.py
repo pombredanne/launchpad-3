@@ -1261,7 +1261,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
             registrant=source.owner)
         job = MergeProposalCreatedJob.create(bmp)
         transaction.commit()
-        self.layer.switchDbUser(config.mpcreationjobs.dbuser)
+        self.layer.switchDbUser(config.merge_proposal_email_jobs.dbuser)
         job.run()
         self.assertIs(None, bmp.review_diff)
         self.assertIsNot(None, bmp.preview_diff)
@@ -1378,7 +1378,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         job = MergeProposalCreatedJob.create(bmp)
         transaction.commit()
-        self.layer.switchDbUser(config.mpcreationjobs.dbuser)
+        self.layer.switchDbUser(config.merge_proposal_email_jobs.dbuser)
         job.run()
 
 
