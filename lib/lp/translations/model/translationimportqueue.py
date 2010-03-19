@@ -62,6 +62,7 @@ from lp.translations.interfaces.translationimportqueue import (
     UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.approver import TranslationNullApprover
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -1000,6 +1001,13 @@ class TranslationImportQueue:
                 upload_files[tarinfo.name] = path
         tarball.close()
 
+        if approver_class is None:
+            approver_class = TranslationNullApprover
+        approver = approver_class(
+            upload_files.values(),
+            productseries=productseries,
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+
         # Re-opening because wer are using sequential access ("r|*") which is
         # so much faster.
         tarball = tarfile.open('', 'r|*', StringIO(content))
@@ -1011,11 +1019,11 @@ class TranslationImportQueue:
             assert len(file_content) > 0
 
             path = upload_files[tarinfo.name]
-            entry = self.addOrUpdateEntry(
+            entry = approver.approve(self.addOrUpdateEntry(
                 path, file_content, is_published, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
-                potemplate=potemplate)
+                potemplate=potemplate))
             if entry == None:
                 conflict_files.append(path)
             else:

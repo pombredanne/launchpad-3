@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'TranslationNullApprover',
     'TranslationBranchApprover',
     'TranslationBuildApprover',
     ]
@@ -20,6 +21,17 @@ from lp.translations.utilities.template import (
     make_domain, make_name, make_name_from_path)
 from lp.translations.utilities.translation_import import (
     TranslationImporter)
+
+
+class TranslationNullApprover(object):
+    """Does not approve any files."""
+
+    def __init__(self, *args, **kwargs):
+        """Ignore parameters."""
+
+    def approve(self, entry):
+        """Leave entry unchanged."""
+        return entry
 
 
 class TranslationBranchApprover(object):
@@ -97,6 +109,9 @@ class TranslationBranchApprover(object):
 
         :param entry: The queue entry that needs to be approved.
         """
+        if entry is None:
+            return None
+
         if not self.is_approval_possible:
             return entry
         potemplate = None
@@ -188,6 +203,9 @@ class TranslationBuildApprover(object):
             entry.distroseries == self._potemplateset.distroseries and
             entry.sourcepackagename == self._potemplateset.sourcepackagename
             ),("Entry must be for same target as approver.")
+
+        if entry is None:
+            return None
 
         if entry.path not in self.filenames:
             # Only files that have been announced to the approver can ve
