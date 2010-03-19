@@ -53,8 +53,8 @@ alter table binarypackagereleasedownloadcount drop constraint binarypackagerelea
 alter table binarypackagereleasedownloadcount 
     add constraint binarypackagereleasedownloadcount_archive_fkey FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
-alter table sourcepackgerecipebuild drop constraint sourcepackagerecipebuild_archive_fkey;
-alter table sourcepackgerecipebuild 
+alter table sourcepackagerecipebuild drop constraint sourcepackagerecipebuild_archive_fkey;
+alter table sourcepackagerecipebuild 
     add constraint sourcepackagerecipebuild_archive_fkey FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
 alter table archivearch drop constraint archivearch__archive__fk;
@@ -79,11 +79,11 @@ alter table archivesubscriber
 
 alter table packagecopyrequest drop constraint packagecopyrequest__sourcearchive__fk;
 alter table packagecopyrequest 
-    add constraint packagecopyrequest__sourcearchive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
+    add constraint packagecopyrequest__sourcearchive__fk FOREIGN KEY (source_archive) REFERENCES archive(id) on delete cascade;
 
 alter table packagecopyrequest drop constraint packagecopyrequest__targetarchive__fk;
 alter table packagecopyrequest 
-    add constraint packagecopyrequest__targetarchive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
+    add constraint packagecopyrequest__targetarchive__fk FOREIGN KEY (target_archive) REFERENCES archive(id) on delete cascade;
 
 
 -- If the upload_archive is deleted but the SPR was copied to a different
