@@ -13,6 +13,7 @@ __all__ = [
     'ArchiveDependencyError',
     'ArchiveNotPrivate',
     'ArchivePurpose',
+    'ArchiveStatus',
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
@@ -182,6 +183,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     purpose = Int(
         title=_("Purpose of archive."), required=True, readonly=True,
+        )
+
+    status = Int(
+        title=_("Status of archive."), required=True, readonly=True,
         )
 
     sources_cached = Int(
@@ -1393,6 +1398,23 @@ class ArchivePurpose(DBEnumeratedType):
 
         This kind of archive will be user for publishing package with
         debug-symbols.
+        """)
+
+
+class ArchiveStatus(DBEnumeratedType):
+    """The status of an archive, e.g. active, disabled. """
+
+    ACTIVE = DBItem(0, """
+        Active
+
+        This archive accepts uploads, copying and publishes packages.
+        """)
+
+    DELETING = DBItem(1, """
+        Deleting
+
+        This archive is in the process of being deleted.  This is a user-
+        requested and short-lived status.
         """)
 
 
