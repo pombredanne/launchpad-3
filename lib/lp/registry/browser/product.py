@@ -338,28 +338,27 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def configure_bugtracker(self):
-        text = 'Configure Launchpad Bugs'
-        return Link('+configure-bugtracker', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def configure_branches(self):
-        text = 'Configure Launchpad Branches'
-        return Link('+configure-branches', text, icon='edit')
+        text = 'Configure project bugtracker'
+        summary = 'Allow users to report bugs on this project'
+        return Link('+configure-bugtracker', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_translations(self):
-        text = 'Configure Launchpad Translations'
-        return Link('+configure-translations', text, icon='edit')
+        text = 'Configure project translations'
+        summary = 'Allow users to submit translations for this project'
+        return Link('+configure-translations', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_answers(self):
-        text = 'Configure Launchpad Answers'
-        return Link('+configure-answers', text, icon='edit')
+        text = 'Configure project answers'
+        summary = 'Allow users to ask questions on this project'
+        return Link('+configure-answers', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_blueprints(self):
-        text = 'Configure Launchpad Blueprints'
-        return Link('+configure-blueprints', text, icon='edit')
+        text = 'Configure project blueprints'
+        summary = 'Allow users to submit blueprints on this project'
+        return Link('+configure-blueprints', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -407,7 +406,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'edit',
         'configure_answers',
         'configure_blueprints',
-        'configure_branches',
         'configure_bugtracker',
         'configure_translations',
         'reassign',
@@ -1193,7 +1191,7 @@ class ProductConfigureBugTrackerView(ProductConfigureBase):
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
         # enable_bug_expiration is disabled by JavaScript when bugtracker
-        # is not 'In Launchpad'. The contraint is enforced here in case the
+        # is not 'In Launchpad'. The constraint is enforced here in case the
         # JavaScript fails to activate or run. Note that the bugtracker
         # name : values are {'In Launchpad' : object, 'Somewhere else' : None
         # 'In a registered bug tracker' : IBugTracker}.

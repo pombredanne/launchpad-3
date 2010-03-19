@@ -32,7 +32,7 @@
     </tal:disabled>
   </ul>
 
-  <ul style="padding-top: 1em">
+  <ul tal:condition="view/configuration_links" style="padding-top: 1em">
     <li tal:repeat="link view/configuration_links">
       <a tal:replace="structure link/fmt:link" />
     </li>

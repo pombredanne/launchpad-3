@@ -74,7 +74,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
+    ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -644,7 +645,8 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         self.next_url = canonical_url(product)
 
 
-class ProductSeriesLinkBranchView(LaunchpadEditFormView):
+class ProductSeriesLinkBranchView(ReturnToReferrerMixin,
+                                  LaunchpadEditFormView):
     """View to set the bazaar branch for a product series."""
 
     schema = IProductSeries
@@ -661,11 +663,6 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
         """The page title."""
         return self.label
 
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
-
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         """Update the branch attribute."""
@@ -678,11 +675,6 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
             self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Series code location updated.')
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
