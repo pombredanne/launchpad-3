@@ -826,6 +826,7 @@
             <require
                 permission="zope.Public"
                 attributes="
+                    activity
                     bug
                     bugtasks
                     bugtracker
@@ -848,7 +849,8 @@
             <require
                 permission="launchpad.AnyPerson"
                 attributes="
-                    destroySelf"
+                    destroySelf
+                    addActivity"
                 set_attributes="bugtracker remotebug"/>
             <require
                 permission="launchpad.Admin"
@@ -884,12 +886,6 @@
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchActivity"/>
         </class>
-        <securedutility
-            class="lp.bugs.model.bugwatch.BugWatchActivity"
-            provides="lp.bugs.interfaces.bugwatch.IBugWatchActivitySet">
-            <allow
-                interface="lp.bugs.interfaces.bugwatch.IBugWatchActivitySet"/>
-        </securedutility>
     </facet>
     <subscriber
         for="canonical.launchpad.interfaces.IBugTask                 lazr.lifecycle.interfaces.IObjectCreatedEvent"

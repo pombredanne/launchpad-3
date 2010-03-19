@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'BugWatchErrorType',
     'IBugWatch',
+    'IBugWatchActivity',
     'IBugWatchSet',
     'NoBugTrackerFound',
     'UnrecognizedBugTrackerURL',
@@ -134,6 +135,7 @@ class IBugWatch(IHasBug):
     owner = exported(
         Reference(title=_('Owner'), required=True,
                   readonly=True, schema=Interface))
+    activity = Attribute('The activity history of this BugWatch.')
 
     # Useful joins.
     bugtasks = exported(
@@ -204,6 +206,9 @@ class IBugWatch(IHasBug):
 
     def getImportedBugMessages():
         """Return all the `IBugMessage`s that have been imported."""
+
+    def addActivity(result=None, message=None, oops_id=None):
+        """Add an `IBugWatchActivity` record for this BugWatch."""
 
 
 # Defined here because of circular imports.
@@ -318,9 +323,3 @@ class IBugWatchActivity(Interface):
         title=_('OOPS ID'), readonly=True,
         description=_("The OOPS ID associated with this activity."))
 
-
-class IBugWatchActivitySet(Interface):
-    """A set of BugWatchActivity records."""
-
-    def create(bug_watch):
-        """Create a new `IBugWatchActivity` record and return it."""

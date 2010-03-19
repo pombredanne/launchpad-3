@@ -44,9 +44,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchErrorType, IBugWatch, IBugWatchActivity,
-    IBugWatchActivitySet, IBugWatchSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
+    BugWatchErrorType, IBugWatch, IBugWatchActivity, IBugWatchSet,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
@@ -277,6 +276,23 @@ class BugWatch(SQLBase):
             BugMessage.bug == self.bug.id,
             BugMessage.bugwatch == self.id,
             Not(BugMessage.remote_comment_id == None))
+
+    def addActivity(self, result=None, message=None, oops_id=None):
+        """See `IBugWatch`."""
+        activity = BugWatchActivity()
+        activity.bug_watch = self
+        activity.result = result
+        activity.message = message
+        activity.oops_id = oops_id
+        store = IStore(BugWatchActivity)
+        store.add(activity)
+
+    @property
+    def activity(self):
+        store = Store.of(self)
+        return store.find(
+            BugWatchActivity,
+            BugWatchActivity.bug_watch == self).order_by('activity_date')
 
 
 class BugWatchSet(BugSetBase):
@@ -624,22 +640,13 @@ class BugWatchActivity(Storm):
     """See `IBugWatchActivity`."""
 
     implements(IBugWatchActivity)
-    classProvides(IBugWatchActivitySet)
 
     __storm_table__ = 'BugWatchActivity'
 
     id = Int(primary=True)
     bug_watch_id = Int(name='bug_watch')
     bug_watch = Reference(bug_watch_id, BugWatch.id)
-    result = EnumCol(enum=BugWatchErrorType, notNull=True)
+    activity_date = UtcDateTimeCol(notNull=True)
+    result = EnumCol(enum=BugWatchErrorType, notNull=False)
     message = Unicode()
     oops_id = Unicode()
-
-    def __init__(self, bug_watch=None):
-        super(BugWatchActivity, self).__init__()
-        self.bug_watch = bug_watch
-
-    @classmethod
-    def create(cls, bug_watch):
-        """See `IBugWatchActivitySet`."""
-        return cls(bug_watch)

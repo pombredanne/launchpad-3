@@ -1,0 +1,53 @@
+BugWatchActivity
+================
+
+The activity on a given bug watch is recorded in the BugWatchActivity
+table.
+
+We can create a new BugWatchActivity record for a bug watch using that
+BugWatch's addActivity() method.
+
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from lp.bugs.model.bugwatch import BugWatch, BugWatchActivity
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug_watch = factory.makeBugWatch(remote_bug='42')
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+When a BugWatch is first created there has been no activity on it.
+
+    >>> print bug_watch.activity.count()
+    0
+
+    >>> bug_watch.addActivity()
+    >>> store = IStore(BugWatchActivity)
+    >>> store.flush()
+
+We can access the BugWatchActivity record by looking at the BugWatch's
+activity property.
+
+    >>> print bug_watch.activity.count()
+    1
+
+    >>> activity = bug_watch.activity.first()
+    >>> activity.bug_watch == bug_watch
+    True
+
+The BugWatchActivity's activity_date will be set automatically when it
+is written to the database.
+
+    >>> activity.activity_date
+    datetime.datetime...
+
+The other fields on the BugWatchActivity record, which aren't required,
+will all be None.
+
+    >>> print activity.result
+    None
+    >>> print activity.message
+    None
+    >>> print activity.oops_id
+    None
