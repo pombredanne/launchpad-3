@@ -743,11 +743,11 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
             field for field in fields
             if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG',
                                       'BZR', '1']]
-        cvs_button['onclick'] = 'updateWidgets()'
-        svn_button['onclick'] = 'updateWidgets()'
-        git_button['onclick'] = 'updateWidgets()'
-        hg_button['onclick'] = 'updateWidgets()'
-        bzr_button['onclick'] = 'updateWidgets()'
+        #cvs_button['onclick'] = 'updateWidgets()'
+        #svn_button['onclick'] = 'updateWidgets()'
+        #git_button['onclick'] = 'updateWidgets()'
+        #hg_button['onclick'] = 'updateWidgets()'
+        #bzr_button['onclick'] = 'updateWidgets()'
         # The following attributes are used only in the page template.
         self.rcs_type_cvs = str(cvs_button)
         self.rcs_type_svn = str(svn_button)
@@ -759,9 +759,9 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
         soup = BeautifulSoup(self.widgets['branch_type']())
         fields = soup.findAll('input')
         (link_button, create_button, import_button, emptymarker) = fields
-        link_button['onclick'] = 'updateBranchType()'
-        create_button['onclick'] = 'updateBranchType()'
-        import_button['onclick'] = 'updateBranchType()'
+        #link_button['onclick'] = 'updateBranchType()'
+        #create_button['onclick'] = 'updateBranchType()'
+        #import_button['onclick'] = 'updateBranchType()'
         self.branch_type_link = str(link_button)
         self.branch_type_create = str(create_button)
         self.branch_type_import = str(import_button)

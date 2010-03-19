@@ -116,65 +116,16 @@
       </table>
       <input tal:replace="structure view/rcs_type_emptymarker" />
 
-      <script type="text/javascript">
-        //<![CDATA[
-        function getRcsType(rcs_types) {
-          var rcs_type = 'None';
-          for (var i = 0; i < rcs_types.length; i++) {
-            if (rcs_types[i].checked) {
-              rcs_type = rcs_types[i].value;
-              break;
-            }
-          }
-          return rcs_type;
-        }
-
-        function updateWidgets() {
-          /* Which rcs type radio button has been selected? */
-          // CVS
-          var rcs_types = document.getElementsByName('field.rcs_type');
-          var rcs_type = getRcsType(rcs_types);
-          var form = rcs_types[0].form;
-          updateField(form['field.cvs_module'], rcs_type == 'CVS');
-        }
-
-        registerLaunchpadFunction(updateWidgets);
-
-        function updateBranchType() {
-          /* Which branch type radio button was selected? */
-          var rcs_types = document.getElementsByName('field.rcs_type');
-          var rcs_type = getRcsType(rcs_types);
-          var types = document.getElementsByName('field.branch_type');
-          var form = types[0].form;
-          var type = 'None';
-          for (var i = 0; i < types.length; i++) {
-            if (types[i].checked) {
-              type = types[i].value;
-              break;
-            }
-          }
-          // Linked
-          updateField(form['field.branch_location'], type == 'link-lp-bzr')
-          // New, empty branch -- do nothing
-          // Import
-          is_external = (type == 'import-external')
-          updateField(form['field.repo_url'], is_external)
-          updateField(form['field.cvs_module'],
-            (is_external & rcs_type == 'CVS'))
-          for (var i = 0; i < rcs_types.length; i++) {
-            updateField(rcs_types[i], is_external)
-          }
-
-        }
-        registerLaunchpadFunction(updateBranchType);
-
-
-        //]]>
-      </script>
-
     </metal:formbody>
   </div>
 
+  <script type="text/javascript">
+//<![CDATA[
+    YUI().use('lp.code.productseries_setbranch', function(Y) {
+      Y.on('domready', Y.lp.code.productseries_setbranch.setup);
+    });
+//]]>
+  </script>
 
 </div>
 </body>
