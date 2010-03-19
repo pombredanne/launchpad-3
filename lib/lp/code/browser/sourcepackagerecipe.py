@@ -7,9 +7,10 @@ __metaclass__ = type
 
 __all__ = []
 
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+
 from canonical.launchpad.webapp import (
     LaunchpadView)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 
 
 class SourcePackageRecipeView(LaunchpadView):

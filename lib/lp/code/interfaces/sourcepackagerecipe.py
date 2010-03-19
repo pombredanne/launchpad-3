@@ -14,7 +14,7 @@ __all__ = [
     'TooNewRecipeFormat',
     ]
 
-from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.fields import Reference
 
 from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Object, TextLine
@@ -22,12 +22,11 @@ from zope.schema import Datetime, Object, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
-
-from lp.code.interfaces.branch import IBranch
 
 
 class ForbiddenInstruction(Exception):
