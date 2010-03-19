@@ -4,7 +4,11 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BugWatch', 'BugWatchSet']
+__all__ = [
+    'BugWatch',
+    'BugWatchActivity',
+    'BugWatchSet',
+    ]
 
 import re
 import urllib
@@ -17,7 +21,9 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
 
+from storm.base import Storm
 from storm.expr import Desc, In, Not
+from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -38,8 +44,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchErrorType, IBugWatch, IBugWatchSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
+    BugWatchErrorType, IBugWatch, IBugWatchActivity, IBugWatchSet,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
@@ -270,6 +276,23 @@ class BugWatch(SQLBase):
             BugMessage.bug == self.bug.id,
             BugMessage.bugwatch == self.id,
             Not(BugMessage.remote_comment_id == None))
+
+    def addActivity(self, result=None, message=None, oops_id=None):
+        """See `IBugWatch`."""
+        activity = BugWatchActivity()
+        activity.bug_watch = self
+        activity.result = result
+        activity.message = message
+        activity.oops_id = oops_id
+        store = IStore(BugWatchActivity)
+        store.add(activity)
+
+    @property
+    def activity(self):
+        store = Store.of(self)
+        return store.find(
+            BugWatchActivity,
+            BugWatchActivity.bug_watch == self).order_by('activity_date')
 
 
 class BugWatchSet(BugSetBase):
@@ -611,3 +634,19 @@ class BugWatchSet(BugSetBase):
         if bug_watch_ids is not None:
             query = query.find(In(BugWatch.id, bug_watch_ids))
         return query
+
+
+class BugWatchActivity(Storm):
+    """See `IBugWatchActivity`."""
+
+    implements(IBugWatchActivity)
+
+    __storm_table__ = 'BugWatchActivity'
+
+    id = Int(primary=True)
+    bug_watch_id = Int(name='bug_watch')
+    bug_watch = Reference(bug_watch_id, BugWatch.id)
+    activity_date = UtcDateTimeCol(notNull=True)
+    result = EnumCol(enum=BugWatchErrorType, notNull=False)
+    message = Unicode()
+    oops_id = Unicode()
