@@ -19,8 +19,9 @@ BugWatchActivity instances.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug_watch = factory.makeBugWatch(remote_bug='42')
-    # This commit is unavoidable, otherwise we lose the watch when we
-    # switch users.
+
+    >>> # This commit is unavoidable, otherwise we lose the watch when we
+    >>> # switch users.
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
