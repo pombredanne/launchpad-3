@@ -13,7 +13,7 @@
 
     <tal:disabled repeat="link view/visible_disabled_links">
       <li tal:condition="not: link/enabled"
-          title="This service needs to be configured."
+          tal:attributes="title string:Launchpad needs to know where the user can ${link/text/lower}"
           class="disabled">
         <div style="padding: 0.3em 0 0.3em 0.3em">
           <div style="display: inline-block"
