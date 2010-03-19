@@ -856,6 +856,12 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
             representing the binaries copied to the destination location.
         """
 
+    @export_read_operation()
+    def getDownloadCount():
+        """Get the download count of this binary package in this archive.
+
+        This is currently only meaningful for PPAs."""
+
 
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
                                       IPublishingEdit):

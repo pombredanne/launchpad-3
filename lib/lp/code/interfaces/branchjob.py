@@ -190,20 +190,6 @@ class IRosettaUploadJobSource(Interface):
         :return: Boolean.
         """
 
-    def findProductSeries(branch, force_translations_upload=False):
-        """Find `ProductSeries` that import translation files from branch.
-
-        :param branch: The `IBranch` that is being scanned.
-        :param force_translations_upload: If True, return all
-            `ProductSeries` attached to this branch regardless of their
-            import mode settings.
-        :return: a list of `IProductSeries`.
-        """
-        # XXX JeroenVermeulen 2010-01-12 bug=521095: 
-        # force_translations_upload was meant to ignore import settings
-        # for one specific ProductSeries attached to the branch, not any
-        # ProductSeries attached to the branch.
-
 
 class IReclaimBranchSpaceJob(IRunnableJob):
     """A job to delete a branch from disk after its been deleted from the db.
