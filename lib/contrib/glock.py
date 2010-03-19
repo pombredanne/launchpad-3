@@ -157,7 +157,7 @@ class GlobalLock:
                        the caller decided not to block.
         """
         if self.logger:
-            self.logger.info('creating lockfile')
+            self.logger.info('Creating lockfile: %s', self.fpath)
         if _windows:
             if blocking:
                 timeout = win32event.INFINITE
