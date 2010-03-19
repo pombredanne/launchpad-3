@@ -93,7 +93,6 @@ Security
 Create a private PPA for Celso with some binaries.
 
     >>> login("foo.bar@canonical.com")
-
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -146,13 +145,11 @@ also fail in their quest.
 Download counts
 ===============
 
-We can retrieve the total download count for the binary in this archive.
+We can retrieve the total download count for a binary in this archive.
 
     >>> webservice.named_get(
     ...     pubs['entries'][0]['self_link'], 'getDownloadCount').jsonBody()
     0
-
-Detailed download counts are also available from the getDownloadCounts method.
 
     >>> login("foo.bar@canonical.com")
 
@@ -172,6 +169,12 @@ Detailed download counts are also available from the getDownloadCounts method.
     >>> firefox = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedBinaries', 
     ...     binary_name='mozilla-firefox').jsonBody()['entries'][0]
+    >>> webservice.named_get(
+    ...     firefox['self_link'], 'getDownloadCount').jsonBody()
+    18
+    
+Detailed download counts are also available from the getDownloadCounts method.
+
     >>> counts = webservice.named_get(
     ...     firefox['self_link'], 'getDownloadCounts').jsonBody()['entries']
     >>> len(counts)
