@@ -637,17 +637,21 @@ class IReviewRequestedEmailJobSource(IJobSource):
 class IMergeProposalUpdatedEmailJob(IRunnableJob):
     """Interface for the job to sends email about merge proposal updates."""
 
-    xxx = Attribute('The xxx.')
+    editor = Attribute('The person that did the editing.')
+    delta_text = Attribute('The textual representation of the changed fields.')
 
 
 class IMergeProposalUpdatedEmailJobSource(IJobSource):
     """Create or retrieve jobs that email about merge proposal updates."""
 
-    def create(xxx):
+    def create(merge_proposal, delta_text, editor):
         """Create a job to email merge proposal updates to subscribers.
 
-        :param xxxx: 
+        :param merge_proposal: The merge proposal that has been edited.
+        :param delta_text: The text representation of the changed fields.
+        :param editor: The person who did the editing.
         """
+
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
 # should be moved there.
