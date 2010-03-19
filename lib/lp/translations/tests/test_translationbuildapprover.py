@@ -209,7 +209,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         entries = self._makeApprovedEntries(series, approver, filenames)
 
         self._assertStatus(entries, [RosettaImportStatus.APPROVED])
-        self.assertEqual(filenames[0], entries[0].potemplate.path)
+        self.assertEqual(filenames[0], domain1_pot.path)
 
 
 def test_suite():
