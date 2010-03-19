@@ -36,9 +36,6 @@ from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 from lp.registry.interfaces.pocket import pocketsuffix
 
 
-UPLOAD_LOG_FILENAME = 'uploader.log'
-
-
 class BuildBase:
     """A mixin class providing functionality for farm jobs that build a
     package.
@@ -97,8 +94,12 @@ class BuildBase:
         method = getattr(self, '_handleStatus_' + status, None)
 
         if method is None:
-            logger.critical("Unknown BuildStatus '%s' for builder '%s'"
-                            % (status, self.buildqueue_record.builder.url))
+            if self.buildqueue_record is not None:
+                logger.critical("Unknown BuildStatus '%s' for builder '%s'"
+                                % (status, self.buildqueue_record.builder.url))
+            else:
+                logger.critical("Unknown BuildStatus '%s' for %r"
+                                % (status, self))
             return
 
         method(librarian, slave_status, logger)
@@ -176,13 +177,10 @@ class BuildBase:
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
-        uploader_logfilename = os.path.join(upload_dir, UPLOAD_LOG_FILENAME)
-        logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
-
         logger.info("Invoking uploader on %s for %s" % (root, upload_leaf))
         upload_logger = BufferLogger()
         upload_log = self.processUpload(upload_leaf, root, upload_logger)
-        uploader_log_content = upload_logger.getvalue()
+        uploader_log_content = upload_logger.buffer.getvalue()
 
         # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):

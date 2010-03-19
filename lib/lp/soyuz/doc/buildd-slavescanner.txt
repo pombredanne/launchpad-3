@@ -499,14 +499,15 @@ upload log information:
     ...
     X-Launchpad-Build-State: FAILEDTOUPLOAD
     ...
-    * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
+     * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
     ...
     Upload log:
-    INFO    creating lockfile
-    DEBUG   Initialising connection.
+	DEBUG: Beginning processing
     ...
-    DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
-    ...
+    DEBUG: Moving upload directory /var/tmp/builddmaster/incoming/... to
+	/var/tmp/builddmaster/failed/...
+	...
+
 
 When a failure in processing the generated binaries occurs, the log
 output is both emailed in an immediate notification, and stored in the
@@ -618,8 +619,7 @@ the given distroseries/pocket. Anytime it happens we need to manually
 investigate why this build end up built. (should never happen in real
 cases, and even so should be refused when we try to upload it.)
 
-    >>> bqItem12 = getUtility(IBuildSet).getByBuildID(
-    ...     2).queueBuild()
+    >>> bqItem12 = getUtility(IBuildSet).getByBuildID(2).queueBuild()
     >>> setupBuildQueue(bqItem12, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -639,8 +639,7 @@ We need 'a_builder' released (from 'bqItem12') so it can be associated with
 The buildlog is collected and compressed locally using gzip algorithm,
 let's see how this method works:
 
-    >>> bqItem10 = getUtility(IBuildSet).getByBuildID(
-    ...     6).queueBuild()
+    >>> bqItem10 = getUtility(IBuildSet).getByBuildID(6).queueBuild()
     >>> setupBuildQueue(bqItem10, a_builder)
     >>> bqItem10.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
@@ -727,28 +726,12 @@ users to view it.
     >>> print headers['content-type']
     text/plain
 
-Check the log from the uploader run has made it into the upload directory:
+Check the failed builds have made it into the failed directory:
 
     >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
     >>> failed_uploads = sorted(os.listdir(failed_dir))
     >>> len(failed_uploads)
     2
-
-    >>> failed_upload = failed_uploads[0]
-    >>> uploader_log = open(os.path.join(failed_dir, failed_upload,
-    ...                                  'uploader.log'))
-
-    >>> print uploader_log.read()
-    INFO    creating lockfile
-    DEBUG   Initialising connection.
-    DEBUG   Beginning processing
-    DEBUG   Creating directory /var/tmp/builddmaster/accepted
-    DEBUG   Creating directory /var/tmp/builddmaster/rejected
-    DEBUG   Creating directory /var/tmp/builddmaster/failed
-    ...
-    DEBUG   Rolling back any remaining transactions.
-    DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
-    <BLANKLINE>
 
 Remove build upload results root
 
