@@ -270,6 +270,8 @@
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="canonical.launchpad.interfaces.IFAQCollection"/>
         <allow
             interface="canonical.launchpad.interfaces.IQuestionCollection"/>
@@ -358,6 +360,8 @@
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
 
         <allow
@@ -408,9 +412,7 @@
                 official_bug_tags
                 findRelatedArchives
                 findRelatedArchivePublications
-                userHasBugSubscriptions
-                max_bug_heat
-                recalculateMaxBugHeat"/>
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1067,6 +1069,8 @@
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
@@ -1380,6 +1384,8 @@
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
@@ -1509,6 +1515,8 @@
         class="lp.registry.model.sourcepackage.SourcePackage">
         <allow
             interface="lp.registry.interfaces.sourcepackage.ISourcePackage"/>
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <allow
