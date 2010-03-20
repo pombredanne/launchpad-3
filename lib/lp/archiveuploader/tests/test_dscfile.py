@@ -8,7 +8,7 @@ __metaclass__ = type
 import os
 import unittest
 
-from lp.archiveuploader.dscfile import findChangelog, findCopyright
+from lp.archiveuploader.dscfile import findAndMoveChangelog, findCopyright
 from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.archiveuploader.tests import mock_logger_quiet
 from lp.testing import TestCase
@@ -26,6 +26,7 @@ class TestDscFile(TestCase):
         os.makedirs(self.dir_path)
         self.copyright_file = os.path.join(self.dir_path, "copyright")
         self.changelog_file = os.path.join(self.dir_path, "changelog")
+        self.changelog_dest = os.path.join(self.tmpdir, "changelog")
         self.dsc_file = self.MockDSCFile()
 
     def removeTempFiles(self):
@@ -34,6 +35,8 @@ class TestDscFile(TestCase):
             os.remove(self.copyright_file)
         if os.path.exists(self.changelog_file):
             os.remove(self.changelog_file)
+        if os.path.exists(os.path.join(self.changelog_dest)):
+            os.remove(os.path.join(self.changelog_dest))
 
     def testBadDebianCopyright(self):
         """Test that a symlink instead of a real file will fail."""
@@ -54,7 +57,6 @@ class TestDscFile(TestCase):
         errors = list(findCopyright(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
-
         self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 0)
         self.assertEqual(self.dsc_file.copyright, copyright)
@@ -62,8 +64,8 @@ class TestDscFile(TestCase):
     def testBadDebianChangelog(self):
         """Test that a symlink instead of a real file will fail."""
         os.symlink("/etc/passwd", self.changelog_file)
-        errors = list(findChangelog(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
+        errors = list(findAndMoveChangelog(
+            self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
 
         self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 1)
@@ -75,13 +77,14 @@ class TestDscFile(TestCase):
         file.write(changelog)
         file.close()
 
-        errors = list(findChangelog(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
+        errors = list(findAndMoveChangelog(
+            self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
 
 
         self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 0)
-        self.assertEqual(self.dsc_file.changelog, changelog)
+        self.assertEqual(self.dsc_file.changelog_path,
+                         self.changelog_dest)
 
 
     def testOversizedFile(self):
@@ -95,8 +98,8 @@ class TestDscFile(TestCase):
         file.write(empty_file)
         file.close()
 
-        errors = list(findChangelog(
-            self.dsc_file, self.tmpdir, mock_logger_quiet))
+        errors = list(findAndMoveChangelog(
+            self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
 
         self.addCleanup(self.removeTempFiles)
 
