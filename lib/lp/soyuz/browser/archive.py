@@ -10,6 +10,7 @@ __all__ = [
     'ArchiveActivateView',
     'ArchiveBadges',
     'ArchiveBuildsView',
+    'ArchiveDeleteView',
     'ArchiveEditDependenciesView',
     'ArchiveEditView',
     'ArchiveIndexActionsMenu',
@@ -57,8 +58,8 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.adapters.archivesourcepublication import (
     ArchiveSourcePublications)
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, CannotCopy, IArchive, IArchiveEditDependenciesForm,
-    IArchiveSet, IPPAActivateForm, NoSuchPPA)
+    ArchivePurpose, ArchiveStatus, CannotCopy, IArchive,
+    IArchiveEditDependenciesForm, IArchiveSet, IPPAActivateForm, NoSuchPPA)
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
@@ -360,6 +361,11 @@ class ArchiveMenuMixin:
         text = 'Change details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def delete_ppa(self):
+        text = 'Delete PPA'
+        return Link('+delete', text, icon='trash')
+
     def builds(self):
         text = 'View all builds'
         return Link('+builds', text, icon='info')
@@ -414,9 +420,9 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'builds', 'builds_building', 'builds_pending',
-             'builds_successful', 'edit', 'edit_dependencies', 'packages',
-             'ppa']
+    links = ['admin', 'delete_ppa', 'builds', 'builds_building',
+             'builds_pending', 'builds_successful', 'edit',
+             'edit_dependencies', 'packages', 'ppa']
 
 
 class IArchiveIndexActionsMenu(Interface):
@@ -427,8 +433,8 @@ class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
     """Archive index navigation menu."""
     usedfor = IArchiveIndexActionsMenu
     facet = 'overview'
-    links = ['admin', 'edit', 'edit_dependencies', 'manage_subscribers',
-             'packages']
+    links = ['admin', 'delete_ppa', 'edit', 'edit_dependencies',
+             'manage_subscribers', 'packages']
 
 
 class IArchivePackagesActionMenu(Interface):
@@ -1865,3 +1871,37 @@ class ArchiveAdminView(BaseArchiveEditView):
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
+
+
+class ArchiveDeleteView(LaunchpadView):
+    """View class for deleting `IArchive`s"""
+
+    __used_for__ = IArchive
+
+    @property
+    def page_title(self):
+        return smartquote('Delete "%s"' % self.context.displayname)
+
+    @property
+    def label(self):
+        return self.page_title
+
+    @property
+    def can_be_deleted(self):
+        return self.context.status != ArchiveStatus.DELETING
+
+    @property
+    def waiting_for_deletion(self):
+        return self.context.status == ArchiveStatus.DELETING
+
+    def delete_ppa(self):
+        action = self.request.form.get('DELETE', None)
+        # No action, return None to present the form again.
+        if action is None:
+            return
+
+        self.context.status = ArchiveStatus.DELETING
+        self.request.response.addInfoNotification('Deletion in progress')
+
+        #self.request.response.redirect(canonical_url(self.context))
+
