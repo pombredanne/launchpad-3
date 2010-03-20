@@ -168,13 +168,13 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
   >>> arg_recipebuild = factory.makeSourcePackageRecipeBuild()
+  >>> changelog = None
 
 The other argurments are strings:
 
   >>> version = '0.0.99'
   >>> dsc = 'smashed dsc...'
   >>> copyright = 'smashed debian/copyright ...'
-  >>> changelog = 'smashed debian/changelog ...'
   >>> changelog_entry = 'contigous text....'
   >>> archhintlist = 'any'
   >>> builddepends = 'cdbs, debhelper (>= 4.1.0), libsysfs-dev, libhal-dev'

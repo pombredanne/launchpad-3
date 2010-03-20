@@ -1116,7 +1116,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator,
-        urgency, changelog, changelog_entry, dsc, dscsigningkey, section,
+        urgency, changelog_id, changelog_entry, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=DEFAULT,
