@@ -4,7 +4,7 @@ Code imports
 The code imports overview page is linked of the main code page.
 
     >>> browser.open('http://code.launchpad.dev')
-    >>> browser.getLink('5 imported branches').click()
+    >>> browser.getLink('1 imported branches').click()
     >>> print browser.title
     Code Imports
 
