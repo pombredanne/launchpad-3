@@ -13,6 +13,7 @@ __all__ = [
     'ArchiveDependencyError',
     'ArchiveNotPrivate',
     'ArchivePurpose',
+    'ArchiveStatus',
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
@@ -165,13 +166,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Private"), required=False,
             description=_(
                 "Whether the archive is private to the owner or not. "
-                "This can only be changed if the archive has not had "
+                "This can only be changed by launchpad admins or launchpad "
+                "commercial admins and only if the archive has not had "
                 "any sources published.")))
 
-    require_virtualized = Bool(
-        title=_("Require Virtualized Builder"), required=False,
-        description=_("Whether this archive requires its packages to be "
-                      "built on a virtual builder."))
+    require_virtualized = exported(
+        Bool(
+            title=_("Require Virtualized Builder"), required=False,
+            description=_("Whether this archive requires its packages to be "
+                          "built on a virtual builder."), readonly=False))
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
@@ -180,6 +183,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     purpose = Int(
         title=_("Purpose of archive."), required=True, readonly=True,
+        )
+
+    status = Int(
+        title=_("Status of archive."), required=True, readonly=True,
         )
 
     sources_cached = Int(
@@ -659,6 +666,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         we create one with the given count.  Otherwise we just increase the
         count of the existing one by the given amount.
         """
+
+    def getPackageDownloadTotal(bpr):
+        """Get the total download count for a given package."""
 
 
 class IArchiveView(IHasBuildRecords):
@@ -1388,6 +1398,23 @@ class ArchivePurpose(DBEnumeratedType):
 
         This kind of archive will be user for publishing package with
         debug-symbols.
+        """)
+
+
+class ArchiveStatus(DBEnumeratedType):
+    """The status of an archive, e.g. active, disabled. """
+
+    ACTIVE = DBItem(0, """
+        Active
+
+        This archive accepts uploads, copying and publishes packages.
+        """)
+
+    DELETING = DBItem(1, """
+        Deleting
+
+        This archive is in the process of being deleted.  This is a user-
+        requested and short-lived status.
         """)
 
 

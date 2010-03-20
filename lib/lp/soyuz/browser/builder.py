@@ -18,9 +18,7 @@ __all__ = [
     'BuilderView',
     ]
 
-import datetime
 import operator
-import pytz
 
 from zope.component import getUtility
 from zope.event import notify
@@ -235,14 +233,10 @@ class BuilderView(LaunchpadView):
 
     @property
     def current_build_duration(self):
-        """Return the delta representing the duration of the current job."""
-        if (self.context.currentjob is None or
-            self.context.currentjob.date_started is None):
+        if self.context.currentjob is None:
             return None
         else:
-            UTC = pytz.timezone('UTC')
-            date_started = self.context.currentjob.date_started
-            return datetime.datetime.now(UTC) - date_started
+            return self.context.currentjob.current_build_duration
 
     @property
     def page_title(self):

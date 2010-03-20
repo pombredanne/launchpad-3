@@ -12,7 +12,6 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
-    'ISeriesMixin',
     'NoSuchDistroSeries',
     ]
 
@@ -30,10 +29,9 @@ from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, Description, PublicPersonChoice, Summary, Title,
+    ContentNameField, Description, PublicPersonChoice, Title,
     UniqueField)
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers)
+from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
@@ -46,7 +44,7 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IHasBugs, IHasOfficialBugTags)
 from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
@@ -141,22 +139,10 @@ class IDistroSeriesEditRestricted(Interface):
         """Create a new milestone for this DistroSeries."""
 
 
-class ISeriesMixin(Interface):
-    """Methods & properties shared between distro & product series."""
-
-    active = exported(
-        Bool(
-            title=_("Active"),
-            description=_(
-                "Whether or not this series is stable and supported, or "
-                "under current development. This excludes series which "
-                "are experimental or obsolete.")))
-
-
-class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                          IBugTarget, ISpecificationGoal, IHasMilestones,
-                          IHasBuildRecords, ISeriesMixin,
-                          IHasOfficialBugTags):
+class IDistroSeriesPublic(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
+    IHasBuildRecords):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
@@ -179,12 +165,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_(
                 "The title of this series. It should be distinctive "
                 "and designed to look good at the top of a page.")))
-    summary = exported(
-        Summary(title=_("Summary"), required=True,
-            description=_(
-                "A brief summary of the highlights of this release. "
-                "It should be no longer than a single paragraph, up "
-                "to 200 words.")))
     description = exported(
         Description(title=_("Description"), required=True,
             description=_("A detailed description of this series, with "
@@ -251,14 +231,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
-    drivers = Attribute(
-        'A list of the people or teams who are drivers for this series. '
-        'This list is made up of any drivers or owners from this '
-        'DistroSeries, and the Distribution to which it belong.')
-    bug_supervisor = Attribute(
-        'Currently just a reference to the Distribution bug supervisor.')
-    security_contact = Attribute(
-        'Currently just a reference to the Distribution security contact.')
     messagecount = Attribute("The total number of translatable items in "
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
@@ -445,14 +417,14 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return a list of packagings that are the most recently linked.
 
         At most five packages are returned of those most recently linked to an
-    upstream.
-    """
+        upstream.
+        """
 
     @operation_parameters(
         created_since_date=Datetime(
             title=_("Created Since Timestamp"),
-            description=_("Return items that are more recent than this "
-                          "timestamp."),
+            description=_(
+                "Return items that are more recent than this timestamp."),
             required=False),
         status=Choice(
             # Really PackageUploadCustomFormat, patched in

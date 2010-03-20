@@ -356,6 +356,16 @@ the merge proposal)
     http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/.../comments/...
 
 
+== Code Imports ==
+
+Code imports have a canonical URL which is a subordinate of the branch
+that they import to.
+
+    >>> from lp.code.interfaces.codeimport import ICodeImportSet
+    >>> code_import = getUtility(ICodeImportSet).get(1)
+    >>> print canonical_url(code_import)
+    http://code.launchpad.dev/~vcs-imports/gnome-terminal/import/+code-import
+
 == Specifications ==
 
     >>> from canonical.launchpad.interfaces import ISpecificationSet

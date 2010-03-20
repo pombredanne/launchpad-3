@@ -15,7 +15,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select
+from storm.expr import Or, And, Select, Sum
 from storm.locals import Count, Join
 from storm.store import Store
 from zope.component import getUtility
@@ -58,7 +58,7 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
+    ArchivePurpose, ArchiveStatus, CannotCopy, CannotSwitchPrivacy,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
     InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
     NoTokensForTeams, PocketNotFound, VersionRequiresName,
@@ -147,6 +147,9 @@ class Archive(SQLBase):
 
     purpose = EnumCol(
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
+
+    status = EnumCol(
+        dbName="status", unique=False, notNull=True, schema=ArchiveStatus)
 
     _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
     enabled = property(lambda x: x._enabled)
@@ -677,7 +680,7 @@ class Archive(SQLBase):
         # It results in:
         # ERROR:  missing FROM-clause entry for table "binarypackagename"
         unique_binary_publications = nominated_arch_independents.union(
-            no_nominated_arch_independents)
+            no_nominated_arch_independents).orderBy("id")
 
         return unique_binary_publications
 
@@ -1341,6 +1344,16 @@ class Archive(SQLBase):
                 country=country, count=count)
         else:
             entry.count += count
+
+    def getPackageDownloadTotal(self, bpr):
+        """See `IArchive`."""
+        store = Store.of(self)
+        count = store.find(
+            Sum(BinaryPackageReleaseDownloadCount.count),
+            BinaryPackageReleaseDownloadCount.archive == self,
+            BinaryPackageReleaseDownloadCount.binary_package_release == bpr,
+            ).one()
+        return count or 0
 
     def _setBuildStatuses(self, status):
         """Update the pending Build Jobs' status for this archive."""

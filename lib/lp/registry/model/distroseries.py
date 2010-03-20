@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'DistroSeries',
     'DistroSeriesSet',
-    'SeriesMixin',
     ]
 
 import logging
@@ -87,8 +86,6 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
@@ -98,7 +95,10 @@ from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet, ISeriesMixin)
+    IDistroSeries, IDistroSeriesSet)
+from lp.registry.model.series import SeriesMixin
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -123,20 +123,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet)
 
 
-class SeriesMixin:
-    """See `ISeriesMixin`."""
-    implements(ISeriesMixin)
-
-    @property
-    def active(self):
-        return self.status in [
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FROZEN,
-            SeriesStatus.CURRENT,
-            SeriesStatus.SUPPORTED,
-            ]
-
-
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
@@ -154,7 +140,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     status = EnumCol(
@@ -281,25 +266,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def parent(self):
         """See `IDistroSeries`."""
         return self.distribution
-
-    @property
-    def drivers(self):
-        """See `IDistroSeries`."""
-        drivers = set()
-        drivers.add(self.driver)
-        drivers = drivers.union(self.distribution.drivers)
-        drivers.discard(None)
-        return sorted(drivers, key=lambda driver: driver.displayname)
-
-    @property
-    def bug_supervisor(self):
-        """See `IDistroSeries`."""
-        return self.distribution.bug_supervisor
-
-    @property
-    def security_contact(self):
-        """See `IDistroSeries`."""
-        return self.distribution.security_contact
 
     @property
     def sortkey(self):
@@ -1256,7 +1222,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             BinaryPackagePublishingHistory.dateremoved == None).config(
-                distinct=True)
+                distinct=True).order_by(BinaryPackageName.name)
 
         number_of_updates = 0
         chunk_size = 0
@@ -1596,6 +1562,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         custom_results = PackageUpload.select(
             custom_where_clause, clauseTables=custom_clauseTables,
             orderBy=custom_orderBy)
+
+        # XXX StuartBishop 2010-03-11 bug=537335
+        # This method is attempting to return ordered results but
+        # failing. It is also referencing non-existing documentation
+        # in the docstring - this method does not exist in the IDistroSeries
+        # interface.
 
         return source_results.union(build_results.union(custom_results))
 
