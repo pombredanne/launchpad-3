@@ -13,7 +13,7 @@ __all__ = [
     'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
-    'findChangelog',
+    'findAndMoveChangelog',
     'findCopyright',
     'findFile',
     ]
@@ -154,9 +154,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
     # Note that files is actually only set inside verify().
     files = None
-    # Copyright and changelog is only set inside unpackAndCheckSource().
+    # Copyright and changelog_path is only set inside unpackAndCheckSource().
     copyright = None
-    changelog = None
+    changelog_path = None
 
     def __init__(self, filepath, digest, size, component_and_section,
                  priority, package, version, changes, policy, logger):
@@ -532,7 +532,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield error
 
         # Now do the same for the changelog
-        for error in findChangelog(self, tmpdir, self.logger):
+        for error in findAndMoveChangelog(self, cwd, tmpdir, self.logger):
             yield error
 
         self.logger.debug("Cleaning up source tree.")
@@ -595,7 +595,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         pending = self._dict.copy()
         pending['simulated_changelog'] = self.changes.simulated_changelog
         pending['copyright'] = self.copyright
-        pending['changelog'] = self.changelog
 
         # We have no way of knowing what encoding the original copyright
         # file is in, unfortunately, and there is no standard, so guess.
@@ -605,6 +604,18 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 encoded[key] = guess_encoding(value)
             else:
                 encoded[key] = None
+
+        # Lets upload the changelog file to librarian
+
+        # We have to do this separately because we need the librarian file
+        # alias id to embed in the SourceReleasePackage
+
+        changelog_id = self.librarian.create(
+            "changelog",
+            os.stat(self.changelog_path).st_size,
+            open(self.changelog_path, "r"),
+            "text/x-debian-source-changelog",
+            restricted=self.policy.archive.private)
 
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
@@ -627,7 +638,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             dsc_binaries=encoded['binary'],
             dsc_standards_version=encoded.get('standards-version'),
             component=self.component,
-            changelog=encoded.get('changelog'),
+            changelog=None,
+            #changelog_id=changelog_id,
             changelog_entry=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,
@@ -721,9 +733,10 @@ def findCopyright(dsc_file, source_dir, logger):
     logger.debug("Copying copyright contents.")
     dsc_file.copyright = open(copyright_file).read().strip()
 
-def findChangelog(dsc_file, source_dir, logger):
-    """Find and store any debian/changelog.
+def findAndMoveChangelog(dsc_file, target_dir, source_dir, logger):
+    """Find and move any debian/changelog.
     :param dsc_file: A DSCFile object where the copyright will be stored.
+    :param target_dir: The directory where the changelog will end up.
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
     """
@@ -738,8 +751,10 @@ def findChangelog(dsc_file, source_dir, logger):
         yield UploadError("No changelog file found.")
         return
 
-    logger.debug("Copying changelog contents.")
-    dsc_file.changelog = open(changelog_file).read().strip()
+    # Move the changelog file out of the package direcotry
+    logger.debug("Found changelog contents; moving to root directory")
+    dsc_file.changelog_path = os.path.join(target_dir, "changelog")
+    shutil.move(changelog_file, dsc_file.changelog_path)
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
                            bzip2_count):
