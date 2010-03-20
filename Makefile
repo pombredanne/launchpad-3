@@ -177,7 +177,7 @@ buildonce_eggs: $(PY)
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
-                --ez_setup-source=ez_setup.py \
+		--setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
 # This builds bin/py and all the other bin files except bin/buildout.
