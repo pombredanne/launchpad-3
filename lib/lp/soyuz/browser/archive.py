@@ -1901,7 +1901,8 @@ class ArchiveDeleteView(LaunchpadView):
             return
 
         self.context.status = ArchiveStatus.DELETING
+        self.context.disable()
         self.request.response.addInfoNotification('Deletion in progress')
 
-        #self.request.response.redirect(canonical_url(self.context))
+        self.request.response.redirect(canonical_url(self.context))
 
