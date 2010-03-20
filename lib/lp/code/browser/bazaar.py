@@ -21,6 +21,7 @@ from canonical.config import config
 from canonical.launchpad.webapp.authorization import (
     precache_permission_for_objects)
 
+from lp.code.enums import CodeImportReviewStatus
 from lp.code.interfaces.branch import IBranchCloud, IBranchSet
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -61,7 +62,8 @@ class BazaarApplicationView(LaunchpadView):
 
     @property
     def import_count(self):
-        return getUtility(ICodeImportSet).getActiveImports().count()
+        return getUtility(ICodeImportSet).search(
+            review_status=CodeImportReviewStatus.REVIEWED).count()
 
     @property
     def bzr_version(self):

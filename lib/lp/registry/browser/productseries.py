@@ -20,7 +20,6 @@ __all__ = [
     'ProductSeriesOverviewNavigationMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
@@ -751,23 +750,6 @@ class ProductSeriesRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
-
-
-class ProductSeriesSourceListView(LaunchpadView):
-    """A listing of all the running imports.
-
-    See `ICodeImportSet.getActiveImports` for our definition of running.
-    """
-
-    page_title = 'Available code imports'
-    label = page_title
-
-    def initialize(self):
-        """See `LaunchpadFormView`."""
-        self.text = self.request.get('text')
-        results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
-
-        self.batchnav = BatchNavigator(results, self.request)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

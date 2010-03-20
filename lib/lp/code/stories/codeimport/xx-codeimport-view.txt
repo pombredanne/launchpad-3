@@ -1,10 +1,10 @@
 Code imports
 ============
 
-For now, there is no link to the page that lists all code imports, so
-we browse there directly:
+The code imports overview page is linked of the main code page.
 
-    >>> browser.open('http://code.launchpad.dev/+code-imports')
+    >>> browser.open('http://code.launchpad.dev')
+    >>> browser.getLink('1 imported branches').click()
     >>> print browser.title
     Code Imports
 
