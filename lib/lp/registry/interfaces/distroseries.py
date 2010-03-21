@@ -591,7 +591,7 @@ class IDistroSeriesPublic(
          :param dscsigningkey: IGPGKey used to sign the DSC file
          :param dsc: string, original content of the dsc file
          :param copyright: string, the original debian/copyright content
-         :param changelog: string, the original debian/changelog content
+         :param changelog: LFA ID of the debian/changelog file in librarian
          :param changelog_entry: string, changelog extracted from the changesfile
          :param architecturehintlist: string, DSC architectures
          :param builddepends: string, DSC build dependencies
