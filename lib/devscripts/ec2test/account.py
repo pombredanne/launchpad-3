@@ -26,6 +26,7 @@ VALID_AMI_OWNERS = (
     200337130613, # mwhudson
     889698597288, # henninge
     366009196755, # salgado
+    "036590675370", # jml
     # ...anyone else want in on the fun?
     )
 
