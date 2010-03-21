@@ -92,6 +92,8 @@ class cmd_launchpad_server(Command):
         install_oops_handler(user_id)
         four_gig = int(4e9)
         resource.setrlimit(resource.RLIMIT_AS, (four_gig, four_gig))
+        # XXX Get seen-new-branch hook from somewhere.
+        # XXX Pass seen-new-branch hook:
         lp_server = get_lp_server(
             int(user_id), branchfs_endpoint_url,
             upload_directory, mirror_directory)

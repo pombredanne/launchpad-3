@@ -376,7 +376,9 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         :param user_id: The database ID for the user who is accessing
             branches.
         """
+        # XXX Accept seen-new-branch hook.
         AsyncVirtualServer.__init__(self, scheme)
+        # XXX Pass seen-new-branch hook:
         self._authserver = BranchFileSystemClient(authserver, user_id)
         self._is_start_server = False
 
@@ -576,7 +578,9 @@ class LaunchpadServer(_BaseLaunchpadServer):
             "mirrored" area of Launchpad. See module docstring for more
             information.
         """
+        # XXX Accept seen-new-branch hook.
         scheme = 'lp-%d:///' % id(self)
+        # XXX Pass seen-new-branch hook:
         super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
         mirror_transport = get_readonly_transport(mirror_transport)
         self._transport_dispatch = TransportDispatch(
@@ -651,6 +655,7 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
     :param mirror_directory: Where all Launchpad branches are mirrored.
     :return: A `LaunchpadServer`.
     """
+    # XXX Accept seen-new-branch hook.
     # Get the defaults from the config.
     if hosted_directory is None:
         hosted_directory = config.codehosting.hosted_branches_root
@@ -665,6 +670,7 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
     # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
     hosted_transport = get_chrooted_transport(hosted_url)
     mirror_transport = get_chrooted_transport(mirror_url)
+    # XXX Pass seen-new-branch hook:
     lp_server = LaunchpadServer(
         BlockingProxy(branchfs_client), user_id,
         hosted_transport, mirror_transport)
