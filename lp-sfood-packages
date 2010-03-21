@@ -5,6 +5,7 @@ lp/soyuz
 lp/services
 lp/scripts
 lp/registry
+lp/poppy
 lp/hardwaredb
 lp/coop/answersbugs
 lp/codehosting

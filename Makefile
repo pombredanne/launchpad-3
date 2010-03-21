@@ -347,6 +347,7 @@ clean: clean_js
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
+	$(RM) -f lp.sfood lp-clustered.sfood lp-clustered.dot lp-clustered.svg
 
 
 realclean: clean
@@ -409,9 +410,9 @@ ID: compile
 lp.sfood:
 	# Generate import dependency graph
 	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts -I lib/contrib \
-	-I lib/canonical/not-used lib/canonical lib/lp | grep -v contrib/ \
+	-I lib/canonical/not-used lib/canonical lib/lp 2>/dev/null | grep -v contrib/ \
 	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
-	| grep -v schoolbell 2>/dev/null > lp.sfood.tmp
+	| grep -v schoolbell > lp.sfood.tmp
 	mv lp.sfood.tmp lp.sfood
 
 
