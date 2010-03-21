@@ -111,6 +111,34 @@ class TestNewCodeImports(TestCaseWithFactory):
             '-- \nYou are getting this email because you are a member of the '
             'vcs-imports team.\n', msg.get_payload(decode=True))
 
+    def test_new_source_package_import(self):
+        # Test the email for a new sourcepackage import.
+        eric = self.factory.makePerson(name='eric')
+        distro = self.factory.makeDistribution(name='foobuntu')
+        series = self.factory.makeDistroSeries(
+            name='manic', distribution=distro)
+        fooix = self.factory.makeSourcePackage(
+            sourcename='fooix', distroseries=series)
+        # Eric needs to be logged in for the mail to be sent.
+        login_person(eric)
+        code_import = self.factory.makePackageCodeImport(
+            hg_repo_url='http://hg.example.com/fooix.hg',
+            branch_name='master', sourcepackage=fooix, registrant=eric)
+        transaction.commit()
+        msg = message_from_string(stub.test_emails[0][2])
+        self.assertEqual('code-import', msg['X-Launchpad-Notification-Type'])
+        self.assertEqual(
+            '~eric/foobuntu/manic/fooix/master', msg['X-Launchpad-Branch'])
+        self.assertEqual(
+            'A new mercurial code import has been requested '
+            'by Eric:\n'
+            '    http://code.launchpad.dev/~eric/foobuntu/manic/fooix/master\n'
+            'from\n'
+            '    http://hg.example.com/fooix.hg\n'
+            '\n'
+            '-- \nYou are getting this email because you are a member of the '
+            'vcs-imports team.\n', msg.get_payload(decode=True))
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
