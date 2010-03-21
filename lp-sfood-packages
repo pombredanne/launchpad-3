@@ -2,7 +2,6 @@ lp/translations
 lp/testopenid
 lp/testing
 lp/soyuz
-lp/services/testing
 lp/services
 lp/scripts
 lp/registry
@@ -19,7 +18,6 @@ lp/app
 lp/answers
 canonical/zeca
 canonical/widgets
-canonical/twistedsupport
 canonical/tests
 canonical/testing
 canonical/poppy
