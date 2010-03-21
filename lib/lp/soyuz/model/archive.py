@@ -675,7 +675,7 @@ class Archive(SQLBase):
         # It results in:
         # ERROR:  missing FROM-clause entry for table "binarypackagename"
         unique_binary_publications = nominated_arch_independents.union(
-            no_nominated_arch_independents)
+            no_nominated_arch_independents).orderBy("id")
 
         return unique_binary_publications
 
