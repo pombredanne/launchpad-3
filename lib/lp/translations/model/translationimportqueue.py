@@ -125,7 +125,7 @@ class TranslationImportQueueEntry(SQLBase):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
     productseries_id = Int(name='productseries', allow_none=True)
     productseries = Reference(productseries_id, 'ProductSeries.id')
-    is_published = BoolCol(dbName='is_published', notNull=True)
+    from_upstream = BoolCol(notNull=True)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile',
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
@@ -455,7 +455,7 @@ class TranslationImportQueueEntry(SQLBase):
             if pofile.canEditTranslations(self.importer):
                 pofile.owner = self.importer
 
-        if self.is_published:
+        if self.from_upstream:
             # This entry comes from upstream, which means that the path we got
             # is exactly the right one. If it's different from what pofile
             # has, that would mean that either the entry changed its path
@@ -863,7 +863,7 @@ class TranslationImportQueue:
 
         return entries[0]
 
-    def addOrUpdateEntry(self, path, content, is_published, importer,
+    def addOrUpdateEntry(self, path, content, from_upstream, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):
         """See ITranslationImportQueue."""
@@ -911,13 +911,13 @@ class TranslationImportQueue:
             entry = TranslationImportQueueEntry(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
-                is_published=is_published, potemplate=potemplate,
+                from_upstream=from_upstream, potemplate=potemplate,
                 pofile=pofile, format=format)
         else:
             # It's an update.
             entry.setErrorOutput(None)
             entry.content = alias
-            entry.is_published = is_published
+            entry.from_upstream = from_upstream
             if potemplate is not None:
                 # Only set the linked IPOTemplate object if it's not None.
                 entry.potemplate = potemplate
@@ -946,7 +946,7 @@ class TranslationImportQueue:
 
         return entry
 
-    def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
+    def addOrUpdateEntriesFromTarball(self, content, from_upstream, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None):
         """See ITranslationImportQueue."""
@@ -990,7 +990,7 @@ class TranslationImportQueue:
                 continue
 
             entry = self.addOrUpdateEntry(
-                filename, file_content, is_published, importer,
+                filename, file_content, from_upstream, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 potemplate=potemplate)
