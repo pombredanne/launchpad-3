@@ -351,15 +351,16 @@ class TestTwistedThreadSchedulerInPlace(
                 self.factory.makeBugWatch(
                     "%s-%d" % (tracker.name, num),
                     tracker, self.bug, self.owner)
-        # Commit so that threads all see the same database state.
-        transaction.commit()
         # Prepare the updater with the Twisted scheduler.
         output_file = OutputFileForThreads()
         threaded_bug_watch_updater = BugWatchUpdaterForThreads(output_file)
         threaded_bug_watch_scheduler = TwistedThreadScheduler(
             num_threads=10, install_signal_handlers=False)
+        # Commit so that threads all see the same database state.
+        transaction.commit()
+        # Run the updater.
         threaded_bug_watch_updater.updateBugTrackers(
-            bug_tracker_names=[tracker.name for tracker in self.trackers],
+            bug_tracker_names=['butterscotch', 'strawberry'],
             batch_size=5, scheduler=threaded_bug_watch_scheduler)
         # The thread names should match the tracker names.
         self.assertEqual(

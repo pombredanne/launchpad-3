@@ -217,6 +217,9 @@ class BugWatchUpdater(object):
         self.txn = txn
         self.log = log
 
+        # Thread local state.
+        self._local = threading.local()
+
         # Override SYNCABLE_GNOME_PRODUCTS if necessary.
         if syncable_gnome_products is not None:
             self._syncable_gnome_products = syncable_gnome_products
@@ -227,9 +230,6 @@ class BugWatchUpdater(object):
             getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
                 self.LOGIN, want_password=False))
 
-        self._local = threading.local()
-        self._local.within_transaction_semaphore = 0
-
     @property
     @contextmanager
     def transaction(self):
@@ -239,6 +239,11 @@ class BugWatchUpdater(object):
         commits on a successful exit. Exceptions are propogated;
         transactions are not aborted when there's an error.
         """
+        try:
+            self._local.within_transaction_semaphore
+        except AttributeError:
+            self._local.within_transaction_semaphore = 0
+
         if self._local.within_transaction_semaphore == 0:
             check_no_transaction()
         self._local.within_transaction_semaphore += 1
@@ -266,10 +271,6 @@ class BugWatchUpdater(object):
     @with_interaction
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
         """Yields functions that can be used to update each bug tracker."""
-        # Set up an interaction as the Bug Watch Updater since the
-        # notification code expects a logged in user.
-        self._login()
-
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
         # Save the name, so we can use it in other transactions.
         ubuntu_bugzilla_name = ubuntu_bugzilla.name
@@ -311,8 +312,6 @@ class BugWatchUpdater(object):
                         "Updates are disabled for bug tracker at %s" %
                         bug_tracker.baseurl)
 
-        self._logout()
-
     def updateBugTrackers(
         self, bug_tracker_names=None, batch_size=None, scheduler=None):
         """Update all the bug trackers that have watches pending.
@@ -331,8 +330,9 @@ class BugWatchUpdater(object):
             scheduler = SerialScheduler()
 
         # Schedule all the jobs to run.
-        for updater in self._bugTrackerUpdaters(bug_tracker_names):
-            scheduler.schedule(updater, batch_size)
+        with self.transaction:
+            for updater in self._bugTrackerUpdaters(bug_tracker_names):
+                scheduler.schedule(updater, batch_size)
 
         # Run all the jobs.
         scheduler.run()
@@ -349,18 +349,17 @@ class BugWatchUpdater(object):
 
         :return: A boolean indicating if the operation was successful.
         """
-        # Get the bug tracker.
-        if isinstance(bug_tracker, (int, long)):
-            bug_tracker = getUtility(IBugTrackerSet).get(bug_tracker)
-
-        # Save the name and url for later, since we might need it to report an
-        # error after a transaction has been aborted.
-        bug_tracker_name = bug_tracker.name
-        bug_tracker_url = bug_tracker.baseurl
+        with self.transaction:
+            # Get the bug tracker.
+            if isinstance(bug_tracker, (int, long)):
+                bug_tracker = getUtility(IBugTrackerSet).get(bug_tracker)
+            # Save the name and url for later, since we might need it
+            # to report an error after a transaction has been aborted.
+            bug_tracker_name = bug_tracker.name
+            bug_tracker_url = bug_tracker.baseurl
 
         try:
-            with self.transaction:
-                self._updateBugTracker(bug_tracker, batch_size)
+            self._updateBugTracker(bug_tracker, batch_size)
         except (KeyboardInterrupt, SystemExit):
             # We should never catch KeyboardInterrupt or SystemExit.
             raise
