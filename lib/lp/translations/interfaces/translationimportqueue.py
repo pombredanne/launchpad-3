@@ -226,10 +226,11 @@ class ITranslationImportQueueEntry(Interface):
         required=False,
         vocabulary="SourcePackageName")
 
-    is_published = Bool(
-        title=_("This import comes from a published file"),
+    from_upstream = Bool(
+        title=_("This import comes from an upstream project."),
         description=_(
-            "If checked, this import will be handled as already published."),
+            "If checked, the translations in this import will be marked "
+            "as is_upstream."),
         required=True,
         default=False)
 
