@@ -656,14 +656,19 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         self.next_url = canonical_url(product)
 
 
+LINK_LP_BZR = 'link-lp-bzr'
+CREATE_NEW = 'create-new'
+IMPORT_EXTERNAL = 'import-external'
+
+
 def _getBranchTypeVocabulary():
     items = (
-        ('link-lp-bzr',
+        (LINK_LP_BZR,
          _("Link to a Bazaar branch already on Launchpad")),
-        ('create-new',
+        (CREATE_NEW,
          _("Create a new, empty branch in Launchpad and "
            "link to this series")),
-        ('import-external',
+        (IMPORT_EXTERNAL,
          _("Import a branch hosted somewhere else")),
         )
     terms = [
@@ -743,14 +748,13 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
     custom_widget('rcs_type', LaunchpadRadioWidget)
     custom_widget('branch_type', LaunchpadRadioWidget)
     initial_values = {
-        'rcs_type': RevisionControlSystems.BZR_SVN,
-        'branch_type': 'link-lp-bzr',
+        'rcs_type': RevisionControlSystemsExtended.BZR,
+        'branch_type': LINK_LP_BZR,
         }
 
     def setUpWidgets(self):
         super(ProductSeriesSetBranchView, self).setUpWidgets()
-        #widget = self.widgets.get('branch')
-        #widget.setRenderedValue('trunkadunk')
+
         # Extract the radio buttons from the rcs_type widget, so we can
         # display them separately in the form.
         soup = BeautifulSoup(self.widgets['rcs_type']())
@@ -760,11 +764,6 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
             field for field in fields
             if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG',
                                       'BZR', '1']]
-        #cvs_button['onclick'] = 'updateWidgets()'
-        #svn_button['onclick'] = 'updateWidgets()'
-        #git_button['onclick'] = 'updateWidgets()'
-        #hg_button['onclick'] = 'updateWidgets()'
-        #bzr_button['onclick'] = 'updateWidgets()'
         # The following attributes are used only in the page template.
         self.rcs_type_cvs = str(cvs_button)
         self.rcs_type_svn = str(svn_button)
@@ -776,28 +775,54 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
         soup = BeautifulSoup(self.widgets['branch_type']())
         fields = soup.findAll('input')
         (link_button, create_button, import_button, emptymarker) = fields
-        #link_button['onclick'] = 'updateBranchType()'
-        #create_button['onclick'] = 'updateBranchType()'
-        #import_button['onclick'] = 'updateBranchType()'
         self.branch_type_link = str(link_button)
         self.branch_type_create = str(create_button)
         self.branch_type_import = str(import_button)
         self.branch_type_emptymarker = str(emptymarker)
 
     def validate(self, data):
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         extra_schemes = {
             RevisionControlSystemsExtended.BZR_SVN:['svn'],
             RevisionControlSystemsExtended.GIT:['git'],
             }
-        rcs_type = data['rcs_type']
+        rcs_type = data.get('rcs_type')
         schemes = ['http', 'https'] + extra_schemes.get(rcs_type, [])
         # Get the repository URL field.
         repo_url_field = self.form_fields['repo_url']
         repo_url_field.field.allowed_schemes = schemes
-        try:
-            repo_url_field.field._validate(data['repo_url'])
-        except LaunchpadValidationError, lve:
-            self.setFieldError('repo_url', str(lve))
+        repo_url = data.get('repo_url')
+        if repo_url is not None:
+            try:
+                repo_url_field.field._validate(repo_url)
+            except LaunchpadValidationError, lve:
+                self.setFieldError('repo_url', str(lve))
+
+        branch_type = data['branch_type']
+        if branch_type == IMPORT_EXTERNAL:
+            # RCS type is mandatory.
+            # This condition should never happen since an initial value is set.
+            if rcs_type is None:
+                # The error shows but does not identify the widget.
+                self.setFieldError(
+                    'rcs_type',
+                    'You must specify the type of RCS for the remote host.')
+        elif branch_type == LINK_LP_BZR:
+            if 'branch_location' not in data:
+                self.setFieldError(
+                    'branch_location',
+                    'The branch location must be set.')
+
+        if branch_type in [CREATE_NEW, IMPORT_EXTERNAL]:
+            if 'branch_name' not in data:
+                self.setFieldError(
+                    'branch_name',
+                    'The branch name must be set.')
+            if 'branch_owner' not in data:
+                self.setFieldError(
+                    'branch_owner',
+                    'The branch owner must be set.')
+
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
@@ -806,7 +831,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
         print data
         self.next_url = canonical_url(self.context)
         branch_type = data.get('branch_type')
-        if branch_type == 'link-lp-bzr':
+        if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
             if branch_location is None:
                 # TODO: need to stay on the page or move this to the
@@ -819,13 +844,15 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
                 self.request.response.addInfoNotification(
                     'Launchpad branch %s linked to the series.' %
                     branch_location.unique_name)
-
-        elif branch_type == 'create-new':
-            pass
-        elif branch_type == 'import-external':
-            pass
         else:
-            raise UnexpectedFormData(branch_type)
+            branch_name = data.get('branch_name')
+            branch_owner = data.get('branch_owner')
+            if branch_type == CREATE_NEW:
+                pass
+            elif branch_type == IMPORT_EXTERNAL:
+                pass
+            else:
+                raise UnexpectedFormData(branch_type)
 
     @property
     def cancel_url(self):
