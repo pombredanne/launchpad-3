@@ -33,7 +33,7 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackagePublishingHistory, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
-    IPackageUpload, IPackageUploadSet, IPackageUploadCustom)
+    IPackageUpload, IPackageUploadCustom, IPackageUploadSet)
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScript, SoyuzScriptError
 from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
