@@ -33,6 +33,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.scripts.logger import log as default_log
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started, set_request_started)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -51,6 +53,7 @@ from lp.bugs.externalbugtracker.bugzilla import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking)
+from lp.services.limitedlist import LimitedList
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -245,10 +248,12 @@ class BugWatchUpdater(object):
                 thread_name = thread.getName()
                 thread.setName(bug_tracker_name)
                 try:
+                    set_request_started(request_statements=LimitedList(1000))
                     run = self._interactionDecorator(self.updateBugTracker)
                     return run(bug_tracker_id, batch_size)
                 finally:
                     thread.setName(thread_name)
+                    clear_request_started()
             return updater
 
         for bug_tracker_name in bug_tracker_names:
