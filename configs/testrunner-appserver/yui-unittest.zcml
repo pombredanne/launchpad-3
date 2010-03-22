@@ -10,6 +10,7 @@
         name="+yui-unittest"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="lp.testing.views.YUITestFileView"
+        attribute="__call__"
         permission="zope.Public"/>
 
 </configure>

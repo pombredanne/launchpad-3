@@ -10,10 +10,13 @@ __all__ = [
     'YUITestFileView',
     ]
 
+import os
 
 from zope.component import getUtility, getMultiAdapter
 from zope.security.management import endInteraction, newInteraction
 
+from canonical.config import config
+from canonical.lazr import ExportedFolder
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -75,24 +78,8 @@ def create_initialized_view(context, name, form=None, layer=None,
     return view
 
 
-class YUITestFileView:
-    """View for mapping the YUI test files to the web server."""
+class YUITestFileView(ExportedFolder):
+    """Export the lib directory where the test assets reside."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def setContentType(self, file_path):
-        """Set the content-type of the file being served."""
-        if file_path.endswith('.js'):
-            content_type = 'application/javascript'
-        elif file_path.endswith('.css'):
-            content_type = 'text/css'
-        else:
-            content_type = 'text/html'
-        self.request.response.setHeader('Content-type', content_type)
-
-    def __call__(self):
-        """Return the content of the file."""
-        self.setContentType('fake.html')
-        return "<html><p>goodbye</p></html>"
+    folder = os.path.join(config.root, 'lib/')
+    export_subdirectories = True
