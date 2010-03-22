@@ -867,6 +867,7 @@ class BugWatchUpdater(object):
                             self.pushBugComments(remotesystem, bug_watch)
                         if ISupportsBackLinking.providedBy(remotesystem):
                             self.linkLaunchpadBug(remotesystem, bug_watch)
+                    bug_watch.addActivity()
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.

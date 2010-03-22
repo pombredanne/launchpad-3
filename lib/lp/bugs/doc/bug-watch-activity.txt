@@ -70,10 +70,10 @@ BugWatchActivity entry.
 We can demonstrate this by passing our bug watch to
 BugWatchUpdater.updateBugWatches().
 
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
-    >>> updater = BugWatchUpdater(transaction, FakeLogger())
+    >>> updater = BugWatchUpdater(transaction, QuietFakeLogger())
     >>> updater.updateBugWatches(
     ...     TestExternalBugTracker('http://example.com'), [bug_watch])
 
