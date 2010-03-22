@@ -292,7 +292,8 @@ class BugWatch(SQLBase):
         store = Store.of(self)
         return store.find(
             BugWatchActivity,
-            BugWatchActivity.bug_watch == self).order_by('activity_date')
+            BugWatchActivity.bug_watch == self).order_by(
+                Desc('activity_date'))
 
 
 class BugWatchSet(BugSetBase):

@@ -867,7 +867,7 @@ class BugWatchUpdater(object):
                             self.pushBugComments(remotesystem, bug_watch)
                         if ISupportsBackLinking.providedBy(remotesystem):
                             self.linkLaunchpadBug(remotesystem, bug_watch)
-                    bug_watch.addActivity()
+                    bug_watch.addActivity(result=error)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -890,9 +890,10 @@ class BugWatchUpdater(object):
                 # their lastchecked dates so that we don't try to
                 # re-check them every time checkwatches runs.
                 errortype = get_bugwatcherrortype_for_error(error)
-                for bugwatch in bug_watches:
-                    bugwatch.lastchecked = UTC_NOW
-                    bugwatch.last_error_type = errortype
+                for bug_watch in bug_watches:
+                    bug_watch.lastchecked = UTC_NOW
+                    bug_watch.last_error_type = errortype
+                    bug_watch.addActivity(result=error)
                 # We need to commit the transaction, in case the next
                 # bug fails to update as well.
                 self.txn.commit()
