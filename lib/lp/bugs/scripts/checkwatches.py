@@ -26,7 +26,7 @@ from canonical.database.sqlbase import flush_database_updates
 from lazr.lifecycle.event import ObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchErrorType, CreateBugParams,
+    BugTaskStatus, BugWatchActivityStatus, CreateBugParams,
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
@@ -62,24 +62,24 @@ class TooMuchTimeSkew(BugWatchUpdateError):
 
 
 _exception_to_bugwatcherrortype = [
-   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
-   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
-   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
-   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (InvalidBugId, BugWatchErrorType.INVALID_BUG_ID),
-   (BugNotFound, BugWatchErrorType.BUG_NOT_FOUND),
-   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
-   (socket.timeout, BugWatchErrorType.TIMEOUT)]
+   (BugTrackerConnectError, BugWatchActivityStatus.CONNECTION_ERROR),
+   (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
+   (UnparseableBugData, BugWatchActivityStatus.UNPARSABLE_BUG),
+   (UnparseableBugTrackerVersion, BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion, BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError, BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (InvalidBugId, BugWatchActivityStatus.INVALID_BUG_ID),
+   (BugNotFound, BugWatchActivityStatus.BUG_NOT_FOUND),
+   (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
+   (socket.timeout, BugWatchActivityStatus.TIMEOUT)]
 
 def get_bugwatcherrortype_for_error(error):
-    """Return the correct `BugWatchErrorType` for a given error."""
+    """Return the correct `BugWatchActivityStatus` for a given error."""
     for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
         if isinstance(error, exc_type):
             return bugwatcherrortype
     else:
-        return BugWatchErrorType.UNKNOWN
+        return BugWatchActivityStatus.UNKNOWN
 
 
 #
@@ -766,13 +766,13 @@ class BugWatchUpdater(object):
                 " trusted. No comments will be imported.")
 
         error_type_messages = {
-            BugWatchErrorType.INVALID_BUG_ID:
+            BugWatchActivityStatus.INVALID_BUG_ID:
                 ("Invalid bug %(bug_id)r on %(base_url)s "
                  "(local bugs: %(local_ids)s)."),
-            BugWatchErrorType.BUG_NOT_FOUND:
+            BugWatchActivityStatus.BUG_NOT_FOUND:
                 ("Didn't find bug %(bug_id)r on %(base_url)s "
                  "(local bugs: %(local_ids)s)."),
-            BugWatchErrorType.PRIVATE_REMOTE_BUG:
+            BugWatchActivityStatus.PRIVATE_REMOTE_BUG:
                 ("Remote bug %(bug_id)r on %(base_url)s is private "
                  "(local bugs: %(local_ids)s)."),
             }

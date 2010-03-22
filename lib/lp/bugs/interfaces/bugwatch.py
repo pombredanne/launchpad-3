@@ -8,7 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugWatchErrorType',
+    'BugWatchActivityStatus',
     'IBugWatch',
     'IBugWatchActivity',
     'IBugWatchSet',
@@ -30,7 +30,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 
 
-class BugWatchErrorType(DBEnumeratedType):
+class BugWatchActivityStatus(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
 
     UNKNOWN = DBItem(999, """
@@ -128,7 +128,7 @@ class IBugWatch(IHasBug):
         Datetime(title=_('Last Checked')),
         exported_as='date_last_checked')
     last_error_type = exported(
-        Choice(title=_('Last Error Type'), vocabulary=BugWatchErrorType))
+        Choice(title=_('Last Error Type'), vocabulary=BugWatchActivityStatus))
     datecreated = exported(
         Datetime(title=_('Date Created'), required=True, readonly=True),
         exported_as='date_created')
@@ -314,7 +314,7 @@ class IBugWatchActivity(Interface):
         title=_('Activity date'), required=True, readonly=True,
         description=_("The date on which this activity occurred."))
     result = Choice(
-        title=_('Result'), vocabulary=BugWatchErrorType, readonly=True,
+        title=_('Result'), vocabulary=BugWatchActivityStatus, readonly=True,
         description=_("The result of the activity."))
     message = Text(
         title=_('Message'), readonly=True,

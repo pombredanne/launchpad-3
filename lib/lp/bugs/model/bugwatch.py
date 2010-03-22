@@ -44,7 +44,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchErrorType, IBugWatch, IBugWatchActivity, IBugWatchSet,
+    BugWatchActivityStatus, IBugWatch, IBugWatchActivity, IBugWatchSet,
     NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
@@ -78,7 +78,7 @@ class BugWatch(SQLBase):
     remote_importance = StringCol(notNull=False, default=None)
     lastchanged = UtcDateTimeCol(notNull=False, default=None)
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
-    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
+    last_error_type = EnumCol(schema=BugWatchActivityStatus, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
@@ -182,27 +182,27 @@ class BugWatch(SQLBase):
             return None
 
         error_message_mapping = {
-            BugWatchErrorType.BUG_NOT_FOUND: "%(bugtracker)s bug #"
+            BugWatchActivityStatus.BUG_NOT_FOUND: "%(bugtracker)s bug #"
                 "%(bug)s appears not to exist. Check that the bug "
                 "number is correct.",
-            BugWatchErrorType.CONNECTION_ERROR: "Launchpad couldn't "
+            BugWatchActivityStatus.CONNECTION_ERROR: "Launchpad couldn't "
                 "connect to %(bugtracker)s.",
-            BugWatchErrorType.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
+            BugWatchActivityStatus.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
                 "valid on %(bugtracker)s. Check that the bug ID is "
                 "correct.",
-            BugWatchErrorType.TIMEOUT: "Launchpad's connection to "
+            BugWatchActivityStatus.TIMEOUT: "Launchpad's connection to "
                 "%(bugtracker)s timed out.",
-            BugWatchErrorType.UNKNOWN: "Launchpad couldn't import bug "
+            BugWatchActivityStatus.UNKNOWN: "Launchpad couldn't import bug "
                 "#%(bug)s from " "%(bugtracker)s.",
-            BugWatchErrorType.UNPARSABLE_BUG: "Launchpad couldn't "
+            BugWatchActivityStatus.UNPARSABLE_BUG: "Launchpad couldn't "
                 "extract a status from %(bug)s on %(bugtracker)s.",
-            BugWatchErrorType.UNPARSABLE_BUG_TRACKER: "Launchpad "
+            BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER: "Launchpad "
                 "couldn't determine the version of %(bugtrackertype)s "
                 "running on %(bugtracker)s.",
-            BugWatchErrorType.UNSUPPORTED_BUG_TRACKER: "Launchpad "
+            BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER: "Launchpad "
                 "doesn't support importing bugs from %(bugtrackertype)s"
                 " bug trackers.",
-            BugWatchErrorType.PRIVATE_REMOTE_BUG: "The bug is marked as "
+            BugWatchActivityStatus.PRIVATE_REMOTE_BUG: "The bug is marked as "
                 "private on the remote bug tracker. Launchpad cannot import "
                 "the status of private remote bugs.",
             }
@@ -647,6 +647,6 @@ class BugWatchActivity(Storm):
     bug_watch_id = Int(name='bug_watch')
     bug_watch = Reference(bug_watch_id, BugWatch.id)
     activity_date = UtcDateTimeCol(notNull=True)
-    result = EnumCol(enum=BugWatchErrorType, notNull=False)
+    result = EnumCol(enum=BugWatchActivityStatus, notNull=False)
     message = Unicode()
     oops_id = Unicode()
