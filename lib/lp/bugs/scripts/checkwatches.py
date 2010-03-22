@@ -2,9 +2,12 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Classes and logic for the checkwatches cronscript."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from functools import wraps
+from contextlib import contextmanager
 from copy import copy
 from datetime import datetime, timedelta
 import socket
@@ -49,6 +52,7 @@ from lp.bugs.externalbugtracker import (
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 from lp.bugs.externalbugtracker.bugzilla import (
     BugzillaAPI)
+from lp.bugs.externalbugtracker.isolation import check_no_transaction
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking)
@@ -223,6 +227,24 @@ class BugWatchUpdater(object):
             getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
                 self.LOGIN, want_password=False))
 
+    @property
+    @contextmanager
+    def transaction(self):
+        """Context manager to ring-fence database activity.
+
+        Ensures that no transaction is in progress on entry, and
+        commits on a successful exit. Exceptions are propogated;
+        transactions are not aborted when there's an error.
+        """
+        check_no_transaction()
+        try:
+            yield self.txn
+        except:
+            # Let the exception propogate.
+            raise
+        else:
+            self.txn.commit()
+
     def _login(self):
         """Set up an interaction as the Bug Watch Updater"""
         setupInteraction(self._principal, login=self.LOGIN)
@@ -327,9 +349,8 @@ class BugWatchUpdater(object):
         bug_tracker_url = bug_tracker.baseurl
 
         try:
-            self.txn.begin()
-            self._updateBugTracker(bug_tracker, batch_size)
-            self.txn.commit()
+            with self.transaction:
+                self._updateBugTracker(bug_tracker, batch_size)
         except (KeyboardInterrupt, SystemExit):
             # We should never catch KeyboardInterrupt or SystemExit.
             raise
