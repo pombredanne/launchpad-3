@@ -58,7 +58,7 @@ from lp.services.scripts.base import LaunchpadCronScript
 
 
 SYNCABLE_GNOME_PRODUCTS = []
-
+MAX_SQL_STATEMENTS_LOGGED = 1000
 
 class TooMuchTimeSkew(BugWatchUpdateError):
     """Time difference between ourselves and the remote server is too much."""
@@ -142,7 +142,8 @@ def report_oops(message=None, properties=None, info=None):
     error_utility.raising(info, request)
     # clear the SQL log.
     clear_request_started()
-    set_request_started()
+    set_request_started(
+        request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED))
     return request
 
 
@@ -250,7 +251,9 @@ class BugWatchUpdater(object):
                 thread_name = thread.getName()
                 thread.setName(bug_tracker_name)
                 try:
-                    set_request_started(request_statements=LimitedList(1000))
+                    set_request_started(
+                        request_statements=LimitedList(
+                            MAX_SQL_STATEMENTS_LOGGED))
                     run = self._interactionDecorator(self.updateBugTracker)
                     return run(bug_tracker_id, batch_size)
                 finally:
