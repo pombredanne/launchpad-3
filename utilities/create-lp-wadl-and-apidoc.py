@@ -34,9 +34,17 @@ def main(path_template):
     WebServiceApplication.cached_wadl = None # do not use cached file version
     execute_zcml_for_scripts()
     config = getUtility(IWebServiceConfiguration)
+    directory, ignore = os.path.split(path_template)
 
     stylesheet = pkg_resources.resource_filename(
         'launchpadlib', 'wadl-to-refhtml.xsl')
+
+    # First, create an index.html with links to all the HTML
+    # documentation files we're about to generate.
+    template_file = 'apidoc-index.pt'
+    template = PageTemplateFile(template_file)
+    f = open(os.path.join(directory, "index.html"), 'w')
+    f.write(template(config=config))
 
     # Request the WADL from the root resource.
     # We do this by creating a request object asking for a WADL
@@ -63,29 +71,12 @@ def main(path_template):
 
         # Now, convert the WADL into an human-readable description and
         # put the HTML in the same directory as the WADL.
-        directory, ignore = os.path.split(path_template)
         html_filename = os.path.join(directory, version + ".html")
         print "Writing apidoc for version %s to %s" % (
             version, html_filename)
         stdout = open(html_filename, "w")
         subprocess.Popen(['xsltproc', stylesheet, filename], stdout=stdout)
         stdout.close()
-
-    # Finally, create an index.html with links to all the HTML
-    # documentation files we just generated.
-    template_file = 'apidoc-index.pt'
-    template = PageTemplateFile(template_file)
-    namespace = template.pt_getContext()
-    namespace['config'] = config
-    versions_and_descriptions = []
-    for version in config.active_versions:
-        versions_and_descriptions.append(
-            dict(version=version,
-                 description=config.version_descriptions[version]))
-    namespace['versions_and_descriptions'] = versions_and_descriptions
-
-    f = open(os.path.join(directory, "index.html"), 'w')
-    f.write(template.pt_render(namespace))
 
     return 0
 
