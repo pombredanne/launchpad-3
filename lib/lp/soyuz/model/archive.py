@@ -58,7 +58,7 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
+    ArchivePurpose, ArchiveStatus, CannotCopy, CannotSwitchPrivacy,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
     InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
     NoTokensForTeams, PocketNotFound, VersionRequiresName,
@@ -147,6 +147,9 @@ class Archive(SQLBase):
 
     purpose = EnumCol(
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
+
+    status = EnumCol(
+        dbName="status", unique=False, notNull=True, schema=ArchiveStatus)
 
     _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
     enabled = property(lambda x: x._enabled)
@@ -677,7 +680,7 @@ class Archive(SQLBase):
         # It results in:
         # ERROR:  missing FROM-clause entry for table "binarypackagename"
         unique_binary_publications = nominated_arch_independents.union(
-            no_nominated_arch_independents)
+            no_nominated_arch_independents).orderBy("id")
 
         return unique_binary_publications
 

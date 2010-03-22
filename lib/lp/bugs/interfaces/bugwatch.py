@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'BugWatchErrorType',
     'IBugWatch',
+    'IBugWatchActivity',
     'IBugWatchSet',
     'NoBugTrackerFound',
     'UnrecognizedBugTrackerURL',
@@ -134,6 +135,7 @@ class IBugWatch(IHasBug):
     owner = exported(
         Reference(title=_('Owner'), required=True,
                   readonly=True, schema=Interface))
+    activity = Attribute('The activity history of this BugWatch.')
 
     # Useful joins.
     bugtasks = exported(
@@ -204,6 +206,9 @@ class IBugWatch(IHasBug):
 
     def getImportedBugMessages():
         """Return all the `IBugMessage`s that have been imported."""
+
+    def addActivity(result=None, message=None, oops_id=None):
+        """Add an `IBugWatchActivity` record for this BugWatch."""
 
 
 # Defined here because of circular imports.
@@ -293,3 +298,28 @@ class NoBugTrackerFound(Exception):
 
 class UnrecognizedBugTrackerURL(Exception):
     """The given URL isn't used by any bug tracker we support."""
+
+
+class IBugWatchActivity(Interface):
+    """A record of a single BugWatch update."""
+
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The unique id of this activity record."))
+    bug_watch = Reference(
+        title=_('Bug watch'), required=True, readonly=True, schema=IBugWatch,
+        description=_(
+            "The BugWatch whose activity is recorded in this record"))
+    activity_date = Datetime(
+        title=_('Activity date'), required=True, readonly=True,
+        description=_("The date on which this activity occurred."))
+    result = Choice(
+        title=_('Result'), vocabulary=BugWatchErrorType, readonly=True,
+        description=_("The result of the activity."))
+    message = Text(
+        title=_('Message'), readonly=True,
+        description=_("The message associated with this activity."))
+    oops_id = Text(
+        title=_('OOPS ID'), readonly=True,
+        description=_("The OOPS ID associated with this activity."))
+
