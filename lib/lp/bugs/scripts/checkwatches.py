@@ -227,6 +227,9 @@ class BugWatchUpdater(object):
             getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
                 self.LOGIN, want_password=False))
 
+        self._local = threading.local()
+        self._local.within_transaction_semaphore = 0
+
     @property
     @contextmanager
     def transaction(self):
@@ -236,14 +239,21 @@ class BugWatchUpdater(object):
         commits on a successful exit. Exceptions are propogated;
         transactions are not aborted when there's an error.
         """
-        check_no_transaction()
+        if self._local.within_transaction_semaphore == 0:
+            check_no_transaction()
+        self._local.within_transaction_semaphore += 1
         try:
-            yield self.txn
-        except:
-            # Let the exception propogate.
-            raise
-        else:
-            self.txn.commit()
+            try:
+                yield self.txn
+            except:
+                # Let the exception propogate.
+                raise
+            else:
+                self.txn.commit()
+        finally:
+            self._local.within_transaction_semaphore -= 1
+            assert self._local.within_transaction_semaphore >= 0, (
+                "within_transaction_semaphore released too many times.")
 
     def _login(self):
         """Set up an interaction as the Bug Watch Updater"""
@@ -433,22 +443,33 @@ class BugWatchUpdater(object):
 
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        remotesystem = externalbugtracker.get_external_bugtracker(
-            bug_tracker)
-        remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
+        with self.transaction:
+            remotesystem = (
+                externalbugtracker.get_external_bugtracker(bug_tracker))
+            remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
+            # We special-case the Gnome Bugzilla.
+            is_gnome_bugzilla = bug_tracker is (
+                getUtility(ILaunchpadCelebrities).gnome_bugzilla)
 
-        # We special-case the Gnome Bugzilla.
-        gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
-        if (bug_tracker == gnome_bugzilla and
+        if (is_gnome_bugzilla and
             isinstance(remotesystem_to_use, BugzillaAPI) and
             len(self._syncable_gnome_products) > 0):
 
             syncable_watches = []
             other_watches = []
 
-            bug_ids = [bug_watch.remotebug for bug_watch in bug_watches]
-            remote_products = remotesystem_to_use.getProductsForRemoteBugs(
-                bug_ids)
+            with self.transaction:
+                remote_bug_ids = [
+                    bug_watch.remotebug for bug_watch in bug_watches]
+                remote_products = (
+                    remotesystem_to_use.getProductsForRemoteBugs(
+                        remote_bug_ids))
+                for bug_watch in bug_watches:
+                    if (remote_products.get(bug_watch.remotebug, None) in
+                        self._syncable_gnome_products):
+                        syncable_watches.append(bug_watch)
+                    else:
+                        other_watches.append(bug_watch)
 
             # For bug watches on remote bugs that are against products
             # in the _syncable_gnome_products list - i.e. ones with which
@@ -459,19 +480,14 @@ class BugWatchUpdater(object):
             remotesystem_for_others = copy(remotesystem_to_use)
             remotesystem_for_others.sync_comments = False
 
-            for bug_watch in bug_watches:
-                if (remote_products.get(bug_watch.remotebug, None) in
-                    self._syncable_gnome_products):
-                    syncable_watches.append(bug_watch)
-                else:
-                    other_watches.append(bug_watch)
-
             trackers_and_watches = [
                 (remotesystem_for_syncables, syncable_watches),
                 (remotesystem_for_others, other_watches),
                 ]
         else:
-            trackers_and_watches = [(remotesystem_to_use, bug_watches)]
+            trackers_and_watches = [
+                (remotesystem_to_use, bug_watches)
+                ]
 
         return trackers_and_watches
 
@@ -485,10 +501,12 @@ class BugWatchUpdater(object):
         #     23.
         # We want 1 day, but we'll use 23 hours because we can't count
         # on the cron job hitting exactly the same time every day
-        bug_watches_to_update = (
-            bug_tracker.getBugWatchesNeedingUpdate(23))
+        with self.transaction:
+            bug_watches_to_update = (
+                bug_tracker.getBugWatchesNeedingUpdate(23))
+            bug_watches_need_updating = bool(bug_watches_to_update)
 
-        if bug_watches_to_update.count() > 0:
+        if bug_watches_need_updating:
             # XXX: GavinPanella 2010-01-18 bug=509223 : Ask remote
             # tracker which remote bugs have been modified, and use
             # this to fill up a batch, rather than figuring out
@@ -496,17 +514,17 @@ class BugWatchUpdater(object):
             try:
                 trackers_and_watches = self._getExternalBugTrackersAndWatches(
                     bug_tracker, bug_watches_to_update)
-            except externalbugtracker.UnknownBugTrackerTypeError, error:
+            except UnknownBugTrackerTypeError, error:
                 # We update all the bug watches to reflect the fact that
                 # this error occurred. We also update their last checked
                 # date to ensure that they don't get checked for another
                 # 24 hours (see above).
                 error_type = (
                     get_bugwatcherrortype_for_error(error))
-                for bug_watch in bug_watches_to_update:
-                    bug_watch.last_error_type = error_type
-                    bug_watch.lastchecked = UTC_NOW
-
+                with self.transaction:
+                    for bug_watch in bug_watches_to_update:
+                        bug_watch.last_error_type = error_type
+                        bug_watch.lastchecked = UTC_NOW
                 message = (
                     "ExternalBugtracker for BugTrackerType '%s' is not "
                     "known." % (error.bugtrackertypename))
@@ -608,11 +626,12 @@ class BugWatchUpdater(object):
             oldest_lastchecked -= (
                 self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
 
-        remote_old_ids = sorted(
-            set(bug_watch.remotebug for bug_watch in old_bug_watches))
-        remote_new_ids = sorted(
-            set(bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch not in old_bug_watches))
+        with self.transaction:
+            remote_old_ids = sorted(
+                set(bug_watch.remotebug for bug_watch in old_bug_watches))
+            remote_new_ids = sorted(
+                set(bug_watch.remotebug for bug_watch in bug_watches
+                    if bug_watch not in old_bug_watches))
 
         # We only make the call to getModifiedRemoteBugs() if there
         # are actually some bugs that we're interested in so as to
@@ -735,18 +754,18 @@ class BugWatchUpdater(object):
         self.txn.commit()
         server_time = remotesystem.getCurrentDBTime()
         try:
-            remote_ids = self._getRemoteIdsToCheck(
-                remotesystem, bug_watches, server_time, now, batch_size)
+            with self.transaction:
+                remote_ids = self._getRemoteIdsToCheck(
+                    remotesystem, bug_watches, server_time, now, batch_size)
         except TooMuchTimeSkew, error:
             # If there's too much time skew we can't continue with this
             # run.
-            self.txn.begin()
-            errortype = get_bugwatcherrortype_for_error(error)
-            for bug_watch_id in bug_watch_ids:
-                bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
-                bugwatch.lastchecked = UTC_NOW
-                bugwatch.last_error_type = errortype
-            self.txn.commit()
+            with self.transaction:
+                errortype = get_bugwatcherrortype_for_error(error)
+                for bug_watch_id in bug_watch_ids:
+                    bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
+                    bugwatch.lastchecked = UTC_NOW
+                    bugwatch.last_error_type = errortype
             raise
 
         remote_ids_to_check = remote_ids['remote_ids_to_check']
@@ -755,9 +774,10 @@ class BugWatchUpdater(object):
 
         # Remove from the list of bug watches any watch whose remote ID
         # doesn't appear in the list of IDs to check.
-        for bug_watch in list(bug_watches):
-            if bug_watch.remotebug not in remote_ids_to_check:
-                bug_watches.remove(bug_watch)
+        with self.transaction:
+            for bug_watch in list(bug_watches):
+                if bug_watch.remotebug not in remote_ids_to_check:
+                    bug_watches.remove(bug_watch)
 
         self.log.info("Updating %i watches for %i bugs on %s" %
             (len(bug_watches), len(remote_ids_to_check),
