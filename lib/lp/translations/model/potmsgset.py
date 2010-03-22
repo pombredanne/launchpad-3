@@ -883,7 +883,7 @@ class POTMsgSet(SQLBase):
         matching_message.sync()
         return matching_message
 
-    def _isNoTranslationConflict(self, message, lock_timestamp):
+    def _maybeRaiseTranslationConflict(self, message, lock_timestamp):
         """Checks if there is a translation conflict for the message.
 
         If a translation conflict is detected, TranslationConflict is raised.
@@ -899,7 +899,7 @@ class POTMsgSet(SQLBase):
                 'error but you might want to re-review the strings '
                 'concerned.')
         else:
-            return True
+            return
 
     def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
         """See `IPOTMsgSet`."""
@@ -912,7 +912,7 @@ class POTMsgSet(SQLBase):
                 pofile, reviewer, [], False, lock_timestamp)
         else:
             # Check for translation conflicts and update review fields.
-            self._isNoTranslationConflict(current, lock_timestamp)
+            self._maybeRaiseTranslationConflict(current, lock_timestamp)
             current.reviewer = reviewer
             current.date_reviewed = lock_timestamp
 
@@ -924,11 +924,10 @@ class POTMsgSet(SQLBase):
         current = self.getCurrentTranslationMessage(
             pofile.potemplate, pofile.language)
 
-        # Reset only if we don't have a conflict and 
-        # if no new suggestions were provided or
-        # the new suggestions are empty.
-        if (current is not None and
-            self._isNoTranslationConflict(current, lock_timestamp)):
+        if (current is not None):
+            # Check for transltion conflicts and update the required
+            # attributes.
+            self._maybeRaiseTranslationConflict(current, lock_timestamp)
             current.is_current = False
             # Converge the current translation only if it is diverged and not
             # imported.

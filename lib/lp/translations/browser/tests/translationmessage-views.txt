@@ -721,18 +721,18 @@ We need to force timestamp update, since suggestions are submitted too fast.
     ...     now = (str(year_tick) +
     ...             datetime.now(UTC).strftime('-%m-%dT%H:%M:%S+00:00'))
     ...     year_tick += 1
-    ...     msgset_stem = 'msgset_' + str(potmsgset.id)
-    ...     msgset_stem_lang = msgset_stem + '_' + pofile.language.code
+    ...     msgset_id = 'msgset_' + str(potmsgset.id)
+    ...     msgset_id_lang = msgset_id + '_' + pofile.language.code
     ...     form = {
     ...         'lock_timestamp': now,
     ...         'alt': None,
-    ...         msgset_stem : None,
-    ...         msgset_stem_lang + '_translation_0_radiobutton':
-    ...         msgset_stem_lang + '_translation_0_new',
-    ...         msgset_stem_lang + '_translation_0_new': translation,
+    ...         msgset_id : None,
+    ...         msgset_id_lang + '_translation_0_radiobutton':
+    ...         msgset_id_lang + '_translation_0_new',
+    ...         msgset_id_lang + '_translation_0_new': translation,
     ...         'submit_translations': 'Save &amp; Continue'}
     ...     if force_suggestion:
-    ...         form[msgset_stem_lang + '_needsreview'] = 'force_suggestion'
+    ...         form[msgset_id_lang + '_needsreview'] = 'force_suggestion'
     ...     tm_view = create_view(
     ...         translationmessage, "+translate", form=form,
     ...         layer=TranslationsLayer, server_url=server_url)
