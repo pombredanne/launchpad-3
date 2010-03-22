@@ -186,7 +186,7 @@ of these files match the uploaded ones.
 Right, that's all we need from the FTP server. We don't need it anymore,
 so we'll just kill the process.
 
-  >>> status = poppy.killPoppy()
+  >>> poppy.killPoppy()
 
 Finally, we'll just create an entirely empty upload folder. We rely for
 our tests on a poppy-like naming system, ie. that the upload folder
