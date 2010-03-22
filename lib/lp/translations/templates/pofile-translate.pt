@@ -53,7 +53,6 @@
 
       });
 
-
     </script>
     </div>
     <div metal:fill-slot="main">
@@ -67,6 +66,7 @@
             tal:condition="not:view/translation_group"
             tal:content="string:var documentation_cookie = 'others';">
       </script>
+
         <!-- Documentation links -->
         <tal:documentation condition="view/translation_group">
           <div class="important-notice-container"
