@@ -131,6 +131,77 @@
 
 
 <metal:pofile-js-footer define-macro="pofile-js-footer">
+    <tal:comment replace="nothing">
+        Shift+Alt+b - Focus first translation field
+    </tal:comment>
+    <a accesskey="b" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+a - First page
+    </tal:comment>
+    <a accesskey="a" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+n - Next page
+    </tal:comment>
+    <a accesskey="n" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+p - Previous page
+    </tal:comment>
+    <a accesskey="p" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+l - Last page
+    </tal:comment>
+    <a accesskey="l" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+f - Focus search field
+    </tal:comment>
+    <a accesskey="f" />
+
+
+    <tal:comment replace="nothing">
+        Shift+Alt+s - Save and continue
+    </tal:comment>
+    <a accesskey="s" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+j - Next field
+    </tal:comment>
+    <a accesskey="j" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+k - Previous field
+    </tal:comment>
+    <a accesskey="k" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+C - Copy original text (both singular and plural)
+    </tal:comment>
+    <a accesskey="c" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+0 - Mark current translation
+    </tal:comment>
+    <a accesskey="0" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+NUMBER - Mark suggestion NUMBER
+    </tal:comment>
+    <a accesskey="1" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+d - Dismiss all suggestions
+    </tal:comment>
+    <a accesskey="d" />
+
+    <tal:comment replace="nothing">
+        Shift+Alt+r - Tick "Someone should review this translation"
+    </tal:comment>
+    <a accesskey="r" />
+
     <script type="text/javascript"
         tal:content="
         structure string:<!-- 

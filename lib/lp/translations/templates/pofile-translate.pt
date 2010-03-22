@@ -18,28 +18,39 @@
       registerLaunchpadFunction(insertAllExpansionButtons);
 
       LPS.use('lp.pofile', function(Y) {
-        try {
-          Y.on('domready', Y.lp.pofile.updateNotificationBox);
-        } catch (e) {
-          Y.log(e, "error");
-        }
-        try {
-          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
-        } catch (e) {
-          Y.log(e, "error");
-        }
-        try {
-          Y.on('domready', Y.lp.pofile.initializeKeyBindings);
-        } catch (e) {
-          Y.log(e, "error");
-        }
-        try {
+
           Y.on('domready', function(e) {
-            Y.lp.pofile.setFocus(autofocus_field);
+            try {
+              Y.lp.pofile.updateNotificationBox();
+            } catch (e) {
+              Y.log(e, "error");
+            }
           });
-        } catch (e) {
-          Y.log(e, "error");
-        }
+
+          Y.on('domready', function(e) {
+            try {
+              Y.lp.pofile.setupSuggestionDismissal();
+            } catch (e) {
+              Y.log(e, "error");
+            }
+          });
+
+          Y.on('domready', function(e) {
+            try {
+              Y.lp.pofile.initializeKeyBindings();
+            } catch (e) {
+              Y.log(e, "error");
+            }
+          });
+
+          Y.on('domready', function(e) {
+            try {
+              Y.lp.pofile.setFocus(autofocus_field);
+            } catch (e) {
+              Y.log(e, "error");
+            }
+          });
+
       });
 
 
@@ -56,7 +67,6 @@
             tal:condition="not:view/translation_group"
             tal:content="string:var documentation_cookie = 'others';">
       </script>
-
         <!-- Documentation links -->
         <tal:documentation condition="view/translation_group">
           <div class="important-notice-container"
