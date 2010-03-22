@@ -337,7 +337,6 @@ clean: clean_js
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
 			  /var/tmp/fatsam.appserver \
-			  /var/tmp/launchpad_mailqueue \
 			  /var/tmp/lperr \
 			  /var/tmp/lperr.test \
 			  /var/tmp/mailman \
@@ -345,6 +344,10 @@ clean: clean_js
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
 			  /var/tmp/zeca
+	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
+	# instances.
+	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
+
 
 realclean: clean
 	$(RM) TAGS tags

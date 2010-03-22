@@ -1872,10 +1872,8 @@ class BranchMergeProposalEdit(AuthorizationBase):
         """
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
-                user.inTeam(self.obj.target_branch.owner) or
-                user.inTeam(self.obj.target_branch.reviewer) or
-                user.in_admin or
-                user.in_bazaar_experts)
+                check_permission('launchpad.Edit', self.obj.target_branch) or
+                user.inTeam(self.obj.target_branch.reviewer))
 
 
 class ViewEntitlement(AuthorizationBase):
