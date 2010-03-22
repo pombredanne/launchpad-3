@@ -3,44 +3,34 @@
 Because Launchpad's main WADL files are so big, we cache them
 internally: one WADL file for every version of the web service.
 Because the WADL only changes when the Launchpad software changes,
-these documents are cached to files.  Right now, the Launchpad
-webservice serves a special test file
-(canonical/launchpad/apidoc/wadl-testrunner-devel.xml) when a client
-asks for the big WADL definition for the 'devel' version. The
-'testrunner' part comes from canonical.config.config.instance_name, so
-a development instance will use the file
-canonical/launchpad/apidoc/wadl-development-{version}.xml.
+these documents are cached to files.
 
-    >>> test_wadl = webservice.get(
+Let's retrieve one of those files now.
+
+    >>> cached_wadl = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml', api_version='devel').body
-    >>> print test_wadl
-    <?xml version="1.0"?>
-    <wadl:application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                      xmlns="http://research.sun.com/wadl/2006/10"
-                      xmlns:wadl="http://research.sun.com/wadl/2006/10"
-                      xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd">
-    <BLANKLINE>
-      <!--This file is for testing purposes only.  See
-          canonical/launcpad/pagetests/webservice/xx-wadl.txt -->
-    <BLANKLINE>
-    </wadl:application>
-    <BLANKLINE>
 
-Let's look at the real contents, though.  To do this, we need to
-deactivate the cache. Simply clearing it out will just cause it to be
-filled up again.
+    >>> cached_wadl = cached_wadl.decode('UTF-8')
+    >>> 'http://api.launchpad.dev/devel/' in cached_wadl
+    True
+
+To look at the original documents, we need to deactivate the
+cache. Simply clearing it out will just cause it to be filled up
+again.
 
     >>> from canonical.launchpad.systemhomes import WebServiceApplication
-    >>> old_cached_wadl = WebServiceApplication.cached_wadl
+    >>> old_wadl_cache = WebServiceApplication.cached_wadl
     >>> WebServiceApplication.cached_wadl = None
 
     >>> wadl = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml', api_version='devel').body
     >>> wadl = wadl.decode('UTF-8')
 
-The real file is much bigger than the test file.
+The uncached WADL is very similar to the cached WADL we retrieved
+earlier. (It may not be identical because some of the stanzas show up
+in random order.)
 
-    >>> len(wadl) > len(test_wadl)
+    >>> len(wadl) == len(cached_wadl)
     True
 
 The WADL we received is keyed to the 'devel' version of the web
@@ -71,10 +61,10 @@ will be deprecated along with the Karmic release of Ubuntu.
     >>> 'http://api.launchpad.dev/beta/' in wadl_beta
     True
 
-We don't need the cache anymore, so we'll reinstate the testing
-version. This way, other tests will have a clean slate.
+We don't need to check the documents as they're generated, so we'll
+reinstate the cache. This way, other tests will have a clean slate.
 
-    >>> WebServiceApplication.cached_wadl = old_cached_wadl
+    >>> WebServiceApplication.cached_wadl = old_wadl_cache
 
 Like all lazr.restful applications, Launchpad's web service generates
 valid WADL.
