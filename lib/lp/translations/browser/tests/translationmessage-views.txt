@@ -773,22 +773,6 @@ listed as suggestions.
     [u'A shared translation']
     >>> print_current_translation(potmsgset, pofile)
 
-Same happens if we force the submission of a suggestion similar to the
-current translation.
-
-    >>> submit_translation(translationmessage, u'New current translation')
-    >>> print_local_suggestions(potmsgset, pofile)
-    >>> print_current_translation(potmsgset, pofile)
-    [u'New current translation']    
-    >>> submit_translation(
-    ...     translationmessage, u'New current translation',
-    ...     force_suggestion=True)
-    >>> print_current_translation(potmsgset, pofile)
-    >>> print_local_suggestions(potmsgset, pofile)
-    [u'New current translation']
-    [u'Foo']
-    [u'A shared translation']
-
 Only users with edit rights are allowed to reset a translation.
 
     >>> submit_translation(translationmessage, u'New current translation')

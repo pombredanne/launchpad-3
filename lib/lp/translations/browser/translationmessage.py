@@ -428,14 +428,10 @@ class BaseTranslationView(LaunchpadView):
 
             # If suggestions were forced and user has the rights to do it,
             # reset the current translation.
-            identical_suggestions = (translationmessage is not None
-                and self._areSuggestionsIdenticalToTranslations(
-                    translations, translationmessage.translations))
             empty_suggestions = self._areSuggestionsEmpty(translations)
-            resetConditions = empty_suggestions or identical_suggestions
             if (force_suggestion and
                 self.user_is_official_translator and
-                resetConditions):
+                empty_suggestions):
                 potmsgset.resetCurrentTranslation(
                     self.pofile, self.lock_timestamp)
 
@@ -457,19 +453,6 @@ class BaseTranslationView(LaunchpadView):
         """Return true if all suggestions are empty strings or None."""
         for index in suggestions:
             if (suggestions[index] is not None and suggestions[index] != ""):
-                return False
-        return True
-
-    def _areSuggestionsIdenticalToTranslations(self, suggestions,
-                                               translations):
-        """Return true if suggestions are identical to translations.
-
-        Suggestions are represented as a dictionary using the plural form
-        as index, while translations are represented as a list ordered by
-        the plural form.
-        """
-        for index in suggestions:
-            if (suggestions[index] != translations[index]):
                 return False
         return True
 
