@@ -142,9 +142,10 @@ def report_oops(message=None, properties=None, info=None):
     error_utility = CheckWatchesErrorUtility()
     error_utility.raising(info, request)
     # clear the SQL log.
-    clear_request_started()
-    set_request_started(
-        request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED))
+    if getattr(threading.local(), 'request_start_time', None) is not None:
+        clear_request_started()
+        set_request_started(
+            request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED))
     return request
 
 
