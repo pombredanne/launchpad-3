@@ -31,14 +31,12 @@ from canonical.launchpad import helpers
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.browser.queue import QueueItemsView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguageSet)
+from lp.translations.browser.distroseries import (
+    check_distroseries_translations_viewable)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
@@ -48,7 +46,6 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
@@ -80,20 +77,13 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
         except IndexError:
             # Unknown language code.
             raise NotFoundError
-        distroserieslang = self.context.getDistroSeriesLanguage(lang)
 
-        if distroserieslang is None:
-            # There is no IDistroSeriesLanguage yet for this IDistroSeries,
-            # but we still need to list it as an available language, so we
-            # generate a dummy one so users have a chance to get to it in the
-            # navigation and start adding translations for it.
-            distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-            distroserieslang = distroserieslangset.getDummy(
-                self.context, lang)
+        distroserieslang = self.context.getDistroSeriesLanguageOrDummy(lang)
 
-        if not check_permission(
-            'launchpad.TranslationsAdmin', distroserieslang):
-            self.context.checkTranslationsViewable()
+        # Check if user is able to view the translations for
+        # this distribution series language.
+        # If not, raise TranslationUnavailable.
+        check_distroseries_translations_viewable(self.context)
 
         return distroserieslang
 
@@ -293,8 +283,7 @@ class SeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView,
-                       MilestoneOverlayMixin):
+class DistroSeriesView(MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
@@ -324,13 +313,6 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
         if self.request.form.get('no-redirect') is not None:
             distro_url += '?no-redirect'
         return self.request.response.redirect(distro_url)
-
-    @property
-    def show_arch_selector(self):
-        """Display the architecture selector.
-
-        See `BuildRecordsView` for further details."""
-        return True
 
     @cachedproperty
     def num_linked_packages(self):

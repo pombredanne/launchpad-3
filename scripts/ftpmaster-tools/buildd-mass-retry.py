@@ -20,12 +20,12 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.interfaces import NotFoundError
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.lp import initZopeless
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 def main():

@@ -23,7 +23,6 @@ from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import Interface
-from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -67,7 +66,7 @@ class CodeImportSetBreadcrumb(Breadcrumb):
     text = u'Code Import System'
 
 
-class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
+class DropdownWidgetWithAny(LaunchpadDropdownWidget):
     """A <select> widget with a more appropriate 'no value' message.
 
     By default `LaunchpadDropdownWidget` displays 'no value' when the
@@ -85,25 +84,31 @@ class CodeImportSetView(LaunchpadView):
 
     def initialize(self):
         """See `LaunchpadView.initialize`."""
-        status_field = Choice(
-            __name__='status', title=_("Review Status"),
-            vocabulary=CodeImportReviewStatus, required=False)
-        self.status_widget = CustomWidgetFactory(ReviewStatusDropdownWidget)
-        setUpWidget(self, 'status',  status_field, IInputWidget)
+        review_status_field = copy_field(
+            ICodeImport['review_status'], required=False, default=None)
+        self.review_status_widget = CustomWidgetFactory(DropdownWidgetWithAny)
+        setUpWidget(self, 'review_status',  review_status_field, IInputWidget)
+
+        rcs_type_field = copy_field(
+            ICodeImport['rcs_type'], required=False, default=None)
+        self.rcs_type_widget = CustomWidgetFactory(DropdownWidgetWithAny)
+        setUpWidget(self, 'rcs_type',  rcs_type_field, IInputWidget)
 
         # status should be None if either (a) there were no query arguments
         # supplied, i.e. the user browsed directly to this page (this is when
         # hasValidInput returns False) or (b) the user chose 'Any' in the
         # status widget (this is when hasValidInput returns True but
         # getInputValue returns None).
-        status = None
-        if self.status_widget.hasValidInput():
-            status = self.status_widget.getInputValue()
+        review_status = None
+        if self.review_status_widget.hasValidInput():
+            review_status = self.review_status_widget.getInputValue()
+        # Similar for 'type'
+        rcs_type = None
+        if self.rcs_type_widget.hasValidInput():
+            rcs_type = self.rcs_type_widget.getInputValue()
 
-        if status is not None:
-            imports = self.context.search(review_status=status)
-        else:
-            imports = self.context.getAll()
+        imports = self.context.search(
+            review_status=review_status, rcs_type=rcs_type)
 
         self.batchnav = BatchNavigator(imports, self.request)
 
@@ -430,9 +435,9 @@ class CodeImportNewView(CodeImportBaseView):
 class EditCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
-    use_template(
-        ICodeImport,
-        ['url', 'cvs_root', 'cvs_module'])
+    url = copy_field(ICodeImport['url'], readonly=False)
+    cvs_root = copy_field(ICodeImport['cvs_root'], readonly=False)
+    cvs_module = copy_field(ICodeImport['cvs_module'], readonly=False)
     whiteboard = copy_field(IBranch['whiteboard'])
 
 

@@ -31,16 +31,16 @@ from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuild)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
@@ -96,6 +96,7 @@ patch_plain_parameter_type(
 patch_plain_parameter_type(
     IBranch, 'setTarget', 'source_package', ISourcePackage)
 patch_reference_property(IBranch, 'sourcepackage', ISourcePackage)
+patch_reference_property(IBranch, 'code_import', ICodeImport)
 
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranch['subscribe'].queryTaggedValue(
@@ -322,10 +323,9 @@ patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
 
-IBuildBase['buildstate'].vocabulary = BuildStatus
-
 patch_reference_property(
-    ISourcePackageRelease, 'source_package_recipe_build', ISourcePackageRecipeBuild)
+    ISourcePackageRelease, 'source_package_recipe_build',
+    ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(
