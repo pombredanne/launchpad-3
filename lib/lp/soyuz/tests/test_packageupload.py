@@ -275,8 +275,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         
         # The custom files were also copied to the public librarian
         for customfile in delayed_copy.customfiles:
-            self.assertEquals(
-                False, customfile.libraryfilealias.restricted)
+            self.assertFalse(customfile.libraryfilealias.restricted)
 
     def test_realiseUpload_for_source_only_delayed_copies(self):
         # Source-only delayed-copies results in the source published
