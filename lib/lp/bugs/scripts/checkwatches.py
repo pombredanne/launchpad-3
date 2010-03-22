@@ -140,7 +140,9 @@ def report_oops(message=None, properties=None, info=None):
     request = ScriptRequest(properties, url)
     error_utility = CheckWatchesErrorUtility()
     error_utility.raising(info, request)
-
+    # clear the SQL log.
+    clear_request_started()
+    set_request_started()
     return request
 
 
