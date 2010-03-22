@@ -65,12 +65,20 @@ Recording BugWatch updates as BugWatchActivity
 -----------------------------------------------
 
 Whenever an update is made to a BugWatch that update is recorded as a
-BugWatchActivity entry. To demonstrate this, we need to make sure that
-only the bug watches that we're interested in are going to be checked,
-so we'll set all their lastchecked times to now.
+BugWatchActivity entry.
 
-    >>> from pytz import utc
-    >>> from datetime import datetime
-    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
-    >>> for bug_watch in getUtility(IBugWatchSet).search():
-    ...     bug_watch.lastchecked = datetime.now().replace(tzinfo=utc)
+We can demonstrate this by passing our bug watch to
+BugWatchUpdater.updateBugWatches().
+
+    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
+    >>> updater = BugWatchUpdater(transaction, FakeLogger())
+    >>> updater.updateBugWatches(
+    ...     TestExternalBugTracker('http://example.com'), [bug_watch])
+
+An extra activity item will have been added to the BugWatch's activity
+property.
+
+    >>> print bug_watch.activity.count()
+    2
