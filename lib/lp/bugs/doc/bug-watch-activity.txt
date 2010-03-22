@@ -124,4 +124,7 @@ not found.
     >>> print most_recent_activity.result.title
     Bug Not Found
 
+The OOPS ID for the error will also have been recorded.
 
+    >>> print most_recent_activity.oops_id
+    OOPS...

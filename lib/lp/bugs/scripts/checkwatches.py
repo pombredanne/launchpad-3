@@ -814,6 +814,7 @@ class BugWatchUpdater(object):
                 new_remote_importance = None
                 new_malone_importance = None
                 error = None
+                oops_id = None
 
                 # XXX: 2007-10-17 Graham Binns
                 #      This nested set of try:excepts isn't really
@@ -834,7 +835,7 @@ class BugWatchUpdater(object):
                     error = get_bugwatcherrortype_for_error(ex)
                     message = error_type_messages.get(
                         error, error_type_message_default)
-                    self.warning(
+                    oops_id = self.warning(
                         message % {
                             'bug_id': remote_bug_id,
                             'base_url': remotesystem.baseurl,
@@ -867,7 +868,7 @@ class BugWatchUpdater(object):
                             self.pushBugComments(remotesystem, bug_watch)
                         if ISupportsBackLinking.providedBy(remotesystem):
                             self.linkLaunchpadBug(remotesystem, bug_watch)
-                    bug_watch.addActivity(result=error)
+                    bug_watch.addActivity(result=error, oops_id=oops_id)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -893,7 +894,7 @@ class BugWatchUpdater(object):
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
                     bug_watch.last_error_type = errortype
-                    bug_watch.addActivity(result=error)
+                    bug_watch.addActivity(result=errortype, oops_id=oops_id)
                 # We need to commit the transaction, in case the next
                 # bug fails to update as well.
                 self.txn.commit()
@@ -1146,12 +1147,20 @@ class BugWatchUpdater(object):
         # Also put it in the log.
         self.log.warning("%s (%s)" % (message, oops_info.oopsid))
 
+        # Return the OOPS ID so that we can use it in
+        # BugWatchActivity.
+        return oops_info.oopsid
+
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
         oops_info = report_oops(message, properties, info)
 
         # Also put it in the log.
         self.log.error("%s (%s)" % (message, oops_info.oopsid))
+
+        # Return the OOPS ID so that we can use it in
+        # BugWatchActivity.
+        return oops_info.oopsid
 
 
 class BaseScheduler:
