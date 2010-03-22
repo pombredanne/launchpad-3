@@ -5,6 +5,8 @@ __metaclass__ = type
 
 import unittest
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.ftests import login
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
@@ -23,8 +25,10 @@ class TestPersonRepresentation(TestCaseWithFactory):
             'launchpad-library', 'salgado-change-anything')
 
     def test_GET_xhtml_representation(self):
+        # Remove the security proxy because IPerson.name is protected.
+        person_name = removeSecurityProxy(self.person).name
         response = self.webservice.get(
-            '/~%s' % self.person.name, 'application/xhtml+xml')
+            '/~%s' % person_name, 'application/xhtml+xml')
 
         self.assertEqual(response.status, 200)
 

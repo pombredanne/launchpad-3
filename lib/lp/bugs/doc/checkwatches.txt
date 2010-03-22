@@ -50,6 +50,7 @@ the watch.
     DEBUG   No watches to update on http://bugs.debian.org
     DEBUG   No watches to update on mailto:bugs@example.com
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    (OOPS-...)
     DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on http://sourceforge.net/
     DEBUG   No watches to update on http://bugzilla.gnome.org/
@@ -206,7 +207,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
     WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
-    known.
+    known. (OOPS-...)
 
 The bug watch's last error type field will have been updated to reflect
 the error that was raised:
@@ -309,6 +310,7 @@ BugWatchUpdater's logger.
     INFO Resetting 1 bug watches for bug tracker 'savannah'
     INFO Updating 1 watches on bug tracker 'savannah'
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    (OOPS-...)
     INFO 0 watches left to check on bug tracker 'savannah'
 
 We can see that the Savannah bug watch has been updated recently. Also,

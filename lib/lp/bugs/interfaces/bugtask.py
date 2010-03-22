@@ -39,7 +39,6 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -303,9 +302,6 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.TRIAGED,
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
-
-UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES = (
-    UNRESOLVED_BUGTASK_STATUSES + (BugTaskStatus.FIXRELEASED,))
 
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
@@ -826,10 +822,10 @@ class IBugTaskSearchBase(Interface):
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
     has_branches = Bool(
-        title=_('Show only bugs with linked branches'), required=False,
+        title=_('Show bugs with linked branches'), required=False,
         default=True)
     has_no_branches = Bool(
-        title=_('Show only bugs without linked branches'), required=False,
+        title=_('Show bugs without linked branches'), required=False,
         default=True)
 
 

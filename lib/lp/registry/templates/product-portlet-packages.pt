@@ -6,14 +6,14 @@
   define="packages context/sourcepackages">
 
 <div class="portlet" id="portlet-packages">
+  <h2>
+    <span class="see-all"><a
+      tal:attributes="href context/menu:overview/packages/fmt:url">
+      All packages</a></span>
+    Packages in Ubuntu
+  </h2>
 
   <tal:has_packages condition="packages">
-    <h2>
-      <span class="see-all"><a
-        tal:attributes="href context/menu:overview/packages/fmt:url">All
-        packages</a></span>
-      Packages in distributions
-    </h2>
 
     <ul>
       <tal:pair tal:repeat="package packages">
@@ -35,12 +35,6 @@
   </tal:has_packages>
 
   <tal:has_no_packages condition="not:packages">
-    <h2>
-      <span class="see-all"><a
-        tal:attributes="href context/menu:overview/packages/fmt:url">All
-        packages</a></span>
-      Packages in Ubuntu
-    </h2>
 
     <p>
       Launchpad doesn't know which Ubuntu packages this project

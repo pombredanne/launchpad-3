@@ -22,6 +22,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
     LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
@@ -29,7 +30,7 @@ from lp.buildmaster.manager import (
     ResetDispatchResult, buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
@@ -43,11 +44,6 @@ class TestRecordingSlaves(TrialTestCase):
         TrialTestCase.setUp(self)
         self.slave = RecordingSlave(
             'foo', 'http://foo:8221/rpc', 'foo.host')
-        # XXX 2009-11-23, MichaelHudson,
-        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
-        # make sure the reactor is running when the test method is executed to
-        # work around the linked Twisted bug.
-        return task.deferLater(reactor, 0, lambda: None)
 
     def test_representation(self):
         """`RecordingSlave` has a custom representation.

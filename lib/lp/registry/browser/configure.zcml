@@ -2172,4 +2172,11 @@
         classes="
             PersonProductFacets"
         module="lp.registry.browser.personproduct"/>
+
+    <browser:url
+        for="lp.registry.interfaces.gpg.IGPGKey"
+        path_expression="string:+gpg-keys/${keyid}"
+        rootsite="api"
+        attribute_to_parent="owner" />
+
 </configure>

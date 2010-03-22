@@ -359,7 +359,7 @@ If a product is packaged in Ubuntu the links are shown.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
     All packages
-    Packages in distributions
+    Packages in Ubuntu
     “mozilla-firefox” source package in Hoary
     “mozilla-firefox” source package in Warty Version 0.9 uploaded on...
 

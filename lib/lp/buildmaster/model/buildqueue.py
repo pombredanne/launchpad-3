@@ -14,19 +14,20 @@ __all__ = [
 from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
-
-from zope.component import getSiteManager, getUtility
-
-from zope.interface import implements
+import pytz
 
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
 from storm.expr import In, Join, LeftJoin
 from storm.store import Store
+from zope.component import getSiteManager, getUtility
+from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
@@ -34,10 +35,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 def normalize_virtualization(virtualized):
@@ -120,6 +118,15 @@ class BuildQueue(SQLBase):
     def date_started(self):
         """See `IBuildQueue`."""
         return self.job.date_started
+
+    @property
+    def current_build_duration(self):
+        """See `IBuildQueue`."""
+        date_started = self.date_started
+        if date_started is None:
+            return None
+        else:
+            return self._now() - date_started
 
     def destroySelf(self):
         """Remove this record and associated job/specific_job."""
@@ -467,8 +474,8 @@ class BuildQueue(SQLBase):
 
     @staticmethod
     def _now():
-        """Provide utcnow() while allowing test code to monkey-patch this."""
-        return datetime.utcnow()
+        """Return current time (UTC).  Overridable for test purposes."""
+        return datetime.now(pytz.UTC)
 
 
 class BuildQueueSet(object):

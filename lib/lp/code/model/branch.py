@@ -401,7 +401,8 @@ class Branch(SQLBase):
         """See `IBranch`."""
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.active_landing_targets]
+                for target in self.active_landing_targets
+                if target.target_branch.last_scanned_id is not None]
         return jobs
 
     # XXX: Tim Penhey, 2008-06-18, bug 240881
