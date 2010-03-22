@@ -60,6 +60,7 @@ from lp.services.scripts.base import LaunchpadCronScript
 SYNCABLE_GNOME_PRODUCTS = []
 MAX_SQL_STATEMENTS_LOGGED = 1000
 
+
 class TooMuchTimeSkew(BugWatchUpdateError):
     """Time difference between ourselves and the remote server is too much."""
 

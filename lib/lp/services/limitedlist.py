@@ -7,10 +7,7 @@ __all__ = [
     ]
 
 class LimitedList(list):
-    """A mutable sequence that takes a limited number of elements.
-
-    >>> raise KeyError('waaaaaaaa')
-    """
+    """A mutable sequence that takes a limited number of elements."""
 
     def __new__(cls, max_length, value=None):
         return super(LimitedList, cls).__new__(cls)
