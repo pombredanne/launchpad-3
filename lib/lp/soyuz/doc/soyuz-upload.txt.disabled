@@ -41,8 +41,7 @@ Now, let's create a subprocess running the poppy FTP server. It won't
 call the upload processing tool. We'll do that ourselves in our test,
 so that we can control what's going on.
 
-  >>> from canonical.poppy.tests import (
-  ...     PoppyTestSetup, SoyuzUploadError)
+  >>> from lp.poppy.tests import PoppyTestSetup, SoyuzUploadError
   >>> poppy = PoppyTestSetup(incoming_dir)
   >>> poppy.startPoppy()
 
@@ -187,7 +186,7 @@ of these files match the uploaded ones.
 Right, that's all we need from the FTP server. We don't need it anymore,
 so we'll just kill the process.
 
-  >>> status = poppy.killPoppy()
+  >>> poppy.killPoppy()
 
 Finally, we'll just create an entirely empty upload folder. We rely for
 our tests on a poppy-like naming system, ie. that the upload folder

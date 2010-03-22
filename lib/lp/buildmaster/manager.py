@@ -30,8 +30,9 @@ from canonical.buildd.utils import notes
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
-from canonical.twistedsupport.processmonitor import run_process_with_timeout
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
+from lp.services.twistedsupport.processmonitor import run_process_with_timeout
+
 
 buildd_success_result_map = {
     'ensurepresent': True,

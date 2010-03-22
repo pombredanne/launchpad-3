@@ -1,7 +1,7 @@
 = Deactivating user accounts =
 
 Users who don't want to use Launchpad anymore can easily deactivate their
-accounts, so they stop receiving emails from Launchpad and make it impossible
+accounts so they stop receiving emails from Launchpad and make it impossible
 to use their accounts to log in.
 
 Deactivating a user's account will un-assign all their bug tasks. To
@@ -35,25 +35,6 @@ There's a link to the +deactivate-account page in a person's +edit page.
     >>> browser.url
     'http://launchpad.dev/~name12/+deactivate-account'
 
-To deactivate a user's account we require the user to enter his password.
-
-    >>> browser.getControl('Why are you deactivating your account?').value = (
-    ...     "I'm going to become a Budhist monk in Tibet")
-    >>> browser.getControl('Deactivate My Account').click()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    There is 1 error.
-    Incorrect password.
-
-    >>> browser.getControl('Password').value = 't'
-    >>> browser.url
-    'http://launchpad.dev/%7Ename12/+deactivate-account'
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    There is 1 error.
-    Incorrect password.
-
-    >>> browser.getControl('Password').value = 'test'
     >>> browser.getControl('Deactivate My Account').click()
     >>> browser.url
     'http://launchpad.dev'

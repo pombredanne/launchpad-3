@@ -25,11 +25,11 @@ from twisted.python import log
 from twisted.web import xmlrpc
 
 from canonical.config import config
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor)
 from lp.services.scripts.base import LaunchpadScript
+from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class CodeImportWorker(LaunchpadScript):
