@@ -13,7 +13,7 @@ from twisted.internet.task import Clock
 
 from zope.interface import implements
 
-from canonical.twistedsupport.task import (
+from lp.services.twistedsupport.task import (
     AlreadyRunningError, ITaskConsumer, ITaskSource, NotRunningError,
     ParallelLimitedTaskConsumer, PollingTaskSource)
 from lp.testing import TestCase
