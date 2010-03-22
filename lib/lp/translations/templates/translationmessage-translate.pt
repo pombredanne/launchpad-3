@@ -21,17 +21,13 @@
             } catch (e) {
               Y.log(e, "error");
             }
-          });
 
-          Y.on('domready', function(e) {
             try {
               Y.lp.pofile.initializeKeyBindings();
             } catch (e) {
               Y.log(e, "error");
             }
-          });
 
-          Y.on('domready', function(e) {
             try {
               Y.lp.pofile.setFocus(autofocus_field);
             } catch (e) {
