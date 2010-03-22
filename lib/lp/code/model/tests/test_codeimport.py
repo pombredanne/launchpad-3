@@ -11,14 +11,11 @@ from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope.component import getUtility
 
-from lp.codehosting.codeimport.tests.test_workermonitor import (
-    nuke_codeimport_sample_data)
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)

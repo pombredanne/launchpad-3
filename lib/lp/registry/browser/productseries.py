@@ -49,8 +49,6 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.helpers import browserLanguages
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.code.interfaces.codeimport import (
-    ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -69,7 +67,6 @@ from canonical.launchpad.webapp import (
     Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepthrough,
     stepto)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.launchpadform import (
