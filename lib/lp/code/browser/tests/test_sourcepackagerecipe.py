@@ -15,14 +15,13 @@ from canonical.testing import DatabaseFunctionalLayer
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import extract_text, find_main_content
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
 from lp.testing import (TestCaseWithFactory)
 
 
-class TestSourcePackageRecipe(TestCaseWithFactory):
+class TestSourcePackageRecipeView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -30,8 +29,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         chef = self.factory.makePersonNoCommit(displayname='Master Chef',
                 name='chef')
         chocolate = self.factory.makeProduct(name='chocolate')
-        cake_branch = self.factory.makeProductBranch(owner=chef, name='cake',
-            product=chocolate)
+        cake_branch = self.factory.makeProductBranch(
+            owner=chef, name='cake', product=chocolate)
         distroseries = self.factory.makeDistroSeries(
             displayname='Secret Squirrel')
         return self.factory.makeSourcePackageRecipe(
@@ -98,7 +97,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertTrue(pattern.search(main_text), main_text)
 
     def test_builds(self):
-        """Ensure SourcePackageRecipe.builds is as described."""
+        """Ensure SourcePackageRecipeView.builds is as described."""
         recipe = self.makeRecipe()
         build1 = self.makeBuildJob(recipe=recipe)
         build2 = self.makeBuildJob(recipe=recipe)
@@ -106,7 +105,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         build4 = self.makeBuildJob(recipe=recipe)
         build5 = self.makeBuildJob(recipe=recipe)
         build6 = self.makeBuildJob(recipe=recipe)
-        view = SourcePackageRecipeView(recipe, LaunchpadTestRequest)
+        view = SourcePackageRecipeView(recipe, None)
         self.assertEqual(
             set([build1, build2, build3, build4, build5, build6]),
             set(view.builds))
@@ -115,6 +114,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
                 2010, 03, day, tzinfo=utc)
         set_day(build1, 16)
         set_day(build2, 15)
+        # When there are 4+ pending builds, only the the most
+        # recently-completed build is returned (i.e. build1, not build2)
         self.assertEqual(
             set([build1, build3, build4, build5, build6]),
             set(view.builds))

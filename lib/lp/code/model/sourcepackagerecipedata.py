@@ -50,7 +50,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
     def __init__(self, name, type, comment, line_number, branch, revspec,
                  directory, recipe_data, parent_instruction):
-        super( _SourcePackageRecipeDataInstruction, self).__init__()
+        super(_SourcePackageRecipeDataInstruction, self).__init__()
         self.name = unicode(name)
         self.type = type
         self.comment = comment

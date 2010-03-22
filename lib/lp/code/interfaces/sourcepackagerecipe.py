@@ -105,7 +105,11 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         """
 
     def getBuilds(pending=False):
-        """Return a ResultSet of all the specified builds."""
+        """Return a ResultSet of all the builds in the given state.
+
+        :param pending: If True, select all builds that are pending.  If
+            False, select all builds that are not pending.
+        """
 
 
 class ISourcePackageRecipeSource(Interface):

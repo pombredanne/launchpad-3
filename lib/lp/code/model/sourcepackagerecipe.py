@@ -120,6 +120,7 @@ class SourcePackageRecipe(Storm):
         return build
 
     def getBuilds(self, pending=False):
+        """See `ISourcePackageRecipe`."""
         if pending:
             clauses = [SourcePackageRecipeBuild.datebuilt == None]
         else:
