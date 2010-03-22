@@ -59,3 +59,18 @@ will all be None.
     None
     >>> print activity.oops_id
     None
+
+
+Recording BugWatch updates as BugWatchActivity
+-----------------------------------------------
+
+Whenever an update is made to a BugWatch that update is recorded as a
+BugWatchActivity entry. To demonstrate this, we need to make sure that
+only the bug watches that we're interested in are going to be checked,
+so we'll set all their lastchecked times to now.
+
+    >>> from pytz import utc
+    >>> from datetime import datetime
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> for bug_watch in getUtility(IBugWatchSet).search():
+    ...     bug_watch.lastchecked = datetime.now().replace(tzinfo=utc)
