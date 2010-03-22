@@ -203,6 +203,7 @@ mv ${DISTSROOT_PARTNER}.old ${DISTSCOPYROOT_PARTNER}/dists
 # Generate the -commercial pocket for backwards compatibility with
 # dapper, edgy and feisty releases.  Don't fail the whole script if it
 # fails.
+echo "$(date -R): Generating -commerical pocket..."
 commercial-compat.sh || true
 
 # Timestamp our trace file to track when the last archive publisher run took
