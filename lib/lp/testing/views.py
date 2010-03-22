@@ -6,7 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'create_view',
-    'create_initialized_view',
+    'create_initialized_view'
+    'YUITestFileView',
     ]
 
 
@@ -72,3 +73,26 @@ def create_initialized_view(context, name, form=None, layer=None,
         query_string, cookie, request, path_info)
     view.initialize()
     return view
+
+
+class YUITestFileView:
+    """View for mapping the YUI test files to the web server."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def setContentType(self, file_path):
+        """Set the content-type of the file being served."""
+        if file_path.endswith('.js'):
+            content_type = 'application/javascript'
+        elif file_path.endswith('.css'):
+            content_type = 'text/css'
+        else:
+            content_type = 'text/html'
+        self.request.response.setHeader('Content-type', content_type)
+
+    def __call__(self):
+        """Return the content of the file."""
+        self.setContentType('fake.html')
+        return "<html><p>goodbye</p></html>"
