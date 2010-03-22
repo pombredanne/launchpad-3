@@ -78,7 +78,8 @@ class BranchFileSystemClient:
         (transport_type, data, trailing_path) = transport_tuple
         matched_part = self._getMatchedPart(path, transport_tuple)
         if transport_type == BRANCH_TRANSPORT:
-            self.seen_new_branch_hook(matched_part)
+            if self.seen_new_branch_hook:
+                self.seen_new_branch_hook(matched_part)
             self._cache[matched_part] = (transport_type, data, self._now())
         return transport_tuple
 

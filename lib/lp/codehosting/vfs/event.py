@@ -14,4 +14,5 @@ class SetProcTitleHook:
         self.basename = setproctitle.getproctitle()
 
     def seen(self, branch_url):
-        setproctitle.setproctitle(self.basename + ' ' + branch_url)
+        branch_url = branch_url.strip('/')
+        setproctitle.setproctitle(self.basename + ' BRANCH:' + branch_url)
