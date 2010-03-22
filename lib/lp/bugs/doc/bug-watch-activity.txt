@@ -109,8 +109,7 @@ recorded in the activity entry for that update.
     >>> broken_bugtracker = TestBrokenExternalBugTracker('http://example.com')
     >>> broken_bugtracker.get_remote_status_error = BugNotFound
 
-    >>> updater.updateBugWatches(
-    ...     broken_bugtracker, [bug_watch])
+    >>> updater.updateBugWatches(broken_bugtracker, [bug_watch])
 
 Another entry will have been added to the watch's activity property.
 
@@ -125,6 +124,21 @@ not found.
     Bug Not Found
 
 The OOPS ID for the error will also have been recorded.
+
+    >>> print most_recent_activity.oops_id
+    OOPS...
+
+The BugWatchUpdater also adds BugWatchActivity entries when errors occur
+that don't have an entry in the BugWatchActivityStatus DB Enum.
+
+    >>> broken_bugtracker.get_remote_status_error = Exception
+    >>> updater.updateBugWatches(broken_bugtracker, [bug_watch])
+    >>> most_recent_activity = bug_watch.activity.first()
+
+    >>> print most_recent_activity.result.title
+    Unknown
+
+The OOPS ID of the error is recorded so that we can debug it.
 
     >>> print most_recent_activity.oops_id
     OOPS...

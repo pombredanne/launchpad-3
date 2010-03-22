@@ -878,7 +878,7 @@ class BugWatchUpdater(object):
                 # Restart transaction before recording the error.
                 self.txn.abort()
                 # Send the error to the log.
-                self.error(
+                oops_id = self.error(
                     "Failure updating bug %r on %s (local bugs: %s)." %
                             (remote_bug_id, bug_tracker_url, local_ids),
                     properties=[
