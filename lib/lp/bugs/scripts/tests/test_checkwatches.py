@@ -14,7 +14,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT, commit
+from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, IBugSet, IBugTaskSet,
@@ -35,17 +35,6 @@ from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
 def always_BugzillaAPI_get_external_bugtracker(bugtracker):
     """A version of get_external_bugtracker that returns BugzillaAPI."""
     return BugzillaAPI(bugtracker.baseurl)
-
-
-class CheckwatchesTestCase(TestCaseWithFactory):
-    """LaunchpadZopelessLayer with auto-commit."""
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(CheckwatchesTestCase, self).setUp()
-        self.layer.alterConnection(
-            isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
 
 class NonConnectingBugzillaAPI(BugzillaAPI):
@@ -74,7 +63,9 @@ class NoBugWatchesByRemoteBugUpdater(checkwatches.BugWatchUpdater):
         return []
 
 
-class TestCheckwatchesWithSyncableGnomeProducts(CheckwatchesTestCase):
+class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestCheckwatchesWithSyncableGnomeProducts, self).setUp()
@@ -112,7 +103,9 @@ class TestCheckwatchesWithSyncableGnomeProducts(CheckwatchesTestCase):
             gnome_bugzilla, [bug_watch_1, bug_watch_2])
 
 
-class TestBugWatchUpdater(CheckwatchesTestCase):
+class TestBugWatchUpdater(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
 
     def test_bug_497141(self):
         # Regression test for bug 497141. KeyErrors raised in
@@ -328,12 +321,14 @@ class BugWatchUpdaterForThreads(BugWatchUpdater):
 
 
 class TestTwistedThreadSchedulerInPlace(
-    ZopeTestInSubProcess, CheckwatchesTestCase):
+    ZopeTestInSubProcess, TestCaseWithFactory):
     """Test TwistedThreadScheduler in place.
 
     As in, driving as much of the bug watch machinery as is possible
     without making external connections.
     """
+
+    layer = LaunchpadZopelessLayer
 
     def test(self):
         # Prepare test data.
