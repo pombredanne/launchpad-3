@@ -48,6 +48,9 @@ TRACEFILE=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
 DSYNCLIST=$CACHEROOT/dsync.list
 MD5LIST=$INDICES/md5sums.gz
 
+# Mirrors to push at the end of the publishing run.
+MASTERMIRRORS="syowa frei scandium"
+
 # Manipulate the environment.
 export GNUPGHOME
 PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing:$LAUNCHPADROOT/scripts/ftpmaster-tools
@@ -252,9 +255,10 @@ fi
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     echo "$(date -R): Triggering master mirrors..."
 
-    ssh archvsync@syowa
-    ssh archvsync@frei
-    ssh archvsync@scandium
+    for HOST in $MASTERMIRRORS; do
+        echo "$(date -R): Triggering $HOST:"
+        ssh archvsync@$HOST
+    done
 
     echo "$(date -R): Master mirror triggers completed."
 fi
