@@ -938,6 +938,12 @@ class FunctionalLayer(BaseLayer):
         register_launchpad_request_publication_factories()
         wsgi_intercept.add_wsgi_intercept(
             'localhost', 80, lambda: wsgi_application)
+        wsgi_intercept.add_wsgi_intercept(
+            'api.launchpad.dev', 80, lambda: wsgi_application)
+
+        from wsgi_intercept.httplib2_intercept import install
+        install()
+
 
     @classmethod
     @profiled
