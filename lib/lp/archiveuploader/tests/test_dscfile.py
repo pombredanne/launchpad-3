@@ -24,33 +24,38 @@ class TestDscFile(TestCase):
         self.tmpdir = self.makeTemporaryDirectory()
         self.dir_path = os.path.join(self.tmpdir, "foo", "debian")
         os.makedirs(self.dir_path)
-        self.copyright_file = os.path.join(self.dir_path, "copyright")
-        self.changelog_file = os.path.join(self.dir_path, "changelog")
+        self.copyright_path = os.path.join(self.dir_path, "copyright")
+        self.changelog_path = os.path.join(self.dir_path, "changelog")
         self.changelog_dest = os.path.join(self.tmpdir, "changelog")
         self.dsc_file = self.MockDSCFile()
 
     def removeTempFiles(self):
         """Remove any test copyright file we may have lying around."""
-        if os.path.exists(self.copyright_file):
-            os.remove(self.copyright_file)
-        if os.path.exists(self.changelog_file):
-            os.remove(self.changelog_file)
+        if os.path.exists(self.copyright_path):
+            os.remove(self.copyright_path)
+        if os.path.exists(self.changelog_path):
+            os.remove(self.changelog_path)
         if os.path.exists(os.path.join(self.changelog_dest)):
             os.remove(os.path.join(self.changelog_dest))
 
     def testBadDebianCopyright(self):
         """Test that a symlink instead of a real file will fail."""
-        os.symlink("/etc/passwd", self.copyright_file)
+        os.symlink("/etc/passwd", self.copyright_path)
         errors = list(findCopyright(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
         self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], UploadError)
+        self.assertEqual(
+            errors[0].message,
+            "Symbolic link for debian/copyright not allowed")
         self.failUnless(isinstance(errors[0], UploadError))
 
     def testGoodDebianCopyright(self):
+        """Test that a proper copyright file will be accepted"""
         copyright = "copyright for dummies"
-        file = open(self.copyright_file, "w")
+        file = open(self.copyright_path, "w")
         file.write(copyright)
         file.close()
 
@@ -62,24 +67,34 @@ class TestDscFile(TestCase):
         self.assertEqual(self.dsc_file.copyright, copyright)
 
     def testBadDebianChangelog(self):
-        """Test that a symlink instead of a real file will fail."""
-        os.symlink("/etc/passwd", self.changelog_file)
+        """Test that a symlink instead of a real file will fail.
+
+        This prevents a symlink in the uploaded package to be used from
+        grabbing files in the system processing the source package."""
+        os.symlink("/etc/passwd", self.changelog_path)
         errors = list(findAndMoveChangelog(
             self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
 
         self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], UploadError)
+        self.assertEqual(
+            errors[0].message,
+            "Symbolic link for debian/changelog not allowed")
         self.failUnless(isinstance(errors[0], UploadError))
 
     def testGoodDebianChangelog(self):
+        """Test that a proper changelog file will be accepted
+
+        This prevents a symlink in the uploaded package to be used from
+        grabbing files in the system processing the source package."""
         changelog = "changelog for dummies"
-        file = open(self.changelog_file, "w")
+        file = open(self.changelog_path, "w")
         file.write(changelog)
         file.close()
 
         errors = list(findAndMoveChangelog(
             self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
-
 
         self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 0)
@@ -94,7 +109,7 @@ class TestDscFile(TestCase):
         empty_file = dev_zero.read(20971520)
         dev_zero.close()
 
-        file = open(self.changelog_file, "w")
+        file = open(self.changelog_path, "w")
         file.write(empty_file)
         file.close()
 

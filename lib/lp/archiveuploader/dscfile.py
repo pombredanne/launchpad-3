@@ -15,7 +15,6 @@ __all__ = [
     'DSCUploadedFile',
     'findAndMoveChangelog',
     'findCopyright',
-    'findFile',
     ]
 
 import apt_pkg
@@ -154,7 +153,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
     # Note that files is actually only set inside verify().
     files = None
-    # Copyright and changelog_path is only set inside unpackAndCheckSource().
+    # Copyright and changelog_path are only set inside unpackAndCheckSource().
     copyright = None
     changelog_path = None
 
@@ -528,10 +527,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # XXX cprov 20070713: We should access only the expected directory
         # name (<sourcename>-<no_epoch(no_revision(version))>).
 
+        # Locate both the copyright and changelog files for later processing
         for error in findCopyright(self, tmpdir, self.logger):
             yield error
 
-        # Now do the same for the changelog
         for error in findAndMoveChangelog(self, cwd, tmpdir, self.logger):
             yield error
 
@@ -610,7 +609,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # We have to do this separately because we need the librarian file
         # alias id to embed in the SourceReleasePackage
 
-        changelog_id = self.librarian.create(
+        changelog_lfa = self.librarian.create(
             "changelog",
             os.stat(self.changelog_path).st_size,
             open(self.changelog_path, "r"),
@@ -638,7 +637,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             dsc_binaries=encoded['binary'],
             dsc_standards_version=encoded.get('standards-version'),
             component=self.component,
-            changelog=changelog_id,
+            changelog=changelog_lfa,
             changelog_entry=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,
@@ -687,17 +686,16 @@ class DSCUploadedFile(NascentUploadFile):
             yield error
 
 
-def findFile(source_dir, filename, logger):
+def findFile(source_dir, filename):
     """Find and return any file under source_dir
     :param source_file: The directory where the source was extracted
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
-    :return fullpath: the full path of the file
+    :return fullpath: The full path of the file, if the file is not found.
     """
-
     # Instead of trying to predict the unpacked source directory name,
     # we simply use glob to retrive everything like:
-    # 'tempdir/*/debian/copyright'
+    # 'tempdir/*/debian/filename'
     globpath = os.path.join(source_dir, "*", filename)
     for fullpath in glob.glob(globpath):
         if not os.path.exists(fullpath):
@@ -713,15 +711,17 @@ def findFile(source_dir, filename, logger):
                 "%s file too large, 10MiB max" % filename)
         else:
             return fullpath
+    return None
 
 def findCopyright(dsc_file, source_dir, logger):
     """Find and store any debian/copyright.
+
     :param dsc_file: A DSCFile object where the copyright will be stored.
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
     """
     try:
-        copyright_file = findFile(source_dir, 'debian/copyright', logger)
+        copyright_file = findFile(source_dir, 'debian/copyright')
     except UploadError, error:
         yield error
         return
@@ -734,19 +734,23 @@ def findCopyright(dsc_file, source_dir, logger):
 
 def findAndMoveChangelog(dsc_file, target_dir, source_dir, logger):
     """Find and move any debian/changelog.
+
+    This function finds the changelog file within the source package and
+    moves it to target_dir. The changelog file is later uploaded to librarian
+    by DSCFile.storeInDatabase().
+
     :param dsc_file: A DSCFile object where the copyright will be stored.
     :param target_dir: The directory where the changelog will end up.
     :param source_dir: The directory where the source was extracted.
     :param logger: A logger object for debug output.
     """
-
     try:
-        changelog_file = findFile(source_dir, 'debian/changelog', logger)
+        changelog_file = findFile(source_dir, 'debian/changelog')
     except UploadError, error:
         yield error
         return
     if changelog_file is None:
-        # Spec requires debian/changelog to always exist, bail out it doesn't
+        # Spec requires debian/changelog to always exist, bail out if it doesn't
         yield UploadError("No changelog file found.")
         return
 
