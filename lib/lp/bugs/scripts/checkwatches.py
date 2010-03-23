@@ -6,14 +6,16 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from functools import wraps
-from contextlib import contextmanager
-from copy import copy
-from datetime import datetime, timedelta
 import socket
 import sys
 import threading
 import time
+
+from contextlib import contextmanager
+from copy import copy
+from datetime import datetime, timedelta
+from functools import wraps
+from itertools import chain, islice
 
 import pytz
 
@@ -581,7 +583,6 @@ class BugWatchUpdater(object):
 
         return launchpad_status
 
-    @with_transaction
     def _getRemoteIdsToCheck(self, remotesystem, bug_watches,
                              server_time=None, now=None, batch_size=None):
         """Return the remote bug IDs to check for a set of bug watches.
@@ -641,94 +642,65 @@ class BugWatchUpdater(object):
                 set(bug_watch.remotebug for bug_watch in old_bug_watches))
             remote_new_ids = sorted(
                 set(bug_watch.remotebug for bug_watch in bug_watches
-                    if bug_watch not in old_bug_watches))
+                if bug_watch not in old_bug_watches))
+            remote_ids_with_comments = set(
+                bug_watch.remotebug for bug_watch in bug_watches
+                if bug_watch.unpushed_comments)
 
         # We only make the call to getModifiedRemoteBugs() if there
         # are actually some bugs that we're interested in so as to
         # avoid unnecessary network traffic.
         if server_time is not None and len(remote_old_ids) > 0:
             if batch_size is None:
-                old_ids_to_check = remotesystem.getModifiedRemoteBugs(
-                    remote_old_ids, oldest_lastchecked)
+                remote_old_ids_to_check = (
+                    remotesystem.getModifiedRemoteBugs(
+                        remote_old_ids, oldest_lastchecked))
             else:
                 # Don't ask the remote system about more than
                 # batch_size bugs at once, but keep asking until we
                 # run out of bugs to ask about or we have batch_size
                 # bugs to check.
-                old_ids_to_check = []
+                remote_old_ids_to_check = []
                 for index in xrange(0, len(remote_old_ids), batch_size):
-                    old_ids_to_check.extend(
+                    remote_old_ids_to_check.extend(
                         remotesystem.getModifiedRemoteBugs(
                             remote_old_ids[index : index + batch_size],
                             oldest_lastchecked))
-                    if len(old_ids_to_check) >= batch_size:
+                    if len(remote_old_ids_to_check) >= batch_size:
                         break
         else:
-            old_ids_to_check = list(remote_old_ids)
+            remote_old_ids_to_check = remote_old_ids
 
-        # We bypass the has-it-been-checked tests for bug watches with
-        # unpushed comments.
-        remote_ids_with_comments = sorted(
-            set(bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch.unpushed_comments))
-
-        remote_ids_to_check = (
-            remote_ids_with_comments + remote_new_ids)
-
-        # We remove any IDs that are already in remote_ids_to_check from
-        # old_ids_to_check, since we're already going to be checking
-        # them anyway.
-        old_ids_to_check = sorted(
-            set(old_ids_to_check).difference(set(remote_ids_to_check)))
+        # We'll create our remote_ids_to_check list so that it's
+        # prioritized. We include remote IDs in priority order:
+        #  1. IDs with comments.
+        #  2. IDs that haven't been checked.
+        #  3. Everything else.
+        remote_ids_to_check = chain(
+            remote_ids_with_comments, remote_new_ids, remote_old_ids_to_check)
 
         if batch_size is not None:
-            # We'll recreate our remote_ids_to_check list so that it's
-            # prioritized. We always include remote ids with comments.
-            actual_remote_ids_to_check = sorted(
-                remote_ids_with_comments[:batch_size])
+            # Some remote bug IDs may appear in more than one list,
+            # this may not now contain batch_size distinct IDs, but
+            # this is acceptable.
+            remote_ids_to_check = islice(remote_ids_to_check, batch_size)
 
-            # If there is still room in the batch, add as many 'old' bug
-            # watches as possible. We do this in kind of an odd way
-            # because we need the ids to go into the list in order of
-            # priority:
-            #  1. IDs with comments.
-            #  2. IDs that haven't been checked.
-            #  3. Everything else.
-            for id_list in (sorted(remote_new_ids), sorted(old_ids_to_check)):
-                # Include first as many IDs from remote_new_ids as
-                # possible and then, if there's room as many from
-                # old_ids_to_check as possible.
-                ids_to_check_count = len(actual_remote_ids_to_check)
-                slots_left = batch_size - ids_to_check_count
-                if slots_left < 1:
-                    continue
-
-                actual_remote_ids_to_check = (
-                    actual_remote_ids_to_check + id_list[:slots_left])
-
-            # Now that we've worked out which IDs we want to check we
-            # can sort the list.
-            remote_ids_to_check = sorted(set(actual_remote_ids_to_check))
-        else:
-            # If there's no batch size specified, update everything.
-            remote_ids_to_check = sorted(
-                set(old_ids_to_check).union(remote_ids_to_check))
+        # De-duplicate.
+        remote_ids_to_check = set(remote_ids_to_check)
 
         # Make sure that unmodified_remote_ids only includes IDs that
         # could have been checked but which weren't modified on the
         # remote server and which haven't been listed for checking
         # otherwise (i.e. because they have comments to be pushed).
-        unmodified_old_ids = set(
-            remote_old_ids).difference(set(old_ids_to_check))
-        unmodified_remote_ids = [
-            remote_id for remote_id in unmodified_old_ids
-            if remote_id not in remote_ids_to_check]
+        unmodified_remote_ids = set(remote_old_ids)
+        unmodified_remote_ids.difference_update(remote_old_ids_to_check)
+        unmodified_remote_ids.difference_update(remote_ids_to_check)
 
-        all_remote_ids = remote_ids_to_check + unmodified_remote_ids
+        all_remote_ids = remote_ids_to_check.union(unmodified_remote_ids)
         return {
-            'remote_ids_to_check': remote_ids_to_check,
-            'all_remote_ids': all_remote_ids,
-            'unmodified_remote_ids': unmodified_remote_ids,
+            'remote_ids_to_check': sorted(remote_ids_to_check),
+            'all_remote_ids': sorted(all_remote_ids),
+            'unmodified_remote_ids': sorted(unmodified_remote_ids),
             }
 
     def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
@@ -764,9 +736,8 @@ class BugWatchUpdater(object):
         self.txn.commit()
         server_time = remotesystem.getCurrentDBTime()
         try:
-            with self.transaction:
-                remote_ids = self._getRemoteIdsToCheck(
-                    remotesystem, bug_watches, server_time, now, batch_size)
+            remote_ids = self._getRemoteIdsToCheck(
+                remotesystem, bug_watches, server_time, now, batch_size)
         except TooMuchTimeSkew, error:
             # If there's too much time skew we can't continue with this
             # run.
