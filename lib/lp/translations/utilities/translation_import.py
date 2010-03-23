@@ -11,7 +11,6 @@ __all__ = [
 
 import gettextpo
 import datetime
-import os
 import posixpath
 import pytz
 from zope.component import getUtility
