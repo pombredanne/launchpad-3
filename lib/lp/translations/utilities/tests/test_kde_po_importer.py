@@ -68,14 +68,14 @@ class KdePOImporterTestCase(unittest.TestCase):
         # Add a new entry for testing purposes. It's a template one.
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         template_path = 'po/testing.pot'
-        is_published = True
+        from_upstream = True
         personset = getUtility(IPersonSet)
         importer = personset.getByName('carlos')
         productset = getUtility(IProductSet)
         firefox = productset.getByName('firefox')
         firefox_trunk = firefox.getSeries('trunk')
         template_entry = self.translation_import_queue.addOrUpdateEntry(
-            template_path, test_kde_template, is_published, importer,
+            template_path, test_kde_template, from_upstream, importer,
             productseries=firefox_trunk)
 
         # Add another one, a translation file.
@@ -88,9 +88,10 @@ class KdePOImporterTestCase(unittest.TestCase):
         # (we use different productseries so it doesn't conflict with
         # KDE PO file being imported into firefox_trunk)
         firefox_10 = firefox.getSeries('1.0')
-        gettext_template_entry = self.translation_import_queue.addOrUpdateEntry(
-            template_path, test_template, is_published, importer,
-            productseries=firefox_10)
+        gettext_template_entry = (
+            self.translation_import_queue.addOrUpdateEntry(
+                template_path, test_template, from_upstream, importer,
+                productseries=firefox_10))
 
         transaction.commit()
         self.template_importer = KdePOImporter()

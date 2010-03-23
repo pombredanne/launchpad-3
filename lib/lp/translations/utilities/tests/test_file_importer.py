@@ -96,22 +96,22 @@ class FileImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer component"""
     layer = LaunchpadZopelessLayer
 
-    def _createFileImporters(self, pot_content, po_content, is_published):
+    def _createFileImporters(self, pot_content, po_content, from_upstream):
         """Create queue entries from POT and PO content strings.
         Create importers from the entries."""
         pot_importer = self._createPOTFileImporter(
-            pot_content, is_published)
+            pot_content, from_upstream)
         po_importer = self._createPOFileImporter(
-            pot_importer, po_content, is_published)
+            pot_importer, po_content, from_upstream)
         return (pot_importer, po_importer)
 
-    def _createPOTFileImporter(self, pot_content, is_published):
+    def _createPOTFileImporter(self, pot_content, from_upstream):
         """Create queue entries from POT content string.
         Create an importer from the entry."""
         potemplate = self.factory.makePOTemplate()
         template_entry = self.translation_import_queue.addOrUpdateEntry(
             potemplate.path, pot_content,
-            is_published, self.importer_person,
+            from_upstream, self.importer_person,
             productseries=potemplate.productseries,
             potemplate=potemplate)
         transaction.commit()
@@ -119,7 +119,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             template_entry, GettextPOImporter(), None )
 
     def _createPOFileImporter(self,
-            pot_importer, po_content, is_published, existing_pofile=None,
+            pot_importer, po_content, from_upstream, existing_pofile=None,
             person=None):
         """Create a PO entry from content, relating to a template_entry.
         Create an importer for the entry."""
@@ -131,7 +131,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             pofile = existing_pofile
         person = person or self.importer_person
         translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            pofile.path, po_content, is_published, person,
+            pofile.path, po_content, from_upstream, person,
             productseries=potemplate.productseries, pofile=pofile)
         transaction.commit()
         return POFileImporter(
@@ -246,7 +246,7 @@ class FileImporterTestCase(TestCaseWithFactory):
                 context=message.context))
 
         po_importer = self._createPOFileImporter(
-            pot_importer, TEST_TRANSLATION_EXPORTED, is_published=True,
+            pot_importer, TEST_TRANSLATION_EXPORTED, from_upstream=True,
             person=unprivileged_person)
 
         entry = removeSecurityProxy(
@@ -496,7 +496,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 
-    def _make_queue_entry(self, is_published):
+    def _make_queue_entry(self, from_upstream):
         pofile = self.factory.makePOFile('eo')
         # Create a header with a newer date than what is found in
         # TEST_TRANSLATION_FILE.
@@ -504,7 +504,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
                          "Content-Type: text/plain; charset=UTF-8\n")
         po_content = TEST_TRANSLATION_FILE % ("", "foo", "bar")
         queue_entry = self.translation_import_queue.addOrUpdateEntry(
-            pofile.path, po_content, is_published, self.importer_person,
+            pofile.path, po_content, from_upstream, self.importer_person,
             productseries=pofile.potemplate.productseries, pofile=pofile)
         transaction.commit()
         return queue_entry

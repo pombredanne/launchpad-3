@@ -53,20 +53,20 @@ class GettextPOImporterTestCase(unittest.TestCase):
         # Add a new entry for testing purposes. It's a template one.
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         template_path = 'po/testing.pot'
-        is_published = True
+        from_upstream = True
         personset = getUtility(IPersonSet)
         importer = personset.getByName('carlos')
         productset = getUtility(IProductSet)
         firefox = productset.getByName('firefox')
         productseries = firefox.getSeries('trunk')
         template_entry = self.translation_import_queue.addOrUpdateEntry(
-            template_path, test_template, is_published, importer,
+            template_path, test_template, from_upstream, importer,
             productseries=productseries)
 
         # Add another one, a translation file.
         pofile_path = 'po/es.po'
         translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            pofile_path, test_translation_file, is_published, importer,
+            pofile_path, test_translation_file, from_upstream, importer,
             productseries=productseries)
 
         transaction.commit()
