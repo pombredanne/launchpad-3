@@ -26,12 +26,12 @@ alter table binarypackagepublishinghistory drop constraint securebinarypackagepu
 ALTER TABLE ONLY binarypackagepublishinghistory
     ADD CONSTRAINT securebinarypackagepublishinghistory__archive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
-alter table sourcepackagepublishinghistory drop constraint securesourcepackagepublishinghistory__archive__fk;
-alter table sourcepackagepublishinghistory ADD CONSTRAINT securesourcepackagepublishinghistory__archive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
+alter table sourcepackagepublishinghistory drop constraint sourcepackagepublishinghistory__archive__fk;
+alter table sourcepackagepublishinghistory ADD CONSTRAINT sourcepackagepublishinghistory__archive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
 alter table binarypackagerelease drop constraint binarypackagerelease_build_fk;
 ALTER TABLE ONLY binarypackagerelease
-    ADD CONSTRAINT binarypackagerelease_build_fk FOREIGN KEY (build) REFERENCES build(id) on delete cascade;
+    ADD CONSTRAINT binarypackagerelease__build__fk FOREIGN KEY (build) REFERENCES build(id) on delete cascade;
 
 alter table packageuploadsource drop constraint packageuploadsource__packageupload__fk;
 ALTER TABLE ONLY packageuploadsource
@@ -39,7 +39,7 @@ ALTER TABLE ONLY packageuploadsource
 
 alter table packageuploadbuild drop constraint packageuploadbuild_packageupload_fk;
 ALTER TABLE ONLY packageuploadbuild
-    ADD CONSTRAINT packageuploadbuild_packageupload_fk FOREIGN KEY (packageupload) REFERENCES packageupload(id) on delete cascade;
+    ADD CONSTRAINT packageuploadbuild__packageupload__fk FOREIGN KEY (packageupload) REFERENCES packageupload(id) on delete cascade;
 
 alter table sourcepackagereleasefile drop constraint "$1";
 ALTER TABLE ONLY sourcepackagereleasefile
@@ -55,7 +55,7 @@ alter table binarypackagereleasedownloadcount
 
 alter table sourcepackagerecipebuild drop constraint sourcepackagerecipebuild_archive_fkey;
 alter table sourcepackagerecipebuild 
-    add constraint sourcepackagerecipebuild_archive_fkey FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
+    add constraint sourcepackagerecipebuild__archive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
 alter table archivearch drop constraint archivearch__archive__fk;
 alter table archivearch 
@@ -63,19 +63,19 @@ alter table archivearch
 
 alter table archiveauthtoken drop constraint archiveauthtoken_archive_fkey;
 alter table archiveauthtoken 
-    add constraint archiveauthtoken_archive_fkey FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
+    add constraint archiveauthtoken__archive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
 alter table archivedependency drop constraint archivedependency_archive_fkey;
 alter table archivedependency 
-    add constraint archivedependency_archive_fkey FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
+    add constraint archivedependency__archive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
 alter table archivedependency drop constraint archivedependency_dependency_fkey;
 alter table archivedependency add 
-    constraint archivedependency_dependency_fkey FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
+    constraint archivedependency__dependency__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
 alter table archivesubscriber drop constraint archivesubscriber_archive_fkey;
 alter table archivesubscriber 
-    add constraint archivesubscriber_archive_fkey FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
+    add constraint archivesubscriber__archive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
 alter table packagecopyrequest drop constraint packagecopyrequest__sourcearchive__fk;
 alter table packagecopyrequest 
@@ -92,4 +92,4 @@ alter table packagecopyrequest
 alter table sourcepackagerelease alter upload_archive drop not null;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 40, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 41, 0);
