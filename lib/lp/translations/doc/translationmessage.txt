@@ -133,7 +133,7 @@ hidden.
 
     >>> new_suggestion = potmsgset.updateTranslation(
     ...     pofile_sr, nopriv, {0: u'suggestion'},
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    ...     is_current_upstream=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> new_suggestion.isHidden(pofile_sr)
     False
@@ -146,7 +146,7 @@ An imported translation is not hidden when submitted.
 
     >>> imported_translation = potmsgset.updateTranslation(
     ...     pofile_sr, foobar, {0: u'foo'},
-    ...     is_imported=True, lock_timestamp=datetime.now(UTC))
+    ...     is_current_upstream=True, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> imported_translation.isHidden(pofile_sr)
     False
@@ -160,7 +160,7 @@ A newly submitted non-imported translation is not hidden either.
 
     >>> current_translation = potmsgset.updateTranslation(
     ...     pofile_sr, foobar, {0: u'bar'},
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    ...     is_current_upstream=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> current_translation.isHidden(pofile_sr)
     False
@@ -174,7 +174,7 @@ If a new current translation is submitted, the old one is hidden.
 
     >>> new_current_translation = potmsgset.updateTranslation(
     ...     pofile_sr, foobar, {0: u'new'},
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    ...     is_current_upstream=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> new_current_translation.isHidden(pofile_sr)
     False
@@ -194,7 +194,7 @@ and last current translation is not hidden either.
 
     >>> another_suggestion = potmsgset.updateTranslation(
     ...     pofile_sr, nopriv, {0: u'another suggestion'},
-    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    ...     is_current_upstream=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> another_suggestion.isHidden(pofile_sr)
     False
@@ -217,7 +217,7 @@ If the message has no actual translation, the translations attribute
 contains just a None.
 
     >>> empty_message = potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {}, is_imported=False,
+    ...     pofile_sr, foobar, {}, is_current_upstream=False,
     ...     lock_timestamp=datetime.now(UTC))
     >>> empty_message.translations
     [None]
@@ -238,7 +238,7 @@ If the message does not translate all those forms, we get None entries
 in the list.
 
     >>> empty_message = plural_potmsgset.updateTranslation(
-    ...     pofile_sr, foobar, {}, is_imported=False,
+    ...     pofile_sr, foobar, {}, is_current_upstream=False,
     ...     lock_timestamp=datetime.now(UTC))
     >>> empty_message.translations
     [None, None, None]

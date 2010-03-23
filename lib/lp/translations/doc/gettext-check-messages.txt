@@ -80,8 +80,8 @@ translation in Launchpad that differs from the imported one.
     >>> imported_message = removeSecurityProxy(imported_message)
 
     >>> imported_message.is_current_ubuntu = False
-    >>> current_message.is_imported = False
-    >>> imported_message.is_imported = True
+    >>> current_message.is_current_upstream = False
+    >>> imported_message.is_current_upstream = True
     >>> current_message.is_current_ubuntu = True
 
 
