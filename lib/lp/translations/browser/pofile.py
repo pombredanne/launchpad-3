@@ -616,12 +616,8 @@ class POFileUploadView(POFileView):
                 " recognised as a file that can be imported.")
             return
 
-        # We only set the 'from_upstream' flag if the upload is marked as an
-        # upstream upload.
-        if self.form.get('upload_type') == 'upstream':
-            from_upstream = True
-        else:
-            from_upstream = False
+        # Uploads on this form are never form upstream.
+        from_upstream = False
 
         if self.context.path is None:
             # The POFile is a dummy one, we use the filename as the path.
