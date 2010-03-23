@@ -38,16 +38,17 @@ class TestTranslatableMessageBase(TestCaseWithFactory):
             potemplate=self.potemplate, language_code='eo')
 
     def _createTranslation(self, translation=None, is_current_ubuntu=False,
-                           is_imported=False, is_diverged=False,
+                           is_current_upstream=False, is_diverged=False,
                            date_updated=None):
-        is_suggestion = not (is_current_ubuntu or is_imported or is_diverged)
+        is_suggestion = not (
+            is_current_ubuntu or is_current_upstream or is_diverged)
         if translation is not None:
             translation = [translation]
         return self.factory.makeTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             translations=translation,
             suggestion=is_suggestion,
-            is_imported=is_imported,
+            is_current_upstream=is_current_upstream,
             force_diverged=is_diverged,
             date_updated=date_updated)
 
@@ -83,7 +84,7 @@ class TestTranslatableMessage(TestTranslatableMessageBase):
 
     def test_is_current_imported(self):
         translation = self._createTranslation(is_current_ubuntu=True,
-                                              is_imported=True)
+                                              is_current_upstream=True)
         message = TranslatableMessage(self.potmsgset, self.pofile)
         self.assertTrue(message.is_current_imported)
 
@@ -112,7 +113,7 @@ class TestTranslatableMessage(TestTranslatableMessageBase):
         self.assertEqual(translation, current)
 
     def test_getImportedTranslation(self):
-        translation = self._createTranslation(is_imported=True)
+        translation = self._createTranslation(is_current_upstream=True)
 
         message = TranslatableMessage(self.potmsgset, self.pofile)
         imported = message.getImportedTranslation()

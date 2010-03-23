@@ -120,7 +120,7 @@ class VPOExport:
          self.sequence,
          self.comment,
          self.is_current_ubuntu,
-         self.is_imported,
+         self.is_current_upstream,
          self.diverged,
          self.translation0,
          self.translation1,

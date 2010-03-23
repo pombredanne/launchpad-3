@@ -42,7 +42,7 @@ class TestSuperFastImports(TestCaseWithFactory):
         # Make sure current, non-imported messages are properly
         # cached in ExistingPOFileInDatabase.
         current_message = self.factory.makeTranslationMessage(
-            pofile=self.pofile, is_imported=False)
+            pofile=self.pofile, is_current_upstream=False)
         cached_file = ExistingPOFileInDatabase(self.pofile)
         message_data = self.getTranslationMessageData(current_message)
         self.assertFalse(cached_file.isAlreadyImportedTheSame(message_data))
@@ -52,8 +52,9 @@ class TestSuperFastImports(TestCaseWithFactory):
         # Make sure current, imported messages are properly
         # cached in ExistingPOFileInDatabase.
         imported_message = self.factory.makeTranslationMessage(
-            pofile=self.pofile, is_imported=True)
-        cached_file = ExistingPOFileInDatabase(self.pofile, is_imported=True)
+            pofile=self.pofile, is_current_upstream=True)
+        cached_file = ExistingPOFileInDatabase(
+            self.pofile, is_current_upstream=True)
         message_data = self.getTranslationMessageData(imported_message)
         self.assertTrue(cached_file.isAlreadyImportedTheSame(message_data))
         self.assertTrue(cached_file.isAlreadyTranslatedTheSame(message_data))
@@ -81,7 +82,7 @@ class TestSuperFastImports(TestCaseWithFactory):
 
         # Add a message that would otherwise be cached (see other tests).
         current_message = self.factory.makeTranslationMessage(
-            pofile=self.pofile, is_imported=False)
+            pofile=self.pofile, is_current_upstream=False)
         message_data = self.getTranslationMessageData(current_message)
         cached_file = ExistingPOFileInDatabase(self.pofile)
         self.assertFalse(cached_file.isAlreadyTranslatedTheSame(message_data))

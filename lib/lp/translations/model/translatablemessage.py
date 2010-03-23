@@ -68,11 +68,11 @@ class TranslatableMessage(object):
         return self._current_translation.potemplate == self.potemplate
 
     @property
-    def is_current_imported(self):
+    def is_current_upstream(self):
         """See `ITranslatableMessage`"""
         if self._current_translation is None:
             return False
-        return self._current_translation.is_imported
+        return self._current_translation.is_current_upstream
 
     @property
     def has_plural_forms(self):

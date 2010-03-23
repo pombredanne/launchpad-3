@@ -223,7 +223,7 @@ from the "fourth" message, and the "fifth" message is newly translated.
 
     >>> entry = import_pofile_or_potemplate(test_translation_update1,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=False)
+    ...                                     is_current_upstream=False)
     >>> print entry.status.name
     IMPORTED
     >>> flush_database_caches()
@@ -289,7 +289,7 @@ a fuzzy flag is removed from the "fourth" message, and both "fifth" and
 
     >>> entry = import_pofile_or_potemplate(test_translation_imported_update,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=True)
+    ...                                     is_current_upstream=True)
     >>> print entry.status.name
     IMPORTED
     >>> flush_database_caches()
@@ -361,7 +361,7 @@ a new translation.
 
     >>> entry = import_pofile_or_potemplate(test_translation_update2,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=False)
+    ...                                     is_current_upstream=False)
     >>> print entry.status.name
     IMPORTED
     >>> flush_database_caches()
@@ -430,7 +430,7 @@ suggestions.
 
     >>> entry = import_pofile_or_potemplate(test_translation_update3,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=False)
+    ...                                     is_current_upstream=False)
     >>> print entry.status.name
     IMPORTED
 
@@ -501,7 +501,7 @@ one except for the plural expression definition.
 
     >>> entry = import_pofile_or_potemplate(test_translation_update3,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=False)
+    ...                                     is_current_upstream=False)
     >>> print entry.status.name
     IMPORTED
 
@@ -528,7 +528,7 @@ be back with next automatic sync from upstream:
 
     >>> entry = import_pofile_or_potemplate(test_translation_update3,
     ...                                     carlos, pofile=firefox_serbian,
-    ...                                     is_imported=True)
+    ...                                     is_current_upstream=True)
     >>> print entry.status.name
     IMPORTED
 

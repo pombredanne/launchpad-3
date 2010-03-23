@@ -574,7 +574,7 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
 
         potmsgset = trunk_message.potmsgset
 
-        stable_message.is_imported = True
+        stable_message.is_current_upstream = True
         stable_message.potemplate = trunk_message.potemplate
         stable_message.potmsgset = potmsgset
         stable_message.sync()
@@ -591,12 +591,12 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
         # The duplicates have been cleaned up.
         self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
         
-        # The is_current_ubuntu and is_imported flags from the duplicate
-        # messages have been merged into a single, current, imported
-        # message.
+        # The is_current_ubuntu and is_current_upstream flags from the
+        # duplicate messages have been merged into a single message,
+        # current in both ubuntu and upstream.
         message = self._getMessage(potmsgset, self.trunk_template)
         self.assertTrue(message.is_current_ubuntu)
-        self.assertTrue(message.is_imported)
+        self.assertTrue(message.is_current_upstream)
 
     def test_ScrubPOTMsgSetTranslationsWithoutDuplication(self):
         # _scrubPOTMsgSetTranslations eliminates duplicated
@@ -613,7 +613,8 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
 
     def test_ScrubPOTMsgSetTranslationsWithDuplication(self):
         # If there are duplicate TranslationMessages, one inherits all
-        # their is_current_ubuntu/is_imported flags and the others disappear.
+        # their is_current_ubuntu/is_is_current_upstream flags and the
+        # others disappear.
         # XXX JeroenVermeulen 2009-06-15
         # spec=message-sharing-prevent-duplicates: We're going to have a
         # unique index for this.  When it becomes impossible to perform
@@ -622,7 +623,7 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
         message1, message2 = self._makeTranslationMessages(
             'tigidou', 'tigidou', trunk_diverged=True, stable_diverged=True)
         message2.is_current_ubuntu = False
-        message2.is_imported = True
+        message2.is_current_upstream = True
         message2.potmsgset = self.trunk_potmsgset
         message2.potemplate = self.trunk_template
         ids = (message1.id, message2.id)
@@ -637,13 +638,14 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
         # The remaining message combines the flags from both its
         # predecessors.
         self.assertEqual(
-            (message.is_current_ubuntu, message.is_imported),
+            (message.is_current_ubuntu, message.is_current_upstream),
             (True, True))
 
     def test_FindCurrentClash(self):
         # _findClashes finds messages that would be "in the way" (as far
-        # as the is_current_ubuntu/is_imported flags are concerned) if we try
-        # to move a message to another template and potmsgset.
+        # as the is_current_ubuntu/is_current_upstream flags are
+        # concerned) if we try to move a message to another template and
+        # potmsgset.
         trunk_message, stable_message = self._makeTranslationMessages(
             'ex', 'why', trunk_diverged=False, stable_diverged=False)
         current_clash, imported_clash, twin = self.script._findClashes(
@@ -653,21 +655,21 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
         # trunk_message.
         self.assertEqual(current_clash, trunk_message)
 
-        # There's no conflict for the is_imported flag.
+        # There's no conflict for the is_current_upstream flag.
         self.assertEqual(imported_clash, None)
 
         # Nor does stable_message have a twin in trunk.
         self.assertEqual(twin, None)
 
     def test_FindImportedClash(self):
-        # Finding is_imported clashes works just like finding
+        # Finding is_current_upstream clashes works just like finding
         # is_current_ubuntu clashes.
         trunk_message, stable_message = self._makeTranslationMessages(
             'ex', 'why', trunk_diverged=False, stable_diverged=False)
 
         for message in (trunk_message, stable_message):
             message.is_current_ubuntu = False
-            message.is_imported = True
+            message.is_current_upstream = True
 
         current_clash, imported_clash, twin = self.script._findClashes(
             stable_message, self.trunk_potmsgset, None)
