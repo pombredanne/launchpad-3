@@ -1,6 +1,6 @@
 SET client_min_messages=ERROR;
 
-ALTER TABLE BugWatch ADD COLUMN next_check timestamp without time zone DEFAULT timezone('UTC'::text, now());
+ALTER TABLE BugWatch ADD COLUMN next_check timestamp without time zone;
 
 CREATE INDEX bugwatch__next_check__idx ON BugWatch(next_check);
 
