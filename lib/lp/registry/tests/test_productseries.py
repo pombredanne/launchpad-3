@@ -19,7 +19,6 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
-from lp.registry.model.sourcepackagename import SourcePackageName
 
 
 class TestProductSeriesSetPackaging(TestCaseWithFactory):

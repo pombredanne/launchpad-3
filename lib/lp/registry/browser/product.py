@@ -989,14 +989,13 @@ class ProductPackagesPortletView(LaunchpadFormView):
         # term descriptions that include a link to the source package.
         self.suggestions = []
         vocab_terms = []
-        if source_packages.count() > 0:
-          for package in source_packages[:20]:
-              self.suggestions.append(package)
-              item_url = canonical_url(package)
-              description = """<a href="%s">%s</a>""" % (
-                  item_url, escape(package.name))
-              vocab_terms.append(
-                  SimpleTerm(package, package.name, description))
+        for package in source_packages[:20]:
+            self.suggestions.append(package)
+            item_url = canonical_url(package)
+            description = """<a href="%s">%s</a>""" % (
+                item_url, escape(package.name))
+            vocab_terms.append(
+                SimpleTerm(package, package.name, description))
         vocabulary = SimpleVocabulary(vocab_terms)
         self.form_fields = form.Fields(
             Choice(__name__='distributionsourcepackage',
