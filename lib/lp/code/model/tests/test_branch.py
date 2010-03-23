@@ -315,6 +315,13 @@ class TestBranch(TestCaseWithFactory):
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
 
+    def test_getRecipes(self):
+        # IBranch.recipes should provide all the SourcePackageRecipes attached
+        # to that branch.
+        branch = self.factory.makeBranch()
+        recipe1 = self.factory.makeRecipe(branch)
+        self.assertEqual(1, len(branch.getRecipes()))
+
 
 class TestBranchUpgrade(TestCaseWithFactory):
     """Test the upgrade functionalities of branches."""

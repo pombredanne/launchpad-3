@@ -15,4 +15,5 @@ from zope.interface import Attribute, Interface
 class IHasRecipes(Interface):
     """An object that has recipes."""
 
-    recipes = Attribute("The recipes attached to the object.")
+    def getRecipes():
+        """Returns all recipes associated with the object."""

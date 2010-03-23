@@ -1065,6 +1065,10 @@ class Branch(SQLBase):
                     user, checked_branches)
         return can_access
 
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        return []
+
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
