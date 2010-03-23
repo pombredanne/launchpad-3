@@ -4,4 +4,4 @@ ALTER TABLE BugWatch ADD COLUMN next_check timestamp without time zone DEFAULT t
 
 CREATE INDEX bugwatch__next_check__idx ON BugWatch(next_check);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 42, 0);
