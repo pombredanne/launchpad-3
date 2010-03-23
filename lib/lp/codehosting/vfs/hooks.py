@@ -14,8 +14,9 @@ class SetProcTitleHook:
     """Use seen() as the hook to report branch access in ps(1) output."""
 
     def __init__(self, setproctitle_mod=None):
-        if setproctitle_mod:
+        if setproctitle_mod is None:
             setproctitle_mod = setproctitle
+        self.setproctitle_mod = setproctitle_mod
         self.basename = setproctitle_mod.getproctitle()
 
     def seen(self, branch_url):

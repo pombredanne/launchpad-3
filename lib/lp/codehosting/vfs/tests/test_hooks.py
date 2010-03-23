@@ -41,7 +41,7 @@ class TestSetProcTitleHook(TestCase):
         hook = SetProcTitleHook(setproctitle_mod)
         hook.seen(branch_url)
         self.assertEqual(
-            initial_title + "BRANCH:" + branch_url,
+            initial_title + " BRANCH:" + branch_url,
             setproctitle_mod.getproctitle())
 
     def test_hook_twice(self):
@@ -55,7 +55,7 @@ class TestSetProcTitleHook(TestCase):
         hook.seen(branch_url1)
         hook.seen(branch_url2)
         self.assertEqual(
-            initial_title + "BRANCH:" + branch_url2,
+            initial_title + " BRANCH:" + branch_url2,
             setproctitle_mod.getproctitle())
 
 
