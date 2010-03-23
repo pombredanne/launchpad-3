@@ -40,7 +40,7 @@ except for untranslated messages.
 
     >>> dummy_pofile.getPOTMsgSetTranslated().count()
     0
-    >>> dummy_pofile.getPOTMsgSetChangedInLaunchpad().count()
+    >>> dummy_pofile.getPOTMsgSetChangedInUbuntu().count()
     0
     >>> dummy_pofile.getPOTMsgSetWithNewSuggestions().count()
     0
@@ -789,10 +789,11 @@ Also, we created it without translations.
     [None, None, None]
 
 
-== getPOTMsgSetChangedInLaunchpad ==
+== getPOTMsgSetChangedInUbuntu ==
 
 This method returns only those POTMsgSet's which contain translation
-submissions through Launchpad which change existing published translations.
+submissions through Launchpad for Ubuntu which change existing published 
+translations.
 
 Lets get Evolution Spanish translation in distribution Hoary.
 
@@ -808,9 +809,9 @@ Lets get Evolution Spanish translation in distribution Hoary.
     >>> pofile_changed = potemplate.getPOFileByLang('es')
 
 This translation file already contains one message which has been changed in
-Launchpad.
+Ubuntu.
 
-    >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
+    >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInUbuntu())
     >>> len(potmsgsets)
     1
     >>> stats = pofile_changed.updateStatistics()
@@ -819,8 +820,8 @@ Launchpad.
 
 This message is also counted as translated message (number of translated
 messages is the number of imported/currentCount plus number of newly
-translated in Launchpad/rosettaCount plus number of changed in
-Launchpad/updatesCount):
+translated in Ubuntu/rosettaCount plus number of changed in
+Ubuntu/updatesCount):
 
     >>> print pofile_changed.currentCount()
     6
@@ -832,7 +833,7 @@ Launchpad/updatesCount):
     0
 
 We make sure that submissions on untranslated strings are not considered
-'changed in Launchpad', since this method is mainly designed to help
+'changed in Ubuntu', since this method is mainly designed to help
 translators revert translations to published translations.
 
 Lets get a single untranslated POTMsgSet.
@@ -855,9 +856,9 @@ Now, lets provide a translation for it.
     ...     pofile_changed.owner, {0: u'sample translation'},
     ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
 
-And make sure that the count of changed in Launchpad hasn't changed.
+And make sure that the count of changed in Ubuntu hasn't changed.
 
-    >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
+    >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInUbuntu())
     >>> len(potmsgsets)
     1
     >>> stats = pofile_changed.updateStatistics()
@@ -885,9 +886,9 @@ Lets re-translate that:
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
-And make sure that the count of messages changed in Launchpad _has_ changed:
+And make sure that the count of messages changed in Ubuntu _has_ changed:
 
-    >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
+    >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInUbuntu())
     >>> len(potmsgsets)
     2
 
