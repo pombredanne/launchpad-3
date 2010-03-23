@@ -11,7 +11,6 @@ __all__ = [
 
 import gettextpo
 import datetime
-import os
 import posixpath
 import pytz
 from zope.component import getUtility
@@ -149,7 +148,7 @@ class ExistingPOFileInDatabase:
             POMsgID_Plural.msgid AS msgid_plural,
             context,
             date_reviewed,
-            is_current,
+            is_current_ubuntu,
             is_imported,
             %(translation_columns)s
           FROM POTMsgSet
@@ -168,7 +167,7 @@ class ExistingPOFileInDatabase:
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
               POMsgID_Plural.id=POTMsgSet.msgid_plural
           WHERE
-              (is_current IS TRUE OR is_imported IS TRUE)
+              (is_current_ubuntu IS TRUE OR is_imported IS TRUE)
           ORDER BY
             TranslationTemplateItem.sequence,
             TranslationMessage.potemplate NULLS LAST
@@ -204,16 +203,17 @@ class ExistingPOFileInDatabase:
         assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
-        for (msgid, msgid_plural, context, date, is_current, is_imported,
-             msgstr0, msgstr1, msgstr2, msgstr3, msgstr4, msgstr5) in rows:
+        for (msgid, msgid_plural, context, date, is_current_ubuntu,
+             is_imported, msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
+             msgstr5) in rows:
 
-            if not is_current and not is_imported:
+            if not is_current_ubuntu and not is_imported:
                 # We don't care about non-current and non-imported messages
                 # yet.  To be part of super-fast-imports-phase2.
                 continue
 
             update_caches = []
-            if is_current:
+            if is_current_ubuntu:
                 update_caches.append(self.messages)
             if is_imported:
                 update_caches.append(self.imported)

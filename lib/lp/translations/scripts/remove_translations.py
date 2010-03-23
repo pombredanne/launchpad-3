@@ -207,8 +207,9 @@ class RemoveTranslations(LaunchpadScript):
             '-L', '--not-language', action='store_true', dest='not_language',
             help="Invert language match: spare messages in given language."),
         ExtendedOption(
-            '-C', '--is-current', dest='is_current', type='bool',
-            help="Match on is_current value (True or False)."),
+            '-C', '--is-current_ubuntu', dest='is_current_ubuntu',
+            type='bool',
+            help="Match on is_current_ubuntu value (True or False)."),
         ExtendedOption(
             '-I', '--is-imported', dest='is_imported', type='bool',
             help="Match on is_imported value (True or False)."),
@@ -301,7 +302,7 @@ class RemoveTranslations(LaunchpadScript):
             potemplate=self.options.potemplate,
             language_code=self.options.language,
             not_language=self.options.not_language,
-            is_current=self.options.is_current,
+            is_current_ubuntu=self.options.is_current_ubuntu,
             is_imported=self.options.is_imported,
             msgid_singular=self.options.msgid,
             origin=self.options.origin)
@@ -313,10 +314,10 @@ class RemoveTranslations(LaunchpadScript):
             self.txn.commit()
 
 
-def remove_translations(logger=None, submitter=None, reviewer=None, 
+def remove_translations(logger=None, submitter=None, reviewer=None,
                         reject_license=False, ids=None, potemplate=None,
                         language_code=None, not_language=False,
-                        is_current=None, is_imported=None,
+                        is_current_ubuntu=None, is_imported=None,
                         msgid_singular=None, origin=None):
     """Remove specified translation messages.
 
@@ -332,7 +333,8 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
         language that would otherwise be deleted.
     :param not_language: Whether to spare (True) or delete (False)
         messages in this language.
-    :param is_current: Delete only messages with this is_current value.
+    :param is_current_ubuntu: Delete only messages with this is_current_ubuntu
+        value.
     :param is_imported: Delete only messages with this is_imported value.
     :param msgid_singular: Delete only messages with this singular msgid.
     :param origin: Delete only messages with this `TranslationOrigin` code.
@@ -373,7 +375,8 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
         else:
             conditions.add(language_match)
 
-    add_bool_match(conditions, 'TranslationMessage.is_current', is_current)
+    add_bool_match(
+        conditions, 'TranslationMessage.is_current_ubuntu', is_current_ubuntu)
     add_bool_match(conditions, 'TranslationMessage.is_imported', is_imported)
 
     if msgid_singular is not None:
@@ -427,7 +430,7 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
             -- Came from published source.
             Imported.is_imported IS TRUE AND
             -- Was masked by the message we're about to delete.
-            Doomed.is_current IS TRUE AND
+            Doomed.is_current_ubuntu IS TRUE AND
             Imported.id <> Doomed.id
             """
     cur.execute(query)
@@ -464,7 +467,7 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
 
     cur.execute("""
         UPDATE TranslationMessage
-        SET is_current = TRUE
+        SET is_current_ubuntu = TRUE
         FROM temp_doomed_message
         WHERE TranslationMessage.id = temp_doomed_message.imported_message
         """)

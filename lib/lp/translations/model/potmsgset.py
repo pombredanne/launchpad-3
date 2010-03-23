@@ -235,12 +235,12 @@ class POTMsgSet(SQLBase):
         
         Prefers a diverged message if present.
         """
-        # Change 'is_current IS TRUE' and 'is_imported IS TRUE' conditions
-        # carefully: they need to match condition specified in indexes,
-        # or Postgres may not pick them up (in complicated queries,
-        # Postgres query optimizer sometimes does text-matching of indexes).
+        # Change 'is_current_ubuntu IS TRUE' and 'is_imported IS TRUE'
+        # conditions with care: they need to match condition specified in
+        # indexes, or postgres may not pick them up (in complicated queries,
+        # postgres query optimizer sometimes does text-matching of indexes).
         if current:
-            used_clause = 'is_current IS TRUE'
+            used_clause = 'is_current_ubuntu IS TRUE'
         else:
             used_clause = 'is_imported IS TRUE'
         if potemplate is None:
@@ -289,7 +289,7 @@ class POTMsgSet(SQLBase):
                                     include_unreviewed=True):
         """See `IPOTMsgSet`."""
         query = """
-            is_current IS NOT TRUE AND
+            is_current_ubuntu IS NOT TRUE AND
             is_imported IS NOT TRUE AND
             potmsgset = %s AND
             language = %s
@@ -340,7 +340,7 @@ class POTMsgSet(SQLBase):
         # Watch out when changing this condition: make sure it's done in
         # a way so that indexes are indeed hit when the query is executed.
         # Also note that there is a NOT(in_use_clause) index.
-        in_use_clause = "(is_current IS TRUE OR is_imported IS TRUE)"
+        in_use_clause = "(is_current_ubuntu IS TRUE OR is_imported IS TRUE)"
         if used:
             query = [in_use_clause]
         else:
@@ -585,7 +585,8 @@ class POTMsgSet(SQLBase):
         converge_shared = force_shared
         if (not force_diverged and
             (current_message is None or
-             ((new_message.potemplate is None and new_message.is_current) and
+             ((new_message.potemplate is None and
+                new_message.is_current_ubuntu) and
               (current_message.potemplate is not None)))):
             converge_shared = True
 
@@ -666,7 +667,7 @@ class POTMsgSet(SQLBase):
                 # message is neither imported nor current
                 # anymore.
                 imported_message.is_imported = False
-                imported_message.is_current = False
+                imported_message.is_current_ubuntu = False
                 imported_message.potemplate = None
             if not (force_diverged or force_shared):
                 # If there was an imported message, keep the same
@@ -679,13 +680,13 @@ class POTMsgSet(SQLBase):
                     was_diverged_to = None
                 new_message.potemplate = was_diverged_to
 
-        # Change actual is_current flag only if it validates ok.
+        # Change actual is_current_ubuntu flag only if it validates ok.
         if new_message.validation_status == TranslationValidationStatus.OK:
             if make_current:
                 # Deactivate previous diverged message.
                 if (current_message is not None and
                     current_message.potemplate is not None):
-                    current_message.is_current = False
+                    current_message.is_current_ubuntu = False
                     # Do not "converge" a diverged imported message since
                     # there might be another shared imported message.
                     if not current_message.is_imported:
@@ -699,7 +700,7 @@ class POTMsgSet(SQLBase):
                     # Either converge_shared==True, or a new message.
                     new_message.potemplate = None
 
-                new_message.is_current = True
+                new_message.is_current_ubuntu = True
             else:
                 new_message.potemplate = None
         if is_imported or new_message == imported_message:
@@ -822,8 +823,8 @@ class POTMsgSet(SQLBase):
                 # Don't create empty is_imported translations
                 if imported_message is not None:
                     imported_message.is_imported = False
-                    if imported_message.is_current:
-                        imported_message.is_current = False
+                    if imported_message.is_current_ubuntu:
+                        imported_message.is_current_ubuntu = False
                 return None
             else:
                 matching_message = TranslationMessage(

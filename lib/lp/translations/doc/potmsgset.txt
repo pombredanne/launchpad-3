@@ -380,7 +380,7 @@ A No Privileges user updates a translation.
 
 This message is not made current or marked as imported.
 
-    >>> new_message.is_current
+    >>> new_message.is_current_ubuntu
     False
     >>> new_message.is_imported
     False
@@ -649,7 +649,7 @@ We will use this helper function to print all suggestions found:
     ...     lines = []
     ...     for suggestion in suggestions:
     ...         usage = []
-    ...         if suggestion.is_current:
+    ...         if suggestion.is_current_ubuntu:
     ...             usage.append('Launchpad')
     ...         if suggestion.is_imported:
     ...             usage.append('Upstream')
@@ -981,7 +981,7 @@ A new translation is saved in the PO file.
     Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
     >>> new_translation.pofile.variant
     u'test'
-    >>> new_translation.is_current
+    >>> new_translation.is_current_ubuntu
     True
     >>> new_translation.is_imported
     True

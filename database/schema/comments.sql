@@ -866,8 +866,8 @@ COMMENT ON COLUMN TranslationMessage.validation_status IS 'Whether we have
 validated this translation. Being 0 the value that says this row has not been
 validated yet, 1 the value that says it is correct and 2 the value noting that
 there was an unknown error with the validation.';
-COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
-is being used in Launchpad.';
+COMMENT ON COLUMN TranslationMessage.is_current_ubuntu IS 'Whether this translation
+is being used in Ubuntu.';
 COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
 is being used in latest imported file.';
 COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether

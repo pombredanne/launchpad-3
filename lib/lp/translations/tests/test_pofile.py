@@ -410,7 +410,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         translation = self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Suggestion"], suggestion=True)
-        self.assertEquals(translation.is_current, False)
+        self.assertEquals(translation.is_current_ubuntu, False)
 
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
@@ -425,7 +425,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         translation = self.factory.makeSharedTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Translation"], date_updated=date_created)
-        self.assertEquals(translation.is_current, True)
+        self.assertEquals(translation.is_current_ubuntu, True)
 
         # When there are no suggestions, nothing is returned.
         found_translations = list(
@@ -438,7 +438,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Suggestion"], suggestion=True,
             date_updated=suggestion_date)
-        self.assertEquals(translation.is_current, False)
+        self.assertEquals(translation.is_current_ubuntu, False)
 
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
@@ -446,7 +446,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # Setting a suggestion as current makes it have no unreviewed
         # suggestions.
-        translation.is_current = True
+        translation.is_current_ubuntu = True
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals(found_translations, [])
@@ -458,7 +458,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"New suggestion"], suggestion=True,
             date_updated=suggestion_date)
-        self.assertEquals(translation.is_current, False)
+        self.assertEquals(translation.is_current_ubuntu, False)
 
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
@@ -496,7 +496,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Shared suggestion"], suggestion=True,
             date_updated=suggestion_date)
-        self.assertEquals(translation.is_current, False)
+        self.assertEquals(translation.is_current_ubuntu, False)
 
         # Shared suggestion is shown since diverged_date < suggestion_date.
         found_translations = list(
@@ -519,7 +519,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Suggestion"], suggestion=True,
             date_updated=suggestion_date)
-        self.assertEquals(translation.is_current, False)
+        self.assertEquals(translation.is_current_ubuntu, False)
 
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
@@ -527,7 +527,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # Setting a suggestion as current makes it have no unreviewed
         # suggestions.
-        translation.is_current = True
+        translation.is_current_ubuntu = True
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals(found_translations, [])
@@ -588,7 +588,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         translation = self.factory.makeTranslationMessage(
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u""], suggestion=True)
-        self.assertEquals(False, translation.is_current)
+        self.assertEquals(False, translation.is_current_ubuntu)
 
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetWithNewSuggestions())
@@ -617,7 +617,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Imported translation"], is_imported=True)
         self.assertEquals(translation.is_imported, True)
-        self.assertEquals(translation.is_current, True)
+        self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [])
@@ -628,7 +628,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Changed translation"], is_imported=False)
         self.assertEquals(translation.is_imported, False)
-        self.assertEquals(translation.is_current, True)
+        self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [self.potmsgset])
@@ -639,7 +639,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Diverged translation"], is_imported=False)
         self.assertEquals(translation.is_imported, False)
-        self.assertEquals(translation.is_current, True)
+        self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [self.potmsgset])
@@ -652,7 +652,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             translations=[u"Diverged imported"], is_imported=True,
             force_diverged=True)
         self.assertEquals(translation.is_imported, True)
-        self.assertEquals(translation.is_current, True)
+        self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [])
@@ -663,7 +663,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Diverged changed"], is_imported=False)
         self.assertEquals(translation.is_imported, False)
-        self.assertEquals(translation.is_current, True)
+        self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [self.potmsgset])
@@ -686,14 +686,14 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             translations=[u"Diverged imported non-current"],
             is_imported=True, force_diverged=True)
         # As we can't come to this situation using existing code,
-        # we modify the is_current flag directly.
-        diverged.is_current = False
+        # we modify the is_current_ubuntu flag directly.
+        diverged.is_current_ubuntu = False
 
         self.assertEquals(shared.is_imported, True)
-        self.assertEquals(shared.is_current, True)
+        self.assertEquals(shared.is_current_ubuntu, True)
         self.assertIs(shared.potemplate, None)
         self.assertEquals(diverged.is_imported, True)
-        self.assertEquals(diverged.is_current, False)
+        self.assertEquals(diverged.is_current_ubuntu, False)
         self.assertEquals(diverged.potemplate, self.devel_potemplate)
 
         # Such POTMsgSet is not considered changed in this PO file.
@@ -710,7 +710,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Imported translation"], is_imported=True)
         self.assertEquals(translation.is_imported, True)
-        self.assertEquals(translation.is_current, True)
+        self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [])
@@ -721,7 +721,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
             translations=[u"Changed translation"], is_imported=False)
         self.assertEquals(translation.is_imported, False)
-        self.assertEquals(translation.is_current, True)
+        self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [self.potmsgset])

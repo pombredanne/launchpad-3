@@ -55,7 +55,7 @@ criteria).
 
     >>> nl_message = set_translation(
     ...     message, nl_pofile, "Maar dan in het Nederlands.")
-    >>> nl_message.is_current
+    >>> nl_message.is_current_ubuntu
     True
     >>> nl_message.is_imported
     False

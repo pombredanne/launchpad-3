@@ -182,7 +182,7 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
         self.assertEqual(options.potemplate, 5)
         self.assertEqual(options.language, 'te')
         self.assertEqual(options.not_language, True)
-        self.assertEqual(options.is_current, True)
+        self.assertEqual(options.is_current_ubuntu, True)
         self.assertEqual(options.is_imported, False)
         self.assertEqual(options.is_imported, False)
         self.assertEqual(options.origin, 1)
@@ -204,7 +204,7 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
             ])
         self.assertEqual(options.submitter, submitter.id)
         self.assertEqual(options.reviewer, reviewer.id)
-        self.assertEqual(options.is_current, False)
+        self.assertEqual(options.is_current_ubuntu, False)
         self.assertEqual(options.is_imported, True)
         self.assertEqual(options.origin, RosettaTranslationOrigin.SCM.value)
 
@@ -423,23 +423,23 @@ class TestRemoveTranslations(TestCase):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "translate", "vertalen", "uebersetzen")
-        self.nl_message.is_current = False
+        self.nl_message.is_current_ubuntu = False
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_current=True)
+        self._removeMessages(ids=ids, is_current_ubuntu=True)
 
-        self.nl_message.is_current = True
+        self.nl_message.is_current_ubuntu = True
         self._checkInvariant()
 
     def test_RemoveNotCurrent(self):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "write", "schrijven", "schreiben")
-        new_nl_message.is_current = False
-        new_de_message.is_current = False
+        new_nl_message.is_current_ubuntu = False
+        new_de_message.is_current_ubuntu = False
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_current=False)
+        self._removeMessages(ids=ids, is_current_ubuntu=False)
 
         self._checkInvariant()
 
@@ -581,9 +581,9 @@ class TestRemoveTranslationsUnmasking(TestCase):
             cleanups.append(imported)
             current = self._setTranslation('current', is_imported=False)
             cleanups.append(current)
-            self.assertFalse(imported.is_current, "Broken test setup.")
+            self.assertFalse(imported.is_current_ubuntu, "Broken test setup.")
             self.assertTrue(imported.is_imported, "Broken test setup.")
-            self.assertTrue(current.is_current, "Broken test setup.")
+            self.assertTrue(current.is_current_ubuntu, "Broken test setup.")
             self.assertFalse(current.is_imported, "Broken test setup.")
             Store.of(current).flush()
 
@@ -591,7 +591,7 @@ class TestRemoveTranslationsUnmasking(TestCase):
 
             sync(imported)
             self.assertTrue(imported.is_imported)
-            self.assertTrue(imported.is_current)
+            self.assertTrue(imported.is_current_ubuntu)
         finally:
             # Clean up.
             remove_translations(ids=[message.id for message in cleanups])
@@ -606,7 +606,7 @@ class TestRemoveTranslationsUnmasking(TestCase):
             imported = self._setTranslation('imported', is_imported=True)
             cleanups.append(imported)
             current = self._setTranslation('current', is_imported=False)
-            self.assertFalse(inactive.is_current, "Broken test setup.")
+            self.assertFalse(inactive.is_current_ubuntu, "Broken test setup.")
             self.assertFalse(inactive.is_imported, "Broken test setup.")
             Store.of(current).flush()
 
@@ -614,8 +614,8 @@ class TestRemoveTranslationsUnmasking(TestCase):
 
             sync(imported)
             sync(inactive)
-            self.assertTrue(imported.is_current)
-            self.assertFalse(inactive.is_current)
+            self.assertTrue(imported.is_current_ubuntu)
+            self.assertFalse(inactive.is_current_ubuntu)
         finally:
             # Clean up.
             remove_translations(ids=[message.id for message in cleanups])

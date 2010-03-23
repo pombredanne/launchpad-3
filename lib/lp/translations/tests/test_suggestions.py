@@ -120,7 +120,7 @@ class TestTranslationSuggestions(unittest.TestCase):
         suggestion = barmsg.updateTranslation(self.bar_nl,
             self.foo_template.owner, ["Noueh hallo dus."],
             is_imported=False, lock_timestamp=None)
-        suggestion.is_current = False
+        suggestion.is_current_ubuntu = False
 
         transaction.commit()
 

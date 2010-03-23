@@ -76,7 +76,7 @@ class GettextCheckMessages(LaunchpadScript):
     def _log_bad_message(self, bad_message, unmasked_message, error):
         """Report gettext validation error for active message."""
         currency_markers = []
-        if bad_message.is_current:
+        if bad_message.is_current_ubuntu:
             currency_markers.append('current')
         if bad_message.is_imported:
             currency_markers.append('imported')
@@ -132,11 +132,11 @@ class GettextCheckMessages(LaunchpadScript):
                 imported = None
 
         self._log_bad_message(translationmessage, imported, error)
-        if translationmessage.is_current:
-            translationmessage.is_current = False
+        if translationmessage.is_current_ubuntu:
+            translationmessage.is_current_ubuntu = False
             self._disable_count += 1
             if imported is not None:
-                imported.is_current = True
+                imported.is_current_ubuntu = True
                 self._unmask_count += 1
 
     def _do_commit(self):

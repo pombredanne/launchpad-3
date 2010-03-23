@@ -453,7 +453,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             if message.potmsgset.msgid_singular.msgid == TEST_MSGID_ERROR:
                 # This is the accursed message.  Whatever happens, it
                 # must not be set as the current translation.
-                self.assertFalse(message.is_current)
+                self.assertFalse(message.is_current_ubuntu)
             else:
                 # This is the other message that the doomed message
                 # conflicted with.

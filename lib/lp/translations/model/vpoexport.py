@@ -119,7 +119,7 @@ class VPOExport:
         (self.potmsgset_id,
          self.sequence,
          self.comment,
-         self.is_current,
+         self.is_current_ubuntu,
          self.is_imported,
          self.diverged,
          self.translation0,

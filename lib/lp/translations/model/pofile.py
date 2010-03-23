@@ -667,7 +667,7 @@ class POFile(SQLBase, POFileMixIn):
         """
         clause_tables = ['TranslationTemplateItem', 'TranslationMessage']
         clauses = self._getClausesForPOFileMessages()
-        clauses.append('TranslationMessage.is_current IS TRUE')
+        clauses.append('TranslationMessage.is_current_ubuntu IS TRUE')
         self._appendCompletePluralFormsConditions(clauses)
 
         # A message is current in this pofile if:
@@ -688,7 +688,7 @@ class POFile(SQLBase, POFileMixIn):
                  SELECT * FROM TranslationMessage AS diverged
                    WHERE
                      diverged.potemplate=%(potemplate)s AND
-                     diverged.is_current IS TRUE AND
+                     diverged.is_current_ubuntu IS TRUE AND
                      diverged.language = %(language)s AND
                      %(variant_clause)s AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
@@ -752,7 +752,7 @@ class POFile(SQLBase, POFileMixIn):
             "TranslationMessage.msgstr%(form)d IS NOT NULL", "OR")
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.is_current IS NOT TRUE',
+            'TranslationMessage.is_current_ubuntu IS NOT TRUE',
             "(%s)" % msgstr_clause
             ])
 
@@ -761,7 +761,7 @@ class POFile(SQLBase, POFileMixIn):
             '''(SELECT COALESCE(diverged.date_reviewed, diverged.date_created)
                  FROM TranslationMessage AS diverged
                  WHERE
-                   diverged.is_current IS TRUE AND
+                   diverged.is_current_ubuntu IS TRUE AND
                    diverged.potemplate = %(potemplate)s AND
                    diverged.language = %(language)s AND
                    %(variant_clause)s AND
@@ -775,7 +775,7 @@ class POFile(SQLBase, POFileMixIn):
             '''(SELECT COALESCE(shared.date_reviewed, shared.date_created)
                  FROM TranslationMessage AS shared
                  WHERE
-                   shared.is_current IS TRUE AND
+                   shared.is_current_ubuntu IS TRUE AND
                    shared.potemplate IS NULL AND
                    shared.language = %(language)s AND
                    %(variant_clause)s AND
@@ -813,7 +813,7 @@ class POFile(SQLBase, POFileMixIn):
         # translations which are 'new' and only exist in LP).
 
         # TranslationMessage is changed if:
-        # is_current IS TRUE, is_imported IS FALSE,
+        # is_current_ubuntu IS TRUE, is_imported IS FALSE,
         # (diverged AND not empty) OR (shared AND not empty AND no diverged)
         # exists imported (is_imported AND not empty AND (diverged OR shared))
         clauses, clause_tables = self._getTranslatedMessagesQuery()
@@ -933,7 +933,7 @@ class POFile(SQLBase, POFileMixIn):
         current_clauses.extend([
             'TranslationTemplateItem.sequence > 0',
             'TranslationMessage.is_imported IS TRUE',
-            'TranslationMessage.is_current IS TRUE',
+            'TranslationMessage.is_current_ubuntu IS TRUE',
             'TranslationMessage.potmsgset = POTMsgSet.id',
             """(TranslationMessage.potemplate = %(template)s OR (
                 TranslationMessage.potemplate IS NULL AND NOT EXISTS (
@@ -945,7 +945,7 @@ class POFile(SQLBase, POFileMixIn):
                       %(variant_clause)s AND
                       TranslationMessage.potmsgset=current.potmsgset AND
                       current.msgstr0 IS NOT NULL AND
-                      current.is_current IS TRUE )))""" % dict(
+                      current.is_current_ubuntu IS TRUE )))""" % dict(
             template=quote(self.potemplate),
             language=quote(self.language),
             variant_clause=variant_clause),
@@ -1233,7 +1233,7 @@ class POFile(SQLBase, POFileMixIn):
             'TranslationTemplateItem.potmsgset',
             'TranslationTemplateItem.sequence',
             'TranslationMessage.comment',
-            'TranslationMessage.is_current',
+            'TranslationMessage.is_current_ubuntu',
             'TranslationMessage.is_imported',
             'TranslationMessage.potemplate',
             'potranslation0.translation',
@@ -1266,7 +1266,7 @@ class POFile(SQLBase, POFileMixIn):
             LEFT JOIN TranslationMessage ON
                 TranslationMessage.potmsgset =
                     TranslationTemplateItem.potmsgset AND
-                TranslationMessage.is_current IS TRUE AND
+                TranslationMessage.is_current_ubuntu IS TRUE AND
                 TranslationMessage.language = %s
             """ % sqlvalues(self.language)
 
@@ -1597,7 +1597,7 @@ class POFileSet:
                         POFile.variant == None,
                         TranslationMessage.variant == None),
                        POFile.variant == TranslationMessage.variant),
-                    TranslationMessage.is_current == True),
+                    TranslationMessage.is_current_ubuntu == True),
                 (TranslationMessage))
             clauses.append(Not(Exists(message_select)))
         result = store.find((POFile, POTMsgSet), clauses)

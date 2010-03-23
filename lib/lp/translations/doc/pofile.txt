@@ -871,7 +871,7 @@ translation:
     >>> for potmsgset in pofile_changed.potemplate:
     ...     tm = potmsgset.getImportedTranslationMessage(
     ...         pofile_changed.potemplate, pofile_changed.language)
-    ...     if tm is not None and tm.is_complete and tm.is_current:
+    ...     if tm is not None and tm.is_complete and tm.is_current_ubuntu:
     ...         imported_potmsgset = potmsgset
     ...         break
     >>> potmsgset is None
@@ -943,7 +943,7 @@ Non-editor can only submit a new suggestion on untranslated message.
     >>> flush_database_caches() # Store modification dates in database
     >>> print new_translation.translations
     [u'translation']
-    >>> new_translation.is_current
+    >>> new_translation.is_current_ubuntu
     False
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     evolution_es.potemplate, evolution_es.language)

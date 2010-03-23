@@ -57,7 +57,7 @@ Check that this submission is now the active one for this msgset/pluralform
 
     >>> potmsgset.getCurrentTranslationMessage(template, spanish) == message
     True
-    >>> message.is_current
+    >>> message.is_current_ubuntu
     True
     >>> message.msgstr0.translation == u'foo'
     True
