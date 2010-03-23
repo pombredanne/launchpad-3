@@ -177,19 +177,12 @@ def with_interaction(func):
     This is intended to make sure the right thing happens whether or not
     the function is run in a different thread.
 
-    It's intended for use with `BugWatchUpdater`, which provides
-    _login() and _logout() methods; these are the hooks that are
-    required.
+    It's intended for use with `BugWatchUpdater`, which provides an
+    `interaction` property; this is the hook that's required.
     """
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        if queryInteraction() is None:
-            self._login()
-            try:
-                return func(self, *args, **kwargs)
-            finally:
-                self._logout()
-        else:
+        with self.interaction:
             return func(self, *args, **kwargs)
     return wrapper
 
@@ -245,6 +238,24 @@ class BugWatchUpdater(object):
 
     @property
     @contextmanager
+    def interaction(self):
+        """Context manager for interaction as the Bug Watch Updater.
+
+        If an interaction is already in progress this is a no-op,
+        otherwise it sets up an interaction on entry and ends it on
+        exit.
+        """
+        if queryInteraction() is None:
+            setupInteraction(self._principal, login=self.LOGIN)
+            try:
+                yield
+            finally:
+                endInteraction()
+        else:
+            yield
+
+    @property
+    @contextmanager
     def transaction(self):
         """Context manager to ring-fence database activity.
 
@@ -272,14 +283,6 @@ class BugWatchUpdater(object):
             self._local.within_transaction_semaphore -= 1
             assert self._local.within_transaction_semaphore >= 0, (
                 "within_transaction_semaphore released too many times.")
-
-    def _login(self):
-        """Set up an interaction as the Bug Watch Updater"""
-        setupInteraction(self._principal, login=self.LOGIN)
-
-    def _logout(self):
-        """Tear down the Bug Watch Updater Interaction."""
-        endInteraction()
 
     @with_interaction
     @with_transaction
@@ -402,6 +405,7 @@ class BugWatchUpdater(object):
         else:
             return True
 
+    @with_interaction
     def forceUpdateAll(self, bug_tracker_name, batch_size):
         """Update all the watches for `bug_tracker_name`.
 
@@ -409,7 +413,6 @@ class BugWatchUpdater(object):
         :param batch_size: The number of bug watches to update in one
             go. If zero, all bug watches will be updated.
         """
-        self._login()
         bug_tracker = getUtility(IBugTrackerSet).getByName(bug_tracker_name)
         if bug_tracker is None:
             # If the bug tracker is nonsense then just ignore it.
@@ -446,8 +449,6 @@ class BugWatchUpdater(object):
                 "%s watches left to check on bug tracker '%s'" %
                 (watches_left, bug_tracker_name))
             has_watches_to_update = watches_left > 0
-
-        self._logout()
 
     def _getBugWatch(self, bug_watch_id):
         """Return the bug watch with id `bug_watch_id`."""
