@@ -82,11 +82,11 @@ class TestTranslatableMessage(TestTranslatableMessageBase):
         message = TranslatableMessage(self.potmsgset, self.pofile)
         self.assertTrue(message.is_current_diverged)
 
-    def test_is_current_imported(self):
+    def test_is_current_upstream(self):
         translation = self._createTranslation(is_current_ubuntu=True,
                                               is_current_upstream=True)
         message = TranslatableMessage(self.potmsgset, self.pofile)
-        self.assertTrue(message.is_current_imported)
+        self.assertTrue(message.is_current_upstream)
 
     def test_has_plural_forms(self):
         message = TranslatableMessage(self.potmsgset, self.pofile)
