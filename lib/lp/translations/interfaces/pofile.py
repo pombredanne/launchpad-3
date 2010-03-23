@@ -172,11 +172,12 @@ class IPOFile(IRosettaStats):
         """Get pot message sets with suggestions submitted after last review.
         """
 
-    def getPOTMsgSetChangedInLaunchpad():
+    def getPOTMsgSetChangedInUbuntu():
         """Get pot message sets changed through Launchpad in this PO file.
 
-        'Changed in Launchpad' are only those which were translated when
-        initially imported, but then got overridden in Launchpad.
+        'Changed in Ubuntu' are only those which were translated when
+        initially imported, but then got overridden in Ubuntu translations
+        through Launchpad.
         """
 
     def getPOTMsgSetWithErrors():

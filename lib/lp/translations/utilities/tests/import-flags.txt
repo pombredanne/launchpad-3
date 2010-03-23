@@ -242,7 +242,7 @@ imported translations). Fuzzy flag is ignored on "fourth" as well.
      6. sixth              None               None               *
 
 We can notice that we have 4 translations (fuzzy messages are not considered
-translated), with "second" imported one now considered 'changed in LP', and
+translated), with "second" imported one now considered 'changed in Ubuntu', and
 two new translations through Launchpad ("d-from-LP" and "e-from-LP"):
 
     >>> print_pofile_stats(firefox_serbian)
@@ -312,7 +312,7 @@ to imported ones.
 With this latest import, we've got five non-fuzzy messages, which are all
 considered 'translated'. Since we are reverting to imported translations
 when there's only a Launchpad-done translation, only a single message is
-marked as 'changed in LP':
+marked as 'changed in Ubuntu':
 
     >>> print_pofile_stats(firefox_serbian)
     total: 6

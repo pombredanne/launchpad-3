@@ -113,15 +113,15 @@ class ExistingPOFileInDatabase:
 
         # Dict indexed by (msgid, context) containing current
         # TranslationMessageData: doing this for the speed.
-        self.messages = {}
+        self.ubuntu_messages = {}
         # Messages which have been seen in the file: messages which exist
         # in the database, but not in the import, will be expired.
         self.seen = set()
 
         # Contains upstream but inactive translations.
-        self.imported = {}
+        self.upstream_messages = {}
 
-        # Pre-fill self.messages and self.imported with data.
+        # Pre-fill self.ubuntu_messages and self.upstream_messages with data.
         self._fetchDBRows()
 
     def _fetchDBRows(self):
@@ -213,9 +213,9 @@ class ExistingPOFileInDatabase:
 
             update_caches = []
             if is_current:
-                update_caches.append(self.messages)
+                update_caches.append(self.ubuntu_messages)
             if is_imported:
-                update_caches.append(self.imported)
+                update_caches.append(self.upstream_messages)
 
             for look_at in update_caches:
                 if (msgid, msgid_plural, context) in look_at:
@@ -247,29 +247,29 @@ class ExistingPOFileInDatabase:
         in the file being imported.
         """
         unseen = set()
-        for (singular, plural, context) in self.messages:
+        for (singular, plural, context) in self.ubuntu_messages:
             if (singular, plural, context) not in self.seen:
                 unseen.add((singular, plural, context))
-        for (singular, plural, context) in self.imported:
-            if ((singular, plural, context) not in self.messages and
+        for (singular, plural, context) in self.upstream_messages:
+            if ((singular, plural, context) not in self.ubuntu_messages and
                 (singular, plural, context) not in self.seen):
                 unseen.add((singular, plural, context))
         return unseen
 
-    def isAlreadyTranslatedTheSame(self, message):
+    def isAlreadyTranslatedTheSameInUbuntu(self, message):
         """Check whether this message is already translated in exactly
         the same way.
         """
         (msgid, plural, context) = (message.msgid_singular,
                                     message.msgid_plural,
                                     message.context)
-        if (msgid, plural, context) in self.messages:
-            msg_in_db = self.messages[(msgid, plural, context)]
+        if (msgid, plural, context) in self.ubuntu_messages:
+            msg_in_db = self.ubuntu_messages[(msgid, plural, context)]
             return is_identical_translation(msg_in_db, message)
         else:
             return False
 
-    def isAlreadyImportedTheSame(self, message):
+    def isAlreadyTranslatedTheSameUpstream(self, message):
         """Check whether this translation is already present in DB as
         'is_imported' translation, and thus needs no changing if we are
         submitting an imported update.
@@ -277,11 +277,13 @@ class ExistingPOFileInDatabase:
         (msgid, plural, context) = (message.msgid_singular,
                                     message.msgid_plural,
                                     message.context)
-        if ((msgid, plural, context) in self.imported) and self.is_imported:
-            msg_in_db = self.imported[(msgid, plural, context)]
+        if (((msgid, plural, context) in self.upstream_messages) and
+            self.is_imported):
+            msg_in_db = self.upstream_messages[(msgid, plural, context)]
             return is_identical_translation(msg_in_db, message)
         else:
             return False
+
 
 class TranslationImporter:
     """Handle translation resources imports."""
@@ -782,10 +784,10 @@ class POFileImporter(FileImporter):
         # Mark this message as seen in the import
         self.pofile_in_db.markMessageAsSeen(message)
         if self.translation_import_queue_entry.from_upstream:
-            if self.pofile_in_db.isAlreadyImportedTheSame(message):
+            if self.pofile_in_db.isAlreadyTranslatedTheSameUpstream(message):
                 return
         else:
-            if self.pofile_in_db.isAlreadyTranslatedTheSame(message):
+            if self.pofile_in_db.isAlreadyTranslatedTheSameInUbuntu(message):
                 return
 
         potmsgset = self.getOrCreatePOTMsgSet(message)

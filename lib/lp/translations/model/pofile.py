@@ -804,13 +804,13 @@ class POFile(SQLBase, POFileMixIn):
         return self._getOrderedPOTMsgSets(
             [POTMsgSet, TranslationTemplateItem], query)
 
-    def getPOTMsgSetChangedInLaunchpad(self):
+    def getPOTMsgSetChangedInUbuntu(self):
         """See `IPOFile`."""
         # POT set has been changed in Launchpad if it contains active
-        # translation which didn't come from an upstream package
+        # translations which didn't come from an upstream package
         # (iow, it's different from an upstream translation: this only
-        # lists translations which have actually changed in LP, not
-        # translations which are 'new' and only exist in LP).
+        # lists translations which have actually changed in Ubuntu, not
+        # translations which are 'new' and only exist in Ubuntu).
 
         # TranslationMessage is changed if:
         # is_current IS TRUE, is_imported IS FALSE,
@@ -957,7 +957,7 @@ class POFile(SQLBase, POFileMixIn):
 
         # Get the number of translations that we have updated from what we got
         # from imports.
-        updates = self.getPOTMsgSetChangedInLaunchpad().count()
+        updates = self.getPOTMsgSetChangedInUbuntu().count()
 
         # Get total number of messages in a POTemplate.
         if self.potemplate.messageCount() > 0:
@@ -966,12 +966,12 @@ class POFile(SQLBase, POFileMixIn):
             total = self.potemplate.getPOTMsgSets().count()
             self.potemplate.messagecount = total
 
-        # Get number of translations done only in Launchpad.
+        # Get number of translations done only in Ubuntu.
         untranslated = self.getPOTMsgSetUntranslated().count()
         translated = total - untranslated
         rosetta = translated - current
 
-        # Get number of unreviewed translations in Launchpad.
+        # Get number of unreviewed translations in Ubuntu.
         unreviewed = self.getPOTMsgSetWithNewSuggestions().count()
 
         self.currentcount = current
@@ -1396,7 +1396,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.emptySelectResults()
 
-    def getPOTMsgSetChangedInLaunchpad(self):
+    def getPOTMsgSetChangedInUbuntu(self):
         """See `IPOFile`."""
         return self.emptySelectResults()
 
