@@ -97,5 +97,5 @@ class ISourcePackageRecipeSource(Interface):
     """
 
     def new(registrant, owner, distroseries, sourcepackagename, name,
-            builder_recipe):
+            builder_recipe, description):
         """Create an `ISourcePackageRecipe`."""
