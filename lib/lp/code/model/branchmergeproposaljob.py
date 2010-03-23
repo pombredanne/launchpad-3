@@ -266,15 +266,6 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
 
-    @staticmethod
-    def _findRevisions(bzr_source, bzr_target):
-        """Return the revisions to use for a review diff."""
-        source_revision = bzr_source.last_revision()
-        target_revision = bzr_target.last_revision()
-        graph = bzr_target.repository.get_graph(bzr_source.repository)
-        lca = graph.find_unique_lca(source_revision, target_revision)
-        return lca, source_revision
-
     def getOopsRecipients(self):
         return [self.branch_merge_proposal.registrant.preferredemail.email]
 
