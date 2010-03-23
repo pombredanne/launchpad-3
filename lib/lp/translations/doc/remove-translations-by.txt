@@ -21,7 +21,7 @@ In this example, we have a template with Dutch and German translations.
     ...     """Set text to be a translation for message in pofile."""
     ...     return message.updateTranslation(
     ...         pofile, pofile.potemplate.owner, {0: text},
-    ...         is_imported=False,
+    ...         is_current_upstream=False,
     ...         lock_timestamp=datetime.now(timezone('UTC')))
 
     >>> def print_pofile_contents(pofile):
@@ -57,7 +57,7 @@ criteria).
     ...     message, nl_pofile, "Maar dan in het Nederlands.")
     >>> nl_message.is_current_ubuntu
     True
-    >>> nl_message.is_imported
+    >>> nl_message.is_current_upstream
     False
     >>> print nl_message.potmsgset.msgid_singular.msgid
     My goose is undercooked.
