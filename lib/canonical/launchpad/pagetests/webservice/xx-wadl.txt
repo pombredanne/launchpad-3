@@ -79,8 +79,7 @@ present.
     True
 
 If we retrieve the WADL for the '1.0' version of the web service,
-we'll get a document keyed to the '1.0' version. The '1.0' version
-will be deprecated along with the Lucid release of Ubuntu.
+we'll get a document keyed to the '1.0' version.
 
     >>> wadl_10 = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml', api_version='1.0').body
@@ -89,21 +88,10 @@ will be deprecated along with the Lucid release of Ubuntu.
     >>> 'http://api.launchpad.dev/1.0/' in wadl_10
     True
 
-If we retrieve the WADL for the 'beta' version of the web service,
-we'll get a document keyed to the 'beta' version. The '1.0' version
-will be deprecated along with the Karmic release of Ubuntu.
-
-    >>> wadl_beta = webservice.get(
-    ...     '/', 'application/vd.sun.wadl+xml', api_version='beta').body
-    >>> wadl_beta = wadl_beta.decode('UTF-8')
-
-    >>> 'http://api.launchpad.dev/beta/' in wadl_beta
-    True
-
-All of these documents have been cached as they were generated:
+All of these documents were cached as they were generated:
 
     >>> sorted(WebServiceApplication.cached_wadl.keys())
-    [u'1.0', u'beta', u'devel']
+    [u'1.0', u'devel']
 
 Finally, restore the cache so that other tests will have a clean
 slate.
