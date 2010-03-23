@@ -11,7 +11,6 @@ __all__ = [
 
 import gettextpo
 import datetime
-import os
 import posixpath
 import pytz
 from zope.component import getUtility
@@ -744,10 +743,11 @@ class POFileImporter(FileImporter):
                 self.pofile.canEditTranslations(
                     self.translation_import_queue_entry.importer))
 
+        from_upstream = self.translation_import_queue_entry.from_upstream
         self.pofile_in_db = (
             ExistingPOFileInDatabase(
                 self.pofile,
-                is_imported=self.translation_import_queue_entry.from_upstream))
+                is_imported=from_upstream))
 
     def _getPersonByEmail(self, email, name=None):
         """Return the person for given email.
