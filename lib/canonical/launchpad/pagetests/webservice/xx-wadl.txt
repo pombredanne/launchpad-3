@@ -5,36 +5,74 @@ internally: one WADL file for every version of the web service.
 Because the WADL only changes when the Launchpad software changes,
 these documents are cached to files.
 
-Let's retrieve one of those files now.
-
-    >>> cached_wadl = webservice.get(
-    ...     '/', 'application/vd.sun.wadl+xml', api_version='devel').body
-
-    >>> cached_wadl = cached_wadl.decode('UTF-8')
-    >>> 'http://api.launchpad.dev/devel/' in cached_wadl
-    True
-
-To look at the original documents, we need to deactivate the
-cache. Simply clearing it out will just cause it to be filled up
-again.
+This test shows how the cache works. It starts off empty.
 
     >>> from canonical.launchpad.systemhomes import WebServiceApplication
-    >>> old_wadl_cache = WebServiceApplication.cached_wadl
-    >>> WebServiceApplication.cached_wadl = None
+    >>> WebServiceApplication.cached_wadl
+    {}
+
+If WADL is present in a certain file on disk--the filename depends on
+the Launchpad configuration and the web service version--it will be
+loaded from disk and not generated from scratch. But the testrunner
+does not have any WADL files written to disk.
+
+    >>> import os
+    >>> wadl_filename = WebServiceApplication.cachedWADLPath(
+    ...     'testrunner', 'devel')
+    >>> os.path.exists(wadl_filename)
+    False
+
+Let's write some fake WADL to disk.
+
+    >>> fd = open(wadl_filename, "w")
+    >>> fd.write("Some fake WADL.")
+    >>> fd.close()
+
+When we request the WADL for version "devel", the fake WADL is loaded
+from disk.
+
+    >>> print webservice.get(
+    ...     '/', 'application/vd.sun.wadl+xml', api_version='devel').body
+    Some fake WADL.
+
+The fake WADL is now present in the cache.
+
+    >>> WebServiceApplication.cached_wadl
+    {u'devel': u'Some fake WADL.'}
+
+Change the cached value, and we change the document served.
+
+    >>> WebServiceApplication.cached_wadl['devel'] = "More fake WADL."
+
+    >>> print webservice.get(
+    ...     '/', 'application/vd.sun.wadl+xml', api_version='devel').body
+    More fake WADL.
+
+If there's no value in the cache and no cached file on disk, the WADL
+is generated from scratch.
+
+    >>> WebServiceApplication.cached_wadl = {}
+    >>> os.remove(wadl_filename)
 
     >>> wadl = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml', api_version='devel').body
     >>> wadl = wadl.decode('UTF-8')
 
-The uncached WADL is very similar to the cached WADL we retrieved
-earlier. (It may not be identical because some of the stanzas show up
-in random order.)
+Unlike the test strings we used earlier, this is a valid WADL file.
 
-    >>> len(wadl) == len(cached_wadl)
+    >>> from lazr.restful import WADL_SCHEMA_FILE
+    >>> from canonical.lazr.xml import XMLValidator
+    >>> wadl_schema = XMLValidator(WADL_SCHEMA_FILE)
+
+    # We need to replace the nbsp entity, because the validator
+    # doesn't support embedded definition.
+    >>> wadl_schema.validate(
+    ...     wadl.replace('&nbsp;', '&#160;').encode('UTF-8'))
     True
 
 The WADL we received is keyed to the 'devel' version of the web
-service. This version will always be present.
+service. The URL to this version's service root will always be
+present.
 
     >>> 'http://api.launchpad.dev/devel/' in wadl
     True
@@ -61,20 +99,11 @@ will be deprecated along with the Karmic release of Ubuntu.
     >>> 'http://api.launchpad.dev/beta/' in wadl_beta
     True
 
-We don't need to check the documents as they're generated, so we'll
-reinstate the cache. This way, other tests will have a clean slate.
+All of these documents have been cached as they were generated:
 
-    >>> WebServiceApplication.cached_wadl = old_wadl_cache
+    >>> sorted(WebServiceApplication.cached_wadl.keys())
+    [u'1.0', u'beta', u'devel']
 
-Like all lazr.restful applications, Launchpad's web service generates
-valid WADL.
+Clear the cache so that other tests will have a clean slate.
 
-    >>> from lazr.restful import WADL_SCHEMA_FILE
-    >>> from canonical.lazr.xml import XMLValidator
-    >>> wadl_schema = XMLValidator(WADL_SCHEMA_FILE)
-
-    # We need to replace the nbsp entity, because the validator
-    # doesn't support embedded definition.
-    >>> wadl_schema.validate(
-    ...     wadl.replace('&nbsp;', '&#160;').encode('UTF-8'))
-    True
+    >>> WebServiceApplication.cached_wadl = {}
