@@ -489,6 +489,7 @@ class BugWatchUpdater(object):
                 for bug_watch in bug_watches_to_update:
                     bug_watch.last_error_type = error_type
                     bug_watch.lastchecked = UTC_NOW
+                    bug_watch.next_check = None
 
                 message = (
                     "ExternalBugtracker for BugTrackerType '%s' is not "
@@ -728,6 +729,7 @@ class BugWatchUpdater(object):
             for bug_watch_id in bug_watch_ids:
                 bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
                 bugwatch.lastchecked = UTC_NOW
+                bugwatch.next_check = None
                 bugwatch.last_error_type = errortype
             self.txn.commit()
             raise
@@ -758,6 +760,7 @@ class BugWatchUpdater(object):
             for bug_watch_id in bug_watch_ids:
                 bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
                 bugwatch.lastchecked = UTC_NOW
+                bugwatch.next_check = None
                 bugwatch.last_error_type = errortype
             self.txn.commit()
             raise
@@ -811,6 +814,7 @@ class BugWatchUpdater(object):
 
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
+                bug_watch.next_check = None
             if remote_bug_id in unmodified_remote_ids:
                 continue
 
@@ -905,6 +909,7 @@ class BugWatchUpdater(object):
                 errortype = get_bugwatcherrortype_for_error(error)
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
+                    bug_watch.next_check = None
                     bug_watch.last_error_type = errortype
                     bug_watch.addActivity(result=errortype, oops_id=oops_id)
                 # We need to commit the transaction, in case the next
