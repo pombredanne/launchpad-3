@@ -34,7 +34,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             displayname='Secret Squirrel')
         return self.factory.makeSourcePackageRecipe(
-            None, chef, distroseries, None, u'Cake Recipe', cake_branch)
+            None, chef, distroseries, None, u'cake_recipe', cake_branch)
 
     def getMainText(self, recipe):
         browser = self.getUserBrowser(canonical_url(recipe))
@@ -51,14 +51,14 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             Branches
             Description
             This recipe .*changes.
-            Recipe Information
+            Recipe information
             Owner:
             Master Chef
             Base branch:
             lp://dev/~chef/chocolate/cake
             Debian version:
             1.0
-            Distros:
+            Distribution series:
             Secret Squirrel
             Build records
             Successful build.on 2010-03-16
@@ -66,7 +66,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             # bzr-builder format 0.2 deb-version 1.0
             lp://dev/~chef/chocolate/cake"""), re.S)
         main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), main_text)
+        self.assertTrue(pattern.search(main_text), repr(main_text))
 
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()

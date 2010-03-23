@@ -44,25 +44,10 @@ class SourcePackageRecipeBuildView(LaunchpadView):
     @property
     def status(self):
         """A human-friendly status string."""
-        description = {
-            BuildStatus.NEEDSBUILD: 'Pending build',
-            BuildStatus.FULLYBUILT: 'Successful build',
-            BuildStatus.FAILEDTOBUILD: 'Failed to build',
-            BuildStatus.MANUALDEPWAIT:
-                'Could not build because of missing dependencies',
-            BuildStatus.CHROOTWAIT:
-                'Could not build because of chroot issues',
-            BuildStatus.SUPERSEDED:
-                'Could not build because source package was superseded',
-            BuildStatus.BUILDING:
-                'Currently building',
-            BuildStatus.FAILEDTOUPLOAD:
-                'Could not be uploaded correctly',
-        }
         if self.context.buildstate == BuildStatus.NEEDSBUILD:
             if self.eta is None:
                 return 'No suitable builders'
-        return description[self.context.buildstate]
+        return self.context.buildstate.title
 
     @property
     def eta(self):

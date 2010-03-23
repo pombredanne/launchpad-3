@@ -31,7 +31,7 @@
     <div class="yui-g">
       <div class="yui-u first">
         <div class="portlet">
-          <h2>Recipe Information</h2>
+          <h2>Recipe information</h2>
           <div class="two-column-list">
             <dl id="owner">
               <dt>Owner:</dt>
@@ -46,7 +46,7 @@
               <dd tal:content="context/deb_version_template" />
             </dl>
             <dl id="distros">
-              <dt>Distros:</dt>
+              <dt>Distribution series:</dt>
               <dd>
                 <ul>
                   <li tal:content="structure context/distroseries/fmt:link" />
