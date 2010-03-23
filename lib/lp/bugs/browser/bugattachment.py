@@ -40,9 +40,19 @@ class BugAttachmentContentCheck:
     """
 
     def guessContentType(self, filename, file_content):
-        """Guess the content type a file with the given anme and content."""
+        """Guess the content type a file with the given name and content."""
         guessed_type, encoding = guess_content_type(
             name=filename, body=file_content)
+        # Zope's guess_content_type() doesn't consider all the factors
+        # we want considered.  So after we get its answer, we probe a
+        # little further... We may want to look at the encoding too.
+        # We could even look at the file content, but at that point
+        # we'd be basically reimplementing parts of 'patch', and it
+        # may not be necessary.
+        if (guessed_type == 'text/plain'
+            and (filename.endswith('.debdiff')
+                 or filename.endswith('.diff'))):
+            guessed_type = 'text/x-diff'
         return guessed_type
 
     def attachmentTypeConsistentWithContentType(
