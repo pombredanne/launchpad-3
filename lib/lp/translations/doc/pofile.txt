@@ -1195,7 +1195,7 @@ is updated.
     >>> print current.translations
     [u'Happy translator']
 
-If we submit non-upstream translation, it's refused.
+If we submit non-upstream translation, it's rejected.
 
     >>> no_credits = potmsgset.updateTranslation(
     ...     alsa_translation, alsa_translation.owner,

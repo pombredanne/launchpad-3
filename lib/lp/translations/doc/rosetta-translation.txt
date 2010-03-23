@@ -105,7 +105,7 @@ Make sure that the new submission is in fact from Pa.
     >>> upstream_message.submitter == Pa
     True
 
-Now let's test that this has become both active and from upstream.
+This is marked as current in both Ubuntu and upstream.
 
     >>> upstream_message.msgstr0.translation == u'bar'
     True
@@ -114,8 +114,8 @@ Now let's test that this has become both active and from upstream.
     ...     template, spanish) == upstream_message
     True
 
-Excellent. This shows that the code to make a new upstream translation
-active as soon as we see it is working.
+Excellent. This shows that activating a new upstream translation upon
+detection works.
 
 Now, let's add a translation from Pb, through the web.
 
@@ -253,7 +253,7 @@ This new submission should not be active:
     ...  noneditor_submission)
     False
 
-And it should definitely not be from upstream:
+And it should definitely not be current upstream:
 
     >>> (potmsgset.getImportedTranslationMessage(template, spanish) ==
     ...  noneditor_submission)

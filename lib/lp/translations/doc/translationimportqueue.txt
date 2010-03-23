@@ -149,9 +149,9 @@ The status change updates date_status_changed as well.
 
 Do the new upload. It will be an upstream upload.
 
-    >>> upstream = True
+    >>> from_upstream = True
     >>> po_sr_entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', upstream, rosetta_experts,
+    ...     u'po/sr.po', 'foo', from_upstream, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
 

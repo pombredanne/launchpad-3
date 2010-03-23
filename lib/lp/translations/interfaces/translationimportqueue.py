@@ -230,7 +230,7 @@ class ITranslationImportQueueEntry(Interface):
         title=_("This import comes from an upstream project."),
         description=_(
             "If checked, the translations in this import will be marked "
-            "as is_upstream."),
+            "as is_current_upstream."),
         required=True,
         default=False)
 

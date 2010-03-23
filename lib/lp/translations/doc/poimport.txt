@@ -325,9 +325,9 @@ set in the PO template.
 
 And should be accepted by our validator.
 
-    >>> from_upstream = message.potmsgset.getImportedTranslationMessage(
+    >>> upstream_message = message.potmsgset.getImportedTranslationMessage(
     ...     pofile.potemplate, pofile.language)
-    >>> from_upstream.validation_status == TranslationValidationStatus.OK
+    >>> upstream_message.validation_status == TranslationValidationStatus.OK
     True
 
 Fuzzy translations are ignored.

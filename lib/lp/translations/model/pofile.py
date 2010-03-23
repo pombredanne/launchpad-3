@@ -807,7 +807,7 @@ class POFile(SQLBase, POFileMixIn):
     def getPOTMsgSetChangedInLaunchpad(self):
         """See `IPOFile`."""
         # POT set has been changed in Launchpad if it contains active
-        # translation which didn't come from an upstrem package
+        # translation which didn't come from an upstream package
         # (iow, it's different from an upstream translation: this only
         # lists translations which have actually changed in LP, not
         # translations which are 'new' and only exist in LP).
@@ -1050,8 +1050,8 @@ class POFile(SQLBase, POFileMixIn):
             errors, warnings = (
                 translation_importer.importFile(entry_to_import, logger))
         except NotExportedFromLaunchpad:
-            # We got a file that was not exported from Rosetta as a
-            # non-upstream upload. We log it and select the email template.
+            # We got a file that was neither an upstream upload nor exported
+            # from Launchpad. We log it and select the email template.
             if logger:
                 logger.info(
                     'Error importing %s' % self.title, exc_info=1)

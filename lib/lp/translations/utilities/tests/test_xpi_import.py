@@ -256,8 +256,7 @@ class XpiTestCase(unittest.TestCase):
         # It's a normal message that lacks any comment.
         self.assertEquals(potmsgset.singular_text, u'FooZilla!')
 
-        # With this first import, upstream and active texts must
-        # match.
+        # With this first import, upstream and Ubuntu translations must match.
         self.assertEquals(
             translation.translations,
             potmsgset.getImportedTranslationMessage(
