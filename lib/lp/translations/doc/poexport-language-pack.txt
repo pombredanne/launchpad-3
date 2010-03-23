@@ -166,9 +166,9 @@ Attach the en-US.xpi (the template) file.
 
     >>> en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
-    >>> published = True
+    >>> from_upstream = True
     >>> template_entry = translation_import_queue.addOrUpdateEntry(
-    ...     firefox_template.path, en_US_xpi.read(), published,
+    ...     firefox_template.path, en_US_xpi.read(), from_upstream,
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template)
 
@@ -177,7 +177,7 @@ Attach the es.xpi file (the translation) file.
     >>> es_xpi = get_en_US_xpi_file_to_import('en-US')
     >>> firefox_es_translation = firefox_template.newPOFile('es')
     >>> translation_entry = translation_import_queue.addOrUpdateEntry(
-    ...     'es.xpi', es_xpi.read(), published,
+    ...     'es.xpi', es_xpi.read(), from_upstream,
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template,
     ...     pofile=firefox_es_translation)

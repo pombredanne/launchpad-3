@@ -43,7 +43,7 @@ msgid "%s"
 msgstr ""
 '''
 TEST_TEMPLATE_EXPORTED = TEST_TEMPLATE % (TEST_EXPORT_DATE, TEST_MSGID)
-TEST_TEMPLATE_PUBLISHED = TEST_TEMPLATE % ("", TEST_MSGID)
+TEST_TEMPLATE_UPSTREAM = TEST_TEMPLATE % ("", TEST_MSGID)
 
 TEST_TRANSLATION_FILE = r'''
 msgid ""
@@ -57,7 +57,7 @@ msgstr "%s"
 '''
 TEST_TRANSLATION_EXPORTED = TEST_TRANSLATION_FILE % (
     TEST_EXPORT_DATE, TEST_MSGID, TEST_MSGSTR)
-TEST_TRANSLATION_PUBLISHED = TEST_TRANSLATION_FILE % (
+TEST_TRANSLATION_UPSTREAM = TEST_TRANSLATION_FILE % (
     "", TEST_MSGID, TEST_MSGSTR)
 # This is needed for test_FileImporter_importFile_conflict and differs from
 # the others in export timestamp and msgstr content.
@@ -143,16 +143,16 @@ class FileImporterTestCase(TestCaseWithFactory):
         return self._createFileImporters(
             TEST_TEMPLATE_EXPORTED, TEST_TRANSLATION_EXPORTED, False)
 
-    def _createImporterForPublishedEntries(self):
+    def _createImporterForUpstreamEntries(self):
         """Set up entries that where not exported from LP, i.e. that do not
         contain the 'X-Launchpad-Export-Date:' header."""
         return self._createFileImporters(
-            TEST_TEMPLATE_PUBLISHED, TEST_TRANSLATION_PUBLISHED, True)
+            TEST_TEMPLATE_UPSTREAM, TEST_TRANSLATION_UPSTREAM, True)
 
     def _createFileImporter(self):
         """Create just an (incomplete) FileImporter for basic tests.
         The importer is based on a template.
-        These tests don't care about Imported or Published."""
+        These tests don't care about Imported or Upstream."""
         potemplate = self.factory.makePOTemplate()
         template_entry = self.translation_import_queue.addOrUpdateEntry(
             potemplate.path, TEST_TEMPLATE_EXPORTED,
@@ -217,14 +217,14 @@ class FileImporterTestCase(TestCaseWithFactory):
     def test_FileImporter_storeTranslationsInDatabase_privileges(self):
         """Test `storeTranslationsInDatabase` privileges."""
 
-        # On a published import, unprivileged person can still store
+        # On an upstream import, unprivileged person can still store
         # translations if they were able to add an entry to the queue.
         unprivileged_person = self.factory.makePerson()
 
         # Steps:
         #  * Get a POT importer and import a POT file.
         #  * Get a POTMsgSet in the imported template.
-        #  * Create a published PO file importer with unprivileged
+        #  * Create an upstream PO file importer with unprivileged
         #    person as the importer.
         #  * Make sure this person lacks editing permissions.
         #  * Try storing translations and watch it succeed.
@@ -333,10 +333,10 @@ class FileImporterTestCase(TestCaseWithFactory):
 
     def test_FileImporter_importFile_ok(self):
         # Test correct import operation for both
-        # exported and published files.
+        # exported and upstream files.
         importers = (
                      self._createImporterForExportedEntries(),
-                     self._createImporterForPublishedEntries()
+                     self._createImporterForUpstreamEntries()
                      )
         for (pot_importer, po_importer) in importers:
             # Run the import and see if PotMsgSet and TranslationMessage
@@ -465,7 +465,7 @@ class FileImporterTestCase(TestCaseWithFactory):
         # A Last-Translator with invalid email address does not upset
         # the importer.  It just picks the uploader as the last
         # translator.
-        pot_content = TEST_TEMPLATE_PUBLISHED
+        pot_content = TEST_TEMPLATE_UPSTREAM
         po_content = """
             msgid ""
             msgstr ""
@@ -514,14 +514,14 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         self.assertRaises(OutdatedTranslationError, POFileImporter,
             queue_entry, GettextPOImporter(), None )
 
-    def test_not_raises_OutdatedTranslationError_on_published_uploads(self):
+    def test_not_raises_OutdatedTranslationError_on_upstream_uploads(self):
         queue_entry = self._make_queue_entry(True)
         try:
             importer = POFileImporter(queue_entry, GettextPOImporter(), None )
         except OutdatedTranslationError:
             self.fail("OutdatedTranslationError raised.")
 
-    def test_old_published_upload_not_changes_header(self):
+    def test_old_upstream_upload_not_changes_header(self):
         queue_entry = self._make_queue_entry(True)
         pofile = queue_entry.pofile
         old_raw_header = pofile.header

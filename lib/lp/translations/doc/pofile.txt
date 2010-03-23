@@ -792,7 +792,7 @@ Also, we created it without translations.
 == getPOTMsgSetChangedInLaunchpad ==
 
 This method returns only those POTMsgSet's which contain translation
-submissions through Launchpad which change existing published translations.
+submissions through Launchpad which change existing upstream translations.
 
 Lets get Evolution Spanish translation in distribution Hoary.
 
@@ -833,7 +833,7 @@ Launchpad/updatesCount):
 
 We make sure that submissions on untranslated strings are not considered
 'changed in Launchpad', since this method is mainly designed to help
-translators revert translations to published translations.
+translators revert translations to upstream translations.
 
 Lets get a single untranslated POTMsgSet.
 
@@ -1162,7 +1162,7 @@ If the passed person is None, the call fails with an assertion.
 == Translation credits ==
 
 Translation credits are handled automatically, and cannot be
-translated in any other way except through a published upload.
+translated in any other way except through an upload from upstream.
 
 Lets get Spanish translation for alsa-utils.
 
@@ -1183,7 +1183,7 @@ is created with a dummy translation
     [u'This is a dummy translation so that
     the credits are counted as translated.']
 
-If we submit a published translation, the translation for this message
+If we submit an upstream translation, the translation for this message
 is updated.
 
     >>> new_credits = potmsgset.updateTranslation(
@@ -1195,7 +1195,7 @@ is updated.
     >>> print current.translations
     [u'Happy translator']
 
-If we submit non-published translation, it's refused.
+If we submit non-upstream translation, it's refused.
 
     >>> no_credits = potmsgset.updateTranslation(
     ...     alsa_translation, alsa_translation.owner,

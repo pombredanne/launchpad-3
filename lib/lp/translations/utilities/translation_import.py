@@ -119,7 +119,7 @@ class ExistingPOFileInDatabase:
         # in the database, but not in the import, will be expired.
         self.seen = set()
 
-        # Contains published but inactive translations.
+        # Contains upstream but inactive translations.
         self.imported = {}
 
         # Pre-fill self.messages and self.imported with data.
@@ -716,7 +716,7 @@ class POFileImporter(FileImporter):
             # while the offline work was done.
             raise NotExportedFromLaunchpad
 
-        # Update the header with the new one. If this is an old published
+        # Update the header with the new one. If this is an old upstream
         # file, the new header has been set to None and no update will occur.
         self.pofile.updateHeader(self.translation_file.header)
 

@@ -26,7 +26,7 @@ class IRosettaStats(Interface):
         """Return the number of current IPOMessageSets inside this object."""
 
     def currentCount(language=None):
-        """Return the number of msgsets published and matched to a potemplate.
+        """Return the number of upstream msgsets and matched to a potemplate.
 
         That's the msgsets for this object that have a complete, non-fuzzy
         translation in its PO file for this language when we last parsed it.
