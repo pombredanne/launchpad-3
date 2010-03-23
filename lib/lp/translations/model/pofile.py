@@ -1159,9 +1159,9 @@ class POFile(SQLBase, POFileMixIn):
             entry_to_import.setStatus(RosettaImportStatus.FAILED,
                                       rosetta_experts)
         else:
-            if (entry_to_import.is_published and
+            if (entry_to_import.from_upstream and
                 not needs_notification_for_imported):
-                # If it's a published upload (i.e. from a package or bzr
+                # If it's an upstream upload (i.e. from a package or bzr
                 # branch), do not send success notifications unless they
                 # are needed.
                 subject = None
@@ -1173,7 +1173,7 @@ class POFile(SQLBase, POFileMixIn):
             # comes from upstream.
             celebs = getUtility(ILaunchpadCelebrities)
             rosetta_experts = celebs.rosetta_experts
-            if (entry_to_import.is_published and
+            if (entry_to_import.from_upstream and
                 entry_to_import.importer.id != rosetta_experts.id):
                 entry_to_import.importer.assignKarma(
                     'translationimportupstream',

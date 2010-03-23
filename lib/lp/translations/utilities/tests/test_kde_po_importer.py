@@ -81,7 +81,7 @@ class KdePOImporterTestCase(unittest.TestCase):
         # Add another one, a translation file.
         pofile_path = 'po/sr.po'
         translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            pofile_path, test_kde_translation_file, is_published, importer,
+            pofile_path, test_kde_translation_file, from_upstream, importer,
             productseries=firefox_trunk)
 
         # Add a non-KDE PO file which gets recognized as regular PO file
