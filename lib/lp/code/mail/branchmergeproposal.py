@@ -3,7 +3,6 @@
 
 """Email notifications related to branch merge proposals."""
 
-
 __metaclass__ = type
 
 
