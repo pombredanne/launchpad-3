@@ -456,10 +456,6 @@ class BugWatchUpdater(object):
                 (watches_left, bug_tracker_name))
             has_watches_to_update = watches_left > 0
 
-    def _getBugWatch(self, bug_watch_id):
-        """Return the bug watch with id `bug_watch_id`."""
-        return getUtility(IBugWatchSet).get(bug_watch_id)
-
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
         with self.transaction:
@@ -585,15 +581,7 @@ class BugWatchUpdater(object):
 
         return launchpad_status
 
-    def _getOldestLastChecked(self, bug_watches):
-        """Return the oldest lastchecked attribute of the bug watches."""
-        if len(bug_watches) == 0:
-            return None
-        bug_watch_lastchecked_times = sorted(
-            bug_watch.lastchecked
-            for bug_watch in bug_watches)
-        return bug_watch_lastchecked_times[0]
-
+    @with_transaction
     def _getRemoteIdsToCheck(self, remotesystem, bug_watches,
                              server_time=None, now=None, batch_size=None):
         """Return the remote bug IDs to check for a set of bug watches.
@@ -636,16 +624,19 @@ class BugWatchUpdater(object):
             # for this bug tracker.
             batch_size = None
 
-        old_bug_watches = [
-            bug_watch for bug_watch in bug_watches
-            if bug_watch.lastchecked is not None]
-        oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
-        if oldest_lastchecked is not None:
-            # Adjust for possible time skew, and some more, just to be safe.
-            oldest_lastchecked -= (
-                self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
-
         with self.transaction:
+            old_bug_watches = set(
+                bug_watch for bug_watch in bug_watches
+                if bug_watch.lastchecked is not None)
+            if len(old_bug_watches) == 0:
+                oldest_lastchecked = None
+            else:
+                oldest_lastchecked = min(
+                    bug_watch.lastchecked for bug_watch in old_bug_watches)
+                # Adjust for possible time skew, and some more, just to be safe.
+                oldest_lastchecked -= (
+                    self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
+            # Collate the remote IDs.
             remote_old_ids = sorted(
                 set(bug_watch.remotebug for bug_watch in old_bug_watches))
             remote_new_ids = sorted(
@@ -679,10 +670,10 @@ class BugWatchUpdater(object):
         # unpushed comments.
         remote_ids_with_comments = sorted(
             set(bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch.unpushed_comments.any() is not None))
+                if bug_watch.unpushed_comments))
 
-        remote_ids_to_check = sorted(
-            set(remote_ids_with_comments)) + sorted(remote_new_ids)
+        remote_ids_to_check = (
+            remote_ids_with_comments + remote_new_ids)
 
         # We remove any IDs that are already in remote_ids_to_check from
         # old_ids_to_check, since we're already going to be checking
