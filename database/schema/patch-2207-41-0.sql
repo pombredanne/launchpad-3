@@ -26,7 +26,7 @@ alter table binarypackagepublishinghistory drop constraint securebinarypackagepu
 ALTER TABLE ONLY binarypackagepublishinghistory
     ADD CONSTRAINT securebinarypackagepublishinghistory__archive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
-alter table sourcepackagepublishinghistory drop constraint sourcepackagepublishinghistory__archive__fk;
+alter table sourcepackagepublishinghistory drop constraint securesourcepackagepublishinghistory__archive__fk;
 alter table sourcepackagepublishinghistory ADD CONSTRAINT sourcepackagepublishinghistory__archive__fk FOREIGN KEY (archive) REFERENCES archive(id) on delete cascade;
 
 alter table binarypackagerelease drop constraint binarypackagerelease_build_fk;
