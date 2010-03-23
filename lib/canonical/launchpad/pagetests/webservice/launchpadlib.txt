@@ -1,15 +1,11 @@
-Pagetests that use launchpadlib
+Using launchpadlib in pagetests
 ===============================
 
 As an alternative to crafting HTTP requests with the 'webservice'
-object, you can write pagetests using launchpadlib.
-
-  >>> from launchpadlib.testing.helpers import salgado_with_full_permissions
-  >>> from launchpadlib.launchpad import Launchpad
-
-  >>> launchpad = Launchpad.login(
-  ...       'launchpad-library', 'salgado-change-anything', 'test',
-  ...       service_root='http://api.launchpad.dev/', version="devel")
+object, you can write pagetests using launchpadlib. The 'launchpad'
+variable contains a launchpadlib Launchpad object that's
+pre-authenticated with salgado's permissions. Anything you can do with
+'webservice', you can do with 'launchpad'.
 
   >>> print launchpad.me.name
   salgado

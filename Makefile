@@ -30,7 +30,6 @@ BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
 WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
-WADL_TESTRUNNER_TEMPLATE = $(APIDOC_DIR).tmp/wadl-testrunner-%(version)s.xml
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -62,7 +61,7 @@ hosted_branches: $(PY)
 
 $(API_INDEX): $(BZR_VERSION_INFO)
 	mkdir $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)" "${WADL_TESTRUNNER_TEMPLATE}"
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
 	rmdir $(APIDOC_DIR).tmp
 
@@ -324,11 +323,7 @@ clean: clean_js
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml \
-	    $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak
 	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
-	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak \
-	    $(APIDOC_DIR)/wadl-testrunner-devel.xml
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py

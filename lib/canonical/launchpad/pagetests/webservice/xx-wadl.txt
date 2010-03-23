@@ -5,11 +5,12 @@ internally: one WADL file for every version of the web service.
 Because the WADL only changes when the Launchpad software changes,
 these documents are cached to files.
 
-This test shows how the cache works. It starts off empty.
+This test shows how the cache works. We'll start by temporarily
+clearing the cache.
 
     >>> from canonical.launchpad.systemhomes import WebServiceApplication
-    >>> WebServiceApplication.cached_wadl
-    {}
+    >>> old_cached_wadl = WebServiceApplication.cached_wadl
+    >>> WebServiceApplication.cached_wadl = {}
 
 If WADL is present in a certain file on disk--the filename depends on
 the Launchpad configuration and the web service version--it will be
@@ -104,6 +105,7 @@ All of these documents have been cached as they were generated:
     >>> sorted(WebServiceApplication.cached_wadl.keys())
     [u'1.0', u'beta', u'devel']
 
-Clear the cache so that other tests will have a clean slate.
+Finally, restore the cache so that other tests will have a clean
+slate.
 
-    >>> WebServiceApplication.cached_wadl = {}
+    >>> WebServiceApplication.cached_wadl = old_cached_wadl
