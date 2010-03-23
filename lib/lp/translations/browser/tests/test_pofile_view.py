@@ -59,7 +59,7 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.factory.makeTranslationMessage(
             self.pofile, self.new_suggestion, suggestion=True,
             date_updated=self.now())
-        # An imported that was changed in Ubuntu.
+        # An upstream that was changed in Ubuntu.
         self.changed = self.factory.makePOTMsgSet(
             self.potemplate, sequence=4)
         self.factory.makeTranslationMessage(
