@@ -30,7 +30,11 @@ class TestDscFile(TestCase):
         self.dsc_file = self.MockDSCFile()
 
     def testBadDebianCopyright(self):
-        """Test that a symlink instead of a real file will fail."""
+        """Test that a symlink as debian/copyright will fail.
+
+        This is a security check, to make sure its not possible to use a
+        dangling symlink in an attempt to try and access files on the system
+        processing the source packages."""
         os.symlink("/etc/passwd", self.copyright_path)
         errors = list(findCopyright(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
@@ -56,10 +60,11 @@ class TestDscFile(TestCase):
         self.assertEqual(self.dsc_file.copyright, copyright)
 
     def testBadDebianChangelog(self):
-        """Test that a symlink instead of a real file will fail.
+        """Test that a symlink as debian/changelog will fail.
 
-        This prevents a symlink in the uploaded package to be used from
-        grabbing files in the system processing the source package."""
+        This is a security check, to make sure its not possible to use a
+        dangling symlink in an attempt to try and access files on the system
+        processing the source packages."""
         os.symlink("/etc/passwd", self.changelog_path)
         errors = list(findAndMoveChangelog(
             self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
@@ -72,10 +77,7 @@ class TestDscFile(TestCase):
         self.failUnless(isinstance(errors[0], UploadError))
 
     def testGoodDebianChangelog(self):
-        """Test that a proper changelog file will be accepted
-
-        This prevents a symlink in the uploaded package to be used from
-        grabbing files in the system processing the source package."""
+        """Test that a proper changelog file will be accepted"""
         changelog = "changelog for dummies"
         file = open(self.changelog_path, "w")
         file.write(changelog)
@@ -90,10 +92,16 @@ class TestDscFile(TestCase):
 
 
     def testOversizedFile(self):
-        """Test that a file larger than 10MiB will fail."""
+        """Test that a file larger than 10MiB will fail.
 
+        This check exists to prevent a possible denial of service attack
+        against launchpad by overloaded the database or librarian with massive
+        changelog and copyright files. 10MiB was set as a sane lower limit
+        which is incredibly unlikely to be hit by normal files in the
+        archive"""
         dev_zero = open("/dev/zero", "r")
-        empty_file = dev_zero.read(20971520)
+        ten_MiB = 2*20 * 10
+        empty_file = dev_zero.read(ten_MiB + 1)
         dev_zero.close()
 
         file = open(self.changelog_path, "w")

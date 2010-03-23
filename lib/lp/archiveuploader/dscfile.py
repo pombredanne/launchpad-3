@@ -527,7 +527,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # XXX cprov 20070713: We should access only the expected directory
         # name (<sourcename>-<no_epoch(no_revision(version))>).
 
-        # Locate both the copyright and changelog files for later processing
+        # Locate both the copyright and changelog files for later processing.
         for error in findCopyright(self, tmpdir, self.logger):
             yield error
 
@@ -688,13 +688,14 @@ class DSCUploadedFile(NascentUploadFile):
 
 def findFile(source_dir, filename):
     """Find and return any file under source_dir
+
     :param source_file: The directory where the source was extracted
     :param source_dir: The directory where the source was extracted.
-    :param logger: A logger object for debug output.
-    :return fullpath: The full path of the file, if the file is not found.
+    :return fullpath: The full path of the file, else return None if the 
+                      file is not found.
     """
     # Instead of trying to predict the unpacked source directory name,
-    # we simply use glob to retrive everything like:
+    # we simply use glob to retrieve everything like:
     # 'tempdir/*/debian/filename'
     globpath = os.path.join(source_dir, "*", filename)
     for fullpath in glob.glob(globpath):
@@ -736,8 +737,8 @@ def findAndMoveChangelog(dsc_file, target_dir, source_dir, logger):
     """Find and move any debian/changelog.
 
     This function finds the changelog file within the source package and
-    moves it to target_dir. The changelog file is later uploaded to librarian
-    by DSCFile.storeInDatabase().
+    moves it to target_dir. The changelog file is later uploaded to the 
+    librarian by DSCFile.storeInDatabase().
 
     :param dsc_file: A DSCFile object where the copyright will be stored.
     :param target_dir: The directory where the changelog will end up.
@@ -750,7 +751,7 @@ def findAndMoveChangelog(dsc_file, target_dir, source_dir, logger):
         yield error
         return
     if changelog_file is None:
-        # Spec requires debian/changelog to always exist, bail out if it doesn't
+        # Policy requires debian/changelog to always exist.
         yield UploadError("No changelog file found.")
         return
 

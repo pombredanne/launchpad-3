@@ -1944,7 +1944,8 @@ class DistroSeriesSet:
         result_set = store.using((DistroSeries, POTemplate)).find(
             DistroSeries,
             DistroSeries.hide_all_translations == False,
-            DistroSeries.id == POTemplate.distroseriesID).config(distinct=True)
+            DistroSeries.id == POTemplate.distroseriesID)
+        result_set.config(distinct=True)
         # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
         # because ResultSet reports a wrong count() when using DISTINCT. Also
         # ResultSet does not implement __len__(), which would make it more
