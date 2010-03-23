@@ -30,7 +30,8 @@ from bzrlib.transport import (
     unregister_transport)
 
 from twisted.internet import defer
-from canonical.twistedsupport import extract_result, gatherResults
+
+from lp.services.twistedsupport import extract_result, gatherResults
 
 
 class TranslationError(BzrError):
