@@ -471,7 +471,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             self.context.path = path
             # We got a path to store as the new one for the POFile.
             pofile.setPathIfUnique(path)
-        elif self.context.is_published:
+        elif self.context.from_upstream:
             # This entry comes from upstream, which means that the path we
             # got is exactly the right one. If it's different from what
             # pofile has, that would mean that either the entry changed

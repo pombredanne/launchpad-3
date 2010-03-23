@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -118,7 +118,7 @@ class ExistingPOFileInDatabase:
         # in the database, but not in the import, will be expired.
         self.seen = set()
 
-        # Contains published but inactive translations.
+        # Contains upstream but inactive translations.
         self.upstream_messages = {}
 
         # Pre-fill self.ubuntu_messages and self.upstream_messages with data.
@@ -460,7 +460,7 @@ class FileImporter(object):
             # Do the actual import.
             translation_message = potmsgset.updateTranslation(
                 self.pofile, self.last_translator, message.translations,
-                self.translation_import_queue_entry.is_published,
+                self.translation_import_queue_entry.from_upstream,
                 self.lock_timestamp, force_edition_rights=self.is_editor)
         except TranslationConflict:
             self._addConflictError(message, potmsgset)
@@ -479,7 +479,7 @@ class FileImporter(object):
             try:
                 translation_message = potmsgset.updateTranslation(
                     self.pofile, self.last_translator, message.translations,
-                    self.translation_import_queue_entry.is_published,
+                    self.translation_import_queue_entry.from_upstream,
                     self.lock_timestamp, ignore_errors=True,
                     force_edition_rights=self.is_editor)
             except TranslationConflict:
@@ -661,7 +661,7 @@ class POTFileImporter(FileImporter):
         # Update translation_message's comments and flags.
         if translation_message is not None:
             translation_message.comment = message.comment
-            if self.translation_import_queue_entry.is_published:
+            if self.translation_import_queue_entry.from_upstream:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
 
@@ -686,8 +686,8 @@ class POFileImporter(FileImporter):
         if upload_header is not None:
             # Check whether we are importing a new version.
             if self.pofile.isTranslationRevisionDateOlder(upload_header):
-                if translation_import_queue_entry.is_published:
-                    # Published files can be older than the last import
+                if translation_import_queue_entry.from_upstream:
+                    # Upstream files can be older than the last import
                     # and still be imported. They don't update header
                     # information, though, so this is deleted here.
                     self.translation_file.header = None
@@ -709,15 +709,15 @@ class POFileImporter(FileImporter):
             self.lock_timestamp = (
                 upload_header.launchpad_export_date)
 
-        if (not self.translation_import_queue_entry.is_published and
+        if (not self.translation_import_queue_entry.from_upstream and
             self.lock_timestamp is None):
-            # We got a translation file from offline translation (not
-            # published) and it misses the export time so we don't have a
+            # We got a translation file from offline translation (not from
+            # upstream) and it misses the export time so we don't have a
             # way to figure whether someone changed the same translations
             # while the offline work was done.
             raise NotExportedFromLaunchpad
 
-        # Update the header with the new one. If this is an old published
+        # Update the header with the new one. If this is an old upstream
         # file, the new header has been set to None and no update will occur.
         self.pofile.updateHeader(self.translation_file.header)
 
@@ -731,9 +731,9 @@ class POFileImporter(FileImporter):
             self.last_translator = (
                 self.translation_import_queue_entry.importer)
 
-        if self.translation_import_queue_entry.is_published:
-            # An unprivileged user wouldn't have been able to upload a
-            # published file in the first place.  But for Soyuz uploads,
+        if self.translation_import_queue_entry.from_upstream:
+            # An unprivileged user wouldn't have been able to upload an
+            # upstream file in the first place.  But for Soyuz uploads,
             # the "importer" reflects the package upload, not the
             # translations upload.  So don't check for editing rights.
             self.is_editor = True
@@ -745,10 +745,11 @@ class POFileImporter(FileImporter):
                 self.pofile.canEditTranslations(
                     self.translation_import_queue_entry.importer))
 
+        from_upstream = self.translation_import_queue_entry.from_upstream
         self.pofile_in_db = (
             ExistingPOFileInDatabase(
                 self.pofile,
-                is_imported=self.translation_import_queue_entry.is_published))
+                is_imported=from_upstream))
 
     def _getPersonByEmail(self, email, name=None):
         """Return the person for given email.
@@ -782,7 +783,7 @@ class POFileImporter(FileImporter):
         """See FileImporter."""
         # Mark this message as seen in the import
         self.pofile_in_db.markMessageAsSeen(message)
-        if self.translation_import_queue_entry.is_published:
+        if self.translation_import_queue_entry.from_upstream:
             if self.pofile_in_db.isAlreadyTranslatedTheSameUpstream(message):
                 return
         else:
@@ -806,7 +807,7 @@ class POFileImporter(FileImporter):
         # Update translation_message's comments and flags.
         if translation_message is not None:
             translation_message.comment = message.comment
-            if self.translation_import_queue_entry.is_published:
+            if self.translation_import_queue_entry.from_upstream:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
 

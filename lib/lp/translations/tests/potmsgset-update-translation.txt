@@ -46,7 +46,7 @@ We can see that this is actually the case:
   >>> message.is_imported
   True
 
-We change the published one, and thus, the one in Launchpad will be changed
+We change the upstream one, and thus, the one in Launchpad will be changed
 too at the same time.
 
   >>> message = potmsgset.updateTranslation(
@@ -101,7 +101,7 @@ unaffected.
   >>> message.is_imported
   False
 
-Since published and active translations diverged, if we get a new
+Since upstream and active translations diverged, if we get a new
 upstream translation, the one in Launchpad will be kept untouched.
 
   >>> dummy = potmsgset.updateTranslation(

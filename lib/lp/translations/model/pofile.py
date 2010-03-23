@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0231
@@ -806,9 +806,9 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetChangedInUbuntu(self):
         """See `IPOFile`."""
-        # POT set has been changed in Ubuntu if it contains active
-        # translation which didn't come from a published package
-        # (iow, it's different from a published translation: this only
+        # POT set has been changed in Launchpad if it contains active
+        # translations which didn't come from an upstream package
+        # (iow, it's different from an upstream translation: this only
         # lists translations which have actually changed in Ubuntu, not
         # translations which are 'new' and only exist in Ubuntu).
 
@@ -1050,8 +1050,8 @@ class POFile(SQLBase, POFileMixIn):
             errors, warnings = (
                 translation_importer.importFile(entry_to_import, logger))
         except NotExportedFromLaunchpad:
-            # We got a file that was not exported from Rosetta as a non
-            # published upload. We log it and select the email template.
+            # We got a file that was neither an upstream upload nor exported
+            # from Launchpad. We log it and select the email template.
             if logger:
                 logger.info(
                     'Error importing %s' % self.title, exc_info=1)
@@ -1159,9 +1159,9 @@ class POFile(SQLBase, POFileMixIn):
             entry_to_import.setStatus(RosettaImportStatus.FAILED,
                                       rosetta_experts)
         else:
-            if (entry_to_import.is_published and
+            if (entry_to_import.from_upstream and
                 not needs_notification_for_imported):
-                # If it's a published upload (i.e. from a package or bzr
+                # If it's an upstream upload (i.e. from a package or bzr
                 # branch), do not send success notifications unless they
                 # are needed.
                 subject = None
@@ -1173,7 +1173,7 @@ class POFile(SQLBase, POFileMixIn):
             # comes from upstream.
             celebs = getUtility(ILaunchpadCelebrities)
             rosetta_experts = celebs.rosetta_experts
-            if (entry_to_import.is_published and
+            if (entry_to_import.from_upstream and
                 entry_to_import.importer.id != rosetta_experts.id):
                 entry_to_import.importer.assignKarma(
                     'translationimportupstream',

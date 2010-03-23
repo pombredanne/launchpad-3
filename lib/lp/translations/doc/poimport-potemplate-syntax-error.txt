@@ -56,9 +56,9 @@ TranslationFormatSyntaxError
     ... msgid "foo"
     ... msgstr ""
     ... '''
-    >>> published = True
+    >>> from_upstream = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, published, person,
+    ...     potemplate.path, potemplate_contents, from_upstream, person,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -117,9 +117,9 @@ And the code composed email with a notification of the error.
     ... msgid "\xa9 Yoyodine Industries"
     ... msgstr ""
     ... '''.encode('utf-8')
-    >>> published = False
+    >>> from_upstream = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, published, person,
+    ...     potemplate.path, potemplate_contents, from_upstream, person,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)

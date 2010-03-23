@@ -2,7 +2,7 @@
   Add Comments to Launchpad database. Please keep these alphabetical by
   table.
 
-     Copyright 2009 Canonical Ltd.  This software is licensed under the
+     Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
@@ -1896,7 +1896,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp whe
 COMMENT ON COLUMN TranslationImportQueueEntry.distroseries IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
-COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
+COMMENT ON COLUMN TranslationImportQueueEntry.from_upstream IS 'Notes whether this upload is from an upstream project.';
 COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
