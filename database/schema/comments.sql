@@ -319,6 +319,7 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
 COMMENT ON COLUMN BugWatch.remote_importance IS 'The importance of the bug as returned by the remote server. This will be converted into a Launchpad BugTaskImportance value.';
 COMMENT ON COLUMN BugWatch.remote_lp_bug_id IS 'The bug in Launchpad that the remote bug is pointing at. This can be different than the BugWatch.bug column, since the same remote bug can be linked from multiple bugs in Launchpad, but the remote bug can only link to a single bug in Launchpad. The main use case for this column is to avoid having to query the remote bug tracker for this information, in order to decide whether we need to give this information to the remote bug tracker.';
+COMMENT ON COLUMN BugWatch.next_check IS 'The time after which the watch should next be checked. Note that this does not denote an exact schedule for the next check since checkwatches only runs periodically.';
 
 
 -- BugWatchActivity
