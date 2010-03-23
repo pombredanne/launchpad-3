@@ -31,14 +31,14 @@
 
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferencePublic"/>
-    <require 
+    <require
         permission="launchpad.Edit"
         interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferenceEdit"/>
   </class>
   <subscriber
       for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference
            lp.code.interfaces.event.IReviewerNominatedEvent"
-      handler="lp.code.mail.branchmergeproposal.send_review_requested_notifications"/>
+      handler="lp.code.subscribers.branchmergeproposal.review_requested"/>
 
   <!-- CodeImportMachine -->
 
@@ -280,11 +280,11 @@
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lp.code.interfaces.event.INewBranchMergeProposalEvent"
-      handler="lp.code.mail.branchmergeproposal.send_merge_proposal_created_notifications"/>
+      handler="lp.code.subscribers.branchmergeproposal.merge_proposal_created"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="lp.code.mail.branchmergeproposal.send_merge_proposal_modified_notifications"/>
+      handler="lp.code.subscribers.branchmergeproposal.merge_proposal_modified"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lp.code.interfaces.event.INewBranchMergeProposalEvent"

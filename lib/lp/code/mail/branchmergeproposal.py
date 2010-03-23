@@ -6,57 +6,13 @@
 
 __metaclass__ = type
 
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.webapp import canonical_url
-from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import CodeReviewNotificationLevel
-from lp.code.interfaces.branchmergeproposal import (
-    IMergeProposalCreatedJobSource, IMergeProposalUpdatedEmailJobSource,
-    IReviewRequestedEmailJobSource)
 from lp.code.mail.branch import BranchMailer
-from lp.registry.interfaces.person import IPerson
 from lp.services.mail.basemailer import BaseMailer
-from lp.services.utils import text_delta
-
-
-def send_merge_proposal_created_notifications(merge_proposal, event):
-    """Notify branch subscribers when merge proposals are created.
-
-    This action is deferred to MergeProposalCreatedJob, so that a diff can be
-    generated first.
-    """
-    getUtility(IMergeProposalCreatedJobSource).create(merge_proposal)
-
-
-def send_merge_proposal_modified_notifications(merge_proposal, event):
-    """Notify branch subscribers when merge proposals are updated."""
-    # Check the user.
-    if event.user is None:
-        return
-    if isinstance(event.user, UnauthenticatedPrincipal):
-        from_person = None
-    else:
-        from_person = IPerson(event.user)
-    # Create a delta of the changes.  If there are no changes to report, then
-    # we're done.
-    delta = BranchMergeProposalDelta.construct(
-        event.object_before_modification, merge_proposal)
-    if delta is None:
-        return
-    changes = text_delta(
-        delta, delta.delta_values, delta.new_values, delta.interface)
-    # Now create the job to send the email.
-    getUtility(IMergeProposalUpdatedEmailJobSource).create(
-        merge_proposal, changes, from_person)
-
-
-def send_review_requested_notifications(vote_reference, event):
-    """Notify the reviewer that they have been requested to review."""
-    getUtility(IReviewRequestedEmailJobSource).create(vote_reference)
 
 
 class BMPMailer(BranchMailer):

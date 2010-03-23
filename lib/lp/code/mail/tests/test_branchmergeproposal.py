@@ -20,13 +20,13 @@ from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.mail.branch import RecipientReason
-from lp.code.mail.branchmergeproposal import (
-    BMPMailer, send_merge_proposal_modified_notifications)
+from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branch import update_trigger_modified_fields
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
     MergeProposalUpdatedEmailJob, ReviewRequestedEmailJob)
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from canonical.launchpad.webapp import canonical_url
 from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
@@ -302,7 +302,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
         event = ObjectModifiedEvent(
             merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
-        send_merge_proposal_modified_notifications(merge_proposal, event)
+        merge_proposal_modified(merge_proposal, event)
         self.assertIs(None, self.getProposalUpdatedEmailJob(merge_proposal))
 
     def makeProposalUpdatedEmailJob(self):
@@ -314,7 +314,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         merge_proposal.description = 'change description'
         event = ObjectModifiedEvent(
             merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
-        send_merge_proposal_modified_notifications(merge_proposal, event)
+        merge_proposal_modified(merge_proposal, event)
         job = self.getProposalUpdatedEmailJob(merge_proposal)
         self.assertIsNot(None, job, 'Job was not created.')
         return job, subscriber
@@ -335,7 +335,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             'Description changed to:\n\nchange description',
             job.delta_text)
 
-    def test_send_merge_proposal_modified_notifications(self):
+    def test_merge_proposal_modified(self):
         """Should send emails when invoked with correct parameters."""
         job, subscriber = self.makeProposalUpdatedEmailJob()
         pop_notifications()
