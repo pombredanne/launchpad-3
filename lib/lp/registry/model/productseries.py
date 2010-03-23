@@ -378,6 +378,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
+        if distroseries.distribution.full_functionality:
+            source_package = distroseries.getSourcePackage(sourcepackagename)
+            if source_package.currentrelease is None:
+                raise AssertionError(
+                    "The source package is not published in %s." %
+                    distroseries.displayname)
         for pkg in self.packagings:
             if pkg.distroseries == distroseries:
                 # we have found a matching Packaging record
