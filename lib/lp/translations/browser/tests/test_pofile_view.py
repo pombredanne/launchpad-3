@@ -59,7 +59,7 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.factory.makeTranslationMessage(
             self.pofile, self.new_suggestion, suggestion=True,
             date_updated=self.now())
-        # An imported that was changed in Launchpad.
+        # An upstream that was changed in Ubuntu.
         self.changed = self.factory.makePOTMsgSet(
             self.potemplate, sequence=4)
         self.factory.makeTranslationMessage(
@@ -110,8 +110,8 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.assertEqual(1, view.shown_count)
         self._assertEqualPOTMsgSets([self.new_suggestion], view.messages)
 
-    def test_show_changed_in_launchpad(self):
-        form = {'show': 'changed_in_launchpad'}
+    def test_show_changed_in_ubuntu(self):
+        form = {'show': 'changed_in_ubuntu'}
         view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
         view.initialize()
         self.assertEqual(1, view.shown_count)

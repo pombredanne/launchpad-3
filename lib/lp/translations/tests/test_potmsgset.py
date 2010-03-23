@@ -217,7 +217,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # A shared translation is imported in both templates.
         shared_translation = self.factory.makeSharedTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, is_current_upstream=True)
+            pofile=sr_pofile, potmsgset=self.potmsgset,
+            is_current_upstream=True)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.devel_potemplate, serbian), shared_translation)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
@@ -226,8 +227,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Adding a diverged translation in one template makes that one
         # an imported translation there.
         diverged_translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, is_current_upstream=True,
-            force_diverged=True)
+            pofile=sr_pofile, potmsgset=self.potmsgset,
+            is_current_upstream=True, force_diverged=True)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.devel_potemplate, serbian), diverged_translation)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
@@ -434,7 +435,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             [external_suggestion])
 
     def test_hasTranslationChangedInLaunchpad(self):
-        """Make sure checking whether a translation is changed in LP works."""
+        """Check whether a translation is changed in Ubuntu works."""
 
         sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
         serbian = sr_pofile.language
@@ -446,7 +447,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             False)
 
         # If only a current, non-imported translation exists, it's not
-        # changed in LP.
+        # changed in Ubuntu.
         current_shared = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset,
             is_current_upstream=False)
@@ -455,7 +456,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 self.devel_potemplate, serbian),
             False)
 
-        # If imported translation is current, it's not changed in LP.
+        # If the current upstream translation is also current in Ubuntu,
+        # it's not changed in Ubuntu.
         current_shared.is_current_ubuntu = False
         imported_shared = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset,
@@ -466,7 +468,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             False)
 
         # If there's a current, diverged translation, and an imported
-        # non-current one, it's changed in LP.
+        # non-current one, it's changed in Ubuntu.
         imported_shared.is_current_ubuntu = False
         current_diverged = self.factory.makeTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset,
@@ -476,8 +478,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 self.devel_potemplate, serbian),
             True)
 
-        # If imported one is shared and current, yet there is a diverged
-        # current translation as well, it is changed in LP.
+        # If the upstream one is shared and used in Ubuntu, yet there is
+        # a diverged Ubuntu translation as well, it is changed in Ubuntu.
         imported_shared.is_current_ubuntu = False
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(

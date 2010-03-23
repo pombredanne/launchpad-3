@@ -1,7 +1,7 @@
 = POFile statistics =
 
 We frequently display statistics about POFiles: how many of its messages
-remain untranslated, how many have been changed in Launchpad, how many have
+remain untranslated, how many have been changed in Ubuntu, how many have
 had suggested translations submitted that need to be reviewed?
 
 It takes too long to gather these statistics on demand, so we cache them in
@@ -64,7 +64,7 @@ reports this giving both the wrong and the corrected statistics.
     (0, 0, 3, 0)
 
 We have a POFile with zero current, updated, and unreviewed translations, and
-3 translations changed in Launchpad (compared to upstream).
+3 translations changed in Ubuntu (compared to upstream).
 
 A software bug incorrectly sets the number of changed translations to 999.
 

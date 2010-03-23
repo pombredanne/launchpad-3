@@ -297,7 +297,7 @@ class POFileBaseView(LaunchpadView):
             'translated': self.context.translatedCount,
             'untranslated': self.context.untranslatedCount,
             'new_suggestions': self.context.unreviewedCount,
-            'changed_in_launchpad': self.context.updatesCount,
+            'changed_in_ubuntu': self.context.updatesCount,
             }
 
         if self.show not in count_functions:
@@ -346,8 +346,8 @@ class POFileBaseView(LaunchpadView):
             'translated': self.context.getPOTMsgSetTranslated,
             'untranslated': self.context.getPOTMsgSetUntranslated,
             'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
-            'changed_in_launchpad':
-                self.context.getPOTMsgSetChangedInLaunchpad,
+            'changed_in_ubuntu':
+                self.context.getPOTMsgSetChangedInUbuntu,
             }
 
         if self.show not in get_functions:
@@ -877,7 +877,7 @@ class POFileTranslateView(BaseTranslationView):
             'translated': self.context.translatedCount,
             'untranslated': self.context.untranslatedCount,
             'new_suggestions': self.context.unreviewedCount,
-            'changed_in_launchpad': self.context.updatesCount,
+            'changed_in_ubuntu': self.context.updatesCount,
             }
 
         if self.show not in count_functions:
@@ -910,8 +910,8 @@ class POFileTranslateView(BaseTranslationView):
             'translated': self.context.getPOTMsgSetTranslated,
             'untranslated': self.context.getPOTMsgSetUntranslated,
             'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
-            'changed_in_launchpad':
-                self.context.getPOTMsgSetChangedInLaunchpad,
+            'changed_in_ubuntu':
+                self.context.getPOTMsgSetChangedInUbuntu,
             }
 
         if self.show not in get_functions:
