@@ -348,7 +348,7 @@ class BugTracker(SQLBase):
                                     distinct=True,
                                     orderBy=['datecreated']))
 
-    def getBugWatchesNeedingUpdate(self, hours_since_last_check):
+    def getBugWatchesNeedingUpdate(self):
         """See `IBugTracker`.
 
         :return: The UNION of the bug watches that need checking and

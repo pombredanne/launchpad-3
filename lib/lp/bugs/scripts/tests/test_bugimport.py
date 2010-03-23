@@ -905,7 +905,7 @@ class TestBugWatchUpdater(BugWatchUpdater):
         """
         return [
             bug_watch for bug_watch in (
-                self.bugtracker.getBugWatchesNeedingUpdate(0))
+                self.bugtracker.getBugWatchesNeedingUpdate())
             if (bug_watch.remotebug == remote_bug_id and
                 bug_watch.id in bug_watch_ids)
             ]

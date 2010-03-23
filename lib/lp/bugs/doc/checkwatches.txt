@@ -300,7 +300,7 @@ that it looks as though it has been updated recently
 
 So our Savannah instance now has no watches that need checking.
 
-    >>> savannah.getBugWatchesNeedingUpdate(23).count()
+    >>> savannah.getBugWatchesNeedingUpdate().count()
     0
 
 However, forceUpdateAll() will update every watch, whether they've
@@ -366,7 +366,7 @@ made.
     ...     def _updateBugTracker(self, bug_tracker, batch_size):
     ...         # Update as many watches as the batch size says.
     ...         watches_to_update = (
-    ...             bug_tracker.getBugWatchesNeedingUpdate(23)[:batch_size])
+    ...             bug_tracker.getBugWatchesNeedingUpdate()[:batch_size])
     ...
     ...         for watch in watches_to_update:
     ...             watch.lastchecked = datetime.now(pytz.timezone('UTC'))

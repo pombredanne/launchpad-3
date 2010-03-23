@@ -16,7 +16,7 @@ and an external bug, see bugwatch.txt.
 
     >>> def print_watches(bugtracker):
     ...     watches = sorted(
-    ...         bugtracker.getBugWatchesNeedingUpdate(23),
+    ...         bugtracker.getBugWatchesNeedingUpdate(),
     ...         key=lambda watch: (watch.remotebug, watch.bug.id))
     ...
     ...     for bug_watch in watches:

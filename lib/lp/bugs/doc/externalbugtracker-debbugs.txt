@@ -91,7 +91,7 @@ being correct.
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
-    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate(23))
+    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate())
     >>> len(bug_watches)
     5
 
@@ -120,7 +120,7 @@ The lastchecked attribute got updated for each bug watch, so no more
 watches are in need of an update.
 
     >>> flush_database_updates()
-    >>> watches = debbugs.getBugWatchesNeedingUpdate(23)
+    >>> watches = debbugs.getBugWatchesNeedingUpdate()
     >>> watches.count()
     0
 

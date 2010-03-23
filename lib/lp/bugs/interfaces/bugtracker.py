@@ -273,12 +273,11 @@ class IBugTracker(Interface):
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""
 
-    def getBugWatchesNeedingUpdate(hours_since_last_check):
+    def getBugWatchesNeedingUpdate():
         """Get the bug watches needing to be updated.
 
-        All bug watches not being updated for the last
-        :hours_since_last_check: hours are considered needing to be
-        updated.
+        All bug watches with a next_check time in the past are
+        considered to be needing an update.
         """
 
     def getLinkedPersonByName(name):

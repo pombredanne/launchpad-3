@@ -402,7 +402,7 @@ class BugWatchUpdater(object):
             self.txn.begin()
             if not self.updateBugTracker(bug_tracker, batch_size):
                 break
-            watches_left = bug_tracker.getBugWatchesNeedingUpdate(23).count()
+            watches_left = bug_tracker.getBugWatchesNeedingUpdate().count()
             self.log.info(
                 "%s watches left to check on bug tracker '%s'" %
                 (watches_left, bug_tracker_name))
@@ -469,7 +469,7 @@ class BugWatchUpdater(object):
         # We want 1 day, but we'll use 23 hours because we can't count
         # on the cron job hitting exactly the same time every day
         bug_watches_to_update = (
-            bug_tracker.getBugWatchesNeedingUpdate(23))
+            bug_tracker.getBugWatchesNeedingUpdate())
 
         if bug_watches_to_update.count() > 0:
             # XXX: GavinPanella 2010-01-18 bug=509223 : Ask remote
