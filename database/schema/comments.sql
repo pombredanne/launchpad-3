@@ -868,8 +868,8 @@ validated yet, 1 the value that says it is correct and 2 the value noting that
 there was an unknown error with the validation.';
 COMMENT ON COLUMN TranslationMessage.is_current_ubuntu IS 'Whether this translation
 is being used in Ubuntu.';
-COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
-is being used in latest imported file.';
+COMMENT ON COLUMN TranslationMessage.is_current_upstream IS 'Whether this translation
+is being used upstream.';
 COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
 this translation was obsolete in last imported file.';
 

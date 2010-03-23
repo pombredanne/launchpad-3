@@ -105,7 +105,7 @@ class IVPOExport(Interface):
         description=u"As in ITranslationMessage.",
         readonly=True, required=True)
 
-    is_imported = Bool(
+    is_current_upstream = Bool(
         title=_("Whether this message was imported"),
         description=u"As in ITranslationMessage.",
         readonly=True, required=True)

@@ -78,7 +78,7 @@ class GettextCheckMessages(LaunchpadScript):
         currency_markers = []
         if bad_message.is_current_ubuntu:
             currency_markers.append('current')
-        if bad_message.is_imported:
+        if bad_message.is_current_upstream:
             currency_markers.append('imported')
         if currency_markers == []:
             currency_markers.append('unused')
@@ -107,7 +107,7 @@ class GettextCheckMessages(LaunchpadScript):
 
     def _get_imported_alternative(self, translationmessage):
         """Look for a valid, imported alternative for this message."""
-        if translationmessage.is_imported:
+        if translationmessage.is_current_upstream:
             return None
 
         potmsgset = translationmessage.potmsgset

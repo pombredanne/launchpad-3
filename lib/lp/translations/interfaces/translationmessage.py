@@ -191,7 +191,7 @@ class ITranslationMessage(Interface):
         title=_("Whether the translation has all needed plural forms or not"),
         readonly=True, required=True)
 
-    is_imported = Bool(
+    is_current_upstream = Bool(
         title=_(
             "Whether this translation is being used in latest imported file"),
         readonly=False, default=False, required=True)

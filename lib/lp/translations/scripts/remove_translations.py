@@ -211,8 +211,8 @@ class RemoveTranslations(LaunchpadScript):
             type='bool',
             help="Match on is_current_ubuntu value (True or False)."),
         ExtendedOption(
-            '-I', '--is-imported', dest='is_imported', type='bool',
-            help="Match on is_imported value (True or False)."),
+            '-I', '--is-imported', dest='is_current_upstream', type='bool',
+            help="Match on is_current_upstream value (True or False)."),
         ExtendedOption(
             '-m', '--msgid', dest='msgid',
             help="Match on (singular) msgid text."),
@@ -254,8 +254,8 @@ class RemoveTranslations(LaunchpadScript):
                 "template %s." % self.options.potemplate)
 
         if self.options.reject_license:
-            if self.options.is_imported == False:
-                # "Remove non-is_imported messages submitted by users
+            if self.options.is_current_upstream == False:
+                # "Remove non-is_current_upstream messages submitted by users
                 # who rejected the license."
                 return (True, None)
 
@@ -303,7 +303,7 @@ class RemoveTranslations(LaunchpadScript):
             language_code=self.options.language,
             not_language=self.options.not_language,
             is_current_ubuntu=self.options.is_current_ubuntu,
-            is_imported=self.options.is_imported,
+            is_current_upstream=self.options.is_current_upstream,
             msgid_singular=self.options.msgid,
             origin=self.options.origin)
 
@@ -317,7 +317,7 @@ class RemoveTranslations(LaunchpadScript):
 def remove_translations(logger=None, submitter=None, reviewer=None,
                         reject_license=False, ids=None, potemplate=None,
                         language_code=None, not_language=False,
-                        is_current_ubuntu=None, is_imported=None,
+                        is_current_ubuntu=None, is_current_upstream=None,
                         msgid_singular=None, origin=None):
     """Remove specified translation messages.
 
@@ -335,7 +335,8 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
         messages in this language.
     :param is_current_ubuntu: Delete only messages with this is_current_ubuntu
         value.
-    :param is_imported: Delete only messages with this is_imported value.
+    :param is_current_upstream: Delete only messages with this
+        is_current_upstream value.
     :param msgid_singular: Delete only messages with this singular msgid.
     :param origin: Delete only messages with this `TranslationOrigin` code.
 
@@ -377,7 +378,9 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
 
     add_bool_match(
         conditions, 'TranslationMessage.is_current_ubuntu', is_current_ubuntu)
-    add_bool_match(conditions, 'TranslationMessage.is_imported', is_imported)
+    add_bool_match(
+        conditions, 'TranslationMessage.is_current_upstream',
+        is_current_upstream)
 
     if msgid_singular is not None:
         joins.add('POTMsgSet')
@@ -428,7 +431,7 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
             Imported.variant IS NOT DISTINCT FROM Doomed.variant AND
             Imported.potemplate IS NOT DISTINCT FROM Doomed.potemplate AND
             -- Came from published source.
-            Imported.is_imported IS TRUE AND
+            Imported.is_current_upstream IS TRUE AND
             -- Was masked by the message we're about to delete.
             Doomed.is_current_ubuntu IS TRUE AND
             Imported.id <> Doomed.id

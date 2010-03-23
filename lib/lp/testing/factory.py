@@ -1846,7 +1846,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                                translator=None, suggestion=False,
                                reviewer=None, translations=None,
                                lock_timestamp=None, date_updated=None,
-                               is_imported=False, force_shared=False,
+                               is_current_upstream=False, force_shared=False,
                                force_diverged=False):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
@@ -1859,7 +1859,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if translations is None:
             translations = [self.getUniqueString()]
         translation_message = potmsgset.updateTranslation(
-            pofile, translator, translations, is_imported=is_imported,
+            pofile, translator, translations,
+            is_current_upstream=is_current_upstream,
             lock_timestamp=lock_timestamp, force_suggestion=suggestion,
             force_shared=force_shared, force_diverged=force_diverged)
         if date_updated is not None:
@@ -1874,17 +1875,19 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeSharedTranslationMessage(self, pofile=None, potmsgset=None,
                                      translator=None, suggestion=False,
                                      reviewer=None, translations=None,
-                                     date_updated=None, is_imported=False):
+                                     date_updated=None,
+                                     is_current_upstream=False):
         translation_message = self.makeTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translator=translator,
-            suggestion=suggestion, reviewer=reviewer, is_imported=is_imported,
+            suggestion=suggestion, reviewer=reviewer,
+            is_current_upstream=is_current_upstream,
             translations=translations, date_updated=date_updated,
             force_shared=True)
         return translation_message
 
     def makeTranslation(self, pofile, sequence,
                         english=None, translated=None,
-                        is_imported=False):
+                        is_current_upstream=False):
         """Add a single current translation entry to the given pofile.
         This should only be used on pristine pofiles with pristine
         potemplates to avoid conflicts in the sequence numbers.
@@ -1894,7 +1897,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         :sequence: The sequence number for the POTMsgSet.
         :english: The english string which becomes the msgid in the POTMsgSet.
         :translated: The translated string which becomes the msgstr.
-        :is_imported: The is_imported flag of the translation message.
+        :is_current_upstream: The is_current_upstream flag of the
+            translation message.
         """
         if english is None:
             english = self.getUniqueString('english')
@@ -1906,8 +1910,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         translation = removeSecurityProxy(
             self.makeTranslationMessage(naked_pofile, potmsgset,
                 translations=[translated]))
-        translation.is_imported = is_imported
-        translation.is_current = True
+        translation.is_current_upstream = is_current_upstream
+        translation.is_current_ubuntu = True
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""

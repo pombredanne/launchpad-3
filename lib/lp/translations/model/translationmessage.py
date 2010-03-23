@@ -128,7 +128,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.validation_status = TranslationValidationStatus.UNKNOWN
         self.is_current_ubuntu = True
         self.is_complete = False
-        self.is_imported = False
+        self.is_current_upstream = False
         self.is_empty = True
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
@@ -184,7 +184,7 @@ def validate_is_current_ubuntu(self, attr, value):
 
     return value
 
-def validate_is_imported(self, attr, value):
+def validate_is_current_upstream(self, attr, value):
     """Unset current imported message before setting this as imported.
 
     :param value: Whether we want this translation message as the new
@@ -192,9 +192,9 @@ def validate_is_imported(self, attr, value):
 
     If there is already another imported message, we unset it first.
     """
-    assert value is not None, 'is_imported field cannot be None.'
+    assert value is not None, 'is_current_upstream field cannot be None.'
 
-    if value and not self.is_imported:
+    if value and not self.is_current_upstream:
         # We are setting this message as the current one. We need to
         # change current one to non current before.
         imported_translation_message = (
@@ -203,7 +203,7 @@ def validate_is_imported(self, attr, value):
                 self.language, self.variant))
         if (imported_translation_message is not None and
             imported_translation_message.potemplate == self.potemplate):
-            imported_translation_message.is_imported = False
+            imported_translation_message.is_current_upstream = False
             # We need to flush the old imported message before the
             # new one because the database constraints prevent two
             # imported messages.
@@ -265,8 +265,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     is_current_ubuntu = BoolCol(
         dbName='is_current_ubuntu', notNull=True, default=False,
         storm_validator=validate_is_current_ubuntu)
-    is_imported = BoolCol(dbName='is_imported', notNull=True, default=False,
-                          storm_validator=validate_is_imported)
+    is_current_upstream = BoolCol(
+        dbName='is_current_upstream', notNull=True, default=False,
+        storm_validator=validate_is_current_upstream)
     was_obsolete_in_last_import = BoolCol(
         dbName='was_obsolete_in_last_import', notNull=True, default=False)
 
@@ -278,7 +279,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         When the message is not imported makes no sense to use this flag.
         """
-        assert self.is_imported, 'The message is not imported.'
+        assert self.is_current_upstream, (
+            'The message is not current upstream.')
 
         return self._SO_get_was_obsolete_in_last_import()
 
@@ -327,7 +329,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         # If this message is currently used or has been imported,
         # it's not hidden.
-        if self.is_current_ubuntu or self.is_imported:
+        if self.is_current_ubuntu or self.is_current_upstream:
             return False
 
         # Otherwise, if this suggestions has been reviewed and
@@ -425,7 +427,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             clash_with_shared_current = (
                 current is not None and self.is_current_ubuntu)
             clash_with_shared_imported = (
-                imported is not None and self.is_imported)
+                imported is not None and self.is_current_upstream)
             if clash_with_shared_current or clash_with_shared_imported:
                 # Keep this message diverged, so it won't usurp the
                 # current or imported message that the templates share.
@@ -433,16 +435,17 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             else:
                 # No clashes; simply mark this message as shared.
                 self.potemplate = None
-        elif self.is_current_ubuntu or self.is_imported:
+        elif self.is_current_ubuntu or self.is_current_upstream:
             # Bequeathe current/imported flags to shared equivalent.
             if self.is_current_ubuntu and current is None:
                 shared.is_current_ubuntu = True
-            if self.is_imported and imported is None:
-                shared.is_imported = True
+            if self.is_current_upstream and imported is None:
+                shared.is_current_upstream = True
 
             current_diverged = (
                 self.is_current_ubuntu and not shared.is_current_ubuntu)
-            imported_diverged = (self.is_imported and not shared.is_imported)
+            imported_diverged = (
+                self.is_current_upstream and not shared.is_current_upstream)
             if not (current_diverged or imported_diverged):
                 # This message is now totally redundant.
                 self.destroySelf()

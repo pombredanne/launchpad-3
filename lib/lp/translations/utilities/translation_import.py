@@ -107,9 +107,9 @@ class ExistingPOFileInDatabase:
     Fetches all information needed to compare messages to be imported in one
     go. Used to speed up PO file import."""
 
-    def __init__(self, pofile, is_imported=False):
+    def __init__(self, pofile, is_current_upstream=False):
         self.pofile = pofile
-        self.is_imported = is_imported
+        self.is_current_upstream = is_current_upstream
 
         # Dict indexed by (msgid, context) containing current
         # TranslationMessageData: doing this for the speed.
@@ -149,7 +149,7 @@ class ExistingPOFileInDatabase:
             context,
             date_reviewed,
             is_current_ubuntu,
-            is_imported,
+            is_current_upstream,
             %(translation_columns)s
           FROM POTMsgSet
             JOIN TranslationTemplateItem ON
@@ -167,7 +167,7 @@ class ExistingPOFileInDatabase:
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
               POMsgID_Plural.id=POTMsgSet.msgid_plural
           WHERE
-              (is_current_ubuntu IS TRUE OR is_imported IS TRUE)
+              (is_current_ubuntu IS TRUE OR is_current_upstream IS TRUE)
           ORDER BY
             TranslationTemplateItem.sequence,
             TranslationMessage.potemplate NULLS LAST
@@ -204,10 +204,10 @@ class ExistingPOFileInDatabase:
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
         for (msgid, msgid_plural, context, date, is_current_ubuntu,
-             is_imported, msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
+             is_current_upstream, msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
              msgstr5) in rows:
 
-            if not is_current_ubuntu and not is_imported:
+            if not is_current_ubuntu and not is_current_upstream:
                 # We don't care about non-current and non-imported messages
                 # yet.  To be part of super-fast-imports-phase2.
                 continue
@@ -215,7 +215,7 @@ class ExistingPOFileInDatabase:
             update_caches = []
             if is_current_ubuntu:
                 update_caches.append(self.messages)
-            if is_imported:
+            if is_current_upstream:
                 update_caches.append(self.imported)
 
             for look_at in update_caches:
@@ -271,14 +271,17 @@ class ExistingPOFileInDatabase:
             return False
 
     def isAlreadyImportedTheSame(self, message):
-        """Check whether this translation is already present in DB as
-        'is_imported' translation, and thus needs no changing if we are
-        submitting an imported update.
+        """Is this translation already the current upstream one?
+
+        If this translation is already present in the database as the
+        'is_current_upstream' translation, and we are processing an
+        upstream upload, it does not need changing.
         """
         (msgid, plural, context) = (message.msgid_singular,
                                     message.msgid_plural,
                                     message.context)
-        if ((msgid, plural, context) in self.imported) and self.is_imported:
+        is_existing_upstream = ((msgid, plural, context) in self.imported)
+        if is_existing_upstream and self.is_current_upstream:
             msg_in_db = self.imported[(msgid, plural, context)]
             return is_identical_translation(msg_in_db, message)
         else:
@@ -744,10 +747,9 @@ class POFileImporter(FileImporter):
                 self.pofile.canEditTranslations(
                     self.translation_import_queue_entry.importer))
 
-        self.pofile_in_db = (
-            ExistingPOFileInDatabase(
-                self.pofile,
-                is_imported=self.translation_import_queue_entry.is_published))
+        from_upstream = self.translation_import_queue_entry.is_published
+        self.pofile_in_db = ExistingPOFileInDatabase(
+            self.pofile, from_upstream)
 
     def _getPersonByEmail(self, email, name=None):
         """Return the person for given email.
@@ -818,11 +820,11 @@ class POFileImporter(FileImporter):
             potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
                 msgid, plural_text=plural, context=context)
             if potmsgset is not None:
-                previous_imported_message = (
+                previous_upstream_message = (
                     potmsgset.getImportedTranslationMessage(
                     self.potemplate, self.pofile.language,
                     self.pofile.variant))
-                if previous_imported_message is not None:
+                if previous_upstream_message is not None:
                     # The message was not imported this time, it
                     # therefore looses its imported status.
-                    previous_imported_message.is_imported = False
+                    previous_upstream_message.is_current_upstream = False

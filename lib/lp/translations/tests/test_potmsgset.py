@@ -217,7 +217,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # A shared translation is imported in both templates.
         shared_translation = self.factory.makeSharedTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, is_imported=True)
+            pofile=sr_pofile, potmsgset=self.potmsgset, is_current_upstream=True)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.devel_potemplate, serbian), shared_translation)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
@@ -226,7 +226,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Adding a diverged translation in one template makes that one
         # an imported translation there.
         diverged_translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, is_imported=True,
+            pofile=sr_pofile, potmsgset=self.potmsgset, is_current_upstream=True,
             force_diverged=True)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.devel_potemplate, serbian), diverged_translation)
@@ -353,7 +353,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # it is returned as the externally used suggestion.
         imported_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=False, is_imported=True)
+            suggestion=False, is_current_upstream=True)
         imported_translation.is_current_ubuntu = False
 
         transaction.commit()
@@ -366,7 +366,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # it is returned as the externally used suggestion as well.
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=False, is_imported=False)
+            suggestion=False, is_current_upstream=False)
 
         transaction.commit()
 
@@ -412,7 +412,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # POTMsgSet, it is not returned as the external suggestion.
         imported_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=False, is_imported=True)
+            suggestion=False, is_current_upstream=True)
         imported_translation.is_current_ubuntu = False
 
         transaction.commit()
@@ -425,7 +425,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # considered an external suggestion.
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
-            suggestion=False, is_imported=False)
+            suggestion=False, is_current_upstream=False)
 
         transaction.commit()
 
@@ -449,7 +449,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # changed in LP.
         current_shared = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset,
-            is_imported=False)
+            is_current_upstream=False)
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
@@ -459,7 +459,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         current_shared.is_current_ubuntu = False
         imported_shared = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset,
-            is_imported=True)
+            is_current_upstream=True)
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
@@ -470,7 +470,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         imported_shared.is_current_ubuntu = False
         current_diverged = self.factory.makeTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset,
-            is_imported=False)
+            is_current_upstream=False)
         self.assertEquals(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
@@ -496,7 +496,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Let's create a shared, current translation.
         shared_translation = self.potmsgset.updateTranslation(
             pofile=sr_pofile, submitter=sr_pofile.owner,
-            new_translations=[u'Shared'], is_imported=False,
+            new_translations=[u'Shared'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC))
         self.assertEquals(shared_translation.potemplate, None)
         self.assertTrue(shared_translation.is_current_ubuntu)
@@ -505,7 +505,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # parameter to updateTranslation call.
         diverged_translation = self.potmsgset.updateTranslation(
             pofile=sr_pofile, submitter=sr_pofile.owner,
-            new_translations=[u'Diverged'], is_imported=False,
+            new_translations=[u'Diverged'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
         self.assertEquals(diverged_translation.potemplate,
                           self.devel_potemplate)
@@ -524,7 +524,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # there is a diverged translation keeps the divergence.
         new_translation = self.potmsgset.updateTranslation(
             pofile=sr_pofile, submitter=sr_pofile.owner,
-            new_translations=[u'New diverged'], is_imported=False,
+            new_translations=[u'New diverged'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC))
         self.assertEquals(new_translation.potemplate,
                           self.devel_potemplate)
@@ -548,21 +548,21 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Let's create a shared, current translation.
         shared_translation = self.potmsgset.updateTranslation(
             pofile=sr_pofile_devel, submitter=sr_pofile_devel.owner,
-            new_translations=[u'Shared'], is_imported=False,
+            new_translations=[u'Shared'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC))
 
         # And let's create a diverged translation on the devel series by
         # passing `force_diverged` parameter to updateTranslation call.
         diverged_translation_devel = self.potmsgset.updateTranslation(
             pofile=sr_pofile_devel, submitter=sr_pofile_devel.owner,
-            new_translations=[u'Diverged'], is_imported=False,
+            new_translations=[u'Diverged'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
 
         # Now we create a diverged translation in the stable series that
         # is identical to the diverged message in the devel series.
         diverged_translation_stable = self.potmsgset.updateTranslation(
             pofile=sr_pofile_stable, submitter=sr_pofile_stable.owner,
-            new_translations=[u'Diverged'], is_imported=False,
+            new_translations=[u'Diverged'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
 
         # This will create a new, diverged message with the same translation
@@ -596,21 +596,21 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Let's create a shared, current translation.
         shared_translation = self.potmsgset.updateTranslation(
             pofile=sr_pofile_devel, submitter=sr_pofile_devel.owner,
-            new_translations=[u'Shared'], is_imported=False,
+            new_translations=[u'Shared'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC))
 
         # And let's create a diverged translation on the devel series by
         # passing `force_diverged` parameter to updateTranslation call.
         diverged_translation_devel = self.potmsgset.updateTranslation(
             pofile=sr_pofile_devel, submitter=sr_pofile_devel.owner,
-            new_translations=[u'Diverged'], is_imported=False,
+            new_translations=[u'Diverged'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
 
         # Now we create a new shared translation in the stable series that
         # is identical to the diverged message in the devel series.
         new_translation_stable = self.potmsgset.updateTranslation(
             pofile=sr_pofile_stable, submitter=sr_pofile_stable.owner,
-            new_translations=[u'Diverged'], is_imported=False,
+            new_translations=[u'Diverged'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC))
 
         # This will create a new shared message with the same translation as
@@ -638,18 +638,18 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # in this POTemplate.
         shared_translation = self.potmsgset.updateTranslation(
             pofile=sr_pofile, submitter=sr_pofile.owner,
-            new_translations=[u'Shared'], is_imported=False,
+            new_translations=[u'Shared'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC))
         diverged_translation = self.potmsgset.updateTranslation(
             pofile=sr_pofile, submitter=sr_pofile.owner,
-            new_translations=[u'Diverged'], is_imported=False,
+            new_translations=[u'Diverged'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC), force_diverged=True)
 
         # Setting a diverged translation to exactly match shared one
         # will "converge" it back to the shared one.
         new_translation = self.potmsgset.updateTranslation(
             pofile=sr_pofile, submitter=sr_pofile.owner,
-            new_translations=[u'Shared'], is_imported=False,
+            new_translations=[u'Shared'], is_current_upstream=False,
             lock_timestamp=datetime.now(pytz.UTC))
         self.assertEquals(new_translation, shared_translation)
         self.assertFalse(diverged_translation.is_current_ubuntu)
@@ -684,7 +684,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             potemplate, es_pofile.language)
         # Let's make sure this message is also marked as imported
         # and diverged.
-        es_current.is_imported = True
+        es_current.is_current_upstream = True
         es_current.potemplate = potemplate
 
         self.assertTrue(es_current.is_current_ubuntu)
@@ -939,13 +939,13 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         # and makes "tm1" shared.
         tm1 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=False, force_diverged=True)
+            is_current_upstream=False, force_diverged=True)
         tm2 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=True, force_shared=True)
+            is_current_upstream=True, force_shared=True)
         self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True)
+            is_current_upstream=True)
 
         self.assertTrue(tm1.is_current_ubuntu)
         self.assertFalse(tm2.is_current_ubuntu)
@@ -957,19 +957,19 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         # Adding a diverged imported translation "tm1",
         # then a shared imported translation "tm2",
         # and re-uploading "tm1" as just imported
-        # makes "tm2" not is_imported, and both are shared.
+        # makes "tm2" not is_current_upstream, and both are shared.
         tm1 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True, force_diverged=True)
+            is_current_upstream=True, force_diverged=True)
         tm2 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=True, force_shared=True)
+            is_current_upstream=True, force_shared=True)
         self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True)
+            is_current_upstream=True)
 
-        self.assertTrue(tm1.is_imported)
-        self.assertFalse(tm2.is_imported)
+        self.assertTrue(tm1.is_current_upstream)
+        self.assertFalse(tm2.is_current_upstream)
         self.assertTrue(tm1.potemplate is None)
         self.assertTrue(tm2.potemplate is None)
 
@@ -978,19 +978,19 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         # Adding a shared imported translation "tm1",
         # then a diverged imported translation "tm2",
         # and re-uploading "tm1" as imported translation
-        # makes "tm2" not is_imported, and both are shared.
+        # makes "tm2" not is_current_upstream, and both are shared.
         tm1 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True, force_shared=True)
+            is_current_upstream=True, force_shared=True)
         tm2 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=True, force_diverged=True)
+            is_current_upstream=True, force_diverged=True)
         self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True)
+            is_current_upstream=True)
 
-        self.assertTrue(tm1.is_imported)
-        self.assertFalse(tm2.is_imported)
+        self.assertTrue(tm1.is_current_upstream)
+        self.assertFalse(tm2.is_current_upstream)
         self.assertTrue(tm1.potemplate is None)
         self.assertTrue(tm2.potemplate is None)
 
@@ -1006,21 +1006,21 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         # "tm2" a diverged, non-current but imported translation.
         tm0 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm0"], lock_timestamp=self.now(),
-            is_imported=False, force_shared=True)
+            is_current_upstream=False, force_shared=True)
         tm1 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=False, force_diverged=True)
+            is_current_upstream=False, force_diverged=True)
         tm2 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=True, force_diverged=True)
+            is_current_upstream=True, force_diverged=True)
         self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm0"], lock_timestamp=self.now(),
-            is_imported=False, force_diverged=True)
+            is_current_upstream=False, force_diverged=True)
 
         self.assertTrue(tm0.is_current_ubuntu)
         self.assertFalse(tm1.is_current_ubuntu)
         self.assertFalse(tm2.is_current_ubuntu)
-        self.assertTrue(tm2.is_imported)
+        self.assertTrue(tm2.is_current_upstream)
         self.assertEquals(tm0.potemplate, self.potemplate)
         self.assertTrue(tm1.potemplate is None)
         self.assertEquals(tm2.potemplate, self.potemplate)
@@ -1032,25 +1032,25 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         # then a diverged imported translation "tm2",
         # making a shared one current.
         # On importing "tm1" again, we need to remove
-        # is_imported flag from diverged message.
+        # is_current_upstream flag from diverged message.
         tm1 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True, force_shared=True)
+            is_current_upstream=True, force_shared=True)
         tm2 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=True, force_diverged=True)
+            is_current_upstream=True, force_diverged=True)
         tm2.is_current_ubuntu = False
         self.assertTrue(tm1.is_current_ubuntu)
         self.assertFalse(tm2.is_current_ubuntu)
 
         self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True)
+            is_current_upstream=True)
 
         self.assertTrue(tm1.is_current_ubuntu)
-        self.assertTrue(tm1.is_imported)
+        self.assertTrue(tm1.is_current_upstream)
         self.assertFalse(tm2.is_current_ubuntu)
-        self.assertFalse(tm2.is_imported)
+        self.assertFalse(tm2.is_current_upstream)
         self.assertTrue(tm1.potemplate is None)
 
     def test_updateTranslation_DivergedCurrentToSharedImported(self):
@@ -1062,24 +1062,24 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         # being current.
         tm1 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True, force_shared=True)
+            is_current_upstream=True, force_shared=True)
         tm2 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=False, force_diverged=True)
+            is_current_upstream=False, force_diverged=True)
         self.assertTrue(tm1.is_current_ubuntu)
         self.assertTrue(tm2.is_current_ubuntu)
-        self.assertTrue(tm1.is_imported)
-        self.assertFalse(tm2.is_imported)
+        self.assertTrue(tm1.is_current_upstream)
+        self.assertFalse(tm2.is_current_upstream)
 
         self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=True)
+            is_current_upstream=True)
 
         self.assertTrue(tm2.is_current_ubuntu)
-        self.assertTrue(tm2.is_imported)
+        self.assertTrue(tm2.is_current_upstream)
         self.assertTrue(tm2.potemplate is None)
         self.assertFalse(tm1.is_current_ubuntu)
-        self.assertFalse(tm1.is_imported)
+        self.assertFalse(tm1.is_current_upstream)
 
     def test_updateTranslation_SharedImportedToSharedImported(self):
         # Corner case for bug #394224:
@@ -1090,10 +1090,10 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         # at the same time would trigger a database constraint.
         tm1 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True, force_shared=True)
+            is_current_upstream=True, force_shared=True)
         tm2 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=True, force_diverged=True)
+            is_current_upstream=True, force_diverged=True)
         tm2.is_current_ubuntu = False
 
         self.assertEquals(None, tm1.potemplate)
@@ -1102,12 +1102,12 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertTrue(tm1.is_current_ubuntu)
         self.assertFalse(tm2.is_current_ubuntu)
 
-        self.assertTrue(tm1.is_imported)
-        self.assertTrue(tm2.is_imported)
+        self.assertTrue(tm1.is_current_upstream)
+        self.assertTrue(tm2.is_current_upstream)
 
         self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=False)
+            is_current_upstream=False)
 
         self.assertEquals(None, tm1.potemplate)
         self.assertEquals(None, tm2.potemplate)
@@ -1115,23 +1115,24 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertFalse(tm1.is_current_ubuntu)
         self.assertTrue(tm2.is_current_ubuntu)
 
-        self.assertFalse(tm1.is_imported)
-        self.assertTrue(tm2.is_imported)
+        self.assertFalse(tm1.is_current_upstream)
+        self.assertTrue(tm2.is_current_upstream)
 
 
     def test_updateTranslation_DivergedCurrentToDivergedImported(self):
         # Corner case that came up when fixing bug #394224:
-        # Two diverged messages, one imported "tm1", the other "tm2" (current)
-        # is not.
-        # Updating the first one through web ui (is_imported=False) allows
-        # the imported to replace the not imported. The former diverged
-        # current message is converged.
+        # Two diverged messages, one current-upstream "tm1", the other "tm2"
+        # (current-Ubuntu) is not.
+        # Updating the first one through the web ui
+        # (is_current_upstream=False) allows the current-upstream one to
+        # replace the one that's not current-upstream. The former diverged
+        # ubuntu message is converged.
         tm1 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=True, force_diverged=True)
+            is_current_upstream=True, force_diverged=True)
         tm2 = self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm2"], lock_timestamp=self.now(),
-            is_imported=False, force_diverged=True)
+            is_current_upstream=False, force_diverged=True)
 
         self.assertEquals(self.pofile.potemplate, tm1.potemplate)
         self.assertEquals(self.pofile.potemplate, tm2.potemplate)
@@ -1139,12 +1140,12 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertFalse(tm1.is_current_ubuntu)
         self.assertTrue(tm2.is_current_ubuntu)
 
-        self.assertTrue(tm1.is_imported)
-        self.assertFalse(tm2.is_imported)
+        self.assertTrue(tm1.is_current_upstream)
+        self.assertFalse(tm2.is_current_upstream)
 
         self.potmsgset.updateTranslation(
             self.pofile, self.uploader, [u"tm1"], lock_timestamp=self.now(),
-            is_imported=False)
+            is_current_upstream=False)
 
         self.assertEquals(self.pofile.potemplate, tm1.potemplate)
         self.assertEquals(None, tm2.potemplate)
@@ -1152,8 +1153,8 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertTrue(tm1.is_current_ubuntu)
         self.assertFalse(tm2.is_current_ubuntu)
 
-        self.assertTrue(tm1.is_imported)
-        self.assertFalse(tm2.is_imported)
+        self.assertTrue(tm1.is_current_upstream)
+        self.assertFalse(tm2.is_current_upstream)
 
 
 class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
@@ -1203,7 +1204,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         credits = self.factory.makePOTMsgSet(
             self.potemplate, u'translator-credits', sequence=1)
         translation = self.factory.makeTranslationMessage(eo_pofile, credits,
-             translations=[imported_credits], is_imported=True)
+             translations=[imported_credits], is_current_upstream=True)
 
         eo_translation = credits.getCurrentTranslationMessage(
             self.potemplate, eo_pofile.language)

@@ -100,7 +100,7 @@ def filter_clashes(clashing_current, clashing_imported, twin):
     Takes the three forms of clashes a message can have in a context
     it's being merged into:
      * Another message that also has the is_current_ubuntu flag.
-     * Another message that also has the is_imported flag.
+     * Another message that also has the is_current_upstream flag.
      * Another message with the same translations.
 
     If either of the first two clashes matches the third, that is not a
@@ -122,15 +122,15 @@ def sacrifice_flags(message, incumbents=None):
 
     :param message: a `TranslationMessage` to drop flags on.
     :param incumbents: a sequence of reference messages.  If any of
-        these has either is_current_ubuntu or is_imported set, that same
+        these has either is_current_ubuntu or is_current_upstream set, that same
         flag will be dropped on message (if set).
     """
     if incumbents:
         for incumbent in incumbents:
             if incumbent is not None and incumbent.is_current_ubuntu:
                 message.is_current_ubuntu = False
-            if incumbent is not None and incumbent.is_imported:
-                message.is_imported = False
+            if incumbent is not None and incumbent.is_current_upstream:
+                message.is_current_upstream = False
 
 
 def bequeathe_flags(source_message, target_message, incumbents=None):
@@ -138,18 +138,21 @@ def bequeathe_flags(source_message, target_message, incumbents=None):
 
     If `source_message` holds the is_current_ubuntu flag, and there are no
     `incumbents` that hold the same flag, then `target_message` inherits
-    it.  Similar for the is_imported flag.
+    it.  Similar for the is_current_upstream flag.
     """
     sacrifice_flags(source_message, incumbents)
 
     if (source_message.is_current_ubuntu and
         not target_message.is_current_ubuntu):
-
+        # Transfer is_current_ubuntu flag.
         source_message.is_current_ubuntu = False
         target_message.is_current_ubuntu = True
-    if source_message.is_imported and not target_message.is_imported:
-        source_message.is_imported = False
-        target_message.is_imported = True
+
+    if (source_message.is_current_upstream and
+        not target_message.is_current_upstream):
+        # Transfer is_current_upstream flag.
+        source_message.is_current_upstream = False
+        target_message.is_current_upstream = True
 
     source_message.destroySelf()
 
@@ -594,7 +597,7 @@ class MessageSharingMerge(LaunchpadScript):
                 clashing_current = found
 
         clashing_imported = None
-        if message.is_imported:
+        if message.is_current_upstream:
             found = target_potmsgset.getImportedTranslationMessage(
                 potemplate=target_potemplate, language=message.language,
                 variant=message.variant)
