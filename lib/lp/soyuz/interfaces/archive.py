@@ -425,6 +425,18 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
+    def getBinaryPackageRelease(name, version, archtag):
+        """Find the specified `IBinaryPackageRelease` in the archive.
+
+        :param name: The `IBinaryPackageName` of the package.
+        :param version: The version of the package.
+        :param archtag: The architecture tag of the package's build. 'all'
+            will not work here -- 'i386' (the build DAS) must be used instead.
+
+        :return The binary package release with the given name and version,
+            or None if one does not exist or there is more than one.
+        """
+
     def getBinaryPackageReleaseByFileName(filename):
         """Return the corresponding `IBinaryPackageRelease` in this context.
 
@@ -918,6 +930,9 @@ class IArchiveView(IHasBuildRecords):
         :param person: An `IPerson`
         :return: A list of `IArchivePermission` records.
         """
+
+    def getPackageDownloadCount(bpr, day, country):
+        """Get the `IBinaryPackageDownloadCount` with the given key."""
 
 
 class IArchiveAppend(Interface):

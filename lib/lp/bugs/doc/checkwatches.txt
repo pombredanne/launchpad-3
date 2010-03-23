@@ -86,10 +86,16 @@ and their type is 'BugWatchUpdateWarning'.
     Revision: ...
     User: None
     URL: None
-    Duration: -1
+    Duration: ...
     Informational: False
     <BLANKLINE>
     error-explanation=ExternalBugtracker for ... is not known.
+    ...SELECT 1 FROM BugTracker WHERE BugTracker.id = %s
+    ...
+    Traceback (most recent call last):
+    ...
+    BugWatchUpdateWarning: ExternalBugtracker for BugTrackerType 'SAVANE'
+    is not known.
 
 We set a default timeout on checkwatches to 30 seconds. In order to test
 this, we can monkey-patch urllib2.urlopen so that it always raises a
@@ -158,13 +164,15 @@ will also be automatically filled from the baseurl OOPS property.
     Revision: ...
     User: None
     URL: http://bugs.example.com
-    Duration: -1
+    Duration: ...
     Informational: False
     <BLANKLINE>
     baseurl=http://bugs.example.com
     bugtracker=example-bugs
     error-explanation=Connection timed out ... http://bugs.example.com
     <BLANKLINE>
+    ...SELECT COUNT(*) FROM...
+    ...SELECT BugTracker.active, BugTracker.baseurl...
     <BLANKLINE>
     Traceback (most recent call last):
     ...
