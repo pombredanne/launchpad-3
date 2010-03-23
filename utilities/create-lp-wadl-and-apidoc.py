@@ -30,7 +30,7 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.systemhomes import WebServiceApplication
 from lazr.restful.interfaces import IWebServiceConfiguration
 
-def main(path_template, testrunner_path_template):
+def main(path_template):
     WebServiceApplication.cached_wadl = None # do not use cached file version
     execute_zcml_for_scripts()
     config = getUtility(IWebServiceConfiguration)
@@ -69,15 +69,6 @@ def main(path_template, testrunner_path_template):
         f.write(content)
         f.close()
 
-        filename = testrunner_path_template % {'version' : version}
-        print "Writing testrunner WADL for version %s to %s." % (
-            version, filename)
-        f = open(filename, 'w')
-        content = content.replace("https://api.launchpad.dev/",
-                                  "http://api.launchpad.dev/")
-        f.write(content)
-        f.close()
-
         # Now, convert the WADL into an human-readable description and
         # put the HTML in the same directory as the WADL.
         html_filename = os.path.join(directory, version + ".html")
@@ -90,11 +81,9 @@ def main(path_template, testrunner_path_template):
     return 0
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print ("Usage: %s [WADL path template] "
-               "[WADL path template for testrunner]") % sys.argv[0]
-        print (" Example: %s path/to/wadl/wadl-production-%%(version).xml "
-               "path/to/wadl/wadl-testrunner-%%(version).xml" % (
-                   sys.argv[0]))
+    if len(sys.argv) != 2:
+        print "Usage: %s [WADL path template]" % sys.argv[0]
+        print " Example: %s path/to/wadl/wadl-%%(version).xml" % (
+            sys.argv[0])
         sys.exit(-1)
-    sys.exit(main(*sys.argv[1:3]))
+    sys.exit(main(sys.argv[1]))
