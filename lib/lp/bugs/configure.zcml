@@ -839,6 +839,7 @@
                     lastchanged
                     lastchecked
                     needscheck
+                    next_check
                     owner
                     remote_importance
                     remotebug
@@ -858,7 +859,14 @@
                     addComment
                     updateImportance
                     updateStatus"
-                set_attributes="last_error_type lastchanged lastchecked needscheck                                                                                                 remote_importance remotestatus"/>
+                set_attributes="
+                    last_error_type
+                    lastchanged
+                    lastchecked
+                    needscheck
+                    next_check
+                    remote_importance
+                    remotestatus"/>
         </class>
 
         <!-- https://launchpad.net/bugs/98639 -->
