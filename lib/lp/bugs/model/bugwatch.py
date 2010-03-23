@@ -282,8 +282,10 @@ class BugWatch(SQLBase):
         activity = BugWatchActivity()
         activity.bug_watch = self
         activity.result = result
-        activity.message = message
-        activity.oops_id = oops_id
+        if message is not None:
+            activity.message = unicode(message)
+        if oops_id is not None:
+            activity.oops_id = unicode(oops_id)
         store = IStore(BugWatchActivity)
         store.add(activity)
 
@@ -292,7 +294,8 @@ class BugWatch(SQLBase):
         store = Store.of(self)
         return store.find(
             BugWatchActivity,
-            BugWatchActivity.bug_watch == self).order_by('activity_date')
+            BugWatchActivity.bug_watch == self).order_by(
+                Desc('activity_date'))
 
 
 class BugWatchSet(BugSetBase):
