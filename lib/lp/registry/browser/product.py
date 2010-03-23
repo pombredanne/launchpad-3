@@ -994,8 +994,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
             item_url = canonical_url(package)
             description = """<a href="%s">%s</a>""" % (
                 item_url, escape(package.name))
-            vocab_terms.append(
-                SimpleTerm(package, package.name, description))
+            vocab_terms.append(SimpleTerm(package, package.name, description))
         vocabulary = SimpleVocabulary(vocab_terms)
         self.form_fields = form.Fields(
             Choice(__name__='distributionsourcepackage',
