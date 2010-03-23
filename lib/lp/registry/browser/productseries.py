@@ -727,6 +727,7 @@ class SetBranchForm(Interface):
         __name__='branch_name',
         title=_('Branch name'),
         description=_(''),
+        required=False,
         )
 
     branch_owner = copy_field(
@@ -734,6 +735,7 @@ class SetBranchForm(Interface):
         __name__='branch_owner',
         title=_('Branch owner'),
         description=_(''),
+        required=False,
         )
 
 
@@ -780,8 +782,19 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
         self.branch_type_import = str(import_button)
         self.branch_type_emptymarker = str(emptymarker)
 
-    def validate(self, data):
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
+    def _validate_link_lp_bzr(self, data):
+        """Validate data for link-lp-bzr case."""
+        if 'branch_location' not in data:
+            self.setFieldError(
+                'branch_location',
+                'The branch location must be set.')
+
+    def _validate_create_new(self, data):
+        """Validate data for create new case."""
+        self._validate_branch(data)
+
+    def _validate_import_external(self, data):
+        """Validate data for import external case."""
         extra_schemes = {
             RevisionControlSystemsExtended.BZR_SVN:['svn'],
             RevisionControlSystemsExtended.GIT:['git'],
@@ -797,53 +810,53 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
                 repo_url_field.field._validate(repo_url)
             except LaunchpadValidationError, lve:
                 self.setFieldError('repo_url', str(lve))
+        # RCS type is mandatory.
+        # This condition should never happen since an initial value is set.
+        if rcs_type is None:
+            # The error shows but does not identify the widget.
+            self.setFieldError(
+                'rcs_type',
+                'You must specify the type of RCS for the remote host.')
+        self._validate_branch(data)
 
+    def _validate_branch(self, data):
+        """Validate that branch name and owner are set."""
+        if 'branch_name' not in data:
+            self.setFieldError(
+                'branch_name',
+                'The branch name must be set.')
+        if 'branch_owner' not in data:
+            self.setFieldError(
+                'branch_owner',
+                'The branch owner must be set.')
+
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
         branch_type = data['branch_type']
         if branch_type == IMPORT_EXTERNAL:
-            # RCS type is mandatory.
-            # This condition should never happen since an initial value is set.
-            if rcs_type is None:
-                # The error shows but does not identify the widget.
-                self.setFieldError(
-                    'rcs_type',
-                    'You must specify the type of RCS for the remote host.')
+            self._validate_import_external(data)
         elif branch_type == LINK_LP_BZR:
-            if 'branch_location' not in data:
-                self.setFieldError(
-                    'branch_location',
-                    'The branch location must be set.')
-
-        if branch_type in [CREATE_NEW, IMPORT_EXTERNAL]:
-            if 'branch_name' not in data:
-                self.setFieldError(
-                    'branch_name',
-                    'The branch name must be set.')
-            if 'branch_owner' not in data:
-                self.setFieldError(
-                    'branch_owner',
-                    'The branch owner must be set.')
-
+            self._validate_link_lp_bzr(data)
+        elif branch_type == CREATE_NEW:
+            self._validate_create_new(data)
+        else:
+            raise AssertionError("Unknown branch type %s" % branch_type)
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
-        print action
-        print data
         self.next_url = canonical_url(self.context)
         branch_type = data.get('branch_type')
         if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
-            if branch_location is None:
-                # TODO: need to stay on the page or move this to the
-                # validator.
-                self.request.response.addErrorNotification(
-                    'No Launchpad branch specified.')
-                self.next_url = None
-
+            if branch_location != self.context.branch:
+                self.context.branch = branch_location
+                # Request an initial upload of translation files.
+                getUtility(IRosettaUploadJobSource).create(
+                    self.context.branch, NULL_REVISION)
             else:
-                self.request.response.addInfoNotification(
-                    'Launchpad branch %s linked to the series.' %
-                    branch_location.unique_name)
+                self.context.branch = branch_location
+            self.request.response.addInfoNotification(
+                'Series code location updated.')
         else:
             branch_name = data.get('branch_name')
             branch_owner = data.get('branch_owner')
