@@ -417,38 +417,40 @@ class BugWatchUpdater(object):
         :param batch_size: The number of bug watches to update in one
             go. If zero, all bug watches will be updated.
         """
-        bug_tracker = getUtility(IBugTrackerSet).getByName(bug_tracker_name)
-        if bug_tracker is None:
-            # If the bug tracker is nonsense then just ignore it.
+        with self.transaction:
+            bug_tracker = getUtility(
+                IBugTrackerSet).getByName(bug_tracker_name)
+            if bug_tracker is None:
+                # If the bug tracker is nonsense then just ignore it.
+                self.log.info(
+                    "Bug tracker '%s' doesn't exist. Ignoring." %
+                    bug_tracker_name)
+                return
+            elif not bug_tracker.watches:
+                # If there are no watches to update, ignore the bug tracker.
+                self.log.info(
+                    "Bug tracker '%s' doesn't have any watches. Ignoring." %
+                    bug_tracker_name)
+                return
+            # Reset all the bug watches for the bug tracker.
             self.log.info(
-                "Bug tracker '%s' doesn't exist. Ignoring." %
-                bug_tracker_name)
-            return
-        elif bug_tracker.watches.count() == 0:
-            # If there are no watches to update, ignore the bug tracker.
-            self.log.info(
-                "Bug tracker '%s' doesn't have any watches. Ignoring." %
-                bug_tracker_name)
-            return
-
-        # Reset all the bug watches for the bug tracker.
-        self.log.info(
-            "Resetting %s bug watches for bug tracker '%s'" %
-            (bug_tracker.watches.count(), bug_tracker_name))
-        bug_tracker.resetWatches()
-        self.txn.commit()
+                "Resetting %s bug watches for bug tracker '%s'" %
+                (bug_tracker.watches.count(), bug_tracker_name))
+            bug_tracker.resetWatches()
 
         # Loop over the bug watches in batches as specificed by
         # batch_size until there are none left to update.
-        self.log.info(
-            "Updating %s watches on bug tracker '%s'" %
-            (bug_tracker.watches.count(), bug_tracker_name))
+        with self.transaction:
+            self.log.info(
+                "Updating %s watches on bug tracker '%s'" %
+                (bug_tracker.watches.count(), bug_tracker_name))
         has_watches_to_update = True
         while has_watches_to_update:
-            self.txn.begin()
             if not self.updateBugTracker(bug_tracker, batch_size):
                 break
-            watches_left = bug_tracker.getBugWatchesNeedingUpdate(23).count()
+            with self.transaction:
+                watches_left = (
+                    bug_tracker.getBugWatchesNeedingUpdate(23).count())
             self.log.info(
                 "%s watches left to check on bug tracker '%s'" %
                 (watches_left, bug_tracker_name))
