@@ -33,6 +33,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.scripts.logger import log as default_log
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started, set_request_started)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -51,10 +53,12 @@ from lp.bugs.externalbugtracker.bugzilla import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking)
+from lp.services.limitedlist import LimitedList
 from lp.services.scripts.base import LaunchpadCronScript
 
 
 SYNCABLE_GNOME_PRODUCTS = []
+MAX_SQL_STATEMENTS_LOGGED = 1000
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -137,7 +141,11 @@ def report_oops(message=None, properties=None, info=None):
     request = ScriptRequest(properties, url)
     error_utility = CheckWatchesErrorUtility()
     error_utility.raising(info, request)
-
+    # clear the SQL log.
+    if getattr(threading.local(), 'request_start_time', None) is not None:
+        clear_request_started()
+        set_request_started(
+            request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED))
     return request
 
 
@@ -245,10 +253,14 @@ class BugWatchUpdater(object):
                 thread_name = thread.getName()
                 thread.setName(bug_tracker_name)
                 try:
+                    set_request_started(
+                        request_statements=LimitedList(
+                            MAX_SQL_STATEMENTS_LOGGED))
                     run = self._interactionDecorator(self.updateBugTracker)
                     return run(bug_tracker_id, batch_size)
                 finally:
                     thread.setName(thread_name)
+                    clear_request_started()
             return updater
 
         for bug_tracker_name in bug_tracker_names:

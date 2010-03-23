@@ -92,7 +92,7 @@ def _reset_dirty_commit_flags(previous_committed, previous_dirty):
 
 _local = threading.local()
 
-def set_request_started(starttime=None):
+def set_request_started(starttime=None, request_statements=None):
     """Set the start time for the request being served by the current
     thread.
 
@@ -107,7 +107,10 @@ def set_request_started(starttime=None):
     if starttime is None:
         starttime = time()
     _local.request_start_time = starttime
-    _local.request_statements = []
+    if request_statements is None:
+        _local.request_statements = []
+    else:
+        _local.request_statements = request_statements
     _local.current_statement_timeout = None
 
 
