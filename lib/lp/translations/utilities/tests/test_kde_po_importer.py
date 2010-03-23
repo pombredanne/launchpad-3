@@ -129,7 +129,7 @@ class KdePOImporterTestCase(unittest.TestCase):
             'GettextPOImporter')
 
     def testGettextPOFileFormat(self):
-        """Check whether non-KDE PO files are recognized as regular PO files."""
+        """Check that non-KDE PO files are recognized as regular PO files."""
         format = self.gettext_template_entry.format
         self.failUnless(format == TranslationFileFormat.PO,
                         ('KdePOImporter format expected PO '
@@ -145,14 +145,16 @@ class KdePOImporterTestCase(unittest.TestCase):
             "KdePOImporter didn't import KDE plural forms correctly.")
 
     def testTranslationPlurals(self):
-        """Check whether translated legacy KDE plural forms are correctly imported."""
+        """Check if translated legacy KDE plural forms are correctly imported.
+        """
         message = self.translation_file.messages[0]
         translations = message.translations
         self.failUnless(
             (translations[0] == u'1st plural form %1' and
              translations[1] == u'2nd plural form %1' and
              translations[2] == u'3rd plural form %1'),
-            "KdePOImporter didn't import translated KDE plural forms correctly.")
+            "KdePOImporter didn't import translated KDE plural forms "
+            "correctly.")
 
     def testTemplateContext(self):
         """Check whether legacy KDE context is correctly imported."""
