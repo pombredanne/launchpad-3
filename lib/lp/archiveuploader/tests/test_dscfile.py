@@ -29,22 +29,12 @@ class TestDscFile(TestCase):
         self.changelog_dest = os.path.join(self.tmpdir, "changelog")
         self.dsc_file = self.MockDSCFile()
 
-    def removeTempFiles(self):
-        """Remove any test copyright file we may have lying around."""
-        if os.path.exists(self.copyright_path):
-            os.remove(self.copyright_path)
-        if os.path.exists(self.changelog_path):
-            os.remove(self.changelog_path)
-        if os.path.exists(os.path.join(self.changelog_dest)):
-            os.remove(os.path.join(self.changelog_dest))
-
     def testBadDebianCopyright(self):
         """Test that a symlink instead of a real file will fail."""
         os.symlink("/etc/passwd", self.copyright_path)
         errors = list(findCopyright(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
-        self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
@@ -62,7 +52,6 @@ class TestDscFile(TestCase):
         errors = list(findCopyright(
             self.dsc_file, self.tmpdir, mock_logger_quiet))
 
-        self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 0)
         self.assertEqual(self.dsc_file.copyright, copyright)
 
@@ -75,7 +64,6 @@ class TestDscFile(TestCase):
         errors = list(findAndMoveChangelog(
             self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
 
-        self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
@@ -96,7 +84,6 @@ class TestDscFile(TestCase):
         errors = list(findAndMoveChangelog(
             self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
 
-        self.addCleanup(self.removeTempFiles)
         self.assertEqual(len(errors), 0)
         self.assertEqual(self.dsc_file.changelog_path,
                          self.changelog_dest)
@@ -116,7 +103,6 @@ class TestDscFile(TestCase):
         errors = list(findAndMoveChangelog(
             self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
 
-        self.addCleanup(self.removeTempFiles)
 
         self.failUnless(isinstance(errors[0], UploadError))
         self.assertIsInstance(errors[0], UploadError)
