@@ -430,7 +430,7 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
             Imported.language = Doomed.language AND
             Imported.variant IS NOT DISTINCT FROM Doomed.variant AND
             Imported.potemplate IS NOT DISTINCT FROM Doomed.potemplate AND
-            -- Came from published source.
+            -- Is used upstream.
             Imported.is_current_upstream IS TRUE AND
             -- Was masked by the message we're about to delete.
             Doomed.is_current_ubuntu IS TRUE AND

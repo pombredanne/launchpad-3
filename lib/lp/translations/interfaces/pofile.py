@@ -279,7 +279,7 @@ class IPOFile(IRosettaStats):
         """
 
     def getChangedRows():
-        """Return exportable rows that differ from published translations.
+        """Return exportable rows that differ from upstream translations.
 
         :return: a list of `VPOExport` objects.
         """

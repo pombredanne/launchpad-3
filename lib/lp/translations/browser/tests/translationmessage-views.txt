@@ -131,7 +131,7 @@ If we request a plural form that is not valid, we get an AssertionError.
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
 
-Published translation is defined and same as the active one.
+Upstream translation is defined and same as the active one.
 
     >>> subview.getImportedTranslation(0)
     u'libreta de direcciones de Evolution'

@@ -325,9 +325,9 @@ set in the PO template.
 
 And should be accepted by our validator.
 
-    >>> published = message.potmsgset.getImportedTranslationMessage(
+    >>> upstream_message = message.potmsgset.getImportedTranslationMessage(
     ...     pofile.potemplate, pofile.language)
-    >>> published.validation_status == TranslationValidationStatus.OK
+    >>> upstream_message.validation_status == TranslationValidationStatus.OK
     True
 
 Fuzzy translations are ignored.
@@ -373,7 +373,7 @@ translator.
     u'Carlos Perell\xf3 Mar\xedn'
 
 The import process produces an email warning us of partial failure, but
-doesn't send it out for published uploads (indicated with subject of None).
+doesn't send it out for upstream uploads (indicated with subject of None).
 
     >>> print subject
     None
@@ -551,7 +551,7 @@ files are now counted as coming from Launchpad translations
     1
 
 This time, our notification email reports complete success, except
-that nothing is emailed out (subject is None) because this is a published
+that nothing is emailed out (subject is None) because this is an upstream
 upload.
 
     >>> print subject
@@ -957,9 +957,9 @@ language, we should not have to reimport all translations):
     >>> current_dv.msgstr2.translation
     u'Third form %d'
 
-== Published import notifications ==
+== Upstream import notifications ==
 
-Add a published POFile import (i.e. from a package or bzr branch),
+Add an upstream POFile import (i.e. from a package or bzr branch),
 approve and import it.
 
     >>> pofile_contents = r'''
@@ -975,9 +975,9 @@ approve and import it.
     ... msgstr "blah"
     ... '''
     >>> pofile = factory.makePOFile('sr')
-    >>> published = True
+    >>> from_upstream = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, from_upstream, person,
     ...     productseries=pofile.potemplate.productseries,
     ...     potemplate=pofile.potemplate, pofile=pofile)
     >>> transaction.commit()
@@ -996,14 +996,14 @@ For syntax errors, failure notification is still sent out.
     # Remove final quote from the contents, causing a syntax error.
     >>> pofile_contents = pofile_contents[:-2]
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, from_upstream, person,
     ...     productseries=pofile.potemplate.productseries,
     ...     potemplate=pofile.potemplate, pofile=pofile)
     >>> transaction.commit()
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
-Import fails and email is sent out even though it's a published upload.
+Import fails and email is sent out even though it's an upstream upload.
 
     >>> entry.status == RosettaImportStatus.FAILED
     True

@@ -616,12 +616,12 @@ class POFileUploadView(POFileView):
                 " recognised as a file that can be imported.")
             return
 
-        # We only set the 'published' flag if the upload is marked as an
+        # We only set the 'from_upstream' flag if the upload is marked as an
         # upstream upload.
         if self.form.get('upload_type') == 'upstream':
-            published = True
+            from_upstream = True
         else:
-            published = False
+            from_upstream = False
 
         if self.context.path is None:
             # The POFile is a dummy one, we use the filename as the path.
@@ -630,7 +630,7 @@ class POFileUploadView(POFileView):
             path = self.context.path
         # Add it to the queue.
         translation_import_queue.addOrUpdateEntry(
-            path, content, published, self.user,
+            path, content, from_upstream, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
             distroseries=self.context.potemplate.distroseries,
             productseries=self.context.potemplate.productseries,
