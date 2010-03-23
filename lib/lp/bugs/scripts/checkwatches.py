@@ -262,6 +262,10 @@ class BugWatchUpdater(object):
         Ensures that no transaction is in progress on entry, and
         commits on a successful exit. Exceptions are propogated;
         transactions are not aborted when there's an error.
+
+        This can be nested. The absense of a transaction will only be
+        checked on entry to the outer most context. However, the
+        transaction will be committed on exit from every level.
         """
         try:
             self._local.within_transaction_semaphore
