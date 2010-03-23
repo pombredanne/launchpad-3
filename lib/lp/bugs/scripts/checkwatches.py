@@ -234,9 +234,10 @@ class BugWatchUpdater(object):
         else:
             self._syncable_gnome_products = list(SYNCABLE_GNOME_PRODUCTS)
 
-        self._principal = (
-            getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
-                self.LOGIN, want_password=False))
+        with self.transaction:
+            self._principal = (
+                getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
+                    self.LOGIN, want_password=False))
 
     @property
     @contextmanager
@@ -291,16 +292,16 @@ class BugWatchUpdater(object):
                 "within_transaction_semaphore released too many times.")
 
     @with_interaction
-    @with_transaction
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
         """Yields functions that can be used to update each bug tracker."""
-        ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
-        # Save the name, so we can use it in other transactions.
-        ubuntu_bugzilla_name = ubuntu_bugzilla.name
-
-        if bug_tracker_names is None:
-            bug_tracker_names = [
-                bugtracker.name for bugtracker in getUtility(IBugTrackerSet)]
+        with self.transaction:
+            ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
+            # Save the name, so we can use it in other transactions.
+            ubuntu_bugzilla_name = ubuntu_bugzilla.name
+            # Get all bug tracker names if none have been specified.
+            if bug_tracker_names is None:
+                bug_tracker_names = [
+                    tracker.name for tracker in getUtility(IBugTrackerSet)]
 
         def make_updater(bug_tracker_name, bug_tracker_id):
             """Returns a function that can update the given bug tracker."""
@@ -326,14 +327,19 @@ class BugWatchUpdater(object):
                 self.log.debug(
                     "Skipping updating Ubuntu Bugzilla watches.")
             else:
-                bug_tracker = getUtility(IBugTrackerSet).getByName(
-                    bug_tracker_name)
-                if bug_tracker.active:
-                    yield make_updater(bug_tracker.name, bug_tracker.id)
+                with self.transaction:
+                    bug_tracker = getUtility(
+                        IBugTrackerSet).getByName(bug_tracker_name)
+                    bug_tracker_id = bug_tracker.id
+                    bug_tracker_active = bug_tracker.active
+                    bug_tracker_baseurl = bug_tracker.baseurl
+
+                if bug_tracker_active:
+                    yield make_updater(bug_tracker_name, bug_tracker_id)
                 else:
                     self.log.debug(
                         "Updates are disabled for bug tracker at %s" %
-                        bug_tracker.baseurl)
+                        bug_tracker_baseurl)
 
     def updateBugTrackers(
         self, bug_tracker_names=None, batch_size=None, scheduler=None):
@@ -386,6 +392,8 @@ class BugWatchUpdater(object):
             # We should never catch KeyboardInterrupt or SystemExit.
             raise
         except Exception, error:
+            # Abort transaction before reporting the error.
+            self.txn.abort()
             # If something unexpected goes wrong, we log it and
             # continue: a failure shouldn't break the updating of
             # the other bug trackers.
@@ -406,7 +414,6 @@ class BugWatchUpdater(object):
                     "An exception was raised when updating %s" %
                     bug_tracker_url,
                     properties=properties, info=info)
-            self.txn.abort()
             return False
         else:
             return True
@@ -428,7 +435,7 @@ class BugWatchUpdater(object):
                     "Bug tracker '%s' doesn't exist. Ignoring." %
                     bug_tracker_name)
                 return
-            elif not bug_tracker.watches:
+            elif bug_tracker.watches.count() == 0:
                 # If there are no watches to update, ignore the bug tracker.
                 self.log.info(
                     "Bug tracker '%s' doesn't have any watches. Ignoring." %
@@ -463,10 +470,12 @@ class BugWatchUpdater(object):
         with self.transaction:
             remotesystem = (
                 externalbugtracker.get_external_bugtracker(bug_tracker))
-            remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
             # We special-case the Gnome Bugzilla.
             is_gnome_bugzilla = bug_tracker is (
                 getUtility(ILaunchpadCelebrities).gnome_bugzilla)
+
+        # Probe the remote system for additional capabilities.
+        remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
 
         if (is_gnome_bugzilla and
             isinstance(remotesystem_to_use, BugzillaAPI) and
@@ -521,7 +530,7 @@ class BugWatchUpdater(object):
         with self.transaction:
             bug_watches_to_update = (
                 bug_tracker.getBugWatchesNeedingUpdate(23))
-            bug_watches_need_updating = bool(bug_watches_to_update)
+            bug_watches_need_updating = (bug_watches_to_update.count() > 0)
 
         if bug_watches_need_updating:
             # XXX: GavinPanella 2010-01-18 bug=509223 : Ask remote
@@ -532,6 +541,8 @@ class BugWatchUpdater(object):
                 trackers_and_watches = self._getExternalBugTrackersAndWatches(
                     bug_tracker, bug_watches_to_update)
             except UnknownBugTrackerTypeError, error:
+                # Abort transaction before reporting the error.
+                self.txn.abort()
                 # We update all the bug watches to reflect the fact that
                 # this error occurred. We also update their last checked
                 # date to ensure that they don't get checked for another
@@ -551,8 +562,9 @@ class BugWatchUpdater(object):
                     self.updateBugWatches(
                         remotesystem, bug_watch_batch, batch_size=batch_size)
         else:
-            self.log.debug(
-                "No watches to update on %s" % bug_tracker.baseurl)
+            with self.transaction:
+                self.log.debug(
+                    "No watches to update on %s" % bug_tracker.baseurl)
 
     def _convertRemoteStatus(self, remotesystem, remote_status):
         """Convert a remote bug status to a Launchpad status and return it.
@@ -771,13 +783,12 @@ class BugWatchUpdater(object):
             # have been updated before re-raising it. We also update the
             # bug watches' lastchecked dates so that checkwatches
             # doesn't keep trying to update them every time it runs.
-            self.txn.begin()
-            errortype = get_bugwatcherrortype_for_error(error)
-            for bug_watch_id in bug_watch_ids:
-                bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
-                bugwatch.lastchecked = UTC_NOW
-                bugwatch.last_error_type = errortype
-            self.txn.commit()
+            with self.transaction:
+                errortype = get_bugwatcherrortype_for_error(error)
+                for bug_watch_id in bug_watch_ids:
+                    bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
+                    bugwatch.lastchecked = UTC_NOW
+                    bugwatch.last_error_type = errortype
             raise
 
         # Whether we can import and / or push comments is determined on
@@ -903,19 +914,16 @@ class BugWatchUpdater(object):
                 raise
 
             except Exception, error:
-                # Restart transaction before recording the error.
+                # Abort transaction before recording the error.
                 self.txn.abort()
-                self.txn.begin()
                 # We record errors against the bug watches and update
                 # their lastchecked dates so that we don't try to
                 # re-check them every time checkwatches runs.
                 errortype = get_bugwatcherrortype_for_error(error)
-                for bugwatch in bug_watches:
-                    bugwatch.lastchecked = UTC_NOW
-                    bugwatch.last_error_type = errortype
-                # We need to commit the transaction, in case the next
-                # bug fails to update as well.
-                self.txn.commit()
+                with self.transaction:
+                    for bugwatch in bug_watches:
+                        bugwatch.lastchecked = UTC_NOW
+                        bugwatch.last_error_type = errortype
                 # Send the error to the log too.
                 self.error(
                     "Failure updating bug %r on %s (local bugs: %s)." %
