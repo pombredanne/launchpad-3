@@ -194,6 +194,19 @@ def with_interaction(func):
     return wrapper
 
 
+def with_transaction(func):
+    """Wrap a method to ensure that it runs within a transaction.
+
+    It's intended for use with `BugWatchUpdater`, which provides a
+    `transaction` property; this is the hook that's required.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        with self.transaction:
+            return func(self, *args, **kwargs)
+    return wrapper
+
+
 class BugWatchUpdater(object):
     """Takes responsibility for updating remote bug watches."""
 
@@ -269,6 +282,7 @@ class BugWatchUpdater(object):
         endInteraction()
 
     @with_interaction
+    @with_transaction
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
         """Yields functions that can be used to update each bug tracker."""
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
@@ -330,9 +344,8 @@ class BugWatchUpdater(object):
             scheduler = SerialScheduler()
 
         # Schedule all the jobs to run.
-        with self.transaction:
-            for updater in self._bugTrackerUpdaters(bug_tracker_names):
-                scheduler.schedule(updater, batch_size)
+        for updater in self._bugTrackerUpdaters(bug_tracker_names):
+            scheduler.schedule(updater, batch_size)
 
         # Run all the jobs.
         scheduler.run()
