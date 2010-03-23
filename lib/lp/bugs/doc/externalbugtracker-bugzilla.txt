@@ -291,7 +291,7 @@ update:
     ...     external_bugzilla, gnome_bugzilla.watches)
     INFO:...:Updating 2 watches for 2 bugs on http://bugzilla.gnome.org/bugs
     WARNING:...Didn't find bug u'304070' on
-    http://bugzilla.gnome.org/bugs (local bugs: 15).
+    http://bugzilla.gnome.org/bugs (local bugs: 15). (OOPS-...)
 
     >>> for bug_watch in gnome_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
@@ -338,7 +338,7 @@ Then updateBugWatches() will make one request per bug watch:
     CALLED _postPage()
     CALLED _postPage()
     WARNING:...:Didn't find bug u'304070' on
-    http://bugzilla.gnome.org/bugs (local bugs: 15).
+    http://bugzilla.gnome.org/bugs (local bugs: 15). (OOPS-...)
 
     >>> remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
@@ -378,7 +378,7 @@ updateBugWatches() issues only one request to update all watches:
     INFO:...:Updating 207 watches for 207 bugs...
     CALLED _postPage()
     WARNING:...:Didn't find bug u'304070' on
-    http://bugzilla.gnome.org/bugs (local bugs: 15).
+    http://bugzilla.gnome.org/bugs (local bugs: 15). (OOPS-...)
 
     >>> remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
