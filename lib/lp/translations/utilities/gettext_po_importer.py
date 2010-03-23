@@ -28,7 +28,7 @@ class GettextPOImporter:
         self.productseries = None
         self.distroseries = None
         self.sourcepackagename = None
-        self.is_published = False
+        self.from_upstream = False
         self.content = None
 
     def getFormat(self, file_contents):
@@ -51,7 +51,7 @@ class GettextPOImporter:
         self.distroseries = translation_import_queue_entry.distroseries
         self.sourcepackagename = (
             translation_import_queue_entry.sourcepackagename)
-        self.is_published = translation_import_queue_entry.is_published
+        self.from_upstream = translation_import_queue_entry.from_upstream
 
         librarian_client = getUtility(ILibrarianClient)
         self.content = librarian_client.getFileByAlias(
