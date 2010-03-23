@@ -46,12 +46,17 @@ class BranchFileSystemClient:
     """
 
     def __init__(self, branchfs_endpoint, user_id, expiry_time=None,
-                 _now=time.time, seen_new_branch_hook=None):
+                 seen_new_branch_hook=None, _now=time.time):
         """Construct a caching branchfs_endpoint.
 
         :param branchfs_endpoint: An XML-RPC proxy that implements callRemote.
         :param user_id: The database ID of the user who will be making these
             requests. An integer.
+        :param expiry_time: If supplied, only cache the results of
+            translatePath for this many seconds.  If not supplied, cache the
+            results of translatePath for as long as this instance exists.
+        :param seen_new_branch_hook: A callable that will be called with the
+            unique_name of each new branch that is accessed.
         """
         self._branchfs_endpoint = branchfs_endpoint
         self._cache = {}
@@ -79,7 +84,7 @@ class BranchFileSystemClient:
         matched_part = self._getMatchedPart(path, transport_tuple)
         if transport_type == BRANCH_TRANSPORT:
             if self.seen_new_branch_hook:
-                self.seen_new_branch_hook(matched_part)
+                self.seen_new_branch_hook(matched_part.strip('/'))
             self._cache[matched_part] = (transport_type, data, self._now())
         return transport_tuple
 
