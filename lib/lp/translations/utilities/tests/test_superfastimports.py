@@ -45,8 +45,10 @@ class TestSuperFastImports(TestCaseWithFactory):
             pofile=self.pofile, is_imported=False)
         cached_file = ExistingPOFileInDatabase(self.pofile)
         message_data = self.getTranslationMessageData(current_message)
-        self.assertFalse(cached_file.isAlreadyImportedTheSame(message_data))
-        self.assertTrue(cached_file.isAlreadyTranslatedTheSame(message_data))
+        self.assertFalse(
+            cached_file.isAlreadyTranslatedTheSameUpstream(message_data))
+        self.assertTrue(
+            cached_file.isAlreadyTranslatedTheSameInUbuntu(message_data))
 
     def test_imported_messages(self):
         # Make sure current, imported messages are properly
@@ -55,8 +57,10 @@ class TestSuperFastImports(TestCaseWithFactory):
             pofile=self.pofile, is_imported=True)
         cached_file = ExistingPOFileInDatabase(self.pofile, is_imported=True)
         message_data = self.getTranslationMessageData(imported_message)
-        self.assertTrue(cached_file.isAlreadyImportedTheSame(message_data))
-        self.assertTrue(cached_file.isAlreadyTranslatedTheSame(message_data))
+        self.assertTrue(
+            cached_file.isAlreadyTranslatedTheSameUpstream(message_data))
+        self.assertTrue(
+            cached_file.isAlreadyTranslatedTheSameInUbuntu(message_data))
 
     def test_inactive_messages(self):
         # Make sure non-current messages (i.e. suggestions) are
@@ -65,8 +69,10 @@ class TestSuperFastImports(TestCaseWithFactory):
             pofile=self.pofile, suggestion=True)
         cached_file = ExistingPOFileInDatabase(self.pofile)
         message_data = self.getTranslationMessageData(inactive_message)
-        self.assertFalse(cached_file.isAlreadyImportedTheSame(message_data))
-        self.assertFalse(cached_file.isAlreadyTranslatedTheSame(message_data))
+        self.assertFalse(
+            cached_file.isAlreadyTranslatedTheSameUpstream(message_data))
+        self.assertFalse(
+            cached_file.isAlreadyTranslatedTheSameInUbuntu(message_data))
 
     def test_query_timeout(self):
         # Test that super-fast-imports doesn't cache anything when it hits
@@ -84,7 +90,8 @@ class TestSuperFastImports(TestCaseWithFactory):
             pofile=self.pofile, is_imported=False)
         message_data = self.getTranslationMessageData(current_message)
         cached_file = ExistingPOFileInDatabase(self.pofile)
-        self.assertFalse(cached_file.isAlreadyTranslatedTheSame(message_data))
+        self.assertFalse(cached_file.isAlreadyTranslatedTheSameInUbuntu(
+                message_data))
 
         # Restore the old configuration.
         config.pop('super_fast_timeout')
