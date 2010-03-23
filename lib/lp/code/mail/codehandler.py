@@ -308,12 +308,18 @@ class CodeHandler:
         any CodeReviewVote item value, case-insensitively.
         :return: True.
         """
+        user = getUtility(ILaunchBag).user
         try:
             merge_proposal = self.getBranchMergeProposal(email_addr)
+        except NonExistantBranchMergeProposalAddress:
+            send_process_error_notification(
+                str(user.preferredemail.email),
+                'Submit Request Failure',
+                'There is no merge proposal at %s' % email_addr,
+                mail)
+            return True
         except BadBranchMergeProposalAddress:
             return False
-
-        user = getUtility(ILaunchBag).user
         context = CodeReviewEmailCommandExecutionContext(merge_proposal, user)
         try:
             email_body_text = get_main_body(mail)

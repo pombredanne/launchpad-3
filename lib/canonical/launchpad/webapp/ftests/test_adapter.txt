@@ -56,6 +56,22 @@ After we complete the request, the statement log is cleared:
     >>> get_request_statements()
     []
 
+By default, all statements of a request are recorded in a Python list.
+We can optionally specify another container where the statements are
+stored. If we use a LimitedList, we can limit the number of recorded
+statements.
+
+    >>> from lp.services.limitedlist import LimitedList
+    >>> set_request_started(request_statements=LimitedList(2))
+    >>> store.execute('SELECT 1', noresult=True)
+    >>> store.execute('SELECT 2', noresult=True)
+    >>> store.execute('SELECT 3', noresult=True)
+    >>> for starttime, endtime, db_id, statement in get_request_statements():
+    ...     print statement
+    SELECT 2
+    SELECT 3
+    >>> clear_request_started()
+
 
 Statement Timeout
 =================

@@ -72,7 +72,10 @@ class Bugzilla(ExternalBugTracker):
             # server because it's the most lightweight method there is.
             remote_version = proxy.Bugzilla.version()
         except xmlrpclib.Fault, fault:
-            if fault.faultCode == 'Client':
+            # 'Client' is a hangover. Either Bugzilla or the Perl
+            # XML-RPC lib in use returned it as faultCode. It's wrong,
+            # but it's known wrongness, so we recognize it here.
+            if fault.faultCode in (xmlrpclib.METHOD_NOT_FOUND, 'Client'):
                 return False
             else:
                 raise
@@ -110,7 +113,10 @@ class Bugzilla(ExternalBugTracker):
             # server because it's the most lightweight method there is.
             proxy.Launchpad.plugin_version()
         except xmlrpclib.Fault, fault:
-            if fault.faultCode == 'Client':
+            # 'Client' is a hangover. Either Bugzilla or the Perl
+            # XML-RPC lib in use returned it as faultCode. It's wrong,
+            # but it's known wrongness, so we recognize it here.
+            if fault.faultCode in (xmlrpclib.METHOD_NOT_FOUND, 'Client'):
                 return False
             else:
                 raise
