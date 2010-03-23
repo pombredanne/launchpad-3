@@ -73,6 +73,7 @@ import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
+from wsgi_intercept import httplib2_intercept
 
 from lazr.restful.utils import safe_hasattr
 
@@ -940,9 +941,7 @@ class FunctionalLayer(BaseLayer):
             'localhost', 80, lambda: wsgi_application)
         wsgi_intercept.add_wsgi_intercept(
             'api.launchpad.dev', 80, lambda: wsgi_application)
-
-        from wsgi_intercept.httplib2_intercept import install
-        install()
+        httplib2_intercept.install()
 
 
     @classmethod
@@ -950,6 +949,8 @@ class FunctionalLayer(BaseLayer):
     def tearDown(cls):
         FunctionalLayer.isSetUp = False
         wsgi_intercept.remove_wsgi_intercept('localhost', 80)
+        wsgi_intercept.remove_wsgi_intercept('api.launchpad.dev', 80)
+        httplib2_intercept.uninstall()
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
