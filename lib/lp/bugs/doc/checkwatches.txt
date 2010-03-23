@@ -50,6 +50,7 @@ the watch.
     DEBUG   No watches to update on http://bugs.debian.org
     DEBUG   No watches to update on mailto:bugs@example.com
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    (OOPS-...)
     DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on http://sourceforge.net/
     DEBUG   No watches to update on http://bugzilla.gnome.org/
@@ -85,10 +86,16 @@ and their type is 'BugWatchUpdateWarning'.
     Revision: ...
     User: None
     URL: None
-    Duration: -1
+    Duration: ...
     Informational: False
     <BLANKLINE>
     error-explanation=ExternalBugtracker for ... is not known.
+    ...SELECT 1 FROM BugTracker WHERE BugTracker.id = %s
+    ...
+    Traceback (most recent call last):
+    ...
+    BugWatchUpdateWarning: ExternalBugtracker for BugTrackerType 'SAVANE'
+    is not known.
 
 We set a default timeout on checkwatches to 30 seconds. In order to test
 this, we can monkey-patch urllib2.urlopen so that it always raises a
@@ -157,13 +164,15 @@ will also be automatically filled from the baseurl OOPS property.
     Revision: ...
     User: None
     URL: http://bugs.example.com
-    Duration: -1
+    Duration: ...
     Informational: False
     <BLANKLINE>
     baseurl=http://bugs.example.com
     bugtracker=example-bugs
     error-explanation=Connection timed out ... http://bugs.example.com
     <BLANKLINE>
+    ...SELECT COUNT(*) FROM...
+    ...SELECT BugTracker.active, BugTracker.baseurl...
     <BLANKLINE>
     Traceback (most recent call last):
     ...
@@ -206,7 +215,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
     WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
-    known.
+    known. (OOPS-...)
 
 The bug watch's last error type field will have been updated to reflect
 the error that was raised:
@@ -309,6 +318,7 @@ BugWatchUpdater's logger.
     INFO Resetting 1 bug watches for bug tracker 'savannah'
     INFO Updating 1 watches on bug tracker 'savannah'
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    (OOPS-...)
     INFO 0 watches left to check on bug tracker 'savannah'
 
 We can see that the Savannah bug watch has been updated recently. Also,

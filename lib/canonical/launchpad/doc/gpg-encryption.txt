@@ -37,11 +37,11 @@ content, let's use cryptic form.
 
     >>> content = u'\ufcber'
 
-Note, gpgkeys is ordered (by GPGKey.id), we can slice it without
-generating warnings: (its is also valid for Person.inactivegpgkeys
+Note, gpg_keys is ordered (by GPGKey.id), we can slice it without
+generating warnings: (its is also valid for Person.inactive_gpg_keys
 property, since both are generating using GPGKeyset.getGPGKeys)
 
-    >>> fingerprint = bag.user.gpgkeys[0].fingerprint
+    >>> fingerprint = bag.user.gpg_keys[0].fingerprint
 
 Note fingerprint is also unicode.
 
