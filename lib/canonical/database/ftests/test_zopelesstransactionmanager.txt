@@ -111,7 +111,7 @@ We can also register synchronizers with the transaction manager.
     Transaction will be completed.
     Transaction completed.
 
-The synchonizer can be ungeristered again.
+The synchonizer can be unregistered again.
 
     >>> ztm.unregisterSynch(synchronizer)
     >>> ztm.begin()

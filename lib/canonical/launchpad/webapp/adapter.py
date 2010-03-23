@@ -113,15 +113,14 @@ def set_request_started(starttime=None, request_statements=None, txn=None):
     """Set the start time for the request being served by the current
     thread.
 
-    If the argument starttime is given, it is used as the start time for
-    the request, as returned by time().  If it is not given, the
-    current time is used.
-
-    The argument request_statements, if specified, should be a mutable
-    sequence where the recorded SQL statements can be logged.
-
-    The optional argument txn is a transaction manager. If given,
-    txn.commit() and txn.abort() calls are logged too.
+    :param start_time: The start time of the request. If given, it is used as
+        the start time for the request, as returned by time().  If it is not
+        given, the current time is used.
+    :param request_statements; The sequence used to store the logged SQL
+        statements.
+    :type request_statements: mutable sequence.
+    :param txn: The current transaction manager. If given, txn.commit() and
+        txn.abort() calls are logged too.
     """
     if getattr(_local, 'request_start_time', None) is not None:
         warnings.warn('set_request_started() called before previous request '
