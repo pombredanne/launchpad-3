@@ -376,7 +376,8 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         :param authserver: An XML-RPC client that implements callRemote.
         :param user_id: The database ID for the user who is accessing
             branches.
-        :param seen_new_branch_hook: XXX.
+        :param seen_new_branch_hook: A callable that will be called once for
+            each branch accessed via this server.
         """
         AsyncVirtualServer.__init__(self, scheme)
         self._authserver = BranchFileSystemClient(
@@ -578,7 +579,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
         :param mirror_transport: A Bazaar `Transport` that points to the
             "mirrored" area of Launchpad. See module docstring for more
             information.
-        :param seen_new_branch_hook: XXX
+        :param seen_new_branch_hook: A callable that will be called once for
+            each branch accessed via this server.
         """
         scheme = 'lp-%d:///' % id(self)
         super(LaunchpadServer, self).__init__(
