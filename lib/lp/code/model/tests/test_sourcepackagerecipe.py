@@ -16,5 +16,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
-        source_package_recipe = self.factory.makeSourcePackageRecipe()
-        self.assertNotEqual(None, source_package_recipe.description)
+        description = u'The whoozits and whatzits.'
+        source_package_recipe = self.factory.makeSourcePackageRecipe(
+            description=description)
+        self.assertEqual(description, source_package_recipe.description)
