@@ -9,11 +9,66 @@ from unittest import TestLoader
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import login
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.testing import ZopelessDatabaseLayer
+
 from lp.testing import TestCaseWithFactory
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
+
+
+class TestProductSeriesSetPackaging(TestCaseWithFactory):
+    """Test for ProductSeries.setPackaging()."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        login('admin@canonical.com')
+
+        self.sourcepackagename = self.factory.makeSourcePackageName()
+
+        # Set up productseries.
+        self.person = self.factory.makePerson()
+        self.product = self.factory.makeProduct(owner=self.person)
+        self.dev_focus = self.product.development_focus
+        self.product_series = self.factory.makeProductSeries(self.product)
+
+        # Set up distroseries.
+        self.distroseries_set = getUtility(IDistroSeriesSet)
+        self.distribution_set = getUtility(IDistributionSet)
+        self.ubuntu = self.distribution_set.getByName("ubuntu")
+        self.debian = self.distribution_set.getByName("debian")
+        self.ubuntu_series = self.factory.makeDistroSeries(self.ubuntu)
+        self.debian_series = self.factory.makeDistroSeries(self.debian)
+
+    def test_setPackaging_without_publishing_history(self):
+        # Fully functional (ubuntu) distributions are prevented from
+        # having a packaging entry for a distroseries that does not
+        # have a source package publishing history.
+        self.assertRaises(
+            AssertionError,
+            self.product_series.setPackaging,
+            self.ubuntu_series, self.sourcepackagename, self.person)
+
+    def test_setPackaging_with_publishing_history(self):
+        # Add the source package publishing history to the distroseries
+        # so that the packaging can be added successfully.
+        self.spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.ubuntu_series)
+        self.product_series.setPackaging(
+            self.ubuntu_series, self.sourcepackagename, self.person)
+
+    def test_setPackaging_not_ubuntu(self):
+        # A non-fully-functional distribution does not need a source
+        # package publishing history before adding the packaging entry.
+        self.product_series.setPackaging(
+            self.debian_series, self.sourcepackagename, self.person)
 
 
 class TestProductSeriesDrivers(TestCaseWithFactory):
