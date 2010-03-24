@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -209,6 +209,7 @@ class IPOTMsgSet(Interface):
 
     def updateTranslation(pofile, submitter, new_translations,
                           is_current_upstream, lock_timestamp,
+                          force_shared=False, force_diverged=False,
                           force_suggestion=False, ignore_errors=False,
                           force_edition_rights=False, allow_credits=False):
         """Update or create a translation message using `new_translations`.
@@ -238,6 +239,15 @@ class IPOTMsgSet(Interface):
             no message is to be updated.  This can happen when updating a
             translation credits message without the is_current_upstream
             parameter set.
+        """
+
+    def submitSuggestion(pofile, submitter, new_translations):
+        """Submit a suggested translation for this message.
+
+        If an identical message is already present, it will be returned
+        (and it is not changed).  Otherwise, a new one is created and
+        returned.  Suggestions for translation credits messages are
+        ignored, and None is returned in that case.
         """
 
     def dismissAllSuggestions(pofile, reviewer, lock_timestamp):
