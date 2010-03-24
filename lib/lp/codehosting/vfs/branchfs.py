@@ -627,8 +627,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return deferred.addCallback(got_path_info)
 
 
-def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
-                  mirror_directory=None):
+def get_lp_server(user_id, branchfs_endpoint_url=None, branch_directory=None):
     """Create a Launchpad server.
 
     :param user_id: A unique database ID of the user whose branches are
@@ -638,23 +637,16 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
     :param mirror_directory: Where all Launchpad branches are mirrored.
     :return: A `LaunchpadServer`.
     """
-    # Get the defaults from the config.
-    if hosted_directory is None:
-        hosted_directory = config.codehosting.mirrored_branches_root
-    if mirror_directory is None:
-        mirror_directory = config.codehosting.mirrored_branches_root
-    if branchfs_endpoint_url is None:
-        branchfs_endpoint_url = config.codehosting.branchfs_endpoint
+    # Get the default from the config.
+    if branch_directory is None:
+        branch_directory = config.codehosting.mirrored_branches_root
 
-    hosted_url = urlutils.local_path_to_url(hosted_directory)
-    mirror_url = urlutils.local_path_to_url(mirror_directory)
+    branch_url = urlutils.local_path_to_url(branch_directory)
     branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
     # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
-    hosted_transport = get_chrooted_transport(hosted_url)
-    mirror_transport = get_chrooted_transport(mirror_url)
+    branch_transport = get_chrooted_transport(branch_url)
     lp_server = LaunchpadServer(
-        BlockingProxy(branchfs_client), user_id,
-        hosted_transport, mirror_transport)
+        BlockingProxy(branchfs_client), user_id, branch_transport)
     return lp_server
 
 
