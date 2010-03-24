@@ -27,6 +27,8 @@ import xmlrpclib
 
 from canonical.config import config
 from lp.buildmaster.interfaces.builder import CannotFetchFile
+from lp.buildmaster.model.builder import (rescueBuilderIfLost,
+    updateBuilderStatus)
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
 
@@ -67,8 +69,14 @@ class MockBuilder:
     def checkSlaveAlive(self):
         pass
 
-    def checkCanBuildForDistroArchSeries(self, distro_arch_series):
+    def checkSlaveArchitecture(self):
         pass
+
+    def rescueIfLost(self, logger=None):
+        rescueBuilderIfLost(self, logger)
+
+    def updateStatus(self, logger=None):
+        updateBuilderStatus(self, logger)
 
 
 class SaneBuildingSlave:

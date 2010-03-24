@@ -18,14 +18,9 @@ import logging
 from zope.component import getUtility
 
 from canonical.buildd.utils import notes
-from canonical.config import config
 from canonical.librarian.interfaces import ILibrarianClient
-from lp.archivepublisher.utils import process_in_batches
-from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.buildergroup import BuilderGroup
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 
 class BuilddMaster:
@@ -106,76 +101,6 @@ class BuilddMaster:
         self._archseries[archseries]["builders"] = \
             notes[archseries.processorfamily]["builders"]
 
-    def createMissingBuilds(self, distroseries):
-        """Ensure that each published package is completly built."""
-        self._logger.info("Processing %s" % distroseries.name)
-        # Do not create builds for distroseries with no nominatedarchindep
-        # they can't build architecture independent packages properly.
-        if not distroseries.nominatedarchindep:
-            self._logger.debug(
-                "No nominatedarchindep for %s, skipping" % distroseries.name)
-            return
-
-        # Listify the architectures to avoid hitting this MultipleJoin
-        # multiple times.
-        distroseries_architectures = list(distroseries.architectures)
-        if not distroseries_architectures:
-            self._logger.debug(
-                "No architectures defined for %s, skipping"
-                % distroseries.name)
-            return
-
-        architectures_available = list(distroseries.enabled_architectures)
-        if not architectures_available:
-            self._logger.debug(
-                "Chroots missing for %s, skipping" % distroseries.name)
-            return
-
-        self._logger.info(
-            "Supported architectures: %s" %
-            " ".join(arch_series.architecturetag
-                     for arch_series in architectures_available))
-
-        pas_verify = BuildDaemonPackagesArchSpecific(
-            config.builddmaster.root, distroseries)
-
-        sources_published = distroseries.getSourcesPublishedForAllArchives()
-        self._logger.info(
-            "Found %d source(s) published." % sources_published.count())
-
-        def process_source(pubrec):
-            builds = pubrec.createMissingBuilds(
-                architectures_available=architectures_available,
-                pas_verify=pas_verify, logger=self._logger)
-            if len(builds) > 0:
-                self.commit()
-
-        process_in_batches(
-            sources_published, process_source, self._logger,
-            minimum_chunk_size=1000)
-
-    def addMissingBuildQueueEntries(self):
-        """Create missing Buildd Jobs. """
-        self._logger.info("Scanning for build queue entries that are missing")
-
-        buildset = getUtility(IBuildSet)
-        builds = buildset.getPendingBuildsForArchSet(self._archseries)
-
-        if not builds:
-            return
-
-        for build in builds:
-            if not build.buildqueue_record:
-                name = build.sourcepackagerelease.name
-                version = build.sourcepackagerelease.version
-                tag = build.distroarchseries.architecturetag
-                self._logger.debug(
-                    "Creating buildqueue record for %s (%s) on %s"
-                    % (name, version, tag))
-                build.queueBuild()
-
-        self.commit()
-
     def scanActiveBuilders(self):
         """Collect informations/results of current build jobs."""
 
@@ -194,25 +119,3 @@ class BuilddMaster:
         if subname is None:
             return self._logger
         return logging.getLogger("%s.%s" % (self._logger.name, subname))
-
-    def scoreCandidates(self):
-        """Iterate over the pending buildqueue entries and re-score them."""
-        if not self._archseries:
-            self._logger.info("No architecture found to rescore.")
-            return
-
-        # Get the current build job candidates.
-        archseries = self._archseries.keys()
-        bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(archseries)
-
-        self._logger.info("Found %d build in NEEDSBUILD state. Rescoring"
-                          % candidates.count())
-
-        for job in candidates:
-            uptodate_build = getUtility(IBuildSet).getByQueueEntry(job)
-            if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
-                continue
-            job.score()
-
-        self.commit()
