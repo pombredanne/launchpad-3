@@ -6,7 +6,10 @@
 #  https://code.edge.launchpad.net/~mvo/ubuntu-maintenance-check/python-port
 # (where it will vanish once taken here)
 
+import apt
+import apt_pkg
 import logging
+import os
 import sys
 import urllib2
 import urlparse
@@ -60,13 +63,56 @@ DISTRO_NAMES_AND_LTS_SUPPORT = [ ("ubuntu",   True),
 # germinate output base directory
 BASE_URL = "http://people.canonical.com/~ubuntu-archive/germinate-output/"
 
-# hints dir url, hints file is "$distro.binary-hints" by default
-# (e.g. lucid.binary-hints)
+# hints dir url, hints file is "$distro.hints" by default
+# (e.g. lucid.hints)
 HINTS_DIR_URL = "http://people.canonical.com/~mvo/maintenance-check/"
+
+# we need the archive root to parse the Sources file to support
+# by-source hints
+#ARCHIVE_ROOT = "file:/srv/launchpad.net/ubuntu-archive/ubuntu"
+ARCHIVE_ROOT = "http://archive.ubuntu.com/ubuntu"
 
 # support timeframe tag used in the Packages file
 SUPPORT_TAG = "Supported"
 
+def get_binaries_for_source_pkg(srcname):
+    """ 
+    get all binary package names for the given source package name
+    """
+    pkgnames = set()
+    recs = apt_pkg.GetPkgSrcRecords()
+    while recs.Lookup(srcname):
+        for binary in recs.binaries:
+            pkgnames.add(binary)
+    return pkgnames
+
+def expand_src_pkgname(pkgname):
+    """ expand a given pkgname if prefixed with src: to a list of
+        binary package names, if not prefixed, just return the pkgname
+    """
+    if not pkgname.startswith("src:"):
+        return [pkgname]
+    return get_binaries_for_source_pkg(pkgname.split("src:")[1])
+
+def create_and_update_deb_src_source_list(distro):
+    """ 
+    create sources.list with deb-src entries for a given distro release
+    and update to make sure we are current
+    """
+    # apt root dir
+    rootdir="./aptroot.%s" % distro
+    sources_list_dir = os.path.join(rootdir, "etc","apt")
+    if not os.path.exists(sources_list_dir):
+        os.makedirs(sources_list_dir)
+    sources_list = open(os.path.join(sources_list_dir, "sources.list"),"w")
+    for pocket in ["%s" % distro, 
+                   "%s-updates" % distro, 
+                   "%s-security" % distro]:
+        sources_list.write("deb-src %s %s main restricted\n" % (
+                ARCHIVE_ROOT, pocket))
+    sources_list.close()
+    cache = apt.Cache(rootdir=rootdir)
+    cache.update(apt.progress.FetchProgress())
 
 def get_structure(name, version):
     """ 
@@ -168,13 +214,16 @@ if __name__ == "__main__":
     else:
         distro = "lucid"
 
+    # make sure our deb-src information is up-to-date
+    create_and_update_deb_src_source_list(distro)
+
     if options.hints_file:
         hints_file = options.hints_file
         (schema, netloc, path, query, fragment) = urlparse.urlsplit(hints_file)
         if not schema:
             hints_file = "file:%s" % path
     else:
-        hints_file = "%s/%s.binary-hints" % (HINTS_DIR_URL, distro)
+        hints_file = "%s/%s.hints" % (HINTS_DIR_URL, distro)
         
     # go over the distros we need to check
     pkg_support_time = {}
@@ -199,11 +248,12 @@ if __name__ == "__main__":
             if not line or line.startswith("#"):
                 continue
             try:
-                (pkgname, support_time) = line.split()
-                if support_time == 'unsupported':
-                    del pkg_support_time[pkgname]
-                else:
-                    pkg_support_time[pkgname] = support_time
+                (raw_pkgname, support_time) = line.split()
+                for pkgname in expand_src_pkgname(raw_pkgname):
+                    if support_time == 'unsupported':
+                        del pkg_support_time[pkgname]
+                    else:
+                        pkg_support_time[pkgname] = support_time
             except:
                 logging.exception("can not parts line '%s'" % line)
     except urllib2.HTTPError, e:
