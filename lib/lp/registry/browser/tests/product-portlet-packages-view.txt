@@ -80,16 +80,26 @@ not be suggested.
     >>> print view.suggestions
     []
 
-An Ubuntu distribution package that is not in the current series
-will be suggested.
+A source package that does NOT have a publishing history
+for the current Ubuntu series will NOT be suggested.
 
-    >>> distro_package = factory.makeDistributionSourcePackage(
-    ...     sourcepackagename=spn, distribution=ubuntu)
     >>> warty = ubuntu.getSeries('warty')
     >>> warty == ubuntu.currentseries
     False
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=warty)
+    >>> (ubuntu, product, spn) = updateCache()
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages",
+    ...     principal=product.owner)
+    >>> for dsp in view.suggestions:
+    ...     print dsp.name
+
+A source package that does have a publishing history for the current
+Ubuntu series will be suggested.
+
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
     >>> (ubuntu, product, spn) = updateCache()
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
