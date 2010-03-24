@@ -88,8 +88,8 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> lostbuilding_builder.rescueIfLost(logger)
-    WARNING:root:Builder 'Lost Building Slave' rescued from
-    '1000-10000': 'Build 1000 is not available: 'Object not found''
+    WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000':
+    'Build 1000 is not available: 'Object not found''
 
 Then a lost slave in status 'WAITING':
 
