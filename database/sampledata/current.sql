@@ -2486,7 +2486,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (54, 'rosetta@launchpad.net', 30, 4, '2006-10-16 18:31:43.626521', NULL);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (55, 'salgado@ubuntu.com', 29, 1, '2006-10-16 18:31:43.626932', 291);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (56, 'cprov@ubuntu.com', 28, 2, '2006-10-16 18:31:43.627318', 281);
-INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 1, '2006-10-16 18:31:43.62774', 621);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 4, '2006-10-16 18:31:43.62774', 621);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (58, 'karl@canonical.com', 63, 4, '2006-10-16 18:31:43.628123', 631);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (59, 'limi@plone.org', 10, 4, '2006-10-16 18:31:43.628504', 101);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (60, 'janitor@launchpad.net', 65, 4, '2006-10-17 23:23:23.232323', 651);

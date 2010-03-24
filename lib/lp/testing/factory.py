@@ -1209,8 +1209,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
 
-        return getUtility(IBugWatchSet).createBugWatch(
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
+
+        # You need to be an admin to set next_check on a BugWatch.
+        def set_next_check(bug_watch):
+            bug_watch.next_check = datetime.now(pytz.timezone('UTC'))
+
+        person = getUtility(IPersonSet).getByName('name16')
+        run_with_login(person, set_next_check, bug_watch)
+        return bug_watch
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,
