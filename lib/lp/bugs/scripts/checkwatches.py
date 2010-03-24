@@ -202,6 +202,32 @@ def with_transaction(func):
     return wrapper
 
 
+def commit_before(func):
+    """Wrap a method to commit any in-progress transactions.
+
+    This is chiefly intended for use with public-facing methods, so
+    that callers do not need to be responsible for committing before
+    calling them.
+
+    It's intended for use with `BugWatchUpdater`, which provides a
+    `txn` property; this is the hook that's required.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        self.txn.commit()
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
+def unique(iterator):
+    """Generate only unique items from an iterator."""
+    seen = set()
+    for item in iterator:
+        if item not in seen:
+            seen.add(item)
+            yield item
+
+
 class BugWatchUpdater(object):
     """Takes responsibility for updating remote bug watches."""
 
@@ -234,10 +260,9 @@ class BugWatchUpdater(object):
         else:
             self._syncable_gnome_products = list(SYNCABLE_GNOME_PRODUCTS)
 
-        with self.transaction:
-            self._principal = (
-                getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
-                    self.LOGIN, want_password=False))
+        self._principal = (
+            getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
+                self.LOGIN, want_password=False))
 
     @property
     @contextmanager
@@ -341,6 +366,7 @@ class BugWatchUpdater(object):
                         "Updates are disabled for bug tracker at %s" %
                         bug_tracker_baseurl)
 
+    @commit_before
     def updateBugTrackers(
         self, bug_tracker_names=None, batch_size=None, scheduler=None):
         """Update all the bug trackers that have watches pending.
@@ -365,6 +391,7 @@ class BugWatchUpdater(object):
         # Run all the jobs.
         scheduler.run()
 
+    @commit_before
     @with_interaction
     def updateBugTracker(self, bug_tracker, batch_size):
         """Updates the given bug trackers's bug watches.
@@ -418,6 +445,7 @@ class BugWatchUpdater(object):
         else:
             return True
 
+    @commit_before
     @with_interaction
     def forceUpdateAll(self, bug_tracker_name, batch_size):
         """Update all the watches for `bug_tracker_name`.
@@ -471,7 +499,7 @@ class BugWatchUpdater(object):
             remotesystem = (
                 externalbugtracker.get_external_bugtracker(bug_tracker))
             # We special-case the Gnome Bugzilla.
-            is_gnome_bugzilla = bug_tracker is (
+            is_gnome_bugzilla = bug_tracker == (
                 getUtility(ILaunchpadCelebrities).gnome_bugzilla)
 
         # Probe the remote system for additional capabilities.
@@ -655,9 +683,9 @@ class BugWatchUpdater(object):
             remote_new_ids = sorted(
                 set(bug_watch.remotebug for bug_watch in bug_watches
                 if bug_watch not in old_bug_watches))
-            remote_ids_with_comments = set(
+            remote_ids_with_comments = sorted(
                 bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch.unpushed_comments)
+                if bug_watch.unpushed_comments.count() > 0)
 
         # We only make the call to getModifiedRemoteBugs() if there
         # are actually some bugs that we're interested in so as to
@@ -692,12 +720,12 @@ class BugWatchUpdater(object):
             remote_ids_with_comments, remote_new_ids, remote_old_ids_to_check)
 
         if batch_size is not None:
-            # Some remote bug IDs may appear in more than one list,
-            # this may not now contain batch_size distinct IDs, but
-            # this is acceptable.
-            remote_ids_to_check = islice(remote_ids_to_check, batch_size)
+            # Some remote bug IDs may appear in more than one list so
+            # we must filter the list before slicing.
+            remote_ids_to_check = islice(
+                unique(remote_ids_to_check), batch_size)
 
-        # De-duplicate.
+        # Stuff the IDs in a set.
         remote_ids_to_check = set(remote_ids_to_check)
 
         # Make sure that unmodified_remote_ids only includes IDs that
@@ -728,6 +756,7 @@ class BugWatchUpdater(object):
 
     # XXX gmb 2008-11-07 [bug=295319]
     #     This method is 186 lines long. It needs to be shorter.
+    @commit_before
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None,
                          batch_size=None):
         """Update the given bug watches."""
@@ -739,13 +768,13 @@ class BugWatchUpdater(object):
         # will pass a SelectResults instance. We convert bug_watches to a
         # list here to ensure that were're doing sane things with it
         # later on.
-        bug_watches = list(bug_watches_to_update)
-        bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
+        with self.transaction:
+            bug_watches = list(bug_watches_to_update)
+            bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
 
         # Fetch the time on the server. We'll use this in
         # _getRemoteIdsToCheck() and when determining whether we can
         # sync comments or not.
-        self.txn.commit()
         server_time = remotesystem.getCurrentDBTime()
         try:
             remote_ids = self._getRemoteIdsToCheck(
@@ -791,8 +820,8 @@ class BugWatchUpdater(object):
                     bugwatch.last_error_type = errortype
             raise
 
-        # Whether we can import and / or push comments is determined on
-        # a per-bugtracker-type level.
+        # Whether we can import and / or push comments is determined
+        # on a per-bugtracker-type level.
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
             remotesystem.sync_comments)
@@ -824,31 +853,30 @@ class BugWatchUpdater(object):
             )
 
         for remote_bug_id in all_remote_ids:
-            # Start a fresh transaction every time round the loop.
-            self.txn.begin()
-
-            bug_watches = self._getBugWatchesForRemoteBug(
-                remote_bug_id, bug_watch_ids)
-            if len(bug_watches) == 0:
+            with self.transaction:
+                bug_watches = self._getBugWatchesForRemoteBug(
+                    remote_bug_id, bug_watch_ids)
                 # If there aren't any bug watches for this remote bug,
                 # just log a warning and carry on.
-                self.warning(
-                    "Spurious remote bug ID: No watches found for "
-                    "remote bug %s on %s" % (
-                        remote_bug_id, remotesystem.baseurl))
-                continue
+                if len(bug_watches) == 0:
+                    self.warning(
+                        "Spurious remote bug ID: No watches found for "
+                        "remote bug %s on %s" % (
+                            remote_bug_id, remotesystem.baseurl))
+                    continue
+                # Mark them all as checked.
+                for bug_watch in bug_watches:
+                    bug_watch.lastchecked = UTC_NOW
+                # Next if this one is definitely unmodified.
+                if remote_bug_id in unmodified_remote_ids:
+                    continue
+                # Save the remote bug URL for error reporting.
+                remote_bug_url = bug_watches[0].url
+                # Save the list of local bug IDs for error reporting.
+                local_ids = ", ".join(
+                    str(bug_id) for bug_id in sorted(
+                        watch.bug.id for watch in bug_watches))
 
-            for bug_watch in bug_watches:
-                bug_watch.lastchecked = UTC_NOW
-            if remote_bug_id in unmodified_remote_ids:
-                continue
-
-            # Save the remote bug URL in case we need to log an error.
-            remote_bug_url = bug_watches[0].url
-
-            local_ids = ", ".join(
-                str(bug_id) for bug_id in sorted(
-                    watch.bug.id for watch in bug_watches))
             try:
                 new_remote_status = None
                 new_malone_status = None
@@ -865,7 +893,6 @@ class BugWatchUpdater(object):
                         remotesystem.getRemoteStatus(remote_bug_id))
                     new_malone_status = self._convertRemoteStatus(
                         remotesystem, new_remote_status)
-
                     new_remote_importance = (
                         remotesystem.getRemoteImportance(remote_bug_id))
                     new_malone_importance = (
@@ -889,19 +916,22 @@ class BugWatchUpdater(object):
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
-                    bug_watch.last_error_type = error
-                    if new_malone_status is not None:
-                        bug_watch.updateStatus(new_remote_status,
-                            new_malone_status)
-                    if new_malone_importance is not None:
-                        bug_watch.updateImportance(new_remote_importance,
-                            new_malone_importance)
-                    if (bug_watch.bug.duplicateof is None and
-                        len(bug_watch.bugtasks) > 0):
+                    with self.transaction:
+                        bug_watch.last_error_type = error
+                        if new_malone_status is not None:
+                            bug_watch.updateStatus(
+                                new_remote_status, new_malone_status)
+                        if new_malone_importance is not None:
+                            bug_watch.updateImportance(
+                                new_remote_importance, new_malone_importance)
                         # Only sync comments and backlink if the local
                         # bug isn't a duplicate, *and* if the bug
                         # watch is associated with a bug task. This
                         # helps us to avoid spamming upstream.
+                        do_sync = (
+                            bug_watch.bug.duplicateof is None and
+                            len(bug_watch.bugtasks) > 0)
+                    if do_sync:
                         if can_import_comments:
                             self.importBugComments(remotesystem, bug_watch)
                         if can_push_comments:

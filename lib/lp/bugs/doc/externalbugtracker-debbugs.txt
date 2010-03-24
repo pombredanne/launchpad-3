@@ -99,6 +99,8 @@ Log in and kick off the update. The importing of comments, which is
 controlled by a configuration option, is disabled here and will be
 tested later.
 
+    >>> transaction.commit()
+
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> external_debbugs.sync_comments = False
@@ -556,6 +558,8 @@ which we want to push the comment, the body of the comment that we wish
 to push and the rfc822msgid of the comment that we're pushing. It
 returns the ID of the comment on the remote bugtracker, which in this
 case will be the rfc822msgid that gets passed as a parameter.
+
+    >>> transaction.commit()
 
     >>> external_debbugs.addRemoteComment(
     ...     '1234', 'A little fermented curd will do the trick!',
