@@ -244,6 +244,31 @@ As with projects, these can be filtered by the branch status.
     >>> print_branches(webservice, '/widgets', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
 
+Differences between versions
+============================
+
+In version 'beta', a branch can be made private or public by invoking
+the named operation 'setPrivate'.
+
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> print branch['private']
+    False
+
+    >>> response = webservice.named_post(
+    ...     branch_url, 'setPrivate', api_version='beta', private=True)
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> print branch['private']
+    True
+
+In subsequent versions, 'setPrivate' is gone; you have to set the
+'private' field directly.
+
+    >>> print webservice.named_post(
+    ...     branch_url, 'setPrivate', api_version='devel', private=True)
+    HTTP/1.1 400 Bad Request
+    ...
+    No such operation: setPrivate
+
 Removing branches
 =================
 
