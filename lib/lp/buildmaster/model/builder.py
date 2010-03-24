@@ -215,8 +215,8 @@ class Builder(SQLBase):
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
-    def checkCanBuildForDistroArchSeries(self, distro_arch_series):
-        """See IBuilder."""
+    def checkSlaveArchitecture(self):
+        """See `IBuilder`."""
         # XXX cprov 2007-06-15:
         # This function currently depends on the operating system specific
         # details of the build slave to return a processor-family-name (the
@@ -226,17 +226,30 @@ class Builder(SQLBase):
         # distro specific and potentially different for radically different
         # distributions - its not the right thing to be comparing.
 
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
         # query the slave for its active details.
         # XXX cprov 2007-06-15: Why is 'mechanisms' ignored?
         builder_vers, builder_arch, mechanisms = self.slave.info()
         # we can only understand one version of slave today:
         if builder_vers != '1.0':
             raise ProtocolVersionMismatch("Protocol version mismatch")
-        # check the slave arch-tag against the distro_arch_series.
-        if builder_arch != distro_arch_series.architecturetag:
+
+        # Find a distroarchseries with the returned arch tag.
+        # This is ugly, sick and wrong, but so is the whole concept. See the
+        # comment above.
+        das = Store.of(self).find(
+            DistroArchSeries, architecturetag=builder_arch).any()
+
+        if das is None:
             raise BuildDaemonError(
-                "Architecture tag mismatch: %s != %s"
-                % (builder_arch, distro_arch_series.architecturetag))
+                "Unknown slave architecture tag: %s" % builder_arch)
+
+        if self.processor.family != das.processorfamily:
+            raise BuildDaemonError(
+                "Processor family mismatch: %s != %s"
+                % (self.processor.family.name,
+                   das.processorfamily.name))
 
     def checkSlaveAlive(self):
         """See IBuilder."""

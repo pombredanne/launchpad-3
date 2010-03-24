@@ -67,7 +67,7 @@ class MockBuilder:
     def checkSlaveAlive(self):
         pass
 
-    def checkCanBuildForDistroArchSeries(self, distro_arch_series):
+    def checkSlaveArchitecture(self):
         pass
 
 
