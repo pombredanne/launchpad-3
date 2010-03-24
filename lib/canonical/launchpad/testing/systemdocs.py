@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Infrastructure for setting up doctests."""
 
 __metaclass__ = type
@@ -199,6 +201,7 @@ def setGlobs(test):
     test.globs['verifyObject'] = verifyObject
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['stop'] = stop
+    test.globs['with_statement'] = with_statement
 
 
 def setUp(test):
