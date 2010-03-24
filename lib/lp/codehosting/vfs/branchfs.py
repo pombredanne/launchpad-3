@@ -637,7 +637,9 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, branch_directory=None):
     :param mirror_directory: Where all Launchpad branches are mirrored.
     :return: A `LaunchpadServer`.
     """
-    # Get the default from the config.
+    # Get the defaults from the config.
+    if branchfs_endpoint_url is None:
+        branchfs_endpoint_url = config.codehosting.branchfs_endpoint
     if branch_directory is None:
         branch_directory = config.codehosting.mirrored_branches_root
 

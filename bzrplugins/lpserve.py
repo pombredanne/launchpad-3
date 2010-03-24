@@ -85,16 +85,15 @@ class cmd_launchpad_server(Command):
         finally:
             ui.ui_factory = old_factory
 
-    def run(self, user_id, port=None, upload_directory=None,
-            mirror_directory=None, branchfs_endpoint_url=None, inet=False):
+    def run(self, user_id, port=None, branch_directory=None,
+            branchfs_endpoint_url=None, inet=False):
         from lp.codehosting.bzrutils import install_oops_handler
         from lp.codehosting.vfs import get_lp_server
         install_oops_handler(user_id)
         four_gig = int(4e9)
         resource.setrlimit(resource.RLIMIT_AS, (four_gig, four_gig))
         lp_server = get_lp_server(
-            int(user_id), branchfs_endpoint_url,
-            upload_directory, mirror_directory)
+            int(user_id), branchfs_endpoint_url, branch_directory)
         lp_server.start_server()
 
         old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
