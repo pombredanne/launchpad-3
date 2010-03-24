@@ -101,7 +101,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             return {
                 'build_status': raw_slave_status[1],
                 'build_id': raw_slave_status[2],
-                'filemap': raw_slave_status[3],
                 }
         else:
             # Nothing special to do for other states.
