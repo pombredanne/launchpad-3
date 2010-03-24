@@ -318,10 +318,13 @@ class TestBranch(TestCaseWithFactory):
     def test_getRecipes(self):
         # IBranch.recipes should provide all the SourcePackageRecipes attached
         # to that branch.
-        branch = self.factory.makeBranch()
-        recipe1 = self.factory.makeRecipe(branch)
-        recipe2 = self.factory.makeRecipe(branch)
-        self.assertEqual(2, len(branch.getRecipes()))
+        base_branch = self.factory.makeBranch()
+        recipe1 = self.factory.makeSourcePackageRecipe(
+            None, None, None, None, None, None, base_branch)
+        recipe2 = self.factory.makeSourcePackageRecipe(
+            None, None, None, None, None, None, base_branch)
+        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.assertEqual(2, base_branch.getRecipes().count())
 
 
 class TestBranchUpgrade(TestCaseWithFactory):

@@ -1067,7 +1067,15 @@ class Branch(SQLBase):
 
     def getRecipes(self):
         """See `IHasRecipes`."""
-        return []
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData)
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id ==
+                SourcePackageRecipeData.sourcepackage_recipe_id,
+            SourcePackageRecipeData.base_branch == self)
 
 
 class DeletionOperation:
