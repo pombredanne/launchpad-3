@@ -68,7 +68,7 @@ class TranslatableMessage(object):
         return self._current_translation.potemplate == self.potemplate
 
     @property
-    def is_current_upstream(self):
+    def is_current_imported(self):
         """See `ITranslatableMessage`"""
         if self._current_translation is None:
             return False
