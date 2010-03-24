@@ -928,7 +928,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cache.changelog = ' '.join(sorted(sprchangelog))
 
     def searchSourcePackageCaches(
-        self, text, has_packaging=None):
+        self, text, has_packaging=None, publishing_distroseries=None):
         """See `IDistribution`."""
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
@@ -949,6 +949,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
             ]
 
+        publishing_condition = ''
+        if publishing_distroseries is not None:
+            publishing_condition = """
+                AND EXISTS (
+                    SELECT 1
+                    FROM SourcePackageRelease spr
+                        JOIN SourcePackagePublishingHistory spph
+                            ON spph.sourcepackagerelease = spr.id
+                    WHERE spr.sourcepackagename = SourcePackageName.id
+                        AND spph.distroseries = %d
+                    )""" % (
+                publishing_distroseries.id)
 
         packaging_query = """
             SELECT 1
@@ -965,24 +977,28 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Storm expressions, a 'tuple index out-of-range' error was always
         # raised.
         condition = """
-            distribution = %s AND
-            archive IN %s AND
-            (fti @@ ftq(%s) OR
+            DistributionSourcePackageCache.distribution = %s AND
+            DistributionSourcePackageCache.archive IN %s AND
+            (DistributionSourcePackageCache.fti @@ ftq(%s) OR
              DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
             %s
+            %s
             """ % (quote(self), quote(self.all_distro_archive_ids),
-                   quote(text), quote_like(text), has_packaging_condition)
+                   quote(text), quote_like(text), has_packaging_condition,
+                   publishing_condition)
         dsp_caches_with_ranks = store.using(*origin).find(
             find_spec, condition
             ).order_by('rank DESC')
 
         return dsp_caches_with_ranks
 
-    def searchSourcePackages(self, text, has_packaging=None):
+    def searchSourcePackages(
+        self, text, has_packaging=None, publishing_distroseries=None):
         """See `IDistribution`."""
 
         dsp_caches_with_ranks = self.searchSourcePackageCaches(
-            text, has_packaging=has_packaging)
+            text, has_packaging=has_packaging,
+            publishing_distroseries=publishing_distroseries)
 
         # Create a function that will decorate the resulting
         # DistributionSourcePackageCaches, converting

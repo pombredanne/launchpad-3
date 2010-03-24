@@ -8,6 +8,7 @@ import os
 from unittest import TestLoader
 
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 
 from canonical.buildd.translationtemplates import (
     TranslationTemplatesBuildManager, TranslationTemplatesBuildState)
@@ -51,6 +52,8 @@ class MockBuildManager(TranslationTemplatesBuildManager):
     def runSubProcess(self, path, command):
         self.commands.append([path]+command)
         return 0
+
+    gatherResults = FakeMethod()
 
 
 class TestTranslationTemplatesBuildManagerIteration(TestCase):
@@ -102,7 +105,7 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
         self.assertEqual(
             TranslationTemplatesBuildState.GENERATE, self.getState())
         expected_command = [
-            'generatepath', 'generatepath', self.buildid, url,
+            'generatepath', 'generatepath', self.buildid, url, 'resultarchive'
             ]
         self.assertEqual(expected_command, self.buildmanager.commands[-1])
         self.assertFalse(self.slave.wasCalled('chrootFail'))
