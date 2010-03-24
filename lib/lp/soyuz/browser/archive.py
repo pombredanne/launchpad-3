@@ -630,6 +630,19 @@ class ArchiveViewBase(LaunchpadView):
         return list(copy_requests)
 
 
+    @property
+    def disabled_warning_message(self):
+        """Return an appropriate message if the archive is disabled."""
+        if self.context.enabled:
+            return None
+
+        if self.context.status in (
+            ArchiveStatus.DELETED, ArchiveStatus.DELETING):
+            return "This archive has been deleted."
+        else:
+            return "This archive has been disabled."
+
+
 class ArchiveSeriesVocabularyFactory:
     """A factory for generating vocabularies of an archive's series."""
 
@@ -1955,6 +1968,12 @@ class ArchiveDeleteView(LaunchpadView):
         # No action, return None to present the form again.
         if action is None:
             return
+
+        # Set all the publications to DELETED.
+        sources = list(self.context.getPublishedSources())
+        getUtility(IPublishingSet).requestDeletion(
+            sources, removed_by=self.user,
+            removal_comment="Removed when deleting archive")
 
         self.context.status = ArchiveStatus.DELETING
         self.context.disable()
