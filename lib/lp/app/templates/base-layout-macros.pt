@@ -285,8 +285,11 @@
     If you need to include a new css file here, add it to
     buildout-templates/bin/combine-css.in instead.
   </tal:comment>
-  <style type="text/css" media="screen, print"
-    tal:content="string:@import url(${icingroot}/combo.css);"/>
+  <link
+        type="text/css"
+        rel="stylesheet"
+        media="screen, print"
+        tal:attributes="href string:${icingroot}/combo.css" />
 </metal:launchpad-stylesheet-3-0>
 
 
