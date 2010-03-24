@@ -320,7 +320,8 @@ class TestBranch(TestCaseWithFactory):
         # to that branch.
         branch = self.factory.makeBranch()
         recipe1 = self.factory.makeRecipe(branch)
-        self.assertEqual(1, len(branch.getRecipes()))
+        recipe2 = self.factory.makeRecipe(branch)
+        self.assertEqual(2, len(branch.getRecipes()))
 
 
 class TestBranchUpgrade(TestCaseWithFactory):
