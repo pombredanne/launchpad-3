@@ -217,7 +217,7 @@ class Builder(SQLBase):
 
     def checkSlaveArchitecture(self):
         """See `IBuilder`."""
-        # XXX cprov 2007-06-15:
+        # XXX cprov 2007-06-15 bug=545839:
         # This function currently depends on the operating system specific
         # details of the build slave to return a processor-family-name (the
         # architecturetag) which matches the distro_arch_series. In reality,
@@ -237,7 +237,7 @@ class Builder(SQLBase):
 
         # Find a distroarchseries with the returned arch tag.
         # This is ugly, sick and wrong, but so is the whole concept. See the
-        # comment above.
+        # XXX above and its bug for details.
         das = Store.of(self).find(
             DistroArchSeries, architecturetag=builder_arch).any()
 
