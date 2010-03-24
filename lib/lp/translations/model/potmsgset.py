@@ -235,14 +235,14 @@ class POTMsgSet(SQLBase):
         
         Prefers a diverged message if present.
         """
-        # Change 'is_current IS TRUE' and 'is_imported IS TRUE' conditions
-        # carefully: they need to match condition specified in indexes,
-        # or Postgres may not pick them up (in complicated queries,
-        # Postgres query optimizer sometimes does text-matching of indexes).
+        # Change the is_current_ubuntu and is_current_upstream conditions
+        # with extreme care: they need to match condition specified in
+        # indexes, or postgres may not pick them up (in complicated queries,
+        # postgres query optimizer sometimes does text-matching of indexes).
         if current:
-            used_clause = 'is_current IS TRUE'
+            used_clause = 'is_current_ubuntu IS TRUE'
         else:
-            used_clause = 'is_imported IS TRUE'
+            used_clause = 'is_current_upstream IS TRUE'
         if potemplate is None:
             template_clause = 'TranslationMessage.potemplate IS NULL'
         else:
@@ -289,8 +289,8 @@ class POTMsgSet(SQLBase):
                                     include_unreviewed=True):
         """See `IPOTMsgSet`."""
         query = """
-            is_current IS NOT TRUE AND
-            is_imported IS NOT TRUE AND
+            is_current_ubuntu IS NOT TRUE AND
+            is_current_upstream IS NOT TRUE AND
             potmsgset = %s AND
             language = %s
             """ % sqlvalues(self, language)
@@ -340,7 +340,8 @@ class POTMsgSet(SQLBase):
         # Watch out when changing this condition: make sure it's done in
         # a way so that indexes are indeed hit when the query is executed.
         # Also note that there is a NOT(in_use_clause) index.
-        in_use_clause = "(is_current IS TRUE OR is_imported IS TRUE)"
+        in_use_clause = (
+            "(is_current_ubuntu IS TRUE OR is_current_upstream IS TRUE)")
         if used:
             query = [in_use_clause]
         else:
@@ -571,7 +572,7 @@ class POTMsgSet(SQLBase):
             return None
 
     def _makeTranslationMessageCurrent(self, pofile, new_message,
-                                       imported_message, is_imported,
+                                       upstream_message, is_current_upstream,
                                        submitter, force_shared=False,
                                        force_diverged=False):
         """Make the given translation message the current one."""
@@ -585,13 +586,14 @@ class POTMsgSet(SQLBase):
         converge_shared = force_shared
         if (not force_diverged and
             (current_message is None or
-             ((new_message.potemplate is None and new_message.is_current) and
+             ((new_message.potemplate is None and
+                new_message.is_current_ubuntu) and
               (current_message.potemplate is not None)))):
             converge_shared = True
 
         make_current = False
 
-        if is_imported:
+        if is_current_upstream:
             # A new imported message is made current
             # if there is no existing current message
             # or if there was no previous imported message
@@ -602,8 +604,8 @@ class POTMsgSet(SQLBase):
             # Empty imported translations should not replace
             # non-empty imported translations.
             if (current_message is None or
-                imported_message is None or
-                (current_message.is_imported and
+                upstream_message is None or
+                (current_message.is_current_upstream and
                  (current_message.is_empty or not new_message.is_empty)) or
                 current_message.is_empty or
                 (current_message == new_message) or
@@ -649,12 +651,13 @@ class POTMsgSet(SQLBase):
                 pofile.date_changed = UTC_NOW
                 pofile.lasttranslator = submitter
 
-        unmark_imported = (make_current and
-                           imported_message is not None and
-                           (is_imported or imported_message == new_message))
-        if unmark_imported:
+        unmark_upstream = (
+            make_current and
+            upstream_message is not None and (
+                is_current_upstream or upstream_message == new_message))
+        if unmark_upstream:
             # Unmark previous imported translation as 'imported'.
-            was_diverged_to = imported_message.potemplate
+            was_diverged_to = upstream_message.potemplate
             if (was_diverged_to is not None or
                 (was_diverged_to is None and
                  new_message == current_message and
@@ -665,13 +668,13 @@ class POTMsgSet(SQLBase):
                 # now being imported, previous imported
                 # message is neither imported nor current
                 # anymore.
-                imported_message.is_imported = False
-                imported_message.is_current = False
-                imported_message.potemplate = None
+                upstream_message.is_current_upstream = False
+                upstream_message.is_current_ubuntu = False
+                upstream_message.potemplate = None
             if not (force_diverged or force_shared):
                 # If there was an imported message, keep the same
                 # divergence/shared state unless something was forced.
-                if (new_message.is_imported and
+                if (new_message.is_current_upstream and
                     new_message.potemplate is None):
                     # If we are reverting imported message to
                     # a shared imported message, do not
@@ -679,16 +682,16 @@ class POTMsgSet(SQLBase):
                     was_diverged_to = None
                 new_message.potemplate = was_diverged_to
 
-        # Change actual is_current flag only if it validates ok.
+        # Change actual is_current_ubuntu flag only if it validates ok.
         if new_message.validation_status == TranslationValidationStatus.OK:
             if make_current:
                 # Deactivate previous diverged message.
                 if (current_message is not None and
                     current_message.potemplate is not None):
-                    current_message.is_current = False
+                    current_message.is_current_ubuntu = False
                     # Do not "converge" a diverged imported message since
                     # there might be another shared imported message.
-                    if not current_message.is_imported:
+                    if not current_message.is_current_upstream:
                         current_message.potemplate = None
                     if not converge_shared:
                         force_diverged = True
@@ -699,17 +702,17 @@ class POTMsgSet(SQLBase):
                     # Either converge_shared==True, or a new message.
                     new_message.potemplate = None
 
-                new_message.is_current = True
+                new_message.is_current_ubuntu = True
             else:
                 new_message.potemplate = None
-        if is_imported or new_message == imported_message:
-            new_message.is_imported = True
+        if is_current_upstream or new_message == upstream_message:
+            new_message.is_current_upstream = True
 
 
     def _isTranslationMessageASuggestion(self, force_suggestion,
                                          pofile, submitter,
-                                         force_edition_rights, is_imported,
-                                         lock_timestamp):
+                                         force_edition_rights,
+                                         is_current_upstream, lock_timestamp):
         # Whether a message should be saved as a suggestion and
         # whether we should display a warning when an older translation is
         # submitted.
@@ -730,9 +733,9 @@ class POTMsgSet(SQLBase):
             raise UnexpectedFormData(
                 "Sorry, Launchpad is in read-only mode right now.")
 
-        if is_imported and not is_editor:
+        if is_current_upstream and not is_editor:
             raise AssertionError(
-                'Only an editor can submit is_imported translations.')
+                'Only an editor can submit is_current_upstream translations.')
 
         assert is_editor or pofile.canAddSuggestions(submitter), (
             '%s cannot add suggestions here.' % submitter.displayname)
@@ -743,7 +746,7 @@ class POTMsgSet(SQLBase):
 
         # Our current submission is newer than 'lock_timestamp'
         # and we try to change it, so just add a suggestion.
-        if (not just_a_suggestion and not is_imported and
+        if (not just_a_suggestion and not is_current_upstream and
             self.isTranslationNewerThan(pofile, lock_timestamp)):
             just_a_suggestion = True
             warn_about_lock_timestamp = True
@@ -761,24 +764,24 @@ class POTMsgSet(SQLBase):
         return not has_translations
 
     def updateTranslation(self, pofile, submitter, new_translations,
-                          is_imported, lock_timestamp, force_shared=False,
-                          force_diverged=False, force_suggestion=False,
-                          ignore_errors=False, force_edition_rights=False,
-                          allow_credits=False):
+                          is_current_upstream, lock_timestamp,
+                          force_shared=False, force_diverged=False,
+                          force_suggestion=False, ignore_errors=False,
+                          force_edition_rights=False, allow_credits=False):
         """See `IPOTMsgSet`."""
 
         just_a_suggestion, warn_about_lock_timestamp = (
             self._isTranslationMessageASuggestion(force_suggestion,
                                                   pofile, submitter,
                                                   force_edition_rights,
-                                                  is_imported,
+                                                  is_current_upstream,
                                                   lock_timestamp))
 
         # If the update is on the translation credits message, yet
-        # update is not is_imported, silently return.
+        # update is not is_current_upstream, silently return.
         deny_credits = (not allow_credits and
                         self.is_translation_credit and
-                        not is_imported)
+                        not is_current_upstream)
         if deny_credits:
             return None
 
@@ -798,17 +801,19 @@ class POTMsgSet(SQLBase):
         matching_message = self._findTranslationMessage(
             pofile, potranslations, pofile.plural_forms)
 
-        if is_imported or (matching_message is not None and
-                           matching_message.is_imported):
-            imported_message = self.getImportedTranslationMessage(
+        match_is_upstream = (
+            matching_message is not None and
+            matching_message.is_current_upstream)
+        if is_current_upstream or match_is_upstream:
+            upstream_message = self.getImportedTranslationMessage(
                 pofile.potemplate, pofile.language, pofile.variant)
         else:
-            imported_message = None
+            upstream_message = None
 
         if matching_message is None:
             # Creating a new message.
 
-            if is_imported:
+            if is_current_upstream:
                 origin = RosettaTranslationOrigin.SCM
             else:
                 origin = RosettaTranslationOrigin.ROSETTAWEB
@@ -817,13 +822,13 @@ class POTMsgSet(SQLBase):
                 "Change this code to support %d plural forms."
                 % TranslationConstants.MAX_PLURAL_FORMS)
 
-            if (is_imported and
+            if (is_current_upstream and
                 self.allTranslationsAreEmpty(sanitized_translations)):
-                # Don't create empty is_imported translations
-                if imported_message is not None:
-                    imported_message.is_imported = False
-                    if imported_message.is_current:
-                        imported_message.is_current = False
+                # Don't create empty is_current_upstream translations
+                if upstream_message is not None:
+                    upstream_message.is_current_upstream = False
+                    if upstream_message.is_current_ubuntu:
+                        upstream_message.is_current_ubuntu = False
                 return None
             else:
                 matching_message = TranslationMessage(
@@ -866,8 +871,8 @@ class POTMsgSet(SQLBase):
             # Makes the new_message current if needed and also
             # assigns karma for translation approval.
             self._makeTranslationMessageCurrent(
-                pofile, matching_message, imported_message,
-                is_imported, submitter,
+                pofile, matching_message, upstream_message,
+                is_current_upstream, submitter,
                 force_shared=force_shared, force_diverged=force_diverged)
 
         # We need this sync so we don't set self.isfuzzy to the wrong
@@ -1079,7 +1084,7 @@ class POTMsgSet(SQLBase):
 
         message = self.updateTranslation(
             pofile, translator, [credits_message_str],
-            is_imported=False, allow_credits=True,
+            is_current_upstream=False, allow_credits=True,
             force_shared=True, force_edition_rights=True,
             lock_timestamp=datetime.datetime.now(pytz.UTC))
 

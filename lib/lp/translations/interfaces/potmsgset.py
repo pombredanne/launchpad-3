@@ -207,10 +207,10 @@ class IPOTMsgSet(Interface):
         otherwise.
         """
 
-    def updateTranslation(pofile, submitter, new_translations, is_imported,
-                          lock_timestamp, force_suggestion=False,
-                          ignore_errors=False, force_edition_rights=False,
-                          allow_credits=False):
+    def updateTranslation(pofile, submitter, new_translations,
+                          is_current_upstream, lock_timestamp,
+                          force_suggestion=False, ignore_errors=False,
+                          force_edition_rights=False, allow_credits=False):
         """Update or create a translation message using `new_translations`.
 
         :param pofile: a `POFile` to add `new_translations` to.
@@ -218,8 +218,8 @@ class IPOTMsgSet(Interface):
         :param new_translations: a dictionary of plural forms, with the
             integer plural form number as the key and the translation as the
             value.
-        :param is_imported: indicates whether this update is imported from a
-            packaged po file.
+        :param is_current_upstream: indicates whether this update is
+            imported from a packaged po file.
         :param lock_timestamp: The timestamp when we checked the values we
             want to update.
         :param force_suggestion: Whether to force translation to be
@@ -236,7 +236,8 @@ class IPOTMsgSet(Interface):
 
         :return: a modified or newly created translation message; or None if
             no message is to be updated.  This can happen when updating a
-            translation credits message without the is_imported parameter set.
+            translation credits message without the is_current_upstream
+            parameter set.
         """
 
     def dismissAllSuggestions(pofile, reviewer, lock_timestamp):

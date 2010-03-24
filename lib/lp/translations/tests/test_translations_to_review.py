@@ -85,7 +85,7 @@ class ReviewTestMixin:
                 translator=self.factory.makePerson(), translations=['wi'],
                 date_updated=later_time, suggestion=True))
 
-        self.assertTrue(self.translation.is_current)
+        self.assertTrue(self.translation.is_current_ubuntu)
         self.pofile.updateStatistics()
         self.assertEqual(self.pofile.unreviewed_count, 1)
 

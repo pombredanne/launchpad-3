@@ -63,7 +63,7 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.changed = self.factory.makePOTMsgSet(
             self.potemplate, sequence=4)
         self.factory.makeTranslationMessage(
-            self.pofile, self.changed, is_imported=True,
+            self.pofile, self.changed, is_current_upstream=True,
             date_updated=self.now())
         self.factory.makeTranslationMessage(
             self.pofile, self.changed,

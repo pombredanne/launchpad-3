@@ -55,7 +55,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
             self.pofile, self.potmsgset,
             translations=translations,
             suggestion=suggestion,
-            is_imported=is_packaged,
+            is_current_upstream=is_packaged,
             translator=self.owner,
             date_updated=self.now())
         message.browser_pofile = self.pofile
