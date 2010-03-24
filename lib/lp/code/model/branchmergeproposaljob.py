@@ -17,9 +17,11 @@ __metaclass__ = type
 
 __all__ = [
     'BranchMergeProposalJob',
+    'BranchMergeProposalJobSource',
     'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
     'MergeProposalCreatedJob',
+    'MergeProposalUpdatedEmailJob',
     'ReviewRequestedEmailJob',
     'UpdatePreviewDiffJob',
     ]
@@ -34,6 +36,7 @@ import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.base import Storm
 from storm.expr import And, Or
+from storm.info import ClassAlias
 from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 from zope.component import getUtility
@@ -49,12 +52,13 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR)
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalJob, ICodeReviewCommentEmailJob,
-    ICodeReviewCommentEmailJobSource, ICreateMergeProposalJob,
-    ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
-    IMergeProposalCreatedJobSource, IMergeProposalUpdatedEmailJob,
-    IMergeProposalUpdatedEmailJobSource, IReviewRequestedEmailJob,
-    IReviewRequestedEmailJobSource, IUpdatePreviewDiffJobSource,
+    IBranchMergeProposalJob, IBranchMergeProposalJobSource,
+    ICodeReviewCommentEmailJob, ICodeReviewCommentEmailJobSource,
+    ICreateMergeProposalJob, ICreateMergeProposalJobSource,
+    IMergeProposalCreatedJob, IMergeProposalCreatedJobSource,
+    IMergeProposalUpdatedEmailJob, IMergeProposalUpdatedEmailJobSource,
+    IReviewRequestedEmailJob, IReviewRequestedEmailJobSource,
+    IUpdatePreviewDiffJobSource,
     )
 from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import BMPMailer
@@ -555,3 +559,88 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
         if self.editor is not None:
             recipients.append(self.editor.preferredemail)
         return recipients
+
+
+class BranchMergeProposalJobFactory:
+    """Construct a derived merge proposal job for a BranchMergeProposalJob."""
+
+    job_classes = {
+        BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED:
+            MergeProposalCreatedJob,
+        BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF:
+            UpdatePreviewDiffJob,
+        BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL:
+            CodeReviewCommentEmailJob,
+        BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL:
+            ReviewRequestedEmailJob,
+        BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED:
+            MergeProposalUpdatedEmailJob,
+        }
+
+    @classmethod
+    def create(cls, bmp_job):
+        """Create the derived job for the bmp_job's job type."""
+        job_class = cls.job_classes[bmp_job.job_type]
+        return job_class(bmp_job)
+
+
+class BranchMergeProposalJobSource:
+    """Provide a job source for all merge proposal jobs.
+
+    Only one job for any particular merge proposal is returned.
+    """
+
+    classProvides(IBranchMergeProposalJobSource)
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        """See `IJobSource`."""
+        errorlog.globalErrorUtility.configure('merge_proposal_jobs')
+        server = get_scanner_server()
+        server.start_server()
+        yield
+        server.stop_server()
+
+    @staticmethod
+    def get(job_id):
+        """Get a job by id.
+
+        :return: the BranchMergeProposalJob with the specified id, as the
+            current BranchMergeProposalJobDereived subclass.
+        :raises: SQLObjectNotFound if there is no job with the specified id,
+            or its job_type does not match the desired subclass.
+        """
+        job = BranchMergeProposalJob.get(job_id)
+        return BranchMergeProposalJobFactory.create(job)
+
+    @staticmethod
+    def iterReady():
+        from lp.code.model.branch import Branch
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        SourceBranch = ClassAlias(Branch)
+        TargetBranch = ClassAlias(Branch)
+        jobs = store.find(
+            (BranchMergeProposalJob, Job, BranchMergeProposal,
+             SourceBranch, TargetBranch),
+            And(BranchMergeProposalJob.job == Job.id,
+                Job.id.is_in(Job.ready_jobs),
+                BranchMergeProposalJob.branch_merge_proposal
+                    == BranchMergeProposal.id,
+                BranchMergeProposal.source_branch == SourceBranch.id,
+                BranchMergeProposal.target_branch == TargetBranch.id,
+                ))
+        # Order by the scheduled start then job type.  This should give us all
+        # creation jobs before comment jobs.
+        jobs = jobs.order_by(
+            Job.scheduled_start, BranchMergeProposalJob.job_type)
+        # Now only return one job for any given merge proposal.
+        ready_jobs = []
+        seen_merge_proposals = set()
+        for bmp_job, job, bmp, source, target in jobs:
+            # If we've seen this merge proposal already, skip this job.
+            if bmp.id in seen_merge_proposals:
+                continue
+            derived_job = BranchMergeProposalJobFactory.create(bmp_job)
+            ready_jobs.append(derived_job)
+        return ready_jobs

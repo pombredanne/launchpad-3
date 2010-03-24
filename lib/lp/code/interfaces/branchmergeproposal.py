@@ -11,6 +11,7 @@ __all__ = [
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
+    'IBranchMergeProposalJobSource',
     'IBranchMergeProposalListingBatchNavigator',
     'ICodeReviewCommentEmailJob',
     'ICodeReviewCommentEmailJobSource',
@@ -506,6 +507,10 @@ class IBranchMergeProposalJob(Interface):
         """Destroy this object."""
 
 
+class IBranchMergeProposalJobSource(IJobSource):
+    """A job source that will get all supported merge proposal jobs."""
+
+
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
 
@@ -576,7 +581,7 @@ class ICreateMergeProposalJob(IRunnableJob):
     """
 
 
-class ICreateMergeProposalJobSource(IJobSource):
+class ICreateMergeProposalJobSource(Interface):
     """Acquire MergeProposalJobs."""
 
     def create(message_bytes):
@@ -587,14 +592,14 @@ class IMergeProposalCreatedJob(IRunnableJob):
     """Interface for review diffs."""
 
 
-class IMergeProposalCreatedJobSource(IJobSource):
+class IMergeProposalCreatedJobSource(Interface):
     """Interface for acquiring MergeProposalCreatedJobs."""
 
     def create(bmp):
         """Create a MergeProposalCreatedJob for the specified Job."""
 
 
-class IUpdatePreviewDiffJobSource(IJobSource):
+class IUpdatePreviewDiffJobSource(Interface):
     """Create or retrieve jobs that update preview diffs."""
 
     def create(bmp):
@@ -610,7 +615,7 @@ class ICodeReviewCommentEmailJob(IRunnableJob):
     code_review_comment = Attribute('The code review comment.')
 
 
-class ICodeReviewCommentEmailJobSource(IJobSource):
+class ICodeReviewCommentEmailJobSource(Interface):
     """Create or retrieve jobs that update preview diffs."""
 
     def create(code_review_comment):
@@ -624,7 +629,7 @@ class IReviewRequestedEmailJob(IRunnableJob):
     requester = Attribute('The person who as asked for the review.')
 
 
-class IReviewRequestedEmailJobSource(IJobSource):
+class IReviewRequestedEmailJobSource(Interface):
     """Create or retrieve jobs that email review requests."""
 
     def create(review_request):
@@ -641,7 +646,7 @@ class IMergeProposalUpdatedEmailJob(IRunnableJob):
     delta_text = Attribute('The textual representation of the changed fields.')
 
 
-class IMergeProposalUpdatedEmailJobSource(IJobSource):
+class IMergeProposalUpdatedEmailJobSource(Interface):
     """Create or retrieve jobs that email about merge proposal updates."""
 
     def create(merge_proposal, delta_text, editor):
