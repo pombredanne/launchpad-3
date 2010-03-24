@@ -637,21 +637,29 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 bzrdir = BzrDir.open_from_transport(transport)
                 branch = bzrdir.open_branch(ignore_fallbacks=True)
                 stacked_on_url = get_stacked_on_url(branch)
-                # mutilate stacked_on_url
                 if stacked_on_url is None:
                     stacked_on_url = ''
                 else:
-                    if '://' in stacked_on_url:
-                        uri = URI(stacked_on_url)
-                        if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
-                            raise BadUrlScheme(uri.scheme, uri)
-                        launchpad_domain = config.vhost.mainsite.hostname
-                        if uri.underDomain(launchpad_domain):
-                            return self._adjustPathURL(uri.path), False
-                        else:
-                            raise BadUrl(uri)
-                        branch._set_config_location(
-                            'stacked_on_location', uri.path)
+                    import sys
+                    try:
+                        if '://' in stacked_on_url:
+                            uri = URI(stacked_on_url)
+                            # These bits should not raise.  We could try to
+                            # display an error on stderr maybe?
+                            if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
+                                raise BadUrlScheme(uri.scheme, uri)
+                            launchpad_domain = config.vhost.mainsite.hostname
+                            if not uri.underDomain(launchpad_domain):
+                                raise BadUrl(uri)
+                            # Use TransportConfig directly
+                            from bzrlib.config import TransportConfig
+                            tconfig = TransportConfig(
+                                branch._transport, 'branch.conf')
+                            tconfig.set_option(
+                                uri.path, 'stacked_on_location')
+                    except:
+                        import traceback
+                        traceback.print_exc(file=sys.stderr)
                 last_revision = branch.last_revision()
             finally:
                 jail_info.transports.remove(transport)

@@ -257,14 +257,11 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             if stacked_on_location == '':
                 stacked_on_branch = None
             else:
-                if stacked_on_location.startswith('/'):
-                    stacked_on_branch = branch_set.getByUniqueName(
-                        stacked_on_location.strip('/'))
-                else:
-                    stacked_on_branch = branch_set.getByUrl(
-                        stacked_on_location.rstrip('/'))
+                stacked_on_branch = branch_set.getByUniqueName(
+                    stacked_on_location.strip('/'))
+                # XXX Should we log that the branch was not found here?
                 if stacked_on_branch is None:
-                    return faults.NoSuchBranch(stacked_on_location)
+                    stacked_on_branch = None
             stacked_branch = branch_set.get(branch_id)
             if stacked_branch is None:
                 return faults.NoBranchWithID(branch_id)
