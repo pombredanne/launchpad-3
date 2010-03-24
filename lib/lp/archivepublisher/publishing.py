@@ -17,7 +17,6 @@ import shutil
 from datetime import datetime
 
 from storm.store import Store
-
 from zope.component import getUtility
 
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
@@ -40,6 +39,8 @@ from lp.soyuz.interfaces.publishing import (BinaryPackagePublishingHistory,
     PackagePublishingStatus, SourcePackagePublishingHistory)
 
 from canonical.librarian.client import LibrarianClient
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -604,37 +605,34 @@ class Publisher(object):
     def deleteArchive(self):
         """Delete the archive.
         
-        Physically remove the entire archive from disk, mark all published
-        source and binary publications as DELETED, and change the archive's 
+        Physically remove the entire archive from disk and set the archive's 
         status to DELETED.
+
+        Any errors encountered while removing the archive from disk will 
+        be caught and an OOPS report generated.
         """
+
         
-        # Only attempt to rmdir if path exists.
+        self.log.info(
+            "Attempting to delete archive '%s/%s' at '%s'." % (
+                self.archive.owner.name, self.archive.name, 
+                self._config.archiveroot))
+        
+        # Attempt to rmdir if the path to the root of the archive exists.
         if os.path.exists(self._config.archiveroot):
-            self.log.debug("Deleting archive root: %s" % 
-                (self._config.archiveroot))
-            shutil.rmtree(self._config.archiveroot)
+            try:
+                shutil.rmtree(self._config.archiveroot)
+            except:
+                message = 'Exception while deleting archive root %s' %
+                    self._config.archiveroot
+                request = ScriptRequest([('error-explanation', message)])
+                ErrorReportingUtility().raising(sys.exc_info(), request)
+                self.log.error('%s (%s)' % (message, request.oopsid))
         else:
-            self.log.debug("Archive root does not exist: %s" % 
-                (self._config.archiveroot))
-        
-        store = Store.of(self.archive)
-        
-        # Mark published source publications as deleted.
-        published_sourcepackages = store.find(SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.archive == self.archive,
-            SourcePackagePublishingHistory.status ==
-            PackagePublishingStatus.PUBLISHED)
-        published_sourcepackages.set(SourcePackagePublishingHistory.status =
-            PackagePublishingStatus.DELETED)
-        
-        # Mark published binary publications as deleted.
-        published_binarypackages = store.find(BinaryPackagePublishingHistory,
-            BinaryPackagePublishingHistory.archive == self.archive,
-            BinaryPackagePublishingHistory.status ==
-            PackagePublishingStatus.PUBLISHED)
-        published_binarypackages.set(BinaryPackagePublishingHistory.status =
-            PackagePublishingStatus.DELETED)
-        
-        # Set archive status to deleted.
+            self.log.warning(
+                "Root directory '%s' for archive '%s/%s' does not exist." % (
+                    self._config.archiveroot, self.archive.owner.name, 
+                    self.archive.name))
+
+        # Set archive's status to DELETED.
         self.archive.status = ArchiveStatus.DELETED
