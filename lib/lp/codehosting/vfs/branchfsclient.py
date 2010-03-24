@@ -118,6 +118,16 @@ class BranchFileSystemClient:
             self._branchfs_endpoint.callRemote,
             'requestMirror', self._user_id, branch_id)
 
+    def branchChanged(self, branch_id, stacked_on_url, last_revision_id):
+        """Mark a branch as needing to be mirrored.
+
+        :param branch_id: The database ID of the branch.
+        """
+        return defer.maybeDeferred(
+            self._branchfs_endpoint.callRemote,
+            'branchChanged', self._user_id, branch_id, stacked_on_url,
+            last_revision_id)
+
     def translatePath(self, path):
         """Translate 'path'."""
         try:

@@ -249,6 +249,30 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             return True
         return run_with_login(login_id, request_mirror)
 
+    def branchChanged(self, login_id, branch_id, stacked_on_location,
+                      last_revision_id):
+        """See `IBranchFileSystem`."""
+        def branch_changed(requester):
+            branch_set = removeSecurityProxy(getUtility(IBranchLookup))
+            if stacked_on_location == '':
+                stacked_on_branch = None
+            else:
+                if stacked_on_location.startswith('/'):
+                    stacked_on_branch = branch_set.getByUniqueName(
+                        stacked_on_location.strip('/'))
+                else:
+                    stacked_on_branch = branch_set.getByUrl(
+                        stacked_on_location.rstrip('/'))
+                if stacked_on_branch is None:
+                    return faults.NoSuchBranch(stacked_on_location)
+            stacked_branch = branch_set.get(branch_id)
+            if stacked_branch is None:
+                return faults.NoBranchWithID(branch_id)
+            stacked_branch.stacked_on = stacked_on_branch
+            stacked_branch.mirrorComplete(last_revision_id)
+            return True
+        return run_with_login(login_id, branch_changed)
+
     def _serializeBranch(self, requester, branch, trailing_path):
         if requester == LAUNCHPAD_SERVICES:
             branch = removeSecurityProxy(branch)

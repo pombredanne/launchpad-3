@@ -179,6 +179,13 @@ class IBranchFileSystem(Interface):
         :param branchID: a branch ID.
         """
 
+    def branchChanged(loginID, branchID, stacked_on_url, last_revision_id):
+        """XXX.
+
+        :param loginID: the person ID of the user requesting the mirror.
+        :param branchID: a branch ID.
+        """
+
     def translatePath(requester_id, path):
         """Translate 'path' so that the codehosting transport can access it.
 
