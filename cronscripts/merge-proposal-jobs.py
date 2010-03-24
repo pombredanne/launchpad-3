@@ -19,7 +19,8 @@ from canonical.config import config
 from lp.codehosting.vfs import get_scanner_server
 from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchmergeproposal import (
-    IMergeProposalCreatedJobSource,)
+    IBranchMergeProposalJobSource,
+    )
 from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
@@ -29,7 +30,7 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
 
     def main(self):
         globalErrorUtility.configure('merge_proposal_jobs')
-        job_source = getUtility(IMergeProposalCreatedJobSource)
+        job_source = getUtility(IBranchMergeProposalJobSource)
         runner = JobRunner.fromReady(job_source, self.logger)
         server = get_scanner_server()
         server.start_server()
