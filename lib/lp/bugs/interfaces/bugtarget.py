@@ -252,8 +252,6 @@ IBugTask['transitionToTarget'].getTaggedValue(
 class IHasBugHeat(Interface):
     """An entity which has bug heat."""
 
-    export_as_webservice_entry()
-
     max_bug_heat = Attribute(
         "The current highest bug heat value for this entity.")
 
