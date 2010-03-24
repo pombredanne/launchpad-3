@@ -12,8 +12,11 @@ __metaclass__ = type
 import hashlib
 import logging
 import os
+import shutil
 
 from datetime import datetime
+
+from storm.store import Store
 
 from zope.component import getUtility
 
@@ -29,11 +32,12 @@ from lp.archivepublisher.utils import (
 from canonical.database.sqlbase import sqlvalues
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, ArchiveStatus
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import (BinaryPackagePublishingHistory,
+    PackagePublishingStatus, SourcePackagePublishingHistory)
 
 from canonical.librarian.client import LibrarianClient
 
@@ -596,3 +600,41 @@ class Publisher(object):
             in_file.close()
 
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
+
+    def deleteArchive(self):
+        """Delete the archive.
+        
+        Physically remove the entire archive from disk, mark all published
+        source and binary publications as DELETED, and change the archive's 
+        status to DELETED.
+        """
+        
+        # Only attempt to rmdir if path exists.
+        if os.path.exists(self._config.archiveroot):
+            self.log.debug("Deleting archive root: %s" % 
+                (self._config.archiveroot))
+            shutil.rmtree(self._config.archiveroot)
+        else:
+            self.log.debug("Archive root does not exist: %s" % 
+                (self._config.archiveroot))
+        
+        store = Store.of(self.archive)
+        
+        # Mark published source publications as deleted.
+        published_sourcepackages = store.find(SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archive == self.archive,
+            SourcePackagePublishingHistory.status ==
+            PackagePublishingStatus.PUBLISHED)
+        published_sourcepackages.set(SourcePackagePublishingHistory.status =
+            PackagePublishingStatus.DELETED)
+        
+        # Mark published binary publications as deleted.
+        published_binarypackages = store.find(BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.archive == self.archive,
+            BinaryPackagePublishingHistory.status ==
+            PackagePublishingStatus.PUBLISHED)
+        published_binarypackages.set(BinaryPackagePublishingHistory.status =
+            PackagePublishingStatus.DELETED)
+        
+        # Set archive status to deleted.
+        self.archive.status = ArchiveStatus.DELETED
