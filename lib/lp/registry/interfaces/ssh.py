@@ -46,7 +46,7 @@ class ISSHKey(Interface):
 
     export_as_webservice_entry('ssh_key')
 
-    id = exported(Int(title=_("Database ID"), required=True, readonly=True))
+    id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True, readonly=True)
     personID = Int(title=_('Owner ID'), required=True, readonly=True)
     keytype = exported(Choice(title=_("Key type"), required=True,
