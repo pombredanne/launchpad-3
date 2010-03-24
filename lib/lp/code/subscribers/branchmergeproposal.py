@@ -12,7 +12,7 @@ from zope.component import getUtility
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalCreatedJobSource, IMergeProposalUpdatedEmailJobSource,
-    IReviewRequestedEmailJobSource)
+    IReviewRequestedEmailJobSource, IUpdatePreviewDiffJobSource)
 from lp.registry.interfaces.person import IPerson
 from lp.services.utils import text_delta
 
@@ -20,8 +20,10 @@ from lp.services.utils import text_delta
 def merge_proposal_created(merge_proposal, event):
     """A new merge proposal has been created.
 
-    Create a job do send the initial email about the merge proposal.
+    Create a job to update the diff for the merge proposal.
+    Also create a job to email the subscribers about the new proposal.
     """
+    getUtility(IUpdatePreviewDiffJobSource).create(merge_proposal)
     getUtility(IMergeProposalCreatedJobSource).create(merge_proposal)
 
 
