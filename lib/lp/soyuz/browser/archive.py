@@ -359,15 +359,16 @@ class ArchiveMenuMixin:
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        link = Link('+edit', text, icon='edit')
-        #if self.context.status == ArchiveStatus.DELETING:
-        #    link.enabled = False
-        return link
+        return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def delete_ppa(self):
         text = 'Delete PPA'
-        return Link('+delete', text, icon='trash-icon')
+        link = Link('+delete', text, icon='trash-icon')
+        view = self.context
+        if view.context.status == ArchiveStatus.DELETING:
+            link.enabled = False
+        return link
 
     def builds(self):
         text = 'View all builds'
