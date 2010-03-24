@@ -466,16 +466,7 @@ class BugWatchUpdater(object):
 
     def _updateBugTracker(self, bug_tracker, batch_size=None):
         """Updates the given bug trackers's bug watches."""
-        # XXX 2007-01-18 gmb:
-        #     Once we start running checkwatches more frequently we need
-        #     to update the comment and the call to
-        #     getBugWatchesNeedingUpdate() below. We'll be checking
-        #     those watches which haven't been checked for 24 hours, not
-        #     23.
-        # We want 1 day, but we'll use 23 hours because we can't count
-        # on the cron job hitting exactly the same time every day
-        bug_watches_to_update = (
-            bug_tracker.getBugWatchesNeedingUpdate())
+        bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate()
 
         if bug_watches_to_update.count() > 0:
             # XXX: GavinPanella 2010-01-18 bug=509223 : Ask remote
