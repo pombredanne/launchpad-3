@@ -167,8 +167,7 @@ class IProjectGroupPublic(
             allow_userinfo=False,
             description=_("The URL of this project group's wiki, "
                           "if it has one. Please include the http://")),
-        exported_as="wiki_url"
-        )
+        exported_as="wiki_url")
 
     lastdoap = TextLine(
         title=_('Last-parsed RDF fragment'),
