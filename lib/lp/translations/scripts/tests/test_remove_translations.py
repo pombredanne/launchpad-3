@@ -61,8 +61,8 @@ class TestRemoveTranslationsConstraints(TestCase):
         opts = [
             '--language=pa',
             '--not-language',
-            '--is-current=False',
-            '--is-imported=true',
+            '--is-current-ubuntu=False',
+            '--is-current-upstream=true',
             '--msgid=foo',
             '--origin=1',
             '--force',
@@ -109,14 +109,14 @@ class TestRemoveTranslationsConstraints(TestCase):
         approval, message = self._check_options(['--reject-license'])
         self.assertFalse(approval)
 
-        # We can do that for the non-imported ones, however...
+        # We can do that for the non-upstream ones, however...
         approval, message = self._check_options([
-            '--reject-license', '--is-imported=False'])
+            '--reject-license', '--is-current-upstream=False'])
         self.assertTrue(approval)
 
-        # ...though not for the imported ones.
+        # ...though not for the upstream ones.
         approval, message = self._check_options([
-            '--reject-license', '--is-imported=True'])
+            '--reject-license', '--is-current-upstream=True'])
         self.assertFalse(approval)
 
         # Similar for ones submitted directly in Launchpad.
@@ -170,8 +170,8 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
             '--potemplate=5',
             '--language=te',
             '--not-language',
-            '--is-current=True',
-            '--is-imported=False',
+            '--is-current-ubuntu=True',
+            '--is-current-upstream=False',
             '--msgid=Hello',
             '--origin=1',
             '--force',
@@ -198,8 +198,8 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
         options = parse_opts([
             '--submitter=%s' % submitter.name,
             '--reviewer=%s' % reviewer.name,
-            '--is-current=0',
-            '--is-imported=true',
+            '--is-current-ubuntu=0',
+            '--is-current-upstream=true',
             '--origin=SCM'
             ])
         self.assertEqual(options.submitter, submitter.id)
@@ -209,7 +209,7 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
         self.assertEqual(options.origin, RosettaTranslationOrigin.SCM.value)
 
     def test_BadBool(self):
-        self.assertRaises(Exception, parse_opts, '--is-current=None')
+        self.assertRaises(Exception, parse_opts, '--is-current-ubuntu=None')
 
     def test_UnknownPerson(self):
         self.assertRaises(
@@ -546,11 +546,11 @@ class TestRemoveTranslations(TestCase):
 
 
 class TestRemoveTranslationsUnmasking(TestCase):
-    """Test that `remove_translations` "unmasks" imported messages.
+    """Test that `remove_translations` "unmasks" upstream messages.
 
-    When a current, non-imported message is deleted, the deletion code
-    checks whether there is also an imported translation.  If there was,
-    it makes sense to make the imported message the current one (as it
+    When a current, non-upstream message is deleted, the deletion code
+    checks whether there is also an upstream translation.  If there was,
+    it makes sense to make the upstream message the current one (as it
     would have been if the deleted message had never been there in the
     first place).
     """
