@@ -26,7 +26,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
+    ArchivePurpose, ArchiveStatus, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -94,6 +94,36 @@ class TestPublisher(TestPublisherBase):
         # file got published
         foo_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
+
+    def testDeletingPPA(self):
+        """Test deleting a PPA"""
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+
+        test_pool_dir = tempfile.mkdtemp()
+        test_temp_dir = tempfile.mkdtemp()
+        test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
+
+        publisher = Publisher(
+            self.logger, self.config, test_disk_pool, test_archive)
+
+        pub_source = self.getPubSource(
+            sourcename="foo", filename="foo_1.dsc",
+            filecontent='I am a file.',
+            status=PackagePublishingStatus.PENDING, archive=test_archive)
+
+        publisher.A_publish(False)
+        self.layer.txn.commit()
+        publisher.C_writeIndexes(False)
+        publisher.D_writeReleaseFiles(False)
+        pub_source.sync()
+
+        self.assertTrue(os.path.exists(publisher._config.archiveroot))
+        publisher.deleteArchive()
+        self.assertTrue(not os.path.exists(publisher._config.archiveroot))
+        self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
