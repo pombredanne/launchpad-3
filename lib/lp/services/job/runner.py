@@ -10,12 +10,14 @@ __metaclass__ = type
 
 __all__ = [
     'BaseRunnableJob',
+    'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
     ]
 
 
 from calendar import timegm
+from collection import defaultdict
 import contextlib
 import logging
 import os
@@ -407,17 +409,22 @@ class JobCronScript(LaunchpadCronScript):
             self.config_name, self.dbuser, test_args)
         self.runner_class = runner_class
 
+    def job_counts(self, jobs):
+        """Return a list of tuples containing the job name and counts."""
+        counts = defaultdict(lambda: 0)
+        for job in jobs:
+            counts[job.__class__.__name__] += 1
+        return sorted(counts.items())
+
     def main(self):
         errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         runner = self.runner_class.runFromSource(
             job_source, self.dbuser, self.logger)
-        self.logger.info(
-            'Ran %d %s jobs.',
-            len(runner.completed_jobs), self.source_interface.__name__)
-        self.logger.info(
-            '%d %s jobs did not complete.',
-            len(runner.incomplete_jobs), self.source_interface.__name__)
+        for name, count in self.job_counts(runner.completed_jobs):
+            self.logger.info('Ran %d %s jobs.', count, name)
+        for name, count in self.job_counts(runner.incomplete_jobs):
+            self.logger.info('%d %s jobs did not complete.', count, name)
 
 
 class TimeoutError(Exception):
