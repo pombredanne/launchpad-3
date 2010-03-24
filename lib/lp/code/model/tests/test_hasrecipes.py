@@ -38,6 +38,15 @@ class TestIHasRecipes(TestCaseWithFactory):
         person = self.factory.makeBranch()
         self.assertProvides(person, IHasRecipes)
 
+    def test_person_getRecipes(self):
+        # IPerson.getRecipes should provide all the SourcePackageRecipes
+        # owned by that person.
+        person = self.factory.makePerson()
+        recipe1 = self.factory.makeSourcePackageRecipe(owner=person)
+        recipe2 = self.factory.makeSourcePackageRecipe(owner=person)
+        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.assertEqual(2, person.getRecipes().count())
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
