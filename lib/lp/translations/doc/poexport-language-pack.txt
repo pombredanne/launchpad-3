@@ -295,7 +295,7 @@ on 2000/01/01.
     >>> pofile_es = template.newPOFile('es')
     >>> translations = { 0: u'blah (es)' }
     >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_es, mark, translations, is_imported=False,
+    ...     pofile_es, mark, translations, is_current_upstream=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> pofile_es.date_changed = d2000_01_01
 
@@ -305,7 +305,7 @@ Create a Welsh PO file, with an active translation submission created on
     >>> pofile_cy = template.newPOFile('cy')
     >>> translations = { 0: u'blah (cy)' }
     >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_cy, mark, translations, is_imported=False,
+    ...     pofile_cy, mark, translations, is_current_upstream=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> pofile_cy.date_changed = d2000_01_03
     >>> transaction.commit()

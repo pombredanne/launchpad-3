@@ -461,7 +461,7 @@ class TranslationMessageContainer:
         # Assign a CSS class to the translation
         # depending on whether it's used, suggested,
         # or an obsolete suggestion.
-        if translation.is_current:
+        if translation.is_current_ubuntu:
             self.usage_class = 'usedtranslation'
         else:
             if translation.isHidden(pofile):

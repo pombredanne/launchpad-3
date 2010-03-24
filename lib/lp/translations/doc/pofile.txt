@@ -428,10 +428,10 @@ breakage.
     ...     singular_text=u'evolution addressbook')
     >>> translation_message = potmsgset.getCurrentTranslationMessage(
     ...     pofile_es.potemplate, pofile_es.language, pofile_es.variant)
-    >>> is_imported = False
+    >>> is_current_upstream = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
     >>> translation_message.potmsgset.updateTranslation(
-    ...     pofile_es, no_priv, [u'foo'], is_imported, lock_timestamp)
+    ...     pofile_es, no_priv, [u'foo'], is_current_upstream, lock_timestamp)
     Traceback (most recent call last):
     ...
     AssertionError: No Privileges Person cannot add suggestions here.
@@ -762,10 +762,10 @@ Now, just to be sure that this entry doesn't exist yet:
 Is time to create it.
 
     >>> translations = {0: u''}
-    >>> is_imported = False
+    >>> is_current_upstream = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
     >>> translation_message = potmsgset.updateTranslation(
-    ...     pofile_sr, rosetta_experts, translations, is_imported,
+    ...     pofile_sr, rosetta_experts, translations, is_current_upstream,
     ...     lock_timestamp)
 
 As we can see, is the msgid we were looking for.
@@ -854,7 +854,8 @@ Now, lets provide a translation for it.
 
     >>> translation_message = untranslated.updateTranslation(pofile_changed,
     ...     pofile_changed.owner, {0: u'sample translation'},
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_current_upstream=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
 
 And make sure that the count of changed in Ubuntu hasn't changed.
 
@@ -872,7 +873,7 @@ translation:
     >>> for potmsgset in pofile_changed.potemplate:
     ...     tm = potmsgset.getImportedTranslationMessage(
     ...         pofile_changed.potemplate, pofile_changed.language)
-    ...     if tm is not None and tm.is_complete and tm.is_current:
+    ...     if tm is not None and tm.is_complete and tm.is_current_ubuntu:
     ...         imported_potmsgset = potmsgset
     ...         break
     >>> potmsgset is None
@@ -882,7 +883,8 @@ Lets re-translate that:
 
     >>> translation_message = imported_potmsgset.updateTranslation(
     ...     pofile_changed, pofile_changed.owner, {0: u'new translation'},
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_current_upstream=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
@@ -940,11 +942,12 @@ Non-editor can only submit a new suggestion on untranslated message.
 
     >>> new_translation = potmsgset.updateTranslation(
     ...     evolution_es, noneditor, {0: u'translation'},
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_current_upstream=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches() # Store modification dates in database
     >>> print new_translation.translations
     [u'translation']
-    >>> new_translation.is_current
+    >>> new_translation.is_current_ubuntu
     False
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     evolution_es.potemplate, evolution_es.language)
@@ -962,7 +965,8 @@ it himself.
 
     >>> new_translation = potmsgset.updateTranslation(
     ...     evolution_es, editor, {0: u'translation'},
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_current_upstream=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches() # Store modification dates in database
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     evolution_es.potemplate, evolution_es.language)
@@ -979,7 +983,8 @@ picked up as a new suggestion, but will be directly set as the translation.
 
     >>> new_translation = potmsgset.updateTranslation(
     ...     evolution_es, editor, {0: u'boohoo'},
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_current_upstream=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches() # Store modification dates in database
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     evolution_es.potemplate, evolution_es.language)
@@ -1004,7 +1009,8 @@ new suggestions.
 
     >>> new_translation = potmsgset.updateTranslation(
     ...     evolution_es, noneditor, {0: u'blahblah'},
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_current_upstream=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     evolution_es.potemplate, evolution_es.language)
     >>> print current.translations
@@ -1020,7 +1026,8 @@ will not be listed twice in the returned result.
 
     >>> new_translation = potmsgset.updateTranslation(
     ...     evolution_es, noneditor, {0: u'another'},
-    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_current_upstream=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
     3
     >>> len(set(evolution_es.getPOTMsgSetWithNewSuggestions()))
@@ -1189,7 +1196,8 @@ is updated.
 
     >>> new_credits = potmsgset.updateTranslation(
     ...     alsa_translation, alsa_translation.owner, {0: u'Happy translator'},
-    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+    ...     is_current_upstream=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_updates()
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     alsa_template, alsa_translation.language)
@@ -1200,7 +1208,7 @@ If we submit non-upstream translation, it's rejected.
 
     >>> no_credits = potmsgset.updateTranslation(
     ...     alsa_translation, alsa_translation.owner,
-    ...     {0: u'Unhappy translator'}, is_imported=False,
+    ...     {0: u'Unhappy translator'}, is_current_upstream=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> print no_credits
     None

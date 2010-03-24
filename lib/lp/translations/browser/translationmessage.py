@@ -422,7 +422,8 @@ class BaseTranslationView(LaunchpadView):
         try:
             potmsgset.updateTranslation(
                 self.pofile, self.user, translations,
-                is_imported=False, lock_timestamp=self.lock_timestamp,
+                is_current_upstream=False,
+                lock_timestamp=self.lock_timestamp,
                 force_suggestion=force_suggestion,
                 force_diverged=force_diverge)
         except TranslationConflict:
@@ -904,7 +905,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.user_is_official_translator = (
             current_translation_message.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
-        if self.context.is_imported:
+        if self.context.is_current_upstream:
             # The imported translation matches the current one.
             self.imported_translationmessage = self.context
         else:
@@ -1005,7 +1006,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.submitter == self.context.reviewer)
             is_same_date = (
                 self.context.date_created == self.context.date_reviewed)
-            if self.context.is_imported:
+            if self.context.is_current_upstream:
                 # Imported one matches the current one.
                 imported_submission = None
             elif self.imported_translationmessage is not None:
@@ -1055,7 +1056,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.context.makeHTMLID('translation_%d' % index),
                 }
 
-            if (not self.context.is_imported and
+            if (not self.context.is_current_upstream and
                 self.imported_translationmessage is not None):
                 translation_entry['html_id_imported_suggestion'] = (
                     self.imported_translationmessage.makeHTMLID(
@@ -1143,7 +1144,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         language = self.pofile.language
         potmsgset = self.context.potmsgset
 
-        if not self.context.is_imported:
+        if not self.context.is_current_upstream:
             imported = self.imported_translationmessage
         else:
             imported = None
@@ -1262,14 +1263,14 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.seen_translations = iterable_submissions.seen_translations
         return iterable_submissions
 
-    def getOfficialTranslation(self, index, is_imported=False,
+    def getOfficialTranslation(self, index, is_current_upstream=False,
                                is_shared=False):
         """Return current or imported translation for plural form 'index'."""
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
                 index, self.pofile.language.displayname))
 
-        if is_imported:
+        if is_current_upstream:
             if self.imported_translationmessage is None:
                 return None
 
@@ -1295,7 +1296,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
     def getImportedTranslation(self, index):
         """Return the imported translation for the pluralform 'index'."""
-        return self.getOfficialTranslation(index, is_imported=True)
+        return self.getOfficialTranslation(index, is_current_upstream=True)
 
     def getSharedTranslation(self, index):
         """Return the shared translation for the pluralform 'index'."""

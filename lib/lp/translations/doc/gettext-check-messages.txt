@@ -79,10 +79,10 @@ translation in Launchpad that differs from the imported one.
     ...     lock_timestamp=datetime.now(UTC))
     >>> imported_message = removeSecurityProxy(imported_message)
 
-    >>> imported_message.is_current = False
-    >>> current_message.is_imported = False
-    >>> imported_message.is_imported = True
-    >>> current_message.is_current = True
+    >>> imported_message.is_current_ubuntu = False
+    >>> current_message.is_current_upstream = False
+    >>> imported_message.is_current_upstream = True
+    >>> current_message.is_current_ubuntu = True
 
 
 == Basic operation ==
@@ -109,7 +109,7 @@ a plain SQL WHERE clause.
 If a translation fails to validate against its potmsgset, the script
 detects the problem when it checks that message.
 
-    >>> current_message.is_current
+    >>> current_message.is_current_ubuntu
     True
 
     >>> current_message.translations = [u'%s c']
@@ -130,21 +130,21 @@ detects the problem when it checks that message.
 
 The failed message is demoted to a mere suggestion.
 
-    >>> current_message.is_current
+    >>> current_message.is_current_ubuntu
     False
 
 In this case, there was a perfectly good imported message that was being
 masked by the invalid current translation.  So in addition to disabling
 the bad current message, the script activates the good imported one.
 
-    >>> imported_message.is_current
+    >>> imported_message.is_current_ubuntu
     True
 
 If the imported message is also bad, this is reported and the imported
 message is not activated.
 
-    >>> imported_message.is_current = False
-    >>> current_message.is_current = True
+    >>> imported_message.is_current_ubuntu = False
+    >>> current_message.is_current_ubuntu = True
     >>> imported_message.translations = [u'%s %s i']
 
     >>> run_checker(["-w id=%s" % quote(current_message.id)])
@@ -162,9 +162,9 @@ message is not activated.
     INFO Messages unmasked: 0
     INFO Commit points: ...
 
-    >>> current_message.is_current
+    >>> current_message.is_current_ubuntu
     False
-    >>> imported_message.is_current
+    >>> imported_message.is_current_ubuntu
     False
 
 
@@ -200,7 +200,7 @@ checked.
 
 The script also notes when a message is both current and imported.
 
-    >>> imported_message.is_current = True
+    >>> imported_message.is_current_ubuntu = True
     >>> run_checker(["-w id=%s" % quote(imported_message.id)])
     DEBUG ...
     INFO ... (current, imported): number of format specifications ...
@@ -210,7 +210,7 @@ The script also notes when a message is both current and imported.
 
 The --dry-run option makes the script abort all its database changes.
 
-    >>> current_message.is_current = True
+    >>> current_message.is_current_ubuntu = True
 
     >>> run_checker(["-w id=%s" % quote(current_message.id), '--dry-run'])
     INFO Dry run.  Not making any changes.
