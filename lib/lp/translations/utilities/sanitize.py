@@ -16,7 +16,7 @@ class Sanitize(object):
     unix_style = u'\n'
 
 
-    def __init__(self, english_singlar):
+    def __init__(self, english_singular):
         """Extract information from the English singular."""
         # Does the dot character appear in the Eglish singular?
         self.has_dots = u'\u2022' in english_singular
