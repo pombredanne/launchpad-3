@@ -263,17 +263,18 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 # Maybe we just wait until the scanner fails.
                 if stacked_on_branch is None:
                     stacked_on_branch = None
-            stacked_branch = branch_set.get(branch_id)
-            if stacked_branch is None:
+            branch = branch_set.get(branch_id)
+            if branch is None:
                 return faults.NoBranchWithID(branch_id)
-            stacked_branch.stacked_on = stacked_on_branch
+            branch.stacked_on = stacked_on_branch
             # This stuff mostly copy/paste/hacked from mirrorComplete.
-            stacked_branch.last_mirrored = datetime.datetime.now(pytz.UTC)
-            stacked_branch.mirror_failures = 0
-            stacked_branch.mirror_status_message = None
-            stacked_branch.last_mirrored_id = last_revision_id
+            branch.last_mirrored = datetime.datetime.now(pytz.UTC)
+            branch.mirror_failures = 0
+            branch.mirror_status_message = None
+            branch.last_mirrored_id = last_revision_id
             from lp.code.model.branchjob import BranchScanJob
-            BranchScanJob.create(stacked_branch)
+            # Maybe don't create this if there's a job pending already?
+            BranchScanJob.create(branch)
             return True
         return run_with_login(login_id, branch_changed)
 
