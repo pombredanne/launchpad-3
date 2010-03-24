@@ -150,7 +150,7 @@ class ILibraryFileAliasSet(Interface):
         from the Librarian at this time. See LibrarianGarbageCollection.
 
         If restricted is True, the file will be created through the
-        IRestricteLibrarianClient utility.
+        IRestrictedLibrarianClient utility.
         """
 
     def __getitem__(key):

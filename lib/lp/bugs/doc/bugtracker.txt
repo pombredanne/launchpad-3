@@ -621,9 +621,9 @@ lastchecked times to None.
 
 resetWatches() also clears the last_error_type field of the watches.
 
-    >>> from lp.bugs.interfaces.bugwatch import BugWatchErrorType
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
     >>> for watch in mozilla_bugzilla.watches:
-    ...     watch.last_error_type = BugWatchErrorType.UNKNOWN
+    ...     watch.last_error_type = BugWatchActivityStatus.UNKNOWN
 
     >>> txn = transaction.begin()
     >>> mozilla_bugzilla.resetWatches()

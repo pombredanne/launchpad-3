@@ -206,6 +206,12 @@ are no suggestions.
     >>> language.alt_suggestion_language is None
     True
 
+Languages have a useful string representation containing its English name in
+quotes and its language code in parentheses.
+
+    >>> language
+    <Language 'Chinese' (zh)>
+
 
 dashedcode
 ==========

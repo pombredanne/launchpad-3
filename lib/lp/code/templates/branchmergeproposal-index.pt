@@ -18,8 +18,8 @@
     #code-review-votes {
       margin: 1em 0;
     }
-    #commit-message, #edit-commit-message {
-      margin: 1em 0 0 0;
+    #description, #edit-description {
+      margin: 1em 0;
     }
     #add-comment-form {
       max-width: 60em;
@@ -39,8 +39,16 @@
     #add-comment-review-fields div {
       display: inline;
     }
+    #proposal-summary th {
+      font-weight: bold;
+      color: #717171;
+    }
+    #proposal-summary td {
+      padding-left: 0.5em;
+    }
     /* A page-specific fix for inline text are editing to line up box. */
-    #edit-commit-message .yui-ieditor-input { top: 0; }
+    #edit-description .yui-ieditor-input { top: 0; }
+    #edit-commit_message .yui-ieditor-input { top: 0; }
   </style>
 </metal:block>
 
@@ -66,27 +74,6 @@
     <tal:summary replace="structure context/@@+pagelet-summary" />
   </div>
 
-  <div id="commit-message" class="yui-g">
-  <tal:no-commit-message condition="not: context/commit_message">
-    <div tal:define="link menu/set_commit_message"
-         tal:condition="link/enabled"
-         tal:content="structure link/render">
-      Set commit message
-    </div>
-    <div id="edit-commit-message" class="lazr-multiline-edit unseen"
-         tal:content="structure view/commit_message_html"/>
-  </tal:no-commit-message>
-  <tal:has-commit-message condition="context/commit_message">
-    <div tal:define="link menu/set_commit_message"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" class="unseen">
-      Set commit message
-    </div>
-    <div id="edit-commit-message" class="lazr-multiline-edit"
-         tal:content="structure view/commit_message_html"/>
-  </tal:has-commit-message>
-  </div>
-
   <div class="yui-g">
     <div id="votes-target"
          tal:content="structure context/@@+votes" />
@@ -107,6 +94,48 @@
         proposal from
         <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
     </p>
+  </div>
+
+  <div id="commit-message" class="yui-g">
+  <tal:no-commit-message condition="not: context/commit_message">
+    <div tal:define="link menu/set_commit_message"
+         tal:condition="link/enabled"
+         tal:content="structure link/render">
+      Set commit message
+    </div>
+    <div id="edit-commit_message" class="lazr-multiline-edit unseen"
+         tal:content="structure view/commit_message_html"/>
+  </tal:no-commit-message>
+  <tal:has-commit-message condition="context/commit_message">
+    <div tal:define="link menu/set_commit_message"
+         tal:condition="link/enabled"
+         tal:content="structure link/render" class="unseen">
+      Set commit message
+    </div>
+    <div id="edit-commit_message" class="lazr-multiline-edit"
+         tal:content="structure view/commit_message_html"/>
+  </tal:has-commit-message>
+  </div>
+
+  <div id="description" class="yui-g">
+  <tal:no-description condition="not: context/description">
+    <div tal:define="link menu/set_description"
+         tal:condition="link/enabled"
+         tal:content="structure link/render">
+      Set description
+    </div>
+    <div id="edit-description" class="lazr-multiline-edit unseen"
+         tal:content="structure view/description_html"/>
+  </tal:no-description>
+  <tal:has-description condition="context/description">
+    <div tal:define="link menu/set_description"
+         tal:condition="link/enabled"
+         tal:content="structure link/render" class="unseen">
+      Set description
+    </div>
+    <div id="edit-description" class="lazr-multiline-edit"
+         tal:content="structure view/description_html"/>
+  </tal:has-description>
   </div>
 
   <div class="yui-g">
@@ -199,8 +228,8 @@
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   conf = <tal:status-config replace="view/status_config" />
   <!--
-  LPS.use('io-base', 'code.codereview', 'code.branchmergeproposal', 'lp.comment',
-            function(Y) {
+  LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
+          'lp.code.branchmergeproposal.status', 'lp.comment', function(Y) {
 
     Y.on('load', function() {
         var logged_in = LP.client.links['me'] !== undefined;
@@ -213,10 +242,11 @@
                 return;
             }
 
-            Y.code.branchmergeproposal.connect_status(conf);
+            Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
-        Y.code.codereview.connect_links();
-        (new Y.codereview.NumberToggle()).render();
+        Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
+        (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
+            ).render();
       }, window);
   });
   -->

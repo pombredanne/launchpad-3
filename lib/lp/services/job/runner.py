@@ -34,11 +34,11 @@ from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
-from canonical.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.twistedsupport.task import (
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 
 
 class BaseRunnableJob:
@@ -53,6 +53,17 @@ class BaseRunnableJob:
     delegates(IJob, 'job')
 
     user_error_types = ()
+
+    # We redefine __eq__ and __ne__ here to prevent the security proxy
+    # from mucking up our comparisons in tests and elsewhere.
+
+    def __eq__(self, job):
+        return (
+            self.__class__ is removeSecurityProxy(job.__class__)
+            and self.job == job.job)
+
+    def __ne__(self, job):
+        return not (self == job)
 
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""
@@ -390,9 +401,10 @@ class TwistedJobRunner(BaseJobRunner):
 class JobCronScript(LaunchpadCronScript):
     """Base class for scripts that run jobs."""
 
-    def __init__(self, runner_class=JobRunner):
+    def __init__(self, runner_class=JobRunner, test_args=None):
         self.dbuser = getattr(config, self.config_name).dbuser
-        super(JobCronScript, self).__init__(self.config_name, self.dbuser)
+        super(JobCronScript, self).__init__(
+            self.config_name, self.dbuser, test_args)
         self.runner_class = runner_class
 
     def main(self):

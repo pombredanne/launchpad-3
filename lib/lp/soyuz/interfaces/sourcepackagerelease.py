@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 
+from lazr.restful.fields import Reference
 from zope.schema import TextLine
 from zope.interface import Interface, Attribute
 
@@ -32,6 +33,7 @@ class ISourcePackageRelease(Interface):
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
+    changelog = Attribute("LibraryFileAlias containing debian/changelog.")
     changelog_entry = Attribute("Source Package Change Log Entry")
     change_summary = Attribute(
         "The message on the latest change in this release. This is usually "
@@ -135,6 +137,15 @@ class ISourcePackageRelease(Interface):
         "The `PackageUpload` record corresponding to original upload of "
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
+
+    # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
+    source_package_recipe_build = Reference(
+        schema=Interface,
+        description=_("The `SourcePackageRecipeBuild` which produced this "
+            "source package release, or None if it was created from a "
+            "traditional upload."),
+        title=_("Source package recipe build"),
+        required=False, readonly=True)
 
     def addFile(file):
         """Add the provided library file alias (file) to the list of files

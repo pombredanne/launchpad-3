@@ -86,6 +86,7 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
@@ -432,6 +433,9 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
+# XXX: salgado, 2010/03/05, bug=532688: This is currently used by c-i-p, so it
+# can't be removed yet.  As soon as we stop using c-i-p, though, we'll be able
+# to remove this.
 class IPersonChangePassword(Interface):
     """The schema used by Person +changepassword form."""
 
@@ -635,9 +639,17 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
-    pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
-    inactivegpgkeys = Attribute(
+    gpg_keys = exported(
+        CollectionField(
+            title=_("List of valid OpenPGP keys ordered by ID"),
+            readonly=False, required=False,
+            value_type=Reference(schema=IGPGKey)))
+    pending_gpg_keys = exported(
+        CollectionField(
+            title=_("Set of fingerprints pending confirmation"),
+            readonly=False, required=False,
+            value_type=Reference(schema=IGPGKey)))
+    inactive_gpg_keys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(
         CollectionField(

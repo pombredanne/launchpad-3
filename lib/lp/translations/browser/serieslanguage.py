@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -77,6 +78,11 @@ class BaseSeriesLanguageView(LaunchpadView):
     def access_level_description(self):
         """Must not be called when there's no translation group."""
         
+        if is_read_only():
+            return (
+                "No work can be done on these translations while Launchpad "
+                "is in read-only mode.")
+
         if self.user is None:
             return ("You are not logged in. Please log in to work "
                     "on translations.")
@@ -104,8 +110,8 @@ class BaseSeriesLanguageView(LaunchpadView):
                     "<a href='%s'>Translations licensing</a>.") % (
                         translation_license_url)
 
-        sample_pofile = self.pofiles[0]
-        if sample_pofile is not None:
+        if len(self.pofiles) > 0:
+            sample_pofile = self.pofiles[0]
             if sample_pofile.canEditTranslations(self.user):
                 return "You can add and review translations."
 
@@ -124,7 +130,7 @@ class BaseSeriesLanguageView(LaunchpadView):
 
         if self.translation_team is None:
             return ("Since there is nobody to manage translation "
-                    "approvals into this language, your cannot add "
+                    "approvals into this language, you cannot add "
                     "new suggestions. If you are interested in making "
                     "translations, please contact %s.") % (
                         translations_contact_link)
