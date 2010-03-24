@@ -13,36 +13,25 @@ This script handles all job types for branch merge proposals.
 __metaclass__ = type
 
 import _pythonpath
-from zope.component import getUtility
 
-from canonical.config import config
-from lp.codehosting.vfs import get_scanner_server
-from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
-from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.job.runner import JobCronScript, TwistedJobRunner
 
 
-class RunMergeProposalCreatedJobs(LaunchpadCronScript):
-    """Run merge proposal creation jobs."""
+class RunMergeProposalJobs(JobCronScript):
+    """Run all merge proposal jobs."""
 
-    def main(self):
-        globalErrorUtility.configure('merge_proposal_jobs')
-        job_source = getUtility(IBranchMergeProposalJobSource)
-        runner = JobRunner.fromReady(job_source, self.logger)
-        server = get_scanner_server()
-        server.start_server()
-        try:
-            runner.runAll()
-        finally:
-            server.stop_server()
-        self.logger.info(
-            'Ran %d MergeProposalCreatedJobs.', len(runner.completed_jobs))
+    config_name = 'merge_proposal_jobs'
+    source_interface = IBranchMergeProposalJobSource
+
+    def __init__(self):
+        super(RunMergeProposalJobs, self).__init__(
+            runner_class=TwistedJobRunner,
+            script_name='merge-proposal-jobs')
 
 
 if __name__ == '__main__':
-    script = RunMergeProposalCreatedJobs(
-        'merge-proposal-jobs', config.merge_proposal_email_jobs.dbuser)
+    script = RunMergeProposalJobs()
     script.lock_and_run()
