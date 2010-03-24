@@ -91,7 +91,7 @@ and their type is 'BugWatchUpdateWarning'.
     <BLANKLINE>
     error-explanation=ExternalBugtracker for ... is not known.
     ...SELECT 1 FROM BugTracker WHERE BugTracker.id = %s
-    ...
+    ...Transaction completed, status: Active...
     Traceback (most recent call last):
     ...
     BugWatchUpdateWarning: ExternalBugtracker for BugTrackerType 'SAVANE'
@@ -139,6 +139,7 @@ will also be automatically filled from the baseurl OOPS property.
 
     >>> import socket
     >>> import urllib2
+    >>> from canonical.database.sqlbase import ZopelessTransactionManager
     >>> urlopen = urllib2.urlopen
 
     >>> transaction.commit()
@@ -146,7 +147,7 @@ will also be automatically filled from the baseurl OOPS property.
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
-    ...     updater = BugWatchUpdater(transaction)
+    ...     updater = BugWatchUpdater(ZopelessTransactionManager)
     ...     updater._login()
     ...     updater.updateBugTrackers(
     ...         bug_tracker_names=[example_bug_tracker.name])
@@ -173,6 +174,7 @@ will also be automatically filled from the baseurl OOPS property.
     <BLANKLINE>
     ...SELECT COUNT(*) FROM...
     ...SELECT BugTracker.active, BugTracker.baseurl...
+    ...Transaction completed, status: Committed...
     <BLANKLINE>
     Traceback (most recent call last):
     ...
@@ -254,7 +256,7 @@ requests are actually made.
 
     >>> from lp.bugs import externalbugtracker
     >>> from canonical.launchpad.scripts import FakeLogger
-    >>> updater = BugWatchUpdater(transaction)
+    >>> updater = BugWatchUpdater(ZopelessTransactionManager)
     >>> original_log = updater.log
     >>> batch_size = externalbugtracker.Roundup.batch_size
     >>> transaction.commit()
