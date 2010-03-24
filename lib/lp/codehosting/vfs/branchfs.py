@@ -646,7 +646,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
             from bzrlib.smart.request import jail_info
             transport, _ = self._transport_dispatch.makeTransport((transport_type, data, trailing_path))
             # XXX yikes!!
-            jail_info.transports.append(transport)
+            if jail_info.transports:
+                jail_info.transports.append(transport)
             try:
                 bzrdir = BzrDir.open_from_transport(transport)
                 branch = bzrdir.open_branch(ignore_fallbacks=True)
@@ -670,10 +671,11 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 # It gets really confusing if we raise an exception
                 # here (the branch remains locked, but this isn't
                 # obvious to the client) so just log the error, which
-                # will result in an OOPS log.
+                # will result in an OOPS being logged.
                 log.err()
             finally:
-                jail_info.transports.remove(transport)
+                if jail_info.transports:
+                    jail_info.transports.remove(transport)
             return self._authserver.branchChanged(
                 data['id'], stacked_on_url, last_revision)
 
@@ -700,11 +702,11 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, branch_directory=None,
 
     branch_url = urlutils.local_path_to_url(branch_directory)
     branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
-    # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
+    # XXX: JonathanLange 2007-05-29: The 'chroot' line lacks a unit test.
     branch_transport = get_chrooted_transport(branch_url)
     lp_server = LaunchpadServer(
-        BlockingProxy(branchfs_client), user_id,
-        branch_transport, seen_new_branch_hook)
+        BlockingProxy(branchfs_client), user_id, branch_transport,
+        seen_new_branch_hook)
     return lp_server
 
 
