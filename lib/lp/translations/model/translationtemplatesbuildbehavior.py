@@ -98,10 +98,13 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         builder_status = raw_slave_status[0]
 
         if builder_status == 'BuilderStatus.WAITING':
-            return {
+            extra_info = {
                 'build_status': raw_slave_status[1],
                 'build_id': raw_slave_status[2],
                 }
+            if len(raw_slave_status) >= 3:
+                extra_info['file_map'] = raw_slave_status[3]
+            return extra_info
         else:
             # Nothing special to do for other states.
             return {}
