@@ -278,8 +278,7 @@
 <metal:launchpad-stylesheet-3-0 define-macro="launchpad-stylesheet-3-0"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-    icingroot string:${rooturl}+icing/rev${revno}">
+    icingroot string:/+icing/rev${revno}">
   <tal:comment replace="nothing">
     This macro loads a single css file containing all our stylesheets.
     If you need to include a new css file here, add it to
