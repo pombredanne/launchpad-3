@@ -616,7 +616,7 @@ class POFileUploadView(POFileView):
                 " recognised as a file that can be imported.")
             return
 
-        # Uploads on this form are never form upstream.
+        # Uploads on this form are never from upstream.
         from_upstream = False
 
         if self.context.path is None:
