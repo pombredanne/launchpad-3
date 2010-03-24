@@ -637,13 +637,26 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 bzrdir = BzrDir.open_from_transport(transport)
                 branch = bzrdir.open_branch(ignore_fallbacks=True)
                 stacked_on_url = get_stacked_on_url(branch)
+                # mutilate stacked_on_url
                 if stacked_on_url is None:
                     stacked_on_url = ''
-                # mutilate stacked_on_url
+                else:
+                    if '://' in stacked_on_url:
+                        uri = URI(stacked_on_url)
+                        if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
+                            raise BadUrlScheme(uri.scheme, uri)
+                        launchpad_domain = config.vhost.mainsite.hostname
+                        if uri.underDomain(launchpad_domain):
+                            return self._adjustPathURL(uri.path), False
+                        else:
+                            raise BadUrl(uri)
+                        branch._set_config_location(
+                            'stacked_on_location', uri.path)
                 last_revision = branch.last_revision()
             finally:
                 jail_info.transports.remove(transport)
-            return self._authserver.branchChanged(data['id'], stacked_on_url, last_revision)
+            return self._authserver.branchChanged(
+                data['id'], stacked_on_url, last_revision)
 
         return deferred.addCallback(got_path_info)
 
