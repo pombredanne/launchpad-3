@@ -59,3 +59,86 @@ will all be None.
     None
     >>> print activity.oops_id
     None
+
+
+Recording BugWatch updates as BugWatchActivity
+-----------------------------------------------
+
+Whenever an update is made to a BugWatch that update is recorded as a
+BugWatchActivity entry.
+
+We can demonstrate this by passing our bug watch to
+BugWatchUpdater.updateBugWatches().
+
+    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
+    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
+    >>> updater = BugWatchUpdater(transaction, QuietFakeLogger())
+    >>> updater.updateBugWatches(
+    ...     TestExternalBugTracker('http://example.com'), [bug_watch])
+
+An extra activity item will have been added to the BugWatch's activity
+property.
+
+    >>> print bug_watch.activity.count()
+    2
+
+The most recent activity entry will have a result of None since it was
+successful.
+
+    >>> most_recent_activity = bug_watch.activity.first()
+    >>> print most_recent_activity.result
+    None
+
+Its message will also be empty
+
+    >>> print most_recent_activity.message
+    None
+
+As will its oops_id
+
+    >>> print most_recent_activity.oops_id
+    None
+
+If the remote bug tracker breaks during an update the error will be
+recorded in the activity entry for that update.
+
+    >>> from lp.bugs.externalbugtracker.base import BugNotFound
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     TestBrokenExternalBugTracker)
+    >>> broken_bugtracker = TestBrokenExternalBugTracker('http://example.com')
+    >>> broken_bugtracker.get_remote_status_error = BugNotFound
+
+    >>> updater.updateBugWatches(broken_bugtracker, [bug_watch])
+
+Another entry will have been added to the watch's activity property.
+
+    >>> print bug_watch.activity.count()
+    3
+
+And this time its result field will record that the the remote bug was
+not found.
+
+    >>> most_recent_activity = bug_watch.activity.first()
+    >>> print most_recent_activity.result.title
+    Bug Not Found
+
+The OOPS ID for the error will also have been recorded.
+
+    >>> print most_recent_activity.oops_id
+    OOPS...
+
+The BugWatchUpdater also adds BugWatchActivity entries when errors occur
+that don't have an entry in the BugWatchActivityStatus DB Enum.
+
+    >>> broken_bugtracker.get_remote_status_error = Exception
+    >>> updater.updateBugWatches(broken_bugtracker, [bug_watch])
+    >>> most_recent_activity = bug_watch.activity.first()
+
+    >>> print most_recent_activity.result.title
+    Unknown
+
+The OOPS ID of the error is recorded so that we can debug it.
+
+    >>> print most_recent_activity.oops_id
+    OOPS...

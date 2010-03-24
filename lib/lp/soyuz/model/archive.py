@@ -304,17 +304,6 @@ class Archive(SQLBase):
         return dependencies
 
     @property
-    def expanded_archive_dependencies(self):
-        """See `IArchive`."""
-        archives = []
-        if self.is_ppa:
-            archives.append(self.distribution.main_archive)
-        archives.append(self)
-        archives.extend(
-            [archive_dep.dependency for archive_dep in self.dependencies])
-        return archives
-
-    @property
     def debug_archive(self):
         """See `IArchive`."""
         if self.purpose == ArchivePurpose.PRIMARY:
@@ -791,8 +780,14 @@ class Archive(SQLBase):
 
     def findDepCandidateByName(self, distroarchseries, name):
         """See `IArchive`."""
-        archives = [
-            archive.id for archive in self.expanded_archive_dependencies]
+        archives = []
+        if self.is_ppa:
+            archives.append(self.distribution.main_archive.id)
+        archives.append(self.id)
+        dep = ArchiveDependency.selectOneBy(archive=self)
+        while dep is not None:
+            archives.append(dep.dependency.id)
+            dep = ArchiveDependency.selectOneBy(archive=dep.dependency)
 
         query = """
             binarypackagename = %s AND
@@ -1133,6 +1128,25 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def getBinaryPackageRelease(self, name, version, archtag):
+        """See `IArchive`."""
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        results = store.find(
+            BinaryPackageRelease,
+            BinaryPackageRelease.binarypackagename == name,
+            BinaryPackageRelease.version == version,
+            Build.id == BinaryPackageRelease.buildID,
+            DistroArchSeries.id == Build.distroarchseriesID,
+            DistroArchSeries.architecturetag == archtag,
+            BinaryPackagePublishingHistory.archive == self,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id).config(distinct=True)
+        if results.count() > 1:
+            return None
+        return results.one()
+
     def getBinaryPackageReleaseByFileName(self, filename):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         results = store.find(
@@ -1354,6 +1368,12 @@ class Archive(SQLBase):
             BinaryPackageReleaseDownloadCount.binary_package_release == bpr,
             ).one()
         return count or 0
+
+    def getPackageDownloadCount(self, bpr, day, country):
+        """See `IArchive`."""
+        return Store.of(self).find(
+            BinaryPackageReleaseDownloadCount, archive=self,
+            binary_package_release=bpr, day=day, country=country).one()
 
     def _setBuildStatuses(self, status):
         """Update the pending Build Jobs' status for this archive."""

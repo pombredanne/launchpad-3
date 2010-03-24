@@ -230,3 +230,14 @@ class BinaryPackageReleaseDownloadCount(Storm):
         self.day = day
         self.country = country
         self.count = count
+
+    @property
+    def binary_package_name(self):
+        """See `IBinaryPackageReleaseDownloadCount`."""
+        return self.binary_package_release.name
+
+    @property
+    def binary_package_version(self):
+        """See `IBinaryPackageReleaseDownloadCount`."""
+        return self.binary_package_release.version
+
