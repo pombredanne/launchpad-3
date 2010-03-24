@@ -102,12 +102,7 @@ class TestPublisher(TestPublisherBase):
             distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
 
-        test_pool_dir = tempfile.mkdtemp()
-        test_temp_dir = tempfile.mkdtemp()
-        test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
-
-        publisher = Publisher(
-            self.logger, self.config, test_disk_pool, test_archive)
+        publisher = getPublisher(test_archive, None, self.logger)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo_1.dsc",
