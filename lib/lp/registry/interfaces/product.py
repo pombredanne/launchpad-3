@@ -285,7 +285,7 @@ class IProductDriverRestricted(Interface):
         """
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
@@ -403,8 +403,7 @@ class IProductPublic(
             description=_(
                 "At least one lowercase letter or number, followed by "
                 "letters, numbers, dots, hyphens or pluses. "
-                "Keep this name short; it is used in URLs as shown above."
-                )))
+                "Keep this name short; it is used in URLs as shown above.")))
 
     displayname = exported(
         TextLine(
@@ -812,8 +811,7 @@ class IProductSet(Interface):
         subscription_modified_after=Date(
             title=_("Subscription modified after")),
         subscription_modified_before=Date(
-            title=_("Subscription modified before"))
-        )
+            title=_("Subscription modified before")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
     @export_operation_as('licensing_search')
@@ -843,7 +841,6 @@ class IProductSet(Interface):
         description fields of product. soyuz, bazaar, malone etc are
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
-
 
     @operation_returns_collection_of(IProduct)
     @call_with(quantity=None)
@@ -988,7 +985,7 @@ class InvalidProductName(LaunchpadValidationError):
     def __init__(self, name):
         self.name = name
         LaunchpadValidationError.__init__(
-            self, "Invalid name for product: %s." % (name,))
+            self, "Invalid name for product: %s." % (name, ))
 
 
 # Fix circular imports.
