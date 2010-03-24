@@ -741,9 +741,6 @@ class IPrimaryContext(Interface):
 #
 
 MAIN_STORE = 'main' # The main database.
-AUTH_STORE = 'auth' # The authentication database.
-
-ALL_STORES = frozenset([MAIN_STORE, AUTH_STORE])
 
 DEFAULT_FLAVOR = 'default' # Default flavor for current state.
 MASTER_FLAVOR = 'master' # The master database.
@@ -770,6 +767,9 @@ class IDatabasePolicy(Interface):
         utility.
         """
 
+    # XXX: 2010-03-24, Guilherme Salgado: The 'name' argument will always be
+    # MAIN_STORE here, so it can be removed.  Not doing it now as this branch
+    # will be CPed into production.
     def getStore(name, flavor):
         """Retrieve a Store.
 
@@ -839,6 +839,9 @@ class IStoreSelector(Interface):
     def get_current():
         """Return the currently installed `IDatabasePolicy`."""
 
+    # XXX: 2010-03-24, Guilherme Salgado: The 'name' argument will always be
+    # MAIN_STORE here, so it can be removed.  Not doing it now as this branch
+    # will be CPed into production.
     def get(name, flavor):
         """Retrieve a Storm Store.
 

@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugheat import BugHeatCalculator
@@ -141,19 +141,17 @@ class OpenIDConsumerNoncePruner(TunableLoop):
         transaction.commit()
 
 
-class OpenIDAssociationPruner(TunableLoop):
+class OpenIDConsumerAssociationPruner(TunableLoop):
     minimum_chunk_size = 3500
     maximum_chunk_size = 50000
 
-    table_name = 'OpenIDAssociation'
-    store_name = AUTH_STORE
+    table_name = 'OpenIDConsumerAssociation'
 
     _num_removed = None
 
     def __init__(self, log, abort_time=None):
-        super(OpenIDAssociationPruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(
-            self.store_name, MASTER_FLAVOR)
+        super(OpenIDConsumerAssociationPruner, self).__init__(log, abort_time)
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     def __call__(self, chunksize):
         result = self.store.execute("""
@@ -170,11 +168,6 @@ class OpenIDAssociationPruner(TunableLoop):
 
     def isDone(self):
         return self._num_removed == 0
-
-
-class OpenIDConsumerAssociationPruner(OpenIDAssociationPruner):
-    table_name = 'OpenIDConsumerAssociation'
-    store_name = MAIN_STORE
 
 
 class RevisionCachePruner(TunableLoop):
@@ -833,7 +826,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
-        OpenIDAssociationPruner,
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
         ]

@@ -25,7 +25,7 @@ from canonical.launchpad.webapp.dbpolicy import (
     ReadOnlyLaunchpadDatabasePolicy, SlaveDatabasePolicy,
     SlaveOnlyDatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
-    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
+    DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore,
     SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -37,18 +37,14 @@ class ImplicitDatabasePolicyTestCase(TestCase):
     layer = DatabaseFunctionalLayer
 
     def test_defaults(self):
-        for store in ALL_STORES:
-            self.assertProvides(
-                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
-                IMasterStore)
+        self.assertProvides(
+            getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
+            IMasterStore)
 
     def test_dbusers(self):
         store_selector = getUtility(IStoreSelector)
         main_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
         self.failUnlessEqual(self.getDBUser(main_store), 'launchpad_main')
-
-        auth_store = store_selector.get(AUTH_STORE, DEFAULT_FLAVOR)
-        self.failUnlessEqual(self.getDBUser(auth_store), 'launchpad_auth')
 
     def getDBUser(self, store):
         return store.execute(
@@ -83,16 +79,14 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         super(SlaveDatabasePolicyTestCase, self).setUp()
 
     def test_defaults(self):
-        for store in ALL_STORES:
-            self.assertProvides(
-                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
-                ISlaveStore)
+        self.assertProvides(
+            getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
+            ISlaveStore)
 
     def test_master_allowed(self):
-        for store in ALL_STORES:
-            self.assertProvides(
-                getUtility(IStoreSelector).get(store, MASTER_FLAVOR),
-                IMasterStore)
+        self.assertProvides(
+            getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR),
+            IMasterStore)
 
 
 class SlaveOnlyDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
@@ -103,10 +97,15 @@ class SlaveOnlyDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
         super(SlaveOnlyDatabasePolicyTestCase, self).setUp()
 
     def test_master_allowed(self):
-        for store in ALL_STORES:
-            self.failUnlessRaises(
-                DisallowedStore,
-                getUtility(IStoreSelector).get, store, MASTER_FLAVOR)
+        # The master store is not allowed here, but we need this empty test
+        # to overwrite the test method from our parent class, where the master
+        # store is allowed.
+        pass
+
+    def test_master_not_allowed(self):
+        self.failUnlessRaises(
+            DisallowedStore,
+            getUtility(IStoreSelector).get, MAIN_STORE, MASTER_FLAVOR)
 
 
 class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
@@ -130,10 +129,9 @@ class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def test_slave_allowed(self):
         # We get the master store even if the slave was requested.
-        for store in ALL_STORES:
-            self.assertProvides(
-                getUtility(IStoreSelector).get(store, SLAVE_FLAVOR),
-                ISlaveStore)
+        self.assertProvides(
+            getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR),
+            ISlaveStore)
 
 
 class LaunchpadDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
@@ -247,23 +245,20 @@ class ReadOnlyLaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def test_defaults(self):
         # default Store is the slave.
-        for store in ALL_STORES:
-            self.assertProvides(
-                getUtility(IStoreSelector).get(store, DEFAULT_FLAVOR),
-                ISlaveStore)
+        self.assertProvides(
+            getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR),
+            ISlaveStore)
 
     def test_slave_allowed(self):
-        for store in ALL_STORES:
-            self.assertProvides(
-                getUtility(IStoreSelector).get(store, SLAVE_FLAVOR),
-                ISlaveStore)
+        self.assertProvides(
+            getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR),
+            ISlaveStore)
 
     def test_master_disallowed(self):
         store_selector = getUtility(IStoreSelector)
-        for store in ALL_STORES:
-            self.assertRaises(
-                ReadOnlyModeDisallowedStore,
-                store_selector.get, store, MASTER_FLAVOR)
+        self.assertRaises(
+            ReadOnlyModeDisallowedStore,
+            store_selector.get, MAIN_STORE, MASTER_FLAVOR)
 
 
 def test_suite():

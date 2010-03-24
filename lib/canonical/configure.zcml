@@ -154,7 +154,5 @@
     <include package="canonical.lazr" />
     <include zcml:condition="installed canonical.shipit"
              package="canonical.shipit" />
-    <include zcml:condition="installed canonical.signon"
-             package="canonical.signon" />
 
 </configure>
