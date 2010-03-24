@@ -200,6 +200,17 @@ special = {
         setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
         ),
+    'package-arch-specific.txt': LayeredDocFileSuite(
+        '../doc/package-arch-specific.txt',
+        setUp=builddmasterSetUp,
+        layer=LaunchpadZopelessLayer,
+        ),
+    'queuebuilder.txt': LayeredDocFileSuite(
+        '../doc/queuebuilder.txt',
+        setUp=builddmasterSetUp,
+        layer=LaunchpadZopelessLayer,
+        stdout_logging_level=logging.WARNING,
+        ),
     }
 
 

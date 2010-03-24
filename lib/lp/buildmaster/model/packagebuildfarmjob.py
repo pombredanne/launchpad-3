@@ -27,4 +27,4 @@ class PackageBuildFarmJob(BuildFarmJob):
 
     def jobAborted(self):
         """See `IBuildFarmJob`."""
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.buildstate = BuildStatus.NEEDSBUILD

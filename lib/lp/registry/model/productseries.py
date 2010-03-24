@@ -50,8 +50,6 @@ from lp.translations.model.translationimportqueue import (
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
@@ -60,10 +58,12 @@ from lp.blueprints.interfaces.specification import (
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
+from lp.registry.model.series import SeriesMixin
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 
@@ -92,12 +92,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         notNull=True, schema=SeriesStatus,
         default=SeriesStatus.DEVELOPMENT)
     name = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,
         notNull=True)
+
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,
@@ -164,25 +164,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def max_bug_heat(self):
         """See `IHasBugs`."""
         return self.product.max_bug_heat
-
-    @property
-    def drivers(self):
-        """See IProductSeries."""
-        drivers = set()
-        drivers.add(self.driver)
-        drivers = drivers.union(self.product.drivers)
-        drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.displayname)
-
-    @property
-    def bug_supervisor(self):
-        """See IProductSeries."""
-        return self.product.bug_supervisor
-
-    @property
-    def security_contact(self):
-        """See IProductSeries."""
-        return self.product.security_contact
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -308,7 +289,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -412,8 +393,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(distroseries=distroseries,
-            sourcepackagename=sourcepackagename, productseries=self,
+        pkg = Packaging(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename,
+            productseries=self,
             packaging=PackagingType.PRIME,
             owner=owner)
         pkg.sync()  # convert UTC_NOW to actual datetime
@@ -436,8 +419,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(productseries=self,
-                                     orderBy=['-priority','name'])
+        result = POTemplate.selectBy(
+            productseries=self, orderBy=['-priority', 'name'])
         return shortlist(result, 300)
 
     def getCurrentTranslationTemplates(self, just_ids=False):
@@ -470,7 +453,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             ProductSeries.product = Product.id AND
             (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
             ''' % sqlvalues(self),
-            orderBy=['-priority','name'],
+            orderBy=['-priority', 'name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
 
@@ -613,3 +596,15 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
+
+    def findByTranslationsImportBranch(
+            self, branch, force_translations_upload=False):
+        """See IProductSeriesSet."""
+        conditions = [ProductSeries.branch == branch]
+        if not force_translations_upload:
+            import_mode = ProductSeries.translations_autoimport_mode
+            conditions.append(
+                import_mode != TranslationsBranchImportMode.NO_IMPORT)
+
+        return Store.of(branch).find(ProductSeries, And(*conditions))
+

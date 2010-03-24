@@ -19,12 +19,13 @@ from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.model.pas import BuildDaemonPackagesArchSpecific
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 # XXX cprov 2009-04-16: This function should live in
 # lp.registry.interfaces.distroseries. It cannot be done right now

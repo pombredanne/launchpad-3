@@ -29,7 +29,7 @@ from zope.interface import Attribute, implements, Interface
 
 from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
+from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 def synchronize(source, target, add, remove):

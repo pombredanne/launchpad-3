@@ -14,6 +14,7 @@ __all__ = [
 from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
+import pytz
 
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
@@ -114,6 +115,15 @@ class BuildQueue(SQLBase):
     def date_started(self):
         """See `IBuildQueue`."""
         return self.job.date_started
+
+    @property
+    def current_build_duration(self):
+        """See `IBuildQueue`."""
+        date_started = self.date_started
+        if date_started is None:
+            return None
+        else:
+            return self._now() - date_started
 
     def destroySelf(self):
         """Remove this record and associated job/specific_job."""
@@ -217,16 +227,17 @@ class BuildQueue(SQLBase):
 
         head_job_processor, head_job_virtualized = head_job_platform
 
+        now = self._now()
         delay_query = """
             SELECT MIN(
               CASE WHEN
                 EXTRACT(EPOCH FROM
                   (BuildQueue.estimated_duration -
-                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))  >= 0
+                   (((%s AT TIME ZONE 'UTC') - Job.date_started))))  >= 0
               THEN
                 EXTRACT(EPOCH FROM
                   (BuildQueue.estimated_duration -
-                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))
+                   (((%s AT TIME ZONE 'UTC') - Job.date_started))))
               ELSE
                 -- Assume that jobs that have overdrawn their estimated
                 -- duration time budget will complete within 2 minutes.
@@ -247,7 +258,7 @@ class BuildQueue(SQLBase):
                 AND Job.status = %s
                 AND Builder.virtualized = %s
             """ % sqlvalues(
-                JobStatus.RUNNING,
+                now, now, JobStatus.RUNNING,
                 normalize_virtualization(head_job_virtualized))
 
         if head_job_processor is not None:
@@ -454,9 +465,14 @@ class BuildQueue(SQLBase):
 
         # A job will not get dispatched in less than 5 seconds no matter what.
         start_time = max(5, min_wait_time + sum_of_delays)
-        result = datetime.utcnow() + timedelta(seconds=start_time)
+        result = self._now() + timedelta(seconds=start_time)
 
         return result
+
+    @staticmethod
+    def _now():
+        """Return current time (UTC).  Overridable for test purposes."""
+        return datetime.now(pytz.UTC)
 
 
 class BuildQueueSet(object):

@@ -40,16 +40,11 @@
             <th>Distribution series</th>
             <th>Source package</th>
             <th>Version</th>
-            <th style="width: 1em;"
-              tal:condition="view/can_delete_packaging">&nbsp;</th>
+            <th>&nbsp;</th>
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="packaging_dict packagings">
-          <tal:packaging_field
-            define="packaging packaging_dict/packaging;
-                    form_id packaging_dict/form_id;
-                    field packaging_dict/field">
+          <tr tal:repeat="packaging packagings">
             <td>
               <a tal:replace="structure packaging/distroseries/distribution/fmt:link" />
             </td>
@@ -69,17 +64,11 @@
               <tal:currentrelease
                 replace="packaging/sourcepackage/currentrelease/version|nothing">
                   2.3.4-1
-              </tal:currentrelease>       
+              </tal:currentrelease>
             </td>
-            <td tal:condition="view/can_delete_packaging">
-              <form style="display: inline" method="post"
-                tal:attributes="action request/URL;
-                                id form_id">
-                <tal:hidden replace="structure field" />
-                <tal:action replace="structure view/renderDeletePackagingAction" />
-              </form>
+            <td>
+              <a tal:replace="structure packaging/sourcepackage/menu:overview/remove_packaging/fmt:icon" />
             </td>
-          </tal:packaging_field>
           </tr>
         </tbody>
       </table>
@@ -99,7 +88,7 @@
     <h2>Packages by distribution</h2>
 
   <tal:distribution repeat="distro view/distro_packaging">
-    
+
     <h3>
       <a tal:attributes="href distro/distribution/fmt:url"
         tal:content="distro/distribution/title">Ubuntu Linux</a>

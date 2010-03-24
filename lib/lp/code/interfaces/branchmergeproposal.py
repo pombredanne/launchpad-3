@@ -97,7 +97,7 @@ class IBranchMergeProposal(IPrivacy):
                 "If True, this proposal is visible only to subscribers.")))
 
     description = exported(
-        Text(title=_('Description of the Change'), required=False,
+        Text(title=_('Description'), required=False,
              description=_(
                 "A detailed description of the changes that are being "
                 "addressed by the branch being proposed to be merged."),

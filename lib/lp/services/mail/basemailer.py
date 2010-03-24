@@ -11,11 +11,11 @@ import logging
 from smtplib import SMTPException
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mailout import text_delta
 
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 from lp.services.mail.sendmail import format_address, MailController
+from lp.services.utils import text_delta
 
 
 class BaseMailer:

@@ -540,7 +540,8 @@ class ObjectFormatterAPI:
 
     def public_private_css(self):
         """Return the CSS class that represents the object's privacy."""
-        if IPrivacy.providedBy(self._context) and self._context.private:
+        privacy = IPrivacy(self._context, None)
+        if privacy is not None and privacy.private:
             return 'private'
         else:
             return 'public'
@@ -1511,6 +1512,33 @@ class CodeImportFormatterAPI(CustomizableFormatter):
             self._context.branch, path_only_if_possible=True,
             view_name=view_name)
         return url
+
+
+class BuildBaseFormatterAPI(ObjectFormatterAPI):
+    """Adapter providing fmt support for `IBuildBase` objects."""
+    def _composeArchiveReference(self, archive):
+        if archive.is_ppa:
+            return " [%s/%s]" % (
+                cgi.escape(archive.owner.name), cgi.escape(archive.name))
+        else:
+            return ""
+
+    def icon(self, view_name):
+        if not check_permission('launchpad.View', self._context):
+            return '<img src="/@@/processing" alt="[build]" />'
+
+        return BuildImageDisplayAPI(self._context).icon()
+
+    def link(self, view_name, rootsite=None):
+        icon = self.icon(view_name)
+        build = self._context
+        if not check_permission('launchpad.View', build):
+            return '%s private source' % icon
+
+        url = self.url(view_name=view_name, rootsite=rootsite)
+        title = cgi.escape(build.title)
+        archive = self._composeArchiveReference(build.archive)
+        return '<a href="%s">%s%s</a>%s' % (url, icon, title, archive)
 
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
@@ -2893,7 +2921,7 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
-                    address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
+                    address, '<a href="%s" class="%s">%s</a>' % (
                         canonical_url(person), css_sprite, address))
 
         return text

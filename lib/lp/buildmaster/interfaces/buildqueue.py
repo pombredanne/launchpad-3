@@ -72,6 +72,10 @@ class IBuildQueue(Interface):
         title=_("Estimated Job Duration"), required=True,
         description=_("Estimated job duration interval."))
 
+    current_build_duration = Timedelta(
+        title=_("Current build duration"), required=False,
+        description=_("Time spent building so far."))
+
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
 

@@ -50,7 +50,6 @@ from lp.soyuz.model.files import (
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.pas import determineArchitecturesToBuild
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.build import BuildSetStatus, IBuildSet
@@ -62,6 +61,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingStatus,
     PoolFileOverwriteError)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 

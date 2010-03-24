@@ -187,16 +187,32 @@
             tal:attributes="src string:${lp_js}/client/client.js"></script>
 
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branchmergeproposal.js">
+            tal:attributes="src string:${lp_js}/code/branch.bugspeclinks.js">
     </script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/codereview.js"></script>
+            tal:attributes="src string:${lp_js}/code/branch.status.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.diff.js">
+      </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branch.subscription.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.status.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.reviewcomment.js"></script>
+
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/comment.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/errors.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/team.js"></script>
+
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
 
   </tal:devmode>
   <tal:production condition="not:devmode">
@@ -335,7 +351,7 @@
         <div class="lp-branding">
           <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
           &nbsp;&bull;&nbsp;
-          <a href="/+tour">Take the tour</a>
+          <a tal:attributes="href string:${rooturl}+tour">Take the tour</a>
           &nbsp;&bull;&nbsp;
           <a href="https://help.launchpad.net/">Read the guide</a>
           &nbsp;
@@ -354,7 +370,7 @@
       &copy; 2004-2010
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
-      <a href="/legal">Terms of use</a>
+      <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
       <a href="https://help.launchpad.net/Feedback"
         >Contact us</a>
@@ -379,16 +395,14 @@
       This site is running pre-release code.
     </tal:site_message>
     <tal:edge_only condition="is_edge">
-      <tal:beta_user condition="view/macro:isbetauser">
-        <a href="#" class="js-action" onclick="setBetaRedirect(false)"
-           tal:condition="not:view/isRedirectInhibited">
-          Disable edge redirect.
-        </a>
-        <a href="#" class="js-action" onclick="setBetaRedirect(true)"
-           tal:condition="view/isRedirectInhibited">
-          Enable edge redirect.
-        </a>
-      </tal:beta_user>
+      <a href="#" class="js-action" onclick="setBetaRedirect(false)"
+         tal:condition="not:request/isRedirectInhibited">
+        Disable edge redirect.
+      </a>
+      <a href="#" class="js-action" onclick="setBetaRedirect(true)"
+         tal:condition="request/isRedirectInhibited">
+        Enable edge redirect.
+      </a>
     </tal:edge_only>
   </div>
 </metal:site-message>

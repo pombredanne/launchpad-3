@@ -8,9 +8,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'BUILDD_MANAGER_LOG_NAME',
     'BuildStatus',
     'IBuildBase',
-    'incomplete_building_status',
     ]
 
 from zope.interface import Attribute, Interface
@@ -26,6 +26,9 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
+
+
+BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 class BuildStatus(DBEnumeratedType):
@@ -106,12 +109,6 @@ class BuildStatus(DBEnumeratedType):
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
         """)
-
-
-incomplete_building_status = (
-    BuildStatus.NEEDSBUILD,
-    BuildStatus.BUILDING,
-    )
 
 
 class IBuildBase(Interface):

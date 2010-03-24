@@ -44,11 +44,6 @@ class TestRecordingSlaves(TrialTestCase):
         TrialTestCase.setUp(self)
         self.slave = RecordingSlave(
             'foo', 'http://foo:8221/rpc', 'foo.host')
-        # XXX 2009-11-23, MichaelHudson,
-        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
-        # make sure the reactor is running when the test method is executed to
-        # work around the linked Twisted bug.
-        return task.deferLater(reactor, 0, lambda: None)
 
     def test_representation(self):
         """`RecordingSlave` has a custom representation.

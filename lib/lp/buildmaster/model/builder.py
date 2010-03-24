@@ -282,7 +282,7 @@ class Builder(SQLBase):
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
     def checkSlaveArchitecture(self):
-        """See IBuilder."""
+        """See `IBuilder`."""
         # XXX cprov 2007-06-15:
         # This function currently depends on the operating system specific
         # details of the build slave to return a processor-family-name (the
@@ -327,6 +327,7 @@ class Builder(SQLBase):
         rescueBuilderIfLost(self, logger)
 
     def updateStatus(self, logger=None):
+        """See `IBuilder`."""
         updateBuilderStatus(self, logger)
 
     def cleanSlave(self):
@@ -719,18 +720,18 @@ class BuilderSet(object):
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""
-        logger.info("Slave Scan Process Initiated.")
+        logger.debug("Slave Scan Process Initiated.")
 
-        logger.info("Setting Builders.")
+        logger.debug("Setting Builders.")
         self.checkBuilders(logger, txn)
 
-        logger.info("Scanning Builders.")
+        logger.debug("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve
         # builds where they are completed
         self.scanActiveBuilders(logger, txn)
 
     def checkBuilders(self, logger, txn):
-        """Set up the builders."""
+        """See `IBuilderSet`."""
         for builder in self:
             # XXX Robert Collins 2007-05-23 bug=31546: builders that are not
             # 'ok' are not worth rechecking here for some currently
@@ -741,7 +742,7 @@ class BuilderSet(object):
         txn.commit()
 
     def scanActiveBuilders(self, logger, txn):
-        """Collect informations/results of current build jobs."""
+        """See `IBuilderSet`."""
 
         queueItems = getUtility(IBuildQueueSet).getActiveBuildJobs()
 
@@ -749,7 +750,6 @@ class BuilderSet(object):
             "scanActiveBuilders() found %d active build(s) to check"
             % queueItems.count())
 
-        build_set = getUtility(IBuildSet)
         for job in queueItems:
             job.builder.updateBuild(job)
             txn.commit()

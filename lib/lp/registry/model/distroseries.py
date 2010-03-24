@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'DistroSeries',
     'DistroSeriesSet',
-    'SeriesMixin',
     ]
 
 import logging
@@ -87,8 +86,6 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
@@ -98,7 +95,10 @@ from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet, ISeriesMixin)
+    IDistroSeries, IDistroSeriesSet)
+from lp.registry.model.series import SeriesMixin
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -118,24 +118,9 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
-    TranslationUnavailable)
+    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR)
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet)
-
-
-class SeriesMixin:
-    """See `ISeriesMixin`."""
-    implements(ISeriesMixin)
-
-    @property
-    def active(self):
-        return self.status in [
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FROZEN,
-            SeriesStatus.CURRENT,
-            SeriesStatus.SUPPORTED
-            ]
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -155,14 +140,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     status = EnumCol(
         dbName='releasestatus', notNull=True, schema=SeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
-    parent_series =  ForeignKey(
+    parent_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
@@ -173,7 +157,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
-        dbName='nominatedarchindep',foreignKey='DistroArchSeries',
+        dbName='nominatedarchindep', foreignKey='DistroArchSeries',
         notNull=False, default=None)
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
@@ -282,25 +266,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def parent(self):
         """See `IDistroSeries`."""
         return self.distribution
-
-    @property
-    def drivers(self):
-        """See `IDistroSeries`."""
-        drivers = set()
-        drivers.add(self.driver)
-        drivers = drivers.union(self.distribution.drivers)
-        drivers.discard(None)
-        return sorted(drivers, key=lambda driver: driver.displayname)
-
-    @property
-    def bug_supervisor(self):
-        """See `IDistroSeries`."""
-        return self.distribution.bug_supervisor
-
-    @property
-    def security_contact(self):
-        """See `IDistroSeries`."""
-        return self.distribution.security_contact
 
     @property
     def sortkey(self):
@@ -756,7 +721,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -890,29 +855,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             (self.getSourcePackage(release.sourcepackagename),
              DistroSeriesSourcePackageRelease(self, release))
             for release in releases)
-
-    def checkTranslationsViewable(self):
-        """See `IDistroSeries`."""
-        if not self.hide_all_translations:
-            # Yup, viewable.
-            return
-
-        future = [
-            SeriesStatus.EXPERIMENTAL,
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FUTURE,
-            ]
-        if self.status in future:
-            raise TranslationUnavailable(
-                "Translations for this release series are not available yet.")
-        elif self.status == SeriesStatus.OBSOLETE:
-            raise TranslationUnavailable(
-                "This release series is obsolete.  Its translations are no "
-                "longer available.")
-        else:
-            raise TranslationUnavailable(
-                "Translations for this release series are not currently "
-                "available.  Please come back soon.")
 
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
@@ -1074,13 +1016,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
-            """ %  sqlvalues(self, archives, status, pocket)
+            """ % sqlvalues(self, archives, status, pocket)
 
         if component:
             clause += (
                 " AND SourcePackagePublishingHistory.component=%s"
-                % sqlvalues(component)
-                )
+                % sqlvalues(component))
 
         orderBy = ['SourcePackageName.name']
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
@@ -1141,7 +1082,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
                         'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName' ]
+                        'SourcePackageRelease', 'SourcePackageName']
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
@@ -1280,7 +1221,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             BinaryPackagePublishingHistory.dateremoved == None).config(
-                distinct=True)
+                distinct=True).order_by(BinaryPackageName.name)
 
         number_of_updates = 0
         chunk_size = 0
@@ -1620,6 +1561,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         custom_results = PackageUpload.select(
             custom_where_clause, clauseTables=custom_clauseTables,
             orderBy=custom_orderBy)
+
+        # XXX StuartBishop 2010-03-11 bug=537335
+        # This method is attempting to return ordered results but
+        # failing. It is also referencing non-existing documentation
+        # in the docstring - this method does not exist in the IDistroSeries
+        # interface.
 
         return source_results.union(build_results.union(custom_results))
 
@@ -1976,8 +1923,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return '%s%s' % (self.name, pocketsuffix[pocket])
 
     def isSourcePackageFormatPermitted(self, format):
-        return getUtility(ISourcePackageFormatSelectionSet
-            ).getBySeriesAndFormat(self, format) is not None
+        return getUtility(
+            ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
+                self, format) is not None
 
 
 class DistroSeriesSet:
@@ -1995,8 +1943,7 @@ class DistroSeriesSet:
         result_set = store.using((DistroSeries, POTemplate)).find(
             DistroSeries,
             DistroSeries.hide_all_translations == False,
-            DistroSeries.id == POTemplate.distroseriesID
-            ).config(distinct=True)
+            DistroSeries.id == POTemplate.distroseriesID).config(distinct=True)
         # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
         # because ResultSet reports a wrong count() when using DISTINCT. Also
         # ResultSet does not implement __len__(), which would make it more

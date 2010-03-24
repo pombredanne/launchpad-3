@@ -4,7 +4,7 @@
 """Memcached interfaces."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['IMemcacheClient']
 
 from zope.interface import Interface
 

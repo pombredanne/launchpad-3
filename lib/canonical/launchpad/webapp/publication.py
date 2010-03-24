@@ -38,7 +38,8 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.publisher.interfaces import IPublishTraverse, Retry
-from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
+from zope.publisher.interfaces.browser import (
+    IDefaultSkin, IBrowserRequest, IBrowserApplicationRequest)
 from zope.publisher.publish import mapply
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
@@ -51,6 +52,7 @@ from canonical.mem import (
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
 from canonical.launchpad.readonly import is_read_only
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam)
@@ -63,6 +65,7 @@ from canonical.launchpad.webapp.dbpolicy import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
+from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -312,9 +315,9 @@ class LaunchpadBrowserPublication(
 
         The OffsiteFormPostError exception is raised if the following
         holds true:
-          1. the request method is POST
-          2. the HTTP referer header is not empty
-          3. the host portion of the referrer is not a registered vhost
+          1. the request method is POST *AND*
+          2. a. the HTTP referer header is empty *OR*
+             b. the host portion of the referrer is not a registered vhost
         """
         if request.method != 'POST':
             return
@@ -324,9 +327,37 @@ class LaunchpadBrowserPublication(
         # form posts.
         if request['PATH_INFO'] == '/+openid':
             return
+        if (IOAuthSignedRequest.providedBy(request)
+            or not IBrowserRequest.providedBy(request)
+            or request['PATH_INFO']  in (
+                '/+storeblob', '/+request-token', '/+access-token')):
+            # We only want to check for the referrer header if we are
+            # in the middle of a request initiated by a web browser. A
+            # request to the web service (which is necessarily
+            # OAuth-signed) or a request that does not implement
+            # IBrowserRequest (such as an XML-RPC request) can do
+            # without a Referer.
+            #
+            # XXX gary 2010-03-09 bug=535122,538097
+            # The one-off exceptions are necessary because existing
+            # non-browser applications make requests to these URLs
+            # without providing a Referer. Apport makes POST requests
+            # to +storeblob without providing a Referer (bug 538097),
+            # and launchpadlib used to make POST requests to
+            # +request-token and +access-token without providing a
+            # Referer.
+            #
+            # We'll have to keep an application's one-off exception
+            # until the application has been changed to send a
+            # Referer, and until we have no legacy versions of that
+            # application to support. For instance, we can't get rid
+            # of the apport exception until after Lucid's end-of-life
+            # date. We should be able to get rid of the launchpadlib
+            # exception after Karmic's end-of-life date.
+            return
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
-            return
+            raise OffsiteFormPostError('No value for REFERER header')
         # XXX: jamesh 2007-04-26 bug=98437:
         # The Zope testing infrastructure sets a default (incorrect)
         # referrer value of "localhost" or "localhost:9000" if no
