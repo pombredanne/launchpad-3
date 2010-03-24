@@ -35,8 +35,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, ArchiveStatus
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import (BinaryPackagePublishingHistory,
-    PackagePublishingStatus, SourcePackagePublishingHistory)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from canonical.librarian.client import LibrarianClient
 from canonical.launchpad.webapp.errorlog import (
@@ -622,8 +621,8 @@ class Publisher(object):
             try:
                 shutil.rmtree(self._config.archiveroot)
             except:
-                message = 'Exception while deleting archive root %s' %
-                    self._config.archiveroot
+                message = 'Exception while deleting archive root %s' % (
+                    self._config.archiveroot)
                 request = ScriptRequest([('error-explanation', message)])
                 ErrorReportingUtility().raising(sys.exc_info(), request)
                 self.log.error('%s (%s)' % (message, request.oopsid))
