@@ -40,8 +40,7 @@
 <metal:load-javascript define-macro="load-javascript"
   tal:define="
       revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-      icingroot string:${rooturl}+icing/rev${revno};
+      icingroot string:/+icing/rev${revno};
       devmode modules/canonical.config/config/devmode;
       yui string:${icingroot}/yui;
       lazr_js string:${icingroot}/lazr/build;
@@ -232,8 +231,7 @@
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
       revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-      icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
+      icingroot_contrib string:/+icing-contrib/rev${revno};
       devmode modules/canonical.config/config/devmode;
       map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
   <tal:comment replace="nothing">
