@@ -166,13 +166,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Private"), required=False,
             description=_(
                 "Whether the archive is private to the owner or not. "
-                "This can only be changed if the archive has not had "
+                "This can only be changed by launchpad admins or launchpad "
+                "commercial admins and only if the archive has not had "
                 "any sources published.")))
 
-    require_virtualized = Bool(
-        title=_("Require Virtualized Builder"), required=False,
-        description=_("Whether this archive requires its packages to be "
-                      "built on a virtual builder."))
+    require_virtualized = exported(
+        Bool(
+            title=_("Require Virtualized Builder"), required=False,
+            description=_("Whether this archive requires its packages to be "
+                          "built on a virtual builder."), readonly=False))
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
@@ -207,10 +209,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     signing_key = Object(
         title=_('Repository sigining key.'), required=False, schema=IGPGKey)
-
-    expanded_archive_dependencies = Attribute(
-        "The expanded list of archive dependencies. It includes the implicit "
-        "PRIMARY archive dependency for PPAs.")
 
     debug_archive = Attribute(
         "The archive into which debug binaries should be uploaded.")
@@ -421,6 +419,18 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+    def getBinaryPackageRelease(name, version, archtag):
+        """Find the specified `IBinaryPackageRelease` in the archive.
+
+        :param name: The `IBinaryPackageName` of the package.
+        :param version: The version of the package.
+        :param archtag: The architecture tag of the package's build. 'all'
+            will not work here -- 'i386' (the build DAS) must be used instead.
+
+        :return The binary package release with the given name and version,
+            or None if one does not exist or there is more than one.
         """
 
     def getBinaryPackageReleaseByFileName(filename):
@@ -664,6 +674,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         we create one with the given count.  Otherwise we just increase the
         count of the existing one by the given amount.
         """
+
+    def getPackageDownloadTotal(bpr):
+        """Get the total download count for a given package."""
 
 
 class IArchiveView(IHasBuildRecords):
@@ -913,6 +926,9 @@ class IArchiveView(IHasBuildRecords):
         :param person: An `IPerson`
         :return: A list of `IArchivePermission` records.
         """
+
+    def getPackageDownloadCount(bpr, day, country):
+        """Get the `IBinaryPackageDownloadCount` with the given key."""
 
 
 class IArchiveAppend(Interface):

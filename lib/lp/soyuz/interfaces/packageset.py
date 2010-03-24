@@ -27,6 +27,7 @@ from lazr.restful.declarations import (
     operation_parameters, operation_returns_collection_of,
     operation_returns_entry, webservice_error)
 from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
@@ -413,10 +414,12 @@ class IPackagesetSet(Interface):
     @operation_parameters(
         sourcepackagename=TextLine(
             title=_('Source package name'), required=True),
+        distroseries=copy_field(IPackageset['distroseries'], required=False),
         direct_inclusion=Bool(required=False))
     @operation_returns_collection_of(IPackageset)
     @export_read_operation()
-    def setsIncludingSource(sourcepackagename, direct_inclusion=False):
+    def setsIncludingSource(sourcepackagename, distroseries=None,
+                            direct_inclusion=False):
         """Get the package sets that include this source package.
 
         Return all package sets that directly or indirectly include the
@@ -424,6 +427,9 @@ class IPackagesetSet(Interface):
 
         :param sourcepackagename: the included source package name; can be
             either a string or a `ISourcePackageName`.
+        :param distroseries: the `IDistroSeries` in which to look for sets.
+            If omitted, matching package sets from all series will be
+            returned.
         :param direct_inclusion: if this flag is set to True, then only
             package sets that directly include this source package name will
             be considered.

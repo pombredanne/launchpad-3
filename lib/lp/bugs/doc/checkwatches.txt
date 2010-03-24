@@ -86,10 +86,16 @@ and their type is 'BugWatchUpdateWarning'.
     Revision: ...
     User: None
     URL: None
-    Duration: -1
+    Duration: ...
     Informational: False
     <BLANKLINE>
     error-explanation=ExternalBugtracker for ... is not known.
+    ...SELECT 1 FROM BugTracker WHERE BugTracker.id = %s
+    ...Transaction completed, status: Active...
+    Traceback (most recent call last):
+    ...
+    BugWatchUpdateWarning: ExternalBugtracker for BugTrackerType 'SAVANE'
+    is not known.
 
 We set a default timeout on checkwatches to 30 seconds. In order to test
 this, we can monkey-patch urllib2.urlopen so that it always raises a
@@ -133,6 +139,7 @@ will also be automatically filled from the baseurl OOPS property.
 
     >>> import socket
     >>> import urllib2
+    >>> from canonical.database.sqlbase import ZopelessTransactionManager
     >>> urlopen = urllib2.urlopen
 
     >>> transaction.commit()
@@ -140,7 +147,7 @@ will also be automatically filled from the baseurl OOPS property.
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
-    ...     updater = BugWatchUpdater(transaction)
+    ...     updater = BugWatchUpdater(ZopelessTransactionManager)
     ...     updater._login()
     ...     updater.updateBugTrackers(
     ...         bug_tracker_names=[example_bug_tracker.name])
@@ -158,13 +165,16 @@ will also be automatically filled from the baseurl OOPS property.
     Revision: ...
     User: None
     URL: http://bugs.example.com
-    Duration: -1
+    Duration: ...
     Informational: False
     <BLANKLINE>
     baseurl=http://bugs.example.com
     bugtracker=example-bugs
     error-explanation=Connection timed out ... http://bugs.example.com
     <BLANKLINE>
+    ...SELECT COUNT(*) FROM...
+    ...SELECT BugTracker.active, BugTracker.baseurl...
+    ...Transaction completed, status: Committed...
     <BLANKLINE>
     Traceback (most recent call last):
     ...
@@ -174,8 +184,8 @@ Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just
 created in its last_error_type field.
 
-    >>> from canonical.launchpad.interfaces import BugWatchErrorType
-    >>> example_bugwatch.last_error_type == BugWatchErrorType.TIMEOUT
+    >>> from canonical.launchpad.interfaces import BugWatchActivityStatus
+    >>> example_bugwatch.last_error_type == BugWatchActivityStatus.TIMEOUT
     True
 
 Another error which may occur and which checkwatches is responsible for
@@ -246,7 +256,7 @@ requests are actually made.
 
     >>> from lp.bugs import externalbugtracker
     >>> from canonical.launchpad.scripts import FakeLogger
-    >>> updater = BugWatchUpdater(transaction)
+    >>> updater = BugWatchUpdater(ZopelessTransactionManager)
     >>> original_log = updater.log
     >>> batch_size = externalbugtracker.Roundup.batch_size
     >>> transaction.commit()
