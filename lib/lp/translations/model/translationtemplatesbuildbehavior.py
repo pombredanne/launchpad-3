@@ -103,7 +103,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 'build_id': raw_slave_status[2],
                 }
             if len(raw_slave_status) >= 3:
-                extra_info['file_map'] = raw_slave_status[3]
+                extra_info['filemap'] = raw_slave_status[3]
             return extra_info
         else:
             # Nothing special to do for other states.
