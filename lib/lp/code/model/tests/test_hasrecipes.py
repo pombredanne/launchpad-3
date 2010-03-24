@@ -33,6 +33,11 @@ class TestIHasRecipes(TestCaseWithFactory):
         recipe_ignored = self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, base_branch.getRecipes().count())
 
+    def test_person_implements_hasbranches(self):
+        # Person should implement IHasRecipes.
+        person = self.factory.makeBranch()
+        self.assertProvides(person, IHasRecipes)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
