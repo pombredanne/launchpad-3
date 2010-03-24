@@ -88,11 +88,11 @@ class cmd_launchpad_server(Command):
     def run(self, user_id, port=None, upload_directory=None,
             mirror_directory=None, branchfs_endpoint_url=None, inet=False):
         from lp.codehosting.bzrutils import install_oops_handler
-        from lp.codehosting.vfs import get_lp_server, event
+        from lp.codehosting.vfs import get_lp_server, hooks
         install_oops_handler(user_id)
         four_gig = int(4e9)
         resource.setrlimit(resource.RLIMIT_AS, (four_gig, four_gig))
-        seen_new_branch = event.SetProcTitleHook()
+        seen_new_branch = hooks.SetProcTitleHook()
         lp_server = get_lp_server(
             int(user_id), branchfs_endpoint_url,
             upload_directory, mirror_directory, seen_new_branch.seen)
