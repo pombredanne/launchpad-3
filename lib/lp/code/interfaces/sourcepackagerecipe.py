@@ -1,12 +1,15 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=E0211,E0213
+
 """Interface of the `SourcePackageRecipe` content type."""
 
 __metaclass__ = type
 __all__ = [
     'ForbiddenInstruction',
     'ISourcePackageRecipe',
+    'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'TooNewRecipeFormat',
     ]
@@ -14,11 +17,12 @@ __all__ = [
 from lazr.restful.fields import Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Text, TextLine
+from zope.schema import Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -42,7 +46,20 @@ class TooNewRecipeFormat(Exception):
         self.newest_supported = newest_supported
 
 
-class ISourcePackageRecipe(IHasOwner):
+class ISourcePackageRecipeData(Interface):
+    """A recipe as database data, not text."""
+
+    base_branch = Object(
+        schema=IBranch, title=_("Base branch"), description=_(
+            "The base branch to use when building the recipe."))
+
+    deb_version_template = TextLine(
+        title=_('deb-version template'),
+        description = _(
+            'The template that will be used to generate a deb version.'),)
+
+
+class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     """An ISourcePackageRecipe describes how to build a source package.
 
     More precisely, it describes how to combine a number of branches into a
@@ -89,6 +106,13 @@ class ISourcePackageRecipe(IHasOwner):
         :param pocket: the pocket that should be targeted.
         :raises: various specific upload errors if the requestor is not
             able to upload to the archive.
+        """
+
+    def getBuilds(pending=False):
+        """Return a ResultSet of all the builds in the given state.
+
+        :param pending: If True, select all builds that are pending.  If
+            False, select all builds that are not pending.
         """
 
 

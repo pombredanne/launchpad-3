@@ -40,7 +40,7 @@ class BuildStatus(DBEnumeratedType):
     """
 
     NEEDSBUILD = DBItem(0, """
-        Needs building
+        Pending build
 
         Build record is fresh and needs building. Nothing is yet known to
         block this build and it is a candidate for building on any free
@@ -48,7 +48,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     FULLYBUILT = DBItem(1, """
-        Successfully built
+        Successful build
 
         Build record is an historic account of the build. The build is complete
         and needs no further work to complete it. The build log etc are all
@@ -65,7 +65,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     MANUALDEPWAIT = DBItem(3, """
-        Dependency wait
+        Could not build because of missing dependencies
 
         Build record represents a package whose build dependencies cannot
         currently be satisfied within the relevant DistroArchSeries. This
@@ -74,7 +74,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     CHROOTWAIT = DBItem(4, """
-        Chroot problem
+        Could not build because of chroot problem
 
         Build record represents a build which needs a chroot currently known
         to be damaged or bad in some way. The buildd maintainer will have to
@@ -83,7 +83,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     SUPERSEDED = DBItem(5, """
-        Build for superseded Source
+        Could not build because source package was superseded
 
         Build record represents a build which never got to happen because the
         source package release for the build was superseded before the job
@@ -99,7 +99,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     FAILEDTOUPLOAD = DBItem(7, """
-        Failed to upload
+        Could not be uploaded correctly
 
         Build record is an historic account of a build that could not be
         uploaded correctly. It's mainly genereated by failures in
