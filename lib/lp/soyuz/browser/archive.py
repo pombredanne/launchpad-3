@@ -359,12 +359,15 @@ class ArchiveMenuMixin:
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        link = Link('+edit', text, icon='edit')
+        #if self.context.status == ArchiveStatus.DELETING:
+        #    link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def delete_ppa(self):
         text = 'Delete PPA'
-        return Link('+delete', text, icon='trash')
+        return Link('+delete', text, icon='trash-icon')
 
     def builds(self):
         text = 'View all builds'
@@ -420,7 +423,7 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'delete_ppa', 'builds', 'builds_building',
+    links = ['admin', 'builds', 'builds_building',
              'builds_pending', 'builds_successful', 'edit',
              'edit_dependencies', 'packages', 'ppa']
 
@@ -1902,7 +1905,10 @@ class ArchiveDeleteView(LaunchpadView):
 
         self.context.status = ArchiveStatus.DELETING
         self.context.disable()
-        self.request.response.addInfoNotification('Deletion in progress')
+        self.request.response.addInfoNotification(
+            "Deletion of '%s' has been requested and the repository will be "
+            "removed shortly." % self.context.title)
 
-        self.request.response.redirect(canonical_url(self.context))
+        # We redirect back to the PPA owner's profile page.
+        self.request.response.redirect(canonical_url(self.context.owner))
 
