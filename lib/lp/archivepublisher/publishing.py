@@ -612,12 +612,11 @@ class Publisher(object):
         be caught and an OOPS report generated.
         """
 
-        
         self.log.info(
             "Attempting to delete archive '%s/%s' at '%s'." % (
                 self.archive.owner.name, self.archive.name, 
                 self._config.archiveroot))
-        
+
         # Attempt to rmdir if the path to the root of the archive exists.
         if os.path.exists(self._config.archiveroot):
             try:
