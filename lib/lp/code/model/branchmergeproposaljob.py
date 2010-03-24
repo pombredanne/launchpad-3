@@ -35,7 +35,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.base import Storm
-from storm.expr import And, Or
+from storm.expr import And, Desc, Or
 from storm.info import ClassAlias
 from storm.locals import Int, Reference, Unicode
 from storm.store import Store
@@ -68,7 +68,7 @@ from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.model.job import Job
-from lp.services.job.interfaces.job import IRunnableJob
+from lp.services.job.interfaces.job import IRunnableJob, JobStatus
 from lp.services.job.runner import BaseRunnableJob
 
 
@@ -618,7 +618,7 @@ class BranchMergeProposalJobSource:
             (BranchMergeProposalJob, Job, BranchMergeProposal,
              SourceBranch, TargetBranch),
             And(BranchMergeProposalJob.job == Job.id,
-                Job.id.is_in(Job.ready_jobs),
+                Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]),
                 BranchMergeProposalJob.branch_merge_proposal
                     == BranchMergeProposal.id,
                 BranchMergeProposal.source_branch == SourceBranch.id,
@@ -627,13 +627,19 @@ class BranchMergeProposalJobSource:
         # Order by the scheduled start then job type.  This should give us all
         # creation jobs before comment jobs.
         jobs = jobs.order_by(
-            Job.scheduled_start, BranchMergeProposalJob.job_type)
+            Desc(Job._status), Job.date_created,
+            Desc(BranchMergeProposalJob.job_type))
         # Now only return one job for any given merge proposal.
         ready_jobs = []
         seen_merge_proposals = set()
         for bmp_job, job, bmp, source, target in jobs:
             # If we've seen this merge proposal already, skip this job.
             if bmp.id in seen_merge_proposals:
+                continue
+            # We have now seen this merge proposal.
+            seen_merge_proposals.add(bmp.id)
+            # If the job is running, then skip it
+            if job.status == JobStatus.RUNNING:
                 continue
             derived_job = BranchMergeProposalJobFactory.create(bmp_job)
             ready_jobs.append(derived_job)
