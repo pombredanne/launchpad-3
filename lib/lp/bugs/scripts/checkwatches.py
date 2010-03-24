@@ -515,11 +515,14 @@ class BugWatchUpdater(object):
             with self.transaction:
                 remote_bug_ids = [
                     bug_watch.remotebug for bug_watch in bug_watches]
-                remote_products = (
-                    remotesystem_to_use.getProductsForRemoteBugs(
-                        remote_bug_ids))
+
+            remote_products = (
+                remotesystem_to_use.getProductsForRemoteBugs(
+                    remote_bug_ids))
+
+            with self.transaction:
                 for bug_watch in bug_watches:
-                    if (remote_products.get(bug_watch.remotebug, None) in
+                    if (remote_products.get(bug_watch.remotebug) in
                         self._syncable_gnome_products):
                         syncable_watches.append(bug_watch)
                     else:

@@ -196,11 +196,11 @@ of the externalbugtracker module to ensure that it raises this error.
 
     >>> login(ANONYMOUS)
     >>> example_bugwatch.lastchecked = None
-    >>> transaction.commit()
     >>> try:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         broken_get_external_bugtracker)
     ...     updater = BugWatchUpdater(transaction)
+    ...     transaction.commit()
     ...     updater._updateBugTracker(example_bug_tracker)
     ... finally:
     ...     externalbugtracker.get_external_bugtracker = (
