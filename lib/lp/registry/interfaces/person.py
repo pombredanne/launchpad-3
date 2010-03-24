@@ -624,7 +624,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         Bool(title=_("Is this a probationary user?"), readonly=True))
     is_ubuntu_coc_signer = exported(
     Bool(title=_("Signed Ubuntu Code of Conduct"),
-        readonly=True))
+            readonly=True))
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
