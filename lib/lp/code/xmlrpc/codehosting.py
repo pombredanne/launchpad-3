@@ -260,12 +260,14 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 stacked_on_branch = branch_set.getByUniqueName(
                     stacked_on_location.strip('/'))
                 # XXX Should we log that the branch was not found here?
+                # Maybe we just wait until the scanner fails.
                 if stacked_on_branch is None:
                     stacked_on_branch = None
             stacked_branch = branch_set.get(branch_id)
             if stacked_branch is None:
                 return faults.NoBranchWithID(branch_id)
             stacked_branch.stacked_on = stacked_on_branch
+            # This stuff mostly copy/paste/hacked from mirrorComplete.
             stacked_branch.last_mirrored = datetime.datetime.now(pytz.UTC)
             stacked_branch.mirror_failures = 0
             stacked_branch.mirror_status_message = None

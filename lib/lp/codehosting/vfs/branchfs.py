@@ -65,6 +65,7 @@ __all__ = [
 import xmlrpclib
 
 from bzrlib.bzrdir import BzrDir, BzrDirFormat
+from bzrlib.config import TransportConfig
 from bzrlib.errors import (
     NoSuchFile, NotBranchError, NotStacked, PermissionDenied,
     TransportNotPossible, UnstackableBranchFormat)
@@ -75,7 +76,7 @@ from bzrlib import urlutils
 from lazr.uri import URI
 
 from twisted.internet import defer
-from twisted.python import failure
+from twisted.python import failure, log
 
 from zope.component import getUtility
 from zope.interface import implements, Interface
@@ -606,6 +607,19 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
         return deferred.addErrback(translate_fault)
 
+    def massage_stacked_on_location(self, location):
+        if '://' not in location: # Not an absolute URL.  Leave it alone.
+            return None
+        uri = URI(location)
+        # We could try to display an error on stderr for these cases
+        # maybe?  The scanner will complain in due course.
+        if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
+            return None
+        launchpad_domain = config.vhost.mainsite.hostname
+        if not uri.underDomain(launchpad_domain):
+            return None
+        return uri.path
+
     def requestMirror(self, virtual_url_fragment):
         """Mirror the branch that owns 'virtual_url_fragment'.
 
@@ -625,42 +639,33 @@ class LaunchpadServer(_BaseLaunchpadServer):
             from bzrlib.bzrdir import BzrDir
             from bzrlib.smart.request import jail_info
             transport, _ = self._transport_dispatch.makeTransport((transport_type, data, trailing_path))
-            def get_stacked_on_url(branch):
-                """Get the stacked-on URL for 'branch', or `None` if not stacked."""
-                try:
-                    return branch.get_stacked_on_url()
-                except (NotStacked, UnstackableBranchFormat):
-                    return None
             # XXX yikes!!
             jail_info.transports.append(transport)
             try:
                 bzrdir = BzrDir.open_from_transport(transport)
                 branch = bzrdir.open_branch(ignore_fallbacks=True)
+                last_revision = branch.last_revision()
                 stacked_on_url = get_stacked_on_url(branch)
                 if stacked_on_url is None:
                     stacked_on_url = ''
                 else:
-                    import sys
-                    try:
-                        if '://' in stacked_on_url:
-                            uri = URI(stacked_on_url)
-                            # These bits should not raise.  We could try to
-                            # display an error on stderr maybe?
-                            if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
-                                raise BadUrlScheme(uri.scheme, uri)
-                            launchpad_domain = config.vhost.mainsite.hostname
-                            if not uri.underDomain(launchpad_domain):
-                                raise BadUrl(uri)
-                            # Use TransportConfig directly
-                            from bzrlib.config import TransportConfig
-                            tconfig = TransportConfig(
-                                branch._transport, 'branch.conf')
-                            tconfig.set_option(
-                                uri.path, 'stacked_on_location')
-                    except:
-                        import traceback
-                        traceback.print_exc(file=sys.stderr)
-                last_revision = branch.last_revision()
+                    massaged_location = self.massage_stacked_on_location(
+                        stacked_on_url)
+                    if massaged_location is not None:
+                        # We use TransportConfig directly because the branch
+                        # is still locked at this point!  We're effectively
+                        # 'borrowing' the lock that is being released.
+                        branch_config = TransportConfig(
+                            branch._transport, 'branch.conf')
+                        branch_config.set_option(
+                            massaged_location, 'stacked_on_location')
+                        stacked_on_url = massaged_location
+            except:
+                # It gets really confusing if we raise an exception
+                # here (the branch remains locked, but this isn't
+                # obvious to the client) so just log the error, which
+                # will result in an OOPS log.
+                log.err()
             finally:
                 jail_info.transports.remove(transport)
             return self._authserver.branchChanged(
@@ -990,8 +995,8 @@ def make_branch_mirrorer(branch_type, protocol=None,
             "Unexpected branch type: %r" % branch_type)
 
     if protocol is not None:
-        log = protocol.log
+        log_function = protocol.log
     else:
-        log = None
+        log_function = None
 
-    return BranchMirrorer(policy, protocol, log)
+    return BranchMirrorer(policy, protocol, log_function)
