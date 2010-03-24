@@ -239,17 +239,13 @@ class Builder(SQLBase):
         # This is ugly, sick and wrong, but so is the whole concept. See the
         # XXX above and its bug for details.
         das = Store.of(self).find(
-            DistroArchSeries, architecturetag=builder_arch).any()
+            DistroArchSeries, architecturetag=builder_arch,
+            processorfamily=self.processor.family).any()
 
         if das is None:
             raise BuildDaemonError(
-                "Unknown slave architecture tag: %s" % builder_arch)
-
-        if self.processor.family != das.processorfamily:
-            raise BuildDaemonError(
-                "Processor family mismatch: %s != %s"
-                % (self.processor.family.name,
-                   das.processorfamily.name))
+                "Bad slave architecture tag: %s (registered family: %s)" %
+                    (builder_arch, self.processor.family.name))
 
     def checkSlaveAlive(self):
         """See IBuilder."""
