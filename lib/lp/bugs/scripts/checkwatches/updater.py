@@ -3,6 +3,15 @@
 """Classes and logic for the checkwatches cronscript."""
 
 __metaclass__ = type
+__all__ = [
+    'BaseScheduler',
+    'BugWatchUpdater',
+    'CheckWatchesCronScript',
+    'CheckWatchesErrorUtility',
+    'SerialScheduler',
+    'TooMuchTimeSkew',
+    'TwistedThreadScheduler',
+    ]
 
 from copy import copy
 from datetime import datetime, timedelta
