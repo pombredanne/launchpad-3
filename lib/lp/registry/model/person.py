@@ -2391,6 +2391,9 @@ class Person(
         from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
 
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+
 
 class PersonSet:
     """The set of persons."""

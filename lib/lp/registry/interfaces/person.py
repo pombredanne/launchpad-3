@@ -483,7 +483,7 @@ class IHasStanding(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs):
+                    IPrivacy, IHasBugs, IHasRecipes):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
