@@ -269,7 +269,12 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             if stacked_branch is None:
                 return faults.NoBranchWithID(branch_id)
             stacked_branch.stacked_on = stacked_on_branch
-            stacked_branch.mirrorComplete(last_revision_id)
+            stacked_branch.last_mirrored = datetime.datetime.now(pytz.UTC)
+            stacked_branch.mirror_failures = 0
+            stacked_branch.mirror_status_message = None
+            stacked_branch.last_mirrored_id = last_revision_id
+            from lp.code.model.branchjob import BranchScanJob
+            BranchScanJob.create(stacked_branch)
             return True
         return run_with_login(login_id, branch_changed)
 

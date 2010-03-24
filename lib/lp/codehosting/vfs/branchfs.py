@@ -622,7 +622,28 @@ class LaunchpadServer(_BaseLaunchpadServer):
         def got_path_info((transport_type, data, trailing_path)):
             if transport_type != BRANCH_TRANSPORT:
                 raise NotABranchPath(virtual_url_fragment)
-            return self._authserver.requestMirror(data['id'])
+            from bzrlib.bzrdir import BzrDir
+            from bzrlib.smart.request import jail_info
+            transport, _ = self._transport_dispatch.makeTransport((transport_type, data, trailing_path))
+            def get_stacked_on_url(branch):
+                """Get the stacked-on URL for 'branch', or `None` if not stacked."""
+                try:
+                    return branch.get_stacked_on_url()
+                except (NotStacked, UnstackableBranchFormat):
+                    return None
+            # XXX yikes!!
+            jail_info.transports.append(transport)
+            try:
+                bzrdir = BzrDir.open_from_transport(transport)
+                branch = bzrdir.open_branch(ignore_fallbacks=True)
+                stacked_on_url = get_stacked_on_url(branch)
+                if stacked_on_url is None:
+                    stacked_on_url = ''
+                # mutilate stacked_on_url
+                last_revision = branch.last_revision()
+            finally:
+                jail_info.transports.remove(transport)
+            return self._authserver.branchChanged(data['id'], stacked_on_url, last_revision)
 
         return deferred.addCallback(got_path_info)
 
