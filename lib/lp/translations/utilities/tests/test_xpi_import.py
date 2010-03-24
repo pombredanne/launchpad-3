@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for XPI file format"""
@@ -79,7 +79,7 @@ class XpiTestCase(unittest.TestCase):
             file_contents=es_xpi.read(),
             person=self.importer,
             pofile=self.spanish_firefox,
-            is_current_upstream=True)
+            from_upstream=True)
 
     def _assertXpiMessageInvariant(self, message):
         """Check whether invariant part of all messages are correct."""

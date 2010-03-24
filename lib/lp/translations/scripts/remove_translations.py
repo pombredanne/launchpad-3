@@ -207,11 +207,12 @@ class RemoveTranslations(LaunchpadScript):
             '-L', '--not-language', action='store_true', dest='not_language',
             help="Invert language match: spare messages in given language."),
         ExtendedOption(
-            '-C', '--is-current_ubuntu', dest='is_current_ubuntu',
+            '-C', '--is-current-ubuntu', dest='is_current_ubuntu',
             type='bool',
             help="Match on is_current_ubuntu value (True or False)."),
         ExtendedOption(
-            '-I', '--is-imported', dest='is_current_upstream', type='bool',
+            '-I', '--is-current-upstream', dest='is_current_upstream',
+            type='bool',
             help="Match on is_current_upstream value (True or False)."),
         ExtendedOption(
             '-m', '--msgid', dest='msgid',

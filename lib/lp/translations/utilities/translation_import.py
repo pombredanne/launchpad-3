@@ -257,18 +257,33 @@ class ExistingPOFileInDatabase:
                 unseen.add((singular, plural, context))
         return unseen
 
+    def _getMessageKey(self, message):
+        """Return tuple identifying `message`.
+
+        Both `ubuntu_messages` and `upstream_messages` are indexed by
+        this key.
+        """
+        return (message.msgid_singular, message.msgid_plural, message.context)
+
+    def isAlreadyTranslatedTheSame(self, message, pool):
+        """Does `pool` have a message that's just like `message`?
+
+        :param message: a message being processed from import.
+        :param pool: a dict mapping message keys to messages; should be
+            either `self.upstream_messages` or `self.ubuntu_messages`.
+        """
+        key = self._getMessageKey(message)
+        msg_in_db = pool.get(key)
+        if msg_in_db is None:
+            return False
+        else:
+            return is_identical_translation(msg_in_db, message)
+
     def isAlreadyTranslatedTheSameInUbuntu(self, message):
         """Check whether this message is already translated in exactly
         the same way.
         """
-        (msgid, plural, context) = (message.msgid_singular,
-                                    message.msgid_plural,
-                                    message.context)
-        if (msgid, plural, context) in self.ubuntu_messages:
-            msg_in_db = self.ubuntu_messages[(msgid, plural, context)]
-            return is_identical_translation(msg_in_db, message)
-        else:
-            return False
+        return self.isAlreadyTranslatedTheSame(message, self.ubuntu_messages)
 
     def isAlreadyTranslatedTheSameUpstream(self, message):
         """Is this translation already the current upstream one?
@@ -277,14 +292,9 @@ class ExistingPOFileInDatabase:
         'is_current_upstream' translation, and we are processing an
         upstream upload, it does not need changing.
         """
-        (msgid, plural, context) = (message.msgid_singular,
-                                    message.msgid_plural,
-                                    message.context)
-        is_existing_upstream = (
-            (msgid, plural, context) in self.upstream_messages)
-        if is_existing_upstream and self.is_current_upstream:
-            msg_in_db = self.upstream_messages[(msgid, plural, context)]
-            return is_identical_translation(msg_in_db, message)
+        if self.is_current_upstream:
+            return self.isAlreadyTranslatedTheSame(
+                message, self.upstream_messages)
         else:
             return False
 

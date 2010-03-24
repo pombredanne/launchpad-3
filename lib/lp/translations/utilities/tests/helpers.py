@@ -22,7 +22,7 @@ from canonical.launchpad.scripts import FakeLogger
 
 
 def import_pofile_or_potemplate(file_contents, person,
-    pofile=None, potemplate=None, is_current_upstream=True):
+    pofile=None, potemplate=None, from_upstream=True):
     """Import a `POFile` or `POTemplate` from the given string.
 
     :param file_contents: text of "file" to import.
@@ -36,18 +36,18 @@ def import_pofile_or_potemplate(file_contents, person,
     if pofile is not None:
         if pofile.potemplate.distroseries is None:
             entry = translation_import_queue.addOrUpdateEntry(
-                pofile.path, file_contents, is_current_upstream, person,
+                pofile.path, file_contents, from_upstream, person,
                 productseries=pofile.potemplate.productseries, pofile=pofile)
         else:
             entry = translation_import_queue.addOrUpdateEntry(
-                pofile.path, file_contents, is_current_upstream, person,
+                pofile.path, file_contents, from_upstream, person,
                 distroseries=pofile.potemplate.distroseries,
                 sourcepackagename=pofile.potemplate.sourcepackagename,
                 pofile=pofile)
         target = pofile
     else:
         # A POTemplate can only be 'upstream', so setting the
-        # is_current_upstream flag makes no difference.
+        # from_upstream flag makes no difference.
         if potemplate.distroseries is None:
             entry = translation_import_queue.addOrUpdateEntry(
                 potemplate.path, file_contents, True, person,

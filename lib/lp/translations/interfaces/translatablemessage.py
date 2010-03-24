@@ -36,7 +36,7 @@ class ITranslatableMessage(Interface):
         title=_("The current translation is diverged"),
         required=True)
 
-    is_current_upstream = Bool(
+    is_current_imported = Bool(
         title=_("The current translation is used upstream"),
         required=True)
 
