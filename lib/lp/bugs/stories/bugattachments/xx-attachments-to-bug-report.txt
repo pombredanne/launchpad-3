@@ -51,3 +51,23 @@ displayed as the bug report).
     >>> link = browser.getLink('sample data')
     >>> print link.url
     http://localhost:58000/.../test.txt
+
+== Patch attachments are shown before non-patch attachments ==
+
+    >>> login("test@canonical.com")
+    >>> patch_attachment = bug_11.addAttachment(
+    ...     owner=None, data=StringIO.StringIO('patchy patch patch'),
+    ...     comment=bug_11.initial_message, filename='patch.txt',
+    ...     is_patch=True, content_type='text/plain',
+    ...     description='a patch')
+    >>> syncUpdate(patch_attachment)
+    >>> syncUpdate(bug_11)
+    >>> logout()
+    >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
+    >>> print extract_text(browser.contents)
+    Bug #11 in Jokosher...
+    ...Patches...
+    ...a patch...
+    ...Bug attachments...
+    ...sample data...
+    ... 

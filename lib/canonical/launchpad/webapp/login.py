@@ -56,8 +56,6 @@ class UnauthorizedView(SystemErrorView):
     read_only_page = ViewPageTemplateFile(
         '../templates/launchpad-readonlyfailure.pt')
 
-    notification_message = _('To continue, you must log in to Launchpad.')
-
     def __call__(self):
         # In read only mode, Unauthorized exceptions get raised by the
         # security policy when write permissions are requested. We need
@@ -105,8 +103,6 @@ class UnauthorizedView(SystemErrorView):
             # unauthenticated sessions. Only after this next line is it safe
             # to use the ``addNoticeNotification`` method.
             allowUnauthenticatedSession(self.request)
-            self.request.response.addNoticeNotification(
-                self.notification_message)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''

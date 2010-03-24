@@ -22,45 +22,42 @@ import tempfile
 import urllib2
 import xmlrpclib
 
-from zope.interface import implements
-from zope.component import getUtility
-
 from sqlobject import (
-    StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
-
+    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
 from storm.store import Store
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch)
-from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
-from canonical.database.sqlbase import SQLBase, sqlvalues
-
-# XXX Michael Nelson 2010-01-13 bug=491330,506617
-# These dependencies on soyuz will be removed when getBuildRecords()
-# is moved, as well as when the generalisation of findBuildCandidate()
-# is completed.
-from lp.soyuz.model.buildqueue import BuildQueue, specific_job_classes
-from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.helpers import filenameToContentType
-from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.buildmaster.interfaces.builder import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, CorruptBuildID, IBuilder, IBuilderSet,
-    ProtocolVersionMismatch)
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.builder import (
+    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
+    CannotResumeHost, CorruptBuildID, IBuilder, IBuilderSet,
+    ProtocolVersionMismatch)
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    BuildBehaviorMismatch)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
+from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from lp.registry.interfaces.person import validate_public_person
+from lp.services.job.interfaces.job import JobStatus
+# XXX Michael Nelson 2010-01-13 bug=491330
+# These dependencies on soyuz will be removed when getBuildRecords()
+# is moved.
+from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
@@ -723,12 +720,12 @@ class BuilderSet(object):
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""
-        logger.info("Slave Scan Process Initiated.")
+        logger.debug("Slave Scan Process Initiated.")
 
-        logger.info("Setting Builders.")
+        logger.debug("Setting Builders.")
         self.checkBuilders(logger, txn)
 
-        logger.info("Scanning Builders.")
+        logger.debug("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve
         # builds where they are completed
         self.scanActiveBuilders(logger, txn)
@@ -753,7 +750,6 @@ class BuilderSet(object):
             "scanActiveBuilders() found %d active build(s) to check"
             % queueItems.count())
 
-        build_set = getUtility(IBuildSet)
         for job in queueItems:
             job.builder.updateBuild(job)
             txn.commit()

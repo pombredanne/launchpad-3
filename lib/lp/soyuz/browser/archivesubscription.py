@@ -35,11 +35,10 @@ from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet, IPersonalArchiveSubscription)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView, Navigation)
+    canonical_url, LaunchpadView)
 from canonical.widgets import DateWidget
 from canonical.widgets.popup import PersonPickerWidget
 
@@ -298,12 +297,26 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
             self.context)
 
         # Turn the result set into a list of dicts so it can be easily
-        # accessed in TAL:
-        return [
-            dict(subscription=PersonalArchiveSubscription(self.context,
-                                                          subscr.archive),
-                 token=token)
-            for subscr, token in subs_with_tokens]
+        # accessed in TAL. Note that we need to ensure that only one
+        # PersonalArchiveSubscription is included for each archive,
+        # as the person might have participation in multiple
+        # subscriptions (via different teams).
+        unique_archives = set()
+        personal_subscription_tokens = []
+        for subscription, token in subs_with_tokens:
+            if subscription.archive in unique_archives:
+                continue
+
+            unique_archives.add(subscription.archive)
+
+            personal_subscription = PersonalArchiveSubscription(
+                self.context, subscription.archive)
+            personal_subscription_tokens.append({
+                'subscription': personal_subscription,
+                'token': token
+                })
+
+        return personal_subscription_tokens
 
 
 class PersonArchiveSubscriptionView(LaunchpadView):
@@ -327,7 +340,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         # active token, then create a token, provided a notification
         # and redirect.
         if self.request.form.get('activate') and not self.active_token:
-            token = self.context.archive.newAuthToken(self.context.subscriber)
+            self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.redirect(self.request.getURL())
 
@@ -337,7 +350,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         elif self.request.form.get('regenerate') and self.active_token:
             self.active_token.deactivate()
 
-            token = self.context.archive.newAuthToken(self.context.subscriber)
+            self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.addNotification(
                 "Launchpad has generated the new password you requested "

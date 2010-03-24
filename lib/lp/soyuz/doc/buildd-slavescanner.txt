@@ -89,14 +89,15 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> lostbuilding_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Lost Building Slave' rescued from
-    '1000-10000': 'Object not found'
+    '1000-10000': 'Build 1000 is not available: 'Object not found''
 
 Then a lost slave in status 'WAITING':
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> lostwaiting_builder.rescueIfLost(logger)
-    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'Object not found'
+    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000':
+    'Build 1000 is not available: 'Object not found''
 
 Both got rescued, as expected.
 
@@ -276,7 +277,7 @@ Do the test execution:
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem4)
     >>> a_builder.updateBuild(bqItem4)
-    CRITICAL:root:***** bob is MANUALDEPWAIT *****
+    CRITICAL:slave-scanner:***** bob is MANUALDEPWAIT *****
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -305,7 +306,7 @@ builder, but right state stored in Build entry:
     ...     WaitingSlave('BuildStatus.CHROOTFAIL'))
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem5)
     >>> a_builder.updateBuild(bqItem5)
-    CRITICAL:root:***** bob is CHROOTWAIT *****
+    CRITICAL:slave-scanner:***** bob is CHROOTWAIT *****
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -331,7 +332,7 @@ Create a mock slave so the builder can operate - one with a builder error.
     ...     WaitingSlave('BuildStatus.BUILDERFAIL'))
 
     >>> a_builder.updateBuild(bqItem6)
-    WARNING:root:***** bob has failed *****
+    WARNING:slave-scanner:***** bob has failed *****
 
     >>> from canonical.launchpad.ftests import sync
     >>> sync(a_builder)
@@ -395,6 +396,8 @@ next build round:
     >>> a_builder.updateBuild(bqItem8)
     >>> bqItem8.builder is None
     True
+    >>> print bqItem8.specific_job.build.buildstate.name
+    NEEDSBUILD
 
 Cleanup in preparation for the next test:
 
@@ -451,6 +454,7 @@ FAILEDTOUPLOAD:
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem10)
     >>> a_builder.updateBuild(bqItem10)
+    WARNING:slave-scanner:Build ... upload failed.
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -486,7 +490,7 @@ upload log information:
     ...
     X-Launchpad-Build-State: FAILEDTOUPLOAD
     ...
-    * Build Log: http://launchpad.dev/.../buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
+    * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
     ...
     Upload log:
     INFO    creating lockfile
@@ -536,7 +540,7 @@ Create a mock slave so the builder gets the right responses for this test.
 Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> build.buildstate = BuildStatus.FULLYBUILT
 
 Now the updateBuild should recognize this build record as a
@@ -574,7 +578,7 @@ Create a mock slave so the builder gets the right responses for this test.
     >>> bqItem11.builder.setSlaveForTesting(
     ...     WaitingSlave('BuildStatus.GIVENBACK'))
     >>> a_builder.updateBuild(bqItem11)
-    WARNING:root:***** 1-1 is GIVENBACK by bob *****
+    WARNING:slave-scanner:***** 1-1 is GIVENBACK by bob *****
 
 Ensure GIVENBACK build preserves the history for future use. (we
 can't be sure if logtail will contain any information, because it
@@ -1252,6 +1256,7 @@ the restricted librarian.
     >>> build.upload_log = None
     >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
     >>> a_builder.updateBuild(candidate)
+    WARNING:slave-scanner:Build ... upload failed.
     >>> local_transaction.commit()
 
     >>> build.archive.private

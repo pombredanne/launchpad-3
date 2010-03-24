@@ -22,6 +22,8 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -187,7 +189,7 @@ class DistributionSourcePackage(BugTargetBase,
                           PackagePublishingStatus.PUBLISHED,
                           PackagePublishingStatus.OBSOLETE),
             clauseTables=["SourcePackagePublishingHistory",
-                          "SourcePackageRelease", 
+                          "SourcePackageRelease",
                           "DistroSeries"],
             orderBy=["status",
                      SQLConstant(
@@ -283,6 +285,7 @@ class DistributionSourcePackage(BugTargetBase,
         results = store.find(
             Archive,
             Archive.distribution == self.distribution,
+            Archive._enabled == True,
             Archive.private == False,
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
@@ -314,11 +317,18 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def upstream_product(self):
-        for distroseries in self.distribution.series:
-            source_package = distroseries.getSourcePackage(
-                self.sourcepackagename)
-            if source_package.direct_packaging is not None:
-                return source_package.direct_packaging.productseries.product
+        store = Store.of(self.sourcepackagename)
+        condition = And(
+            Packaging.sourcepackagename == self.sourcepackagename,
+            Packaging.distroseriesID == DistroSeries.id,
+            DistroSeries.distribution == self.distribution
+            )
+        result = store.find(Packaging, condition)
+        result.order_by("debversion_sort_key(version) DESC")
+        if result.count() == 0:
+            return None
+        else:
+            return result[0].productseries.product
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
@@ -351,8 +361,6 @@ class DistributionSourcePackage(BugTargetBase,
 
     def getReleasesAndPublishingHistory(self):
         """See `IDistributionSourcePackage`."""
-        # Local import of DistroSeries to avoid import loop.
-        from lp.registry.model.distroseries import DistroSeries
         store = Store.of(self.distribution)
         result = store.find(
             (SourcePackageRelease, SourcePackagePublishingHistory),
