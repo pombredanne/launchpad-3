@@ -1,14 +1,13 @@
 #!/usr/bin/python2.5
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0403
 
-"""Handle new BranchMergeProposals.
+"""Handle jobs for BranchMergeProposals.
 
-This script generates a diff for the merge proposal if needed, then notifies
-all interested parties about the merge proposal.
+This script handles all job types for branch merge proposals.
 """
 
 __metaclass__ = type
@@ -29,7 +28,7 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
     """Run merge proposal creation jobs."""
 
     def main(self):
-        globalErrorUtility.configure('merge_proposal_email_jobs')
+        globalErrorUtility.configure('merge_proposal_jobs')
         job_source = getUtility(IMergeProposalCreatedJobSource)
         runner = JobRunner.fromReady(job_source, self.logger)
         server = get_scanner_server()
@@ -44,5 +43,5 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = RunMergeProposalCreatedJobs(
-        'merge-proposal-email-jobs', config.merge_proposal_email_jobs.dbuser)
+        'merge-proposal-jobs', config.merge_proposal_email_jobs.dbuser)
     script.lock_and_run()
