@@ -72,7 +72,7 @@ class ISourcePackageRecipe(IHasOwner):
             description=_("The name of this recipe."))
 
     description = Text(
-        title=_('Description'), required=False,
+        title=_('Description'), required=True,
         description=_('A short description of the recipe.'))
 
     builder_recipe = Attribute(
