@@ -2008,45 +2008,36 @@ class LaunchpadObjectFactory(ObjectFactory):
     def getAnySourcePackageUrgency(self):
         return SourcePackageUrgency.MEDIUM
 
-    def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
-                                           distroseries=None, maintainer=None,
-                                           creator=None, component=None,
-                                           section=None, urgency=None,
-                                           version=None, archive=None,
-                                           builddepends=None,
-                                           builddependsindep=None,
-                                           build_conflicts=None,
-                                           build_conflicts_indep=None,
-                                           architecturehintlist='all',
-                                           dateremoved=None,
-                                           date_uploaded=UTC_NOW,
-                                           pocket=None,
-                                           status=None,
-                                           scheduleddeletiondate=None,
-                                           dsc_standards_version='3.6.2',
-                                           dsc_format='1.0',
-                                           dsc_binaries='foo-bin',
-                                           ):
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
-        spn = sourcepackagename
-
+    def makeSourcePackageRelease(self, archive=None, sourcepackagename=None,
+                                 distroseries=None, maintainer=None,
+                                 creator=None, component=None, section=None,
+                                 urgency=None, version=None,
+                                 builddepends=None, builddependsindep=None,
+                                 build_conflicts=None,
+                                 build_conflicts_indep=None,
+                                 architecturehintlist='all',
+                                 dsc_maintainer_rfc822=None,
+                                 dsc_standards_version='3.6.2',
+                                 dsc_format='1.0', dsc_binaries='foo-bin',
+                                 date_uploaded=UTC_NOW):
+        """Make a `SourcePackageRelease`."""
         if distroseries is None:
-            distroseries = self.makeDistroRelease()
+            if archive is None:
+                distribution = None
+            else:
+                distribution = archive.distribution
+            distroseries = self.makeDistroRelease(distribution=distribution)
 
         if archive is None:
             archive = self.makeArchive(
                 distribution=distroseries.distribution,
                 purpose=ArchivePurpose.PRIMARY)
 
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+
         if component is None:
             component = self.makeComponent()
-
-        if pocket is None:
-            pocket = self.getAnyPocket()
-
-        if status is None:
-            status = PackagePublishingStatus.PENDING
 
         if urgency is None:
             urgency = self.getAnySourcePackageUrgency()
@@ -2068,10 +2059,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if version is None:
             version = self.getUniqueString('version')
 
-        gpg_key = self.makeGPGKey(creator)
-
-        spr = distroseries.createUploadedSourcePackageRelease(
-            sourcepackagename=spn,
+        return distroseries.createUploadedSourcePackageRelease(
+            sourcepackagename=sourcepackagename,
             maintainer=maintainer,
             creator=creator,
             component=component,
@@ -2086,12 +2075,70 @@ class LaunchpadObjectFactory(ObjectFactory):
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
-            dscsigningkey=gpg_key,
+            dscsigningkey=None,
             dsc_maintainer_rfc822=maintainer_email,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive, dateuploaded=date_uploaded)
+            archive=archive,
+            dateuploaded=date_uploaded)
+
+    def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
+                                           distroseries=None, maintainer=None,
+                                           creator=None, component=None,
+                                           section=None, urgency=None,
+                                           version=None, archive=None,
+                                           builddepends=None,
+                                           builddependsindep=None,
+                                           build_conflicts=None,
+                                           build_conflicts_indep=None,
+                                           architecturehintlist='all',
+                                           dateremoved=None,
+                                           date_uploaded=UTC_NOW,
+                                           pocket=None,
+                                           status=None,
+                                           scheduleddeletiondate=None,
+                                           dsc_standards_version='3.6.2',
+                                           dsc_format='1.0',
+                                           dsc_binaries='foo-bin',
+                                           ):
+        """Make a `SourcePackagePublishingHistory`."""
+        if distroseries is None:
+            if archive is None:
+                distribution = None
+            else:
+                distribution = archive.distribution
+            distroseries = self.makeDistroRelease(distribution=distribution)
+
+        if archive is None:
+            archive = self.makeArchive(
+                distribution=distroseries.distribution,
+                purpose=ArchivePurpose.PRIMARY)
+
+        if pocket is None:
+            pocket = self.getAnyPocket()
+
+        if status is None:
+            status = PackagePublishingStatus.PENDING
+
+        spr = self.makeSourcePackageRelease(
+            archive=archive,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries,
+            maintainer=maintainer,
+            creator=creator, component=component,
+            section=section,
+            urgency=urgency,
+            version=version,
+            builddepends=builddepends,
+            builddependsindep=builddependsindep,
+            build_conflicts=build_conflicts,
+            build_conflicts_indep=build_conflicts_indep,
+            architecturehintlist=architecturehintlist,
+            dsc_standards_version=dsc_standards_version,
+            dsc_format=dsc_format,
+            dsc_binaries=dsc_binaries,
+            date_uploaded=date_uploaded)
 
         sspph = SourcePackagePublishingHistory(
             distroseries=distroseries,

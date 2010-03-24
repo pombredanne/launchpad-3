@@ -35,7 +35,6 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.archiveuploader.utils import safe_fix_maintainer
-from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -60,6 +59,7 @@ from lp.soyuz.interfaces.queue import (
     NonBuildableSourceUploadError, QueueBuildAcceptError,
     QueueInconsistentStateError, QueueSourceAcceptError,
     QueueStateWriteProtectedError)
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (
@@ -132,7 +132,8 @@ class LanguagePackEncountered(Exception):
 
 
 class PackageUpload(SQLBase):
-    """A Queue item for Lucille."""
+    """A Queue item for the archive uploader."""
+
     implements(IPackageUpload)
 
     _defaultOrder = ['id']
@@ -1317,7 +1318,12 @@ class PackageUpload(SQLBase):
             source.sourcepackagerelease.override(
                 component=new_component, section=new_section)
 
-        return self.sources.count() > 0
+        # We override our own archive too, as it is used to create
+        # the SPPH during publish().
+        self.archive = self.distroseries.distribution.getArchiveByComponent(
+            new_component.name)
+
+        return True
 
     def overrideBinaries(self, new_component, new_section, new_priority,
                          allowed_components):
@@ -1349,7 +1355,7 @@ class PackageUpload(SQLBase):
 
 
 class PackageUploadBuild(SQLBase):
-    """A Queue item's related builds (for Lucille)."""
+    """A Queue item's related builds."""
     implements(IPackageUploadBuild)
 
     _defaultOrder = ['id']
@@ -1449,7 +1455,8 @@ class PackageUploadBuild(SQLBase):
 
 
 class PackageUploadSource(SQLBase):
-    """A Queue item's related sourcepackagereleases (for Lucille)."""
+    """A Queue item's related sourcepackagereleases."""
+
     implements(IPackageUploadSource)
 
     _defaultOrder = ['id']
@@ -1544,7 +1551,6 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
-        section = self.sourcepackagerelease.section
 
         if self.packageupload.is_delayed_copy:
             # For a delayed copy the component will not yet have
@@ -1574,11 +1580,12 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
-        debug(logger, "Publishing source %s/%s to %s/%s" % (
+        debug(logger, "Publishing source %s/%s to %s/%s in the %s archive" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.packageupload.distroseries.distribution.name,
-            self.packageupload.distroseries.name))
+            self.packageupload.distroseries.name,
+            self.packageupload.archive.name))
 
         return getUtility(IPublishingSet).newSourcePublication(
             archive=self.packageupload.archive,

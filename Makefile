@@ -30,7 +30,6 @@ BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
 WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
-DEVEL_WADL_FILE = $(APIDOC_DIR)/wadl-$(LPCONFIG)-devel.xml
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -60,15 +59,11 @@ newsampledata:
 hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(DEVEL_WADL_FILE): $(BZR_VERSION_INFO)
+$(API_INDEX): $(BZR_VERSION_INFO)
 	mkdir $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py "$(WADL_TEMPLATE)"
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
 	rmdir $(APIDOC_DIR).tmp
-
-$(API_INDEX): $(DEVEL_WADL_FILE)
-	bin/apiindex $(DEVEL_WADL_FILE) > $@.tmp
-	mv $@.tmp $@
 
 apidoc: compile $(API_INDEX)
 
@@ -259,7 +254,7 @@ sync_branches: pull_branches scan_branches mpcreationjobs
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
 
-support_files: $(DEVEL_WADL_FILE) $(BZR_VERSION_INFO)
+support_files: $(API_INDEX) $(BZR_VERSION_INFO)
 
 # Intended for use on developer machines
 start: inplace stop support_files initscript-start
@@ -330,9 +325,10 @@ clean: clean_js
 	$(RM) -r $(CODEHOSTING_ROOT)
 	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml \
 	    $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak
-	$(RM) $(APIDOC_DIR)/wadl*.xml $(API_INDEX)
+	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
 	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak \
 	    $(APIDOC_DIR)/wadl-testrunner-devel.xml
+	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py
 	$(RM) -rf \
@@ -341,7 +337,6 @@ clean: clean_js
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
 			  /var/tmp/fatsam.appserver \
-			  /var/tmp/launchpad_mailqueue \
 			  /var/tmp/lperr \
 			  /var/tmp/lperr.test \
 			  /var/tmp/mailman \
@@ -349,6 +344,11 @@ clean: clean_js
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
 			  /var/tmp/zeca
+	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
+	# instances.
+	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
+	$(RM) -f lp.sfood lp-clustered.sfood lp-clustered.dot lp-clustered.svg
+
 
 realclean: clean
 	$(RM) TAGS tags
@@ -406,6 +406,33 @@ tags: compile
 ID: compile
 	# idutils ID file
 	bin/tags -i
+
+lp.sfood:
+	# Generate import dependency graph
+	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts -I lib/contrib \
+	-I lib/canonical/not-used lib/canonical lib/lp 2>/dev/null | grep -v contrib/ \
+	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
+	| grep -v schoolbell > lp.sfood.tmp
+	mv lp.sfood.tmp lp.sfood
+
+
+lp-clustered.sfood: lp.sfood lp-sfood-packages
+	# Cluster the import dependency graph
+	sfood-cluster -f lp-sfood-packages < lp.sfood > lp-clustered.sfood.tmp
+	mv lp-clustered.sfood.tmp lp-clustered.sfood
+
+
+lp-clustered.dot: lp-clustered.sfood
+	# Build the visual graph
+	sfood-graph -p < lp-clustered.sfood > lp-clustered.dot.tmp
+	mv lp-clustered.dot.tmp lp-clustered.dot
+
+
+lp-clustered.svg: lp-clustered.dot
+	# Render to svg
+	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
+	mv lp-clustered.svg.tmp lp-clustered.svg
+
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\

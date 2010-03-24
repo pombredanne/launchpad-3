@@ -11,10 +11,10 @@ from optparse import OptionParser
 from twisted.internet import defer, reactor
 from twisted.python import log as tplog
 
-from lp.codehosting.puller import mirror, scheduler
 from canonical.config import config
 from canonical.launchpad.scripts import logger_options
-from canonical.twistedsupport.loggingsupport import (
+from lp.codehosting.puller import mirror, scheduler
+from lp.services.twistedsupport.loggingsupport import (
     LoggingProxy, set_up_logging_for_script)
 
 def clean_shutdown(ignored):

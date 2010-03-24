@@ -211,6 +211,9 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/team.js"></script>
 
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
+
   </tal:devmode>
   <tal:production condition="not:devmode">
     <script type="text/javascript"
@@ -393,11 +396,11 @@
     </tal:site_message>
     <tal:edge_only condition="is_edge">
       <a href="#" class="js-action" onclick="setBetaRedirect(false)"
-         tal:condition="not:view/isRedirectInhibited">
+         tal:condition="not:request/isRedirectInhibited">
         Disable edge redirect.
       </a>
       <a href="#" class="js-action" onclick="setBetaRedirect(true)"
-         tal:condition="view/isRedirectInhibited">
+         tal:condition="request/isRedirectInhibited">
         Enable edge redirect.
       </a>
     </tal:edge_only>

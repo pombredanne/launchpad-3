@@ -2,9 +2,13 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Checkwatches unit tests."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
+import threading
 import unittest
+
 import transaction
 
 from zope.component import getUtility
@@ -19,11 +23,13 @@ from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts import checkwatches
-from lp.bugs.scripts.checkwatches import CheckWatchesErrorUtility
+from lp.bugs.scripts.checkwatches import (
+    BugWatchUpdater, CheckWatchesErrorUtility, TwistedThreadScheduler)
 from lp.bugs.tests.externalbugtracker import (
-    TestBugzillaAPIXMLRPCTransport, new_bugtracker)
-from lp.testing import TestCaseWithFactory
+    TestBugzillaAPIXMLRPCTransport, TestExternalBugTracker, new_bugtracker)
+from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
 
 
 def always_BugzillaAPI_get_external_bugtracker(bugtracker):
@@ -74,7 +80,7 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # Create an updater with a limited set of syncable gnome
         # products.
         self.updater = checkwatches.BugWatchUpdater(
-            transaction, QuietFakeLogger(), ['test-product'])
+            transaction.manager, QuietFakeLogger(), ['test-product'])
 
     def tearDown(self):
         checkwatches.externalbugtracker.get_external_bugtracker = (
@@ -106,7 +112,7 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         # BugWatchUpdater.updateBugWatches() shouldn't cause
         # checkwatches to abort.
         updater = NoBugWatchesByRemoteBugUpdater(
-            transaction, QuietFakeLogger())
+            transaction.manager, QuietFakeLogger())
 
         # Create a couple of bug watches for testing purposes.
         bug_tracker = self.factory.makeBugTracker()
@@ -200,6 +206,174 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
             "BugTask status is inconsistent. Expected %s but got %s" %
             (BugTaskStatus.INPROGRESS.title,
             self.bugtask_with_question.status.title))
+
+
+class TestSchedulerBase:
+
+    def test_args_and_kwargs(self):
+        def func(name, aptitude):
+            self.failUnlessEqual("Robin Hood", name)
+            self.failUnlessEqual("Riding through the glen", aptitude)
+        # Positional args specified when adding a job are passed to
+        # the job function at run time.
+        self.scheduler.schedule(
+            func, "Robin Hood", "Riding through the glen")
+        # Keyword args specified when adding a job are passed to the
+        # job function at run time.
+        self.scheduler.schedule(
+            func, name="Robin Hood", aptitude="Riding through the glen")
+        # Positional and keyword args can both be specified.
+        self.scheduler.schedule(
+            func, "Robin Hood", aptitude="Riding through the glen")
+        # Run everything.
+        self.scheduler.run()
+
+
+class TestSerialScheduler(TestSchedulerBase, unittest.TestCase):
+    """Test SerialScheduler."""
+
+    def setUp(self):
+        self.scheduler = checkwatches.SerialScheduler()
+
+    def test_ordering(self):
+        # The numbers list will be emptied in the order we add jobs to
+        # the scheduler.
+        numbers = [1, 2, 3]
+        # Remove 3 and check.
+        self.scheduler.schedule(
+            list.remove, numbers, 3)
+        self.scheduler.schedule(
+            lambda: self.failUnlessEqual([1, 2], numbers))
+        # Remove 1 and check.
+        self.scheduler.schedule(
+            list.remove, numbers, 1)
+        self.scheduler.schedule(
+            lambda: self.failUnlessEqual([2], numbers))
+        # Remove 2 and check.
+        self.scheduler.schedule(
+            list.remove, numbers, 2)
+        self.scheduler.schedule(
+            lambda: self.failUnlessEqual([], numbers))
+        # Run the scheduler.
+        self.scheduler.run()
+
+
+class TestTwistedThreadScheduler(
+    TestSchedulerBase, ZopeTestInSubProcess, unittest.TestCase):
+    """Test TwistedThreadScheduler.
+
+    By default, updateBugTrackers() runs jobs serially, but a
+    different scheduling policy can be plugged in. One such policy,
+    for running several jobs in parallel, is TwistedThreadScheduler.
+    """
+
+    def setUp(self):
+        self.scheduler = checkwatches.TwistedThreadScheduler(
+            num_threads=5, install_signal_handlers=False)
+
+
+class OutputFileForThreads:
+    """Collates writes according to thread name."""
+
+    def __init__(self):
+        self.output = {}
+        self.lock = threading.Lock()
+
+    def write(self, data):
+        thread_name = threading.currentThread().getName()
+        with self.lock:
+            if thread_name in self.output:
+                self.output[thread_name].append(data)
+            else:
+                self.output[thread_name] = [data]
+
+
+class ExternalBugTrackerForThreads(TestExternalBugTracker):
+    """Fake which records interesting activity to a file."""
+
+    def __init__(self, output_file):
+        super(ExternalBugTrackerForThreads, self).__init__()
+        self.output_file = output_file
+
+    def getRemoteStatus(self, bug_id):
+        self.output_file.write("getRemoteStatus(bug_id=%r)" % bug_id)
+        return 'UNKNOWN'
+
+    def getCurrentDBTime(self):
+        return None
+
+
+class BugWatchUpdaterForThreads(BugWatchUpdater):
+    """Fake updater.
+
+    Plumbs an `ExternalBugTrackerForThreads` into a given output file,
+    which is expected to be an instance of `OutputFileForThreads`, and
+    suppresses normal log activity.
+    """
+
+    def __init__(self, output_file):
+        logger = QuietFakeLogger()
+        super(BugWatchUpdaterForThreads, self).__init__(
+            transaction.manager, logger)
+        self.output_file = output_file
+
+    def _getExternalBugTrackersAndWatches(self, bug_trackers, bug_watches):
+        return [(ExternalBugTrackerForThreads(self.output_file), bug_watches)]
+
+
+class TestTwistedThreadSchedulerInPlace(
+    ZopeTestInSubProcess, TestCaseWithFactory):
+    """Test TwistedThreadScheduler in place.
+
+    As in, driving as much of the bug watch machinery as is possible
+    without making external connections.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def test(self):
+        # Prepare test data.
+        self.owner = self.factory.makePerson()
+        self.trackers = [
+            getUtility(IBugTrackerSet).ensureBugTracker(
+                "http://butterscotch.example.com", self.owner,
+                BugTrackerType.BUGZILLA, name="butterscotch"),
+            getUtility(IBugTrackerSet).ensureBugTracker(
+                "http://strawberry.example.com", self.owner,
+                BugTrackerType.BUGZILLA, name="strawberry"),
+            ]
+        self.bug = self.factory.makeBug(owner=self.owner)
+        for tracker in self.trackers:
+            for num in (1, 2, 3):
+                self.factory.makeBugWatch(
+                    "%s-%d" % (tracker.name, num),
+                    tracker, self.bug, self.owner)
+        # Commit so that threads all see the same database state.
+        transaction.commit()
+        # Prepare the updater with the Twisted scheduler.
+        output_file = OutputFileForThreads()
+        threaded_bug_watch_updater = BugWatchUpdaterForThreads(output_file)
+        threaded_bug_watch_scheduler = TwistedThreadScheduler(
+            num_threads=10, install_signal_handlers=False)
+        threaded_bug_watch_updater.updateBugTrackers(
+            bug_tracker_names=[tracker.name for tracker in self.trackers],
+            batch_size=5, scheduler=threaded_bug_watch_scheduler)
+        # The thread names should match the tracker names.
+        self.assertEqual(
+            ['butterscotch', 'strawberry'], sorted(output_file.output))
+        # Check that getRemoteStatus() was called.
+        self.assertEqual(
+            ["getRemoteStatus(bug_id=u'butterscotch-1')",
+             "getRemoteStatus(bug_id=u'butterscotch-2')",
+             "getRemoteStatus(bug_id=u'butterscotch-3')"],
+            output_file.output['butterscotch']
+            )
+        self.assertEqual(
+            ["getRemoteStatus(bug_id=u'strawberry-1')",
+             "getRemoteStatus(bug_id=u'strawberry-2')",
+             "getRemoteStatus(bug_id=u'strawberry-3')"],
+            output_file.output['strawberry']
+            )
 
 
 def test_suite():
