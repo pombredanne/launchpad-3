@@ -442,7 +442,7 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         if sourcepackagename is None:
             message = "You must choose the source package name."
             self.setFieldError('sourcepackagename', message)
-        # Do not allow users it create links to unpublished Ubuntu packages.
+        # Do not allow users to create links to unpublished Ubuntu packages.
         elif distroseries.distribution.full_functionality:
             source_package = distroseries.getSourcePackage(sourcepackagename)
             if source_package.currentrelease is None:
