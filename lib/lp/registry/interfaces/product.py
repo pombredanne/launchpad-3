@@ -70,7 +70,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
     export_as_webservice_collection, export_as_webservice_entry,
@@ -422,14 +421,17 @@ class IProductPublic(
     summary = exported(
         Summary(
             title=_('Summary'),
-            description=_("The summary should be a single short paragraph.")))
+            description=_(
+                "A short paragraph to introduce the project's work.")))
 
     description = exported(
         Description(
             title=_('Description'),
             required=False,
-            description=_("""Include information on how to get involved with
-                development. Don't repeat anything from the Summary.""")))
+            description=_(
+                "Details about the project's work, highlights, goals, and "
+                "how to contribute. Use plain text, paragraphs are preserved "
+                "and URLs are linked in pages. Don't repeat the Summary.")))
 
     datecreated = exported(
         Datetime(

@@ -496,9 +496,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             description=_('The cached total karma for this person.')))
     homepage_content = exported(
         Text(title=_("Homepage Content"), required=False,
-             description=_(
-                 "The content of your home page. Edit this and it will be "
-                 "displayed for all the world to see.")))
+            description=_(
+                "The content of your profile page. Use plain text, "
+                "paragraphs are preserved and URLs are linked in pages.")))
     # NB at this stage we do not allow individual people to have their own
     # icon, only teams get that. People can however have a logo and mugshot
     # The icon is only used for teams; that's why we use /@@/team as the
@@ -1588,8 +1588,9 @@ class ITeamPublic(Interface):
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
              description=_(
-                "Include information on how to get involved with "
-                "development. Use plain text; URLs will be linkified.")),
+                "Details about the team's work, highlights, goals, "
+                "and how to contribute. Use plain text, paragraphs are "
+                "preserved and URLs are linked in pages.")),
         exported_as='team_description')
 
     subscriptionpolicy = exported(
