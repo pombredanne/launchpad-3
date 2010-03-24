@@ -153,41 +153,42 @@ traversed to, obviously.
 
 People have SSH keys which we can manipulate over the API.
 
-The sample person "name12" doesn't have any keys to begin with:
+The sample person "ssh-user" doesn't have any keys to begin with:
 
-    >>> sample_person = webservice.get("/~name12").jsonBody()
+    >>> login('test@canonical.com')
+    >>> person = factory.makePerson(name="ssh-user")
+    >>> logout()
+    >>> sample_person = webservice.get("/~ssh-user").jsonBody()
     >>> sshkeys = sample_person['sshkeys_collection_link']
     >>> print sshkeys
-    http://.../~name12/sshkeys
+    http://.../~ssh-user/sshkeys
     >>> print_self_link_of_entries(webservice.get(sshkeys).jsonBody())
-    http://.../~name12/+ssh-keys/1
 
-Let's give "name12" a key via the back door of our internal Python APIs:
+Let's give "ssh-user" a key via the back door of our internal Python APIs:
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
-    >>> ssh_user = getUtility(IPersonSet).getByName('name12')
-    >>> ssh_key = factory.makeGPGKey(ssh_user)
+    >>> ssh_user = getUtility(IPersonSet).getByName('ssh-user')
+    >>> ssh_key = factory.makeSSHKey(ssh_user)
     >>> logout()
 
-Now when we get the sshkey collection for 'name12' again, the key should show
+Now when we get the sshkey collection for 'sssh-user' again, the key should show
 up:
 
     >>> keys = webservice.get(sshkeys).jsonBody()
     >>> print_self_link_of_entries(keys)
-    http://.../~name12/+ssh-keys/1
+    http://.../~ssh-user/+ssh-keys/...
 
 
 And then we can actually retrieve the key:
 
     >>> pprint_entry(keys['entries'][0])
-    comment: u'andrew@trogdor'
-    id: 1
-    keytext: u'AAAAB3NzaC1kc3MAAAEBAPfhCA15ZaT08brwVXwpJjcZT6QFIipzF1sGy57HY7QPi/W+uljr1VcCHzWdlSmda7YpTCTx0NFYYQIccQRGX6zYL8v1w9FSRCAnxxUJmqEhsUDFYFdVTa9uLCrs3MSbmh7wwFPdRrGrO6X5x7T4dMZQwykSZrOVdpLcCHRgrMZslLomIAjERn6OAQNiGFz7B2tEi/3Soqd52bGJwOtGymRiAXkPSLbH7KfzSCe34ytdh6BD+4SrgSoa+TL3VDV70QAdlOFXD42ZHl3Sc0Tde4LbZeYq2Uf84DOATLZBbOYpRSqTLkM9XngpnvCRVb6dxEQfgODDw783tEuPpySLj2EAAAAVANpUVgivDjt9gFibN/AXfYy1meeBAAABAB6FtnMywmWZg2lr2I3nDfE5U5QbGUQB/ZEP98ZkSkhOcF29VlnGOxyb2/VZbVTLa/btlPF82L4An/c8VKtKZnel7LnAlMoArdgzQNXGVQQVtnaWwM26ydgDzkSSIes3elNZgsfnPRBvaF0ol9Tqju0rNGKjnr3ZOX/NX+42bxpjRnxYj1h56yP2jKKeGfjorI6JK1YfqBAiTxzaDMzSpknnrbztaKJoh7IFqMMOp9ANSFh7H106pEaCv3ebCTJZprtWqNKjb2zum7OQPRz3upA0qx22ocTokjv4itXJ6yj/BvGu9qdOIQFXuB2rsFtLZtS8ATueOly0GzyeiZBx/AEAAAEBAO8jRYjL7tAYnVlO1p6UzPOicAuGCFWfNbBEDRAXoSgLNdj451jStw+eUc9ZVz7tG/XRVZsiavtFHb2cbrcfX1YOd69xi0m+IY6mo3yKt3irQRokDtt376sHoUdHgj2ozySZJgG8IJndtoS+VQQy6NdClA3fNFb96bF865eNaRYoHJO9ZI84lkWQL++MLzIuyFfCs1hSlapyyuHC8kFmF7AQdrVZvbohSbnWs+w53nIW8nAA7z21wAukvE1Pl6AQyG0e7U1sYS8Pc8dtmzJvdtVZWBl02/gqQJ7f06mFvnsN45rR1Uyxnrwl6rbFwqabZDlyD5Ac6Icbvz9SG1gBOiI='
-    keytype: u'DSA'
+    comment: u'generic-string...'
+    keytext: u'generic-string...'
+    keytype: u'RSA'
     resource_type_link: u'http://.../#ssh_key'
-    self_link: u'http://.../~name12/+ssh-keys/1'
+    self_link: u'http://.../~ssh-user/+ssh-keys/...'
 
 === Team memberships ===
 
