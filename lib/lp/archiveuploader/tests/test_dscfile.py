@@ -100,7 +100,7 @@ class TestDscFile(TestCase):
         which is incredibly unlikely to be hit by normal files in the
         archive"""
         dev_zero = open("/dev/zero", "r")
-        ten_MiB = 2*20 * 10
+        ten_MiB = 2**20 * 10
         empty_file = dev_zero.read(ten_MiB + 1)
         dev_zero.close()
 
@@ -111,8 +111,6 @@ class TestDscFile(TestCase):
         errors = list(findAndMoveChangelog(
             self.dsc_file, self.tmpdir, self.tmpdir, mock_logger_quiet))
 
-
-        self.failUnless(isinstance(errors[0], UploadError))
         self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
             errors[0].message,
