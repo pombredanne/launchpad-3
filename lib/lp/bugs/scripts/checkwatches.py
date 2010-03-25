@@ -149,7 +149,7 @@ def report_oops(message=None, properties=None, info=None, txn=None):
         clear_request_started()
         set_request_started(
             request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
-            txn=txn)
+            txn=txn, enable_timeout=False)
     return request
 
 
@@ -261,7 +261,7 @@ class BugWatchUpdater(object):
                     set_request_started(
                         request_statements=LimitedList(
                             MAX_SQL_STATEMENTS_LOGGED),
-                        txn=self.txn)
+                        txn=self.txn, enable_timeout=False)
                     run = self._interactionDecorator(self.updateBugTracker)
                     return run(bug_tracker_id, batch_size)
                 finally:
