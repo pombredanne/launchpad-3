@@ -5,13 +5,18 @@
 
 __metaclass__ = type
 
+import transaction
 import unittest
+
+from datetime import datetime
+from pytz import utc
 
 from urlparse import urlunsplit
 
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp import urlsplit
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
@@ -19,6 +24,7 @@ from canonical.testing import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
 from lp.registry.interfaces.person import IPersonSet
 
 from lp.testing import TestCaseWithFactory
@@ -370,6 +376,29 @@ class TestBugWatchBugTasks(TestCaseWithFactory):
         # BugWatch.bugtasks is always a list.
         self.assertIsInstance(
             self.bug_watch.bugtasks, list)
+
+
+class TestBugWatchScheduler(TestCaseWithFactory):
+    """Tests for the BugWatchScheduler, which runs as part of garbo."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugWatchScheduler, self).setUp('foo.bar@canonical.com')
+        self.bug_watch = self.factory.makeBugWatch()
+        transaction.commit()
+        self.scheduler = BugWatchScheduler(QuietFakeLogger())
+
+    def test_scheduler_schedules_unchecked_watches(self):
+        # The BugWatchScheduler will schedule a BugWatch that has never
+        # been checked to be checked immediately.
+        self.bug_watch.lastchecked = None
+        self.bug_watch.next_check = None
+        self.scheduler(1)
+
+        self.assertNotEqual(None, self.bug_watch.next_check)
+        self.assertTrue(
+            self.bug_watch.next_check <= datetime.now(utc))
 
 
 def test_suite():

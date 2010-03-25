@@ -3,7 +3,11 @@
 
 __metaclass__ = type
 
-__all__ = ['DBLoopTuner', 'LoopTuner']
+__all__ = [
+    'DBLoopTuner',
+    'LoopTuner',
+    'TunableLoop',
+    ]
 
 
 from datetime import timedelta
