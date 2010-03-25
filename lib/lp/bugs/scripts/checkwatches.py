@@ -1168,6 +1168,7 @@ class BugWatchUpdater(object):
         for unpushed_comment in unpushed_comments:
             with self.transaction:
                 message = unpushed_comment.message
+                message_rfc822msgid = message.rfc822msgid
                 # Format the comment so that it includes information
                 # about the Launchpad bug.
                 formatted_comment = self._formatRemoteComment(
@@ -1176,11 +1177,10 @@ class BugWatchUpdater(object):
             remote_comment_id = (
                 external_bugtracker.addRemoteComment(
                     remote_bug_id, formatted_comment,
-                    message.rfc822msgid))
+                    message_rfc822msgid))
 
             assert remote_comment_id is not None, (
                 "A remote_comment_id must be specified.")
-
             with self.transaction:
                 unpushed_comment.remote_comment_id = remote_comment_id
 
