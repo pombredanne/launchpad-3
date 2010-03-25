@@ -77,6 +77,7 @@ A insane WAITING slave, with wrong BuildQueue/Build relation:
     >>> insanewaiting_builder = MockBuilder(
     ...     'Insane Waiting Slave', InsaneWaitingSlave())
     >>> insanewaiting_builder.rescueIfLost(logger)
+    Cleaning slave
     WARNING:root:Builder 'Insane Waiting Slave' rescued from '7-1': 'Job build entry mismatch'
 
 It was rescued because the BuildQueue.id == 1 isn't related to
@@ -88,6 +89,7 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> lostbuilding_builder.rescueIfLost(logger)
+    Aborting slave
     WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000':
     'Build 1000 is not available: 'Object not found''
 
@@ -96,6 +98,7 @@ Then a lost slave in status 'WAITING':
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> lostwaiting_builder.rescueIfLost(logger)
+    Cleaning slave
     WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000':
     'Build 1000 is not available: 'Object not found''
 
@@ -109,12 +112,14 @@ A BUILDING or WAITING slave without a build assigned in the DB will also be resc
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> lostbuilding_builder.current_build_behavior = IdleBuildBehavior()
     >>> lostbuilding_builder.rescueIfLost(logger)
+    Aborting slave
     WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000': 'No job assigned to builder'
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> lostwaiting_builder.current_build_behavior = IdleBuildBehavior()
     >>> lostwaiting_builder.rescueIfLost(logger)
+    Cleaning slave
     WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'No job assigned to builder'
 
 Slave-scanner will deactivate a 'lost-building' builder that could not
@@ -124,6 +129,7 @@ be aborted appropriately.
     ...     'Lost Building Broken Slave', LostBuildingBrokenSlave())
 
     >>> lostbuilding_builder.updateStatus(logger)
+    Aborting slave
     WARNING:root:Lost Building Broken Slave (http://fake:0000) marked as failed due to: <Fault 8002: 'Could not abort'>
     Traceback (most recent call last):
     ...

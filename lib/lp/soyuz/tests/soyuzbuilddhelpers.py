@@ -58,9 +58,11 @@ class MockBuilder:
         return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
 
     def cleanSlave(self):
+        print 'Cleaning slave'
         return self.slave.clean()
 
     def requestAbort(self):
+        print 'Aborting slave'
         return self.slave.abort()
 
     def resumeSlave(self, logger):
@@ -86,7 +88,7 @@ class SaneBuildingSlave:
         return ('BuilderStatus.BUILDING', '8-1', 'Doing something ...')
 
     def clean(self):
-        print 'Rescuing SaneSlave'
+        pass
 
     def echo(self, *args):
         return args
@@ -108,7 +110,7 @@ class SaneWaitingSlave:
         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '8-1')
 
     def clean(self):
-        print 'Rescuing SaneSlave'
+        pass
 
 
 class InsaneWaitingSlave:
