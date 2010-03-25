@@ -9,6 +9,7 @@ __all__ = [
 
 import transaction
 
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.interfaces import IMasterStore
 
@@ -38,10 +39,12 @@ class BugWatchScheduler(TunableLoop):
                            LIMIT 5) AS recent_failures
                     ) AS recent_failure_count
                 FROM BugWatch AS bug_watch
+                WHERE bug_watch.next_check IS NULL
+                LIMIT %s
             ) AS counts
-        WHERE BugWatch.next_check IS NULL
-          AND BugWatch.id = counts.id;
-        """
+        WHERE BugWatch.id = counts.id;
+        """ % sqlvalues(chunk_size)
+
         self.store = IMasterStore(BugWatch)
         transaction.begin()
         self.store.execute(query)

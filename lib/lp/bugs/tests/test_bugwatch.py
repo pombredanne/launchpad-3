@@ -386,6 +386,11 @@ class TestBugWatchScheduler(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugWatchScheduler, self).setUp('foo.bar@canonical.com')
+        # We'll make sure that all the other bug watches look like
+        # they've been scheduled so that only our watch gets scheduled.
+        for watch in getUtility(IBugWatchSet).search():
+            watch.next_check = datetime.now(utc)
+
         self.bug_watch = self.factory.makeBugWatch()
         transaction.commit()
         self.scheduler = BugWatchScheduler(QuietFakeLogger())
@@ -443,6 +448,16 @@ class TestBugWatchScheduler(TestCaseWithFactory):
         self.scheduler(1)
         self.assertEqual(
             now + timedelta(days=7), self.bug_watch.next_check)
+
+    def test_scheduler_doesnt_schedule_scheduled_watches(self):
+        # The scheduler will ignore watches whose next_check has been
+        # set.
+        next_check_date = datetime.now(utc) + timedelta(days=1)
+        self.bug_watch.next_check = next_check_date
+        transaction.commit()
+        self.scheduler(1)
+
+        self.assertEqual(next_check_date, self.bug_watch.next_check)
 
 
 def test_suite():
