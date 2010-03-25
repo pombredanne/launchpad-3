@@ -102,13 +102,26 @@ class TestSanitizeTranslations(unittest.TestCase):
                     u"%r was not normalized to %r" % (
                         translation_text, expected_sanitized))
 
-    def test_normalizeNewlines_nothing_to_do(self):
+    def test_normalizeNewlines_nothing_to_do_english(self):
         # If no newlines are found in the english text, no normalization
         # takes place.
         sanitize = Sanitize(u"Text without newline.")
         translation_template = u"Translation with%snewline."
         for translation_newline in self.newline_styles:
             translation_text = translation_template % translation_newline
+            self.assertEqual(
+                translation_text,
+                sanitize.normalizeNewlines(translation_text),
+                u"%r was not left unchanged." % translation_text)
+
+    def test_normalizeNewlines_nothing_to_do_translation(self):
+        # If no newlines are found in the translation text, no normalization
+        # takes place.
+        english_template = u"Text with%snewline."
+        translation_text = u"Translation without newline."
+        for english_newline in self.newline_styles:
+            english_text = english_template % english_newline
+            sanitize = Sanitize(english_text)
             self.assertEqual(
                 translation_text,
                 sanitize.normalizeNewlines(translation_text),
