@@ -33,6 +33,7 @@ from lp.bugs.interfaces.externalbugtracker import (
 from canonical.launchpad.mail import simple_sendmail
 from lp.bugs.scripts import debbugs
 from canonical.launchpad.webapp import urlsplit
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,
@@ -319,6 +320,7 @@ class DebBugs(ExternalBugTracker):
                 commit()
                 return message
 
+    @ensure_no_transaction
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Push a comment to the remote DebBugs instance.
 

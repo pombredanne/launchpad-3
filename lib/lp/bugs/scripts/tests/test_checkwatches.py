@@ -14,7 +14,6 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, IBugSet, IBugTaskSet,
@@ -71,6 +70,7 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
 
     def setUp(self):
         super(TestCheckwatchesWithSyncableGnomeProducts, self).setUp()
+        transaction.commit()
 
         # We monkey-patch externalbugtracker.get_external_bugtracker()
         # so that it always returns what we want.
@@ -99,6 +99,10 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         bug_watch_2 = self.factory.makeBugWatch(
             remote_bug=2, bugtracker=gnome_bugzilla)
 
+        # The bug watch updater expects to begin and end all
+        # transactions.
+        transaction.commit()
+
         # Calling this method shouldn't raise a KeyError, even though
         # there's no bug 2 on the bug tracker that we pass to it.
         self.updater._getExternalBugTrackersAndWatches(
@@ -108,6 +112,10 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
 class TestBugWatchUpdater(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBugWatchUpdater, self).setUp()
+        transaction.abort()
 
     def test_bug_497141(self):
         # Regression test for bug 497141. KeyErrors raised in
@@ -188,7 +196,7 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
         # subscribers from a bug watch.
         question.subscribe(
             getUtility(ILaunchpadCelebrities).launchpad_developers)
-        commit()
+        transaction.commit()
 
         # We now need to switch to the checkwatches DB user so that
         # we're testing with the correct set of permissions.
@@ -205,7 +213,7 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
         self.bugwatch_with_question = bug_with_question.addWatch(
             bugtracker, '1', getUtility(ILaunchpadCelebrities).janitor)
         self.bugtask_with_question.bugwatch = self.bugwatch_with_question
-        commit()
+        transaction.commit()
 
     def test_can_update_bug_with_questions(self):
         """Test whether bugs with linked questions can be updated.
@@ -377,8 +385,9 @@ class TestTwistedThreadSchedulerInPlace(
         threaded_bug_watch_updater = BugWatchUpdaterForThreads(output_file)
         threaded_bug_watch_scheduler = TwistedThreadScheduler(
             num_threads=10, install_signal_handlers=False)
+        # Run the updater.
         threaded_bug_watch_updater.updateBugTrackers(
-            bug_tracker_names=[tracker.name for tracker in self.trackers],
+            bug_tracker_names=['butterscotch', 'strawberry'],
             batch_size=5, scheduler=threaded_bug_watch_scheduler)
         # The thread names should match the tracker names.
         self.assertEqual(

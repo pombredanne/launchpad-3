@@ -29,6 +29,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.bugs.adapters import treelookup
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import (
     IExternalBugTracker)
@@ -139,6 +140,7 @@ class ExternalBugTracker:
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
 
+    @ensure_no_transaction
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
 
