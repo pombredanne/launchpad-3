@@ -21,9 +21,10 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
@@ -32,9 +33,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -113,6 +112,10 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(
             SourcePackageRelease, source_package_recipe_build=self).one()
+
+    @property
+    def title(self):
+        return '%s recipe build' % self.recipe.base_branch.unique_name
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
                  archive, pocket, date_created=None,
@@ -213,10 +216,3 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
         store = IMasterStore(SourcePackageRecipeBuildJob)
         store.add(specific_job)
         return specific_job
-
-    def getTitle(self):
-        """See `IBuildFarmJob`."""
-        return "%s-%s-%s-recipe-build-job" % (
-            self.build.distroseries.displayname,
-            self.build.sourcepackagename.name,
-            self.build.archive.displayname)

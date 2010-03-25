@@ -20,46 +20,43 @@ import tempfile
 import urllib2
 import xmlrpclib
 
-from zope.interface import implements
-from zope.component import getUtility
-
 from sqlobject import (
-    StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
-
+    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
 from storm.store import Store
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch)
-from lp.buildmaster.master import BuilddMaster
-from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
-from canonical.database.sqlbase import SQLBase, sqlvalues
-
-# XXX Michael Nelson 2010-01-13 bug=491330,506617
-# These dependencies on soyuz will be removed when getBuildRecords()
-# is moved, as well as when the generalisation of findBuildCandidate()
-# is completed.
-from lp.soyuz.model.buildqueue import BuildQueue, specific_job_classes
-from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.helpers import filenameToContentType
-from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.buildmaster.interfaces.builder import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.builder import (
+    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
+    CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    BuildBehaviorMismatch)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.master import BuilddMaster
+from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
+from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from lp.registry.interfaces.person import validate_public_person
+from lp.services.job.interfaces.job import JobStatus
+# XXX Michael Nelson 2010-01-13 bug=491330
+# These dependencies on soyuz will be removed when getBuildRecords()
+# is moved.
+from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
@@ -218,9 +215,9 @@ class Builder(SQLBase):
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
-    def checkCanBuildForDistroArchSeries(self, distro_arch_series):
-        """See IBuilder."""
-        # XXX cprov 2007-06-15:
+    def checkSlaveArchitecture(self):
+        """See `IBuilder`."""
+        # XXX cprov 2007-06-15 bug=545839:
         # This function currently depends on the operating system specific
         # details of the build slave to return a processor-family-name (the
         # architecturetag) which matches the distro_arch_series. In reality,
@@ -229,17 +226,26 @@ class Builder(SQLBase):
         # distro specific and potentially different for radically different
         # distributions - its not the right thing to be comparing.
 
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
         # query the slave for its active details.
         # XXX cprov 2007-06-15: Why is 'mechanisms' ignored?
         builder_vers, builder_arch, mechanisms = self.slave.info()
         # we can only understand one version of slave today:
         if builder_vers != '1.0':
             raise ProtocolVersionMismatch("Protocol version mismatch")
-        # check the slave arch-tag against the distro_arch_series.
-        if builder_arch != distro_arch_series.architecturetag:
+
+        # Find a distroarchseries with the returned arch tag.
+        # This is ugly, sick and wrong, but so is the whole concept. See the
+        # XXX above and its bug for details.
+        das = Store.of(self).find(
+            DistroArchSeries, architecturetag=builder_arch,
+            processorfamily=self.processor.family).any()
+
+        if das is None:
             raise BuildDaemonError(
-                "Architecture tag mismatch: %s != %s"
-                % (builder_arch, distro_arch_series.architecturetag))
+                "Bad slave architecture tag: %s (registered family: %s)" %
+                    (builder_arch, self.processor.family.name))
 
     def checkSlaveAlive(self):
         """See IBuilder."""
@@ -636,17 +642,17 @@ class BuilderSet(object):
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""
-        logger.info("Slave Scan Process Initiated.")
+        logger.debug("Slave Scan Process Initiated.")
 
         buildMaster = BuilddMaster(logger, txn)
 
-        logger.info("Setting Builders.")
+        logger.debug("Setting Builders.")
         # Put every distroarchseries we can find into the build master.
         for archseries in getUtility(IDistroArchSeriesSet):
             buildMaster.addDistroArchSeries(archseries)
             buildMaster.setupBuilders(archseries)
 
-        logger.info("Scanning Builders.")
+        logger.debug("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve
         # builds where they are completed
         buildMaster.scanActiveBuilders()

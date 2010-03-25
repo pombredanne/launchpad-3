@@ -309,7 +309,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def request_import_link(self):
         """A link to the page for requesting a new code import."""
-        return canonical_url(getUtility(ICodeImportSet), view_name='+new')
+        return canonical_url(self.context.product, view_name='+new-import')
 
     @property
     def user_branch_visible(self):
@@ -442,7 +442,7 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         if sourcepackagename is None:
             message = "You must choose the source package name."
             self.setFieldError('sourcepackagename', message)
-        # Do not allow users it create links to unpublished Ubuntu packages.
+        # Do not allow users to create links to unpublished Ubuntu packages.
         elif distroseries.distribution.full_functionality:
             source_package = distroseries.getSourcePackage(sourcepackagename)
             if source_package.currentrelease is None:

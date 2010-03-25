@@ -14,7 +14,6 @@ import pdb
 import pprint
 import re
 import transaction
-import sys
 import unittest
 
 from BeautifulSoup import (
@@ -30,11 +29,13 @@ from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 from zope.security.proxy import removeSecurityProxy
 
+from launchpadlib.launchpad import Launchpad
+
 from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
     TeamMembershipStatus)
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
+    LayeredDocFileSuite, SpecialOutputChecker, stop, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
@@ -715,16 +716,6 @@ def setupRosettaExpertBrowser():
     return setupBrowser(auth='Basic re@ex.com:test')
 
 
-def stop():
-    # Temporarily restore the real stdout.
-    old_stdout = sys.stdout
-    sys.stdout = sys.__stdout__
-    try:
-        pdb.set_trace()
-    finally:
-        sys.stdout = old_stdout
-
-
 def setUpGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller()
@@ -736,6 +727,9 @@ def setUpGlobs(test):
         'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['anon_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', '')
+    test.globs['launchpad'] = Launchpad.login(
+        'launchpad-library', 'salgado-change-anything', 'test',
+        service_root='http://api.launchpad.dev/', version="devel")
     test.globs['setupBrowser'] = setupBrowser
     test.globs['setupDTCBrowser'] = setupDTCBrowser
     test.globs['setupRosettaExpertBrowser'] = setupRosettaExpertBrowser

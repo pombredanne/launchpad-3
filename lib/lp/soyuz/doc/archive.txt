@@ -919,7 +919,7 @@ source-package releases for the archive. By default, all releases will
 be returned, but you can also ask for releases with builds in a certain
 state.
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> releases = cprov_archive.getSourcePackageReleases(
     ...     build_status=BuildStatus.FULLYBUILT)
     >>> for release in releases:
@@ -1037,7 +1037,6 @@ This method can return build records for sources matching the given
 
 Or return build records in a specific status:
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> cprov_archive.getBuildRecords(
     ...     build_state=BuildStatus.FULLYBUILT).count()
     3
@@ -1263,26 +1262,6 @@ Attempts to remove a non-existent dependency results in a AssertionError.
     Traceback (most recent call last):
     ...
     AssertionError: This dependency does not exist.
-
-Since the 'dependency' property only returns explicitly recorded
-archive dependencies and we usually need the expanded list when
-inspecting the build domain we have also implemented the
-'expanded_archive_dependencies' property. It returns implicit
-dependencies, including the archive itself and the PRIMARY archive
-dependency for PPAs.
-
-    >>> def print_expanded_archive_dependencies(archive):
-    ...     for dep in archive.expanded_archive_dependencies:
-    ...         print dep.displayname
-
-    >>> print_expanded_archive_dependencies(ubuntu.main_archive)
-    Primary Archive for Ubuntu Linux
-
-    >>> print_expanded_archive_dependencies(cprov.archive)
-    Primary Archive for Ubuntu Linux
-    PPA for Celso Providelo
-    PPA for Mark Shuttleworth
-
 
 == Find binary package dependency candidates ==
 
@@ -2753,7 +2732,7 @@ for more information.
 We will select the only available IGPGKey from the sampledata.
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> [a_key] = foo_bar.gpgkeys
+    >>> [a_key] = foo_bar.gpg_keys
     >>> print a_key.displayname
     1024D/12345678
 

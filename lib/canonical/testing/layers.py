@@ -73,6 +73,7 @@ import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
+from wsgi_intercept import httplib2_intercept
 
 from lazr.restful.utils import safe_hasattr
 
@@ -97,7 +98,7 @@ from canonical.database.revision import (
     confirm_dbrevision, confirm_dbrevision_on_startup)
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
+from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -537,6 +538,11 @@ class MemcachedLayer(BaseLayer):
     def getPidFile(cls):
         return os.path.join(config.root, '.memcache.pid')
 
+    @classmethod
+    def purge(cls):
+        "Purge everything from our memcached."
+        MemcachedLayer.client.flush_all() # Only do this in tests!
+
 
 class LibrarianLayer(BaseLayer):
     """Provides tests access to a Librarian instance.
@@ -933,12 +939,18 @@ class FunctionalLayer(BaseLayer):
         register_launchpad_request_publication_factories()
         wsgi_intercept.add_wsgi_intercept(
             'localhost', 80, lambda: wsgi_application)
+        wsgi_intercept.add_wsgi_intercept(
+            'api.launchpad.dev', 80, lambda: wsgi_application)
+        httplib2_intercept.install()
+
 
     @classmethod
     @profiled
     def tearDown(cls):
         FunctionalLayer.isSetUp = False
         wsgi_intercept.remove_wsgi_intercept('localhost', 80)
+        wsgi_intercept.remove_wsgi_intercept('api.launchpad.dev', 80)
+        httplib2_intercept.uninstall()
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 

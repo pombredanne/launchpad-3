@@ -6,7 +6,7 @@
 <metal:render-suggestion define-macro="render-suggestion">
 <tal:submission condition="submission">
   <tal:not-empty condition="not:submission/is_empty">
-    <tr tal:attributes="class string:secondary ${dismissable};
+    <tr tal:attributes="class string:secondary ${dismissable} ${submission/translation_html_id};
                         id submission/row_html_id">
       <th colspan="3" tal:content="section_title">
         Packaged:
@@ -69,7 +69,7 @@
       <td colspan="3"></td>
       <td class="icon left right">
         <tal:legal-warning condition="submission/legal_warning">
-          <a href="http://help.launchpad.net/Translations/ReusingPackagedTranslations"
+          <a href="https://help.launchpad.net/Translations/ReusingPackagedTranslations"
              class="legal-warning">
             <img alt="Legal warning" title="Do not use this translation before checking for license compatibility" src="/@@/warning" /></a>
         </tal:legal-warning>
@@ -128,6 +128,17 @@
             tal:content="structure link/render"></li>
       </ul>
 </metal:nav-pofile-subpages>
+
+
+<metal:pofile-js-footer define-macro="pofile-js-footer">
+    <script type="text/javascript"
+        tal:content="
+        structure string:<!-- 
+        var autofocus_field = '${view/autofocus_html_id}';
+        var translations_order = '${view/translations_order}';
+        var plural_forms = ${context/plural_forms};
+        // -->" />
+</metal:pofile-js-footer>
 
 
 <metal:translations-js define-macro="translations-js">

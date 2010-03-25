@@ -31,6 +31,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
@@ -58,7 +59,8 @@ from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
     InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
-    PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    NoTokensForTeams, PocketNotFound, VersionRequiresName,
+    default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import (
@@ -66,7 +68,7 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -80,6 +82,7 @@ from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus, IPublishingSet)
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.interfaces import (
@@ -294,17 +297,6 @@ class Archive(SQLBase):
         dependencies = ArchiveDependency.select(
             query, clauseTables=clauseTables, orderBy=orderBy)
         return dependencies
-
-    @property
-    def expanded_archive_dependencies(self):
-        """See `IArchive`."""
-        archives = []
-        if self.is_ppa:
-            archives.append(self.distribution.main_archive)
-        archives.append(self)
-        archives.extend(
-            [archive_dep.dependency for archive_dep in self.dependencies])
-        return archives
 
     @property
     def debug_archive(self):
@@ -672,7 +664,7 @@ class Archive(SQLBase):
         # It results in:
         # ERROR:  missing FROM-clause entry for table "binarypackagename"
         unique_binary_publications = nominated_arch_independents.union(
-            no_nominated_arch_independents)
+            no_nominated_arch_independents).orderBy("id")
 
         return unique_binary_publications
 
@@ -783,8 +775,14 @@ class Archive(SQLBase):
 
     def findDepCandidateByName(self, distroarchseries, name):
         """See `IArchive`."""
-        archives = [
-            archive.id for archive in self.expanded_archive_dependencies]
+        archives = []
+        if self.is_ppa:
+            archives.append(self.distribution.main_archive.id)
+        archives.append(self.id)
+        dep = ArchiveDependency.selectOneBy(archive=self)
+        while dep is not None:
+            archives.append(dep.dependency.id)
+            dep = ArchiveDependency.selectOneBy(archive=dep.dependency)
 
         query = """
             binarypackagename = %s AND
@@ -1125,6 +1123,21 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def getBinaryPackageReleaseByFileName(self, filename):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        results = store.find(
+            BinaryPackageRelease,
+            BinaryPackageFile.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
+            LibraryFileAlias.filename == filename,
+            BinaryPackagePublishingHistory.archive == self,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id).config(distinct=True)
+        if results.count() > 1:
+            return None
+        return results.one()
+
     def requestPackageCopy(self, target_location, requestor, suite=None,
         copy_binaries=False, reason=None):
         """See `IArchive`."""
@@ -1219,6 +1232,11 @@ class Archive(SQLBase):
 
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # Tokens can only be created for individuals.
+        if person.is_team:
+            raise NoTokensForTeams(
+                "Subscription tokens can be created for individuals only.")
 
         # First, ensure that a current subscription exists for the
         # person and archive:
