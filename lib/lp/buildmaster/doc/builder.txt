@@ -246,27 +246,27 @@ builder can be marked as failed.
 A fictitious i386 variant is rejected, since there are no DASes with that
 tag.
 
-   >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-   >>> bob.setSlaveForTesting(OkSlave('i387'))
-   >>> bob.checkSlaveArchitecture()
-   Traceback (most recent call last):
-   ...
-   BuildDaemonError: Bad slave architecture tag: i387 (registered family: x86)
+    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
+    >>> bob.setSlaveForTesting(OkSlave('i387'))
+    >>> bob.checkSlaveArchitecture()
+    Traceback (most recent call last):
+    ...
+    BuildDaemonError: Bad slave architecture tag: i387 (registered family: x86)
 
 hppa isn't in the x86 family, so it too is rejected.
 
-   >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-   >>> bob.setSlaveForTesting(OkSlave('hppa'))
-   >>> bob.checkSlaveArchitecture()
-   Traceback (most recent call last):
-   ...
-   BuildDaemonError: Bad slave architecture tag: hppa (registered family: x86)
+    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
+    >>> bob.setSlaveForTesting(OkSlave('hppa'))
+    >>> bob.checkSlaveArchitecture()
+    Traceback (most recent call last):
+    ...
+    BuildDaemonError: Bad slave architecture tag: hppa (registered family: x86)
 
 But i386, a real x86 variant, passes without objection.
 
-   >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-   >>> bob.setSlaveForTesting(OkSlave('i386'))
-   >>> bob.checkSlaveArchitecture()
+    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
+    >>> bob.setSlaveForTesting(OkSlave('i386'))
+    >>> bob.checkSlaveArchitecture()
 
 
 Rescuing lost slaves
