@@ -65,7 +65,8 @@ BASE_URL = "http://people.canonical.com/~ubuntu-archive/germinate-output/"
 
 # hints dir url, hints file is "$distro.hints" by default
 # (e.g. lucid.hints)
-HINTS_DIR_URL = "http://people.canonical.com/~mvo/maintenance-check/"
+#HINTS_DIR_URL = "http://people.canonical.com/~mvo/maintenance-check/%s.hints"
+HINTS_DIR_URL = "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORT_TIME_OVERWRITES.hints"
 
 # we need the archive root to parse the Sources file to support
 # by-source hints
@@ -223,7 +224,7 @@ if __name__ == "__main__":
         if not schema:
             hints_file = "file:%s" % path
     else:
-        hints_file = "%s/%s.hints" % (HINTS_DIR_URL, distro)
+        hints_file = HINTS_DIR_URL % distro
         
     # go over the distros we need to check
     pkg_support_time = {}
@@ -251,9 +252,15 @@ if __name__ == "__main__":
                 (raw_pkgname, support_time) = line.split()
                 for pkgname in expand_src_pkgname(raw_pkgname):
                     if support_time == 'unsupported':
-                        del pkg_support_time[pkgname]
+                        try:
+                            del pkg_support_time[pkgname]
+                            sys.stderr.write("hints-file: marking %s unsupported\n" % pkgname)
+                        except KeyError:
+                            pass
                     else:
-                        pkg_support_time[pkgname] = support_time
+                        if pkg_support_time.get(pkgname) != support_time:
+                            sys.stderr.write("hints-file: changing %s from %s to %s\n" % (pkgname,  pkg_support_time.get(pkgname), support_time))
+                            pkg_support_time[pkgname] = support_time
             except:
                 logging.exception("can not parts line '%s'" % line)
     except urllib2.HTTPError, e:
