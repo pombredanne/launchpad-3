@@ -86,6 +86,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.factory.makeRecipe())
         self.assertProvides(recipe, ISourcePackageRecipe)
 
+    def test_base_branch(self):
+        # When a recipe is created, we can access its base branch.
+        branch = self.factory.makeAnyBranch()
+        builder_recipe = self.factory.makeRecipe(branch)
+        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
+            builder_recipe)
+        self.assertEquals(branch, sp_recipe.base_branch)
+
     def test_branch_links_created(self):
         # When a recipe is created, we can query it for links to the branch
         # it references.
