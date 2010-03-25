@@ -104,24 +104,6 @@ Then a lost slave in status 'WAITING':
 
 Both got rescued, as expected.
 
-A BUILDING or WAITING slave without a build assigned in the DB will also be rescued.
-
-    >>> from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
-
-    >>> lostbuilding_builder = MockBuilder(
-    ...     'Lost Building Slave', LostBuildingSlave())
-    >>> lostbuilding_builder.current_build_behavior = IdleBuildBehavior()
-    >>> lostbuilding_builder.rescueIfLost(logger)
-    Aborting slave
-    WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000': 'No job assigned to builder'
-
-    >>> lostwaiting_builder = MockBuilder(
-    ...     'Lost Waiting Slave', LostWaitingSlave())
-    >>> lostwaiting_builder.current_build_behavior = IdleBuildBehavior()
-    >>> lostwaiting_builder.rescueIfLost(logger)
-    Cleaning slave
-    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'No job assigned to builder'
-
 Slave-scanner will deactivate a 'lost-building' builder that could not
 be aborted appropriately.
 
