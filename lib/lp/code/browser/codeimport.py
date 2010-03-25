@@ -435,9 +435,9 @@ class CodeImportNewView(CodeImportBaseView):
 class EditCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
-    use_template(
-        ICodeImport,
-        ['url', 'cvs_root', 'cvs_module'])
+    url = copy_field(ICodeImport['url'], readonly=False)
+    cvs_root = copy_field(ICodeImport['cvs_root'], readonly=False)
+    cvs_module = copy_field(ICodeImport['cvs_module'], readonly=False)
     whiteboard = copy_field(IBranch['whiteboard'])
 
 
