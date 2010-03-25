@@ -51,10 +51,11 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         name = self.factory.getUniqueString(u'recipe-name')
+        description = self.factory.getUniqueString(u'recipe-description')
         return getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename, name=name,
-            builder_recipe=builder_recipe)
+            description=description, builder_recipe=builder_recipe)
 
     def test_creation(self):
         # The metadata supplied when a SourcePackageRecipe is created is
@@ -64,11 +65,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         name = self.factory.getUniqueString(u'recipe-name')
+        description = self.factory.getUniqueString(u'recipe-description')
         builder_recipe = self.factory.makeRecipe()
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename, name=name,
-            builder_recipe=builder_recipe)
+            description=description, builder_recipe=builder_recipe)
         self.assertEquals(
             (registrant, owner, distroseries, sourcepackagename, name),
             (recipe.registrant, recipe.owner, recipe.distroseries,
@@ -242,10 +244,11 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         name = self.factory.getUniqueString(u'recipe-name')
+        description = self.factory.getUniqueString(u'recipe-description')
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename, name=name,
-            builder_recipe=builder_recipe)
+            description=description, builder_recipe=builder_recipe)
         return recipe.builder_recipe
 
     def check_base_recipe_branch(self, branch, url, revspec=None,

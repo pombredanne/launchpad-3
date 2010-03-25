@@ -1718,7 +1718,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, sourcepackagename=None,
-                                description=None, name=None, *branches):
+                                name=None, description=None, *branches):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
