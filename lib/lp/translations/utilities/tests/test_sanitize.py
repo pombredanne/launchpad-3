@@ -153,6 +153,26 @@ class TestSanitizeTranslations(unittest.TestCase):
                     BrokenTextError,
                     sanitize.normalizeNewlines, translation_text)
 
+    def test_call_Sanitize(self):
+        # Calling the Sanitize object will apply all sanitization procedures.
+        sanitize = Sanitize(u"Text with\nnewline.")
+        translation_text = (
+                u"Translation with\r\nnewline dots\u2022and whitespace.  ")
+        expected_sanitized = (
+                u"Translation with\nnewline dots and whitespace.")
+        self.assertEqual(expected_sanitized, sanitize(translation_text))
+
+    def test_call_Sanitize_whitespace_string(self):
+        # A whitespace only string will be normalized to None.
+        sanitize = Sanitize(u"Text without whitespace.")
+        empty_translation_text = (u"  ")
+        self.assertTrue(sanitize(empty_translation_text) is None)
+
+    def test_call_Sanitize_None(self):
+        # None is returned as None.
+        sanitize = Sanitize(u"Text without whitespace.")
+        self.assertTrue(sanitize(None) is None)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
