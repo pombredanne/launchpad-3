@@ -31,7 +31,7 @@ def new_import(code_import, event):
         return
     user = IPerson(event.user)
     subject = 'New code import: %s/%s' % (
-        code_import.product.name, code_import.branch.name)
+        code_import.branch.target.name, code_import.branch.name)
     if code_import.rcs_type == RevisionControlSystems.CVS:
         location = '%s, %s' % (code_import.cvs_root, code_import.cvs_module)
     else:
@@ -147,7 +147,7 @@ def code_import_updated(code_import, event, new_whiteboard, person):
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
     subject = 'Code import %s/%s status: %s' % (
-        code_import.product.name, branch.name,
+        code_import.branch.target.name, branch.name,
         code_import.review_status.title)
 
     email_template = get_email_template('code-import-status-updated.txt')
