@@ -290,8 +290,7 @@ will use a special behavior that just checks if the slave ID is 'good'.
     ...             raise CorruptBuildID('Bad value')
 
     >>> def rescue_slave_if_lost(slave):
-    ...     builder = MockBuilder(
-    ...         'mock', slave, TestBuildBehavior())
+    ...     builder = MockBuilder('mock', slave, TestBuildBehavior())
     ...     builder.rescueIfLost(logging.getLogger())
 
 An idle slave is not rescued.
