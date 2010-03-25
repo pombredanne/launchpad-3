@@ -21,6 +21,8 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IProductSet, IQuestionSet)
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started, get_request_statements, set_request_started)
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
@@ -136,6 +138,26 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         last_oops = error_utility.getLastOopsReport()
         self.assertTrue(
             last_oops.value.startswith('Spurious remote bug ID'))
+
+    def test_sql_log_cleared_in_oops_reporting(self):
+        # The log of SQL statements is cleared after an OOPS has been
+        # reported by checkwatches.report_oops().
+
+        # Enable SQL statment logging.
+        set_request_started()
+        try:
+            bug = self.factory.makeBug()
+            self.assertTrue(
+                len(get_request_statements()) > 0,
+                "We need at least one statement in the SQL log.")
+            checkwatches.report_oops()
+            self.assertTrue(
+                len(get_request_statements()) == 0,
+                "SQL statement log not cleared by "
+                "checkwatches.report_oops().")
+        finally:
+            # stop SQL statemnet logging.
+            clear_request_started()
 
 
 class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):

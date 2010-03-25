@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.adapter import (
-    clear_request_started, set_request_started)
+    clear_request_started, get_request_start_time, set_request_started)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -145,7 +145,7 @@ def report_oops(message=None, properties=None, info=None, txn=None):
     error_utility = CheckWatchesErrorUtility()
     error_utility.raising(info, request)
     # clear the SQL log.
-    if getattr(threading.local(), 'request_start_time', None) is not None:
+    if get_request_start_time() is not None:
         clear_request_started()
         set_request_started(
             request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
