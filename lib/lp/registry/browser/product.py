@@ -983,7 +983,8 @@ class ProductPackagesPortletView(LaunchpadFormView):
         super(ProductPackagesPortletView, self).setUpFields()
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         source_packages = ubuntu.searchSourcePackages(
-            self.context.name, has_packaging=False)
+            self.context.name, has_packaging=False,
+            publishing_distroseries=ubuntu.currentseries)
         # Based upon the matches, create a new vocabulary with
         # term descriptions that include a link to the source package.
         self.suggestions = []

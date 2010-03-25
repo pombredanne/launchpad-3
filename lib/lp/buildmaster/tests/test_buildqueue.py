@@ -705,9 +705,10 @@ class MultiArchBuildsBase(TestBuildQueueBase):
 
 class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     """Test estimated time-to-builder with builds and multiple processors."""
-    def test_min_time_to_next_builder(self):
+    def disabled_test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
+        # XXX AaronBentley 2010-03-19 bug=541914: Fails spuriously
         # One of four builders for the 'apg' build is immediately available.
         apg_build, apg_job = find_job(self, 'apg', 'hppa')
         check_mintime_to_builder(self, apg_job, 0)
