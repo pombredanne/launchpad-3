@@ -60,7 +60,7 @@ class BuilderGroup:
         self.logger.debug('Checking %s' % builder.name)
         try:
             builder.checkSlaveAlive()
-            builder.checkCanBuildForDistroArchSeries(arch)
+            builder.checkSlaveArchitecture()
             self.rescueBuilderIfLost(builder)
         # Catch only known exceptions.
         # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is

@@ -33,6 +33,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.scripts.logger import log as default_log
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started, set_request_started)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -51,10 +53,12 @@ from lp.bugs.externalbugtracker.bugzilla import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking)
+from lp.services.limitedlist import LimitedList
 from lp.services.scripts.base import LaunchpadCronScript
 
 
 SYNCABLE_GNOME_PRODUCTS = []
+MAX_SQL_STATEMENTS_LOGGED = 1000
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -93,7 +97,7 @@ class CheckWatchesErrorUtility(ErrorReportingUtility):
     _default_config_section = 'checkwatches'
 
 
-def report_oops(message=None, properties=None, info=None):
+def report_oops(message=None, properties=None, info=None, txn=None):
     """Record an oops for the current exception.
 
     This must only be called while handling an exception.
@@ -110,6 +114,9 @@ def report_oops(message=None, properties=None, info=None):
 
     :param info: Exception info.
     :type info: The return value of `sys.exc_info()`.
+
+    :param txn: A transaction manager. If specified, further txn.commit()
+        calls will be logged.
     """
     # Get the current exception info first of all.
     if info is None:
@@ -137,11 +144,16 @@ def report_oops(message=None, properties=None, info=None):
     request = ScriptRequest(properties, url)
     error_utility = CheckWatchesErrorUtility()
     error_utility.raising(info, request)
-
+    # clear the SQL log.
+    if getattr(threading.local(), 'request_start_time', None) is not None:
+        clear_request_started()
+        set_request_started(
+            request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
+            txn=txn)
     return request
 
 
-def report_warning(message, properties=None, info=None):
+def report_warning(message, properties=None, info=None, txn=None):
     """Create and report a warning as an OOPS.
 
     If no exception info is passed in this will create a generic
@@ -150,6 +162,7 @@ def report_warning(message, properties=None, info=None):
     :param message: See `report_oops`.
     :param properties: See `report_oops`.
     :param info: See `report_oops`.
+    :param txn: See `report_oops`.
     """
     if info is None:
         # Raise and catch the exception so that sys.exc_info will
@@ -159,7 +172,7 @@ def report_warning(message, properties=None, info=None):
         except BugWatchUpdateWarning:
             return report_oops(message, properties)
     else:
-        return report_oops(message, properties, info)
+        return report_oops(message, properties, info, txn)
 
 
 class BugWatchUpdater(object):
@@ -245,10 +258,15 @@ class BugWatchUpdater(object):
                 thread_name = thread.getName()
                 thread.setName(bug_tracker_name)
                 try:
+                    set_request_started(
+                        request_statements=LimitedList(
+                            MAX_SQL_STATEMENTS_LOGGED),
+                        txn=self.txn)
                     run = self._interactionDecorator(self.updateBugTracker)
                     return run(bug_tracker_id, batch_size)
                 finally:
                     thread.setName(thread_name)
+                    clear_request_started()
             return updater
 
         for bug_tracker_name in bug_tracker_names:
@@ -1140,13 +1158,13 @@ class BugWatchUpdater(object):
 
     def warning(self, message, properties=None, info=None):
         """Record a warning related to this bug tracker."""
-        oops_info = report_warning(message, properties, info)
+        oops_info = report_warning(message, properties, info, self.txn)
         # Also put it in the log.
         self.log.warning("%s (%s)" % (message, oops_info.oopsid))
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
-        oops_info = report_oops(message, properties, info)
+        oops_info = report_oops(message, properties, info, self.txn)
 
         # Also put it in the log.
         self.log.error("%s (%s)" % (message, oops_info.oopsid))
