@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'sanitize_translations',
+    'sanitize_translation_on_import',
     ]
 
 from lp.translations.interfaces.potmsgset import BrokenTextError
@@ -172,4 +173,8 @@ def sanitize_translations(english_singular, translations, pluralforms):
             sanitized_translations[pluralform] = None
 
     return sanitized_translations
+
+# There will be a different function for translation coming from imports but
+# for now it is identical to the one used in browser code.
+sanitize_translation_on_import = sanitize_translations
 
