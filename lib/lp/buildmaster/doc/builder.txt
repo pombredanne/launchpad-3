@@ -267,3 +267,68 @@ But i386, a real x86 variant, passes without objection.
    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
    >>> bob.setSlaveForTesting(OkSlave('i386'))
    >>> bob.checkSlaveArchitecture()
+
+
+Rescuing lost slaves
+====================
+
+Builder.rescueIfLost() checks the build ID reported in the slave status
+against the database. If it isn't building what we think it should be,
+the current build will be aborted and the slave cleaned in preparation
+for a new task. The decision about the slave's correctness is left up
+to IBuildFarmJobBehavior.verifySlaveBuildID -- for these examples we
+will use BinaryPackageBuildBehavior.
+
+    >>> import logging
+    >>> from lp.soyuz.tests.soyuzbuilddhelpers import (
+    ...    LostBuildingSlave, LostWaitingSlave, MockBuilder,
+    ...    OkSlave, SaneBuildingSlave, SaneWaitingSlave)
+    >>> logger = logging.getLogger()
+
+An idle slave is not rescued.
+
+    >>> idle_builder = MockBuilder(
+    ...     'Idle Slave', OkSlave())
+    >>> idle_builder.rescueIfLost(logger)
+
+Nor is a slave building the correct build.
+
+    >>> sanebuilding_builder = MockBuilder(
+    ...     'Sane Building Slave', SaneBuildingSlave())
+    >>> sanebuilding_builder.rescueIfLost(logger)
+
+Slaves building or having built the correct build are not rescued
+either.
+
+    >>> logger = logging.getLogger()
+    >>> sanebuilding_builder = MockBuilder(
+    ...     'Sane Building Slave', SaneBuildingSlave())
+    >>> sanebuilding_builder.rescueIfLost(logger)
+
+    >>> logger = logging.getLogger()
+    >>> sanewaiting_builder = MockBuilder(
+    ...     'Sane Waiting Slave', SaneWaitingSlave())
+    >>> sanewaiting_builder.rescueIfLost(logger)
+
+But if a slave is building the wrong ID, it is declared lost and
+an abort is attempted. MockSlave prints out a message when it is aborted
+or cleaned.
+
+    >>> lostbuilding_builder = MockBuilder(
+    ...     'Lost Building Slave', LostBuildingSlave())
+    >>> lostbuilding_builder.rescueIfLost(logger)
+    Aborting slave
+    WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000':
+    'Build 1000 is not available: 'Object not found''
+
+Slaves having completed an incorrect build are also declared lost,
+but there's no need to abort a completed build. Such builders are
+instead simply cleaned, ready for the next build.
+
+    >>> lostwaiting_builder = MockBuilder(
+    ...     'Lost Waiting Slave', LostWaitingSlave())
+    >>> lostwaiting_builder.rescueIfLost(logger)
+    Cleaning slave 
+    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000':
+    'Build 1000 is not available: 'Object not found''
+
