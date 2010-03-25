@@ -65,7 +65,7 @@ from lp.services.scripts.base import LaunchpadCronScript
 
 
 SYNCABLE_GNOME_PRODUCTS = []
-MAX_SQL_STATEMENTS_LOGGED = 1000
+MAX_SQL_STATEMENTS_LOGGED = 10000
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -156,7 +156,7 @@ def report_oops(message=None, properties=None, info=None, txn=None):
         clear_request_started()
         set_request_started(
             request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
-            txn=txn)
+            txn=txn, enable_timeout=False)
     return request
 
 
@@ -322,7 +322,7 @@ class BugWatchUpdater(object):
                     set_request_started(
                         request_statements=LimitedList(
                             MAX_SQL_STATEMENTS_LOGGED),
-                        txn=self.txn)
+                        txn=self.txn, enable_timeout=False)
                     return self.updateBugTracker(bug_tracker_id, batch_size)
                 finally:
                     thread.setName(thread_name)
