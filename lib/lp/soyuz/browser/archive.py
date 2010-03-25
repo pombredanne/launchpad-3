@@ -418,7 +418,8 @@ class ArchiveMenuMixin:
         text = 'Delete PPA'
         link = Link('+delete', text, icon='trash-icon')
         view = self.context
-        if view.context.status == ArchiveStatus.DELETING:
+        if view.context.status in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
             link.enabled = False
         return link
 
