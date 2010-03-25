@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import unittest
 
+from lp.translations.interfaces.potmsgset import BrokenTextError
 from lp.translations.utilities.sanitize import Sanitize
 
 
@@ -86,7 +87,7 @@ class TestSanitizeTranslations(unittest.TestCase):
     newline_styles = [u'\r\n', u'\r', u'\n']
 
     def test_normalizeNewlines(self):
-        # Newlines will be converted to the same style as the English has.
+        # Newlines will be converted to the same style that the English has.
         english_template = u"Text with%snewline."
         translation_template = u"Translation with%snewline."
         for english_newline in self.newline_styles:
@@ -100,6 +101,31 @@ class TestSanitizeTranslations(unittest.TestCase):
                     sanitize.normalizeNewlines(translation_text),
                     u"%r was not normalized to %r" % (
                         translation_text, expected_sanitized))
+
+    def test_normalizeNewlines_nothing_to_do(self):
+        # If no newlines are found in the english text, no normalization
+        # takes place.
+        sanitize = Sanitize(u"Text without newline.")
+        translation_template = u"Translation with%snewline."
+        for translation_newline in self.newline_styles:
+            translation_text = translation_template % translation_newline
+            self.assertEqual(
+                translation_text,
+                sanitize.normalizeNewlines(translation_text),
+                u"%r was not left unchanged." % translation_text)
+
+    def test_normalizeNewlines_mixed_newlines_english(self):
+        # Mixed newlines in the English text will raise an exception.
+        english_template = u"Text with%smixed%snewlines."
+        translation_template = u"Translation with%snewline."
+        for english_newline_1 in self.newline_styles:
+            other_newlines = self.newline_styles[:]
+            other_newlines.remove(english_newline_1)
+            for english_newline_2 in other_newlines:
+                english_text = english_template % (
+                    english_newline_1, english_newline_2)
+                self.assertRaises(
+                    BrokenTextError, Sanitize, english_text)
 
 
 def test_suite():

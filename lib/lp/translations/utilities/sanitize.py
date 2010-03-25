@@ -6,6 +6,8 @@ __all__ = [
     'sanitize_translations',
     ]
 
+from lp.translations.interfaces.potmsgset import BrokenTextError
+
 
 class Sanitize(object):
     """Provide a function to sanitize a translation text."""
