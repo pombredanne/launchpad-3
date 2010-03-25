@@ -7,11 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'MockBuilder',
+    'BuildingSlave',
+    'WaitingSlave',
     'SaneBuildingSlave',
-    'SaneWaitingSlave',
-    'InsaneWaitingSlave',
-    'LostBuildingSlave',
-    'LostWaitingSlave',
     'LostBuildingBrokenSlave',
     'BrokenSlave',
     'OkSlave',
@@ -36,9 +34,12 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
 class MockBuilder:
     """Emulates a IBuilder class."""
 
-    current_build_behavior = BinaryPackageBuildBehavior(None)
+    def __init__(self, name, slave, behavior=None):
+        if behavior is None:
+            self.current_build_behavior = BinaryPackageBuildBehavior(None)
+        else:
+            self.current_build_behavior = behavior
 
-    def __init__(self, name, slave):
         self.slave = slave
         self.builderok = True
         self.manual = False
@@ -79,68 +80,6 @@ class MockBuilder:
 
     def updateStatus(self, logger=None):
         updateBuilderStatus(self, logger)
-
-
-class SaneBuildingSlave:
-    """A mock slave that is currently building build 8 and buildqueue 1."""
-
-    def status(self):
-        return ('BuilderStatus.BUILDING', '8-1', 'Doing something ...')
-
-    def clean(self):
-        pass
-
-    def echo(self, *args):
-        return args
-
-    def info(self):
-        return ['1.0', 'i386', ['debian']]
-
-    def build(self, buildid, builder_type, chroot_sha1, filemap, args):
-        return ('BuildStatus.Building', buildid)
-
-
-class SaneWaitingSlave:
-    """A mock slave that is currently waiting.
-
-    Uses build 8 and buildqueue 1.
-    """
-
-    def status(self):
-        return ('BuilderStatus.WAITING', 'BuildStatus.OK', '8-1')
-
-    def clean(self):
-        pass
-
-
-class InsaneWaitingSlave:
-    """A mock slave waiting with a bogus Build/BuildQueue relation."""
-
-    def status(self):
-        return ('BuilderStatus.WAITING', 'BuildStatus.OK', '7-1')
-
-    def clean(self):
-        pass
-
-
-class LostBuildingSlave:
-    """A mock slave building bogus Build/BuildQueue IDs."""
-
-    def status(self):
-        return ('BuilderStatus.BUILDING', '1000-10000')
-
-    def abort(self):
-        pass
-
-
-class LostWaitingSlave:
-    """A mock slave waiting with bogus Build/BuildQueue IDs."""
-
-    def status(self):
-        return ('BuilderStatus.WAITING', 'BuildStatus.OK', '1000-10000')
-
-    def clean(self):
-        pass
 
 
 class LostBuildingBrokenSlave:
@@ -198,7 +137,13 @@ class OkSlave:
     def fetchlogtail(self, size):
         return 'BOGUS'
 
+    def echo(self, *args):
+        return args
+
     def clean(self):
+        pass
+
+    def abort(self):
         pass
 
     def info(self):
@@ -225,9 +170,13 @@ class OkSlave:
 class BuildingSlave(OkSlave):
     """A mock slave that looks like it's currently building."""
 
+    def __init__(self, build_id='1-1'):
+        super(BuildingSlave, self).__init__()
+        self.build_id = build_id
+
     def status(self):
         buildlog = xmlrpclib.Binary("This is a build log")
-        return ('BuilderStatus.BUILDING', '1-1', buildlog)
+        return ('BuilderStatus.BUILDING', self.build_id, buildlog)
 
     def getFile(self, sum):
         if sum == "buildlog":
@@ -246,14 +195,16 @@ class AbortedSlave(OkSlave):
 class WaitingSlave(OkSlave):
     """A mock slave that looks like it's currently waiting."""
 
-    def __init__(self, state, dependencies=None):
+    def __init__(self, state='BuildStatus.OK', dependencies=None,
+                 build_id='1-1'):
         super(WaitingSlave, self).__init__()
         self.state = state
         self.dependencies = dependencies
+        self.build_id = build_id
 
     def status(self):
-        return ('BuilderStatus.WAITING', self.state, '1-1', {},
-                self.dependencies )
+        return ('BuilderStatus.WAITING', self.state, self.build_id, {},
+                self.dependencies)
 
     def getFile(self, sum):
         if sum == "buildlog":
