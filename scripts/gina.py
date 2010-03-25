@@ -131,6 +131,7 @@ def run_gina(options, ztm, target_section):
     pocket = target_section.pocket
     component_override = target_section.componentoverride
     source_only = target_section.source_only
+    spnames_only = target_section.sourcepackagenames_only
 
     dry_run = options.dry_run
 
@@ -155,6 +156,7 @@ def run_gina(options, ztm, target_section):
     log.debug("Launchpad database user: %s" % LPDB_USER)
     log.info("Katie database: %s" % KTDB)
     log.info("SourcePackage Only: %s" % source_only)
+    log.info("SourcePackageName Only: %s" % spnames_only)
     log.debug("Librarian: %s:%s" % (LIBRHOST, LIBRPORT))
     log.info("Dry run: %s" % (dry_run))
     log.info("")
