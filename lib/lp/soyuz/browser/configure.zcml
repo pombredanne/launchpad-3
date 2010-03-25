@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -798,4 +798,39 @@
         path_expression="string:+dependency/${dependency/id}"
         attribute_to_parent="archive"
         />
+    <browser:url
+        for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"
+        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distroarchseries/architecturetag}/${day}/${country/iso3166code2|string:unknown}"
+        attribute_to_parent="archive"
+        />
+
+    <!-- XXX JeroenVermeulen 2010-03-13 bug=539395: This is buildmaster, not soyuz -->
+    <browser:page
+        for="lp.buildmaster.interfaces.buildqueue.IBuildQueue"
+        name="+current"
+        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        facet="overview"
+        permission="launchpad.View"
+        template="../templates/buildqueue-current.pt"/>
+    <browser:page
+        for="lp.buildmaster.interfaces.buildqueue.IBuildFarmJob"
+        name="+current"
+        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        facet="overview"
+        permission="launchpad.View"
+        template="../templates/buildfarmjob-current.pt"/>
+    <browser:page
+        for="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"
+        name="+current"
+        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        facet="overview"
+        permission="launchpad.View"
+        template="../templates/buildfarmbranchjob-current.pt"/>
+    <browser:page
+        for="lp.soyuz.interfaces.buildfarmbuildjob.IBuildFarmBuildJob"
+        name="+current"
+        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        facet="overview"
+        permission="launchpad.View"
+        template="../templates/buildfarmbuildjob-current.pt"/>
 </configure>

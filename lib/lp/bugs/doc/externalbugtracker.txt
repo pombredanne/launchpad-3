@@ -398,7 +398,7 @@ logged saying that comments won't be imported.
     getCurrentDBTime() called
     initializeRemoteBugDB() called: []
     WARNING:...:Comment importing supported, but server time can't be
-                trusted. No comments will be imported.
+                trusted. No comments will be imported. (OOPS-...)
 
 
 === Limiting which bug watches to update ===
@@ -670,7 +670,7 @@ warning.
 
     >>> status = bug_watch_updater._convertRemoteStatus(
     ...     StatusConvertingExternalBugTracker(), 'spam')
-    WARNING...Unknown remote status 'spam'.
+    WARNING...Unknown remote status 'spam'. (OOPS-...)
     >>> print status.title
     Unknown
 

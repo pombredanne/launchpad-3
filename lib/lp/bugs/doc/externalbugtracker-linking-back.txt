@@ -47,6 +47,8 @@ The methods are called by the BugWatchUpdater class:
 
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> txn.commit()
+
     >>> external_bugtracker = BackLinkingExternalBugTracker(
     ...     'http://example.com/')
 
