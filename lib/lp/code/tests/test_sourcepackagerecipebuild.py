@@ -63,8 +63,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(bq, spb.buildqueue_record)
 
     def test_title(self):
-        # A recipe build's title currently consists of the referenced
-        # branch names.
+        # A recipe build's title currently consists of the base
+        # branch's unique name.
         spb = self.makeSourcePackageRecipeBuild()
         title = "%s recipe build" % (
             spb.recipe.getReferencedBranches().next().unique_name)

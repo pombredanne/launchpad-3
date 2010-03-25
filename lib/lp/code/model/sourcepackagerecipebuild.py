@@ -115,9 +115,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     @property
     def title(self):
-        return '%s recipe build' % ', '.join(
-            branch.unique_name for branch in
-            self.recipe.getReferencedBranches())
+        return '%s recipe build' % self.recipe.base_branch.unique_name
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
                  archive, pocket, date_created=None,
