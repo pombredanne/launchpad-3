@@ -196,7 +196,7 @@ def run_publisher(options, txn, log=None):
         if archive.status == ArchiveStatus.DELETING:
             if archive.purpose == ArchivePurpose.PPA:
                 # Delete the archive.
-                try_and_commit("publishing", publisher.deleteArchive,
+                try_and_commit("deleting archive", publisher.deleteArchive,
                                options.careful or options.careful_publishing)
             else:
                 # Other types of archives do not currently support deletion.
