@@ -857,6 +857,34 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self.assertEqual(
             [(db_branch.id, '', 'null:')], self._branch_changed_log)
 
+    def test_branch_unlock_reports_stacked_on_url(self):
+        # XXX
+        db_branch1 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        db_branch2 = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        self.make_branch(db_branch1.unique_name)
+        branch = self.make_branch(db_branch2.unique_name)
+        del self._branch_changed_log[:]
+        branch.lock_write()
+        branch.set_stacked_on_url('/' + db_branch1.unique_name)
+        branch.unlock()
+        self.assertEqual(
+            [(db_branch2.id, '/' + db_branch1.unique_name, 'null:')],
+            self._branch_changed_log)
+
+    def test_branch_unlock_reports_last_revision(self):
+        # XXX
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        revid = branch.create_checkout('tree').commit('')
+        del self._branch_changed_log[:]
+        branch.lock_write()
+        branch.unlock()
+        self.assertEqual(
+            [(db_branch.id, '', revid)], self._branch_changed_log)
+
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
