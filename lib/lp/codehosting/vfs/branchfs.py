@@ -517,7 +517,7 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         # can request a mirror once a branch is unlocked.
         abs_from = self._abspath(rel_from)
         if is_lock_directory(abs_from):
-            deferred = self.server.requestMirror(abs_from)
+            deferred = self.server.branchChanged(abs_from)
         else:
             deferred = defer.succeed(None)
         deferred = deferred.addCallback(
@@ -561,7 +561,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         See `_BaseLaunchpadServer` for more information.
 
         :param authserver: An object that has 'createBranch' and
-            'requestMirror' methods in addition to a 'translatePath' method.
+            'branchChanged' methods in addition to a 'translatePath' method.
             These methods should return Deferreds.
             XXX: JonathanLange 2008-11-19: Specify this interface better.
         :param user_id: The database ID of the user to connect as.
@@ -626,7 +626,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             return None
         return uri.path
 
-    def requestMirror(self, virtual_url_fragment):
+    def branchChanged(self, virtual_url_fragment):
         """Mirror the branch that owns 'virtual_url_fragment'.
 
         :param virtual_path: A virtual URL fragment to be translated.

@@ -117,15 +117,6 @@ class BranchFileSystemClient:
             self._branchfs_endpoint.callRemote, 'createBranch', self._user_id,
             branch_path)
 
-    def requestMirror(self, branch_id):
-        """Mark a branch as needing to be mirrored.
-
-        :param branch_id: The database ID of the branch.
-        """
-        return defer.maybeDeferred(
-            self._branchfs_endpoint.callRemote,
-            'requestMirror', self._user_id, branch_id)
-
     def branchChanged(self, branch_id, stacked_on_url, last_revision_id):
         """Mark a branch as needing to be mirrored.
 
