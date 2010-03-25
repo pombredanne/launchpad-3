@@ -23,7 +23,8 @@ from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError, TranslationCreditsType)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
-from lp.translations.interfaces.translationmessage import TranslationConflict
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin, TranslationConflict)
 from lp.translations.model.translationmessage import (
     DummyTranslationMessage)
 
@@ -1265,6 +1266,222 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
                 sequence=sequence)
             self.assertTrue(credits.is_translation_credit)
             self.assertEqual(credits_type, credits.translation_credits_type)
+
+
+class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
+    """Test `POTMsgSet.submitSuggestion`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def _makePOFileAndPOTMsgSet(self, msgid=None, with_plural=False):
+        """Set up a `POFile` with `POTMsgSet`."""
+        return self.factory.makePOFileAndPOTMsgSet(
+            'nl', msgid=msgid, with_plural=with_plural)
+
+    def _listenForKarma(self, pofile):
+        """Set up `KarmaRecorder` on `pofile`."""
+        template = pofile.potemplate
+        return self.installKarmaRecorder(
+            person=template.owner,
+            action_name='translationsuggestionadded',
+            product=template.product,
+            distribution=template.distribution,
+            sourcepackagename=template.sourcepackagename)
+
+    def test_new_suggestion(self):
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertEqual(translation[0], suggestion.msgstr0.translation)
+        self.assertEqual(None, suggestion.msgstr1)
+        self.assertEqual(pofile.language, suggestion.language)
+        self.assertEqual(pofile.variant, suggestion.variant)
+        self.assertEqual(None, suggestion.potemplate)
+        self.assertEqual(pofile.potemplate.owner, suggestion.submitter)
+        self.assertEqual(potmsgset, suggestion.potmsgset)
+        self.assertIs(None, suggestion.date_reviewed)
+        self.assertIs(None, suggestion.reviewer)
+        self.assertFalse(suggestion.is_current_ubuntu)
+        self.assertFalse(suggestion.is_current_upstream)
+        self.assertEqual(
+            RosettaTranslationOrigin.ROSETTAWEB, suggestion.origin)
+        self.assertTrue(suggestion.is_complete)
+
+    def test_new_suggestion_karma(self):
+        # Karma is assigned for a new suggestion.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+        karma_listener = self._listenForKarma(pofile)
+
+        potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertNotEqual(0, len(karma_listener.karma_events))
+
+    def test_repeated_suggestion_karma(self):
+        # No karma is assigned for repeating an existing suggestion.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+        potmsgset.submitSuggestion(pofile, owner, translation)
+        karma_listener = self._listenForKarma(pofile)
+
+        potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertEqual([], karma_listener.karma_events)
+
+    def test_plural_forms(self):
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet(with_plural=True)
+        owner = pofile.potemplate.owner
+        translations = {
+            0: self.factory.getUniqueString(),
+            1: self.factory.getUniqueString(),
+            }
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translations)
+        self.assertEqual(translations[0], suggestion.msgstr0.translation)
+        self.assertEqual(translations[1], suggestion.msgstr1.translation)
+
+        # The remaining forms are untranslated.
+        self.assertIs(None, suggestion.msgstr2)
+
+    def test_repeated_suggestion(self):
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        repeat = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertEqual(suggestion, repeat)
+
+    def test_same_as_shared(self):
+        # A suggestion identical to a shared current translation is a
+        # repeated suggestion.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+        shared_message = self.factory.makeSharedTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=owner,
+            translations=translation)
+        self.assertTrue(shared_message.is_current_ubuntu)
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertEqual(shared_message, suggestion)
+
+    def test_same_as_diverged(self):
+        # A suggestion identical to a diverged current translation for
+        # the same template is a repeated suggestion.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+        diverged_message = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=owner,
+            translations=translation, force_diverged=True)
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertEqual(diverged_message, suggestion)
+
+    def test_same_as_diverged_elsewhere(self):
+        # If a suggestion is identical to a diverged current translation
+        # in another, sharing template, that doesn't make the suggestion
+        # a repeated suggestion.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        series2 = self.factory.makeProductSeries(
+            product=pofile.potemplate.product)
+        template2 = self.factory.makePOTemplate(
+            productseries=series2, name=pofile.potemplate.name)
+        pofile2 = template2.getPOFileByLang(pofile.language.code)
+        translation = {0: self.factory.getUniqueString()}
+        diverged_message = self.factory.makeTranslationMessage(
+            pofile=pofile2, potmsgset=potmsgset, translator=owner,
+            translations=translation, force_diverged=True)
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertNotEqual(diverged_message, suggestion)
+
+    def test_same_as_hidden_shared(self):
+        # A suggestion identical to a shared message is a repeated
+        # suggestion even if the shared message is "hidden" by a
+        # diverged message.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+        translation2 = {0: self.factory.getUniqueString()}
+        shared_message = self.factory.makeSharedTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=owner,
+            translations=translation)
+        diverged_message = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, translator=owner,
+            translations=translation2, force_diverged=True)
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertEqual(shared_message, suggestion)
+
+    def test_suggestions_on_sharing_templates(self):
+        # A suggestion identical to another one on a template that
+        # shares with its own is a repeated suggestion.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        series2 = self.factory.makeProductSeries(
+            product=pofile.potemplate.product)
+        template2 = self.factory.makePOTemplate(
+            productseries=series2, name=pofile.potemplate.name)
+        pofile2 = template2.getPOFileByLang(pofile.language.code)
+        translation = {0: self.factory.getUniqueString()}
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+        suggestion2 = potmsgset.submitSuggestion(pofile2, owner, translation)
+
+        self.assertEqual(suggestion, suggestion2)
+
+    def test_different_variants(self):
+        # Identical suggestions for different variants of the same
+        # language lead separate lives.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        pofile2 = self.factory.makePOFile(
+            pofile.language.code, variant=u'Latn',
+            potemplate=pofile.potemplate)
+        translation = {0: self.factory.getUniqueString()}
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+        suggestion2 = potmsgset.submitSuggestion(pofile2, owner, translation)
+
+        self.assertNotEqual(suggestion, suggestion2)
+
+    def test_credits_message(self):
+        # Suggestions for translation-credits messages are ignored.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet(
+            msgid='translator-credits')
+        self.assertTrue(potmsgset.is_translation_credit)
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertIs(None, suggestion)
+
+    def test_credits_karma(self):
+        # No karma is assigned for suggestions on translation credits.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet(
+            msgid='translator-credits')
+        self.assertTrue(potmsgset.is_translation_credit)
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+        karma_listener = self._listenForKarma(pofile)
+
+        suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertEqual([], karma_listener.karma_events)
 
 
 def test_suite():

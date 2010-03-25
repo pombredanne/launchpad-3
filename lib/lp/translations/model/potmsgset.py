@@ -514,8 +514,8 @@ class POTMsgSet(SQLBase):
         for pluralform in xrange(TranslationConstants.MAX_PLURAL_FORMS):
             if (pluralform in translations and
                 translations[pluralform] is not None):
-                translation = translations[pluralform]
                 # Find or create a POTranslation for the specified text
+                translation = translations[pluralform]
                 potranslations[pluralform] = (
                     POTranslation.getOrCreateTranslation(translation))
             else:
@@ -887,6 +887,36 @@ class POTMsgSet(SQLBase):
         # page.
         matching_message.sync()
         return matching_message
+
+    def submitSuggestion(self, pofile, submitter, new_translations):
+        """See `IPOTMsgSet`."""
+        if self.is_translation_credit:
+            # We don't support suggestions on credits messages.
+            return None
+
+        potranslations = self._findPOTranslations(new_translations)
+
+        existing_message = self._findTranslationMessage(
+            pofile, potranslations, pofile.plural_forms)
+        if existing_message is not None:
+            return existing_message
+
+        forms = dict(
+            ('msgstr%d' % form, potranslation)
+            for form, potranslation in potranslations.iteritems())
+
+        message = TranslationMessage(
+            potmsgset=self, language=pofile.language, variant=pofile.variant,
+            origin=RosettaTranslationOrigin.ROSETTAWEB, submitter=submitter,
+            **forms)
+
+        template = pofile.potemplate
+        submitter.assignKarma(
+            'translationsuggestionadded', product=template.product,
+            distribution=template.distribution,
+            sourcepackagename=template.sourcepackagename)
+
+        return message
 
     def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
         """See `IPOTMsgSet`."""

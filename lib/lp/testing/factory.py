@@ -1842,6 +1842,23 @@ class LaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(potmsgset).sync()
         return potmsgset
 
+    def makePOFileAndPOTMsgSet(self, language_code, msgid=None,
+                               with_plural=False):
+        """Make a `POFile` with a `POTMsgSet`."""
+        pofile = self.makePOFile(language_code)
+
+        if with_plural:
+            if msgid is None:
+                msgid = self.getUniqueString()
+            plural = self.getUniqueString()
+        else:
+            plural = None
+
+        potmsgset = self.makePOTMsgSet(
+            pofile.potemplate, singular=msgid, plural=plural)
+
+        return pofile, potmsgset
+
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
                                translator=None, suggestion=False,
                                reviewer=None, translations=None,
