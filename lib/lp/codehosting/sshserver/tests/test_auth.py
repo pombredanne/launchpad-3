@@ -22,11 +22,11 @@ from twisted.test.proto_helpers import StringTransport
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from lp.codehosting.sshserver import auth, service
 from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing.layers import TwistedLayer
-from canonical.twistedsupport import suppress_stderr
+from lp.codehosting.sshserver import auth, service
+from lp.services.twistedsupport import suppress_stderr
 
 
 class MockRealm:

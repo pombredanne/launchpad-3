@@ -3437,6 +3437,7 @@ class BugTaskTableRowView(LaunchpadView):
                                 None),
             'user_can_edit_milestone': self.user_can_edit_milestone,
             'user_can_edit_status': not self.context.bugwatch,
+            'status_requires_confirmation': not self.user_can_edit_importance,
             'user_can_edit_importance': (
                 self.user_can_edit_importance and
                 not self.context.bugwatch)})
