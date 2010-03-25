@@ -250,6 +250,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
     max_bug_heat = Int()
+    date_last_packaging_check = UtcDateTimeCol(
+        dbName='date_last_packaging_check', default=None)
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
