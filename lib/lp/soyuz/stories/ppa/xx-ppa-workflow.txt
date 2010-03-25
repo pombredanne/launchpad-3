@@ -718,7 +718,8 @@ They may also change whether the PPA is published to disk or not.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
 
 Initially, the PPA is enabled and publishes.
 
@@ -738,7 +739,8 @@ After disabling the PPA a warning message is displayed on its page.
 
 Going back to the edit page, we can see the publish flag was cleared:
 
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
     >>> print no_priv_browser.getControl(name='field.publish').value
     False
 
@@ -754,3 +756,23 @@ Once we re-enable the PPA the "disabled" warning message will be gone.
     True
 
 
+== Deleting a PPA ==
+
+Users with launchpad.Edit permission see a "Delete PPA" link in the
+navigation menu.
+
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> print anon_browser.getLink("Delete PPA")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> no_priv_browser.getLink("Delete PPA").click()
+
+Clicking this link takes the user to a page that allows deletion of a PPA:
+
+    >>> print no_priv_browser.title
+    Delete 
+
+    >>> print extract_text(find_main_content(no_priv_browser.contents))
