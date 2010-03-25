@@ -33,6 +33,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
@@ -816,6 +817,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
         BugHeatUpdater,
+        BugWatchScheduler,
         ]
     experimental_tunable_loops = []
 

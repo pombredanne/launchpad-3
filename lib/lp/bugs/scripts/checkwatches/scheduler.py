@@ -9,6 +9,8 @@ __all__ = [
 
 import transaction
 
+from storm.expr import Not
+
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.interfaces import IMasterStore
@@ -16,18 +18,50 @@ from canonical.launchpad.interfaces import IMasterStore
 from lp.bugs.model.bugwatch import BugWatch
 
 
+# The maximum additional delay in days that a watch may have placed upon
+# it.
+MAX_DELAY_DAYS = 6.0
+# The maximum number of BugWatchActivity entries we want to examine.
+MAX_SAMPLE_SIZE = 5.0
+
+
+def get_delay_coefficient(max_delay_days, max_sample_size):
+    return max_delay_days / max_sample_size
+
+
 class BugWatchScheduler(TunableLoop):
     """An `ITunableLoop` for scheduling BugWatches."""
 
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None, max_delay_days=None,
+                 max_sample_size=None):
+        super(BugWatchScheduler, self).__init__(log, abort_time)
+        self.transaction = transaction
+        self.store = IMasterStore(BugWatch)
+
+        if max_delay_days is None:
+            max_delay_days = MAX_DELAY_DAYS
+        if max_sample_size is None:
+            max_sample_size = MAX_SAMPLE_SIZE
+
+        self.delay_coefficient = get_delay_coefficient(
+            max_delay_days, max_sample_size)
+
     def __call__(self, chunk_size):
         """Run the loop."""
+        # XXX 2010-03-25 gmb bug=198767:
+        #     We cast chunk_size to an integer to ensure that we're not
+        #     trying to slice using floats or anything similarly
+        #     foolish. We shouldn't have to do this.
+        chunk_size = int(chunk_size)
         query = """
         UPDATE BugWatch
             SET next_check =
                 COALESCE(
                     lastchecked + interval '1 day',
                     now() AT TIME ZONE 'UTC') +
-                (interval '1 day' * (1.2 * recent_failure_count))
+                (interval '1 day' * (%s * recent_failure_count))
             FROM (
                 SELECT bug_watch.id,
                     (SELECT COUNT(*)
@@ -42,10 +76,14 @@ class BugWatchScheduler(TunableLoop):
                 WHERE bug_watch.next_check IS NULL
                 LIMIT %s
             ) AS counts
-        WHERE BugWatch.id = counts.id;
-        """ % sqlvalues(chunk_size)
+        WHERE BugWatch.id = counts.id
+        """ % sqlvalues(self.delay_coefficient, chunk_size)
+        self.transaction.begin()
+        result = self.store.execute(query)
+        self.transaction.commit()
+        self.log.debug("Scheduled %s watches" % result.rowcount)
 
-        self.store = IMasterStore(BugWatch)
-        transaction.begin()
-        self.store.execute(query)
-        transaction.commit()
+    def isDone(self):
+        """Return True when there are no more watches to schedule."""
+        return self.store.find(
+            BugWatch, BugWatch.next_check == None).is_empty()
