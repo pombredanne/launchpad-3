@@ -53,10 +53,13 @@ from lp.blueprints.interfaces.specification import (
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.helpers import browserLanguages
+from lp.code.browser.branch import BranchNameValidationMixin
 from lp.code.browser.branchref import BranchRef
-from lp.code.enums import RevisionControlSystems
-from lp.code.interfaces.branch import IBranch
+from lp.code.enums import BranchType, RevisionControlSystems
+from lp.code.interfaces.branch import (
+    BranchCreationForbidden, BranchExists, IBranch)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
@@ -85,7 +88,7 @@ from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
@@ -698,7 +701,7 @@ class SetBranchForm(Interface):
             "The version control system to import from. "))
 
     repo_url = URIField(
-        title=_("Branch URL"), required=False,
+        title=_("Branch URL"), required=True,
         description=_("The URL of the branch."),
         allowed_schemes=["http", "https", "svn", "git"],
         allow_userinfo=False,
@@ -727,7 +730,7 @@ class SetBranchForm(Interface):
         __name__='branch_name',
         title=_('Branch name'),
         description=_(''),
-        required=False,
+        required=True,
         )
 
     branch_owner = copy_field(
@@ -735,11 +738,12 @@ class SetBranchForm(Interface):
         __name__='branch_owner',
         title=_('Branch owner'),
         description=_(''),
-        required=False,
+        required=True,
         )
 
 
-class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
+class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
+                                 BranchNameValidationMixin):
     """The view to set a branch for the ProductSeries."""
 
     schema = SetBranchForm
@@ -830,6 +834,37 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
                 'branch_owner',
                 'The branch owner must be set.')
 
+    def _mark_optional(self, names):
+        """Mark the widget field as optional."""
+        for name in names:
+            widget = self.widgets[name]
+            # The 'required' property on the widget context is set to False.
+            # The widget also has a 'required' property but it isn't used
+            # during validation.
+            widget.context.required = False
+
+    def validate_widgets(self, data, names=None):
+        """See `LaunchpadFormView`."""
+        names = ['branch_type', 'rcs_type']
+        super(ProductSeriesSetBranchView, self).validate_widgets(data, names)
+        branch_type = data.get('branch_type')
+        if branch_type == LINK_LP_BZR:
+            # Mark other widgets as non-required.
+            self._mark_optional(['rcs_type', 'repo_url', 'cvs_module',
+                                 'branch_name', 'branch_owner'])
+        elif branch_type == CREATE_NEW:
+            self._mark_optional(['branch_location', 'rcs_type', 'cvs_module'])
+        elif branch_type == IMPORT_EXTERNAL:
+            rcs_type = data.get('rcs_type')
+            optional = ['branch_location']
+            if rcs_type != RevisionControlSystemsExtended.CVS:
+                optional.append('cvs_module')
+            self._mark_optional(optional)
+        else:
+            raise AssertionError("Unknown branch type %s" % branch_type)
+        # Perform full validation now.
+        super(ProductSeriesSetBranchView, self).validate_widgets(data)
+
     def validate(self, data):
         """See `LaunchpadFormView`."""
         branch_type = data['branch_type']
@@ -841,6 +876,11 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
             self._validate_create_new(data)
         else:
             raise AssertionError("Unknown branch type %s" % branch_type)
+
+    @property
+    def target(self):
+        """The branch target for the context."""
+        return IBranchTarget(self.context)
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
@@ -861,11 +901,54 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView):
             branch_name = data.get('branch_name')
             branch_owner = data.get('branch_owner')
             if branch_type == CREATE_NEW:
-                pass
+                self._createBzrBranch(
+                    BranchType.HOSTED, branch_name, branch_owner)
             elif branch_type == IMPORT_EXTERNAL:
-                pass
+                # Either create an externally hosted bzr branch
+                # (a.k.a. 'mirrored') or create a new code import.
+                rcs_type = data.get('rcs_type')
+                if rcs_type == RevisionControlSystemsExtended.BZR:
+                    self._createBzrBranch(
+                        BranchType.MIRRORED, branch_name, branch_owner)
+                else:
+                    # We need to create an import request.
+                    import pdb; pdb.set_trace(); # DO NOT COMMIT
+                    if rcs_type == RevisionControlSystemsExtended.CVS:
+                        cvs_root = data['repo_url']
+                        cvs_module = data['cvs_module']
+                        url = None
+                    else:
+                        cvs_root = None
+                        cvs_module = None
+                        url = data['repo_url']
+                    code_import = getUtility(ICodeImportSet).new(
+                        registrant=self.user,
+                        product=self.context.product,
+                        branch_name=branch_name,
+                        rcs_type=RevisionControlSystems.items[rcs_type.name],
+                        url=url,
+                        cvs_root=cvs_root,
+                        cvs_module=cvs_module)
+                    self.context.branch = code_import.branch
             else:
                 raise UnexpectedFormData(branch_type)
+
+    def _createBzrBranch(self, branch_type, branch_name,
+                         branch_owner):
+        """Create a new Bazaar branch.  It may be hosted or mirrored."""
+        try:
+            namespace = self.target.getNamespace(branch_owner)
+            branch = namespace.createBranch(branch_type=branch_type,
+                                            name=branch_name,
+                                            registrant=self.user)
+            if branch_type == BranchType.MIRRORED:
+                branch.requestMirror()
+        except BranchCreationForbidden:
+            self.addError(
+                "You are not allowed to create branches in %s." %
+                self.context.displayname)
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch, 'branch_name')
 
     @property
     def cancel_url(self):
