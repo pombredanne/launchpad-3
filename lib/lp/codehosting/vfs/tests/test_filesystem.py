@@ -33,7 +33,7 @@ class TestFilesystem(TestCaseWithTransport):
         endpoint = XMLRPCWrapper(frontend.getFilesystemEndpoint())
         self.requester = self.factory.makePerson()
         self._server = LaunchpadServer(
-            endpoint, self.requester.id, MemoryTransport(), MemoryTransport())
+            endpoint, self.requester.id, MemoryTransport())
         self._server.start_server()
         self.addCleanup(self._server.stop_server)
 

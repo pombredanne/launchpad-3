@@ -673,6 +673,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 # obvious to the client) so just log the error, which
                 # will result in an OOPS being logged.
                 log.err()
+                return
             finally:
                 if jail_info.transports:
                     jail_info.transports.remove(transport)

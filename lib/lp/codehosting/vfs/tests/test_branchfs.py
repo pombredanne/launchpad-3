@@ -93,11 +93,8 @@ class TestTransportDispatch(TestCase):
         memory_server.start_server()
         base_transport = get_transport(memory_server.get_url())
         base_transport.mkdir('hosted')
-        base_transport.mkdir('mirrored')
         self.hosted_transport = base_transport.clone('hosted')
-        self.mirrored_transport = base_transport.clone('mirrored')
-        self.factory = TransportDispatch(
-            self.hosted_transport, self.mirrored_transport)
+        self.factory = TransportDispatch(self.hosted_transport)
 
     def test_control_conf_read_only(self):
         transport = self.factory._makeControlTransport(
@@ -133,14 +130,6 @@ class TestTransportDispatch(TestCase):
         transport.mkdir('.bzr')
         self.assertEqual(
             ['.bzr'], self.hosted_transport.list_dir('00/00/00/05'))
-
-    def test_read_only_returns_mirrored(self):
-        self.mirrored_transport.mkdir_multi(
-            ['00', '00/00', '00/00/00', '00/00/00/05', '00/00/00/05/.bzr'])
-        self.mirrored_transport.put_bytes('00/00/00/05/.bzr/README', "Hello")
-        transport = self.factory._makeBranchTransport(id=5, writable=False)
-        data = transport.get_bytes(".bzr/README")
-        self.assertEqual("Hello", data)
 
     def test_makeTransport_control(self):
         # makeTransport returns a control transport for the tuple.
@@ -225,8 +214,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 
     def getLaunchpadServer(self, authserver, user_id):
         return LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, MemoryTransport(),
-            MemoryTransport())
+            XMLRPCWrapper(authserver), user_id, MemoryTransport())
 
     def test_translateControlPath(self):
         branch = self.factory.makeProductBranch(owner=self.requester)
@@ -487,8 +475,7 @@ class LaunchpadTransportTests:
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
         self.server = self.getServer(
-            authserver, self.requester.id, self.backing_transport,
-            MemoryTransport())
+            authserver, self.requester.id, self.backing_transport)
         self.server.start_server()
         self.addCleanup(self.server.stop_server)
 
@@ -519,11 +506,9 @@ class LaunchpadTransportTests:
         """Call `function` and return an appropriate Deferred."""
         raise NotImplementedError
 
-    def getServer(self, authserver, user_id, backing_transport,
-                  mirror_transport):
+    def getServer(self, authserver, user_id, backing_transport):
         return LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, backing_transport,
-            mirror_transport)
+            XMLRPCWrapper(authserver), user_id, backing_transport)
 
     def getTransport(self):
         """Return the transport to be tested."""
@@ -825,52 +810,52 @@ class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
         return AsyncLaunchpadTransport(self.server, url)
 
 
-class TestRequestMirror(TestCaseWithTransport):
-    """Test request mirror behaviour."""
+class TestBranchChangedNotification(TestCaseWithTransport):
+    """Test notification of branch changes."""
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         self._server = None
-        self._request_mirror_log = []
+        self._branch_changed_log = []
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.authserver = frontend.getFilesystemEndpoint()
-        self.authserver.requestMirror = (
-            lambda *args: self._request_mirror_log.append(args))
+        self.authserver.branchChanged = (
+            lambda *args: self._branch_changed_log.append(args))
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
-        self.mirror_transport = MemoryTransport()
+        self.disable_directory_isolation()
 
     def get_server(self):
         if self._server is None:
             self._server = LaunchpadServer(
                 XMLRPCWrapper(self.authserver), self.requester.id,
-                self.backing_transport, self.mirror_transport)
+                self.backing_transport)
             self._server.start_server()
             self.addCleanup(self._server.stop_server)
         return self._server
 
     def test_no_mirrors_requested_if_no_branches_changed(self):
-        self.assertEqual([], self._request_mirror_log)
+        self.assertEqual([], self._branch_changed_log)
 
-    def test_creating_branch_requests_mirror(self):
+    def test_creating_branch_calls_branchChanged(self):
         # Creating a branch requests a mirror.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(db_branch.unique_name)
+        self.make_branch(db_branch.unique_name)
         self.assertEqual(
-            [(self.requester.id, db_branch.id)], self._request_mirror_log)
+            [(db_branch.id, '', 'null:')], self._branch_changed_log)
 
-    def test_branch_unlock_requests_mirror(self):
+    def test_branch_unlock_calls_branchChanged(self):
         # Unlocking a branch requests a mirror.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
-        self._request_mirror_log = []
+        del self._branch_changed_log[:]
         branch.lock_write()
         branch.unlock()
         self.assertEqual(
-            [(self.requester.id, db_branch.id)], self._request_mirror_log)
+            [(db_branch.id, '', 'null:')], self._branch_changed_log)
 
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
@@ -888,7 +873,6 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         memory_server = self._setUpMemoryServer()
         memory_transport = get_transport(memory_server.get_url())
         backing_transport = memory_transport.clone('backing')
-        mirror_transport = memory_transport.clone('mirror')
 
         self._frontend = InMemoryFrontend()
         self.factory = self._frontend.getLaunchpadObjectFactory()
@@ -903,8 +887,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
             branch_type=BranchType.HOSTED).unique_name
 
         self.lp_server = self._setUpLaunchpadServer(
-            self.requester.id, authserver, backing_transport,
-            mirror_transport)
+            self.requester.id, authserver, backing_transport)
         self.lp_transport = get_transport(self.lp_server.get_url())
         self.lp_transport.mkdir(os.path.dirname(self.writable_file))
         self.lp_transport.put_bytes(self.writable_file, 'Hello World!')
@@ -915,11 +898,9 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self.addCleanup(memory_server.stop_server)
         return memory_server
 
-    def _setUpLaunchpadServer(self, user_id, authserver, backing_transport,
-                              mirror_transport):
+    def _setUpLaunchpadServer(self, user_id, authserver, backing_transport):
         server = LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, backing_transport,
-            mirror_transport)
+            XMLRPCWrapper(authserver), user_id, backing_transport)
         server.start_server()
         self.addCleanup(server.stop_server)
         return server
