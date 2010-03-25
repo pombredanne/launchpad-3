@@ -7,9 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'MockBuilder',
-    'BuildingSlave',
-    'WaitingSlave',
-    'SaneBuildingSlave',
     'LostBuildingBrokenSlave',
     'BrokenSlave',
     'OkSlave',
