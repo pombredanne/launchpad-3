@@ -45,7 +45,6 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
-from canonical.launchpad.validators import LaunchpadValidationError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.blueprints.interfaces.specification import (
@@ -703,7 +702,7 @@ class SetBranchForm(Interface):
     repo_url = URIField(
         title=_("Branch URL"), required=True,
         description=_("The URL of the branch."),
-        allowed_schemes=["http", "https", "svn", "git"],
+        allowed_schemes=["http", "https"],
         allow_userinfo=False,
         allow_port=True,
         allow_query=False,
@@ -786,34 +785,26 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         self.branch_type_import = str(import_button)
         self.branch_type_emptymarker = str(emptymarker)
 
-    def _validate_link_lp_bzr(self, data):
+    def _validateLinkLpBzr(self, data):
         """Validate data for link-lp-bzr case."""
         if 'branch_location' not in data:
             self.setFieldError(
                 'branch_location',
                 'The branch location must be set.')
 
-    def _validate_create_new(self, data):
+    def _validateCreateNew(self, data):
         """Validate data for create new case."""
-        self._validate_branch(data)
+        self._validateBranch(data)
 
-    def _validate_import_external(self, data):
+    def validateImportExternal(self, data):
         """Validate data for import external case."""
-        extra_schemes = {
-            RevisionControlSystemsExtended.BZR_SVN:['svn'],
-            RevisionControlSystemsExtended.GIT:['git'],
-            }
         rcs_type = data.get('rcs_type')
-        schemes = ['http', 'https'] + extra_schemes.get(rcs_type, [])
-        # Get the repository URL field.
-        repo_url_field = self.form_fields['repo_url']
-        repo_url_field.field.allowed_schemes = schemes
         repo_url = data.get('repo_url')
-        if repo_url is not None:
-            try:
-                repo_url_field.field._validate(repo_url)
-            except LaunchpadValidationError, lve:
-                self.setFieldError('repo_url', str(lve))
+
+        if repo_url is None:
+            self.setFieldError('repo_url',
+                               'You must set the external repository URL.')
+
         # RCS type is mandatory.
         # This condition should never happen since an initial value is set.
         if rcs_type is None:
@@ -821,9 +812,14 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
             self.setFieldError(
                 'rcs_type',
                 'You must specify the type of RCS for the remote host.')
-        self._validate_branch(data)
+        elif rcs_type == RevisionControlSystemsExtended.CVS:
+            if 'cvs_module' not in data:
+                self.setFieldError(
+                    'cvs_module',
+                    'The CVS module must be set.')
+        self._validateBranch(data)
 
-    def _validate_branch(self, data):
+    def _validateBranch(self, data):
         """Validate that branch name and owner are set."""
         if 'branch_name' not in data:
             self.setFieldError(
@@ -834,14 +830,26 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                 'branch_owner',
                 'The branch owner must be set.')
 
-    def _mark_optional(self, names):
+    def _setRequired(self, names, value):
         """Mark the widget field as optional."""
         for name in names:
             widget = self.widgets[name]
             # The 'required' property on the widget context is set to False.
             # The widget also has a 'required' property but it isn't used
             # during validation.
-            widget.context.required = False
+            widget.context.required = value
+
+    def _validSchemes(self, rcs_type):
+        """Return the valid schemes for the repository URL."""
+        schemes = set(['http', 'https'])
+        # Extend the allowed schemes for the repository URL based on
+        # rcs_type.
+        extra_schemes = {
+            RevisionControlSystemsExtended.BZR_SVN:['svn'],
+            RevisionControlSystemsExtended.GIT:['git'],
+            }
+        schemes.update(extra_schemes.get(rcs_type, []))
+        return schemes
 
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
@@ -850,16 +858,22 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         branch_type = data.get('branch_type')
         if branch_type == LINK_LP_BZR:
             # Mark other widgets as non-required.
-            self._mark_optional(['rcs_type', 'repo_url', 'cvs_module',
-                                 'branch_name', 'branch_owner'])
+            self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
+                               'branch_name', 'branch_owner'], False)
         elif branch_type == CREATE_NEW:
-            self._mark_optional(['branch_location', 'rcs_type', 'cvs_module'])
+            self._setRequired(['branch_location', 'rcs_type', 'cvs_module'],
+                              False)
         elif branch_type == IMPORT_EXTERNAL:
             rcs_type = data.get('rcs_type')
-            optional = ['branch_location']
-            if rcs_type != RevisionControlSystemsExtended.CVS:
-                optional.append('cvs_module')
-            self._mark_optional(optional)
+
+            # Set the valid schemes based on rcs_type.
+            self.widgets['repo_url'].field.allowed_schemes = (
+                self._validSchemes(rcs_type))
+            # The branch location is not required for validation.
+            self._setRequired(['branch_location'], False)
+            # The cvs_module is required if it is a CVS import.
+            if rcs_type == RevisionControlSystemsExtended.CVS:
+                self._setRequired(['cvs_module'], True)
         else:
             raise AssertionError("Unknown branch type %s" % branch_type)
         # Perform full validation now.
@@ -869,11 +883,11 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         """See `LaunchpadFormView`."""
         branch_type = data['branch_type']
         if branch_type == IMPORT_EXTERNAL:
-            self._validate_import_external(data)
+            self.validateImportExternal(data)
         elif branch_type == LINK_LP_BZR:
-            self._validate_link_lp_bzr(data)
+            self._validateLinkLpBzr(data)
         elif branch_type == CREATE_NEW:
-            self._validate_create_new(data)
+            self._validateCreateNew(data)
         else:
             raise AssertionError("Unknown branch type %s" % branch_type)
 
@@ -900,47 +914,67 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         else:
             branch_name = data.get('branch_name')
             branch_owner = data.get('branch_owner')
+
+            # Create a new branch.
             if branch_type == CREATE_NEW:
-                self._createBzrBranch(
+                branch = self._createBzrBranch(
                     BranchType.HOSTED, branch_name, branch_owner)
+                if branch is not None:
+                    self.context.branch = branch
+                    self.request.response.addInfoNotification(
+                        'New branch created and linked to the series.')
+
+            # Import or mirror an external branch.
             elif branch_type == IMPORT_EXTERNAL:
                 # Either create an externally hosted bzr branch
                 # (a.k.a. 'mirrored') or create a new code import.
                 rcs_type = data.get('rcs_type')
                 if rcs_type == RevisionControlSystemsExtended.BZR:
-                    self._createBzrBranch(
-                        BranchType.MIRRORED, branch_name, branch_owner)
+                    branch = self._createBzrBranch(
+                        BranchType.MIRRORED, branch_name, branch_owner,
+                        data['repo_url'])
+                    if branch is not None:
+                        self.context.branch = branch
+                        self.request.response.addInfoNotification(
+                            'Mirrored branch created and linked to '
+                            'the series.')
                 else:
                     # We need to create an import request.
-                    import pdb; pdb.set_trace(); # DO NOT COMMIT
                     if rcs_type == RevisionControlSystemsExtended.CVS:
-                        cvs_root = data['repo_url']
-                        cvs_module = data['cvs_module']
+                        cvs_root = data.get('repo_url')
+                        cvs_module = data.get('cvs_module')
                         url = None
                     else:
                         cvs_root = None
                         cvs_module = None
-                        url = data['repo_url']
+                        url = data.get('repo_url')
                     code_import = getUtility(ICodeImportSet).new(
                         registrant=self.user,
-                        product=self.context.product,
+                        target=self.target,
                         branch_name=branch_name,
                         rcs_type=RevisionControlSystems.items[rcs_type.name],
                         url=url,
                         cvs_root=cvs_root,
                         cvs_module=cvs_module)
                     self.context.branch = code_import.branch
+                    self.request.response.addInfoNotification(
+                        'Code import created and branch linked to the series.')
             else:
                 raise UnexpectedFormData(branch_type)
 
     def _createBzrBranch(self, branch_type, branch_name,
-                         branch_owner):
-        """Create a new Bazaar branch.  It may be hosted or mirrored."""
+                         branch_owner, repo_url=None):
+        """Create a new Bazaar branch.  It may be hosted or mirrored.
+
+        Return the branch on success or None.
+        """
+        branch = None
         try:
             namespace = self.target.getNamespace(branch_owner)
             branch = namespace.createBranch(branch_type=branch_type,
                                             name=branch_name,
-                                            registrant=self.user)
+                                            registrant=self.user,
+                                            url=repo_url)
             if branch_type == BranchType.MIRRORED:
                 branch.requestMirror()
         except BranchCreationForbidden:
@@ -949,6 +983,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                 self.context.displayname)
         except BranchExists, e:
             self._setBranchExists(e.existing_branch, 'branch_name')
+        return branch
 
     @property
     def cancel_url(self):

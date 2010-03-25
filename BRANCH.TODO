@@ -4,17 +4,8 @@
 # be converted to bugs so they can be scheduled.
 
 TODO:
-* on productseries-index page remove the explanatory text and move to +linkbranch page.
 
-* on +linkbranch put all options:
-  * link to existing bzr branch on launchpad
-  * mirror bzr branch elsewhere
-  * request a code import
-  * code.lp.dev/proj/series displays the overview page but it should
+* validation errors give misleading messages
+* uncaught constraint error on duplicate of code import URL
+* code.lp.dev/proj/series displays the overview page but it should
     direct away from the code vhost
-
-Done:
-
-* productseries-index is missing the involvement portlet
-  (was already there but not displayed in our example due to project
-  configuration.)
