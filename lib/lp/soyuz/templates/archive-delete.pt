@@ -13,7 +13,7 @@
 
     <div class="top-portlet"
          tal:condition="view/can_be_deleted">
-      <p>Deleting a PPA will destroy all of its packages, build history,
+      <p>Deleting a PPA will destroy all of its packages,
          files and the repository area.</p>
       <p>This deletion is PERMANENT and cannot be undone.</p>
       <p>Are you sure ?</p>

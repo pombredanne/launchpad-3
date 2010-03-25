@@ -773,6 +773,36 @@ navigation menu.
 Clicking this link takes the user to a page that allows deletion of a PPA:
 
     >>> print no_priv_browser.title
-    Delete 
+    Delete “PPA for No Privileges Person” : PPA for No Privileges Person : No Privileges Person
+
+The page contains a stern warning that this action is final and irreversible:
 
     >>> print extract_text(find_main_content(no_priv_browser.contents))
+    Delete “PPA for No Privileges Person”
+    ...
+    Deleting a PPA will destroy all of its packages, files and the
+    repository area.
+    This deletion is PERMANENT and cannot be undone.
+    Are you sure ?
+    ...
+
+If the user changes his mind, he can click on the cancel link to go back
+a page:
+
+    >>> print no_priv_browser.getLink("Cancel").url
+    http://launchpad.dev/~no-priv/+archive/ppa
+
+Otherwise, he has a button to press to confirm the deletion.
+
+    >>> no_priv_browser.getControl("Permanently delete PPA").click()
+
+This action will redirect the user back to his profile page, which will
+contain a notification message that the deletion is in progress.
+
+    >>> print no_priv_browser.url
+    http://launchpad.dev/~no-priv
+
+    >>> for msg in get_feedback_messages(no_priv_browser.contents):
+    ...     print msg
+    Deletion of 'PPA for No Privileges Person' has been requested and
+    the repository will be removed shortly.

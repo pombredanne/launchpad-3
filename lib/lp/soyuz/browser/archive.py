@@ -1970,14 +1970,7 @@ class ArchiveDeleteView(LaunchpadView):
         if action is None:
             return
 
-        # Set all the publications to DELETED.
-        sources = list(self.context.getPublishedSources())
-        getUtility(IPublishingSet).requestDeletion(
-            sources, removed_by=self.user,
-            removal_comment="Removed when deleting archive")
-
-        self.context.status = ArchiveStatus.DELETING
-        self.context.disable()
+        self.context.delete(self.user)
         self.request.response.addInfoNotification(
             "Deletion of '%s' has been requested and the repository will be "
             "removed shortly." % self.context.title)
