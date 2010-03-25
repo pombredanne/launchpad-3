@@ -1052,80 +1052,88 @@ class BugWatchUpdater(object):
         :param bug_watch: The bug watch for which the comments should be
             imported.
         """
+        with self.transaction:
+            local_bug_id = bug_watch.bug.id
+            remote_bug_id = bug_watch.remotebug
+
         # Construct a list of the comment IDs we want to import; i.e.
         # those which we haven't already imported.
-        all_comment_ids = external_bugtracker.getCommentIds(
-            bug_watch.remotebug)
-        comment_ids_to_import = [
-            comment_id for comment_id in all_comment_ids
-            if not bug_watch.hasComment(comment_id)]
+        all_comment_ids = external_bugtracker.getCommentIds(remote_bug_id)
+
+        with self.transaction:
+            comment_ids_to_import = [
+                comment_id for comment_id in all_comment_ids
+                if not bug_watch.hasComment(comment_id)]
 
         external_bugtracker.fetchComments(
-            bug_watch.remotebug, comment_ids_to_import)
+            remote_bug_id, comment_ids_to_import)
 
-        previous_imported_comments = bug_watch.getImportedBugMessages()
-        is_initial_import = previous_imported_comments.count() == 0
-        imported_comments = []
-        for comment_id in comment_ids_to_import:
-            displayname, email = external_bugtracker.getPosterForComment(
-                bug_watch.remotebug, comment_id)
+        with self.transaction:
+            previous_imported_comments = bug_watch.getImportedBugMessages()
+            is_initial_import = previous_imported_comments.count() == 0
+            imported_comments = []
 
-            if displayname is None and email is None:
-                # If we don't have a displayname or an email address
-                # then we can't create a Launchpad Person as the author
-                # of this comment. We raise an OOPS and continue.
-                self.warning(
-                    "Unable to import remote comment author. No email "
-                    "address or display name found.",
-                    self._getOOPSProperties(external_bugtracker),
-                    sys.exc_info())
-                continue
+            for comment_id in comment_ids_to_import:
+                displayname, email = external_bugtracker.getPosterForComment(
+                    remote_bug_id, comment_id)
 
-            poster = bug_watch.bugtracker.ensurePersonForSelf(
-                displayname, email, PersonCreationRationale.BUGIMPORT,
-                "when importing comments for %s." % bug_watch.title)
+                if displayname is None and email is None:
+                    # If we don't have a displayname or an email address
+                    # then we can't create a Launchpad Person as the author
+                    # of this comment. We raise an OOPS and continue.
+                    self.warning(
+                        "Unable to import remote comment author. No email "
+                        "address or display name found.",
+                        self._getOOPSProperties(external_bugtracker),
+                        sys.exc_info())
+                    continue
 
-            comment_message = external_bugtracker.getMessageForComment(
-                bug_watch.remotebug, comment_id, poster)
+                poster = bug_watch.bugtracker.ensurePersonForSelf(
+                    displayname, email, PersonCreationRationale.BUGIMPORT,
+                    "when importing comments for %s." % bug_watch.title)
 
-            bug_message = bug_watch.addComment(comment_id, comment_message)
-            imported_comments.append(bug_message)
+                comment_message = external_bugtracker.getMessageForComment(
+                    remote_bug_id, comment_id, poster)
 
-        if len(imported_comments) > 0:
-            bug_watch_updater = (
-                getUtility(ILaunchpadCelebrities).bug_watch_updater)
-            if is_initial_import:
-                notification_text = get_email_template(
-                    'bugwatch-initial-comment-import.txt') % dict(
-                        num_of_comments=len(imported_comments),
-                        bug_watch_url=bug_watch.url)
-                comment_text_template = get_email_template(
-                    'bugwatch-comment.txt')
+                bug_message = bug_watch.addComment(comment_id, comment_message)
+                imported_comments.append(bug_message)
 
-                for bug_message in imported_comments:
-                    comment = bug_message.message
-                    notification_text += comment_text_template % dict(
-                        comment_date=comment.datecreated.isoformat(),
-                        commenter=comment.owner.displayname,
-                        comment_text=comment.text_contents,
-                        comment_reply_url=canonical_url(comment))
-                notification_message = getUtility(IMessageSet).fromText(
-                    subject=bug_watch.bug.followup_subject(),
-                    content=notification_text,
-                    owner=bug_watch_updater)
-                bug_watch.bug.addCommentNotification(notification_message)
-            else:
-                for bug_message in imported_comments:
-                    notify(ObjectCreatedEvent(
-                        bug_message,
-                        user=bug_watch_updater))
+            if len(imported_comments) > 0:
+                bug_watch_updater = (
+                    getUtility(ILaunchpadCelebrities).bug_watch_updater)
+                if is_initial_import:
+                    notification_text = get_email_template(
+                        'bugwatch-initial-comment-import.txt') % dict(
+                            num_of_comments=len(imported_comments),
+                            bug_watch_url=bug_watch.url)
+                    comment_text_template = get_email_template(
+                        'bugwatch-comment.txt')
+
+                    for bug_message in imported_comments:
+                        comment = bug_message.message
+                        notification_text += comment_text_template % dict(
+                            comment_date=comment.datecreated.isoformat(),
+                            commenter=comment.owner.displayname,
+                            comment_text=comment.text_contents,
+                            comment_reply_url=canonical_url(comment))
+                    notification_message = getUtility(IMessageSet).fromText(
+                        subject=bug_watch.bug.followup_subject(),
+                        content=notification_text,
+                        owner=bug_watch_updater)
+                    bug_watch.bug.addCommentNotification(notification_message)
+                else:
+                    for bug_message in imported_comments:
+                        notify(ObjectCreatedEvent(
+                            bug_message,
+                            user=bug_watch_updater))
+
             self.log.info("Imported %(count)i comments for remote bug "
                 "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
                 "%(bug_id)s." %
                 {'count': len(imported_comments),
-                 'remotebug': bug_watch.remotebug,
+                 'remotebug': remote_bug_id,
                  'bugtracker_url': external_bugtracker.baseurl,
-                 'bug_id': bug_watch.bug.id})
+                 'bug_id': local_bug_id})
 
     def _formatRemoteComment(self, external_bugtracker, bug_watch, message):
         """Format a comment for a remote bugtracker and return it."""
@@ -1148,26 +1156,33 @@ class BugWatchUpdater(object):
         """
         pushed_comments = 0
 
+        with self.transaction:
+            local_bug_id = bug_watch.bug.id
+            remote_bug_id = bug_watch.remotebug
+            unpushed_comments = list(bug_watch.unpushed_comments)
+
         # Loop over the unpushed comments for the bug watch.
         # We only push those comments that haven't been pushed
         # already. We don't push any comments not associated with
         # the bug watch.
-        for unpushed_comment in bug_watch.unpushed_comments:
-            message = unpushed_comment.message
-
-            # Format the comment so that it includes information
-            # about the Launchpad bug.
-            formatted_comment = self._formatRemoteComment(
-                external_bugtracker, bug_watch, message)
+        for unpushed_comment in unpushed_comments:
+            with self.transaction:
+                message = unpushed_comment.message
+                # Format the comment so that it includes information
+                # about the Launchpad bug.
+                formatted_comment = self._formatRemoteComment(
+                    external_bugtracker, bug_watch, message)
 
             remote_comment_id = (
                 external_bugtracker.addRemoteComment(
-                    bug_watch.remotebug, formatted_comment,
+                    remote_bug_id, formatted_comment,
                     message.rfc822msgid))
 
             assert remote_comment_id is not None, (
                 "A remote_comment_id must be specified.")
-            unpushed_comment.remote_comment_id = remote_comment_id
+
+            with self.transaction:
+                unpushed_comment.remote_comment_id = remote_comment_id
 
             pushed_comments += 1
 
@@ -1176,23 +1191,25 @@ class BugWatchUpdater(object):
                 "%(remotebug)s on %(bugtracker_url)s from Launchpad bug "
                 "%(bug_id)s" %
                 {'count': pushed_comments,
-                 'remotebug': bug_watch.remotebug,
+                 'remotebug': remote_bug_id,
                  'bugtracker_url': external_bugtracker.baseurl,
-                 'bug_id': bug_watch.bug.id})
+                 'bug_id': local_bug_id})
 
     def linkLaunchpadBug(self, remotesystem, bug_watch):
         """Link a Launchpad bug to a given remote bug."""
-        current_launchpad_id = remotesystem.getLaunchpadBugId(
-            bug_watch.remotebug)
+        with self.transaction:
+            local_bug_id = bug_watch.bug.id
+            remote_bug_id = bug_watch.remotebug
+
+        current_launchpad_id = remotesystem.getLaunchpadBugId(remote_bug_id)
 
         if current_launchpad_id is None:
             # If no bug is linked to the remote bug, link this one and
             # then stop.
-            remotesystem.setLaunchpadBugId(
-                bug_watch.remotebug, bug_watch.bug.id)
+            remotesystem.setLaunchpadBugId(remote_bug_id, local_bug_id)
             return
 
-        elif current_launchpad_id == bug_watch.bug.id:
+        elif current_launchpad_id == local_bug_id:
             # If the current_launchpad_id is the same as the ID of the bug
             # we're trying to link, we can stop.
             return
@@ -1205,11 +1222,11 @@ class BugWatchUpdater(object):
             # we've been passed, overwriting the previous value of the
             # Launchpad bug ID for this remote bug.
             try:
-                other_launchpad_bug = getUtility(IBugSet).get(
-                    current_launchpad_id)
-
-                other_bug_watch = other_launchpad_bug.getBugWatch(
-                    bug_watch.bugtracker, bug_watch.remotebug)
+                with self.transaction:
+                    other_launchpad_bug = getUtility(IBugSet).get(
+                        current_launchpad_id)
+                    other_bug_watch = other_launchpad_bug.getBugWatch(
+                        bug_watch.bugtracker, remote_bug_id)
             except NotFoundError:
                 # If we can't find the bug that's referenced by
                 # current_launchpad_id we simply set other_bug_watch to
@@ -1218,8 +1235,7 @@ class BugWatchUpdater(object):
                 other_bug_watch = None
 
             if other_bug_watch is None:
-                remotesystem.setLaunchpadBugId(
-                    bug_watch.remotebug, bug_watch.bug.id)
+                remotesystem.setLaunchpadBugId(remote_bug_id, local_bug_id)
 
     def _getOOPSProperties(self, remotesystem):
         """Return an iterable of 2-tuples (name, value) of OOPS properties.
