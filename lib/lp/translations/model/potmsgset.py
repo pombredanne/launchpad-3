@@ -21,7 +21,6 @@ from storm.store import EmptyResultSet, Store
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
-from canonical.launchpad import helpers
 from canonical.launchpad.helpers import shortlist
 from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment)
@@ -51,6 +50,7 @@ from lp.translations.model.translationmessage import (
     TranslationMessage)
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem)
+from lp.translations.utilities.validate import validate_translation
 
 
 # Msgids that indicate translation credit messages, and their
@@ -484,7 +484,7 @@ class POTMsgSet(SQLBase):
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
-            helpers.validate_translation(
+            validate_translation(
                 original_texts, translations, self.flags)
         except gettextpo.error:
             if ignore_errors:

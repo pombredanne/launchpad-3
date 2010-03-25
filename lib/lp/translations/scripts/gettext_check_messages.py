@@ -14,7 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessageSet)
-from canonical.launchpad.helpers import validate_translation
+from lp.translations.utilities.validate import validate_translation
 from lp.services.scripts.base import LaunchpadScript
 
 
