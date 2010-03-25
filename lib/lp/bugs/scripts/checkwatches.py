@@ -530,7 +530,7 @@ class BugWatchUpdater(object):
                 ]
         else:
             trackers_and_watches = [
-                (remotesystem_to_use, bug_watches)
+                (remotesystem_to_use, bug_watches),
                 ]
 
         return trackers_and_watches
