@@ -79,6 +79,7 @@ from lp.code.enums import (
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
@@ -1405,8 +1406,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         return target.newFAQ(
             owner=target.owner, title=title, content='content')
 
+    def makeProductCodeImport(self, product=None, **kwargs):
+        """Make a code import targetting a product."""
+        if product is None:
+            product = self.makeProduct()
+        target = IBranchTarget(product)
+        return self.makeCodeImport(target=target, **kwargs)
+
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None, product=None, branch_name=None,
+                       cvs_module=None, target=None, branch_name=None,
                        git_repo_url=None, hg_repo_url=None, registrant=None,
                        rcs_type=None):
         """Create and return a new, arbitrary code import.
@@ -1419,8 +1427,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             hg_repo_url is None):
             svn_branch_url = self.getUniqueURL()
 
-        if product is None:
-            product = self.makeProduct()
+        if target is None:
+            target = IBranchTarget(self.makeProduct())
         if branch_name is None:
             branch_name = self.getUniqueString('name')
         if registrant is None:
@@ -1434,23 +1442,23 @@ class LaunchpadObjectFactory(ObjectFactory):
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
             return code_import_set.new(
-                registrant, product, branch_name, rcs_type=rcs_type,
+                registrant, target, branch_name, rcs_type=rcs_type,
                 url=svn_branch_url)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
             return code_import_set.new(
-                registrant, product, branch_name,
+                registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 url=git_repo_url)
         elif hg_repo_url is not None:
             return code_import_set.new(
-                registrant, product, branch_name,
+                registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
                 url=hg_repo_url)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
             return code_import_set.new(
-                registrant, product, branch_name,
+                registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
                 cvs_root=cvs_root, cvs_module=cvs_module)
 

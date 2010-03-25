@@ -214,6 +214,11 @@ and also the areas in which (s)he worked on each project.
     Mozilla Firefox
        Bug Management
 
+The portlet also has a link to see the most recent karmic activity.
+
+    >>> anon_browser.getLink('Recent activities')
+    <Link text='Recent activities' url='http://launchpad.dev/~name16/+karma'>
+
 If the person hasn't made any contributions, the table is not present in its
 page.
 

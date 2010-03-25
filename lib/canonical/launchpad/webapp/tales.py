@@ -1494,12 +1494,12 @@ class BugTaskFormatterAPI(CustomizableFormatter):
 class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
-    _link_summary_template = _('Import of %(product)s: %(branch)s')
+    _link_summary_template = _('Import of %(target)s: %(branch)s')
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        return {'product': self._context.product.displayname,
+        return {'target': self._context.branch.target.displayname,
                 'branch': self._context.branch.bzr_identity,
                }
 
