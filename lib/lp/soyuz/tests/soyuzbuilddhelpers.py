@@ -79,26 +79,6 @@ class MockBuilder:
         updateBuilderStatus(self, logger)
 
 
-class LostBuildingBrokenSlave:
-    """A mock slave building bogus Build/BuildQueue IDs that can't be aborted.
-
-    When 'aborted' it raises an xmlrpclib.Fault(8002, 'Could not abort')
-    """
-
-    def status(self):
-        return ('BuilderStatus.BUILDING', '1000-10000')
-
-    def abort(self):
-        raise xmlrpclib.Fault(8002, "Could not abort")
-
-
-class BrokenSlave:
-    """A mock slave that reports that it is broken."""
-
-    def status(self):
-        raise xmlrpclib.Fault(8001, "Broken slave")
-
-
 class OkSlave:
     """An idle mock slave that prints information about itself.
 
@@ -182,13 +162,6 @@ class BuildingSlave(OkSlave):
             return s
 
 
-class AbortedSlave(OkSlave):
-    """A mock slave that looks like it's aborted."""
-
-    def status(self):
-        return ('BuilderStatus.ABORTED', '1-1')
-
-
 class WaitingSlave(OkSlave):
     """A mock slave that looks like it's currently waiting."""
 
@@ -209,8 +182,36 @@ class WaitingSlave(OkSlave):
             s.headers = {'content-length':19}
             return s
 
+
 class AbortingSlave(OkSlave):
     """A mock slave that looks like it's in the process of aborting."""
 
     def status(self):
         return ('BuilderStatus.ABORTING', '1-1')
+
+
+class AbortedSlave(OkSlave):
+    """A mock slave that looks like it's aborted."""
+
+    def status(self):
+        return ('BuilderStatus.ABORTED', '1-1')
+
+
+class LostBuildingBrokenSlave:
+    """A mock slave building bogus Build/BuildQueue IDs that can't be aborted.
+
+    When 'aborted' it raises an xmlrpclib.Fault(8002, 'Could not abort')
+    """
+
+    def status(self):
+        return ('BuilderStatus.BUILDING', '1000-10000')
+
+    def abort(self):
+        raise xmlrpclib.Fault(8002, "Could not abort")
+
+
+class BrokenSlave:
+    """A mock slave that reports that it is broken."""
+
+    def status(self):
+        raise xmlrpclib.Fault(8001, "Broken slave")

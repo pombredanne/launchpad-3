@@ -299,13 +299,11 @@ An idle slave is not rescued.
 Slaves building or having built the correct build are not rescued
 either.
 
-    >>> logger = logging.getLogger()
     >>> sanebuilding_builder = MockBuilder(
     ...     'Sane Building Slave', BuildingSlave(build_id='good'),
     ...     TestBuildBehavior())
     >>> sanebuilding_builder.rescueIfLost(logger)
 
-    >>> logger = logging.getLogger()
     >>> sanewaiting_builder = MockBuilder(
     ...     'Sane Waiting Slave', WaitingSlave(build_id='good'),
     ...     TestBuildBehavior())
