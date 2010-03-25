@@ -1927,6 +1927,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
                 self, format) is not None
 
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+
 
 class DistroSeriesSet:
     implements(IDistroSeriesSet)

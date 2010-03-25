@@ -47,10 +47,10 @@ class TestIHasRecipes(TestCaseWithFactory):
         recipe_ignored = self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, person.getRecipes().count())
 
-    def test_distro_implements_hasbranches(self):
-        # Distribution should implement IHasRecipes.
-        distro = self.factory.makeDistribution()
-        self.assertProvides(distro, IHasRecipes)
+    def test_distroseries_implements_hasbranches(self):
+        # DistributionSeries should implement IHasRecipes.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertProvides(distroseries, IHasRecipes)
 
 
 def test_suite():
