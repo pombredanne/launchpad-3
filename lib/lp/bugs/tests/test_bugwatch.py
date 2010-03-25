@@ -8,7 +8,7 @@ __metaclass__ = type
 import transaction
 import unittest
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pytz import utc
 
 from urlparse import urlunsplit
@@ -23,7 +23,8 @@ from canonical.testing import (
 
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
+    UnrecognizedBugTrackerURL)
 from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
 from lp.registry.interfaces.person import IPersonSet
 
@@ -392,13 +393,56 @@ class TestBugWatchScheduler(TestCaseWithFactory):
     def test_scheduler_schedules_unchecked_watches(self):
         # The BugWatchScheduler will schedule a BugWatch that has never
         # been checked to be checked immediately.
-        self.bug_watch.lastchecked = None
         self.bug_watch.next_check = None
         self.scheduler(1)
 
         self.assertNotEqual(None, self.bug_watch.next_check)
         self.assertTrue(
             self.bug_watch.next_check <= datetime.now(utc))
+
+    def test_scheduler_schedules_working_watches(self):
+        # If a watch has been checked and has never failed its next
+        # check will be scheduled for 24 hours after its last check.
+        now = datetime.now(utc)
+        self.bug_watch.lastchecked = now
+        self.bug_watch.next_check = None
+        transaction.commit()
+        self.scheduler(1)
+
+        self.assertEqual(
+            now + timedelta(hours=24), self.bug_watch.next_check)
+
+    def test_scheduler_schedules_failing_watches(self):
+        # If a watch has failed once, it will be scheduled more than 24
+        # hours after its last check.
+        now = datetime.now(utc)
+        self.bug_watch.lastchecked = now
+
+        # The delay depends on the number of failures that the watch has
+        # had.
+        for failure_count in range(1, 6):
+            self.bug_watch.next_check = None
+            self.bug_watch.addActivity(
+                result=BugWatchActivityStatus.BUG_NOT_FOUND)
+            transaction.commit()
+            self.scheduler(1)
+
+            coefficient = 1.2 * failure_count
+            self.assertEqual(
+                now + timedelta(days=1 + coefficient),
+                self.bug_watch.next_check)
+
+        # The scheduler only looks at the last 5 activity items, so even
+        # if there have been more failures the maximum delay will be 7
+        # days.
+        for count in range(10):
+            self.bug_watch.addActivity(
+                result=BugWatchActivityStatus.BUG_NOT_FOUND)
+        self.bug_watch.next_check = None
+        transaction.commit()
+        self.scheduler(1)
+        self.assertEqual(
+            now + timedelta(days=7), self.bug_watch.next_check)
 
 
 def test_suite():

@@ -26,7 +26,7 @@ class BugWatchScheduler(TunableLoop):
                 COALESCE(
                     lastchecked + interval '1 day',
                     now() AT TIME ZONE 'UTC') +
-                (interval '1 day' * ((6 / 5) * recent_failure_count))
+                (interval '1 day' * (1.2 * recent_failure_count))
             FROM (
                 SELECT bug_watch.id,
                     (SELECT COUNT(*)
