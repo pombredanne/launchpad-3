@@ -62,3 +62,7 @@ lib/canonical/buildd/launchpad-files
 ./pipes
 lib/canonical/launchpad/apidoc/wadl-development-*.xml
 tags.new
+lp-clustered.dot
+lp-clustered.sfood
+lp-clustered.svg
+lp.sfood
