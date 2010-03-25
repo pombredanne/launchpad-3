@@ -273,6 +273,10 @@ class PackageUploadTestCase(TestCaseWithFactory):
             'main/dist-upgrader-all')
         self.assertEquals(
             ['20060302.0120', 'current'], sorted(os.listdir(custom_path)))
+        
+        # The custom files were also copied to the public librarian
+        for customfile in delayed_copy.customfiles:
+            self.assertFalse(customfile.libraryfilealias.restricted)
 
     def test_realiseUpload_for_source_only_delayed_copies(self):
         # Source-only delayed-copies results in the source published

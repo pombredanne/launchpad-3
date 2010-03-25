@@ -162,7 +162,12 @@ class BrokenSlave:
 
 
 class OkSlave:
-    """An idle mock slave that prints information about itself."""
+    """An idle mock slave that prints information about itself.
+
+    The architecture tag can be customised during initialisation."""
+
+    def __init__(self, arch_tag='i386'):
+        self.arch_tag = arch_tag
 
     def status(self):
         return ('BuilderStatus.IDLE', '')
@@ -195,7 +200,7 @@ class OkSlave:
         pass
 
     def info(self):
-        return ('1.0', 'i386', 'debian')
+        return ('1.0', self.arch_tag, 'debian')
 
     def resume(self):
         resume_argv = config.builddmaster.vm_resume_command.split()
@@ -240,6 +245,7 @@ class WaitingSlave(OkSlave):
     """A mock slave that looks like it's currently waiting."""
 
     def __init__(self, state, dependencies=None):
+        super(WaitingSlave, self).__init__()
         self.state = state
         self.dependencies = dependencies
 
