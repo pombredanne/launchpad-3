@@ -58,7 +58,7 @@ from lp.services.scripts.base import LaunchpadCronScript
 
 
 SYNCABLE_GNOME_PRODUCTS = []
-MAX_SQL_STATEMENTS_LOGGED = 1000
+MAX_SQL_STATEMENTS_LOGGED = 10000
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
