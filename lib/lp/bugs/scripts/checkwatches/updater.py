@@ -5,6 +5,16 @@
 from __future__ import with_statement
 
 __metaclass__ = type
+__all__ = [
+    'BaseScheduler',
+    'BugWatchUpdater',
+    'CheckWatchesCronScript',
+    'CheckWatchesErrorUtility',
+    'externalbugtracker',
+    'SerialScheduler',
+    'TooMuchTimeSkew',
+    'TwistedThreadScheduler',
+    ]
 
 import socket
 import sys
