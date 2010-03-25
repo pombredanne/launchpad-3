@@ -1541,6 +1541,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # see: https://bugs.launchpad.net/soyuz/+bug/246200
         return results.any() != None
 
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""

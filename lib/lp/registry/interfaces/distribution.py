@@ -37,6 +37,7 @@ from canonical.launchpad.fields import (
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.bugs.interfaces.bugtarget import (
@@ -91,7 +92,7 @@ class IDistributionPublic(
     IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
     IHasOwner, IHasSecurityContact, IHasSprints, ITranslationPolicy,
     IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
+    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
