@@ -219,6 +219,18 @@ in the Packaging table linking it to an upstream project.
     DistributionSourcePackage: foobar
     DistributionSourcePackage: commercialpackage
 
+searchSourcePackages() also has a publishing_distroseries parameter that
+it just passes on to searchSourcePackageCaches(), and it restricts the
+results based on whether the source package has an entry in the
+SourcePackagePublishingHistory table for the given distroseries.
+
+    >>> packages = ubuntu.searchSourcePackages(
+    ...     'a', publishing_distroseries=ubuntu.currentseries)
+    >>> for dsp in packages:
+    ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: netapplet
+    DistributionSourcePackage: alsa-utils
+
 
 === Searching for binary packages ===
 
