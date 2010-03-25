@@ -156,21 +156,20 @@ def sanitize_translations(english_singular, translations, pluralforms):
         value.
     :param pluralforms: The number of expected pluralforms
     """
-    # Sanitize translations and normalize empty translations to None.
-    sanitized_translations = {}
-    sanitize = Sanitize(english_singular)
-    for pluralform in range(pluralforms):
-        if pluralform in translations:
-            sanitized_translations[pluralform] = (
-                sanitize(translations[pluralform]))
-        else:
-            sanitized_translations[pluralform] = None
+    # Sanitize all given translations.
     # Unneeded plural forms are stored as well (needed since we may
     # have incorrect plural form data, so we can just reactivate them
     # once we fix the plural information for the language)
+    sanitized_translations = {}
+    sanitize = Sanitize(english_singular)
     for index, value in translations.items():
-        if index >= pluralforms:
-            sanitized_translations[index] = sanitize(value)
+        sanitized_translations[index] = sanitize(value)
+
+    # Expected plural forms should all exist and empty translations should
+    # be normalized to None.
+    for pluralform in range(pluralforms):
+        if pluralform not in sanitized_translations:
+            sanitized_translations[pluralform] = None
 
     return sanitized_translations
 
