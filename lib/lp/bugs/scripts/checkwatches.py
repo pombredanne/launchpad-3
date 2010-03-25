@@ -667,7 +667,7 @@ class BugWatchUpdater(object):
                 if bug_watch not in old_bug_watches))
             remote_ids_with_comments = sorted(
                 bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch.unpushed_comments.count() > 0)
+                if bug_watch.unpushed_comments.any() is not None)
 
         # We only make the call to getModifiedRemoteBugs() if there
         # are actually some bugs that we're interested in so as to
