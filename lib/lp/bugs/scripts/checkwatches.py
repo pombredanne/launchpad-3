@@ -285,8 +285,8 @@ class BugWatchUpdater(object):
         """Context manager to ring-fence database activity.
 
         Ensures that no transaction is in progress on entry, and
-        commits on a successful exit. Exceptions are propogated;
-        transactions are not aborted when there's an error.
+        commits on a successful exit. Exceptions are propagated once
+        the transaction has been aborted.
 
         This intentionally cannot be nested. Keep it simple.
         """
@@ -294,7 +294,8 @@ class BugWatchUpdater(object):
         try:
             yield self.txn
         except:
-            # Let the exception propogate.
+            self.txn.abort()
+            # Let the exception propagate.
             raise
         else:
             self.txn.commit()
@@ -407,8 +408,6 @@ class BugWatchUpdater(object):
             # We should never catch KeyboardInterrupt or SystemExit.
             raise
         except Exception, error:
-            # Abort transaction before reporting the error.
-            self.txn.abort()
             # If something unexpected goes wrong, we log it and
             # continue: a failure shouldn't break the updating of
             # the other bug trackers.
@@ -553,8 +552,6 @@ class BugWatchUpdater(object):
                 trackers_and_watches = self._getExternalBugTrackersAndWatches(
                     bug_tracker, bug_watches_to_update)
             except UnknownBugTrackerTypeError, error:
-                # Abort transaction before reporting the error.
-                self.txn.abort()
                 # We update all the bug watches to reflect the fact that
                 # this error occurred. We also update their last checked
                 # date to ensure that they don't get checked for another
@@ -938,8 +935,6 @@ class BugWatchUpdater(object):
                 raise
 
             except Exception, error:
-                # Abort transaction before recording the error.
-                self.txn.abort()
                 # Send the error to the log.
                 oops_id = self.error(
                     "Failure updating bug %r on %s (local bugs: %s)." %
