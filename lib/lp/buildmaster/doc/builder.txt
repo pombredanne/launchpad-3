@@ -283,53 +283,40 @@ will use a special behavior that just checks if the slave ID is 'good'.
     >>> from lp.buildmaster.interfaces.builder import CorruptBuildID
     >>> from lp.soyuz.tests.soyuzbuilddhelpers import (
     ...    BuildingSlave, MockBuilder, OkSlave, WaitingSlave)
-    >>> logger = logging.getLogger()
 
     >>> class TestBuildBehavior:
     ...     def verifySlaveBuildID(self, build_id):
     ...         if build_id != 'good':
     ...             raise CorruptBuildID('Bad value')
 
+    >>> def rescue_slave_if_lost(slave):
+    ...     builder = MockBuilder(
+    ...         'mock', slave, TestBuildBehavior())
+    ...     builder.rescueIfLost(logging.getLogger())
+
 An idle slave is not rescued.
 
-    >>> idle_builder = MockBuilder(
-    ...     'Idle Slave', OkSlave(), TestBuildBehavior())
-    >>> idle_builder.rescueIfLost(logger)
+    >>> rescue_slave_if_lost(OkSlave())
 
 Slaves building or having built the correct build are not rescued
 either.
 
-    >>> sanebuilding_builder = MockBuilder(
-    ...     'Sane Building Slave', BuildingSlave(build_id='good'),
-    ...     TestBuildBehavior())
-    >>> sanebuilding_builder.rescueIfLost(logger)
-
-    >>> sanewaiting_builder = MockBuilder(
-    ...     'Sane Waiting Slave', WaitingSlave(build_id='good'),
-    ...     TestBuildBehavior())
-    >>> sanewaiting_builder.rescueIfLost(logger)
+    >>> rescue_slave_if_lost(BuildingSlave(build_id='good'))
+    >>> rescue_slave_if_lost(WaitingSlave(build_id='good'))
 
 But if a slave is building the wrong ID, it is declared lost and
 an abort is attempted. MockSlave prints out a message when it is aborted
 or cleaned.
 
-    >>> lostbuilding_builder = MockBuilder(
-    ...     'Lost Building Slave', BuildingSlave(build_id='bad'),
-    ...     TestBuildBehavior())
-    >>> lostbuilding_builder.rescueIfLost(logger)
+    >>> rescue_slave_if_lost(BuildingSlave(build_id='bad'))
     Aborting slave
-    WARNING:root:Builder 'Lost Building Slave' rescued from 'bad':
-    'Bad value'
+    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
 
 Slaves having completed an incorrect build are also declared lost,
 but there's no need to abort a completed build. Such builders are
 instead simply cleaned, ready for the next build.
 
-    >>> lostwaiting_builder = MockBuilder(
-    ...     'Lost Waiting Slave', WaitingSlave(build_id='bad'),
-    ...     TestBuildBehavior())
-    >>> lostwaiting_builder.rescueIfLost(logger)
+    >>> rescue_slave_if_lost(WaitingSlave(build_id='bad')
     Cleaning slave 
-    WARNING:root:Builder 'Lost Waiting Slave' rescued from 'bad':
-    'Bad value'
+    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
 
