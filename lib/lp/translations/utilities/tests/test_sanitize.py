@@ -137,7 +137,8 @@ class TestSanitizeTranslations(unittest.TestCase):
                 translation_text = translation_template % (
                     translation_newline_1, translation_newline_2)
                 self.assertRaises(
-                    BrokenTextError, sanitize, translation_text)
+                    BrokenTextError,
+                    sanitize.normalizeNewlines, translation_text)
 
 
 def test_suite():
