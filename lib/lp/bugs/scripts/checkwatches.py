@@ -202,19 +202,6 @@ def with_interaction(func):
     return wrapper
 
 
-def with_transaction(func):
-    """Wrap a method to ensure that it runs within a transaction.
-
-    It's intended for use with `BugWatchUpdater`, which provides a
-    `transaction` property; this is the hook that's required.
-    """
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        with self.transaction:
-            return func(self, *args, **kwargs)
-    return wrapper
-
-
 def commit_before(func):
     """Wrap a method to commit any in-progress transactions.
 
