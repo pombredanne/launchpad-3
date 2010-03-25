@@ -179,10 +179,9 @@ class IBranchFileSystem(Interface):
         :param branchID: a branch ID.
         """
 
-    def branchChanged(loginID, branchID, stacked_on_url, last_revision_id):
+    def branchChanged(branch_id, stacked_on_url, last_revision_id):
         """XXX.
 
-        :param loginID: the person ID of the user requesting the mirror.
         :param branchID: a branch ID.
         """
 

@@ -249,34 +249,32 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             return True
         return run_with_login(login_id, request_mirror)
 
-    def branchChanged(self, login_id, branch_id, stacked_on_location,
-                      last_revision_id):
+    def branchChanged(self, branch_id, stacked_on_location, last_revision_id):
         """See `IBranchFileSystem`."""
-        def branch_changed(requester):
-            branch_set = removeSecurityProxy(getUtility(IBranchLookup))
-            if stacked_on_location == '':
+        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
+        if stacked_on_location == '':
+            stacked_on_branch = None
+        else:
+            stacked_on_branch = branch_set.getByUniqueName(
+                stacked_on_location.strip('/'))
+            # XXX Should we log that the branch was not found here?
+            # Maybe we just wait until the scanner fails.
+            if stacked_on_branch is None:
                 stacked_on_branch = None
-            else:
-                stacked_on_branch = branch_set.getByUniqueName(
-                    stacked_on_location.strip('/'))
-                # XXX Should we log that the branch was not found here?
-                # Maybe we just wait until the scanner fails.
-                if stacked_on_branch is None:
-                    stacked_on_branch = None
-            branch = branch_set.get(branch_id)
-            if branch is None:
-                return faults.NoBranchWithID(branch_id)
-            branch.stacked_on = stacked_on_branch
-            # This stuff mostly copy/paste/hacked from mirrorComplete.
-            branch.last_mirrored = datetime.datetime.now(pytz.UTC)
-            branch.mirror_failures = 0
-            branch.mirror_status_message = None
-            branch.last_mirrored_id = last_revision_id
-            from lp.code.model.branchjob import BranchScanJob
-            # Maybe don't create this if there's a job pending already?
-            BranchScanJob.create(branch)
-            return True
-        return run_with_login(login_id, branch_changed)
+        branch = branch_set.get(branch_id)
+        if branch is None:
+            return faults.NoBranchWithID(branch_id)
+        branch.stacked_on = stacked_on_branch
+        # This stuff mostly copy/paste/hacked from mirrorComplete.
+        # It's not clear that this is all meaningful any more.
+        branch.last_mirrored = datetime.datetime.now(pytz.UTC)
+        branch.mirror_failures = 0
+        branch.mirror_status_message = None
+        branch.last_mirrored_id = last_revision_id
+        from lp.code.model.branchjob import BranchScanJob
+        # Maybe don't create this if there's a job pending already?
+        BranchScanJob.create(branch)
+        return True
 
     def _serializeBranch(self, requester, branch, trailing_path):
         if requester == LAUNCHPAD_SERVICES:
