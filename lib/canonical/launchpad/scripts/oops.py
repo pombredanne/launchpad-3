@@ -3,6 +3,8 @@
 
 """Module docstring goes here."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 __all__ = [
@@ -18,6 +20,7 @@ from pytz import utc
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
 from canonical.launchpad.webapp.tales import FormattersAPI
 
 def referenced_oops():
@@ -51,18 +54,19 @@ def referenced_oops():
 
     referenced_codes = set()
 
-    cur = cursor()
-    cur.execute(query)
-    for content in (row[0] for row in cur.fetchall()):
-        found = False
-        for match in FormattersAPI._re_linkify.finditer(content):
-            if match.group('oops') is not None:
-                code_string = match.group('oopscode')
-                referenced_codes.add(code_string.upper())
-                found = True
-        assert found, \
-            'PostgreSQL regexp matched content that Python regexp ' \
-            'did not (%r)' % (content,)
+    with SlaveOnlyDatabasePolicy():
+        cur = cursor()
+        cur.execute(query)
+        for content in (row[0] for row in cur.fetchall()):
+            found = False
+            for match in FormattersAPI._re_linkify.finditer(content):
+                if match.group('oops') is not None:
+                    code_string = match.group('oopscode')
+                    referenced_codes.add(code_string.upper())
+                    found = True
+            assert found, \
+                'PostgreSQL regexp matched content that Python regexp ' \
+                'did not (%r)' % (content,)
 
     return referenced_codes
 

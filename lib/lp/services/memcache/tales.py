@@ -109,6 +109,10 @@ class MemcacheExpr:
         '_'*33 + ''.join(chr(i) for i in range(33, ord(':'))) + '_'
         + ''.join(chr(i) for i in range(ord(':')+1, 127)) + '_' * 129)
 
+    # We strip digits from our LPCONFIG when generating the key
+    # to ensure that edge1 and edge4 share cache.
+    _lpconfig = config.instance_name.rstrip('0123456789')
+
     def getKey(self, econtext):
         """We need to calculate a unique key for this cached chunk.
 
@@ -165,8 +169,7 @@ class MemcacheExpr:
         # tools - it doesn't really matter provided all the components are
         # included and separators used.
         key = "pt:%s:%s,%s:%s:%d,%d:%d,%s" % (
-            config.instance_name,
-            source_file, versioninfo.revno, uid,
+            self._lpconfig, source_file, versioninfo.revno, uid,
             econtext.position[0], econtext.position[1], counter,
             sanitized_url,
             )
