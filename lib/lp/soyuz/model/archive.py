@@ -149,7 +149,8 @@ class Archive(SQLBase):
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
     status = EnumCol(
-        dbName="status", unique=False, notNull=True, schema=ArchiveStatus)
+        dbName="status", unique=False, notNull=True, schema=ArchiveStatus,
+        default=ArchiveStatus.ACTIVE)
 
     _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
     enabled = property(lambda x: x._enabled)
@@ -1405,6 +1406,22 @@ class Archive(SQLBase):
         assert self._enabled == True, "This archive is already disabled."
         self._enabled = False
         self._setBuildStatuses(JobStatus.SUSPENDED)
+
+    def delete(self, deleted_by):
+        """See `IArchive`."""
+        # Set all the publications to DELETED.
+        statuses = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+        sources = list(self.getPublishedSources(status=statuses))
+        getUtility(IPublishingSet).requestDeletion(
+            sources, removed_by=deleted_by,
+            removal_comment="Removed when deleting archive")
+
+        # Mark the archive's status as DELETING so the repository can be
+        # removed by the publisher.
+        self.status = ArchiveStatus.DELETING
+        self.disable()
 
 
 class ArchiveSet:
