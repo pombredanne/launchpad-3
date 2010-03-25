@@ -6,11 +6,11 @@ __metaclass__ = type
 import unittest
 
 from lp.translations.interfaces.potmsgset import BrokenTextError
-from lp.translations.utilities.sanitize import Sanitize
+from lp.translations.utilities.sanitize import Sanitize, sanitize_translations
 
 
-class TestSanitizeTranslations(unittest.TestCase):
-    """Test sanitization functions."""
+class TestSanitize(unittest.TestCase):
+    """Test the Sanitize class used by sanitize_translations."""
 
     def test_convertDotToSpace(self):
         # Dots are converted back to spaces.
@@ -172,6 +172,68 @@ class TestSanitizeTranslations(unittest.TestCase):
         # None is returned as None.
         sanitize = Sanitize(u"Text without whitespace.")
         self.assertTrue(sanitize(None) is None)
+
+
+class TestSanitizeTranslations(unittest.TestCase):
+    """Test sanitize_translations function.
+
+    This test case is just about how the functions handles different plural
+    form situations.  The actual sanitization is tested in TestSanitize.
+    """
+
+    english = u"Some English text\nwith unix newline."
+
+    def test_sanitize_translations(self):
+        # All plural forms are sanitized.
+        translations = {
+            0: u'Plural\r\nform 0  ',
+            1: u'Plural\r\nform 1  ',
+            2: u'Plural\r\nform 2  ',
+            }
+        expected_sanitized = {
+            0: u'Plural\nform 0',
+            1: u'Plural\nform 1',
+            2: u'Plural\nform 2',
+            }
+        self.assertEqual(
+            expected_sanitized,
+            sanitize_translations(self.english, translations, 3)
+            )
+
+    def test_sanitize_translations_missing_pluralform(self):
+        # Missing plural forms are normalized to None.
+        translations = {
+            0: u'Plural\r\nform 0  ',
+            2: u'Plural\r\nform 2  ',
+            }
+        expected_sanitized = {
+            0: u'Plural\nform 0',
+            1: None,
+            2: u'Plural\nform 2',
+            }
+        self.assertEqual(
+            expected_sanitized,
+            sanitize_translations(self.english, translations, 3)
+            )
+
+    def test_sanitize_translations_excess_pluralform(self):
+        # Excess plural forms are sanitized, too.
+        translations = {
+            0: u'Plural\r\nform 0  ',
+            1: u'Plural\r\nform 1  ',
+            2: u'Plural\r\nform 2  ',
+            4: u'Plural\r\nform 4  ',
+            }
+        expected_sanitized = {
+            0: u'Plural\nform 0',
+            1: u'Plural\nform 1',
+            2: u'Plural\nform 2',
+            4: u'Plural\nform 4',
+            }
+        self.assertEqual(
+            expected_sanitized,
+            sanitize_translations(self.english, translations, 3)
+            )
 
 
 def test_suite():

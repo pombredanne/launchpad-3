@@ -168,7 +168,7 @@ def sanitize_translations(english_singular, translations, pluralforms):
     # Unneeded plural forms are stored as well (needed since we may
     # have incorrect plural form data, so we can just reactivate them
     # once we fix the plural information for the language)
-    for index, value in enumerate(translations):
+    for index, value in translations.items():
         if index >= pluralforms:
             sanitized_translations[index] = sanitize(value)
 
