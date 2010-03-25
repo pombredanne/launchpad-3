@@ -26,7 +26,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtask import BugTask
@@ -78,12 +79,12 @@ def landmark_key(landmark):
     return date + landmark['name']
 
 
-class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
-                    HasSpecificationsMixin, HasTranslationImportsMixin,
-                    HasTranslationTemplatesMixin,
+class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
+                    HasMilestonesMixin, HasSpecificationsMixin,
+                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IProductSeries, IHasTranslationTemplates)
+    implements(IHasBugHeat, IProductSeries, IHasTranslationTemplates)
 
     _table = 'ProductSeries'
 
