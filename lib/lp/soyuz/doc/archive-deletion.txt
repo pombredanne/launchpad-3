@@ -58,7 +58,8 @@ However we can delete it using the owner of the archive:
     >>> publications.extend(list(archive.getAllPublishedBinaries()))
     >>> for pub in publications:
     ...     if pub.status != PackagePublishingStatus.DELETED:
-    ...         print "%s is not deleted!" % pub.displayname
+    ...         print "%s is %s and not deleted!" % (
+    ...             pub.displayname, pub.status.name)
 
     >>> print archive.enabled
     False

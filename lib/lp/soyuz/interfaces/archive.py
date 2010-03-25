@@ -678,19 +678,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
     def getPackageDownloadTotal(bpr):
         """Get the total download count for a given package."""
 
-    def delete(deleted_by):
-        """Delete this archive.
-
-        :param deleted_by: The `IPerson` requesting the deletion.
-
-        The ArchiveStatus will be set to DELETING and any published
-        packages will be marked as DELETED by deleted_by.
-
-        The publisher is responsible for deleting the repository area
-        when it sees the status change and sets it to DELETED once
-        processed.
-        """
-
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -1163,6 +1150,19 @@ class IArchiveEdit(Interface):
 
     def disable():
         """Disable the archive."""
+
+    def delete(deleted_by):
+        """Delete this archive.
+
+        :param deleted_by: The `IPerson` requesting the deletion.
+
+        The ArchiveStatus will be set to DELETING and any published
+        packages will be marked as DELETED by deleted_by.
+
+        The publisher is responsible for deleting the repository area
+        when it sees the status change and sets it to DELETED once
+        processed.
+        """
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
