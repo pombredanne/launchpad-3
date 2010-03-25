@@ -60,7 +60,7 @@ class Sanitize(object):
             style = self.unix_style
         return style
 
-    def __call_(self, translation_text):
+    def __call__(self, translation_text):
         """Return 'translation_text' or None after doing some sanitization.
 
         The text is sanitized through the following filters:

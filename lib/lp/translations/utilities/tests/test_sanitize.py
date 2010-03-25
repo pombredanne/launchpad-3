@@ -117,7 +117,6 @@ class TestSanitizeTranslations(unittest.TestCase):
     def test_normalizeNewlines_mixed_newlines_english(self):
         # Mixed newlines in the English text will raise an exception.
         english_template = u"Text with%smixed%snewlines."
-        translation_template = u"Translation with%snewline."
         for english_newline_1 in self.newline_styles:
             other_newlines = self.newline_styles[:]
             other_newlines.remove(english_newline_1)
@@ -126,6 +125,19 @@ class TestSanitizeTranslations(unittest.TestCase):
                     english_newline_1, english_newline_2)
                 self.assertRaises(
                     BrokenTextError, Sanitize, english_text)
+
+    def test_normalizeNewlines_mixed_newlines_translation(self):
+        # Mixed newlines in the translation text will raise an exception.
+        sanitize = Sanitize(u"Text with\nnewline.")
+        translation_template = u"Translation with%smixed%snewlines."
+        for translation_newline_1 in self.newline_styles:
+            other_newlines = self.newline_styles[:]
+            other_newlines.remove(translation_newline_1)
+            for translation_newline_2 in other_newlines:
+                translation_text = translation_template % (
+                    translation_newline_1, translation_newline_2)
+                self.assertRaises(
+                    BrokenTextError, sanitize, translation_text)
 
 
 def test_suite():
