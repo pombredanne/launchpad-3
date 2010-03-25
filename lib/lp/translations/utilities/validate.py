@@ -29,7 +29,7 @@ def validate_translation(original, translation, flags):
     msg.check_format()
 
 
-def validate_translations(msgids, translations, flags, ignore_errors):
+def validate_translations(msgids, translations, flags, ignore_errors=False):
     """Validate all the `translations`.
 
     :param msgids: A list of one or two msgids, depending on whether the
