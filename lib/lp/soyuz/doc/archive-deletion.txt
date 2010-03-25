@@ -37,6 +37,8 @@ We can create some packages in it using the test publisher:
     >>> ignore = stp.getPubBinaries(
     ...     archive=archive, binaryname="foo-bin3",
     ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> from storm.store import Store
+    >>> Store.of(archive).flush()
 
 Calling delete() will now do the deletion.  It is only callable by someone
 with launchpad.Edit permission on the archive.  Here, "duderino" who is
@@ -54,6 +56,7 @@ However we can delete it using the owner of the archive:
     >>> login_person(archive.owner)
     >>> archive.delete(archive.owner)
 
+    >>> Store.of(archive).invalidate()
     >>> publications = list(archive.getPublishedSources())
     >>> publications.extend(list(archive.getAllPublishedBinaries()))
     >>> for pub in publications:
