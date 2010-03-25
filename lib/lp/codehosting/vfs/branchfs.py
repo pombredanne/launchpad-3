@@ -614,8 +614,9 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return deferred.addErrback(translate_fault)
 
     def massage_stacked_on_location(self, location):
+        """ """
         if '://' not in location: # Not an absolute URL.  Leave it alone.
-            return None
+            return location
         uri = URI(location)
         # We could try to display an error on stderr for these cases
         # maybe?  The scanner will complain in due course.
@@ -667,6 +668,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
                         branch_config.set_option(
                             massaged_location, 'stacked_on_location')
                         stacked_on_url = massaged_location
+                    else:
+                        stacked_on_url = ''
             except:
                 # It gets really confusing if we raise an exception
                 # here (the branch remains locked, but this isn't

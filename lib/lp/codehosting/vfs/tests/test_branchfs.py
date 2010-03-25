@@ -885,6 +885,48 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self.assertEqual(
             [(db_branch.id, '', revid)], self._branch_changed_log)
 
+    def test_branch_unlock_relativizes_absolute_stacked_on_url(self):
+        # XXX
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        del self._branch_changed_log[:]
+        branch.lock_write()
+        branch.get_config().set_user_option(
+            'stacked_on_location', 'http://bazaar.launchpad.dev/~user/foo')
+        branch.unlock()
+        self.assertEqual('/~user/foo', branch.get_stacked_on_url())
+
+    def test_branch_unlock_ignores_non_launchpad_stacked_url(self):
+        # XXX
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        del self._branch_changed_log[:]
+        stacked_on_url = 'http://example.com/~user/foo'
+        branch.lock_write()
+        branch.get_config().set_user_option(
+            'stacked_on_location', stacked_on_url)
+        branch.unlock()
+        self.assertEqual(
+            [(db_branch.id, '', 'null:')], self._branch_changed_log)
+        self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
+
+    def test_branch_unlock_ignores_odd_scheme_stacked_url(self):
+        # XXX
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        del self._branch_changed_log[:]
+        stacked_on_url = 'gopher://bazaar.launchpad.dev/~user/foo'
+        branch.lock_write()
+        branch.get_config().set_user_option(
+            'stacked_on_location', stacked_on_url)
+        branch.unlock()
+        self.assertEqual(
+            [(db_branch.id, '', 'null:')], self._branch_changed_log)
+        self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
+
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
