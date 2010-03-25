@@ -70,7 +70,7 @@ class BugWatchScheduler(TunableLoop):
                             FROM bugwatchactivity
                            WHERE bugwatchactivity.bug_watch = bug_watch.id
                              AND bugwatchactivity.result IS NOT NULL
-                           ORDER BY bugwatchactivity.id
+                           ORDER BY bugwatchactivity.id DESC
                            LIMIT %s) AS recent_failures
                     ) AS recent_failure_count
                 FROM BugWatch AS bug_watch
