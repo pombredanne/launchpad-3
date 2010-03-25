@@ -5,8 +5,8 @@ __metaclass__ = type
 
 import unittest
 
-from lp.translations.interfaces.potmsgset import BrokenTextError
-from lp.translations.utilities.sanitize import Sanitize, sanitize_translations
+from lp.translations.utilities.sanitize import (
+    MixedNewlineMarkersError, Sanitize, sanitize_translations)
 
 
 class TestSanitize(unittest.TestCase):
@@ -137,7 +137,7 @@ class TestSanitize(unittest.TestCase):
                 english_text = english_template % (
                     english_newline_1, english_newline_2)
                 self.assertRaises(
-                    BrokenTextError, Sanitize, english_text)
+                    MixedNewlineMarkersError, Sanitize, english_text)
 
     def test_normalizeNewlines_mixed_newlines_translation(self):
         # Mixed newlines in the translation text will raise an exception.
@@ -150,7 +150,7 @@ class TestSanitize(unittest.TestCase):
                 translation_text = translation_template % (
                     translation_newline_1, translation_newline_2)
                 self.assertRaises(
-                    BrokenTextError,
+                    MixedNewlineMarkersError,
                     sanitize.normalizeNewlines, translation_text)
 
     def test_call_Sanitize(self):

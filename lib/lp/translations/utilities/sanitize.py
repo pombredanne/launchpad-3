@@ -3,11 +3,18 @@
 
 __metaclass__ = type
 __all__ = [
+    'MixedNewlineMarkersError',
     'sanitize_translations',
-    'sanitize_translation_on_import',
+    'sanitize_translations_on_import',
     ]
 
-from lp.translations.interfaces.potmsgset import BrokenTextError
+
+class MixedNewlineMarkersError(ValueError):
+    """Exception raised when we detect mixing of new line markers.
+
+    Raised when the sanitization code detects that a msgid or msgstr uses
+    more than one style of newline markers (windows, mac, unix).
+    """
 
 
 class Sanitize(object):
@@ -52,12 +59,12 @@ class Sanitize(object):
 
         if self.mac_style in stripped_text:
             if style is not None:
-                raise BrokenTextError(error_message)
+                raise MixedNewlineMarkersError(error_message)
             style = self.mac_style
 
         if self.unix_style in stripped_text:
             if style is not None:
-                raise BrokenTextError(error_message)
+                raise MixedNewlineMarkersError(error_message)
             style = self.unix_style
         return style
 
@@ -176,5 +183,5 @@ def sanitize_translations(english_singular, translations, pluralforms):
 
 # There will be a different function for translation coming from imports but
 # for now it is identical to the one used in browser code.
-sanitize_translation_on_import = sanitize_translations
+sanitize_translations_on_import = sanitize_translations
 
