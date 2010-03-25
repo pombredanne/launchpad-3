@@ -131,7 +131,6 @@ def run_gina(options, ztm, target_section):
     pocket = target_section.pocket
     component_override = target_section.componentoverride
     source_only = target_section.source_only
-    spnames_only = target_section.sourcepackagenames_only
 
     dry_run = options.dry_run
 
@@ -156,7 +155,6 @@ def run_gina(options, ztm, target_section):
     log.debug("Launchpad database user: %s" % LPDB_USER)
     log.info("Katie database: %s" % KTDB)
     log.info("SourcePackage Only: %s" % source_only)
-    log.info("SourcePackageName Only: %s" % spnames_only)
     log.debug("Librarian: %s:%s" % (LIBRHOST, LIBRPORT))
     log.info("Dry run: %s" % (dry_run))
     log.info("")
@@ -193,14 +191,6 @@ def run_gina(options, ztm, target_section):
     importer_handler = ImporterHandler(ztm, distro, distroseries,
                                        dry_run, kdb, package_root, keyrings,
                                        pocket, component_override)
-
-    if spnames_only:
-        log.info('Running in SourcePackageName-only mode...')
-        for source in packages_map.src_map.itervalues():
-            log.info('Ensuring %s name' % source['Package'])
-            importer_handler.ensure_sourcepackagename(source['Package'])
-        log.info('done')
-        return
 
     import_sourcepackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
