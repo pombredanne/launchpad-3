@@ -66,7 +66,7 @@ BASE_URL = "http://people.canonical.com/~ubuntu-archive/germinate-output/"
 # hints dir url, hints file is "$distro.hints" by default
 # (e.g. lucid.hints)
 #HINTS_DIR_URL = "http://people.canonical.com/~mvo/maintenance-check/%s.hints"
-HINTS_DIR_URL = "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORT_TIME_OVERWRITES.hints"
+HINTS_DIR_URL = "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS"
 
 # we need the archive root to parse the Sources file to support
 # by-source hints
@@ -266,6 +266,7 @@ if __name__ == "__main__":
     except urllib2.HTTPError, e:
         if e.getcode() != 404:
             raise
+        sys.stderr.write("hints-file: %s gave 404 error\n" % hints_file)
     
     # output suitable for the extra-override file
     for pkgname in sorted(pkg_support_time.keys()):
