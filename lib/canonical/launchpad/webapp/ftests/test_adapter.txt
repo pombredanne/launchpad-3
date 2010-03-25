@@ -162,6 +162,16 @@ Even though the statement timed out, it is recorded in the statement log:
 
     >>> clear_request_started()
 
+It is possible to disable timeouts. They should be disabled if
+set_request_started() is called in scripts.
+
+    >>> reset_store()
+    >>> set_request_started(enable_timeout=False)
+    >>> print current_statement_timeout(store)
+    0ms
+    >>> store.execute('SELECT pg_sleep(0.200)', noresult=True)
+    >>> clear_request_started()
+
 The statement_timeout will be adjusted during the transaction, within
 a certain precision. To test this reliably, we need a time machine to
 avoid random failures under load. Lets build one and plug it in:
