@@ -92,13 +92,38 @@ def _reset_dirty_commit_flags(previous_committed, previous_dirty):
 
 _local = threading.local()
 
-def set_request_started(starttime=None):
+
+class CommitLogger:
+    def __init__(self, txn):
+        self.txn = txn
+
+    def newTransaction(self, txn):
+        pass
+
+    def beforeCompletion(self, txn):
+        pass
+
+    def afterCompletion(self, txn):
+        now = time()
+        _log_statement(
+            now, now, None, 'Transaction completed, status: %s' % txn.status)
+
+
+def set_request_started(
+    starttime=None, request_statements=None, txn=None, enable_timeout=True):
     """Set the start time for the request being served by the current
     thread.
 
-    If the argument is given, it is used as the start time for the
-    request, as returned by time().  If it is not given, the
-    current time is used.
+    :param start_time: The start time of the request. If given, it is used as
+        the start time for the request, as returned by time().  If it is not
+        given, the current time is used.
+    :param request_statements; The sequence used to store the logged SQL
+        statements.
+    :type request_statements: mutable sequence.
+    :param txn: The current transaction manager. If given, txn.commit() and
+        txn.abort() calls are logged too.
+    :param enable_timeout: If True, a timeout error is raised if the request
+        runs for a longer time than the configured timeout.
     """
     if getattr(_local, 'request_start_time', None) is not None:
         warnings.warn('set_request_started() called before previous request '
@@ -107,9 +132,15 @@ def set_request_started(starttime=None):
     if starttime is None:
         starttime = time()
     _local.request_start_time = starttime
-    _local.request_statements = []
+    if request_statements is None:
+        _local.request_statements = []
+    else:
+        _local.request_statements = request_statements
     _local.current_statement_timeout = None
-
+    _local.enable_timeout = enable_timeout
+    if txn is not None:
+        _local.commit_logger = CommitLogger(txn)
+        txn.registerSynch(_local.commit_logger)
 
 def clear_request_started():
     """Clear the request timer.  This function should be called when
@@ -120,6 +151,10 @@ def clear_request_started():
 
     _local.request_start_time = None
     _local.request_statements = []
+    commit_logger = getattr(_local, 'commit_logger', None)
+    if commit_logger is not None:
+        _local.commit_logger.txn.unregisterSynch(_local.commit_logger)
+        del _local.commit_logger
 
 
 def summarize_requests():
@@ -181,7 +216,10 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
     endtime = int((endtime - request_starttime) * 1000)
     # A string containing no whitespace that lets us identify which Store
     # is being used.
-    database_identifier = connection_wrapper._database.name
+    if connection_wrapper is not None:
+        database_identifier = connection_wrapper._database.name
+    else:
+        database_identifier = None
     _local.request_statements.append(
         (starttime, endtime, database_identifier, statement))
 
@@ -192,8 +230,8 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""
-    if timeout is None:
-        return False # no timeout configured
+    if timeout is None or not getattr(_local, 'enable_timeout', True):
+        return False # no timeout configured or timeout disabled.
 
     starttime = getattr(_local, 'request_start_time', None)
     if starttime is None:
@@ -447,7 +485,8 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
 
     def get_remaining_time(self):
         """See `TimeoutTracer`"""
-        if not dbconfig.db_statement_timeout:
+        if (not dbconfig.db_statement_timeout or
+            not getattr(_local, 'enable_timeout', True)):
             return None
         start_time = getattr(_local, 'request_start_time', None)
         if start_time is None:

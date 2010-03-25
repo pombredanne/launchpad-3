@@ -113,8 +113,7 @@ from lp.bugs.interfaces.bugtask import (
     IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
     IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES)
+    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
@@ -1084,7 +1083,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        return bugtask_heat_html(self.context)
+        if IDistributionSourcePackage.providedBy(self.context.target):
+            return bugtask_heat_html(
+                self.context, target=self.context.distribution)
+        else:
+            return bugtask_heat_html(self.context)
 
 
 def calculate_heat_display(heat, max_bug_heat):
@@ -1889,7 +1892,7 @@ class BugsStatsMixin(BugsInfoMixin):
         """A count of unresolved bugs with patches."""
         return self.context.searchTasks(
             None, user=self.user,
-            status=UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES,
+            status=UNRESOLVED_BUGTASK_STATUSES,
             omit_duplicates=True, has_patch=True).count()
 
 
@@ -3434,6 +3437,7 @@ class BugTaskTableRowView(LaunchpadView):
                                 None),
             'user_can_edit_milestone': self.user_can_edit_milestone,
             'user_can_edit_status': not self.context.bugwatch,
+            'status_requires_confirmation': not self.user_can_edit_importance,
             'user_can_edit_importance': (
                 self.user_can_edit_importance and
                 not self.context.bugwatch)})

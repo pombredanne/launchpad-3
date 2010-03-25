@@ -10,6 +10,7 @@ __all__ = [
     'BugCommentBoxView',
     'BugCommentBoxExpandedReplyView',
     'BugCommentXHTMLRepresentation',
+    'BugMessageBreadcrumb',
     'build_comments_from_chunks',
     'should_display_remote_comments',
     ]
@@ -25,6 +26,7 @@ from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from canonical.config import config
 
@@ -253,3 +255,13 @@ class BugCommentXHTMLRepresentation:
             (self.comment, self.request), name="+box")
         return comment_view()
 
+
+class BugCommentBreadcrumb(Breadcrumb):
+    """Breadcrumb for an `IBugComment`."""
+
+    def __init__(self, context):
+        super(BugCommentBreadcrumb, self).__init__(context)
+
+    @property
+    def text(self):
+        return "Comment #%d" % self.context.index

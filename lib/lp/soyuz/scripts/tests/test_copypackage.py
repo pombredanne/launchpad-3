@@ -177,8 +177,8 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # or `IBinaryPackagePublishingHistory` objects.
         self.assertRaisesWithContent(
             AssertionError,
-            'pub_record is not one of SourcePackagePublishingHistory '
-            'or BinaryPackagePublishingHistory.',
+            'pub_record is not one of SourcePackagePublishingHistory, '
+            'BinaryPackagePublishingHistory or PackageUploadCustom.',
             update_files_privacy, None)
 
     def assertNewFiles(self, new_files, result):

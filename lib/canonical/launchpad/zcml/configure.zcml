@@ -12,7 +12,6 @@
     <include file="account.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binaryandsourcepackagename.zcml" />
-    <include file="crowd.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
     <include file="emailaddress.zcml" />
