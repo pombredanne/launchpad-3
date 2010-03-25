@@ -64,3 +64,43 @@ class TestSanitizeTranslations(unittest.TestCase):
             expected_sanitized,
             sanitize.normalizeWhitespaces(translation))
 
+    def test_normalizeWhitespaces_only_whitespace(self):
+        # If a translation is only whitespace, it will be turned into the
+        # empty string.
+        sanitize = Sanitize(u"English")
+        only_whitespace = u"    "
+
+        self.assertEqual(u'', sanitize.normalizeWhitespaces(only_whitespace))
+
+    def test_normalizeWhitespaces_only_whitespace_everywhere(self):
+        # Corner case: only whitespace in English and translation will
+        # normalize to the English string.
+        english_whitespace = u"  "
+        sanitize = Sanitize(english_whitespace)
+        only_whitespace = u"    "
+
+        self.assertEqual(
+            english_whitespace,
+            sanitize.normalizeWhitespaces(only_whitespace))
+
+    newline_styles = [u'\r\n', u'\r', u'\n']
+
+    def test_normalizeNewlines(self):
+        # Newlines will be converted to the same style as the English has.
+        english_template = u"Text with%snewline."
+        translation_template = u"Translation with%snewline."
+        for english_newline in self.newline_styles:
+            english_text = english_template % english_newline
+            sanitize = Sanitize(english_text)
+            expected_sanitized = translation_template % english_newline
+            for translation_newline in self.newline_styles:
+                translation_text = translation_template % translation_newline
+                self.assertEqual(
+                    expected_sanitized,
+                    sanitize.normalizeNewlines(translation_text),
+                    u"%r was not normalized to %r" % (
+                        translation_text, expected_sanitized))
+
+
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)
