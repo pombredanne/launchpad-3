@@ -616,7 +616,7 @@ class PackageUpload(SQLBase):
                     update_files_privacy(custom_file)
                     debug(logger,
                           "Re-uploaded custom file %s to librarian" %
-                          custom_file.filename)
+                          custom_file.libraryfilealias.filename)
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
                     pas_verify = BuildDaemonPackagesArchSpecific(
                         config.builddmaster.root, self.distroseries)
