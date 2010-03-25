@@ -229,41 +229,44 @@ def import_sourcepackages(packages_map, kdb, package_root,
     npacks = len(packages_map.src_map)
     log.info('%i Source Packages to be imported' % npacks)
 
-    for list_source in sorted(packages_map.src_map.values(),
-                         key=lambda x: x[0].get("Package")):
+    for list_source in sorted(
+        packages_map.src_map.values(), key=lambda x: x[0].get("Package")):
         for source in list_source:
             count += 1
             package_name = source.get("Package", "unknown")
             try:
                 try:
-                    do_one_sourcepackage(source, kdb, package_root, keyrings,
-                                     importer_handler)
+                    do_one_sourcepackage(
+                        source, kdb, package_root, keyrings, importer_handler)
                 except psycopg2.Error:
-                    log.exception("Database error: unable to create "
-                              "SourcePackage for %s. Retrying once.."
-                              % package_name)
+                    log.exception(
+                        "Database error: unable to create SourcePackage "
+                        "for %s. Retrying once.." % package_name)
                     importer_handler.abort()
                     time.sleep(15)
-                    do_one_sourcepackage(source, kdb, package_root, keyrings,
-                                     importer_handler)
-            except (InvalidVersionError, MissingRequiredArguments,
+                    do_one_sourcepackage(
+                        source, kdb, package_root, keyrings, importer_handler)
+            except (
+                InvalidVersionError, MissingRequiredArguments,
                 DisplayNameDecodingError):
-                log.exception("Unable to create SourcePackageData for %s" %
-                          package_name)
+                log.exception(
+                    "Unable to create SourcePackageData for %s" %
+                    package_name)
                 continue
             except (PoolFileNotFound, ExecutionError):
                 # Problems with katie db stuff of opening files
-                log.exception("Error processing package files for %s" %
-                          package_name)
+                log.exception(
+                    "Error processing package files for %s" % package_name)
                 continue
             except psycopg2.Error:
-                log.exception("Database errors made me give up: unable to create "
-                          "SourcePackage for %s" % package_name)
+                log.exception(
+                    "Database errors made me give up: unable to create "
+                    "SourcePackage for %s" % package_name)
                 importer_handler.abort()
                 continue
             except MultiplePackageReleaseError:
-                log.exception("Database duplication processing %s" %
-                          package_name)
+                log.exception(
+                    "Database duplication processing %s" % package_name)
                 continue
 
             if COUNTDOWN and count % COUNTDOWN == 0:
