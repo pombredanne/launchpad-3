@@ -220,7 +220,7 @@ up:
 
     >>> keys = webservice.get(gpgkeys).jsonBody()
     >>> print_self_link_of_entries(keys)
-    http://api.launchpad.dev/beta/~name12/+gpg-keys/00000001
+    http://.../~name12/+gpg-keys/...
 
 
 And then we can actually retrieve the key:
