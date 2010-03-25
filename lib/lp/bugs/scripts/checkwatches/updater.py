@@ -8,6 +8,7 @@ __all__ = [
     'BugWatchUpdater',
     'CheckWatchesCronScript',
     'CheckWatchesErrorUtility',
+    'externalbugtracker',
     'SerialScheduler',
     'TooMuchTimeSkew',
     'TwistedThreadScheduler',

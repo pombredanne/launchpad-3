@@ -73,8 +73,8 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # We monkey-patch externalbugtracker.get_external_bugtracker()
         # so that it always returns what we want.
         self.original_get_external_bug_tracker = (
-            checkwatches.externalbugtracker.get_external_bugtracker)
-        checkwatches.externalbugtracker.get_external_bugtracker = (
+            checkwatches.updater.externalbugtracker.get_external_bugtracker)
+        checkwatches.updater.externalbugtracker.get_external_bugtracker = (
             always_BugzillaAPI_get_external_bugtracker)
 
         # Create an updater with a limited set of syncable gnome
