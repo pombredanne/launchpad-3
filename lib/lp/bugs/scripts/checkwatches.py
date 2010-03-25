@@ -251,9 +251,6 @@ class BugWatchUpdater(object):
         self.txn = txn
         self.log = log
 
-        # Thread local state.
-        self._local = threading.local()
-
         # Override SYNCABLE_GNOME_PRODUCTS if necessary.
         if syncable_gnome_products is not None:
             self._syncable_gnome_products = syncable_gnome_products
@@ -291,30 +288,16 @@ class BugWatchUpdater(object):
         commits on a successful exit. Exceptions are propogated;
         transactions are not aborted when there's an error.
 
-        This can be nested. The absense of a transaction will only be
-        checked on entry to the outer most context. However, the
-        transaction will be committed on exit from every level.
+        This intentionally cannot be nested. Keep it simple.
         """
+        check_no_transaction()
         try:
-            self._local.within_transaction_semaphore
-        except AttributeError:
-            self._local.within_transaction_semaphore = 0
-
-        if self._local.within_transaction_semaphore == 0:
-            check_no_transaction()
-        self._local.within_transaction_semaphore += 1
-        try:
-            try:
-                yield self.txn
-            except:
-                # Let the exception propogate.
-                raise
-            else:
-                self.txn.commit()
-        finally:
-            self._local.within_transaction_semaphore -= 1
-            assert self._local.within_transaction_semaphore >= 0, (
-                "within_transaction_semaphore released too many times.")
+            yield self.txn
+        except:
+            # Let the exception propogate.
+            raise
+        else:
+            self.txn.commit()
 
     @with_interaction
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
