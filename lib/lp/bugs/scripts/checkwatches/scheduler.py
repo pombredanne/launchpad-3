@@ -20,13 +20,13 @@ from lp.bugs.model.bugwatch import BugWatch
 
 # The maximum additional delay in days that a watch may have placed upon
 # it.
-MAX_DELAY_DAYS = 6.0
+MAX_DELAY_DAYS = 6
 # The maximum number of BugWatchActivity entries we want to examine.
-MAX_SAMPLE_SIZE = 5.0
+MAX_SAMPLE_SIZE = 5
 
 
 def get_delay_coefficient(max_delay_days, max_sample_size):
-    return max_delay_days / max_sample_size
+    return float(max_delay_days) / float(max_sample_size)
 
 
 class BugWatchScheduler(TunableLoop):
@@ -44,6 +44,7 @@ class BugWatchScheduler(TunableLoop):
             max_delay_days = MAX_DELAY_DAYS
         if max_sample_size is None:
             max_sample_size = MAX_SAMPLE_SIZE
+        self.max_sample_size = max_sample_size
 
         self.delay_coefficient = get_delay_coefficient(
             max_delay_days, max_sample_size)
@@ -70,18 +71,19 @@ class BugWatchScheduler(TunableLoop):
                            WHERE bugwatchactivity.bug_watch = bug_watch.id
                              AND bugwatchactivity.result IS NOT NULL
                            ORDER BY bugwatchactivity.id
-                           LIMIT 5) AS recent_failures
+                           LIMIT %s) AS recent_failures
                     ) AS recent_failure_count
                 FROM BugWatch AS bug_watch
                 WHERE bug_watch.next_check IS NULL
                 LIMIT %s
             ) AS counts
         WHERE BugWatch.id = counts.id
-        """ % sqlvalues(self.delay_coefficient, chunk_size)
+        """ % sqlvalues(
+            self.delay_coefficient, self.max_sample_size, chunk_size)
         self.transaction.begin()
         result = self.store.execute(query)
-        self.transaction.commit()
         self.log.debug("Scheduled %s watches" % result.rowcount)
+        self.transaction.commit()
 
     def isDone(self):
         """Return True when there are no more watches to schedule."""

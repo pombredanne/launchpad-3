@@ -432,7 +432,7 @@ class TestBugWatchScheduler(TestCaseWithFactory):
             transaction.commit()
             self.scheduler(1)
 
-            coefficient = 1.2 * failure_count
+            coefficient = self.scheduler.delay_coefficient * failure_count
             self.assertEqual(
                 now + timedelta(days=1 + coefficient),
                 self.bug_watch.next_check)
