@@ -83,7 +83,7 @@ def get_binaries_for_source_pkg(srcname):
     pkgnames = set()
     recs = apt_pkg.GetPkgSrcRecords()
     while recs.Lookup(srcname):
-        for binary in recs.binaries:
+        for binary in recs.Binaries:
             pkgnames.add(binary)
     return pkgnames
 
