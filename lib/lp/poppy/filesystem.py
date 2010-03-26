@@ -6,7 +6,6 @@ __metaclass__ = type
 import datetime
 import os
 import stat
-import shutil
 from zope.security.interfaces import Unauthorized
 from zope.server.interfaces.ftp import IFileSystem
 from zope.interface import implements

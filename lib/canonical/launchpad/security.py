@@ -71,6 +71,8 @@ from canonical.launchpad.interfaces.oauth import (
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageReleaseDownloadCount)
 from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.publishing import (
@@ -90,6 +92,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup, IProjectGroupSet)
+from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.code.interfaces.seriessourcepackagebranch import (
@@ -1872,10 +1875,8 @@ class BranchMergeProposalEdit(AuthorizationBase):
         """
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
-                user.inTeam(self.obj.target_branch.owner) or
-                user.inTeam(self.obj.target_branch.reviewer) or
-                user.in_admin or
-                user.in_bazaar_experts)
+                check_permission('launchpad.Edit', self.obj.target_branch) or
+                user.inTeam(self.obj.target_branch.reviewer))
 
 
 class ViewEntitlement(AuthorizationBase):
@@ -2175,6 +2176,11 @@ class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
     usedfor = IBinaryPackagePublishingHistory
 
 
+class ViewBinaryPackageReleaseDownloadCount(ViewSourcePackagePublishingHistory):
+    """Restrict viewing of binary package download counts."""
+    usedfor = IBinaryPackageReleaseDownloadCount
+
+
 class ViewSourcePackageRelease(AuthorizationBase):
     """Restrict viewing of source packages.
 
@@ -2287,6 +2293,10 @@ class EditEmailAddress(EditByOwnersOrAdmins):
             return True
         return super(EditEmailAddress, self).checkAccountAuthenticated(
             account)
+
+
+class ViewGPGKey(AnonymousAuthorization):
+    usedfor = IGPGKey
 
 
 class ViewIrcID(AnonymousAuthorization):

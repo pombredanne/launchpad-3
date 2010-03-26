@@ -80,7 +80,7 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # Create an updater with a limited set of syncable gnome
         # products.
         self.updater = checkwatches.BugWatchUpdater(
-            transaction, QuietFakeLogger(), ['test-product'])
+            transaction.manager, QuietFakeLogger(), ['test-product'])
 
     def tearDown(self):
         checkwatches.externalbugtracker.get_external_bugtracker = (
@@ -112,7 +112,7 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         # BugWatchUpdater.updateBugWatches() shouldn't cause
         # checkwatches to abort.
         updater = NoBugWatchesByRemoteBugUpdater(
-            transaction, QuietFakeLogger())
+            transaction.manager, QuietFakeLogger())
 
         # Create a couple of bug watches for testing purposes.
         bug_tracker = self.factory.makeBugTracker()
@@ -313,7 +313,8 @@ class BugWatchUpdaterForThreads(BugWatchUpdater):
 
     def __init__(self, output_file):
         logger = QuietFakeLogger()
-        super(BugWatchUpdaterForThreads, self).__init__(transaction, logger)
+        super(BugWatchUpdaterForThreads, self).__init__(
+            transaction.manager, logger)
         self.output_file = output_file
 
     def _getExternalBugTrackersAndWatches(self, bug_trackers, bug_watches):

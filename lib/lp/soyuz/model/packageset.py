@@ -403,7 +403,8 @@ class PackagesetSet:
             source_name = getUtility(ISourcePackageNameSet)[source_name]
         return source_name
 
-    def setsIncludingSource(self, sourcepackagename, direct_inclusion=False):
+    def setsIncludingSource(self, sourcepackagename, distroseries=None,
+                            direct_inclusion=False):
         """See `IPackagesetSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
 
@@ -421,5 +422,9 @@ class PackagesetSet:
             '''
         store = IStore(Packageset)
         psets = SQL(query, (sourcepackagename.id,))
-        result_set = store.find(Packageset, In(Packageset.id, psets))
+        clauses = [In(Packageset.id, psets)]
+        if distroseries:
+            clauses.append(Packageset.distroseries == distroseries)
+
+        result_set = store.find(Packageset, *clauses)
         return _order_result_set(result_set)
