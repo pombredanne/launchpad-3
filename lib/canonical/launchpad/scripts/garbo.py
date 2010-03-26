@@ -13,7 +13,6 @@ import pytz
 import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
-from zope.interface import implements
 from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
@@ -27,13 +26,15 @@ from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import DBLoopTuner
+from canonical.launchpad.utilities.looptuner import (
+    DBLoopTuner, TunableLoop)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
@@ -46,29 +47,6 @@ from lp.services.scripts.base import (
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
-
-
-class TunableLoop:
-    implements(ITunableLoop)
-
-    goal_seconds = 4
-    minimum_chunk_size = 1
-    maximum_chunk_size = None # Override
-    cooldown_time = 0
-
-    def __init__(self, log, abort_time=None):
-        self.log = log
-        self.abort_time = abort_time
-
-    def run(self):
-        assert self.maximum_chunk_size is not None, (
-            "Did not override maximum_chunk_size.")
-        DBLoopTuner(
-            self, self.goal_seconds,
-            minimum_chunk_size = self.minimum_chunk_size,
-            maximum_chunk_size = self.maximum_chunk_size,
-            cooldown_time = self.cooldown_time,
-            abort_time = self.abort_time).run()
 
 
 class OAuthNoncePruner(TunableLoop):
@@ -863,6 +841,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
         BugHeatUpdater,
+        BugWatchScheduler,
         ]
     experimental_tunable_loops = []
 

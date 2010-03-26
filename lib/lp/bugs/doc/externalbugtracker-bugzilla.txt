@@ -107,6 +107,8 @@ When getExternalBugTrackerToUse() receives a Fault of type
 METHOD_NOT_FOUND from the remote server in response to its check, it
 will return a standard Bugzilla instance.
 
+    >>> transaction.commit()
+
     >>> from lp.bugs.externalbugtracker import (
     ...     BugzillaAPI, BugzillaLPPlugin)
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()

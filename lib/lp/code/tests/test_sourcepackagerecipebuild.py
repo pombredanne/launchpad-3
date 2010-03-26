@@ -62,16 +62,18 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertIs(None, bq.processor)
         self.assertEqual(bq, spb.buildqueue_record)
 
+    def test_title(self):
+        # A recipe build's title currently consists of the base
+        # branch's unique name.
+        spb = self.makeSourcePackageRecipeBuild()
+        title = "%s recipe build" % spb.recipe.base_branch.unique_name
+        self.assertEqual(spb.title, title)
+
     def test_getTitle(self):
-        # A build farm job implements getTitle().
+        # A recipe build job's title is the same as its build's title.
         spb = self.makeSourcePackageRecipeBuild()
         job = spb.makeJob()
-        # The title describes the job and should be recognizable by users.
-        # Hence the choice of the "ingredients" below.
-        title = "%s-%s-%s-recipe-build-job" % (
-            job.build.distroseries.displayname, job.build.sourcepackagename,
-            job.build.archive.displayname)
-        self.assertEqual(job.getTitle(), title)
+        self.assertEqual(job.getTitle(), spb.title)
 
     def test_distribution(self):
         # A source package recipe build has a distribution derived from
