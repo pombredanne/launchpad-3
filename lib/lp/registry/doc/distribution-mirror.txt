@@ -855,20 +855,20 @@ There cannot be multiple country mirrors of one type for one country:
     >>> login('karl@canonical.com')
     >>> proberecord = factory.makeMirrorProbeRecord(davis_station_archive)
 
-    >>> print str(davis_station_archive.content.name)
+    >>> print davis_station_archive.content.name
     ARCHIVE
     >>> print davis_station_archive.country_dns_mirror
     False
-    >>> print str(davis_station_archive.country.name)
+    >>> print davis_station_archive.country.name
     Antarctica
 
     >>> archive_mirror2 = getUtility(IDistributionMirrorSet).getByName(
     ...     'archive-mirror2')
-    >>> print str(archive_mirror2.content.name)
+    >>> print archive_mirror2.content.name
     ARCHIVE
     >>> print archive_mirror2.country_dns_mirror
     False
-    >>> print str(archive_mirror2.country.name)
+    >>> print archive_mirror2.country.name
     Antarctica
 
     >>> davis_station_archive.status = MirrorStatus.OFFICIAL
