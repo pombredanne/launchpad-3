@@ -674,9 +674,14 @@ class BugWatchUpdater(object):
             remote_new_ids = sorted(
                 set(bug_watch.remotebug for bug_watch in bug_watches
                 if bug_watch not in old_bug_watches))
-            remote_ids_with_comments = sorted(
-                bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch.unpushed_comments.any() is not None)
+            # If the remote system is not configured to sync comments,
+            # don't bother checking for any to push.
+            if remotesystem.sync_comments:
+                remote_ids_with_comments = sorted(
+                    bug_watch.remotebug for bug_watch in bug_watches
+                    if bug_watch.unpushed_comments.any() is not None)
+            else:
+                remote_ids_with_comments = []
 
         # We only make the call to getModifiedRemoteBugs() if there
         # are actually some bugs that we're interested in so as to

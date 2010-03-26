@@ -604,6 +604,7 @@ possible.
     ...         return []
 
     >>> external_bugtracker = DummyExternalBugTracker('http://example.com')
+    >>> external_bugtracker.sync_comments = True
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
@@ -917,6 +918,7 @@ comments to push in order to demonstrate this.
     ...     batch_size = 5
     >>> external_bugtracker = SmallBatchExternalBugTracker(
     ...     'http://example.com')
+    >>> external_bugtracker.sync_comments = True
 
 The watches on remote bugs 0 - 4 haven't been checked.
 
