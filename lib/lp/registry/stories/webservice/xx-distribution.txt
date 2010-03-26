@@ -150,43 +150,40 @@ returning None if there isn't one.
     >>> # Prepare stuff.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from zope.component import getUtility
-    >>> login('admin@canonical.com')
-    >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> davis_station = factory.makeMirror(ubuntu_distro,
-    ...     "Davis Station", country=9,
-    ...     http_url="http://mirror.davis.antarctica.org/ubuntu")
-    >>> davis_station_log = factory.makeMirrorProbeRecord(davis_station)
-    >>> logout()
-
-    >>> # Prepare karl user.
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from simplejson import dumps
+
+    >>> login('admin@canonical.com')
+    >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> davis_station = factory.makeMirror(ubuntu_distro,
+    ...     "Davis Station", country=9,
+    ...     http_url="http://mirror.davis.antarctica.org/ubuntu",
+    ...     official_candidate=True)
+    >>> davis_station_log = factory.makeMirrorProbeRecord(davis_station)
+    >>> logout()
+
     >>> login(ANONYMOUS)
     >>> karl_db = getUtility(IPersonSet).getByName('karl')
     >>> karl_webservice = webservice_for_person(karl_db,
     ...     permission=OAuthPermission.WRITE_PUBLIC)
     >>> logout()
 
-    >>> # Mark new mirror as official
-    >>> officialness_patch = {
-    ...     u'official_candidate': True,
-    ...     u'status': 'Official'
-    ... }
-    >>> countryness_patch = {
+    >>> # Mark new mirror as official and a country mirror.
+    >>> patch = {
+    ...     u'status': 'Official',
     ...     u'country_dns_mirror': True
     ... }
+
     >>> antarctica_patch_target = webservice.named_get(
     ...     ubuntu['self_link'], 'getMirrorByName',
     ...     name='mirror.davis.antarctica.org-archive').jsonBody()
     ... )
+
     >>> response = karl_webservice.patch(
     ...     antarctica_patch_target['self_link'], 'application/json',
-    ...     dumps(officialness_patch))
-    >>> response = karl_webservice.patch(
-    ...     antarctica_patch_target['self_link'], 'application/json',
-    ...     dumps(countryness_patch))
+    ...     dumps(patch))
 
     >>> antarctica = webservice.get("/+countries/AQ").jsonBody()
     >>> antarctica_country_mirror_archive = webservice.named_get(
@@ -197,24 +194,7 @@ returning None if there isn't one.
     content: u'Archive'
     country_dns_mirror: True
     country_link: u'http://.../+countries/AQ'
-    date_created: ...
-    date_reviewed: None
-    description: None
-    displayname: u'Davis Station'
-    distribution_link: u'http://.../ubuntu'
-    enabled: False
-    ftp_base_url: None
-    http_base_url: u'http://mirror.davis.antarctica.org/ubuntu/'
-    name: u'mirror.davis.antarctica.org-archive'
-    official_candidate: True
-    owner_link: u'http://.../~ubuntu-team'
-    resource_type_link: u'http://.../#distribution_mirror'
-    reviewer_link: None
-    rsync_base_url: None
-    self_link: u'http://.../ubuntu/+mirror/mirror.davis.antarctica.org-archive'
-    speed: u'256 Kbps'
-    status: u'Official'
-    whiteboard: None
+    ...
 
     >>> uk = webservice.get("/+countries/GB").jsonBody()
     >>> uk_country_mirror_archive = webservice.named_get(
