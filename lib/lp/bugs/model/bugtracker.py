@@ -34,6 +34,7 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -547,10 +548,6 @@ class BugTrackerSet:
             return bugtracker
         return None
 
-    def search(self):
-        """See `IBugTrackerSet`."""
-        return BugTracker.select()
-
     def ensureBugTracker(self, baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
         """See `IBugTrackerSet`."""
@@ -578,8 +575,8 @@ class BugTrackerSet:
         return bugtracker
 
     @property
-    def bugtracker_count(self):
-        return BugTracker.select().count()
+    def count(self):
+        return IStore(self.table).find(self.table).count()
 
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""

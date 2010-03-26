@@ -336,7 +336,7 @@ class IBugTrackerSet(Interface):
 
     title = Attribute('Title')
 
-    bugtracker_count = Attribute("The number of registered bug trackers.")
+    count = Attribute("The number of registered bug trackers.")
 
     def get(bugtracker_id, default=None):
         """Get a BugTracker by its id.

@@ -143,7 +143,7 @@ class MaloneApplication:
 
     @property
     def bugtracker_count(self):
-        return getUtility(IBugTrackerSet).search().count()
+        return getUtility(IBugTrackerSet).count
 
     @property
     def projects_with_bugs_count(self):
