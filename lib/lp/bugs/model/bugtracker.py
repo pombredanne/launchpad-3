@@ -26,7 +26,7 @@ from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import Not
+from storm.expr import Count, Desc, Not
 from storm.locals import Bool
 from storm.store import Store
 
@@ -589,7 +589,6 @@ class BugTrackerSet:
         store = IStore(self.table)
         result = store.find(self.table, self.table.id == BugWatch.bugtrackerID)
         result = result.group_by(self.table)
-        from storm.expr import Count, Desc
         result = result.order_by(Desc(Count(BugWatch)))
         if limit is not None:
             return result[:limit]
