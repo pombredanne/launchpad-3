@@ -280,9 +280,6 @@ class IBugTracker(Interface):
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""
 
-    def getBugWatchesNeedingUpdate():
-        """Temporary, for compatibility."""
-
     def getLinkedPersonByName(name):
         """Return the `IBugTrackerPerson` for a given name on a bugtracker.
 

@@ -376,10 +376,6 @@ class BugTracker(SQLBase):
         return self.watches_ready_to_check.union(
             self.watches_with_unpushed_comments)
 
-    def getBugWatchesNeedingUpdate(self):
-        """Temporary, for compatibility."""
-        return self.watches_needing_update
-
     # Join to return a list of BugTrackerAliases relating to this
     # BugTracker.
     _bugtracker_aliases = SQLMultipleJoin(

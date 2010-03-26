@@ -483,7 +483,7 @@ class BugWatchUpdater(object):
                 break
             with self.transaction:
                 watches_left = (
-                    bug_tracker.getBugWatchesNeedingUpdate().count())
+                    bug_tracker.watches_needing_update.count())
             self.log.info(
                 "%s watches left to check on bug tracker '%s'" %
                 (watches_left, bug_tracker_name))
@@ -548,7 +548,7 @@ class BugWatchUpdater(object):
         """Updates the given bug trackers's bug watches."""
         with self.transaction:
             bug_watches_to_update = (
-                bug_tracker.getBugWatchesNeedingUpdate())
+                bug_tracker.watches_needing_update)
             bug_watches_need_updating = (
                 bug_watches_to_update.count() > 0)
 

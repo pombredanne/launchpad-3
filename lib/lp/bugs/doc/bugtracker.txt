@@ -16,7 +16,7 @@ and an external bug, see bugwatch.txt.
 
     >>> def print_watches(bugtracker):
     ...     watches = sorted(
-    ...         bugtracker.getBugWatchesNeedingUpdate(),
+    ...         bugtracker.watches_needing_update,
     ...         key=lambda watch: (watch.remotebug, watch.bug.id))
     ...
     ...     for bug_watch in watches:
@@ -62,7 +62,7 @@ The watches needing updating should the ones with old statuses, 2000 and 42:
     Remote bug: 42   LP bug: 1
     Remote bug: 42   LP bug: 2
 
-getBugWatchesNeedingUpdate() will also return bug watches that have
+watches_needing_update will also return bug watches that have
 un-pushed bug comments that need pushing to remote bug trackers,
 regardless of whether they have been checked recently or not. We'll add
 a comment to the bug watch against remote bug 123543 to demonstrate
@@ -87,7 +87,7 @@ this.
     Remote bug: 42     LP bug: 2
 
 Once the comment has been pushed to the remote bug the bug watch will no
-longer appear in the set returned by getBugWatchesNeedingUpdate().
+longer appear in the set returned by watches_needing_update.
 
     >>> bug_message.remote_comment_id = '1'
     >>> transaction.commit()

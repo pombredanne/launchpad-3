@@ -365,7 +365,6 @@
                     bugtrackertype
                     contactdetails
                     getBugFilingAndSearchLinks
-                    getBugWatchesNeedingUpdate
                     getBugsWatching
                     getLinkedPersonByName
                     has_lp_plugin
