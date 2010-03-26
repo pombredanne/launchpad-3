@@ -127,7 +127,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         self.assertIsNot(None, code_import.import_job)
 
     def test_junk_code_import_rejected(self):
-        """A new hg import is always reviewed by default."""
+        """You are not allowed to create code imports targetting +junk."""
         registrant = self.factory.makePerson()
         self.assertRaises(AssertionError, CodeImportSet().new,
             registrant=registrant,
