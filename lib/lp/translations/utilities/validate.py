@@ -18,7 +18,7 @@ class GettextValidationError(ValueError):
 def validate_translation(original, translation, flags):
     """Check with gettext if a translation is correct or not.
 
-    If the translation has a problem, raise gettextpo.error.
+    If the translation has a problem, raise GettextValidationError.
     """
     msg = gettextpo.PoMessage()
     msg.set_msgid(original[0])
