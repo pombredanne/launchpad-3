@@ -55,7 +55,7 @@ from lp.registry.interfaces.person import (
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
     IPlacelessAuthUtility, IPrimaryContext, IStoreSelector, MAIN_STORE,
-    MASTER_FLAVOR, OffsiteFormPostError, SLAVE_FLAVOR)
+    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.dbpolicy import (
     DatabaseBlockedPolicy, LaunchpadDatabasePolicy)
 from canonical.launchpad.webapp.menu import structured
@@ -353,7 +353,7 @@ class LaunchpadBrowserPublication(
             return
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
-            raise OffsiteFormPostError('No value for REFERER header')
+            raise NoReferrerError('No value for REFERER header')
         # XXX: jamesh 2007-04-26 bug=98437:
         # The Zope testing infrastructure sets a default (incorrect)
         # referrer value of "localhost" or "localhost:9000" if no
