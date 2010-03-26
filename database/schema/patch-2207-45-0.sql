@@ -4,7 +4,6 @@ SET client_min_messages=ERROR;
 
 DROP INDEX translationmessage__current_or_imported__idx;
 DROP INDEX hwsubmissiondevice__parent__idx;
-DROP INDEX oauthnonce__access_token__idx;
 DROP INDEX shippingrequest__recipientdisplayname__idx;
 
 /* This has gotten bloated */
