@@ -5,7 +5,7 @@ __metaclass__ = type
 __all__ = [
     'MixedNewlineMarkersError',
     'sanitize_translations_from_webui',
-    'sanitize_translations_on_import',
+    'sanitize_translations_from_import',
     ]
 
 
@@ -54,8 +54,8 @@ class Sanitizer(object):
                 text_name, text)
             )
         style = None
-        # To avoid confusing the single character newline styles for mac and
-        # unix with the tow character windows one, remove the windows style
+        # To avoid confusing the single-character newline styles for mac and
+        # unix with the two-character windows one, remove the windows-style
         # newlines from the text and use that text to search for the other
         # two.
         stripped_text = text.replace(self.windows_style, u'')
@@ -187,5 +187,5 @@ def sanitize_translations_from_webui(
 
 # There will be a different function for translation coming from imports but
 # for now it is identical to the one used in browser code.
-sanitize_translations_on_import = sanitize_translations_from_webui
+sanitize_translations_from_import = sanitize_translations_from_webui
 
