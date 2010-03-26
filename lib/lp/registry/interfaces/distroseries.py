@@ -569,9 +569,10 @@ class IDistroSeriesPublic(
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
-        dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
-        build_conflicts, build_conflicts_indep, dateuploaded=None,
+        changelog, changelog_entry, dsc, dscsigningkey, section,
+        dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
+        dsc_binaries, archive, copyright, build_conflicts,
+        build_conflicts_indep, dateuploaded=None,
         source_package_recipe_build=None):
         """Create an uploads `SourcePackageRelease`.
 
@@ -591,7 +592,8 @@ class IDistroSeriesPublic(
          :param dscsigningkey: IGPGKey used to sign the DSC file
          :param dsc: string, original content of the dsc file
          :param copyright: string, the original debian/copyright content
-         :param changelog: string, changelog extracted from the changesfile
+         :param changelog: LFA ID of the debian/changelog file in librarian
+         :param changelog_entry: string, changelog extracted from the changesfile
          :param architecturehintlist: string, DSC architectures
          :param builddepends: string, DSC build dependencies
          :param builddependsindep: string, DSC architecture independent build

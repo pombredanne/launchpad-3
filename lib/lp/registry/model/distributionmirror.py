@@ -432,7 +432,7 @@ class DistributionMirrorSet:
                 base_query)
             mirrors.extend(shortlist(
                 DistributionMirror.select(query, orderBy=order_by),
-                longest_expected=100))
+                longest_expected=300))
 
         if mirror_type == MirrorContent.ARCHIVE:
             main_mirror = getUtility(

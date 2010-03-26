@@ -177,7 +177,7 @@ members should be able to see their team's icon in this list.
 
 First, we will add a custom icon to two teams.
 
-    >>> from canonical.launchpad.ftests import set_branding
+    >>> from lp.testing.branding import set_branding
     >>> admin_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> admin_browser.open('http://launchpad.dev/~myteam/+branding')
     >>> set_branding(admin_browser)

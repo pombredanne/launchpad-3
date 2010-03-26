@@ -71,6 +71,7 @@ from canonical.launchpad.webapp import errorlog
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
+from lp.testing.karma import KarmaRecorder
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -215,8 +216,19 @@ class TestCase(testtools.TestCase):
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
         tempdir = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(tempdir))
+        self.addCleanup(shutil.rmtree, tempdir)
         return tempdir
+
+    def installKarmaRecorder(self, *args, **kwargs):
+        """Set up and return a `KarmaRecorder`.
+
+        Registers the karma recorder immediately, and ensures that it is
+        unregistered after the test.
+        """
+        recorder = KarmaRecorder(*args, **kwargs)
+        recorder.register_listener()
+        self.addCleanup(recorder.unregister_listener)
+        return recorder
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
@@ -380,11 +392,10 @@ class TestCase(testtools.TestCase):
 
     def useTempDir(self):
         """Use a temporary directory for this test."""
-        tempdir = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(tempdir))
+        tempdir = self.makeTemporaryDirectory()
         cwd = os.getcwd()
         os.chdir(tempdir)
-        self.addCleanup(lambda: os.chdir(cwd))
+        self.addCleanup(os.chdir, cwd)
 
 
 class TestCaseWithFactory(TestCase):

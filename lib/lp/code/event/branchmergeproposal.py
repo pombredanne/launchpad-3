@@ -16,7 +16,7 @@ __all__ = [
 from zope.component.interfaces import ObjectEvent
 from zope.interface import implements
 
-from canonical.launchpad.event.interfaces import (
+from lp.code.interfaces.event import (
     IBranchMergeProposalStatusChangeEvent,
     INewBranchMergeProposalEvent,
     INewCodeReviewCommentEvent,
