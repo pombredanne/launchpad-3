@@ -10,7 +10,8 @@ __all__ = [
     'BugTrackerAliasSet',
     'BugTrackerSet']
 
-from datetime import datetime, timedelta
+
+from datetime import datetime
 from itertools import chain
 from pytz import timezone
 # splittype is not formally documented, but is in urllib.__all__, is
@@ -25,7 +26,7 @@ from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import Not, Or
+from storm.expr import Not
 from storm.locals import Bool
 from storm.store import Store
 
@@ -622,4 +623,3 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
-
