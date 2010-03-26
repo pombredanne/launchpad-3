@@ -452,7 +452,7 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         'bugsupervisor',
         'securitycontact',
         'cve',
-        'subscribe'
+        'subscribe',
         )
 
     def filebug(self):
@@ -1355,6 +1355,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
         # supervisor.
         self.validate_private_bugs(data)
 
+
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
 
@@ -1756,8 +1757,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             description=description,
             licenses=data['licenses'],
             license_info=data['license_info'],
-            project=project
-            )
+            project=project)
 
     def main_action(self, data):
         """See `MultiStepView`."""
