@@ -49,12 +49,12 @@ the watch.
     DEBUG   Skipping updating Ubuntu Bugzilla watches.
     DEBUG   No watches to update on http://bugs.debian.org
     DEBUG   No watches to update on mailto:bugs@example.com
+    DEBUG   No watches to update on http://bugzilla.gnome.org/
+    DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
+    DEBUG   No watches to update on https://bugzilla.mozilla.org/
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     (OOPS-...)
-    DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on http://sourceforge.net/
-    DEBUG   No watches to update on http://bugzilla.gnome.org/
-    DEBUG   No watches to update on https://bugzilla.mozilla.org/
     INFO    Time for this run: ... seconds.
     DEBUG   Removing lock file:...
     <BLANKLINE>
