@@ -978,6 +978,20 @@ class ProductPackagesPortletView(LaunchpadFormView):
         orientation='vertical')
     suggestions = None
 
+    @cachedproperty
+    def sourcepackages(self):
+        """The project's latest source packages."""
+        current_packages = [
+            sp for sp in self.context.sourcepackages
+            if sp.currentrelease is not None]
+        current_packages.reverse()
+        return current_packages[0:5]
+
+    @cachedproperty
+    def can_show_portlet(self):
+        """Are there packages, or can packages be suggested."""
+        return len(self.sourcepackages) > 0 or not config.launchpad.is_lpnet
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProductPackagesPortletView, self).setUpFields()
