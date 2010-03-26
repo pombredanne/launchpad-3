@@ -10,13 +10,13 @@ __metaclass__ = type
 
 import unittest
 
-from twisted.internet import defer, error, reactor, task
+from twisted.internet import defer, error, task
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.testing import TwistedLayer
-from canonical.twistedsupport import suppress_stderr
-from canonical.twistedsupport.processmonitor import (
+from lp.services.twistedsupport import suppress_stderr
+from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocol, ProcessMonitorProtocolWithTimeout,
     ProcessProtocolWithTwoStageKill, run_process_with_timeout)
 
