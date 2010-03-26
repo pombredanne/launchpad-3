@@ -173,6 +173,18 @@ class IBuilder(IHasOwner):
         :raises BuildDaemonError: When the slave is down.
         """
 
+    def rescueIfLost(logger=None):
+        """Reset the slave if its job information doesn't match the DB.
+
+        If the builder is BUILDING or WAITING but has a build ID string
+        that doesn't match what is stored in the DB, we have to dismiss
+        its current actions and clean the slave for another job, assuming
+        the XMLRPC is working properly at this point.
+        """
+
+    def updateStatus(logger=None):
+        """Update the builder's status by probing it."""
+
     def cleanSlave():
         """Clean any temporary files from the slave."""
 

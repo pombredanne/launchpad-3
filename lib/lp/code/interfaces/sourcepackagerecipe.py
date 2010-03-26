@@ -26,6 +26,7 @@ from zope.schema import Bool, Datetime, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -82,6 +83,10 @@ class ISourcePackageRecipe(IHasOwner):
 
     builder_recipe = Attribute(
         _("The bzr-builder data structure for the recipe."))
+
+    base_branch = Reference(
+        IBranch, title=_("The base branch used by this recipe."),
+        required=True, readonly=True)
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""

@@ -936,6 +936,7 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
         # trigger a DB error, the second updates successfully.
         bug_tracker = TestBugTracker(test_bug_one, test_bug_two)
         bug_watch_updater = TestBugWatchUpdater(self.layer.txn)
+        self.layer.txn.commit()
         bug_watch_updater._updateBugTracker(bug_tracker)
         # We verify that the first bug watch didn't update the status,
         # and the second did.
