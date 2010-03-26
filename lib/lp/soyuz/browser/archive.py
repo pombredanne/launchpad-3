@@ -490,8 +490,8 @@ class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
     """Archive index navigation menu."""
     usedfor = IArchiveIndexActionsMenu
     facet = 'overview'
-    links = ['admin', 'delete_ppa', 'edit', 'edit_dependencies',
-             'manage_subscribers', 'packages']
+    links = ['admin', 'edit', 'edit_dependencies',
+             'manage_subscribers', 'packages', 'delete_ppa']
 
 
 class IArchivePackagesActionMenu(Interface):
