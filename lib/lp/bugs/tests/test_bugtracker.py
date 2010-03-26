@@ -66,14 +66,26 @@ class TestBugTracker(TestCaseWithFactory):
                     "no remote product is passed." %
                     type.title)
 
-    def test_watches_not_in_snapshot(self):
-        # A snapshot of an IBugTracker will not contain a copy of the
-        # 'watches' property.
+    def test_attributes_not_in_snapshot(self):
+        # A snapshot of an IBugTracker will not contain a copy of
+        # several attributes.
         marker = object()
         original = self.factory.makeBugTracker()
-        self.failUnless(getattr(original, 'watches', marker) is not marker)
+        attributes = [
+            'watches',
+            'watches_needing_update',
+            'watches_ready_to_check',
+            'watches_with_unpushed_comments',
+            ]
+        for attribute in attributes:
+            self.failUnless(
+                getattr(original, attribute, marker) is not marker,
+                "Attribute %s missing from bug tracker." % attribute)
         snapshot = Snapshot(original, providing=IBugTracker)
-        self.failUnless(getattr(snapshot, 'watches', marker) is marker)
+        for attribute in attributes:
+            self.failUnless(
+                getattr(snapshot, attribute, marker) is marker,
+                "Attribute %s not missing from snapshot." % attribute)
 
     def test_watches_ready_to_check(self):
         bug_tracker = self.factory.makeBugTracker()
