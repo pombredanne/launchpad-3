@@ -550,6 +550,10 @@ class BugTrackerSet:
             return bugtracker
         return None
 
+    def search(self):
+        """See `IBugTrackerSet`."""
+        return BugTracker.select()
+
     def ensureBugTracker(self, baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
         """See `IBugTrackerSet`."""
