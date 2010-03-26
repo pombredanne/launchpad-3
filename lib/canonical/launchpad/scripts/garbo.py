@@ -34,7 +34,8 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
-from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
+from lp.bugs.scripts.checkwatches.scheduler import (
+    BugWatchScheduler, MAX_SAMPLE_SIZE)
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
@@ -751,9 +752,9 @@ class BugWatchActivityPruner(TunableLoop):
                 FROM BugWatch, BugWatchActivity
                 WHERE BugWatchActivity.bug_watch = BugWatch.id
                 GROUP BY BugWatch.id) AS watch_activity
-            WHERE watch_activity.activity_count > 5
+            WHERE watch_activity.activity_count > %s
             LIMIT %s;
-        """ % sqlvalues(chunk_size)
+        """ % sqlvalues(MAX_SAMPLE_SIZE, chunk_size)
         store = IMasterStore(BugWatch)
         results = store.execute(query)
         return set(result[0] for result in results)
@@ -767,12 +768,12 @@ class BugWatchActivityPruner(TunableLoop):
                 FROM BugWatchActivity
                 WHERE bug_watch = %s
                 ORDER BY id DESC
-                OFFSET 5);
+                OFFSET %s);
         """
-
         store = IMasterStore(BugWatch)
         for bug_watch_id in bug_watch_ids:
-            results = store.execute(query % sqlvalues(bug_watch_id))
+            results = store.execute(
+                query % sqlvalues(bug_watch_id, MAX_SAMPLE_SIZE))
             self.log.debug(
                 "Pruned %s BugWatchActivity entries for watch %s" %
                 (results.rowcount, bug_watch_id))

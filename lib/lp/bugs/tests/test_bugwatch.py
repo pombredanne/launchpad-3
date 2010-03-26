@@ -27,7 +27,8 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
-from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
+from lp.bugs.scripts.checkwatches.scheduler import (
+    BugWatchScheduler, MAX_SAMPLE_SIZE)
 from lp.registry.interfaces.person import IPersonSet
 
 from lp.testing import TestCaseWithFactory
@@ -448,9 +449,10 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         self.pruner(chunk_size=1)
         self.assertTrue(self.pruner.isDone())
 
-    def test_pruneBugWatchActivity_leaves_5_most_recent(self):
+    def test_pruneBugWatchActivity_leaves_most_recent(self):
         # BugWatchActivityPruner.pruneBugWatchActivity() will delete all
-        # but the 5 most recent BugWatchActivity items for a bug watch.
+        # but the n most recent BugWatchActivity items for a bug watch,
+        # where n is determined by checkwatches.scheduler.MAX_SAMPLE_SIZE.
         for i in range(5):
             self.bug_watch.addActivity(message="Activity %s" % i)
         transaction.commit()
@@ -458,10 +460,10 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         self.layer.switchDbUser('garbo')
         self.assertEqual(15, self.bug_watch.activity.count())
         self.pruner.pruneBugWatchActivity([self.bug_watch.id])
-        self.assertEqual(5, self.bug_watch.activity.count())
+        self.assertEqual(MAX_SAMPLE_SIZE, self.bug_watch.activity.count())
 
         messages = [activity.message for activity in self.bug_watch.activity]
-        for i in range(5):
+        for i in range(MAX_SAMPLE_SIZE):
             self.failUnless("Activity %s" % i in messages)
 
 
