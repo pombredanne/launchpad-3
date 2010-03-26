@@ -17,7 +17,7 @@ __all__ = [
 
 
 from calendar import timegm
-from collection import defaultdict
+from collections import defaultdict
 import contextlib
 import logging
 import os
