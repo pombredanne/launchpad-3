@@ -37,7 +37,7 @@ from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import (
-    IDefaultSkin, IBrowserRequest, IBrowserApplicationRequest)
+    IDefaultSkin, IBrowserRequest)
 from zope.publisher.publish import mapply
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
@@ -61,7 +61,6 @@ from canonical.launchpad.webapp.dbpolicy import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
-from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
