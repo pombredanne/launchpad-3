@@ -33,6 +33,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugwatch import BugWatch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
@@ -753,6 +754,29 @@ class BugHeatUpdater(TunableLoop):
             getUtility(ICalculateBugHeatJobSource).create(bug)
             self.total_processed += 1
         transaction.commit()
+
+
+class BugWatchActivityPruner(TunableLoop):
+    """A TunableLoop to prune BugWatchActivity entries."""
+
+    def getPrunableBugWatchIds(self, chunk_size):
+        """Return the set of BugWatch IDs whose activity is prunable."""
+        query = """
+            SELECT
+                watch_activity.id
+            FROM (
+                SELECT
+                    BugWatch.id AS id,
+                    COUNT(BugWatchActivity.id) as activity_count
+                FROM BugWatch, BugWatchActivity
+                WHERE BugWatchActivity.bug_watch = BugWatch.id
+                GROUP BY BugWatch.id) AS watch_activity
+            WHERE watch_activity.activity_count > 5
+            LIMIT %s;
+        """ % sqlvalues(chunk_size)
+        store = IMasterStore(BugWatch)
+        results = store.execute(query)
+        return set(result[0] for result in results)
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):

@@ -13,6 +13,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.webapp import urlsplit
+from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
@@ -371,6 +373,30 @@ class TestBugWatchBugTasks(TestCaseWithFactory):
         self.assertIsInstance(
             self.bug_watch.bugtasks, list)
 
+
+class TestBugWatchActivityPruner(TestCaseWithFactory):
+    """TestCase for the BugWatchActivityPruner."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugWatchActivityPruner, self).setUp(
+            'foo.bar@canonical.com')
+        self.bug_watch = self.factory.makeBugWatch()
+        for i in range(10):
+            self.bug_watch.addActivity()
+
+        self.pruner = BugWatchActivityPruner(QuietFakeLogger())
+
+    def test_getPrunableBugWatchIds(self):
+        # BugWatchActivityPruner.getPrunableBugWatchIds() will return a
+        # set containing the IDs of BugWatches whose activity can be
+        # pruned.
+        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
+        self.assertEqual(1, len(prunable_ids))
+        self.failUnless(
+            self.bug_watch.id in prunable_ids,
+            "BugWatch ID not present in prunable_ids.")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
