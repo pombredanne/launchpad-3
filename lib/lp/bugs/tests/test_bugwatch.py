@@ -391,7 +391,7 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         super(TestBugWatchActivityPruner, self).setUp(
             'foo.bar@canonical.com')
         self.bug_watch = self.factory.makeBugWatch()
-        for i in range(10):
+        for i in range(MAX_SAMPLE_SIZE + 1):
             self.bug_watch.addActivity()
 
         self.pruner = BugWatchActivityPruner(QuietFakeLogger())
@@ -458,7 +458,7 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         transaction.commit()
 
         self.layer.switchDbUser('garbo')
-        self.assertEqual(15, self.bug_watch.activity.count())
+        self.assertEqual(MAX_SAMPLE_SIZE + 6, self.bug_watch.activity.count())
         self.pruner.pruneBugWatchActivity([self.bug_watch.id])
         self.assertEqual(MAX_SAMPLE_SIZE, self.bug_watch.activity.count())
 
