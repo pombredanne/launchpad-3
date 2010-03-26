@@ -1221,7 +1221,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         run_with_login(person, set_next_check, bug_watch)
         return bug_watch
 
-    def makeBugComment(self, bug=None, owner=None, subject=None, body=None):
+    def makeBugComment(self, bug=None, owner=None, subject=None, body=None,
+                       bug_watch=None):
         """Create and return a new bug comment.
 
         :param bug: An `IBug` or a bug ID or name, or None, in which
@@ -1232,6 +1233,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             case a new message will be generated.
         :param body: An `IMessage` or a string, or None, in which
             case a new message will be generated.
+        :param bug_watch: An `IBugWatch`, or None.
         :return: An `IBugMessage`.
         """
         if bug is None:
@@ -1244,8 +1246,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             subject = self.getUniqueString()
         if body is None:
             body = self.getUniqueString()
+        assert (bug is None or bug_watch is None or bug == bug_watch.bug), (
+            "Bug watch points to bug %d, should point to %d." % (
+                bug_watch.bug.id, bug.id))
         return bug.newMessage(owner=owner, subject=subject,
-                              content=body, parent=None, bugwatch=None,
+                              content=body, parent=None, bugwatch=bug_watch,
                               remote_comment_id=None)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
