@@ -828,7 +828,6 @@ or $CC.releases.ubuntu.com. These assignments are tracked in Launchpad.
     >>> davis_station_archive = factory.makeMirror(ubuntu_distro,
     ...     "Davis Station", country=9,
     ...     http_url="http://mirror.davis.antarctica.org/ubuntu")
-
     >>> de_archive_mirror.official_candidate = True
     >>> de_archive_mirror.status = MirrorStatus.OFFICIAL
     >>> de_archive_prober_log = factory.makeMirrorProbeRecord(de_archive_mirror)
@@ -857,10 +856,8 @@ There cannot be multiple country mirrors of one type for one country:
 
     >>> print str(davis_station_archive.content.name)
     ARCHIVE
-
     >>> print davis_station_archive.country_dns_mirror
     False
-
     >>> print str(davis_station_archive.country.name)
     Antarctica
 
@@ -868,20 +865,15 @@ There cannot be multiple country mirrors of one type for one country:
     ...     'archive-mirror2')
     >>> print str(archive_mirror2.content.name)
     ARCHIVE
-
     >>> print archive_mirror2.country_dns_mirror
     False
-
     >>> print str(archive_mirror2.country.name)
     Antarctica
 
-    >>> # Mark davis_station_archive official and a candidate.
     >>> davis_station_archive.official_candidate = True
     >>> davis_station_archive.status = MirrorStatus.OFFICIAL
-    >>> # Mark davis_station_archive as country mirror.
+    
     >>> davis_station_archive.transitionToCountryMirror(True)
-
-    >>> # Attempt to mark archive-mirror2 as a country mirror.
     >>> archive_mirror2.transitionToCountryMirror(True)
     Traceback (most recent call last):
     ...
@@ -893,7 +885,6 @@ Mirrors which have not been probed may not be marked as country mirrors:
     >>> linux_au_mirror = factory.makeMirror(ubuntu_distro,
     ...     "Linux.org.au", country=14,
     ...     http_url="http://mirror.linux.org.au/ubuntu")
-    >>> # Mark linux_au_mirror official and a candidate.
     >>> linux_au_mirror.official_candidate = True
     >>> linux_au_mirror.status = MirrorStatus.OFFICIAL
     >>> linux_au_mirror.transitionToCountryMirror(True)
@@ -910,10 +901,8 @@ country mirrors:
     >>> osuosl_mirror = factory.makeMirror(ubuntu_distro, "OSU Open Source Lab",
     ...     country=226,
     ...     ftp_url="ftp://ubuntu.osuosl.org/pub/ubuntu/")
-    >>> # Mark osuosl_mirror official and a candidate.
     >>> osuosl_mirror.official_candidate = True
     >>> osuosl_mirror.status = MirrorStatus.OFFICIAL
-
     >>> print osuosl_mirror.http_base_url
     None
 
