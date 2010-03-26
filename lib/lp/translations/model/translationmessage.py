@@ -156,63 +156,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         return
 
 
-def validate_is_current_ubuntu(self, attr, value):
-    """Unset current Ubuntu message before selecting new one as current.
-
-    :param value: Whether we want this translation message as the new
-        current one.
-
-    If there is already another current message, we unset it first.
-    """
-    assert value is not None, 'is_current_ubuntu field cannot be None.'
-
-    if value and not self.is_current_ubuntu:
-        # We are setting this message as the current one. We need to
-        # change current one to non current before.
-        current_translation_message = (
-            self.potmsgset.getCurrentTranslationMessage(
-                self.potemplate,
-                self.language, self.variant))
-        if (current_translation_message is not None and
-            current_translation_message.potemplate == self.potemplate):
-            current_translation_message.is_current_ubuntu = False
-            # We need to flush the old current message before the
-            # new one because the database constraints prevent two
-            # current messages.
-            Store.of(self).add_flush_order(current_translation_message,
-                                           self)
-
-    return value
-
-def validate_is_current_upstream(self, attr, value):
-    """Unset current upstream message before activing this one as upstream.
-
-    :param value: Whether we want this translation message as the new
-        upstream one.
-
-    If there is already another upstream message, we unset it first.
-    """
-    assert value is not None, 'is_current_upstream field cannot be None.'
-
-    if value and not self.is_current_upstream:
-        # We are setting this message as the current one. We need to
-        # change current one to non current before.
-        upstream_translation_message = (
-            self.potmsgset.getImportedTranslationMessage(
-                self.potemplate,
-                self.language, self.variant))
-        if (upstream_translation_message is not None and
-            upstream_translation_message.potemplate == self.potemplate):
-            upstream_translation_message.is_current_upstream = False
-            # We need to flush the old upstream message before the
-            # new one because the database constraints prevent two
-            # upstream messages.
-            Store.of(self).add_flush_order(upstream_translation_message,
-                                           self)
-
-    return value
-
-
 class TranslationMessage(SQLBase, TranslationMessageMixIn):
     implements(ITranslationMessage)
 
@@ -263,11 +206,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         dbName='validation_status', notNull=True,
         schema=TranslationValidationStatus)
     is_current_ubuntu = BoolCol(
-        dbName='is_current_ubuntu', notNull=True, default=False,
-        storm_validator=validate_is_current_ubuntu)
+        dbName='is_current_ubuntu', notNull=True, default=False)
     is_current_upstream = BoolCol(
-        dbName='is_current_upstream', notNull=True, default=False,
-        storm_validator=validate_is_current_upstream)
+        dbName='is_current_upstream', notNull=True, default=False)
     was_obsolete_in_last_import = BoolCol(
         dbName='was_obsolete_in_last_import', notNull=True, default=False)
 
