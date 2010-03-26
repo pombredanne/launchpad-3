@@ -9,7 +9,6 @@ __all__ = [
     'is_identical_translation',
     ]
 
-import gettextpo
 import datetime
 import posixpath
 import pytz
@@ -52,6 +51,7 @@ from lp.translations.utilities.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
+from lp.translations.utilities.validate import GettextValidationError
 
 from canonical.launchpad.webapp import canonical_url
 
@@ -482,7 +482,7 @@ class FileImporter(object):
                 self.logger.info(
                     "Conflicting updates on message %d." % potmsgset.id)
             return None
-        except gettextpo.error, e:
+        except GettextValidationError, e:
             # We got an error, so we submit the translation again but
             # this time asking to store it as a translation with
             # errors.

@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = ['POTMsgSet']
 
 import datetime
-import gettextpo
 import logging
 import pytz
 
@@ -50,7 +49,8 @@ from lp.translations.model.translationmessage import (
     TranslationMessage)
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem)
-from lp.translations.utilities.validate import validate_translation
+from lp.translations.utilities.validate import (
+    GettextValidationError, validate_translation)
 
 
 # Msgids that indicate translation credit messages, and their
@@ -486,7 +486,7 @@ class POTMsgSet(SQLBase):
         try:
             validate_translation(
                 original_texts, translations, self.flags)
-        except gettextpo.error:
+        except GettextValidationError:
             if ignore_errors:
                 # The translations are stored anyway, but we set them as
                 # broken.

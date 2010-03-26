@@ -35,7 +35,11 @@ def validate_translation(original, translation, flags):
         msg.set_format(flag, True)
 
     # Check the msg.
-    msg.check_format()
+    try:
+        msg.check_format()
+    except gettextpo.error, e:
+        # Hide gettextpo.error in GettextValidationError.
+        raise GettextValidationError(e)
 
 
 def validate_translations(msgids, translations, flags, ignore_errors=False):
@@ -54,7 +58,7 @@ def validate_translations(msgids, translations, flags, ignore_errors=False):
     # to know if gettext is unhappy with the input.
     try:
         validate_translation(msgids, translations, flags)
-    except gettextpo.error, e:
+    except GettextValidationError:
         if ignore_errors:
             # The translations are stored anyway, although they have not been
             # validated.status
@@ -65,7 +69,7 @@ def validate_translations(msgids, translations, flags, ignore_errors=False):
                 # Partial translations cannot be stored, the
                 # exception is raised again and handled outside
                 # this method.
-                raise GettextValidationError(e)
+                raise
 
     return validated
 

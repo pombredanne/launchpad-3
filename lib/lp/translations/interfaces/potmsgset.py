@@ -232,7 +232,7 @@ class IPOTMsgSet(Interface):
             message.
 
         If there is an error with the translations and ignore_errors is not
-        True or it's not a fuzzy submit, raises gettextpo.error
+        True or it's not a fuzzy submit, raises GettextValidationError.
 
         :return: a modified or newly created translation message; or None if
             no message is to be updated.  This can happen when updating a
