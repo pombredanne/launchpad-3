@@ -128,7 +128,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         self.assertIsNot(None, code_import.import_job)
 
     def test_junk_code_import_rejected(self):
-        """An import targetting someone's +junk is disallowed"""
+        """You are not allowed to create code imports targetting +junk."""
         registrant = self.factory.makePerson()
         self.assertRaises(AssertionError, CodeImportSet().new,
             registrant=registrant,
