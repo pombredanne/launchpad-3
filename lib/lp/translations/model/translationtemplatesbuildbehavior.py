@@ -22,6 +22,9 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
+from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 
 
 class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
@@ -82,8 +85,13 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def _uploadTarball(self, branch, tarball, logger):
         """Upload tarball to productseries that want it."""
-        # XXX JeroenVermeulen 2010-01-28 bug=507680: Find productseries
-        # that want these templates, and upload to there.
+        queue = getUtility(ITranslationImportQueue)
+        productseriesset = getUtility(IProductSeriesSet)
+        related_series = (
+            productseriesset.findByTranslationsImportBranch(branch))
+        for series in related_series:
+            queue.addOrUpdateEntriesFromTarball(
+                tarball, False, branch.owner, productseries=series)
 
     def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
         """Deal with a finished ("WAITING" state, perversely) build job.

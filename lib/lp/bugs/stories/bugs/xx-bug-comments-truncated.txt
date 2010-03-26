@@ -53,7 +53,7 @@ Let's click on the first "Read more..." link.
 The whole comment is visible on this page:
 
     >>> print browser.title
-    Bug #2 (blackhole) : Bugs : Tomcat
+    Comment #1 : Bug #2 (blackhole) : Bugs : Tomcat
 
     >>> print_comments(browser.contents) #doctest: -ELLIPSIS
     <div class="boardCommentBody">
