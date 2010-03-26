@@ -95,7 +95,7 @@ class Sanitizer(object):
         # Now, fix the newline chars.
         new_text = self.normalizeNewlines(new_text)
         # Finally, set the same whitespace at the start/end of the string.
-        new_text = self.normalizeWhitespaces(new_text)
+        new_text = self.normalizeWhitespace(new_text)
         # Also, if it's an empty string, replace it with None.
         if new_text == '':
             new_text = None

@@ -33,7 +33,7 @@ class TestSanitizer(TestCase):
             expected_sanitized,
             sanitizer.convertDotToSpace(translation))
 
-    def test_normalizeWhitespaces_add(self):
+    def test_normalizeWhitespace_add(self):
         # Leading and trailing white space in the translation are synced to
         # what the English text has.
         sanitizer = Sanitizer(u"  English with leading white space.  ")
@@ -42,9 +42,9 @@ class TestSanitizer(TestCase):
 
         self.assertEqual(
             expected_sanitized,
-            sanitizer.normalizeWhitespaces(translation))
+            sanitizer.normalizeWhitespace(translation))
 
-    def test_normalizeWhitespaces_remove(self):
+    def test_normalizeWhitespace_remove(self):
         # Leading and trailing white space in the translation are synced to
         # what the English text has.
         sanitizer = Sanitizer(u"English without leading white space.")
@@ -53,9 +53,9 @@ class TestSanitizer(TestCase):
 
         self.assertEqual(
             expected_sanitized,
-            sanitizer.normalizeWhitespaces(translation))
+            sanitizer.normalizeWhitespace(translation))
 
-    def test_normalizeWhitespaces_add_and_remove(self):
+    def test_normalizeWhitespace_add_and_remove(self):
         # Leading and trailing white space in the translation are synced to
         # what the English text has.
         sanitizer = Sanitizer(u"  English with leading white space.")
@@ -64,17 +64,17 @@ class TestSanitizer(TestCase):
 
         self.assertEqual(
             expected_sanitized,
-            sanitizer.normalizeWhitespaces(translation))
+            sanitizer.normalizeWhitespace(translation))
 
-    def test_normalizeWhitespaces_only_whitespace(self):
+    def test_normalizeWhitespace_only_whitespace(self):
         # If a translation is only whitespace, it will be turned into the
         # empty string.
         sanitizer = Sanitizer(u"English")
         only_whitespace = u"    "
 
-        self.assertEqual(u'', sanitizer.normalizeWhitespaces(only_whitespace))
+        self.assertEqual(u'', sanitizer.normalizeWhitespace(only_whitespace))
 
-    def test_normalizeWhitespaces_only_whitespace_everywhere(self):
+    def test_normalizeWhitespace_only_whitespace_everywhere(self):
         # Corner case: only whitespace in English and translation will
         # normalize to the English string.
         english_whitespace = u"  "
@@ -83,7 +83,7 @@ class TestSanitizer(TestCase):
 
         self.assertEqual(
             english_whitespace,
-            sanitizer.normalizeWhitespaces(only_whitespace))
+            sanitizer.normalizeWhitespace(only_whitespace))
 
     newline_styles = [u'\r\n', u'\r', u'\n']
 
