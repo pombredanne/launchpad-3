@@ -14,4 +14,4 @@ CREATE TABLE SourcePackageRecipeDistroSeries
       sourcepackagerecipe, distroseries)
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 90, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 38, 0);
