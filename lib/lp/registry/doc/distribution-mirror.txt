@@ -906,6 +906,12 @@ country mirrors:
     >>> print osuosl_mirror.http_base_url
     None
 
+    >>> osuosl_mirror.transitionToCountryMirror(None)
+    Traceback (most recent call last):
+    ...
+    NoneError: None isn't acceptable as a value for
+      DistributionMirror.country_dns_mirror
+
     >>> osuosl_mirror.transitionToCountryMirror(True)
     Traceback (most recent call last):
     ...
