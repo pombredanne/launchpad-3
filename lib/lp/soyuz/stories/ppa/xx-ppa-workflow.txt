@@ -392,7 +392,7 @@ see some of the updated information.
 
     >>> for msg in get_feedback_messages(admin_browser.contents):
     ...     print msg
-    This archive has been disabled.
+    This PPA has been disabled.
 
 We need go back to the "Administer archive" page to see the build score and
 external dependencies changes that were made:
@@ -735,7 +735,7 @@ After disabling the PPA a warning message is displayed on its page.
     >>> no_priv_browser.getControl('Save').click()
     >>> print extract_text(
     ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
-    This archive has been disabled.
+    This PPA has been disabled.
 
 Going back to the edit page, we can see the publish flag was cleared:
 
@@ -820,12 +820,14 @@ no longer "Delete packages", "Edit PPA dependencies", or "Change details".
     ...
     LinkNotFoundError
     
+    >>> print no_priv_browser.getLink("Edit PPA dependencies")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> no_priv_browser.getLink("View package details").click()
     >>> print no_priv_browser.getLink("Delete packages")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> print no_priv_browser.getLink("Edit PPA dependencies")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
