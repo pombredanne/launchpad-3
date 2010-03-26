@@ -225,6 +225,17 @@ that the project has no Ubuntu packages.
     >>> print evo.date_last_packaging_check
     None
 
+Any logged in user can set the date.
+
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+
+    >>> login("no-priv@canonical.com")
+    >>> evo.date_last_packaging_check = datetime(
+    ...     2010, 1, 25, 0, 0, 0, tzinfo=UTC)
+    >>> print evo.date_last_packaging_check
+    2010-01-25 00:00:00+00:00
+
 
 External Bug Tracker
 --------------------
@@ -249,6 +260,8 @@ one.
 This is true even if its project has a bug tracker specified.
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
+
+    >>> login_person(firefox.owner)
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
     >>> firefox.project.bugtracker = gnome_bugzilla
     >>> firefox.getExternalBugTracker() is None
@@ -327,6 +340,7 @@ may not have a license set, so an empty tuple is valid. If the licenses
 or license_info attributes are changed, the license_reviewed is reset
 to false.
 
+    >>> login('admin@canonical.com')
     >>> productset.getByName('jokosher').licenses == ()
     True
     >>> product.licenses
@@ -406,7 +420,6 @@ We can filter for specifications that contain specific text:
 We can use IProduct.milestones to get all milestones associated with any
 ProductSeries of a product.
 
-    >>> from datetime import datetime
     >>> [milestone.name for milestone in firefox.milestones]
     [u'1.0']
 
