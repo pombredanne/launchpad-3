@@ -117,15 +117,15 @@ class IProjectGroupPublic(
         Summary(
             title=_('Project Group Summary'),
             description=_(
-                "A brief (one-paragraph) summary of the project group.")))
+                "A short paragraph to introduce the project group's work.")))
 
     description = exported(
         Text(
             title=_('Description'),
-            description=_("A detailed description of the project group, "
-                          "including details like when it was founded, "
-                          "how many contributors there are, "
-                          "and how it is organised and coordinated.")))
+            description=_(
+                "Details about the project group's work, goals, and "
+                "how to contribute. Use plain text, paragraphs are preserved "
+                "and URLs are linked in pages. Don't repeat the Summary.")))
 
     datecreated = exported(
         Datetime(
@@ -167,8 +167,7 @@ class IProjectGroupPublic(
             allow_userinfo=False,
             description=_("The URL of this project group's wiki, "
                           "if it has one. Please include the http://")),
-        exported_as="wiki_url"
-        )
+        exported_as="wiki_url")
 
     lastdoap = TextLine(
         title=_('Last-parsed RDF fragment'),

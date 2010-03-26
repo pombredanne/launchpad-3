@@ -25,6 +25,7 @@ from lp.bugs.externalbugtracker.base import (
     InvalidBugId, LookupTree, UnknownRemoteStatusError,
     UnparseableBugData
     )
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
 from lp.bugs.interfaces.bugtask import (
@@ -325,6 +326,7 @@ class TracLPPlugin(Trac):
         self._url_opener = urllib2.build_opener(
             urllib2.HTTPCookieProcessor(cookie_jar))
 
+    @ensure_no_transaction
     @needs_authentication
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
@@ -338,6 +340,7 @@ class TracLPPlugin(Trac):
             if remote_bug['status'] != 'missing':
                 self.bugs[int(remote_bug['id'])] = remote_bug
 
+    @ensure_no_transaction
     def urlopen(self, request, data=None):
         """See `ExternalBugTracker`.
 
@@ -347,6 +350,7 @@ class TracLPPlugin(Trac):
         """
         return self._url_opener.open(request, data)
 
+    @ensure_no_transaction
     def _generateAuthenticationToken(self):
         """Create an authentication token and return it."""
         internal_xmlrpc = xmlrpclib.ServerProxy(
@@ -366,6 +370,7 @@ class TracLPPlugin(Trac):
             raise BugTrackerAuthenticationError(
                 self.baseurl, '%s "%s"' % (error.code, error.msg))
 
+    @ensure_no_transaction
     @needs_authentication
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
@@ -377,6 +382,7 @@ class TracLPPlugin(Trac):
         trac_time = datetime.utcfromtimestamp(utc_time)
         return trac_time.replace(tzinfo=pytz.timezone('UTC'))
 
+    @ensure_no_transaction
     @needs_authentication
     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
         """See `IExternalBugTracker`."""
@@ -403,6 +409,7 @@ class TracLPPlugin(Trac):
         else:
             return [comment_id for comment_id in bug['comments']]
 
+    @ensure_no_transaction
     @needs_authentication
     def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
@@ -453,6 +460,7 @@ class TracLPPlugin(Trac):
 
         return message
 
+    @ensure_no_transaction
     @needs_authentication
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """See `ISupportsCommentPushing`."""
@@ -461,6 +469,7 @@ class TracLPPlugin(Trac):
 
         return comment_id
 
+    @ensure_no_transaction
     @needs_authentication
     def getLaunchpadBugId(self, remote_bug):
         """Return the Launchpad bug for a given remote bug.
@@ -485,6 +494,7 @@ class TracLPPlugin(Trac):
         else:
             return lp_bug_id
 
+    @ensure_no_transaction
     @needs_authentication
     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
         """Set the Launchpad bug ID for a given remote bug.

@@ -1025,6 +1025,7 @@ report described by the bugwatch.
   date_created: u'2004-10-04T01:00:00+00:00'
   date_last_changed: u'2004-10-04T01:00:00+00:00'
   date_last_checked: u'2004-10-04T01:00:00+00:00'
+  date_next_checked: None
   last_error_type: None
   owner_link: u'http://.../~mark'
   remote_bug: u'2000'
@@ -1096,6 +1097,7 @@ Following the redirect, we can see the new bug watch:
   date_created: u'...'
   date_last_changed: None
   date_last_checked: None
+  date_next_checked: None
   last_error_type: None
   owner_link: u'http://.../~salgado'
   remote_bug: u'9876'
