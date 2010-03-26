@@ -58,6 +58,7 @@ class SourcePackageRecipe(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     name = Unicode(allow_none=True)
+    description = Unicode(allow_none=False)
 
     @property
     def _recipe_data(self):
@@ -85,7 +86,7 @@ class SourcePackageRecipe(Storm):
 
     @staticmethod
     def new(registrant, owner, distroseries, sourcepackagename, name,
-            builder_recipe):
+            builder_recipe, description):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
@@ -95,6 +96,7 @@ class SourcePackageRecipe(Storm):
         sprecipe.distroseries = distroseries
         sprecipe.sourcepackagename = sourcepackagename
         sprecipe.name = name
+        sprecipe.description = description
         store.add(sprecipe)
         return sprecipe
 

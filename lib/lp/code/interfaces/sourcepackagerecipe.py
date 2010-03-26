@@ -14,7 +14,7 @@ __all__ = [
 from lazr.restful.fields import Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Datetime, TextLine
+from zope.schema import Datetime, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
@@ -72,6 +72,10 @@ class ISourcePackageRecipe(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe."))
 
+    description = Text(
+        title=_('Description'), required=True,
+        description=_('A short description of the recipe.'))
+
     builder_recipe = Attribute(
         _("The bzr-builder data structure for the recipe."))
 
@@ -98,5 +102,5 @@ class ISourcePackageRecipeSource(Interface):
     """
 
     def new(registrant, owner, distroseries, sourcepackagename, name,
-            builder_recipe):
+            builder_recipe, description):
         """Create an `ISourcePackageRecipe`."""
