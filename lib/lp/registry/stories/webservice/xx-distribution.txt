@@ -157,11 +157,11 @@ returning None if there isn't one.
 
     >>> login('admin@canonical.com')
     >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> davis_station = factory.makeMirror(ubuntu_distro,
-    ...     "Davis Station", country=9,
-    ...     http_url="http://mirror.davis.antarctica.org/ubuntu",
+    >>> showa_station = factory.makeMirror(ubuntu_distro,
+    ...     "Showa Station", country=9,
+    ...     http_url="http://mirror.showa.antarctica.org/ubuntu",
     ...     official_candidate=True)
-    >>> davis_station_log = factory.makeMirrorProbeRecord(davis_station)
+    >>> showa_station_log = factory.makeMirrorProbeRecord(showa_station)
     >>> logout()
 
     >>> login(ANONYMOUS)
@@ -178,7 +178,7 @@ returning None if there isn't one.
 
     >>> antarctica_patch_target = webservice.named_get(
     ...     ubuntu['self_link'], 'getMirrorByName',
-    ...     name='mirror.davis.antarctica.org-archive').jsonBody()
+    ...     name='mirror.showa.antarctica.org-archive').jsonBody()
     ... )
 
     >>> response = karl_webservice.patch(
