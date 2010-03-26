@@ -73,7 +73,8 @@ class ICodeImport(Interface):
         Choice(
             title=_('Branch'), required=True, readonly=True,
             vocabulary='Branch',
-            description=_("The Bazaar branch produced by the import system.")))
+            description=_(
+                "The Bazaar branch produced by the import system.")))
 
     registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
