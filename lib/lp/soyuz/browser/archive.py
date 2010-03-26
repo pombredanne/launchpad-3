@@ -405,13 +405,22 @@ class ArchiveMenuMixin:
         archive = view.context
         if not archive.private:
             link.enabled = False
+        if archive.status in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
+            link.enabled = False
+        return link
 
         return link
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        link = Link('+edit', text, icon='edit')
+        view = self.context
+        if view.context.status in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
+            link.enabled = False
+        return link
 
     @enabled_with_permission('launchpad.Edit')
     def delete_ppa(self):
@@ -453,6 +462,10 @@ class ArchiveMenuMixin:
         # archives without any sources.
         if self.context.is_copy or not self.context.has_sources:
             link.enabled = False
+        view = self.context
+        if view.context.status in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
+            link.enabled = False
         return link
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -469,7 +482,12 @@ class ArchiveMenuMixin:
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
         text = 'Edit PPA dependencies'
-        return Link('+edit-dependencies', text, icon='edit')
+        link = Link('+edit-dependencies', text, icon='edit')
+        view = self.context
+        if view.context.status in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
+            link.enabled = False
+        return link
 
 
 class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
@@ -478,8 +496,8 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
     usedfor = IArchive
     facet = 'overview'
     links = ['admin', 'builds', 'builds_building',
-             'builds_pending', 'builds_successful', 'edit',
-             'edit_dependencies', 'packages', 'ppa']
+             'builds_pending', 'builds_successful',
+             'packages', 'ppa']
 
 
 class IArchiveIndexActionsMenu(Interface):
@@ -639,9 +657,9 @@ class ArchiveViewBase(LaunchpadView):
 
         if self.context.status in (
             ArchiveStatus.DELETED, ArchiveStatus.DELETING):
-            return "This archive has been deleted."
+            return "This %s has been deleted." % self.archive_label
         else:
-            return "This archive has been disabled."
+            return "This %s has been disabled." % self.archive_label
 
 
 class ArchiveSeriesVocabularyFactory:

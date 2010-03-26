@@ -806,3 +806,26 @@ contain a notification message that the deletion is in progress.
     ...     print msg
     Deletion of 'PPA for No Privileges Person' has been requested and
     the repository will be removed shortly.
+
+The deleted PPA is still available to browse via a link on the profile page
+so you can see its build history, etc.:
+
+    >>> no_priv_browser.getLink("PPA for No Privileges Person").click()
+
+However, most of the action links are removed for deleted PPAs, so you can
+no longer "Delete packages", "Edit PPA dependencies", or "Change details".
+
+    >>> print no_priv_browser.getLink("Change details")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    
+    >>> print no_priv_browser.getLink("Delete packages")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print no_priv_browser.getLink("Edit PPA dependencies")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
