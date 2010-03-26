@@ -737,6 +737,8 @@ class BugHeatUpdater(TunableLoop):
 class BugWatchActivityPruner(TunableLoop):
     """A TunableLoop to prune BugWatchActivity entries."""
 
+    maximum_chunk_size = 1000
+
     def getPrunableBugWatchIds(self, chunk_size):
         """Return the set of BugWatch IDs whose activity is prunable."""
         query = """

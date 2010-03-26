@@ -460,9 +460,9 @@ class TestBugWatchScheduler(TestCaseWithFactory):
         # they've been scheduled so that only our watch gets scheduled.
         for watch in getUtility(IBugWatchSet).search():
             watch.next_check = datetime.now(utc)
-        transaction.commit()
         self.bug_watch = self.factory.makeBugWatch()
         self.scheduler = BugWatchScheduler(QuietFakeLogger())
+        transaction.commit()
 
     def test_scheduler_schedules_unchecked_watches(self):
         # The BugWatchScheduler will schedule a BugWatch that has never
