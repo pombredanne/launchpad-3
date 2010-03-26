@@ -269,6 +269,11 @@ class Archive(SQLBase):
         return self.purpose in MAIN_ARCHIVE_PURPOSES
 
     @property
+    def is_active(self):
+        """See `IArchive`."""
+        return self.status == ArchiveStatus.ACTIVE
+
+    @property
     def series_with_sources(self):
         """See `IArchive`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -1409,6 +1414,10 @@ class Archive(SQLBase):
 
     def delete(self, deleted_by):
         """See `IArchive`."""
+        assert self.status not in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED,
+            "This archive is already deleted.")
+
         # Set all the publications to DELETED.
         statuses = (
             PackagePublishingStatus.PENDING,

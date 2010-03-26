@@ -773,7 +773,8 @@ navigation menu.
 Clicking this link takes the user to a page that allows deletion of a PPA:
 
     >>> print no_priv_browser.title
-    Delete “PPA for No Privileges Person” : PPA for No Privileges Person : No Privileges Person
+    Delete “PPA for No Privileges Person” : PPA for No Privileges Person :
+        No Privileges Person
 
 The page contains a stern warning that this action is final and irreversible:
 

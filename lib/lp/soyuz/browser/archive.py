@@ -405,32 +405,24 @@ class ArchiveMenuMixin:
         archive = view.context
         if not archive.private:
             link.enabled = False
-        if archive.status in (
-            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
+        if not archive.is_active:
             link.enabled = False
-        return link
-
         return link
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        link = Link('+edit', text, icon='edit')
         view = self.context
-        if view.context.status in (
-            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
-            link.enabled = False
-        return link
+        return Link(
+            '+edit', text, icon='edit', enabled=view.context.is_active)
 
     @enabled_with_permission('launchpad.Edit')
     def delete_ppa(self):
         text = 'Delete PPA'
-        link = Link('+delete', text, icon='trash-icon')
         view = self.context
-        if view.context.status in (
-            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
-            link.enabled = False
-        return link
+        return Link(
+            '+delete', text, icon='trash-icon',
+            enabled=view.context.is_active)
 
     def builds(self):
         text = 'View all builds'
@@ -463,8 +455,7 @@ class ArchiveMenuMixin:
         if self.context.is_copy or not self.context.has_sources:
             link.enabled = False
         view = self.context
-        if view.context.status in (
-            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
+        if not view.context.is_active:
             link.enabled = False
         return link
 
@@ -482,12 +473,10 @@ class ArchiveMenuMixin:
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
         text = 'Edit PPA dependencies'
-        link = Link('+edit-dependencies', text, icon='edit')
         view = self.context
-        if view.context.status in (
-            ArchiveStatus.DELETING, ArchiveStatus.DELETED):
-            link.enabled = False
-        return link
+        return Link(
+            '+edit-dependencies', text, icon='edit',
+            enabled=view.context.is_active)
 
 
 class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
@@ -1961,10 +1950,10 @@ class ArchiveAdminView(BaseArchiveEditView):
         return self.context.owner.visibility == PersonVisibility.PRIVATE
 
 
-class ArchiveDeleteView(LaunchpadView):
+class ArchiveDeleteView(LaunchpadFormView):
     """View class for deleting `IArchive`s"""
 
-    __used_for__ = IArchive
+    schema = Interface
 
     @property
     def page_title(self):
@@ -1976,23 +1965,27 @@ class ArchiveDeleteView(LaunchpadView):
 
     @property
     def can_be_deleted(self):
-        return self.context.status != ArchiveStatus.DELETING
+        return self.context.status not in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED)
 
     @property
     def waiting_for_deletion(self):
         return self.context.status == ArchiveStatus.DELETING
 
-    def delete_ppa(self):
-        action = self.request.form.get('DELETE', None)
-        # No action, return None to present the form again.
-        if action is None:
-            return
+    @property
+    def next_url(self):
+        # We redirect back to the PPA owner's profile page on a
+        # successful action.
+        return canonical_url(self.context.owner)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Permanently delete PPA"), name="delete_ppa")
+    def action_delete_ppa(self, action, data):
         self.context.delete(self.user)
         self.request.response.addInfoNotification(
             "Deletion of '%s' has been requested and the repository will be "
             "removed shortly." % self.context.title)
-
-        # We redirect back to the PPA owner's profile page.
-        self.request.response.redirect(canonical_url(self.context.owner))
 

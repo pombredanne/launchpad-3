@@ -8,8 +8,7 @@
 >
 <body>
 
-  <div metal:fill-slot="main"
-       tal:define="message view/delete_ppa; error view/error|nothing">
+  <div metal:fill-slot="main">
 
     <div class="top-portlet"
          tal:condition="view/can_be_deleted">
@@ -18,11 +17,7 @@
       <p>This deletion is PERMANENT and cannot be undone.</p>
       <p>Are you sure ?</p>
 
-      <form name="DELETE" action="" method="POST">
-        <input name="DELETE" type="hidden" value="1"/>
-        <input type="submit" value="Permanently delete PPA"/>
-        or <a tal:attributes="href context/fmt:url">Cancel</a>
-      </form>
+      <div metal:use-macro="context/@@launchpad_form/form" />
     </div>
 
     <div class="top-portlet"

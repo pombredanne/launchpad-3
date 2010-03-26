@@ -59,7 +59,7 @@ the cache to make Storm re-read the database objects.
 
     >>> Store.of(archive).invalidate()
 
-Now, all the publications are DELTETED, the archive is disabled and the
+Now, all the publications are DELETED, the archive is disabled and the
 status is DELETING to tell the publisher to remove the repository:
 
     >>> publications = list(archive.getPublishedSources())

@@ -222,6 +222,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
 
+    is_active = Bool(
+        title=_("True if the archive is in the active state"),
+        required=False, readonly=True)
+
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
