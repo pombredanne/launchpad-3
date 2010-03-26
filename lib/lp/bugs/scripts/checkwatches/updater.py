@@ -319,8 +319,7 @@ class BugWatchUpdater(object):
             ubuntu_bugzilla_name = ubuntu_bugzilla.name
             # Get all bug tracker names if none have been specified.
             if bug_tracker_names is None:
-                bug_tracker_names = [
-                    tracker.name for tracker in getUtility(IBugTrackerSet)]
+                bug_tracker_names = sorted(getUtility(IBugTrackerSet).names)
 
         def make_updater(bug_tracker_name, bug_tracker_id):
             """Returns a function that can update the given bug tracker."""

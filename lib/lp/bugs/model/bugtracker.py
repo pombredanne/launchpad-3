@@ -579,6 +579,10 @@ class BugTrackerSet:
     def count(self):
         return IStore(self.table).find(self.table).count()
 
+    @property
+    def names(self):
+        return IStore(self.table).find(self.table).values(self.table.name)
+
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""
         result = shortlist(self.search(), longest_expected=20)
