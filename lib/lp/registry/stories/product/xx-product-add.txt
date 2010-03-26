@@ -51,7 +51,7 @@ forgetting to enter a title or summary.
     The project title. Should be just a few words.
     Summary:
     Required input is missing.
-    The summary should be a single short paragraph.
+    A short paragraph to introduce the project's work.
 
 Realizing her mistake, Sample Person fills out the project's basic information
 correctly this time.
