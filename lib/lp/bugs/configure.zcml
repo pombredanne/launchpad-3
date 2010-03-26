@@ -380,6 +380,9 @@
                     summary
                     title
                     watches
+                    watches_needing_update
+                    watches_ready_to_check
+                    watches_with_unpushed_comments
                     "/>
             <require
                 permission="launchpad.Edit"

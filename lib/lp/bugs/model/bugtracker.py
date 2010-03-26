@@ -350,30 +350,35 @@ class BugTracker(SQLBase):
                                     distinct=True,
                                     orderBy=['datecreated']))
 
-    def getBugWatchesNeedingUpdate(self):
-        """See `IBugTracker`.
-
-        :return: The UNION of the bug watches that need checking and
-            those with unpushed comments.
-        """
-        store = Store.of(self)
-
-        bug_watches_needing_checking = store.find(
+    @property
+    def watches_ready_to_check(self):
+        return Store.of(self).find(
             BugWatch,
             BugWatch.bugtracker == self,
             Not(BugWatch.next_check == None),
             BugWatch.next_check <= datetime.now(timezone('UTC')))
 
-        bug_watches_with_unpushed_comments = store.find(
+    @property
+    def watches_with_unpushed_comments(self):
+        return Store.of(self).find(
             BugWatch,
             BugWatch.bugtracker == self,
             BugMessage.bugwatch == BugWatch.id,
-            BugMessage.remote_comment_id == None)
+            BugMessage.remote_comment_id == None).config(distinct=True)
 
-        results = bug_watches_needing_checking.union(
-            bug_watches_with_unpushed_comments.config(distinct=True))
+    @property
+    def watches_needing_update(self):
+        """All watches needing some sort of update.
 
-        return results
+        :return: The union of `watches_ready_to_check` and
+            `watches_with_unpushed_comments`.
+        """
+        return self.watches_ready_to_check.union(
+            self.watches_with_unpushed_comments)
+
+    def getBugWatchesNeedingUpdate(self):
+        """Temporary, for compatibility."""
+        return self.watches_needing_update
 
     # Join to return a list of BugTrackerAliases relating to this
     # BugTracker.

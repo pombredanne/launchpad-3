@@ -250,6 +250,13 @@ class IBugTracker(Interface):
             title=_('Updates for this bug tracker are enabled'),
             required=True, default=True))
 
+    watches_ready_to_check = Attribute(
+        "The set of bug watches that are scheduled to be checked.")
+    watches_with_unpushed_comments = Attribute(
+        "The set of bug watches that have unpushed comments.")
+    watches_needing_update = Attribute(
+        "The set of bug watches that need updating.")
+
     def getBugFilingAndSearchLinks(remote_product, summary=None,
                                    description=None):
         """Return the bug filing and search links for the tracker.
@@ -274,11 +281,7 @@ class IBugTracker(Interface):
         """Get the bugs watching the given remote bug in this bug tracker."""
 
     def getBugWatchesNeedingUpdate():
-        """Get the bug watches needing to be updated.
-
-        All bug watches with a next_check time in the past are
-        considered to be needing an update.
-        """
+        """Temporary, for compatibility."""
 
     def getLinkedPersonByName(name):
         """Return the `IBugTrackerPerson` for a given name on a bugtracker.
