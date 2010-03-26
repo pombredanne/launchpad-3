@@ -240,6 +240,21 @@ class ITranslationMessage(Interface):
             HTML element id.
         """
 
+    def makeCurrentUbuntu(new_value=True):
+        """Set the `is_current_ubuntu` flag.
+
+        If setting to True, clears the flag on any competing
+        TranslationMessages.
+        """
+
+    def makeCurrentUpstream(new_value=True):
+        """Set the `is_current_upstream` flag.
+
+        If setting to True, clears the flag on any competing
+        TranslationMessages.
+        """
+
+
 
 class ITranslationMessageSuggestions(Interface):
     """Suggested `ITranslationMessage`s for a `POTMsgSet`.

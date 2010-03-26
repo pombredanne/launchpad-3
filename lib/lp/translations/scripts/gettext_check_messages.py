@@ -9,6 +9,8 @@ from datetime import timedelta, datetime
 
 import gettextpo
 
+from storm.store import Store
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -137,6 +139,8 @@ class GettextCheckMessages(LaunchpadScript):
             self._disable_count += 1
             if imported is not None:
                 imported.is_current_ubuntu = True
+                Store.of(imported).add_flush_order(
+                    translationmessage, imported)
                 self._unmask_count += 1
 
     def _do_commit(self):
