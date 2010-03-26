@@ -72,6 +72,25 @@ statements.
     SELECT 3
     >>> clear_request_started()
 
+transaction.commit() and transaction.abort() calls are logged too,
+if we pass the transaction manager to set_request_started(). Note
+that aborted transactions are still in the status "Active".
+
+    >>> set_request_started(txn=transaction.manager)
+    >>> store.execute('SELECT 1', noresult=True)
+    >>> store.execute('SELECT 2', noresult=True)
+    >>> transaction.commit()
+    >>> store.execute('SELECT 3', noresult=True)
+    >>> transaction.abort()
+    >>> for starttime, endtime, db_id, statement in get_request_statements():
+    ...     print statement
+    SELECT 1
+    SELECT 2
+    Transaction completed, status: Committed
+    SELECT 3
+    Transaction completed, status: Active
+    >>> clear_request_started()
+
 
 Statement Timeout
 =================

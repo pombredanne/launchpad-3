@@ -68,16 +68,6 @@ class CodeImport(SQLBase):
         dbName='assignee', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
 
-    @property
-    def product(self):
-        """See `ICodeImport`."""
-        return self.branch.product
-
-    @property
-    def series(self):
-        """See `ICodeImport`."""
-        return ProductSeries.selectOneBy(branch=self.branch)
-
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
 
@@ -215,7 +205,7 @@ class CodeImportSet:
 
     implements(ICodeImportSet)
 
-    def new(self, registrant, product, branch_name, rcs_type,
+    def new(self, registrant, target, branch_name, rcs_type,
             url=None, cvs_root=None, cvs_module=None, review_status=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
@@ -239,7 +229,7 @@ class CodeImportSet:
             else:
                 review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
-        namespace = get_branch_namespace(registrant, product)
+        namespace = target.getNamespace(registrant)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
             registrant=registrant)

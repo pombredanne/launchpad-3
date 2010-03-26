@@ -765,7 +765,7 @@ class PersonBugsMenu(NavigationMenu):
         return Link('+assignedbugs', text, site='bugs', summary=summary)
 
     def softwarebugs(self):
-        text = 'Show package report'
+        text = 'List subscribed packages'
         summary = (
             'A summary report for packages where %s is a bug supervisor.'
             % self.context.displayname)

@@ -44,9 +44,10 @@ from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.answers.model.faq import FAQ, FAQSearch
 from lp.registry.model.karma import KarmaContextMixin
@@ -72,10 +73,10 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               StructuralSubscriptionTargetMixin,
-              HasBranchesMixin, HasMergeProposalsMixin):
+              HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin):
     """A Project"""
 
-    implements(IProjectGroup, IFAQCollection, IHasIcon, IHasLogo,
+    implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
                IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
