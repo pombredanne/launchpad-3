@@ -25,7 +25,7 @@ from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import Or
+from storm.expr import Not, Or
 from storm.locals import Bool
 from storm.store import Store
 
@@ -348,26 +348,19 @@ class BugTracker(SQLBase):
                                     distinct=True,
                                     orderBy=['datecreated']))
 
-    def getBugWatchesNeedingUpdate(self, hours_since_last_check):
+    def getBugWatchesNeedingUpdate(self):
         """See `IBugTracker`.
 
         :return: The UNION of the bug watches that need checking and
             those with unpushed comments.
         """
-        lastchecked_cutoff = (
-            datetime.now(timezone('UTC')) -
-            timedelta(hours=hours_since_last_check))
-
-        lastchecked_clause = Or(
-            BugWatch.lastchecked < lastchecked_cutoff,
-            BugWatch.lastchecked == None)
-
         store = Store.of(self)
 
         bug_watches_needing_checking = store.find(
             BugWatch,
             BugWatch.bugtracker == self,
-            lastchecked_clause)
+            Not(BugWatch.next_check == None),
+            BugWatch.next_check <= datetime.now(timezone('UTC')))
 
         bug_watches_with_unpushed_comments = store.find(
             BugWatch,
@@ -486,12 +479,15 @@ class BugTracker(SQLBase):
 
         return person
 
-    def resetWatches(self):
+    def resetWatches(self, now=None):
         """See `IBugTracker`."""
+        if now is None:
+            now = datetime.now(timezone('UTC'))
+
         store = Store.of(self)
         store.execute(
-            "UPDATE BugWatch SET lastchecked = NULL WHERE bugtracker = %s" %
-            sqlvalues(self))
+            "UPDATE BugWatch SET next_check = %s WHERE bugtracker = %s" %
+            sqlvalues(now, self))
 
 
 class BugTrackerSet:

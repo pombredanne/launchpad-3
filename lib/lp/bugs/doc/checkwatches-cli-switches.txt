@@ -55,7 +55,7 @@ line.
     ...         super(TestCheckWatchesCronScript, self).__init__(
     ...             name, dbuser, test_args)
     ...         self.logger = FakeLogger()
-    ...         self.txn = transaction
+    ...         self.txn = ZopelessTransactionManager
 
     >>> def run_cronscript_with_args(args):
     ...     # It may seem a bit weird to do ths rather than letting the

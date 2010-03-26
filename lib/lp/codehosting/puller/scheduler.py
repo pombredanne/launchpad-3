@@ -24,16 +24,16 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
 from canonical.cachedproperty import cachedproperty
-from canonical.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
-from canonical.twistedsupport.processmonitor import (
+from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
+from lp.services.twistedsupport.task import (
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 
 
 class BadMessage(Exception):
