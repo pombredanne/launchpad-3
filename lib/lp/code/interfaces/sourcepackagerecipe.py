@@ -1,9 +1,15 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=E0211,E0213
+
+
 """Interface of the `SourcePackageRecipe` content type."""
 
+
 __metaclass__ = type
+
+
 __all__ = [
     'ForbiddenInstruction',
     'ISourcePackageRecipe',
@@ -11,10 +17,11 @@ __all__ = [
     'TooNewRecipeFormat',
     ]
 
-from lazr.restful.fields import Reference
+
+from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Text, TextLine
+from zope.schema import Bool, Datetime, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
@@ -58,10 +65,12 @@ class ISourcePackageRecipe(IHasOwner):
     owner = Reference(
         IPerson, title=_("The person or team who can edit this recipe"),
         readonly=False)
-    distroseries = Reference(
-        IDistroSeries, title=_("The distroseries this recipe will build a "
-                               "source package for"),
-        readonly=True)
+    distroseries = CollectionField(
+        Reference(IDistroSeries), title=_("The distroseries this recipe will"
+            " build a source package for"),
+        readonly=False)
+    build_daily = Bool(
+        title=_("If true, the recipe should be built daily."))
     sourcepackagename = Reference(
         ISourcePackageName, title=_("The name of the source package this "
                                     "recipe will build a source package"),
