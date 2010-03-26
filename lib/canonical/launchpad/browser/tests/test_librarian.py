@@ -26,5 +26,6 @@ class TestStreamOrRedirectLibraryFileAliasView(TestCase):
         view = StreamOrRedirectLibraryFileAliasView(
             FakeRestrictedLibraryFileAlias(), LaunchpadTestRequest())
         html = view()
+        self.assertEqual(503, view.request.response.getStatus())
         self.assertIn(
             'There was a problem fetching the contents of this file', html)

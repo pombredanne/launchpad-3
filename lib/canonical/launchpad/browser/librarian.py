@@ -121,6 +121,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
             tmp_file = self.getFileContents()
         except LibrarianServerError:
             self.request.response.setHeader('Content-Type', 'text/plain')
+            self.request.response.setStatus(503)
             return (u'There was a problem fetching the contents of this '
                      'file. Please try again in a few minutes.')
 
