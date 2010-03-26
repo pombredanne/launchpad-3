@@ -585,9 +585,12 @@ class BugTrackerSet:
 
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""
-        result = shortlist(self.search(), longest_expected=20)
-        result.sort(key=lambda bugtracker: -bugtracker.watches.count())
-        if limit and limit > 0:
+        store = IStore(self.table)
+        result = store.find(self.table, self.table.id == BugWatch.bugtrackerID)
+        result = result.group_by(self.table)
+        from storm.expr import Count, Desc
+        result = result.order_by(Desc(Count(BugWatch)))
+        if limit is not None:
             return result[:limit]
         else:
             return result
