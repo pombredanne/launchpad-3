@@ -61,7 +61,7 @@ class DebBugs(ExternalBugTracker):
     # Because we keep a local copy of debbugs, we remove the batch_size
     # limit so that all debbugs watches that need checking will be
     # checked each time checkwatches runs.
-    batch_size = None
+    batch_size = 0
 
     def __init__(self, baseurl, db_location=None):
         super(DebBugs, self).__init__(baseurl)

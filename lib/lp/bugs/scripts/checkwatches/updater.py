@@ -78,6 +78,11 @@ from lp.services.scripts.base import LaunchpadCronScript
 SYNCABLE_GNOME_PRODUCTS = []
 MAX_SQL_STATEMENTS_LOGGED = 10000
 
+# The minimum batch size to suggest to an IExternalBugTracker.
+SUGGESTED_BATCH_SIZE_MIN = 100
+# The proportion of all watches to suggest as a batch size.
+SUGGESTED_BATCH_SIZE_PROPORTION = 0.02
+
 
 class TooMuchTimeSkew(BugWatchUpdateError):
     """Time difference between ourselves and the remote server is too much."""
@@ -495,9 +500,17 @@ class BugWatchUpdater(object):
                 (watches_left, bug_tracker_name))
             has_watches_to_update = watches_left > 0
 
+    def _suggestBatchSize(self, remote_system, num_watches):
+        """Suggest a value for batch_size if it's not set."""
+        if remote_system.batch_size is None:
+            remote_system.batch_size = max(
+                SUGGESTED_BATCH_SIZE_MIN, int(
+                    SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
+
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
         with self.transaction:
+            num_watches = bug_tracker.watches.count()
             remotesystem = (
                 externalbugtracker.get_external_bugtracker(bug_tracker))
             # We special-case the Gnome Bugzilla.
@@ -506,6 +519,9 @@ class BugWatchUpdater(object):
 
         # Probe the remote system for additional capabilities.
         remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
+
+        # Try to hint at how many bug watches to check each time.
+        self._suggestBatchSize(remotesystem_to_use, num_watches)
 
         if (is_gnome_bugzilla and
             isinstance(remotesystem_to_use, BugzillaAPI) and
