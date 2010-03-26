@@ -28,7 +28,6 @@ __all__ = [
 
 import contextlib
 from email.utils import parseaddr
-import transaction
 
 from lazr.delegates import delegates
 from lazr.enum import DBEnumeratedType, DBItem
