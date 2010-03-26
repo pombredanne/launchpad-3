@@ -5,11 +5,12 @@ __metaclass__ = type
 
 import unittest
 
+from lp.testing import TestCase
 from lp.translations.utilities.sanitize import (
     MixedNewlineMarkersError, Sanitizer, sanitize_translations_from_webui)
 
 
-class TestSanitizer(unittest.TestCase):
+class TestSanitizer(TestCase):
     """Test the Sanitizer class used by sanitize_translations."""
 
     def test_convertDotToSpace(self):
@@ -96,11 +97,12 @@ class TestSanitizer(unittest.TestCase):
             expected_sanitized = translation_template % english_newline
             for translation_newline in self.newline_styles:
                 translation_text = translation_template % translation_newline
+                sanitized = sanitizer.normalizeNewlines(translation_text)
                 self.assertEqual(
-                    expected_sanitized,
-                    sanitizer.normalizeNewlines(translation_text),
-                    u"%r was not normalized to %r" % (
-                        translation_text, expected_sanitized))
+                    expected_sanitized, sanitized,
+                    "With %r and %r:\n%r != %r" % (
+                        english_newline, translation_newline,
+                        expected_sanitized, sanitized))
 
     def test_normalizeNewlines_nothing_to_do_english(self):
         # If no newlines are found in the english text, no normalization
@@ -109,10 +111,11 @@ class TestSanitizer(unittest.TestCase):
         translation_template = u"Translation with%snewline."
         for translation_newline in self.newline_styles:
             translation_text = translation_template % translation_newline
+            sanitized = sanitizer.normalizeNewlines(translation_text)
             self.assertEqual(
-                translation_text,
-                sanitizer.normalizeNewlines(translation_text),
-                u"%r was not left unchanged." % translation_text)
+                translation_text, sanitized,
+                "With %r: %r != %r" % (
+                    translation_newline, translation_text, sanitized))
 
     def test_normalizeNewlines_nothing_to_do_translation(self):
         # If no newlines are found in the translation text, no normalization
@@ -122,10 +125,11 @@ class TestSanitizer(unittest.TestCase):
         for english_newline in self.newline_styles:
             english_text = english_template % english_newline
             sanitizer = Sanitizer(english_text)
+            sanitized = sanitizer.normalizeNewlines(translation_text)
             self.assertEqual(
-                translation_text,
-                sanitizer.normalizeNewlines(translation_text),
-                u"%r was not left unchanged." % translation_text)
+                translation_text, sanitized,
+                "With %r: %r != %r" % (
+                    english_newline, translation_text, sanitized))
 
     def test_normalizeNewlines_mixed_newlines_english(self):
         # Mixed newlines in the English text will raise an exception.
@@ -173,10 +177,10 @@ class TestSanitizer(unittest.TestCase):
     def test_sanitizer_None(self):
         # None is returned as None.
         sanitizer = Sanitizer(u"Text without whitespace.")
-        self.assertTrue(sanitizer.sanitize(None) is None)
+        self.assertIs(sanitizer.sanitize(None), None)
 
 
-class TestSanitizeTranslations(unittest.TestCase):
+class TestSanitizeTranslations(TestCase):
     """Test sanitize_translations_from_webui function.
 
     This test case is just about how the functions handles different plural
