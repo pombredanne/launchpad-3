@@ -915,5 +915,6 @@ country mirrors:
     >>> osuosl_mirror.transitionToCountryMirror(True)
     Traceback (most recent call last):
     ...
-    MirrorHasNoHTTPUrl: This mirror may not be set as a country mirror as it does not have an HTTP URL set.
+    MirrorHasNoHTTPUrl: This mirror may not be set as a country mirror as it
+      does not have an HTTP URL set.
     >>> logout()
