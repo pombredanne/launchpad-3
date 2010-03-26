@@ -40,9 +40,9 @@ Passing only suite, request retry on all failed states:
   DEBUG   Intitialising connection.
   INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
-  INFO    Processing builds in 'Dependency wait'
+  INFO    Processing builds in 'Could not build because of missing dependencies'
   INFO    Retrying i386 build of libstdc++ b8p in ubuntu hoary RELEASE (12)
-  INFO    Processing builds in 'Chroot problem'
+  INFO    Processing builds in 'Could not build because of chroot problem'
   INFO    Success.
   INFO    Dry-run.
   <BLANKLINE>
@@ -62,8 +62,8 @@ nothing is done:
   DEBUG   Intitialising connection.
   INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release for hppa (hppa)/RELEASE'
   INFO    Processing builds in 'Failed to build'
-  INFO    Processing builds in 'Dependency wait'
-  INFO    Processing builds in 'Chroot problem'
+  INFO    Processing builds in 'Could not build because of missing dependencies'
+  INFO    Processing builds in 'Could not build because of chroot problem'
   INFO    Success.
   INFO    Dry-run.
   <BLANKLINE>
