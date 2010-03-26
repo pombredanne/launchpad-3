@@ -7,45 +7,38 @@ __metaclass__ = type
 
 import ftplib
 import os
-import shutil
 import socket
-import tempfile
 import unittest
 import StringIO
 
-from canonical.testing import LaunchpadZopelessLayer
-from lp.poppy.tests import PoppyTestSetup
+from lp.poppy.tests.helpers import PoppyTestSetup
+from lp.testing import TestCase
 
 
-class TestPoppy(unittest.TestCase):
+class TestPoppy(TestCase):
     """Test if poppy.py daemon works properly."""
-
-    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up poppy in a temp dir."""
-        self.root_dir = tempfile.mkdtemp()
+        super(TestPoppy, self).setUp()
+        self.root_dir = self.makeTemporaryDirectory()
         self.port = 3421
         self.poppy = PoppyTestSetup(self.root_dir, port=self.port,
                                     cmd='echo CLOSED')
         self.poppy.startPoppy()
-
-    def tearDown(self):
-        """Purge poppy root directory."""
-        self.poppy.killPoppy()
-        shutil.rmtree(self.root_dir)
+        self.addCleanup(self.poppy.killPoppy)
 
     def getFTPConnection(self, login=True, user="ubuntu", password=""):
         """Build and return a FTP connection to the current poppy.
 
-        Optionally log in with as 'annonymous' & empty password, or passed
+        Optionally log in with as 'anonymous' & empty password, or passed
         user/password.
         """
         conn = ftplib.FTP()
         # poppy usually takes sometime to come up, we need to wait, or insist.
         while True:
             try:
-                reply = conn.connect("localhost", self.port)
+                conn.connect("localhost", self.port)
             except socket.error:
                 if not self.poppy.alive:
                     raise
@@ -75,7 +68,7 @@ class TestPoppy(unittest.TestCase):
         upload_dir = contents[1]
         return os.path.join(self.root_dir, upload_dir, path)
 
-    def testLOGIN(self):
+    def test_LOGIN(self):
         """Check login procedure and the state of the toplevel lockfile.
 
         The toplevel lockfile should allow the process-upload runner (lp_queue,
@@ -90,7 +83,7 @@ class TestPoppy(unittest.TestCase):
         lockfile_path = os.path.join(self.root_dir, '.lock')
         self.assertEqual(os.stat(lockfile_path).st_mode, 0100664)
 
-    def testCWD(self):
+    def test_CWD(self):
         """Check automatic creation of directories 'cwd'ed in.
 
         Also ensure they are created with proper permission (g+rwxs)
@@ -107,7 +100,7 @@ class TestPoppy(unittest.TestCase):
         self.assertTrue(os.path.exists(wanted_path))
         self.assertEqual(os.stat(wanted_path).st_mode, 042775)
 
-    def testMKD(self):
+    def test_MKD(self):
         """Check recursive MKD (aka mkdir -p).
 
         Also ensure they are created with proper permission (g+rwxs)
@@ -128,7 +121,7 @@ class TestPoppy(unittest.TestCase):
         self.assertTrue(os.path.exists(wanted_path))
         self.assertEqual(os.stat(wanted_path).st_mode, 042775)
 
-    def testRMD(self):
+    def test_RMD(self):
         """Check recursive RMD (aka rmdir)"""
         conn = self.getFTPConnection()
         self.assertEqual(
@@ -143,7 +136,7 @@ class TestPoppy(unittest.TestCase):
         wanted_path = self._uploadPath('foo')
         self.assertFalse(os.path.exists(wanted_path))
 
-    def testSTOR(self):
+    def test_STOR(self):
         """Check if the parent directories are created during file upload.
 
         The uploaded file permissions are also special (g+rwxs).
@@ -160,7 +153,7 @@ class TestPoppy(unittest.TestCase):
         self.assertEqual(fs_content, "fake contents")
         self.assertEqual(os.stat(wanted_path).st_mode, 0102674)
 
-    def testUploadIsolation(self):
+    def test_uploadIsolation(self):
         """Check if poppy isolates the uploads properly.
 
         Upload should be done atomically, i.e., poppy should isolate the
@@ -215,6 +208,7 @@ class TestPoppy(unittest.TestCase):
             content = open(os.path.join(
                 self.root_dir, upload_dirs[index], "test")).read()
             self.assertEqual(content, expected_contents[index])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

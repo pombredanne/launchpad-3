@@ -51,6 +51,7 @@ distributions are supported as the bug target.
     >>> external_bugtracker._bugs['3'] =  {
     ...     'package': 'evolution',
     ...     'reporter': ("Joe Bloggs", "joe.bloggs@example.com")}
+    >>> transaction.commit()
     >>> bug_watch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '3')

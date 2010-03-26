@@ -15,13 +15,17 @@ from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
 from urlparse import urlunparse
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.webapp.url import urlparse
+
 from lp.bugs.externalbugtracker import (
     BugNotFound, BugWatchUpdateError, BugWatchUpdateWarning,
     ExternalBugTracker, InvalidBugId, LookupTree, UnknownRemoteStatusError,
     UnparseableBugData)
-from canonical.launchpad.webapp.url import urlparse
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+
+
 class MantisLoginHandler(urllib2.HTTPRedirectHandler):
     """Handler for urllib2.build_opener to automatically log-in
     to Mantis anonymously if needed.
@@ -89,6 +93,7 @@ class Mantis(ExternalBugTracker):
     # Mantis if (and only if) needed.
     _opener = urllib2.build_opener(MantisLoginHandler)
 
+    @ensure_no_transaction
     def urlopen(self, request, data=None):
         # We use urllib2 to make following cookies transparent.
         # This is required for certain bugtrackers that require
