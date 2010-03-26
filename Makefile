@@ -205,7 +205,7 @@ ftest_inplace: inplace
 
 merge-proposal-jobs:
 	# Handle merge proposal email jobs.
-	$(PY) cronscripts/merge-proposal-jobs.py
+	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: inplace stop
 	$(RM) thread*.request
