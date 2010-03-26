@@ -73,7 +73,8 @@ class ICodeImport(Interface):
         Choice(
             title=_('Branch'), required=True, readonly=True,
             vocabulary='Branch',
-            description=_("The Bazaar branch produced by the import system.")))
+            description=_(
+                "The Bazaar branch produced by the import system.")))
 
     registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
@@ -183,16 +184,6 @@ class ICodeImportSet(Interface):
         """Create a new CodeImport.
 
         :param target: An `IBranchTarget` that the code is associated with.
-        """
-
-    def getActiveImports(text=None):
-        """Return an iterable of all 'active' CodeImport objects.
-
-        Active is defined, somewhat arbitrarily, as having
-        review_status==REVIEWED and having completed at least once.
-
-        :param text: If specifed, limit to the results to those that contain
-            ``text`` in the product or project titles and descriptions.
         """
 
     def get(id):
