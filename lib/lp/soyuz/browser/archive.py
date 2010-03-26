@@ -403,9 +403,7 @@ class ArchiveMenuMixin:
         # This link should only be available for private archives:
         view = self.context
         archive = view.context
-        if not archive.private:
-            link.enabled = False
-        if not archive.is_active:
+        if not archive.private or not archive.is_active:
             link.enabled = False
         return link
 
