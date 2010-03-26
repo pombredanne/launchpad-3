@@ -407,10 +407,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         store = Store.of(self)
         results = store.find(
             DistributionMirror,
-            distribution == self,
-            country == country,
-            content == mirror_type,
-            country_dns_mirror == True)
+            DistributionMirror.distribution == self,
+            DistributionMirror.country == country,
+            DistributionMirror.content == mirror_type,
+            DistributionMirror.country_dns_mirror == True)
         return results.one()
 
     def newMirror(self, owner, speed, country, content, displayname=None,

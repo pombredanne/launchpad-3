@@ -25,7 +25,7 @@ from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-   collection_default_content, export_as_webservice_collection,
+   collection_default_content, copy_field, export_as_webservice_collection,
    export_as_webservice_entry, export_operation_as,
    export_read_operation, exported, operation_parameters,
    operation_returns_collection_of, operation_returns_entry,
