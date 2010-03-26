@@ -448,6 +448,22 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         self.pruner(chunk_size=1)
         self.assertTrue(self.pruner.isDone())
 
+    def test_pruneBugWatchActivity_leaves_5_most_recent(self):
+        # BugWatchActivityPruner.pruneBugWatchActivity() will delete all
+        # but the 5 most recent BugWatchActivity items for a bug watch.
+        for i in range(5):
+            self.bug_watch.addActivity(message="Activity %s" % i)
+        transaction.commit()
+
+        self.layer.switchDbUser('garbo')
+        self.assertEqual(15, self.bug_watch.activity.count())
+        self.pruner.pruneBugWatchActivity([self.bug_watch.id])
+        self.assertEqual(5, self.bug_watch.activity.count())
+
+        messages = [activity.message for activity in self.bug_watch.activity]
+        for i in range(5):
+            self.failUnless("Activity %s" % i in messages)
+
 
 class TestBugWatchScheduler(TestCaseWithFactory):
     """Tests for the BugWatchScheduler, which runs as part of garbo."""
