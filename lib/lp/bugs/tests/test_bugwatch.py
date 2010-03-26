@@ -384,7 +384,7 @@ class TestBugWatchBugTasks(TestCaseWithFactory):
 class TestBugWatchActivityPruner(TestCaseWithFactory):
     """TestCase for the BugWatchActivityPruner."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestBugWatchActivityPruner, self).setUp(
@@ -394,6 +394,7 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
             self.bug_watch.addActivity()
 
         self.pruner = BugWatchActivityPruner(QuietFakeLogger())
+        transaction.commit()
 
     def test_getPrunableBugWatchIds(self):
         # BugWatchActivityPruner.getPrunableBugWatchIds() will return a
@@ -404,6 +405,48 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         self.failUnless(
             self.bug_watch.id in prunable_ids,
             "BugWatch ID not present in prunable_ids.")
+
+        # Even if we specify a bigger chunk size, only one result will
+        # be returned.
+        prunable_ids = self.pruner.getPrunableBugWatchIds(10)
+        self.assertEqual(1, len(prunable_ids))
+
+        # If we add another BugWatch with prunable activity, it too will
+        # be returned.
+        new_watch = self.factory.makeBugWatch()
+        for i in range(10):
+            new_watch.addActivity()
+
+        prunable_ids = self.pruner.getPrunableBugWatchIds(10)
+        self.assertEqual(2, len(prunable_ids))
+
+    def test_pruneBugWatchActivity(self):
+        # BugWatchActivityPruner.pruneBugWatchActivity() will prune the
+        # activity for all the BugWatches whose IDs are passed to it.
+        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
+
+        self.layer.switchDbUser('garbo')
+        self.pruner.pruneBugWatchActivity(prunable_ids)
+
+        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
+        self.assertEqual(0, len(prunable_ids))
+
+    def test_call_prunes_activity(self):
+        # BugWatchActivityPruner is a callable object. Calling it will
+        # cause it to prune the BugWatchActivity of prunable watches.
+        self.layer.switchDbUser('garbo')
+        self.pruner(chunk_size=1)
+
+        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
+        self.assertEqual(0, len(prunable_ids))
+
+    def test_isDone(self):
+        # BugWatchActivityPruner.isDone() returns True when there are no
+        # more prunable BugWatches. Until then, it returns False.
+        self.layer.switchDbUser('garbo')
+        self.assertFalse(self.pruner.isDone())
+        self.pruner(chunk_size=1)
+        self.assertTrue(self.pruner.isDone())
 
 
 class TestBugWatchScheduler(TestCaseWithFactory):

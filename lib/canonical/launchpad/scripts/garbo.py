@@ -756,6 +756,35 @@ class BugWatchActivityPruner(TunableLoop):
         results = store.execute(query)
         return set(result[0] for result in results)
 
+    def pruneBugWatchActivity(self, bug_watch_ids):
+        """Prune the BugWatchActivity for bug_watch_ids."""
+        query = """
+            DELETE FROM BugWatchActivity
+            WHERE id IN (
+                SELECT id
+                FROM BugWatchActivity
+                WHERE bug_watch = %s
+                ORDER BY id DESC
+                OFFSET 5);
+        """
+
+        store = IMasterStore(BugWatch)
+        for bug_watch_id in bug_watch_ids:
+            results = store.execute(query % sqlvalues(bug_watch_id))
+            self.log.debug(
+                "Pruned %s BugWatchActivity entries for watch %s" %
+                (results.rowcount, bug_watch_id))
+
+    def __call__(self, chunk_size):
+        transaction.begin()
+        prunable_ids = self.getPrunableBugWatchIds(chunk_size)
+        self.pruneBugWatchActivity(prunable_ids)
+        transaction.commit()
+
+    def isDone(self):
+        """Return True if there are no watches left to prune."""
+        return len(self.getPrunableBugWatchIds(1)) == 0
+
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
@@ -863,6 +892,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonEmailAddressLinkChecker,
         BugNotificationPruner,
         BranchJobPruner,
+        BugWatchActivityPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,
