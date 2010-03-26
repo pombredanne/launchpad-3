@@ -11,6 +11,7 @@ __all__ = [
     'CheckWatchesCronScript',
     'CheckWatchesErrorUtility',
     'externalbugtracker',
+    'report_oops',
     'SerialScheduler',
     'TooMuchTimeSkew',
     'TwistedThreadScheduler',
@@ -86,9 +87,12 @@ _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchActivityStatus.CONNECTION_ERROR),
    (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
    (UnparseableBugData, BugWatchActivityStatus.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion, BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER),
-   (UnsupportedBugTrackerVersion, BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
-   (UnknownBugTrackerTypeError, BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (UnparseableBugTrackerVersion,
+    BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion,
+    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError,
+    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
    (InvalidBugId, BugWatchActivityStatus.INVALID_BUG_ID),
    (BugNotFound, BugWatchActivityStatus.BUG_NOT_FOUND),
    (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
@@ -314,7 +318,8 @@ class BugWatchUpdater(object):
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
         """Yields functions that can be used to update each bug tracker."""
         with self.transaction:
-            ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
+            ubuntu_bugzilla = (
+                getUtility(ILaunchpadCelebrities).ubuntu_bugzilla)
             # Save the name, so we can use it in other transactions.
             ubuntu_bugzilla_name = ubuntu_bugzilla.name
             # Get all bug tracker names if none have been specified.
@@ -666,7 +671,8 @@ class BugWatchUpdater(object):
             else:
                 oldest_lastchecked = min(
                     bug_watch.lastchecked for bug_watch in old_bug_watches)
-                # Adjust for possible time skew, and some more, just to be safe.
+                # Adjust for possible time skew, and some more, just to be
+                # safe.
                 oldest_lastchecked -= (
                     self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
             # Collate the remote IDs.
@@ -1070,7 +1076,8 @@ class BugWatchUpdater(object):
                 comment_message = external_bugtracker.getMessageForComment(
                     remote_bug_id, comment_id, poster)
 
-                bug_message = bug_watch.addComment(comment_id, comment_message)
+                bug_message = bug_watch.addComment(
+                    comment_id, comment_message)
                 imported_comments.append(bug_message)
 
             if len(imported_comments) > 0:
