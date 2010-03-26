@@ -75,6 +75,10 @@ class SourcePackageRecipe(Storm):
 
     builder_recipe = property(_get_builder_recipe, _set_builder_recipe)
 
+    @property
+    def base_branch(self):
+        return self._recipe_data.base_branch
+
     def getReferencedBranches(self):
         """See `ISourcePackageRecipe.getReferencedBranches`."""
         return self._recipe_data.getReferencedBranches()
