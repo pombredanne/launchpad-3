@@ -4,17 +4,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'ChoiceErrorMarshaller'
+    'choiceMarshallerError'
     ]
 
 
-from lazr.restful.marshallers import SimpleFieldMarshaller
-
-
-class ChoiceErrorMarshaller(SimpleFieldMarshaller):
-
-    def __init__(self, field, request, vocabulary=None):
-        raise ValueError("You exported %s as an IChoice based on an "
-                "SQLObjectVocabularyBase, you should use "
-                "lazr.restful.fields.ReferenceChoice instead."
-                % field.__name__)
+def choiceMarshallerError(field, request, vocabulary=None):
+    raise AssertionError("You exported %s as an IChoice based on an "
+                         "SQLObjectVocabularyBase, you should use "
+                         "lazr.restful.fields.ReferenceChoice instead."
+                         % field.__name__)

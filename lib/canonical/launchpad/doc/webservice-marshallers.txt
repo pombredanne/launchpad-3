@@ -96,7 +96,7 @@ ensure that the resulting wadl matches lazr.restful conventions.
     ... # doctest: +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
-    ValueError: You exported some_person as an IChoice based on an
+    AssertionError: You exported some_person as an IChoice based on an
     SQLObjectVocabularyBase, you should use
     lazr.restful.fields.ReferenceChoice instead.
 
