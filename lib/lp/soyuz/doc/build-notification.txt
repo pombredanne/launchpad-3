@@ -178,7 +178,7 @@ Check the notification content:
    * Architecture: i386
    * Archive: ubuntu primary archive
    * Component: main
-   * State: Needs building
+   * State: Pending build
    * Duration: not available
    * Build Log: not available
    * Builder: not available
@@ -314,7 +314,7 @@ Check the notification content:
    * Architecture: i386
    * Archive: ubuntu primary archive
    * Component: main
-   * State: Build for superseded Source
+   * State: Could not build because source package was superseded
    * Duration: not available
    * Build Log: not available
    * Builder: not available
