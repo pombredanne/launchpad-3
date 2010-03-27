@@ -127,8 +127,8 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
            distroseries state.
         """
         build = self.build
-        assert not (not self._builder.virtualized and build.is_virtualized), (
-            "Attempt to build non-virtual item on a virtual builder.")
+        #assert not (not self._builder.virtualized and build.is_virtualized), (
+        #    "Attempt to build non-virtual item on a virtual builder.")
 
         # This should already have been checked earlier, but just check again
         # here in case of programmer errors.
@@ -140,35 +140,24 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                     (build.title, build.id, build.pocket.name,
                      build.distroseries.name))
 
-    def slaveStatus(self, raw_slave_status):
-        """Parse and return the binary build specific status info.
+    def slaveStatus(self, raw_slave_status, status):
+        """Parse the recipe build specific status info into the status dict.
 
         This includes:
-        * build_id => string
-        * build_status => string or None
-        * logtail => string or None
         * filemap => dictionary or None
         * dependencies => string or None
         """
-        builder_status = raw_slave_status[0]
-        extra_info = {}
-        if builder_status == 'BuilderStatus.WAITING':
-            extra_info['build_status'] = raw_slave_status[1]
-            extra_info['build_id'] = raw_slave_status[2]
-            build_status_with_files = [
-                'BuildStatus.OK',
-                'BuildStatus.PACKAGEFAIL',
-                'BuildStatus.DEPFAIL',
-                ]
-            if extra_info['build_status'] in build_status_with_files:
-                extra_info['filemap'] = raw_slave_status[3]
-                extra_info['dependencies'] = raw_slave_status[4]
-        else:
-            extra_info['build_id'] = raw_slave_status[1]
-            if builder_status == 'BuilderStatus.BUILDING':
-                extra_info['logtail'] = raw_slave_status[2]
+        build_status_with_files = (
+            'BuildStatus.OK',
+            'BuildStatus.PACKAGEFAIL',
+            'BuildStatus.DEPFAIL',
+            )
+        if (status['builder_status'] == 'BuilderStatus.WAITING' and
+            status['build_status'] in build_status_with_files):
+            status['filemap'] = raw_slave_status[3]
+            status['dependencies'] = raw_slave_status[4]
+        return status
 
-        return extra_info
 
     def getVerifiedBuild(self, raw_id):
         """See `IBuildFarmJobBehavior`."""

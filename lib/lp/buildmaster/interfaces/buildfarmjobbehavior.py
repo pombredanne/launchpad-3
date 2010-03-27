@@ -48,13 +48,16 @@ class IBuildFarmJobBehavior(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def slaveStatus(raw_slave_status):
+    def slaveStatus(raw_slave_status, status):
         """Return a dict of custom slave status values for this behavior.
 
         :param raw_slave_status: The value returned by the build slave's
            status() method.
-        :return: a dict of extra key/values to be included in the result
-            of IBuilder.slaveStatus().
+        :param status: A dict of the processed slave status values provided
+           by all types: builder_status, build_id, and optionally build_status
+           or logtail.
+        :return: a dict of the processed status information, including any
+            provided values.
         """
 
     def verifySlaveBuildID(slave_build_id):

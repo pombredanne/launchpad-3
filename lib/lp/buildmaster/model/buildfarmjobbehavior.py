@@ -58,11 +58,11 @@ class BuildFarmJobBehaviorBase:
         """The default behavior is a no-op."""
         pass
 
-    def slaveStatus(self, raw_slave_status):
+    def updateSlaveStatus(self, raw_slave_status, status):
         """See `IBuildFarmJobBehavior`.
 
         The default behavior is that we don't add any extra values."""
-        return {}
+        pass
 
     def _helpVerifyBuildIDComponent(self, raw_id, item_type, finder):
         """Helper for verifying parts of a `BuildFarmJob` name.
