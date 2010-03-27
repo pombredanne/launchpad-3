@@ -62,7 +62,7 @@ component.
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     Build status
-    Needs building
+    Pending build
     Start in ... (2505) What's this?
     Build details
     Source: testing - 1.0
@@ -82,7 +82,7 @@ question.
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     Build status
-    Needs building
+    Pending build
     Build details
     Source: testing - 1.0
     Archive: Primary Archive for Ubuntu Test
@@ -134,7 +134,7 @@ new 'score' value is presented.
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
-    Needs building
+    Pending build
     Start in ... (0) Rescore build What's this?
 
 Eventually a pending build record will get started, and while it's
@@ -279,7 +279,7 @@ retrying the build is not a possibility anymore.
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
-    Needs building
+    Pending build
     Start in ... (0) Rescore build What's this?
 
     >>> admin_browser.getLink("Retry this build").click()
@@ -316,7 +316,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'status'))
     Build status
-    Successfully built on Bob The Builder
+    Successful build on Bob The Builder
     Started on 2008-01-01
     Finished on 2008-01-01 (took 5 minutes, 0.0 seconds)
     buildlog (6 bytes)
@@ -453,7 +453,7 @@ The 'Build status' section is identical for PPAs.
 
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'status'))
     Build status
-    Successfully built on Bob The Builder
+    Successful build on Bob The Builder
     Started on ...
     Finished on ... (took 5 minutes, 0.0 seconds)
     buildlog (6 bytes)
