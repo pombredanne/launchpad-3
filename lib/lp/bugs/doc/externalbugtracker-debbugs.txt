@@ -91,7 +91,7 @@ being correct.
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
-    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate())
+    >>> bug_watches = list(debbugs.watches_needing_update)
     >>> len(bug_watches)
     0
 
@@ -105,7 +105,7 @@ bug watches should solve that problem.
     >>> for watch in debbugs.watches:
     ...     watch.next_check = datetime.now(utc)
 
-    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate())
+    >>> bug_watches = list(debbugs.watches_needing_update)
     >>> len(bug_watches)
     5
 
@@ -136,7 +136,7 @@ The next_check value for all the watches got set to null when they
 were updated, so there are no watches left needing an update.
 
     >>> flush_database_updates()
-    >>> watches = debbugs.getBugWatchesNeedingUpdate()
+    >>> watches = debbugs.watches_needing_update
     >>> watches.count()
     0
 

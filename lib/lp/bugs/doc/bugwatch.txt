@@ -204,7 +204,7 @@ doesn't handle the case where the same bug tracker is available through
 different URLs, for example where the host name is different (e.g.,
 bugs.gnome.org vs. bugzilla.gnome.org).
 
-    >>> old_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> old_bugtracker_count = getUtility(IBugTrackerSet).count
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).queryByBaseURL(
     ...     'http://bugzilla.gnome.org/bugs')
     >>> gnome_bugzilla.name
@@ -214,7 +214,7 @@ bugs.gnome.org vs. bugzilla.gnome.org).
     ...     text, bug_one, sample_person)
     >>> gnome_bugwatch.bugtracker.name
     u'gnome-bugzilla'
-    >>> new_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> new_bugtracker_count = getUtility(IBugTrackerSet).count
     >>> old_bugtracker_count == new_bugtracker_count
     True
 
