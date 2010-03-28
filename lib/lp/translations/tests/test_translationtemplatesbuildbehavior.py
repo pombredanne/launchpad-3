@@ -90,6 +90,7 @@ class FakeBuildQueue:
         Copies its builder from the behavior object.
         """
         self.builder = behavior._builder
+        self.specific_job = behavior.buildfarmjob
         self.destroySelf = FakeMethod()
 
 
