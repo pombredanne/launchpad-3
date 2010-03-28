@@ -20,7 +20,6 @@ __all__ = [
     'ProductSeriesOverviewNavigationMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
@@ -50,8 +49,6 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.helpers import browserLanguages
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.code.interfaces.codeimport import (
-    ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -70,7 +67,6 @@ from canonical.launchpad.webapp import (
     Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepthrough,
     stepto)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.launchpadform import (
@@ -309,7 +305,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def request_import_link(self):
         """A link to the page for requesting a new code import."""
-        return canonical_url(getUtility(ICodeImportSet), view_name='+new')
+        return canonical_url(self.context.product, view_name='+new-import')
 
     @property
     def user_branch_visible(self):
@@ -442,7 +438,7 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         if sourcepackagename is None:
             message = "You must choose the source package name."
             self.setFieldError('sourcepackagename', message)
-        # Do not allow users it create links to unpublished Ubuntu packages.
+        # Do not allow users to create links to unpublished Ubuntu packages.
         elif distroseries.distribution.full_functionality:
             source_package = distroseries.getSourcePackage(sourcepackagename)
             if source_package.currentrelease is None:
@@ -751,23 +747,6 @@ class ProductSeriesRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
-
-
-class ProductSeriesSourceListView(LaunchpadView):
-    """A listing of all the running imports.
-
-    See `ICodeImportSet.getActiveImports` for our definition of running.
-    """
-
-    page_title = 'Available code imports'
-    label = page_title
-
-    def initialize(self):
-        """See `LaunchpadFormView`."""
-        self.text = self.request.get('text')
-        results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
-
-        self.batchnav = BatchNavigator(results, self.request)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

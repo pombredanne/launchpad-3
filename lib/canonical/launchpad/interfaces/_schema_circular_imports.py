@@ -31,22 +31,22 @@ from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuild)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasCodeImports, IHasMergeProposals, IHasRequestedReviews)
+    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
 from lp.registry.interfaces.distribution import IDistribution
@@ -126,13 +126,13 @@ IBranchMergeProposal['nominateReviewer'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewVoteReference
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
+patch_entry_return_type(IBranchTarget, 'newCodeImport', ICodeImport)
+
 patch_collection_return_type(IHasBranches, 'getBranches', IBranch)
 patch_collection_return_type(
     IHasMergeProposals, 'getMergeProposals', IBranchMergeProposal)
 patch_collection_return_type(
     IHasRequestedReviews, 'getRequestedReviews', IBranchMergeProposal)
-patch_entry_return_type(
-    IHasCodeImports, 'newCodeImport', ICodeImport)
 
 # IBugTask
 
@@ -297,6 +297,7 @@ patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
+patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
@@ -326,10 +327,9 @@ patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
 
-IBuildBase['buildstate'].vocabulary = BuildStatus
-
 patch_reference_property(
-    ISourcePackageRelease, 'source_package_recipe_build', ISourcePackageRecipeBuild)
+    ISourcePackageRelease, 'source_package_recipe_build',
+    ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(
@@ -378,3 +378,6 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+
+# IProductSeries
+patch_reference_property(IProductSeries, 'product', IProduct)

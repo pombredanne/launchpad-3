@@ -34,7 +34,7 @@ If a bug tracker is disabled checkwatches won't try to update it.
     >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-   >>> login('foo.bar@canonical.com')
+    >>> login('foo.bar@canonical.com')
     >>> bug_tracker = LaunchpadObjectFactory().makeBugTracker(
     ...     'http://example.com')
     >>> bug_tracker.active = False
@@ -55,7 +55,7 @@ line.
     ...         super(TestCheckWatchesCronScript, self).__init__(
     ...             name, dbuser, test_args)
     ...         self.logger = FakeLogger()
-    ...         self.txn = transaction
+    ...         self.txn = ZopelessTransactionManager
 
     >>> def run_cronscript_with_args(args):
     ...     # It may seem a bit weird to do ths rather than letting the
@@ -105,6 +105,7 @@ demonstrate this.
     INFO Resetting 5 bug watches for bug tracker 'savannah'
     INFO Updating 5 watches on bug tracker 'savannah'
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    (OOPS-...)
     INFO 0 watches left to check on bug tracker 'savannah'
     INFO    Time for this run...
 

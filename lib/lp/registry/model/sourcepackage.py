@@ -21,10 +21,12 @@ from storm.locals import And, Desc, In, Select, SQL, Store
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.lazr.utils import smartquote
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.model.build import Build, BuildSet
@@ -48,7 +50,6 @@ from lp.soyuz.model.sourcepackagerelease import (
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
@@ -157,7 +158,8 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                    HasBranchesMixin, HasMergeProposalsMixin):
+                    HasBranchesMixin, HasMergeProposalsMixin,
+                    HasBugHeatMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -166,8 +168,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
-        IQuestionTarget)
+        ISourcePackage, IHasBugHeat, IHasBuildRecords,
+        IHasTranslationTemplates, IQuestionTarget)
 
     classProvides(ISourcePackageFactory)
 

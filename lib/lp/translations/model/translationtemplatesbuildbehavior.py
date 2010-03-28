@@ -17,10 +17,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
+from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
+from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 
 
 class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
@@ -40,11 +44,26 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         self._builder.slave.cacheFile(logger, chroot)
         buildid = self.buildfarmjob.getName()
 
-        args = { 'branch_url': self.buildfarmjob.branch.url }
+        args = self.buildfarmjob.metadata
         filemap = {}
 
         self._builder.slave.build(
             buildid, self.build_type, chroot_sha1, filemap, args)
+
+    def verifySlaveBuildID(self, slave_build_id):
+        """See `IBuildFarmJobBehavior`."""
+        try:
+            branch_name, queue_item_id = slave_build_id.rsplit('-', 1)
+        except ValueError:
+            raise CorruptBuildID(
+                "Malformed translation templates build id: '%s'" % (
+                    slave_build_id))
+
+        buildqueue = self.getVerifiedBuildQueue(queue_item_id)
+        if buildqueue.job != self.buildfarmjob.job:
+            raise CorruptBuildID(
+                "ID mismatch for translation templates build '%s'" % (
+                    slave_build_id))
 
     def _getChroot(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -66,8 +85,13 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def _uploadTarball(self, branch, tarball, logger):
         """Upload tarball to productseries that want it."""
-        # XXX JeroenVermeulen 2010-01-28 bug=507680: Find productseries
-        # that want these templates, and upload to there.
+        queue = getUtility(ITranslationImportQueue)
+        productseriesset = getUtility(IProductSeriesSet)
+        related_series = (
+            productseriesset.findByTranslationsImportBranch(branch))
+        for series in related_series:
+            queue.addOrUpdateEntriesFromTarball(
+                tarball, False, branch.owner, productseries=series)
 
     def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
         """Deal with a finished ("WAITING" state, perversely) build job.

@@ -57,13 +57,6 @@
       permission="zope.Public"
       />
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+code-import-list"
-      class="lp.registry.browser.productseries.ProductSeriesSourceListView"
-      template="../templates/sources-list.pt"
-      permission="zope.Public"
-      />
-  <browser:page
       for="zope.interface.Interface"
       name="+test-webservice-js"
       template="../../../canonical/launchpad/templates/test-webservice-js.pt"
@@ -1079,5 +1072,16 @@
         factory="lp.code.browser.diff.DiffFormatterAPI"
         name="fmt"
         />
+
+    <browser:url
+        for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+        attribute_to_parent="owner"
+        path_expression="string:+recipe/${name}"
+        rootsite="code" />
+    <browser:url
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        attribute_to_parent="recipe"
+        path_expression="string:+build/${id}"
+        rootsite="code" />
 
 </configure>
