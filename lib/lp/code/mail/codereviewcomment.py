@@ -8,6 +8,7 @@ __metaclass__ = type
 
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 
@@ -40,6 +41,10 @@ class CodeReviewCommentMailer(BMPMailer):
         self.attachments = []
         original_email = self.code_review_comment.getOriginalEmail()
         if original_email is not None:
+            # The original_email here is wrapped in a zope security proxy,
+            # which is not helpful as there is no interface defined for
+            # emails, so strip it off here.
+            original_email = removeSecurityProxy(original_email)
             # The attachments for the code review comment are actually
             # library file aliases.
             display_aliases, other_aliases = (
