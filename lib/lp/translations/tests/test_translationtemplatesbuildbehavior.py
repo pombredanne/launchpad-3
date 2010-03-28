@@ -189,8 +189,7 @@ class TestTranslationTemplatesBuildBehavior(
         slave_status = behavior.slaveStatus(
             builder.slave.status(),
             {'builder_status': builder.slave.status()[0],
-             'build_status': builder.slave.status()[1],
-             'build_id': builder.slave.status()[2]})
+             'build_status': builder.slave.status()[1]})
         behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
 
         self.assertEqual(1, queue_item.destroySelf.call_count)
