@@ -153,7 +153,8 @@ class BuildBase:
         filemap = slave_status['filemap']
 
         logger.info("Processing successful build %s from builder %s" % (
-            buildid, self.buildqueue_record.builder.name))
+            self.buildqueue_record.specific_job.build.title,
+            self.buildqueue_record.builder.name))
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         if not self.archive.allowUpdatesToReleasePocket():
@@ -349,7 +350,7 @@ class BuildBase:
         ZERO.
         """
         logger.warning("***** %s is GIVENBACK by %s *****"
-                       % (slave_status['build_id'],
+                       % (self.buildqueue_record.specific_job.build.title,
                           self.buildqueue_record.builder.name))
         self.storeBuildInfo(librarian, slave_status)
         # XXX cprov 2006-05-30: Currently this information is not
