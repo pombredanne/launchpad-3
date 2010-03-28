@@ -40,6 +40,7 @@ from lp.code.enums import (
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
@@ -307,8 +308,8 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(sender, vote.reviewer)
         self.assertEqual(comment, vote.comment)
 
-    def test_processSendsMail(self):
-        """Processing mail causes mail to be sent."""
+    def test_processmail_generates_job(self):
+        """Processing mail causes an email job to be created."""
         mail = self.factory.makeSignedMessage(
             body=' vote Abstain EBAILIWICK', subject='subject')
         bmp = self.factory.makeBranchMergeProposal()
@@ -321,17 +322,14 @@ class TestCodeHandler(TestCaseWithFactory):
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
-        notification = [
-            msg for msg in pop_notifications() if
-            msg['X-Launchpad-message-rationale'] == 'Owner'][0]
-        self.assertEqual('subject', notification['Subject'])
-        expected_body = ('Review: Abstain ebailiwick\n'
-                         ' vote Abstain EBAILIWICK\n'
-                         '-- \n'
-                         '%s\n'
-                         'You are the owner of %s.' %
-                         (canonical_url(bmp), bmp.source_branch.bzr_identity))
-        self.assertEqual(expected_body, notification.get_payload(decode=True))
+        job = Store.of(bmp).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == bmp,
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL).one()
+        self.assertIsNot(None, job)
+        # Ensure the DB operations violate no constraints.
+        Store.of(bmp).flush()
 
     def test_getBranchMergeProposal(self):
         """The correct BranchMergeProposal is returned for the address."""
