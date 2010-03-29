@@ -107,7 +107,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
             registrant=source.owner)
         job = MergeProposalCreatedJob.create(bmp)
         transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_email_jobs.dbuser)
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
         job.run()
         self.assertIs(None, bmp.review_diff)
         self.assertIsNot(None, bmp.preview_diff)
@@ -159,7 +159,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         job = MergeProposalCreatedJob.create(bmp)
         transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_email_jobs.dbuser)
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
         job.run()
 
 
@@ -178,10 +178,32 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
         transaction.commit()
-        self.layer.switchDbUser(config.update_preview_diffs.dbuser)
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
         JobRunner.fromReady(UpdatePreviewDiffJob).runAll()
         transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
+
+    def test_run_branches_not_ready(self):
+        # If the job has been waiting for a significant period of time (15
+        # minutes for now), we run the job anyway.  The check_ready method
+        # then raises and this is caught as a user error by the job system,
+        # and as such sends an email to the error recipients, which for this
+        # job is the merge proposal registrant.
+        eric = self.factory.makePerson(name='eric', email='eric@example.com')
+        bmp = self.factory.makeBranchMergeProposal(registrant=eric)
+        job = UpdatePreviewDiffJob.create(bmp)
+        pop_notifications()
+        JobRunner([job]).runAll()
+        [email] = pop_notifications()
+        self.assertEqual('Eric <eric@example.com>', email['to'])
+        self.assertEqual(
+            'Launchpad error while generating the diff for a merge proposal',
+            email['subject'])
+        self.assertEqual(
+            'Launchpad encountered an error during the following operation: '
+            'generating the diff for a merge proposal.  '
+            'The source branch has no revisions.',
+            email.get_payload(decode=True))
 
 
 class TestBranchMergeProposalJobSource(TestCaseWithFactory):

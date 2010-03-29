@@ -69,8 +69,9 @@ from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.model.job import Job
-from lp.services.job.interfaces.job import IRunnableJob, JobStatus
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.sendmail import format_address_for_person
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -290,7 +291,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
-    def check_ready(self):
+    user_error_types = (UpdatePreviewDiffNotReady, )
+
+    def checkReady(self):
         """Is this job ready to run?"""
         bmp = self.branch_merge_proposal
         if bmp.source_branch.last_scanned_id is None:
@@ -315,9 +318,18 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
+        self.checkReady()
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
         self.branch_merge_proposal.preview_diff = preview
+
+    def getOperationDescription(self):
+        return ('generating the diff for a merge proposal')
+
+    def getErrorRecipients(self):
+        """Return a list of email-ids to notify about user errors."""
+        registrant = self.branch_merge_proposal.registrant
+        return format_address_for_person(registrant)
 
 
 class CreateMergeProposalJob(BaseRunnableJob):
@@ -443,7 +455,7 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
     def getErrorRecipients(self):
         """Return a list of email-ids to notify about user errors."""
         commenter = self.code_review_comment.message.owner
-        return [commenter.preferredemail]
+        return format_address_for_person(commenter)
 
 
 class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
@@ -504,7 +516,7 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
         """Return a list of email-ids to notify about user errors."""
         recipients = []
         if self.requester is not None:
-            recipients.append(self.requester.preferredemail)
+            recipients.append(format_address_for_person(self.requester))
         return recipients
 
 
@@ -569,7 +581,7 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
         """Return a list of email-ids to notify about user errors."""
         recipients = []
         if self.editor is not None:
-            recipients.append(self.editor.preferredemail)
+            recipients.append(format_address_for_person(self.editor))
         return recipients
 
 
@@ -664,7 +676,7 @@ class BranchMergeProposalJobSource:
             # ready.
             if IUpdatePreviewDiffJob.providedBy(derived_job):
                 try:
-                    derived_job.check_ready()
+                    derived_job.checkReady()
                 except UpdatePreviewDiffNotReady:
                     # If the job was created under 15 minutes ago wait a bit.
                     cut_off_time = datetime.now(pytz.UTC) - timedelta(minutes=15)
