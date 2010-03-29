@@ -69,6 +69,7 @@ from bzrlib.config import TransportConfig
 from bzrlib.errors import (
     NoSuchFile, NotBranchError, NotStacked, PermissionDenied,
     TransportNotPossible, UnstackableBranchFormat)
+from bzrlib.smart.request import jail_info
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
 from bzrlib import urlutils
@@ -613,8 +614,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
         return deferred.addErrback(translate_fault)
 
-    def massage_stacked_on_location(self, location):
-        """ """
+    def _massage_stacked_on_location(self, location):
+        """XXX"""
         if '://' not in location: # Not an absolute URL.  Leave it alone.
             return location
         uri = URI(location)
@@ -627,11 +628,21 @@ class LaunchpadServer(_BaseLaunchpadServer):
             return None
         return uri.path
 
+    def _forcibly_set_stacked_on_location(self, branch, location):
+        """XXX"""
+        # We use TransportConfig directly because the branch
+        # is still locked at this point!  We're effectively
+        # 'borrowing' the lock that is being released.
+        branch_config = TransportConfig(
+            branch._transport, 'branch.conf')
+        branch_config.set_option(
+            location, 'stacked_on_location')
+
     def branchChanged(self, virtual_url_fragment):
-        """Mirror the branch that owns 'virtual_url_fragment'.
+        """Notify Launchpad of a change to the a branch.
 
-        :param virtual_path: A virtual URL fragment to be translated.
-
+        :param virtual_url_fragment: A url fragment that points to a path
+            owned by a branch.
         :raise NotABranchPath: If `virtual_url_fragment` points to a path
             that's not a branch.
         :raise NotEnoughInformation: If `virtual_url_fragment` cannot be
@@ -643,9 +654,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
         def got_path_info((transport_type, data, trailing_path)):
             if transport_type != BRANCH_TRANSPORT:
                 raise NotABranchPath(virtual_url_fragment)
-            from bzrlib.bzrdir import BzrDir
-            from bzrlib.smart.request import jail_info
-            transport, _ = self._transport_dispatch.makeTransport((transport_type, data, trailing_path))
+            transport, _ = self._transport_dispatch.makeTransport(
+                (transport_type, data, trailing_path))
             # XXX yikes!!
             if jail_info.transports:
                 jail_info.transports.append(transport)
@@ -657,16 +667,11 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 if stacked_on_url is None:
                     stacked_on_url = ''
                 else:
-                    massaged_location = self.massage_stacked_on_location(
+                    massaged_location = self._massage_stacked_on_location(
                         stacked_on_url)
                     if massaged_location is not None:
-                        # We use TransportConfig directly because the branch
-                        # is still locked at this point!  We're effectively
-                        # 'borrowing' the lock that is being released.
-                        branch_config = TransportConfig(
-                            branch._transport, 'branch.conf')
-                        branch_config.set_option(
-                            massaged_location, 'stacked_on_location')
+                        self._forcibly_set_stacked_on_location(
+                            branch, massaged_location)
                         stacked_on_url = massaged_location
                     else:
                         stacked_on_url = ''
