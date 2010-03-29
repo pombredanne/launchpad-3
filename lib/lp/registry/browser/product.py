@@ -338,26 +338,26 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def configure_bugtracker(self):
-        text = 'Configure project bugtracker'
-        summary = 'Allow users to report bugs on this project'
+        text = 'Configure bug tracker'
+        summary = 'Specify where bugs are tracked for this project'
         return Link('+configure-bugtracker', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_translations(self):
-        text = 'Configure project translations'
+        text = 'Configure translations'
         summary = 'Allow users to submit translations for this project'
         return Link('+configure-translations', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_answers(self):
-        text = 'Configure project answers'
+        text = 'Configure support tracker'
         summary = 'Allow users to ask questions on this project'
         return Link('+configure-answers', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def configure_blueprints(self):
-        text = 'Configure project blueprints'
-        summary = 'Allow users to submit blueprints on this project'
+        text = 'Configure blueprints'
+        summary = 'Enable tracking of specifications and meetings'
         return Link('+configure-blueprints', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
