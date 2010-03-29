@@ -37,7 +37,7 @@ from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import (
-    IDefaultSkin, IBrowserRequest, IBrowserApplicationRequest)
+    IDefaultSkin, IBrowserRequest)
 from zope.publisher.publish import mapply
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
@@ -61,7 +61,6 @@ from canonical.launchpad.webapp.dbpolicy import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
-from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -326,7 +325,8 @@ class LaunchpadBrowserPublication(
         if (IOAuthSignedRequest.providedBy(request)
             or not IBrowserRequest.providedBy(request)
             or request['PATH_INFO']  in (
-                '/+storeblob', '/+request-token', '/+access-token')):
+                '/+storeblob', '/+request-token', '/+access-token',
+                '/+hwdb/+submit')):
             # We only want to check for the referrer header if we are
             # in the middle of a request initiated by a web browser. A
             # request to the web service (which is necessarily
