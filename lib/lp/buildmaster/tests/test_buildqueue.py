@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=C0324
 
@@ -6,13 +6,14 @@
 
 from datetime import datetime, timedelta
 from pytz import utc
+from unittest import TestLoader
 
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -28,6 +29,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 def find_job(test, name, processor='386'):
@@ -140,10 +142,12 @@ def monkey_patch_the_now_property(buildqueue):
     This avoids spurious test failures.
     """
     # Use the date/time the job started if available.
-    time_stamp = buildqueue.job.date_started
-    if not time_stamp:
-        time_stamp = datetime.now(utc)
-    buildqueue._now = lambda: time_stamp
+    if buildqueue.job.date_started:
+        time_stamp = buildqueue.job.date_started
+    else:
+        time_stamp = buildqueue._now()
+
+    buildqueue._now = FakeMethod(result=time_stamp)
     return time_stamp
 
 
@@ -207,7 +211,6 @@ class TestBuildQueueSet(TestCaseWithFactory):
         self.assertTrue(
             self.buildqueueset.getActiveBuildJobs().is_empty(),
             "An active build job must have a builder.")
-
 
 
 class TestBuildQueueBase(TestCaseWithFactory):
@@ -605,6 +608,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         # fact that no builders capable of running the job are available.
         check_mintime_to_builder(self, job, 0)
 
+
 class MultiArchBuildsBase(TestBuildQueueBase):
     """Set up a test environment with builds and multiple processors."""
     def setUp(self):
@@ -701,9 +705,10 @@ class MultiArchBuildsBase(TestBuildQueueBase):
 
 class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     """Test estimated time-to-builder with builds and multiple processors."""
-    def test_min_time_to_next_builder(self):
+    def disabled_test_min_time_to_next_builder(self):
         """When is the next builder capable of running the job at the head of
         the queue becoming available?"""
+        # XXX AaronBentley 2010-03-19 bug=541914: Fails spuriously
         # One of four builders for the 'apg' build is immediately available.
         apg_build, apg_job = find_job(self, 'apg', 'hppa')
         check_mintime_to_builder(self, apg_job, 0)
@@ -803,6 +808,27 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
 
         # That builder should be available immediately since it's idle.
         check_mintime_to_builder(self, apg_job, 0)
+
+
+class TestBuildQueueDuration(TestCaseWithFactory):
+    layer = ZopelessDatabaseLayer
+
+    def _makeBuildQueue(self):
+        """Produce a `BuildQueue` object to test."""
+        return self.factory.makeSourcePackageRecipeBuildJob()
+
+    def test_current_build_duration_not_started(self):
+        buildqueue = self._makeBuildQueue()
+        self.assertEqual(None, buildqueue.current_build_duration)
+
+    def test_current_build_duration(self):
+        buildqueue = self._makeBuildQueue()
+        now = buildqueue._now()
+        buildqueue._now = FakeMethod(result=now)
+        age = timedelta(minutes=3)
+        buildqueue.job.date_started = now - age
+
+        self.assertEqual(age, buildqueue.current_build_duration)
 
 
 class TestJobClasses(TestCaseWithFactory):
@@ -1301,3 +1327,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         assign_to_builder(self, 'xxr-daptup', 1, None)
         postgres_build, postgres_job = find_job(self, 'postgres', '386')
         check_estimate(self, postgres_job, 120)
+
+
+def test_suite():
+    return TestLoader().loadTestsFromName(__name__)

@@ -146,7 +146,7 @@ class BaseTestRunner:
                         result and 'FAILURE' or 'SUCCESS')
                     summary_file = open(self.logger.summary_filename, 'r')
                     bzrlib.email_message.EmailMessage.send(
-                        config, self.email[0], self.email,
+                        config, config.username(), self.email,
                         subject, summary_file.read())
                     summary_file.close()
         finally:
@@ -404,8 +404,7 @@ if __name__ == '__main__':
         '-e', '--email', action='append', dest='email', default=None,
         help=('Email address to which results should be mailed.  Defaults to '
               'the email address from `bzr whoami`. May be supplied multiple '
-              'times. The first supplied email address will be used as the '
-              'From: address.'))
+              'times. `bzr whoami` will be used as the From: address.'))
     parser.add_option(
         '-s', '--submit-pqm-message', dest='pqm_message', default=None,
         help=('A base64-encoded pickle (string) of a pqm message '
@@ -465,10 +464,11 @@ if __name__ == '__main__':
 
             runner.test()
         except:
+            config = bzrlib.config.GlobalConfig()
             # Handle exceptions thrown by the test() or daemonize() methods.
             if options.email:
                 bzrlib.email_message.EmailMessage.send(
-                    bzrlib.config.GlobalConfig(), options.email[0],
+                    config, config.username(),
                     options.email,
                     'Test Runner FAILED', traceback.format_exc())
             raise
