@@ -380,7 +380,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             displayname='Candidate', email='candidate@example.com')
         requester = self.factory.makePerson(
             displayname='Requester', email='requester@example.com')
-        request = CodeReviewVoteReference(
+        CodeReviewVoteReference(
             branch_merge_proposal=merge_proposal, reviewer=candidate,
             registrant=requester)
         reason = RecipientReason.forReviewer(merge_proposal, True, candidate)
@@ -449,7 +449,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         # review request email.
         reviewer = self.factory.makePerson()
         pop_notifications()
-        vote_reference = self.bmp.nominateReviewer(reviewer, self.owner, None)
+        self.bmp.nominateReviewer(reviewer, self.owner, None)
         # No email is sent.
         sent_mail = pop_notifications()
         self.assertEqual([], sent_mail)
@@ -464,7 +464,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         # a link to the proposal.
         reviewer = self.factory.makePerson()
         self.bmp.description = 'This branch is awesome.'
-        vote_reference = self.bmp.nominateReviewer(reviewer, self.owner, None)
+        self.bmp.nominateReviewer(reviewer, self.owner, None)
         review_request_job = self.getReviewNotificationEmail()
         review_request_job.run()
         [sent_mail] = pop_notifications()
@@ -495,7 +495,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         review_team.addMember(black_beard, eric)
         pop_notifications()
         login_person(self.owner)
-        vote_reference = self.bmp.nominateReviewer(review_team, self.owner, None)
+        self.bmp.nominateReviewer(review_team, self.owner, None)
         review_request_job = self.getReviewNotificationEmail()
         review_request_job.run()
         sent_mail = pop_notifications()
@@ -509,8 +509,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         # private email address.
         candidate = self.makePersonWithHiddenEmail()
         # Request a review and prepare the mailer.
-        vote_reference = self.bmp.nominateReviewer(
-            candidate, self.owner, None)
+        self.bmp.nominateReviewer(candidate, self.owner, None)
         # Send the mail.
         review_request_job = self.getReviewNotificationEmail()
         review_request_job.run()
