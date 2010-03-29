@@ -614,11 +614,15 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
         return deferred.addErrback(translate_fault)
 
-    def _massage_stacked_on_location(self, location):
-        """XXX"""
-        if '://' not in location: # Not an absolute URL.  Leave it alone.
-            return location
-        uri = URI(location)
+    def _normalize_stacked_on_url(self, branch):
+        """XXX."""
+        stacked_on_url = get_stacked_on_url(branch)
+        if stacked_on_url is None:
+            return None
+        if '://' not in stacked_on_url:
+            # Assume it's a relative path.
+            return stacked_on_url
+        uri = URI(stacked_on_url)
         # We could try to display an error on stderr for these cases
         # maybe?  The scanner will complain in due course.
         if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
@@ -626,17 +630,11 @@ class LaunchpadServer(_BaseLaunchpadServer):
         launchpad_domain = config.vhost.mainsite.hostname
         if not uri.underDomain(launchpad_domain):
             return None
-        return uri.path
-
-    def _forcibly_set_stacked_on_location(self, branch, location):
-        """XXX"""
         # We use TransportConfig directly because the branch
         # is still locked at this point!  We're effectively
         # 'borrowing' the lock that is being released.
-        branch_config = TransportConfig(
-            branch._transport, 'branch.conf')
-        branch_config.set_option(
-            location, 'stacked_on_location')
+        branch_config = TransportConfig(branch._transport, 'branch.conf')
+        branch_config.set_option(uri.path, 'stacked_on_location')
 
     def branchChanged(self, virtual_url_fragment):
         """Notify Launchpad of a change to the a branch.
@@ -660,21 +658,10 @@ class LaunchpadServer(_BaseLaunchpadServer):
             if jail_info.transports:
                 jail_info.transports.append(transport)
             try:
-                bzrdir = BzrDir.open_from_transport(transport)
-                branch = bzrdir.open_branch(ignore_fallbacks=True)
+                branch = BzrDir.open_from_transport(transport).open_branch(
+                    ignore_fallbacks=True)
                 last_revision = branch.last_revision()
-                stacked_on_url = get_stacked_on_url(branch)
-                if stacked_on_url is None:
-                    stacked_on_url = ''
-                else:
-                    massaged_location = self._massage_stacked_on_location(
-                        stacked_on_url)
-                    if massaged_location is not None:
-                        self._forcibly_set_stacked_on_location(
-                            branch, massaged_location)
-                        stacked_on_url = massaged_location
-                    else:
-                        stacked_on_url = ''
+                stacked_on_url = self._normalize_stacked_on_url(branch)
             except:
                 # It gets really confusing if we raise an exception
                 # here (the branch remains locked, but this isn't
