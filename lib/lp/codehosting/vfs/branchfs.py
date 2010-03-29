@@ -181,7 +181,12 @@ def get_puller_server():
     the hosted branch area and is read-only, the other points to the mirrored
     area and is read/write.
     """
-    return get_multi_server(write_mirrored=True)
+    hosted_transport = get_chrooted_transport(
+        config.codehosting.mirrored_branches_root, mkdir=True)
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+    branchfs_endpoint = BlockingProxy(proxy)
+    return LaunchpadInternalServer(
+        'lp-mirrored:///', branchfs_endpoint, hosted_transport)
 
 
 def get_multi_server(write_hosted=False, write_mirrored=False,

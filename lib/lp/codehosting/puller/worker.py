@@ -239,19 +239,6 @@ class BranchMirrorer(object):
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        # We check to see if the stacked on branch exists in the mirrored area
-        # so that we can nicely signal to the scheduler that the pulling of
-        # this branch should be deferred before we even create the branch in
-        # the mirrored area.
-        stacked_on_url = (
-            self.policy.getStackedOnURLForDestinationBranch(
-                source_branch, destination_url))
-        if stacked_on_url is not None:
-            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
-            try:
-                Branch.open(stacked_on_url)
-            except errors.NotBranchError:
-                raise StackedOnBranchNotFound()
         if isinstance(source_branch, LoomSupport):
             # Looms suck.
             revision_id = None
@@ -315,12 +302,12 @@ class BranchMirrorer(object):
     def mirror(self, source_branch, destination_url):
         """Mirror 'source_branch' to 'destination_url'."""
         branch = self.openDestinationBranch(source_branch, destination_url)
+        revid_before = branch.last_revision()
         # If the branch is locked, try to break it. Our special UI factory
         # will allow the breaking of locks that look like they were left
         # over from previous puller worker runs. We will block on other
         # locks and fail if they are not broken before the timeout expires
         # (currently 5 minutes).
-        revid_before = branch.last_revision()
         if branch.get_physical_lock_status():
             branch.break_lock()
         self.updateBranch(source_branch, branch)

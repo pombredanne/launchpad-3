@@ -199,7 +199,7 @@ class AcquireBranchToPullTests:
     def test_simple(self):
         # If there is one branch that needs mirroring, acquireBranchToPull
         # returns that.
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
         self.assertBranchIsAquired(branch)
 
