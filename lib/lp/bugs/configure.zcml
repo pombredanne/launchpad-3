@@ -583,8 +583,6 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    linkBranch
-                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -690,6 +688,8 @@
                     markAsDuplicate
                     linkHWSubmission
                     unlinkHWSubmission
+                    linkBranch
+                    unlinkBranch
                     linkAttachment"
                 set_attributes="
                     activity initial_message
