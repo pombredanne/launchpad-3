@@ -14,6 +14,13 @@ Launchpad.
     ...     'Hide my email addresses from other Launchpad users').selected
     False
 
+He can see a link to an FAQ that explains launchpad accounts and passwords.
+Note that this is a link to an FAQ in production databases.
+
+    >>> print browser.getLink(
+    ...     'Learn about your Launchpad account and password').url
+    http://launchpad.dev/launchpad/+faq/51
+
 He noticed that his information is out of date and will update it.
 (If he leaves leading or trailing whitespace in the displayname it'll
 be stripped)
