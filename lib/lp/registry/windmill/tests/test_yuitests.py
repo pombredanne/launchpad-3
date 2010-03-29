@@ -6,13 +6,11 @@
 __metaclass__ = type
 __all__ = []
 
-import re
 import unittest
-
-from windmill.authoring import WindmillTestClient
 
 from canonical.config import config
 from canonical.launchpad.windmill.testing import constants
+from canonical.launchpad.testing.pages import find_tags_by_class
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
@@ -24,7 +22,6 @@ class YUIUnitTestCase(WindmillTestCase):
     suite_name = 'RegistryYUIUnitTests'
 
     _yui_results = None
-    _log_pattern = re.compile(r'<pre id="python-log">\|\|(.*)</pre>')
     _view_name = u'http://launchpad.dev:8085/+yui-unittest/'
 
     def initialize(self, test_path):
@@ -39,32 +36,30 @@ class YUIUnitTestCase(WindmillTestCase):
             client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
             client.waits.forElement(id='complete')
             response = client.commands.getPageText()
-            match = self._log_pattern.search(response['result'])
             self._yui_results = {}
-            lines = match.group(1).split('||')
-            for line in lines:
-                result, test_name, unit_test_name = line.split('::')
+            entries = find_tags_by_class(
+                response['result'], 'yui-console-entry-TestRunner')
+            for entry in entries:
+                category = entry.find(
+                    attrs={'class': 'yui-console-entry-cat'})
+                if category is None:
+                    continue
+                result = category.string
+                if result not in ('pass', 'fail'):
+                    continue
+                message = entry.pre.string
+                test_name, ignore = message.split(':', 1)
                 self._yui_results[test_name] = dict(
-                    result=result, message='oops',
-                    unit_test_name=unit_test_name)
-
-    def _verify_test(self, test_name):
-        if test_name not in self._yui_results:
-            self.fail("Test harness or js failed.")
-        result = self._yui_results[test_name]
-        self.assertTrue('pass' == result,
-                'Failue in %s.%s: %s' % (
-                    result['unit_test_name'], test_name, result['message']))
+                    result=result, message=message)
 
     def runTest(self):
-        if self._yui_results is None:
+        if self._yui_results is None or len(self._yui_results) == 0:
             self.fail("Test harness or js failed.")
         for test_name in self._yui_results:
             result = self._yui_results[test_name]
             self.assertTrue('pass' == result['result'],
-                    'Failue in %s.%s: %s' % (
-                        result['unit_test_name'],
-                        test_name, result['message']))
+                    'Failure in %s.%s: %s' % (
+                        self.test_path, test_name, result['message']))
 
 
 def test_suite():
