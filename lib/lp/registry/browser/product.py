@@ -486,7 +486,7 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         'bugsupervisor',
         'securitycontact',
         'cve',
-        'subscribe'
+        'subscribe',
         )
 
     def filebug(self):
@@ -1013,12 +1013,27 @@ class ProductPackagesPortletView(LaunchpadFormView):
         orientation='vertical')
     suggestions = None
 
+    @cachedproperty
+    def sourcepackages(self):
+        """The project's latest source packages."""
+        current_packages = [
+            sp for sp in self.context.sourcepackages
+            if sp.currentrelease is not None]
+        current_packages.reverse()
+        return current_packages[0:5]
+
+    @cachedproperty
+    def can_show_portlet(self):
+        """Are there packages, or can packages be suggested."""
+        return len(self.sourcepackages) > 0 or not config.launchpad.is_lpnet
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProductPackagesPortletView, self).setUpFields()
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         source_packages = ubuntu.searchSourcePackages(
-            self.context.name, has_packaging=False)
+            self.context.name, has_packaging=False,
+            publishing_distroseries=ubuntu.currentseries)
         # Based upon the matches, create a new vocabulary with
         # term descriptions that include a link to the source package.
         self.suggestions = []
@@ -1427,6 +1442,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
         # supervisor.
         self.validate_private_bugs(data)
 
+
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
 
@@ -1828,8 +1844,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             description=description,
             licenses=data['licenses'],
             license_info=data['license_info'],
-            project=project
-            )
+            project=project)
 
     def main_action(self, data):
         """See `MultiStepView`."""

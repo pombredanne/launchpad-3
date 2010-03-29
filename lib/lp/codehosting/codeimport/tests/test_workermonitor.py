@@ -18,8 +18,8 @@ import urllib
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
 
-from twisted.internet import defer, error, protocol, reactor, task
-from twisted.python import failure, log
+from twisted.internet import defer, error, protocol, reactor
+from twisted.python import log
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import xmlrpc
 
@@ -32,9 +32,6 @@ from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.testing.layers import (
     TwistedAppServerLayer, TwistedLaunchpadZopelessLayer, TwistedLayer)
-from canonical.twistedsupport import suppress_stderr
-from canonical.twistedsupport.tests.test_processmonitor import (
-    makeFailure, ProcessTestsMixin)
 
 from lp.code.enums import (
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
@@ -52,6 +49,9 @@ from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
+from lp.services.twistedsupport import suppress_stderr
+from lp.services.twistedsupport.tests.test_processmonitor import (
+    makeFailure, ProcessTestsMixin)
 from lp.testing import login, logout, TestCase
 from lp.testing.factory import LaunchpadObjectFactory
 
@@ -732,7 +732,9 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    def test_import_bzrsvn(self):
+    # XXX 2010-03-24 MichaelHudson, bug=541526: This test fails intermittently
+    # in EC2.
+    def DISABLED_test_import_bzrsvn(self):
         # Create a Subversion-via-bzr-svn CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
         code_import_id = job.code_import.id

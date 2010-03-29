@@ -14,7 +14,7 @@ We call such a transport a "Twisted Transport".
 
 __metaclass__ = type
 __all__ = [
-    'AvatarToSFTPAdapter',
+    'avatar_to_sftp_server',
     'FileTransferServer',
     'TransportSFTPServer',
     ]
@@ -40,7 +40,7 @@ from zope.interface import implements
 from lp.codehosting.vfs import AsyncLaunchpadTransport, LaunchpadServer
 from lp.codehosting.sshserver import accesslog
 from canonical.config import config
-from canonical.twistedsupport import gatherResults
+from lp.services.twistedsupport import gatherResults
 
 
 class FileIsADirectory(bzr_errors.PathError):

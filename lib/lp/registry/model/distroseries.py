@@ -45,8 +45,9 @@ from lp.soyuz.model.binarypackagerelease import (
         BinaryPackageRelease)
 from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
@@ -126,11 +127,11 @@ from lp.soyuz.interfaces.sourcepackageformat import (
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
-                   StructuralSubscriptionTargetMixin):
+                   StructuralSubscriptionTargetMixin, HasBugHeatMixin):
     """A particular series of a distribution."""
     implements(
-        ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates)
+        ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
+        IHasQueueItems, IHasTranslationTemplates)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -1943,7 +1944,8 @@ class DistroSeriesSet:
         result_set = store.using((DistroSeries, POTemplate)).find(
             DistroSeries,
             DistroSeries.hide_all_translations == False,
-            DistroSeries.id == POTemplate.distroseriesID).config(distinct=True)
+            DistroSeries.id == POTemplate.distroseriesID).config(
+                distinct=True)
         # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
         # because ResultSet reports a wrong count() when using DISTINCT. Also
         # ResultSet does not implement __len__(), which would make it more

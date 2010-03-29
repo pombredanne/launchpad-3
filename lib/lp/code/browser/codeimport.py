@@ -23,6 +23,7 @@ from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import Interface
+from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -38,6 +39,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.branch import BranchExists, IBranch
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
@@ -117,13 +119,13 @@ class CodeImportView(LaunchpadView):
     """The default view for `ICodeImport`.
 
     We present the CodeImport as a simple page listing all the details of the
-    import such as associated product and branch, who requested the import,
+    import such as target and branch, who requested the import,
     and so on.
     """
 
     def initialize(self):
         """See `LaunchpadView.initialize`."""
-        self.title = "Code Import for %s" % (self.context.product.name,)
+        self.title = "Code Import for %s" % (self.context.branch.target.name,)
 
 
 class CodeImportBaseView(LaunchpadFormView):
@@ -202,7 +204,7 @@ class NewCodeImportForm(Interface):
 
     use_template(
         ICodeImport,
-        ['product', 'rcs_type', 'cvs_root', 'cvs_module'])
+        ['rcs_type', 'cvs_root', 'cvs_module'])
 
     svn_branch_url = URIField(
         title=_("Branch URL"), required=False,
@@ -247,6 +249,12 @@ class NewCodeImportForm(Interface):
         description=_(
             "This will be used in the branch URL to identify the "
             "imported branch.  Examples: main, trunk."),
+        )
+
+    product = Choice(
+        title=_('Project'),
+        description=_("The Project to associate the code import with."),
+        vocabulary="Product",
         )
 
 
@@ -326,7 +334,7 @@ class CodeImportNewView(CodeImportBaseView):
         cvs_root, cvs_module, url = self._getImportLocation(data)
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
-            product=product,
+            target=IBranchTarget(product),
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
             url=url,
@@ -343,8 +351,8 @@ class CodeImportNewView(CodeImportBaseView):
             <a href="%(product_url)s">%(product_name)s</a>
             with the name of
             <a href="%(branch_url)s">%(branch_name)s</a>.""",
-                       product_url=canonical_url(existing_branch.product),
-                       product_name=existing_branch.product.name,
+                       product_url=canonical_url(existing_branch.target),
+                       product_name=existing_branch.target.name,
                        branch_url=canonical_url(existing_branch),
                        branch_name=existing_branch.name))
 
@@ -435,9 +443,9 @@ class CodeImportNewView(CodeImportBaseView):
 class EditCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
-    use_template(
-        ICodeImport,
-        ['url', 'cvs_root', 'cvs_module'])
+    url = copy_field(ICodeImport['url'], readonly=False)
+    cvs_root = copy_field(ICodeImport['cvs_root'], readonly=False)
+    cvs_module = copy_field(ICodeImport['cvs_module'], readonly=False)
     whiteboard = copy_field(IBranch['whiteboard'])
 
 
