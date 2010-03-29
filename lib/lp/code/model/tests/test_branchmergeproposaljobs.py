@@ -15,6 +15,8 @@ from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, IBranchMergeProposalJobSource,
     IMergeProposalCreatedJob, IUpdatePreviewDiffJobSource,
@@ -22,9 +24,11 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.model.branchmergeproposaljob import (
      BranchMergeProposalJob, BranchMergeProposalJobDerived,
      BranchMergeProposalJobType, CodeReviewCommentEmailJob,
-     MergeProposalCreatedJob, ReviewRequestedEmailJob, UpdatePreviewDiffJob,
+     MergeProposalCreatedJob, MergeProposalUpdatedEmailJob,
+     ReviewRequestedEmailJob, UpdatePreviewDiffJob,
      )
 from lp.code.model.tests.test_diff import DiffTestCase
+from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.job.runner import JobRunner
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
@@ -249,6 +253,19 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         self.assertEqual(job.branch_merge_proposal, bmp)
         self.assertIsInstance(job, CodeReviewCommentEmailJob)
         self.assertEqual(comment, job.code_review_comment)
+
+    def test_iterReady_supports_updated_emails(self):
+        # iterReady will also return pending MergeProposalUpdatedEmailJob.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.completePendingJobs()
+        old_merge_proposal = BranchMergeProposalDelta.snapshot(bmp)
+        bmp.commit_message = 'new commit message'
+        event = ObjectModifiedEvent(
+            bmp, old_merge_proposal, [], bmp.registrant)
+        merge_proposal_modified(bmp, event)
+        [job] = self.job_source.iterReady()
+        self.assertEqual(job.branch_merge_proposal, bmp)
+        self.assertIsInstance(job, MergeProposalUpdatedEmailJob)
 
 
 def test_suite():
