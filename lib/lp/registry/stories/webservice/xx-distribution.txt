@@ -214,4 +214,5 @@ For "getCountryMirror", the mirror_type parameter must be "Archive" or
     >>> print uk_country_mirror_archive.jsonBody()
     Traceback (most recent call last):
     ...
-    ValueError: mirror_type: Invalid value "Bogus". Acceptable values are: Archive, CD Image
+    ValueError: mirror_type: Invalid value "Bogus". Acceptable values are:
+      Archive, CD Image

@@ -817,8 +817,9 @@ Only mirrors which have never been probed can be deleted this way.
 Country DNS mirrors
 -------------------
 
-Country DNS mirrors are mirrors which have been assigned $CC.archive.ubuntu.com
-or $CC.releases.ubuntu.com. These assignments are tracked in Launchpad.
+Country DNS mirrors are mirrors which have been assigned
+$CC.archive.ubuntu.com or $CC.releases.ubuntu.com. These assignments are
+tracked in Launchpad.
 
     >>> login('admin@canonical.com')
     >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
@@ -898,8 +899,8 @@ Mirrors which are not official or do not have an HTTP URL may not be set as
 country mirrors:
 
     >>> login('admin@canonical.com')
-    >>> osuosl_mirror = factory.makeMirror(ubuntu_distro, "OSU Open Source Lab",
-    ...     country=226,
+    >>> osuosl_mirror = factory.makeMirror(ubuntu_distro,
+    ...     "OSU Open Source Lab", country=226,
     ...     ftp_url="ftp://ubuntu.osuosl.org/pub/ubuntu/",
     ...     official_candidate=True)
     >>> osuosl_mirror.status = MirrorStatus.OFFICIAL

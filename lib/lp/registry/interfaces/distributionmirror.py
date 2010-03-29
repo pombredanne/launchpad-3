@@ -22,7 +22,7 @@ __all__ = [
     'MirrorNotProbed',
     'MirrorSpeed',
     'MirrorStatus',
-    'UnableToFetchCDImageFileList'
+    'UnableToFetchCDImageFileList',
     ]
 
 from cgi import escape
