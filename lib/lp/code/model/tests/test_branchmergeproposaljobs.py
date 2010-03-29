@@ -5,10 +5,14 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
 import transaction
 import unittest
 
+import pytz
 from sqlobject import SQLObjectNotFound
+from storm.locals import Select
+from storm.store import Store
 from zope.component import getUtility
 
 from canonical.config import config
@@ -30,6 +34,7 @@ from lp.code.model.branchmergeproposaljob import (
 from lp.code.model.tests.test_diff import DiffTestCase
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.job.runner import JobRunner
+from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 
@@ -200,9 +205,11 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         bmp_jobs = Store.of(bmp).find(
             Job,
-            BranchMergeProposalJob.job == Job.id,
-            BranchMergeProposalJob.branch_merge_proposal == bmp.id)
-        a_while_ago = datetime.now(tzinfo=pytz.UTC) - timedelta(minutes=16)
+            Job.id.is_in(
+                Select(
+                    BranchMergeProposalJob.jobID,
+                    BranchMergeProposalJob.branch_merge_proposal == bmp.id)))
+        a_while_ago = datetime.now(pytz.UTC) - timedelta(minutes=16)
         bmp_jobs.set(date_created=a_while_ago)
         [job] = self.job_source.iterReady()
         self.assertEqual(job.branch_merge_proposal, bmp)
@@ -240,8 +247,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         self.factory.makeRevisionsForBranch(bmp.target_branch)
         self.factory.makeRevisionsForBranch(bmp.source_branch)
-        # The scan jobs are created from mirrorComplete.
-        bmp.source_branch.mirrorComplete('last-rev-id')
+        bmp.source_branch.last_mirrored_id = 'last-rev-id'
         jobs = self.job_source.iterReady()
         self.assertEqual([], jobs)
 
@@ -251,8 +257,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         self.factory.makeRevisionsForBranch(bmp.target_branch)
         self.factory.makeRevisionsForBranch(bmp.source_branch)
-        # The scan jobs are created from mirrorComplete.
-        bmp.target_branch.mirrorComplete('last-rev-id')
+        bmp.target_branch.last_mirrored_id = 'last-rev-id'
         [job] = self.job_source.iterReady()
         self.assertEqual(job.branch_merge_proposal, bmp)
         self.assertIsInstance(job, UpdatePreviewDiffJob)
@@ -270,7 +275,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
     def test_iterReady_new_merge_proposal_update_diff_running(self):
         # If the update preview diff job is running, then iterReady does not
         # return any other jobs for that merge proposal.
-        self.factory.makeBranchMergeProposal()
+        self.makeBranchMergeProposal()
         [job] = self.job_source.iterReady()
         job.start()
         jobs = self.job_source.iterReady()
