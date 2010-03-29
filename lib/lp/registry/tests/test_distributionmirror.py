@@ -19,15 +19,16 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.mail import stub
+from lp.testing.factory import LaunchpadObjectFactory
 
 from canonical.testing import LaunchpadFunctionalLayer
-
 
 class TestDistributionMirror(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         login('test@canonical.com')
+        self.factory = LaunchpadObjectFactory()
         mirrorset = getUtility(IDistributionMirrorSet)
         self.cdimage_mirror = getUtility(IDistributionMirrorSet).getByName(
             'releases-mirror')
