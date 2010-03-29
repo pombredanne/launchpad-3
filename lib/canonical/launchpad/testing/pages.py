@@ -727,9 +727,6 @@ def setUpGlobs(test):
         'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['anon_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', '')
-    test.globs['launchpad'] = Launchpad.login(
-        'launchpad-library', 'salgado-change-anything', 'test',
-        service_root='http://api.launchpad.dev/', version="devel")
     test.globs['setupBrowser'] = setupBrowser
     test.globs['setupDTCBrowser'] = setupDTCBrowser
     test.globs['setupRosettaExpertBrowser'] = setupRosettaExpertBrowser
