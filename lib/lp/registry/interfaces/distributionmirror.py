@@ -17,7 +17,7 @@ __all__ = [
     'PROBE_INTERVAL',
     'MirrorContent',
     'MirrorFreshness',
-    'MirrorHasNoHTTPUrl',
+    'MirrorHasNoHTTPURL',
     'MirrorNotOfficial',
     'MirrorNotProbed',
     'MirrorSpeed',
@@ -74,7 +74,7 @@ class MirrorNotOfficial(CannotTransitionToCountryMirror):
     """
 
 
-class MirrorHasNoHTTPUrl(CannotTransitionToCountryMirror):
+class MirrorHasNoHTTPURL(CannotTransitionToCountryMirror):
     """Distribution mirror has no HTTP URL.
 
     Raised when a user tries to make an official mirror a country mirror,

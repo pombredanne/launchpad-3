@@ -48,7 +48,7 @@ from lp.registry.interfaces.distributionmirror import (
     CannotTransitionToCountryMirror, CountryMirrorAlreadySet,
     IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,
     IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
-    MirrorContent, MirrorFreshness, MirrorHasNoHTTPUrl, MirrorNotOfficial,
+    MirrorContent, MirrorFreshness, MirrorHasNoHTTPURL, MirrorNotOfficial,
     MirrorNotProbed, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
@@ -170,7 +170,7 @@ class DistributionMirror(SQLBase):
 
         if self.http_base_url is None:
             # Country mirrors must have HTTP URLs set.
-            raise MirrorHasNoHTTPUrl(
+            raise MirrorHasNoHTTPURL(
                 "This mirror may not be set as a country mirror as it does "
                 "not have an HTTP URL set.")
 
