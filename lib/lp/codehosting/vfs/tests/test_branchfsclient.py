@@ -36,13 +36,14 @@ class TestBranchFileSystemClient(TestCase):
         """
         self.fake_time.advance(amount)
 
-    def makeClient(self, expiry_time=None):
+    def makeClient(self, expiry_time=None, seen_new_branch_hook=None):
         """Make a `BranchFileSystemClient`.
 
         The created client interacts with the InMemoryFrontend.
         """
         return BranchFileSystemClient(
             self._xmlrpc_client, self.user.id, expiry_time=expiry_time,
+            seen_new_branch_hook=seen_new_branch_hook,
             _now=self.fake_time.now)
 
     def test_translatePath(self):
@@ -212,6 +213,41 @@ class TestBranchFileSystemClient(TestCase):
                 NotInCache, client._getFromCache, '/foo/bar/baz')
         return deferred.addCallbacks(
             translated_successfully, failed_translation)
+
+    def test_seen_new_branch_hook_called_for_new_branch(self):
+        # A callable passed as the seen_new_branch_hook when constructing a
+        # BranchFileSystemClient will be called with a previously unseen
+        # branch's unique_name when a path for a that branch is translated for
+        # the first time.
+        seen_branches = []
+        client = self.makeClient(seen_new_branch_hook=seen_branches.append)
+        branch = self.factory.makeAnyBranch()
+        client.translatePath('/' + branch.unique_name + '/trailing')
+        self.assertEqual([branch.unique_name], seen_branches)
+
+    def test_seen_new_branch_hook_called_for_each_branch(self):
+        # The seen_new_branch_hook is called for a each branch that is
+        # accessed.
+        seen_branches = []
+        client = self.makeClient(seen_new_branch_hook=seen_branches.append)
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        client.translatePath('/' + branch1.unique_name + '/trailing')
+        client.translatePath('/' + branch2.unique_name + '/trailing')
+        self.assertEqual(
+            [branch1.unique_name, branch2.unique_name], seen_branches)
+
+    def test_seen_new_branch_hook_called_once_for_a_new_branch(self):
+        # The seen_new_branch_hook is only called once for a given branch.
+        seen_branches = []
+        client = self.makeClient(seen_new_branch_hook=seen_branches.append)
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        client.translatePath('/' + branch1.unique_name + '/trailing')
+        client.translatePath('/' + branch2.unique_name + '/trailing')
+        client.translatePath('/' + branch1.unique_name + '/different')
+        self.assertEqual(
+            [branch1.unique_name, branch2.unique_name], seen_branches)
 
 
 class TestTrapFault(TestCase):

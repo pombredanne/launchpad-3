@@ -270,10 +270,6 @@ class LaunchpadView(UserAttributeCache):
         """
         return self.request.response.getStatus() in [301, 302, 303, 307]
 
-    def isRedirectInhibited(self):
-        """Returns True if redirection has been inhibited."""
-        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
-
     def __call__(self):
         self.initialize()
         if self._isRedirected():

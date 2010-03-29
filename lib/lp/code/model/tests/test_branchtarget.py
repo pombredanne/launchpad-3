@@ -91,7 +91,7 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
     def test_adapter(self):
         target = IBranchTarget(self.original)
-        self.assertIsInstance(self.target, PackageBranchTarget)
+        self.assertIsInstance(target, PackageBranchTarget)
 
     def test_components(self):
         target = IBranchTarget(self.original)
