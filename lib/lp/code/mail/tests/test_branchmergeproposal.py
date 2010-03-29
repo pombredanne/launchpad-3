@@ -135,7 +135,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         """Correctly format list of reviewers."""
         bmp, subscriber = self.makeProposalWithSubscriber()
         reviewer = self.factory.makePerson(name='review-person')
-        vote_reference = bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertIn(
@@ -150,7 +150,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         bug = self.factory.makeBug(title='I am a bug')
         bmp.source_branch.linkBug(bug, bmp.registrant)
         reviewer = self.factory.makePerson(name='review-person')
-        vote_reference = bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         expected = (
