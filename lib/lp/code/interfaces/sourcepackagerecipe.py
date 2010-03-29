@@ -22,7 +22,7 @@ __all__ = [
 from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Datetime, Object, TextLine
+from zope.schema import Bool, Datetime, Object, TextLine, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
