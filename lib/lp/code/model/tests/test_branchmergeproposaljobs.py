@@ -241,7 +241,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         self.factory.makeRevisionsForBranch(bmp.target_branch)
         self.factory.makeRevisionsForBranch(bmp.source_branch)
         # The scan jobs are created from mirrorComplete.
-        self.source_branch.mirrorComplete('last-rev-id')
+        bmp.source_branch.mirrorComplete('last-rev-id')
         jobs = self.job_source.iterReady()
         self.assertEqual([], jobs)
 
@@ -252,7 +252,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         self.factory.makeRevisionsForBranch(bmp.target_branch)
         self.factory.makeRevisionsForBranch(bmp.source_branch)
         # The scan jobs are created from mirrorComplete.
-        self.target_branch.mirrorComplete('last-rev-id')
+        bmp.target_branch.mirrorComplete('last-rev-id')
         [job] = self.job_source.iterReady()
         self.assertEqual(job.branch_merge_proposal, bmp)
         self.assertIsInstance(job, UpdatePreviewDiffJob)
@@ -276,11 +276,18 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         jobs = self.job_source.iterReady()
         self.assertEqual(0, len(jobs))
 
+    def makeBranchMergeProposal(self):
+        # Make a merge proposal that would have a ready update diff job.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.factory.makeRevisionsForBranch(bmp.source_branch)
+        self.factory.makeRevisionsForBranch(bmp.target_branch)
+        return bmp
+
     def test_iterReady_new_merge_proposal_update_diff_finished(self):
         # Once the update preview diff job has finished running, then
         # iterReady returns the next job for the merge proposal, which is in
         # this case the initial email job.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         [update_diff] = self.job_source.iterReady()
         update_diff.start()
         update_diff.complete()
@@ -300,7 +307,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
 
     def test_iterReady_supports_review_requested(self):
         # iterReady will also return pending ReviewRequestedEmailJobs.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         self.completePendingJobs()
         reviewer = self.factory.makePerson()
         bmp.nominateReviewer(reviewer, bmp.registrant)
@@ -312,7 +319,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
 
     def test_iterReady_supports_code_review_comment(self):
         # iterReady will also return pending CodeReviewCommentEmailJob.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         self.completePendingJobs()
         commenter = self.factory.makePerson()
         comment = bmp.createComment(commenter, '', 'Interesting idea.')
@@ -323,7 +330,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
 
     def test_iterReady_supports_updated_emails(self):
         # iterReady will also return pending MergeProposalUpdatedEmailJob.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         self.completePendingJobs()
         old_merge_proposal = BranchMergeProposalDelta.snapshot(bmp)
         bmp.commit_message = 'new commit message'

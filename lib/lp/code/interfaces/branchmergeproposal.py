@@ -23,6 +23,7 @@ __all__ = [
     'IMergeProposalUpdatedEmailJobSource',
     'IReviewRequestedEmailJob',
     'IReviewRequestedEmailJobSource',
+    'IUpdatePreviewDiffJob',
     'IUpdatePreviewDiffJobSource',
     'notify_modified',
     ]
@@ -598,6 +599,13 @@ class IMergeProposalCreatedJobSource(Interface):
 
     def create(bmp):
         """Create a MergeProposalCreatedJob for the specified Job."""
+
+
+class IUpdatePreviewDiffJob(IRunnableJob):
+    """Interface for the job to update the diff for a merge proposal."""
+
+    def check_ready():
+        """Check to see if this job is ready to run."""
 
 
 class IUpdatePreviewDiffJobSource(Interface):

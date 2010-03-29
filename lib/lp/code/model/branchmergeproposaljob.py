@@ -27,10 +27,12 @@ __all__ = [
     ]
 
 import contextlib
+from datetime import datetime, timedelta
 from email.utils import parseaddr
 
 from lazr.delegates import delegates
 from lazr.enum import DBEnumeratedType, DBItem
+import pytz
 import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.base import Storm
@@ -57,7 +59,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalCreatedJob, IMergeProposalCreatedJobSource,
     IMergeProposalUpdatedEmailJob, IMergeProposalUpdatedEmailJobSource,
     IReviewRequestedEmailJob, IReviewRequestedEmailJobSource,
-    IUpdatePreviewDiffJobSource,
+    IUpdatePreviewDiffJob, IUpdatePreviewDiffJobSource,
     )
 from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import BMPMailer
@@ -272,17 +274,34 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
              self.branch_merge_proposal.target_branch.bzr_identity))
 
 
+class UpdatePreviewDiffNotReady(Exception):
+    """Raised if the the preview diff is not ready to run."""
+
+
 class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     """A job to update the preview diff for a branch merge proposal.
 
     Provides class methods to create and retrieve such jobs.
     """
 
-    implements(IRunnableJob)
+    implements(IUpdatePreviewDiffJob)
 
     classProvides(IUpdatePreviewDiffJobSource)
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
+
+    def check_ready(self):
+        """Is this job ready to run?"""
+        bmp = self.branch_merge_proposal
+        if bmp.source_branch.last_scanned_id is None:
+            raise UpdatePreviewDiffNotReady(
+                'The source branch has no revisions.')
+        if bmp.target_branch.last_scanned_id is None:
+            raise UpdatePreviewDiffNotReady(
+                'The target branch has no revisions.')
+        if bmp.source_branch.pending_writes:
+            raise UpdatePreviewDiffNotReady(
+                'The source branch has pending writes.')
 
     @staticmethod
     @contextlib.contextmanager
@@ -641,5 +660,15 @@ class BranchMergeProposalJobSource:
             if job.status == JobStatus.RUNNING:
                 continue
             derived_job = BranchMergeProposalJobFactory.create(bmp_job)
+            # If the job is an update preview diff, then check that it is
+            # ready.
+            if IUpdatePreviewDiffJob.providedBy(derived_job):
+                try:
+                    derived_job.check_ready()
+                except UpdatePreviewDiffNotReady:
+                    # If the job was created under 15 minutes ago wait a bit.
+                    cut_off_time = datetime.now(pytz.UTC) - timedelta(minutes=15)
+                    if job.date_created > cut_off_time:
+                        continue
             ready_jobs.append(derived_job)
         return ready_jobs
