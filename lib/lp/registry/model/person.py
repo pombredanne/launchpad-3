@@ -837,16 +837,6 @@ class Person(
         """No-op, to satisfy a requirement of HasBugsBase."""
         pass
 
-    @property
-    def max_bug_heat(self):
-        """Return None as this attribute is not implemented for a person.
-
-        XXX deryck 2010-02-28 bug=529846
-        This requires a DB patch to be done correctly, and we're
-        near release and tests are failing.
-        """
-        return None
-
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
         if search_params is None and len(args) == 0:

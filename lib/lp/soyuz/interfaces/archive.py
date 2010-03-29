@@ -13,6 +13,7 @@ __all__ = [
     'ArchiveDependencyError',
     'ArchiveNotPrivate',
     'ArchivePurpose',
+    'ArchiveStatus',
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
@@ -184,6 +185,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
+    status = Int(
+        title=_("Status of archive."), required=True, readonly=True,
+        )
+
     sources_cached = Int(
         title=_("Number of sources cached"), required=False,
         description=_("Number of source packages cached in this PPA."))
@@ -204,10 +209,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     signing_key = Object(
         title=_('Repository sigining key.'), required=False, schema=IGPGKey)
-
-    expanded_archive_dependencies = Attribute(
-        "The expanded list of archive dependencies. It includes the implicit "
-        "PRIMARY archive dependency for PPAs.")
 
     debug_archive = Attribute(
         "The archive into which debug binaries should be uploaded.")
@@ -418,6 +419,18 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+    def getBinaryPackageRelease(name, version, archtag):
+        """Find the specified `IBinaryPackageRelease` in the archive.
+
+        :param name: The `IBinaryPackageName` of the package.
+        :param version: The version of the package.
+        :param archtag: The architecture tag of the package's build. 'all'
+            will not work here -- 'i386' (the build DAS) must be used instead.
+
+        :return The binary package release with the given name and version,
+            or None if one does not exist or there is more than one.
         """
 
     def getBinaryPackageReleaseByFileName(filename):
@@ -648,6 +661,23 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: A `ResultSet` of distinct `SourcePackageReleases` for this
             archive.
         """
+
+    def updatePackageDownloadCount(bpr, day, country, count):
+        """Update the daily download count for a given package.
+
+        :param bpr: The `IBinaryPackageRelease` to update the count for.
+        :param day: The date to update the count for.
+        :param country: The `ICountry` to update the count for.
+        :param count: The new download count.
+
+        If there's no matching `IBinaryPackageReleaseDownloadCount` entry,
+        we create one with the given count.  Otherwise we just increase the
+        count of the existing one by the given amount.
+        """
+
+    def getPackageDownloadTotal(bpr):
+        """Get the total download count for a given package."""
+
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -896,6 +926,9 @@ class IArchiveView(IHasBuildRecords):
         :param person: An `IPerson`
         :return: A list of `IArchivePermission` records.
         """
+
+    def getPackageDownloadCount(bpr, day, country):
+        """Get the `IBinaryPackageDownloadCount` with the given key."""
 
 
 class IArchiveAppend(Interface):
@@ -1377,6 +1410,30 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be user for publishing package with
         debug-symbols.
         """)
+
+
+class ArchiveStatus(DBEnumeratedType):
+    """The status of an archive, e.g. active, disabled. """
+
+    ACTIVE = DBItem(0, """
+        Active
+
+        This archive accepts uploads, copying and publishes packages.
+        """)
+
+    DELETING = DBItem(1, """
+        Deleting
+
+        This archive is in the process of being deleted.  This is a user-
+        requested and short-lived status.
+        """)
+
+    DELETED = DBItem(2, """
+        Deleted
+
+        This archive has been deleted and removed from disk.
+        """)
+
 
 
 default_name_by_purpose = {

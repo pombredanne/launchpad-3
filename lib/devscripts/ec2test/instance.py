@@ -560,6 +560,7 @@ class EC2Instance:
             'ec2-register',
             '--private-key=%s' % self.local_pk,
             '--cert=%s' % self.local_cert,
+            '--name=%s' % (name,),
             manifest_path,
             ]
         self.log("Executing command: %s" % ' '.join(cmd))
