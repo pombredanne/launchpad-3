@@ -188,7 +188,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         """Addresses for the to header exclude requested team reviewers."""
         bmp, subscriber = self.makeProposalWithSubscriber()
         team = self.factory.makeTeam(email='group@team.com')
-        request = CodeReviewVoteReference(
+        CodeReviewVoteReference(
             branch_merge_proposal=bmp, reviewer=team, registrant=subscriber)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(subscriber,
