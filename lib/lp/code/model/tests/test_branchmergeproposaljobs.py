@@ -192,6 +192,31 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         # the methods is says it does.
         self.assertProvides(self.job_source, IBranchMergeProposalJobSource)
 
+    def test_iterReady_new_merge_proposal_update_unready(self):
+        # A new merge proposal has two jobs, one for the diff, and one for the
+        # email.  The diff email is always returned first, providing that it
+        # is ready.  The diff job is ready if both the source and target have
+        # revisions, and the source branch doesn't have a pending scan.
+        bmp = self.factory.makeBranchMergeProposal()
+        jobs = self.job_source.iterReady()
+        self.assertEqual([], jobs)
+
+    def test_iterReady_new_merge_proposal_target_revisions(self):
+        # The target branch having revisions is not enough for the job to be
+        # considered ready.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.factory.makeRevisionsForBranch(bmp.target_branch)
+        jobs = self.job_source.iterReady()
+        self.assertEqual([], jobs)
+
+    def test_iterReady_new_merge_proposal_source_revisions(self):
+        # The source branch having revisinos is not enough for the job to be
+        # considered ready.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.factory.makeRevisionsForBranch(bmp.source_branch)
+        jobs = self.job_source.iterReady()
+        self.assertEqual([], jobs)
+
     def test_iterReady_new_merge_proposal_update_diff_first(self):
         # A new merge proposal has two jobs, one for the diff, and one for the
         # email.  The diff email is always returned first.
