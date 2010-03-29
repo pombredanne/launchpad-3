@@ -127,7 +127,6 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
     def test_forCreation_without_bugs(self):
         """If there are no related bugs, omit 'Related bugs'."""
         bmp, subscriber = self.makeProposalWithSubscriber()
-        bug = self.factory.makeBug()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertNotIn('Related bugs:\n', ctrl.body)
