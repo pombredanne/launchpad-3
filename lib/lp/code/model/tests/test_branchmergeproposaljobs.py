@@ -9,19 +9,20 @@ import transaction
 import unittest
 
 from sqlobject import SQLObjectNotFound
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposalJob, IMergeProposalCreatedJob,
-    IUpdatePreviewDiffJobSource,
+    IBranchMergeProposalJob, IBranchMergeProposalJobSource,
+    IMergeProposalCreatedJob, IUpdatePreviewDiffJobSource,
     )
 from lp.code.model.branchmergeproposaljob import (
      BranchMergeProposalJob, BranchMergeProposalJobDerived,
-     BranchMergeProposalJobType, MergeProposalCreatedJob,
-     UpdatePreviewDiffJob,
+     BranchMergeProposalJobType, CodeReviewCommentEmailJob,
+     MergeProposalCreatedJob, ReviewRequestedEmailJob, UpdatePreviewDiffJob,
      )
 from lp.code.model.tests.test_diff import DiffTestCase
 from lp.services.job.runner import JobRunner
@@ -173,6 +174,81 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
 
+
+class TestBranchMergeProposalJobSource(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.job_source = getUtility(IBranchMergeProposalJobSource)
+
+    def test_utility_provides_interface(self):
+        # The utility that is registered as the job source needs to implement
+        # the methods is says it does.
+        self.assertProvides(self.job_source, IBranchMergeProposalJobSource)
+
+    def test_iterReady_new_merge_proposal_update_diff_first(self):
+        # A new merge proposal has two jobs, one for the diff, and one for the
+        # email.  The diff email is always returned first.
+        bmp = self.factory.makeBranchMergeProposal()
+        [job] = self.job_source.iterReady()
+        self.assertEqual(job.branch_merge_proposal, bmp)
+        self.assertIsInstance(job, UpdatePreviewDiffJob)
+
+    def test_iterReady_new_merge_proposal_update_diff_running(self):
+        # If the update preview diff job is running, then iterReady does not
+        # return any other jobs for that merge proposal.
+        self.factory.makeBranchMergeProposal()
+        [job] = self.job_source.iterReady()
+        job.start()
+        jobs = self.job_source.iterReady()
+        self.assertEqual(0, len(jobs))
+
+    def test_iterReady_new_merge_proposal_update_diff_finished(self):
+        # Once the update preview diff job has finished running, then
+        # iterReady returns the next job for the merge proposal, which is in
+        # this case the initial email job.
+        bmp = self.factory.makeBranchMergeProposal()
+        [update_diff] = self.job_source.iterReady()
+        update_diff.start()
+        update_diff.complete()
+        [job] = self.job_source.iterReady()
+        self.assertEqual(job.branch_merge_proposal, bmp)
+        self.assertIsInstance(job, MergeProposalCreatedJob)
+
+    def completePendingJobs(self):
+        # Mark all current pending jobs as complete
+        while True:
+            jobs = self.job_source.iterReady()
+            if len(jobs) == 0:
+                break
+            for job in jobs:
+                job.start()
+                job.complete()
+
+    def test_iterReady_supports_review_requested(self):
+        # iterReady will also return pending ReviewRequestedEmailJobs.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.completePendingJobs()
+        reviewer = self.factory.makePerson()
+        bmp.nominateReviewer(reviewer, bmp.registrant)
+        [job] = self.job_source.iterReady()
+        self.assertEqual(job.branch_merge_proposal, bmp)
+        self.assertIsInstance(job, ReviewRequestedEmailJob)
+        self.assertEqual(reviewer, job.reviewer)
+        self.assertEqual(bmp.registrant, job.requester)
+
+    def test_iterReady_supports_code_review_comment(self):
+        # iterReady will also return pending CodeReviewCommentEmailJob.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.completePendingJobs()
+        commenter = self.factory.makePerson()
+        comment = bmp.createComment(commenter, '', 'Interesting idea.')
+        [job] = self.job_source.iterReady()
+        self.assertEqual(job.branch_merge_proposal, bmp)
+        self.assertIsInstance(job, CodeReviewCommentEmailJob)
+        self.assertEqual(comment, job.code_review_comment)
 
 
 def test_suite():
