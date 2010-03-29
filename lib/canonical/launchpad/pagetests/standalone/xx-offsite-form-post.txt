@@ -85,17 +85,8 @@ present a hopefully helpful error message.
   403 Forbidden
   >>> print extract_text(find_main_content(browser.contents))
   No REFERER Header
-  Launchpad requires a REFERER header to perform
-  this action. There is no REFERER header present.
-  Perhaps you have blocked REFERER headers or perhaps
-  you navigated to this URL in an unexpected way.
-  Unblock REFERER headers for launchpad.net and try
-  again, or see this
-  FAQ for more information.
-  You can also join the
-  #launchpad IRC support channel on irc.freenode.net for further
-  assistance.
-  >>> browser.getLink('this FAQ').url
+  ...
+  >>> browser.getLink('the FAQ').url
   'https://answers.edge.launchpad.net/launchpad/+faq/1024'
   >>> browser.handleErrors = False
 
