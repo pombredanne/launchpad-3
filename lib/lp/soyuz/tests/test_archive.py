@@ -344,6 +344,7 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
         self.failUnlessEqual(
             self.sourcepackagereleases[0], result[0])
 
+
 class TestCorrespondingDebugArchive(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -519,6 +520,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.archive.disable()
         self.assertRaises(AssertionError, self.archive.disable)
 
+
 class TestCollectLatestPublishedSources(TestCaseWithFactory):
     """Ensure that the private helper method works as expected."""
 
@@ -563,6 +565,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             self.archive, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+
 
 class TestArchiveCanUpload(TestCaseWithFactory):
     """Test the various methods that verify whether uploads are allowed to 
