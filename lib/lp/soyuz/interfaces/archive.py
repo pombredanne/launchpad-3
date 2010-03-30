@@ -38,6 +38,7 @@ __all__ = [
     'NoRightsForArchive',
     'NoRightsForComponent',
     'NoSuchPPA',
+    'NoTokensForTeams',
     'PocketNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
@@ -110,6 +111,11 @@ class AlreadySubscribed(Exception):
 
 class ArchiveNotPrivate(Exception):
     """Raised when creating an archive subscription for a public archive."""
+    webservice_error(400) # Bad request.
+
+
+class NoTokensForTeams(Exception):
+    """Raised when creating a token for a team, rather than a person."""
     webservice_error(400) # Bad request.
 
 
@@ -240,13 +246,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Private"), required=False,
             description=_(
                 "Whether the archive is private to the owner or not. "
-                "This can only be changed if the archive has not had "
+                "This can only be changed by launchpad admins or launchpad "
+                "commercial admins and only if the archive has not had "
                 "any sources published.")))
 
-    require_virtualized = Bool(
-        title=_("Require Virtualized Builder"), required=False,
-        description=_("Whether this archive requires its packages to be "
-                      "built on a virtual builder."))
+    require_virtualized = exported(
+        Bool(
+            title=_("Require Virtualized Builder"), required=False,
+            description=_("Whether this archive requires its packages to be "
+                          "built on a virtual builder."), readonly=False))
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
@@ -277,10 +285,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     signing_key = Object(
         title=_('Repository sigining key.'), required=False, schema=IGPGKey)
-
-    expanded_archive_dependencies = Attribute(
-        "The expanded list of archive dependencies. It includes the implicit "
-        "PRIMARY archive dependency for PPAs.")
 
     debug_archive = Attribute(
         "The archive into which debug binaries should be uploaded.")
@@ -353,6 +357,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "The series variable is replaced with the series name of the "
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
+
+    arm_builds_allowed = Bool(
+        title=_("Allow ARM builds for this archive"))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -517,6 +524,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+    def getBinaryPackageReleaseByFileName(filename):
+        """Return the corresponding `IBinaryPackageRelease` in this context.
+
+        :param filename: The filename to look up.
+        :return: The `IBinaryPackageRelease` with the specified filename,
+            or None if it was not found.
         """
 
     def requestPackageCopy(target_location, requestor, suite=None,

@@ -108,6 +108,7 @@ time goes on.
     branch_format: None
     branch_type: u'Hosted'
     bzr_identity: u'lp://dev/~eric/fooix/trunk'
+    code_import_link: None
     control_format: None
     date_created: u'2009-01-01T00:00:00+00:00'
     date_last_modified: u'2009-01-01T00:00:00+00:00'
@@ -242,6 +243,31 @@ As with projects, these can be filtered by the branch status.
 
     >>> print_branches(webservice, '/widgets', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
+
+Differences between versions
+============================
+
+In version 'beta', a branch can be made private or public by invoking
+the named operation 'setPrivate'.
+
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> print branch['private']
+    False
+
+    >>> response = webservice.named_post(
+    ...     branch_url, 'setPrivate', api_version='beta', private=True)
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> print branch['private']
+    True
+
+In subsequent versions, 'setPrivate' is gone; you have to set the
+'private' field directly.
+
+    >>> print webservice.named_post(
+    ...     branch_url, 'setPrivate', api_version='devel', private=True)
+    HTTP/1.1 400 Bad Request
+    ...
+    No such operation: setPrivate
 
 Removing branches
 =================

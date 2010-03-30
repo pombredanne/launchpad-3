@@ -18,13 +18,13 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
     TooNewRecipeFormat)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
-from lp.soyuz.model.buildqueue import (
-    BuildQueue)
 from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipe import (
@@ -34,8 +34,6 @@ from lp.services.job.interfaces.job import (
     IJob, JobStatus)
 from lp.soyuz.interfaces.archive import (ArchiveDisabled,
     ArchivePurpose, CannotUploadToArchive, InvalidPocketForPPA)
-from lp.soyuz.interfaces.buildqueue import (
-    IBuildQueue)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -86,6 +84,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             self.factory.makeRecipe())
         self.assertProvides(recipe, ISourcePackageRecipe)
+
+    def test_base_branch(self):
+        # When a recipe is created, we can access its base branch.
+        branch = self.factory.makeAnyBranch()
+        builder_recipe = self.factory.makeRecipe(branch)
+        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
+            builder_recipe)
+        self.assertEquals(branch, sp_recipe.base_branch)
 
     def test_branch_links_created(self):
         # When a recipe is created, we can query it for links to the branch

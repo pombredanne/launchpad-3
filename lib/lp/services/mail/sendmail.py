@@ -15,6 +15,7 @@ messaging settings -- stub 2004-10-21
 """
 
 __all__ = [
+    'append_footer',
     'format_address',
     'get_msgid',
     'MailController',
@@ -27,7 +28,6 @@ __all__ = [
 
 
 import hashlib
-import sets
 
 from binascii import b2a_qp
 from email.Encoders import encode_base64
@@ -83,13 +83,33 @@ def do_paranoid_envelope_to_validation(to_addrs):
     to header.  The to header and envelope_to addresses may vary
     independently, and the to header cannot break Z3.
     """
-    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
+    assert (zisinstance(to_addrs, (list, tuple, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
         assert '\n' not in addr, (
             "Address contains carriage returns: %r" % (addr,))
+
+
+def append_footer(main, footer):
+    """Append a footer to an email, following signature conventions.
+
+    If there is no footer, do nothing.
+    If there is already a signature, append an additional footer.
+    If there is no existing signature, append '-- \n' and a footer.
+
+    :param main: The main content, which may have a signature.
+    :param footer: An additional footer to append.
+    :return: a new version of main that includes the footer.
+    """
+    if footer == '':
+        footer_separator = ''
+    elif '\n-- \n' in main:
+        footer_separator = '\n'
+    else:
+        footer_separator = '\n-- \n'
+    return ''.join((main, footer_separator, footer))
 
 
 def format_address(name, address):

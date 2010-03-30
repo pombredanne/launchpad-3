@@ -273,32 +273,19 @@ The +packages named view displays the packages links to the product's series.
     >>> print view.label
     Linked packages
 
-The view defines the all_packages property used by the PackagingDeleteView
-to create a vocabulary.
-
-    >>> for package in view.all_packaging:
-    ...     print package.distroseries.name, package.productseries.name
-    grumpy hotter
-    hoary hotter
-
 The view provides the series_packages property that returns a list of
-dicts. Each dict as a series and a list of package dicts. The package dict
-contains the package and field for form actions.
+dicts. Each dict as a series and a list of packages.
 
-    >>> for series_dict in view.series_packages:
-    ...     print series_dict['series'].name
-    ...     for package_dict in series_dict['packagings']:
-    ...         print package_dict['packaging'].distroseries.name
-    ...         print package_dict['form_id']
-    ...         print package_dict['field']
+    >>> def print_packages(view):
+    ...     for series_dict in view.series_packages:
+    ...         print series_dict['series'].name
+    ...         for package in series_dict['packagings']:
+    ...             print package.distroseries.name
+    >>> print_packages(view)
     cold
     hotter
       grumpy
-        delete-grumpy-hot-hotter
-        <input type="hidden" name="field.packaging" .../>
       hoary
-        delete-hoary-thunderbird-hotter
-        <input type="hidden" name="field.packaging" .../>
     trunk
 
 The view provides the distro_packaging property that is a list of
@@ -306,40 +293,48 @@ dictionaries for the distributions and their packaging.  The list is
 sorted by distribution with Ubuntu first and the rest in alphabetic
 order.
 
-    >>> view = create_initialized_view(product, name='+packages')
     >>> for distro_dict in view.distro_packaging:
     ...     print distro_dict['distribution'].name
     ubuntu
 
-The +packages named view descends from PackagingDeleteView to provide remove
-link actions for the product's linked packages.
-
-    >>> from lp.registry.browser.packaging import PackagingDeleteView
-
-    >>> isinstance(view, PackagingDeleteView)
-    True
-
 A packaging link can be deleted if the owner believes it is an error. The
 package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
 
-    >>> view = create_initialized_view(product, name='+packages')
-    >>> for package in view.all_packaging:
-    ...     print package.distroseries.name, package.productseries.name
-    grumpy hotter
-    hoary hotter
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> view = create_initialized_view(
+    ...     product, name='+packages', principal=a_user)
+    >>> print_packages(view)
+    cold
+    hotter
+      grumpy
+      hoary
+    trunk
 
-    >>> [hoary_package] = [package for package in view.all_packaging
-    ...                     if package.distroseries.name == 'hoary']
-    >>> form = {
-    ...     'field.packaging': '%s' % hoary_package.id,
-    ...     'field.actions.delete_packaging': 'Delete upstream link',
-    ...     }
-    >>> view = create_initialized_view(product, name='+packages', form=form)
-    >>> view.errors
+    # There are links to the +remove-packaging page.
+    >>> table = find_tag_by_id(view.render(), 'packages-hotter')
+    >>> for link in table.findAll('a'):
+    ...     if '+remove-packaging' in link['href']:
+    ...         print link['href']
+    http://launchpad.dev/ubuntu/grumpy/+source/hot/+remove-packaging
+    http://launchpad.dev/ubuntu/hoary/+source/thunderbird/+remove-packaging
+
+    >>> [hoary_package] = [
+    ...     package for series_dict in view.series_packages
+    ...     for package in series_dict['packagings']
+    ...     if package.distroseries.name == 'hoary']
+    >>> form = {'field.actions.unlink': 'Unlink'}
+    >>> unlink_view = create_initialized_view(
+    ...     hoary_package.sourcepackage, name='+remove-packaging', form=form)
+    >>> unlink_view.errors
     []
-    >>> for package in view.all_packaging:
-    ...     print package.distroseries.name, package.productseries.name
-    grumpy hotter
+
+    # The view has to be reloaded since view.series_packages is cached.
+    >>> view = create_initialized_view(product, name='+packages')
+    >>> print_packages(view)
+    cold
+    hotter
+      grumpy
+    trunk
 
 
 Distro series +packaging view

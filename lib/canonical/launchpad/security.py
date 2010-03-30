@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -30,8 +30,9 @@ from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.soyuz.interfaces.build import IBuild
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
+from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -48,8 +49,6 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguage)
 from lp.registry.interfaces.entitlement import IEntitlement
 from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
@@ -70,6 +69,8 @@ from canonical.launchpad.interfaces.oauth import (
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.soyuz.interfaces.build import IBuild
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingEdit,
     ISourcePackagePublishingHistory)
@@ -87,6 +88,9 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup, IProjectGroupSet)
+from lp.registry.interfaces.gpg import IGPGKey
+from lp.registry.interfaces.irc import IIrcID
+from lp.registry.interfaces.wikiname import IWikiName
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -1298,6 +1302,11 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
              user.inTeam(translation_group.owner)))
 
 
+class ViewBugTracker(AnonymousAuthorization):
+    """Anyone can view a bug tracker."""
+    usedfor = IBugTracker
+
+
 class EditBugTracker(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
@@ -1361,7 +1370,8 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
 
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
-            self.obj.distroseries.main_archive, user.person)
+            self.obj.distroseries.distribution.all_distro_archives,
+            user.person)
         return permissions.count() > 0
 
 
@@ -1447,15 +1457,16 @@ class EditBuildRecord(AdminByBuilddAdmin):
                     user.inTeam(self.obj.archive.owner))
 
         # Primary or partner section here: is the user in question allowed
-        # to upload to the respective component? Allow user to retry build
-        # if so.
-        archive = self.obj.archive
-        if archive.checkArchivePermission(user.person, 
-                                          self.obj.current_component):
-            return True
-        else:
-            return archive.checkArchivePermission(
-                user.person, self.obj.sourcepackagerelease.sourcepackagename)
+        # to upload to the respective component, packageset or package? Allow
+        # user to retry build if so.
+        # strict_component is True because the source package already exists,
+        # otherwise, how can they give it back?
+        check_perms = self.obj.archive.checkUpload(
+            user.person, self.obj.distroseries,
+            self.obj.sourcepackagerelease.sourcepackagename, 
+            self.obj.current_component, self.obj.pocket,
+            strict_component=True)
+        return check_perms == None
 
 
 class ViewBuildRecord(EditBuildRecord):
@@ -1497,6 +1508,53 @@ class ViewBuildRecord(EditBuildRecord):
         # See comment above.
         auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
         return auth_spr.checkUnauthenticated()
+
+
+class ViewBuildFarmJob(AuthorizationBase):
+    """Permission to view an `IBuildFarmJob`.
+
+    This permission is based entirely on permission to view the
+    associated `IBuild` and/or `IBranch`.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBuildFarmJob
+
+    def _getBranch(self):
+        """Get `IBranch` associated with this job, if any."""
+        if IBuildFarmBranchJob.providedBy(self.obj):
+            return self.obj.branch
+        else:
+            return None
+
+    def _getBuild(self):
+        """Get `IBuildBase` associated with this job, if any."""
+        if IBuildFarmBuildJob.providedBy(self.obj):
+            return self.obj.build
+        else:
+            return None
+
+    def _checkBuildPermission(self, user=None):
+        """Check access to `IBuildBase` for this job."""
+        permission = ViewBuildRecord(self.obj.build)
+        if user is None:
+            return permission.checkUnauthenticated()
+        else:
+            return permission.checkAuthenticated(user)
+
+    def _checkAccess(self, user=None):
+        """Unified access check for anonymous and authenticated users."""
+        branch = self._getBranch()
+        if branch is not None and not branch.visibleByUser(user):
+            return False
+
+        build = self._getBuild()
+        if build is not None and not self._checkBuildPermission(user):
+            return False
+
+        return True
+
+    checkAuthenticated = _checkAccess
+    checkUnauthenticated = _checkAccess
 
 
 class AdminQuestion(AdminByAdminsTeam):
@@ -1665,19 +1723,6 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
             self.obj.distribution).checkAuthenticated(user))
 
 
-class AdminDistroSeriesLanguage(AuthorizationBase):
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistroSeriesLanguage
-
-    def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistroSeriesLanguage` translations.
-
-        Distribution managers can also manage IDistroSeriesLanguage
-        """
-        return (AdminDistroSeriesTranslations(
-            self.obj.distroseries).checkAuthenticated(user))
-
-
 class BranchSubscriptionEdit(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBranchSubscription
@@ -1827,10 +1872,8 @@ class BranchMergeProposalEdit(AuthorizationBase):
         """
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
-                user.inTeam(self.obj.target_branch.owner) or
-                user.inTeam(self.obj.target_branch.reviewer) or
-                user.in_admin or
-                user.in_bazaar_experts)
+                check_permission('launchpad.Edit', self.obj.target_branch) or
+                user.inTeam(self.obj.target_branch.reviewer))
 
 
 class ViewEntitlement(AuthorizationBase):
@@ -2107,19 +2150,13 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.in_admin
 
 
-class ViewSourcePackagePublishingHistory(AuthorizationBase):
+class ViewSourcePackagePublishingHistory(ViewArchive):
     """Restrict viewing of source publications."""
     permission = "launchpad.View"
     usedfor = ISourcePackagePublishingHistory
 
-    def checkAuthenticated(self, user):
-        view_archive = ViewArchive(self.obj.archive)
-        if view_archive.checkAuthenticated(user):
-            return True
-        return user.in_admin
-
-    def checkUnauthenticated(self):
-        return not self.obj.archive.private
+    def __init__(self, obj):
+        super(ViewSourcePackagePublishingHistory, self).__init__(obj.archive)
 
 
 class EditPublishing(AuthorizationBase):
@@ -2248,6 +2285,18 @@ class EditEmailAddress(EditByOwnersOrAdmins):
             return True
         return super(EditEmailAddress, self).checkAccountAuthenticated(
             account)
+
+
+class ViewGPGKey(AnonymousAuthorization):
+    usedfor = IGPGKey
+
+
+class ViewIrcID(AnonymousAuthorization):
+    usedfor = IIrcID
+
+
+class ViewWikiName(AnonymousAuthorization):
+    usedfor = IWikiName
 
 
 class EditArchivePermissionSet(AuthorizationBase):

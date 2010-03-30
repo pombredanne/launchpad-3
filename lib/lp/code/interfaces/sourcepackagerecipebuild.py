@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=E0213
+
 """Interfaces for source package builds."""
 
 __metaclass__ = type
@@ -19,12 +21,13 @@ from zope.schema import Int, Object
 from canonical.launchpad import _
 
 from lp.buildmaster.interfaces.buildbase import IBuildBase
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.job.interfaces.job import IJob
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class ISourcePackageRecipeBuild(IBuildBase):
@@ -49,6 +52,10 @@ class ISourcePackageRecipeBuild(IBuildBase):
         schema=ISourcePackageRecipe, required=True,
         title=_("The recipe being built."))
 
+    source_package_release = Reference(
+        ISourcePackageRelease, title=_("The produced source package release"),
+        readonly=True)
+
 
 class ISourcePackageRecipeBuildSource(Interface):
     """A utility of this interface be used to create source package builds."""
@@ -72,17 +79,12 @@ class ISourcePackageRecipeBuildSource(Interface):
         """
 
 
-class ISourcePackageRecipeBuildJob(IBuildFarmJob):
+class ISourcePackageRecipeBuildJob(IBuildFarmBuildJob):
     """A read-only interface for recipe build jobs."""
 
     job = Reference(
         IJob, title=_("Job"), required=True, readonly=True,
         description=_("Data common to all job types."))
-
-    build = Reference(
-        ISourcePackageRecipeBuild, title=_("Build"),
-        required=True, readonly=True,
-        description=_("Build record associated with this job."))
 
 
 class ISourcePackageRecipeBuildJobSource(Interface):

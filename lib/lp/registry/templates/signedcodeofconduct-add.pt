@@ -10,7 +10,7 @@
 
       <div metal:fill-slot="main"
            tal:define="user request/lp:person;
-                       gpgkeys user/gpgkeys|nothing">
+                       gpgkeys user/gpg_keys|nothing">
 
         <h1>Sign the Ubuntu code of Conduct</h1>
 
@@ -43,14 +43,6 @@
                       string:${context/fmt:url}/+download">Download</a>
                       the file to your own computer and read it carefully
                       to ensure you agree to it.
-                    </p>
-                  </li>
-                  <li>
-                    <p>
-                      If you want to, add extra spaces or blank lines between words
-                      in the file.
-                      (This helps protect against other people trying to
-                      forge your signature.)
                     </p>
                   </li>
                   <li>

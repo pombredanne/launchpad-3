@@ -8,6 +8,7 @@ import sys
 
 from bzrlib.branch import Branch
 from bzrlib.config import LocationConfig
+from bzrlib.errors import NoSuchRevision
 from bzrlib.transport import get_transport
 
 
@@ -52,10 +53,28 @@ def is_present(local_branch, deployed_location, deployed_revno):
         deployed_branch = Branch.open(deployed_location)
     else:
         deployed_branch = Branch.open(local_mirror)
-    deployed_branch.lock_read()
+    deployed_branch.lock_write()
     try:
-        deployed_rev_id = deployed_branch.get_rev_id(deployed_revno)
-        graph = local_branch.repository.get_graph(deployed_branch.repository)
+        try:
+            deployed_rev_id = deployed_branch.get_rev_id(deployed_revno)
+        except NoSuchRevision:
+            if local_mirror is None:
+                raise
+            else:
+                remote = Branch.open(deployed_location)
+                remote.lock_read()
+                try:
+                    deployed_rev_id = remote.get_rev_id(deployed_revno)
+                    print "Mirror %s is out of date." % deployed_branch.base
+                    if not deployed_branch.repository.has_revision(
+                        deployed_rev_id):
+                        deployed_branch.repository.fetch(
+                            remote.repository, deployed_rev_id)
+                    assert deployed_branch.repository.has_revision(
+                        deployed_rev_id)
+                finally:
+                    remote.unlock()
+        graph = deployed_branch.repository.get_graph(local_branch.repository)
         return graph.is_ancestor(local_branch.last_revision(), deployed_rev_id)
     finally:
         deployed_branch.unlock()
