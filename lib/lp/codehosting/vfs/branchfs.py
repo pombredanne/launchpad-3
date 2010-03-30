@@ -639,13 +639,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
     def branchChanged(self, virtual_url_fragment):
         """Notify Launchpad of a change to the a branch.
 
+        This method tries hard to not exit via an exception, because the
+        client side experience is not good in that case.  Instead, log.err()
+        is called, which will result in an OOPS being logged.
+
         :param virtual_url_fragment: A url fragment that points to a path
             owned by a branch.
-        :raise NotABranchPath: If `virtual_url_fragment` points to a path
-            that's not a branch.
-        :raise NotEnoughInformation: If `virtual_url_fragment` cannot be
-            translated to a branch.
-        :raise Fault: If the XML-RPC server raises errors.
         """
         deferred = self._authserver.translatePath('/' + virtual_url_fragment)
 
@@ -662,20 +661,18 @@ class LaunchpadServer(_BaseLaunchpadServer):
                     ignore_fallbacks=True)
                 last_revision = branch.last_revision()
                 stacked_on_url = self._normalize_stacked_on_url(branch)
-            except:
-                # It gets really confusing if we raise an exception
-                # here (the branch remains locked, but this isn't
-                # obvious to the client) so just log the error, which
-                # will result in an OOPS being logged.
-                log.err()
-                return
             finally:
                 if jail_info.transports:
                     jail_info.transports.remove(transport)
+            if stacked_on_url is None:
+                stacked_on_url = ''
             return self._authserver.branchChanged(
                 data['id'], stacked_on_url, last_revision)
 
-        return deferred.addCallback(got_path_info)
+        # It gets really confusing if we raise an exception from this method
+        # (the branch remains locked, but this isn't obvious to the client) so
+        # just log the error, which will result in an OOPS being logged.
+        return deferred.addCallback(got_path_info).addErrback(log.err)
 
 
 def get_lp_server(user_id, branchfs_endpoint_url=None, branch_directory=None,
