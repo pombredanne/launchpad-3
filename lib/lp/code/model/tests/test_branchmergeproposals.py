@@ -18,7 +18,6 @@ from zope.component import getUtility
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
@@ -36,27 +35,22 @@ from canonical.launchpad.ftests import (
     ANONYMOUS, import_secret_test_key, login, syncUpdate)
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel, CodeReviewVote,
+    CodeReviewNotificationLevel, CodeReviewVote,
     BranchVisibilityRule)
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
+    IBranchMergeProposal, IBranchMergeProposalGetter,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, IUpdatePreviewDiffJobSource, notify_modified)
+    notify_modified)
 from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, BranchMergeProposalJobDerived,
-    BranchMergeProposalJobType, CreateMergeProposalJob,
+    BranchMergeProposalJob, CreateMergeProposalJob,
     MergeProposalCreatedJob, UpdatePreviewDiffJob)
 from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal, BranchMergeProposalGetter, is_valid_transition)
-from lp.code.model.tests.test_diff import DiffTestCase
+    BranchMergeProposalGetter, is_valid_transition)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.services.job.runner import JobRunner
-from lp.testing import (
-    capture_events, login_person, TestCaseWithFactory, time_counter)
+from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
-from lp.testing.mail_helpers import pop_notifications
 
 
 class TestBranchMergeProposalInterface(TestCaseWithFactory):
@@ -1193,195 +1187,6 @@ class TestNotifyModified(TestCaseWithFactory):
         self.assertEqual('abc', bmp.queued_revision_id)
 
 
-class TestBranchMergeProposalJob(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_providesInterface(self):
-        """BranchMergeProposalJob implements expected interfaces."""
-        bmp = self.factory.makeBranchMergeProposal()
-        job = BranchMergeProposalJob(
-            bmp, BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED, {})
-        job.sync()
-        verifyObject(IBranchMergeProposalJob, job)
-
-
-class TestBranchMergeProposalJobDerived(TestCaseWithFactory):
-    """Test the behaviour of the BranchMergeProposalJobDerived base class."""
-
-    layer = LaunchpadZopelessLayer
-
-    def test_get(self):
-        """Ensure get returns or raises appropriately.
-
-        It's an error to call get on BranchMergeProposalJobDerived-- it must
-        be called on a subclass.  An object is returned only if the job id
-        and job type match the request.  If no suitable object can be found,
-        SQLObjectNotFound is raised.
-        """
-        bmp = self.factory.makeBranchMergeProposal()
-        job = MergeProposalCreatedJob.create(bmp)
-        transaction.commit()
-        self.assertRaises(
-            AttributeError, BranchMergeProposalJobDerived.get, job.id)
-        self.assertRaises(SQLObjectNotFound, UpdatePreviewDiffJob.get, job.id)
-        self.assertRaises(
-            SQLObjectNotFound, MergeProposalCreatedJob.get, job.id + 1)
-        self.assertEqual(job, MergeProposalCreatedJob.get(job.id))
-
-
-class TestMergeProposalCreatedJob(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def test_providesInterface(self):
-        """MergeProposalCreatedJob provides the expected interfaces."""
-        bmp = self.factory.makeBranchMergeProposal()
-        job = MergeProposalCreatedJob.create(bmp)
-        verifyObject(IMergeProposalCreatedJob, job)
-        verifyObject(IBranchMergeProposalJob, job)
-
-    def test_run_makes_diff(self):
-        """MergeProposalCreationJob.run creates a diff."""
-        self.useBzrBranches()
-        target, target_tree = self.create_branch_and_tree('target')
-        target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
-        target_tree.add('foo')
-        rev1 = target_tree.commit('added foo')
-        source, source_tree = self.create_branch_and_tree('source')
-        source_tree.pull(target_tree.branch, stop_revision=rev1)
-        source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\n')
-        source_tree.commit('added bar')
-        target_tree.merge_from_branch(source_tree.branch)
-        target_tree.commit('merged from source')
-        source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\nqux\n')
-        source_tree.commit('added qux')
-        bmp = BranchMergeProposal(
-            source_branch=source, target_branch=target,
-            registrant=source.owner)
-        job = MergeProposalCreatedJob.create(bmp)
-        transaction.commit()
-        self.layer.switchDbUser(config.mpcreationjobs.dbuser)
-        job.run()
-        self.assertIs(None, bmp.review_diff)
-        self.assertIsNot(None, bmp.preview_diff)
-        transaction.commit()
-        self.checkDiff(bmp.preview_diff)
-
-    def checkDiff(self, diff):
-        self.assertNotIn('+bar', diff.diff.text)
-        self.assertIn('+qux', diff.diff.text)
-
-    def createProposalWithEmptyBranches(self):
-        target_branch, tree = self.create_branch_and_tree()
-        tree.commit('test')
-        source_branch = self.factory.makeProductBranch(
-            product=target_branch.product)
-        self.createBzrBranch(source_branch, tree.branch)
-        return self.factory.makeBranchMergeProposal(
-            source_branch=source_branch, target_branch=target_branch)
-
-    def test_run_sends_email(self):
-        """MergeProposalCreationJob.run sends an email."""
-        self.useBzrBranches()
-        bmp = self.createProposalWithEmptyBranches()
-        job = MergeProposalCreatedJob.create(bmp)
-        self.assertEqual([], pop_notifications())
-        job.run()
-        self.assertEqual(2, len(pop_notifications()))
-
-    def test_iterReady_includes_ready_jobs(self):
-        """Ready jobs should be listed."""
-        # Suppress events to avoid creating a MergeProposalCreatedJob early.
-        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
-        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
-        job = MergeProposalCreatedJob.create(bmp)
-        job.job.sync()
-        job.context.sync()
-        self.assertEqual([job], list(MergeProposalCreatedJob.iterReady()))
-
-    def test_iterReady_excludes_unready_jobs(self):
-        """Unready jobs should not be listed."""
-        # Suppress events to avoid creating a MergeProposalCreatedJob early.
-        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
-        job = MergeProposalCreatedJob.create(bmp)
-        job.job.start()
-        job.job.complete()
-        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
-
-    def test_iterReady_excludes_hosted_needing_mirror(self):
-        """Skip Jobs with a hosted source branch that needs mirroring."""
-        # Suppress events to avoid creating a MergeProposalCreatedJob early.
-        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
-        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
-        bmp.source_branch.requestMirror()
-        job = MergeProposalCreatedJob.create(bmp)
-        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
-
-    def test_iterReady_joins_properly(self):
-        """An up-to-date branch does not cause a job for a needs-mirroring
-        branch to be returned."""
-        # Suppress events to avoid creating MergeProposalCreatedJobs early.
-        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
-        bmp2 = capture_events(self.factory.makeBranchMergeProposal)[0]
-        # Give both branches some revisions.
-        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
-        self.factory.makeRevisionsForBranch(bmp2.source_branch, count=1)
-        # Request a mirror and create a job for one of them.
-        bmp.source_branch.requestMirror()
-        MergeProposalCreatedJob.create(bmp)
-        # No jobs are ready.
-        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
-
-    def test_iterReady_includes_mirrored_needing_mirror(self):
-        """Skip Jobs with a hosted source branch that needs mirroring."""
-        source_branch = self.factory.makeProductBranch(
-            branch_type=BranchType.MIRRORED)
-        self.factory.makeRevisionsForBranch(source_branch, count=1)
-        # Suppress events to avoid creating a MergeProposalCreatedJob early.
-        bmp = capture_events(
-            self.factory.makeBranchMergeProposal,
-            source_branch=source_branch)[0]
-        bmp.source_branch.requestMirror()
-        job = MergeProposalCreatedJob.create(bmp)
-        self.assertEqual([job], list(MergeProposalCreatedJob.iterReady()))
-
-    def test_iterReady_excludes_branches_with_no_revisions(self):
-        """Skip Jobs with a source branch that has no revisions."""
-        # Suppress events to avoid creating a MergeProposalCreatedJob early.
-        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
-        bmp.source_branch.requestMirror()
-        self.assertEqual(0, bmp.source_branch.revision_count)
-        job = MergeProposalCreatedJob.create(bmp)
-        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
-
-    def test_getOopsMailController(self):
-        """The registrant is notified about merge proposal creation issues."""
-        bmp = self.factory.makeBranchMergeProposal()
-        bmp.source_branch.requestMirror()
-        job = MergeProposalCreatedJob.create(bmp)
-        ctrl = job.getOopsMailController('1234')
-        self.assertEqual([bmp.registrant.preferredemail.email], ctrl.to_addrs)
-        message = (
-            'notifying people about the proposal to merge %s into %s' %
-            (bmp.source_branch.bzr_identity, bmp.target_branch.bzr_identity))
-        self.assertIn(message, ctrl.body)
-
-    def test_MergeProposalCreateJob_with_sourcepackage_branch(self):
-        """Jobs for merge proposals with sourcepackage branches work."""
-        self.useBzrBranches()
-        bmp = self.factory.makeBranchMergeProposal(
-            target_branch=self.factory.makePackageBranch())
-        tree = self.create_branch_and_tree(db_branch=bmp.target_branch)[1]
-        tree.commit('Initial commit')
-        self.createBzrBranch(bmp.source_branch, tree.branch)
-        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
-        job = MergeProposalCreatedJob.create(bmp)
-        transaction.commit()
-        self.layer.switchDbUser(config.mpcreationjobs.dbuser)
-        job.run()
-
-
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""
 
@@ -1817,27 +1622,6 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         self.assertNotEqual(
             diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).diff_id)
-
-
-class TestUpdatePreviewDiffJob(DiffTestCase):
-
-    layer = LaunchpadZopelessLayer
-
-    def test_implement_interface(self):
-        """UpdatePreviewDiffJob implements IUpdatePreviewDiffJobSource."""
-        verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
-
-    def test_run(self):
-        self.useBzrBranches()
-        bmp = self.createExampleMerge()[0]
-        job = UpdatePreviewDiffJob.create(bmp)
-        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
-        bmp.source_branch.next_mirror_time = None
-        transaction.commit()
-        self.layer.switchDbUser(config.update_preview_diffs.dbuser)
-        JobRunner.fromReady(UpdatePreviewDiffJob).runAll()
-        transaction.commit()
-        self.checkExampleMerge(bmp.preview_diff.text)
 
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):
