@@ -21,7 +21,6 @@ __all__ = [
 
 import cgi
 import datetime
-import gettextpo
 import operator
 import pytz
 import re
@@ -53,6 +52,7 @@ from lp.translations.interfaces.translationmessage import (
     TranslationConflict)
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
+from lp.translations.utilities.validate import GettextValidationError
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
     Link, urlparse)
@@ -432,7 +432,7 @@ class BaseTranslationView(LaunchpadView):
                 u' To avoid accidentally reverting work done by others, we'
                 u' added your translations as suggestions, so please review'
                 u' current values.')
-        except gettextpo.error, e:
+        except GettextValidationError, e:
             # Save the error message gettext gave us to show it to the
             # user.
             return unicode(e)

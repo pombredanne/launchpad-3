@@ -8,8 +8,6 @@ from pytz import timezone
 import transaction
 import unittest
 
-import gettextpo
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -17,6 +15,7 @@ from canonical.config import config
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
+from lp.translations.utilities.validate import GettextValidationError
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -201,7 +200,7 @@ class TestTranslationSuggestions(unittest.TestCase):
 
         # An exception is raised if one tries to set the broken translation.
         self.assertRaises(
-            gettextpo.error,
+            GettextValidationError,
             potmsgset.updateTranslation,
             self.foo_nl, self.foo_template.owner, [translation_with_error],
             is_current_upstream=True, lock_timestamp=None)

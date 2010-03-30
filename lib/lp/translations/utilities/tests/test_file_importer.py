@@ -398,7 +398,7 @@ class FileImporterTestCase(TestCaseWithFactory):
             "importFile() failed to detect a message update conflict.")
 
     def test_FileImporter_importFile_error(self):
-        # Test that gettextpo.error is handled correctly during import.
+        # Test that a validation error is handled correctly during import.
         # This is done by trying to store a translation (msgstr) with format
         # spefifiers that do not match those in the msgid, as they should.
         (pot_importer, po_importer) = self._createFileImporters(
