@@ -66,6 +66,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.sendmail import format_address_for_person
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -436,7 +437,7 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
     def getErrorRecipients(self):
         """Return a list of email-ids to notify about user errors."""
         commenter = self.code_review_comment.message.owner
-        return [commenter.preferredemail]
+        return [format_address_for_person(commenter)]
 
 
 class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
@@ -497,7 +498,7 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
         """Return a list of email-ids to notify about user errors."""
         recipients = []
         if self.requester is not None:
-            recipients.append(self.requester.preferredemail)
+            recipients.append(format_address_for_person(self.requester))
         return recipients
 
 
@@ -562,5 +563,5 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
         """Return a list of email-ids to notify about user errors."""
         recipients = []
         if self.editor is not None:
-            recipients.append(self.editor.preferredemail)
+            recipients.append(format_address_for_person(self.editor))
         return recipients

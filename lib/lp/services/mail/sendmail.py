@@ -17,6 +17,7 @@ messaging settings -- stub 2004-10-21
 __all__ = [
     'append_footer',
     'format_address',
+    'format_address_for_person',
     'get_msgid',
     'MailController',
     'sendmail',
@@ -145,6 +146,11 @@ def format_address(name, address):
     # names are folded, so let's unfold it again.
     name = ''.join(name.splitlines())
     return str(formataddr((name, address)))
+
+
+def format_address_for_person(person):
+    """Helper function to call format_address for a person."""
+    return format_address(person.displayname, person.preferredemail.email)
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
@@ -413,18 +419,8 @@ def sendmail(message, to_addrs=None, bulk=True):
             TestMailer().send(
                 config.canonical.bounce_address, to_addrs, raw_message)
         else:
-            if config.zopeless.send_email:
-                # Note that we simply throw away dud recipients. This is fine,
-                # as it emulates the Z3 API which doesn't report this either
-                # (because actual delivery is done later).
-                smtp = SMTP(
-                    config.zopeless.smtp_host, config.zopeless.smtp_port)
-
-                # The "MAIL FROM" is set to the bounce address, to behave in a
-                # way similar to mailing list software.
-                smtp.sendmail(
-                    config.canonical.bounce_address, to_addrs, raw_message)
-                smtp.quit()
+            return raw_sendmail(
+                config.canonical.bounce_address, to_addrs, raw_message)
         # Strip the angle brackets to the return a Message-Id consistent with
         # raw_sendmail (which doesn't include them).
         return message['message-id'][1:-1]
