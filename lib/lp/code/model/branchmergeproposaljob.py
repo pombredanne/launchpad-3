@@ -190,6 +190,14 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
     def __init__(self, job):
         self.context = job
 
+    def __repr__(self):
+        bmp = self.branch_merge_proposal
+        return '<%(job_type)s job for merge %(merge_id)s on %(branch)s>' % {
+            'job_type': self.context.job_type.name,
+            'merge_id': bmp.id,
+            'branch': bmp.source_branch.unique_name,
+            }
+
     @classmethod
     def create(cls, bmp):
         """See `IMergeProposalCreationJob`."""
@@ -255,26 +263,11 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
 
-    def run(self, _create_preview=True):
+    def run(self):
         """See `IMergeProposalCreatedJob`."""
-        # _create_preview can be set False for testing purposes.
-        if _create_preview:
-            preview_diff = PreviewDiff.fromBranchMergeProposal(
-                self.branch_merge_proposal)
-            self.branch_merge_proposal.preview_diff = preview_diff
-            transaction.commit()
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
-
-    @staticmethod
-    def _findRevisions(bzr_source, bzr_target):
-        """Return the revisions to use for a review diff."""
-        source_revision = bzr_source.last_revision()
-        target_revision = bzr_target.last_revision()
-        graph = bzr_target.repository.get_graph(bzr_source.repository)
-        lca = graph.find_unique_lca(source_revision, target_revision)
-        return lca, source_revision
 
     def getOopsRecipients(self):
         return [self.branch_merge_proposal.registrant.preferredemail.email]
