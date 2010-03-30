@@ -429,6 +429,11 @@ class IDistributionMirror(Interface):
         description=_("Notes on the current status of the mirror (only "
                       "visible to admins and the mirror's registrant).")))
 
+    @export_read_operation()
+    def canTransitionToCountryMirror():
+        """Verify if a mirror can be set as a country mirror or return
+        False."""
+
     @mutator_for(country_dns_mirror)
     @operation_parameters(country_dns_mirror=copy_field(country_dns_mirror))
     @export_write_operation()

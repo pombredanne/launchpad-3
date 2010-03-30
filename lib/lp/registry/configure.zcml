@@ -1685,7 +1685,8 @@
                 deleteMirrorCDImageSeries
                 deleteAllMirrorCDImageSeries
                 getExpectedPackagesPaths
-                getExpectedSourcesPaths" />
+                getExpectedSourcesPaths
+                canTransitionToCountryMirror" />
         <require
             permission="launchpad.Edit"
             set_attributes="name displayname description whiteboard

@@ -185,7 +185,7 @@ class DistributionMirror(SQLBase):
         return True
 
     def canTransitionToCountryMirror(self):
-        """See if a mirror can be set as a country mirror or return False."""
+        """See `IDistributionMirror`."""
         try:
             return self.verifyTransitionToCountryMirror()
         except CannotTransitionToCountryMirror:

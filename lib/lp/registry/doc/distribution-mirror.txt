@@ -835,9 +835,12 @@ tracked in Launchpad.
     >>> de_archive_prober_log = factory.makeMirrorProbeRecord(de_archive_mirror)
     >>> logout()
 
-Normal users can access country_dns_mirror, however, they may not change it:
+Normal users can access country_dns_mirror, can see if a mirror is eligible
+for the status, however, they may not change it:
 
     >>> login('test@canonical.com')
+    >>> de_archive_mirror.canTransitionToCountryMirror()
+    True
     >>> de_archive_mirror.transitionToCountryMirror(True)
     Traceback (most recent call last):
     ...
@@ -906,6 +909,9 @@ country mirrors:
     >>> osuosl_mirror.status = MirrorStatus.OFFICIAL
     >>> print osuosl_mirror.http_base_url
     None
+
+    >>> de_archive_mirror.canTransitionToCountryMirror()
+    False
 
     >>> osuosl_mirror.transitionToCountryMirror(None)
     Traceback (most recent call last):
