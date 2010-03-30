@@ -282,6 +282,11 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskBreadcrumb"
             permission="zope.Public"/>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
+            factory="lp.bugs.browser.bugcomment.BugCommentBreadcrumb"
+            permission="zope.Public"/>
 
         <!-- NullBugTask -->
 

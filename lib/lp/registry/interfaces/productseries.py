@@ -99,7 +99,8 @@ class IProductSeriesPublic(
     id = Int(title=_('ID'))
 
     product = exported(
-        Choice(title=_('Project'), required=True, vocabulary='Product'),
+        ReferenceChoice(title=_('Project'), required=True,
+            vocabulary='Product', schema=Interface), # really IProduct
         exported_as='project')
 
     status = exported(

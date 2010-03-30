@@ -166,7 +166,7 @@ class SystemErrorView(LaunchpadView):
     @property
     def layer_help(self):
         if canonical.launchpad.layers.FeedsLayer.providedBy(self.request):
-            return '''<a href="http://help.launchpad.net/Feeds">
+            return '''<a href="https://help.launchpad.net/Feeds">
                       Help with Launchpad feeds</a>'''
         else:
             return None
@@ -283,3 +283,8 @@ class ReadOnlyErrorView(SystemErrorView):
     def __call__(self):
         return self.index()
 
+
+class NoReferrerErrorView(SystemErrorView):
+    """View rendered when a POST request does not include a REFERER header."""
+
+    response_code = 403 # Forbidden.

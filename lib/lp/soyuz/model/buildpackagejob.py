@@ -154,10 +154,6 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
         """See `IBuildPackageJob`."""
         return self.build.sourcepackagerelease.name
 
-    def getTitle(self):
-        """See `IBuildPackageJob`."""
-        return self.build.title
-
     @property
     def processor(self):
         """See `IBuildFarmJob`."""

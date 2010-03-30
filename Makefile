@@ -60,7 +60,7 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(API_INDEX): $(BZR_VERSION_INFO)
-	mkdir $(APIDOC_DIR).tmp
+	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
 	rmdir $(APIDOC_DIR).tmp
@@ -177,7 +177,8 @@ buildonce_eggs: $(PY)
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
-                --ez_setup-source=ez_setup.py \
+		--ez_setup-source=ez_setup.py \
+		--version=1.5.0dev-gary-r108342 \
 		--download-base=download-cache/dist --eggs=eggs
 
 # This builds bin/py and all the other bin files except bin/buildout.
