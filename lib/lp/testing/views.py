@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'create_view',
-    'create_initialized_view'
+    'create_initialized_view',
     'YUITestFileView',
     ]
 
