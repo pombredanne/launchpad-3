@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'launchpadlib_credentials_for',
+    'launchpadlib_for',
     'oauth_access_token_for'
     ]
 
@@ -16,15 +18,31 @@ from launchpadlib.launchpad import Launchpad
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, IPersonSet)
+
 from lp.testing._login import ANONYMOUS, login, logout
 
 def oauth_access_token_for(consumer_name, person, permission, context=None):
     """Find or create an OAuth access token for the given person.
+    :param consumer_name: An OAuth consumer name.
+    :param person: A person (or the name of a person) for whom to create
+        or find credentials.
+    :param permission: An OAuthPermission (or its token) designating
+        the level of permission the credentials should have.
+    :param context: The OAuth context for the credentials (or a string
+        designating same).
 
     :return: An OAuthAccessToken object.
     """
-    # Allow the permission to be specified by its token string.
+    if isinstance(person, basestring):
+        # Look up a person by name.
+        person = getUtility(IPersonSet).getByName(person)
+    if isinstance(context, basestring):
+        # Turn an OAuth context string into the corresponding object.
+        # Avoid an import loop by importing from launchpad.browser here.
+        from canonical.launchpad.browser.oauth import lookup_oauth_context
+        context = lookup_oauth_context(context)
     if isinstance(permission, basestring):
+        # Look up a permission by its token string.
         permission = OAuthPermission.items[permission]
 
     # Find or create the consumer object.
@@ -56,12 +74,20 @@ def launchpadlib_credentials_for(
     context=None):
     """Create launchpadlib credentials for the given person.
 
+    :param consumer_name: An OAuth consumer name.
+    :param person: A person (or the name of a person) for whom to create
+        or find credentials.
+    :param permission: An OAuthPermission (or its token) designating
+        the level of permission the credentials should have.
+    :param context: The OAuth context for the credentials.
     :return: A launchpadlib Credentials object.
     """
+    # Start an interaction so that oauth_access_token_for will
+    # succeed.  oauth_access_token_for may be called in any layer, but
+    # launchpadlib_credentials_for is only called in the
+    # PageTestLayer, when a Launchpad instance is running for
+    # launchpadlib to use.
     login(ANONYMOUS)
-    if isinstance(person, basestring):
-        # Look up a person by their username.
-        person = getUtility(IPersonSet).getByName(person)
     access_token = oauth_access_token_for(
         consumer_name, person, permission, context)
     logout()
@@ -75,6 +101,15 @@ def launchpadlib_for(
     consumer_name, person, permission=OAuthPermission.WRITE_PRIVATE,
     context=None, version=None, service_root="http://api.launchpad.dev/"):
     """Create a Launchpad object for the given person.
+
+    :param consumer_name: An OAuth consumer name.
+    :param person: A person (or the name of a person) for whom to create
+        or find credentials.
+    :param permission: An OAuthPermission (or its token) designating
+        the level of permission the credentials should have.
+    :param context: The OAuth context for the credentials.
+    :param version: The version of the web service to access.
+    :param service_root: The root URL of the web service to access.
 
     :return: A launchpadlib Launchpad object.
     """

@@ -17,7 +17,8 @@ Launchpad object for a given user with a single call.
     salgado
 
     >>> launchpad = launchpadlib_for(
-    ...     'launchpadlib test', 'no-priv', 'READ_PRIVATE', version="devel")
+    ...     'launchpadlib test', 'no-priv', 'READ_PRIVATE', 'firefox',
+    ...      version="devel")
     >>> print launchpad.me.name
     no-priv
 
@@ -25,7 +26,7 @@ With launchpadlib_credentials_for() you can get a launchpadlib
 Credentials object.
 
     >>> credentials = launchpadlib_credentials_for(
-    ...     'launchpadlib test', 'no-priv', 'READ_PUBLIC')
+    ...     'launchpadlib test', 'no-priv', 'READ_PUBLIC', 'firefox')
     >>> credentials
     <launchpadlib.credentials.Credentials object ...>
 
