@@ -333,13 +333,14 @@ class TwistedJobRunner(BaseJobRunner):
         except LeaseHeld:
             self.incomplete_jobs.append(job)
             return
+        # Commit transaction to clear the row lock.
+        transaction.commit()
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
         self.logger.debug('Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
         def update(response):
-            self.logger.debug('Update called')
             if response['success']:
                 self.completed_jobs.append(job)
                 self.logger.debug('Finished %r', job)
