@@ -12,10 +12,8 @@ __all__ = [
     'IAdminTeamMergeSchema',
     'IHasStanding',
     'INewPerson',
-    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
-    'IPersonChangePassword',
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
@@ -433,19 +431,6 @@ class PersonNameField(BlacklistableContentNameField):
 
         # Perform the normal validation, including the real blacklist checks.
         super(PersonNameField, self)._validate(input)
-
-
-# XXX: salgado, 2010/03/05, bug=532688: This is currently used by c-i-p, so it
-# can't be removed yet.  As soon as we stop using c-i-p, though, we'll be able
-# to remove this.
-class IPersonChangePassword(Interface):
-    """The schema used by Person +changepassword form."""
-
-    currentpassword = PasswordField(
-        title=_('Current password'), required=True, readonly=False)
-
-    password = PasswordField(
-        title=_('New password'), required=True, readonly=False)
 
 
 class IPersonClaim(Interface):
@@ -1542,16 +1527,6 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
 # Set the schemas to the newly defined interface for classes that deferred
 # doing so when defined.
 PersonChoice.schema = IPerson
-
-
-class INewPersonForm(IPerson):
-    """Interface used to create new Launchpad accounts.
-
-    The only change with `IPerson` is a customised Password field.
-    """
-
-    password = PasswordField(
-        title=_('Create password'), required=True, readonly=False)
 
 
 class ITeamPublic(Interface):

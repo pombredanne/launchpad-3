@@ -316,12 +316,6 @@ class LaunchpadBrowserPublication(
         """
         if request.method != 'POST':
             return
-        # XXX: jamesh 2007-11-23 bug=124421:
-        # Allow offsite posts to our OpenID endpoint.  Ideally we'd
-        # have a better way of marking this URL as allowing offsite
-        # form posts.
-        if request['PATH_INFO'] == '/+openid':
-            return
         if (IOAuthSignedRequest.providedBy(request)
             or not IBrowserRequest.providedBy(request)
             or request['PATH_INFO']  in (
@@ -428,7 +422,6 @@ class LaunchpadBrowserPublication(
         Because of this we cannot chain to the superclass and implement
         the whole behaviour here.
         """
-        orig_env = request._orig_env
         assert hasattr(request, '_publicationticks_start'), (
             'request._publicationticks_start, which should have been set by '
             'callObject(), was not found.')

@@ -152,23 +152,6 @@ class LoginToken(SQLBase):
         subject = 'Launchpad: Confirm your OpenPGP Key'
         self._send_email(from_name, subject, text)
 
-    def sendPasswordResetEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('forgottenpassword.txt')
-        from_name = "Launchpad"
-        message = template % dict(token_url=canonical_url(self))
-        subject = "Launchpad: Forgotten Password"
-        self._send_email(from_name, subject, message)
-
-    def sendNewUserEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('newuser-email.txt')
-        message = template % dict(token_url=canonical_url(self))
-
-        from_name = "Launchpad"
-        subject = "Launchpad: complete your registration"
-        self._send_email(from_name, subject, message)
-
     def sendProfileCreatedEmail(self, profile, comment):
         """See ILoginToken."""
         template = get_email_template('profile-created.txt')
