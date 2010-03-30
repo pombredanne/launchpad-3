@@ -852,6 +852,17 @@ Mirror listing administrators may change the status however:
 
     >>> login('karl@canonical.com')
     >>> de_archive_mirror.transitionToCountryMirror(True)
+
+Mirrors which are already set as country mirrors can't be 'set' as such
+again:
+
+    >>> de_archive_mirror.canTransitionToCountryMirror()
+    False
+    >>> de_archive_mirror.transitionToCountryMirror(True)
+    Traceback (most recent call last):
+    ...
+    MirrorAlreadyCountryMirror: This mirror is already set as a country
+      Archive mirror for Germany.
     >>> logout()
 
 There cannot be multiple country mirrors of one type for one country:

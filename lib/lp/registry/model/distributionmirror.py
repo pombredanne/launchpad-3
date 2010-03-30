@@ -48,8 +48,9 @@ from lp.registry.interfaces.distributionmirror import (
     CannotTransitionToCountryMirror, CountryMirrorAlreadySet,
     IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,
     IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
-    MirrorContent, MirrorFreshness, MirrorHasNoHTTPURL, MirrorNotOfficial,
-    MirrorNotProbed, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
+    MirrorAlreadyCountryMirror, MirrorContent, MirrorFreshness,
+    MirrorHasNoHTTPURL, MirrorNotOfficial, MirrorNotProbed, MirrorSpeed,
+    MirrorStatus, PROBE_INTERVAL)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import simple_sendmail, format_address
@@ -155,8 +156,16 @@ class DistributionMirror(SQLBase):
         Return True if valid, otherwise raise a subclass of
         CannotTransitionToCountryMirror.
         """
-        if self.distribution.getCountryMirror(self.country,
-            self.content):
+
+        current_country_mirror = self.distribution.getCountryMirror(
+            self.country, self.content)
+
+        if self == current_country_mirror:
+            raise MirrorAlreadyCountryMirror(
+                "This mirror is already set as a country %s mirror for %s." % (
+                self.content, self.country.name))
+
+        if current_country_mirror is not None:
             # Country already has a country mirror.
             raise CountryMirrorAlreadySet(
                 "%s already has a country %s mirror set." % (
