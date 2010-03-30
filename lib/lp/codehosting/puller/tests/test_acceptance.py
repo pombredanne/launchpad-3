@@ -48,7 +48,6 @@ class TestBranchPuller(PullerBranchTestCase):
         PullerBranchTestCase.setUp(self)
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
-        self.makeCleanDirectory(config.codehosting.hosted_branches_root)
         self.addCleanup(
             shutil.rmtree, config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
@@ -207,58 +206,6 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch.url = self.serveOverHTTP()
         db_branch.requestMirror()
         return tree
-
-    def test_mirror_hosted_branch(self):
-        # Run the puller on a populated hosted branch pull queue.
-        db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        transaction.commit()
-        self.pushBranch(db_branch)
-        command, retcode, output, error = self.runPuller()
-        self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(db_branch)
-
-    def test_remirror_hosted_branch(self):
-        # When the format of a branch changes, we completely remirror it.
-        # First we push up and mirror the branch in one format.
-        db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        transaction.commit()
-        pack_tree = self.make_branch_and_tree('pack', format='pack-0.92')
-        self.pushBranch(db_branch, tree=pack_tree)
-        command, retcode, output, error = self.runPuller()
-        self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(db_branch)
-        # Then we upgrade the to a different format and ask for it to be
-        # mirrored again.
-        upgrade(self.getHostedPath(db_branch), format_registry.get('1.6')())
-        transaction.begin()
-        db_branch.requestMirror()
-        transaction.commit()
-        command, retcode, output, error = self.runPuller()
-        self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(db_branch)
-
-    def test_mirror_hosted_loom_branch(self):
-        # Run the puller over a branch with looms enabled.
-        db_branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        transaction.commit()
-        loom_tree = self.makeLoomBranchAndTree('loom')
-        self.pushBranch(db_branch, tree=loom_tree)
-        command, retcode, output, error = self.runPuller()
-        self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(db_branch)
-
-    def test_mirror_private_branch(self):
-        # Run the puller with a private branch in the queue.
-        db_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, private=True)
-        accessing_user = self.factory.makePerson()
-        self.factory.makeBranchSubscription(
-            branch=db_branch, person=accessing_user)
-        transaction.commit()
-        self.pushBranch(db_branch)
-        command, retcode, output, error = self.runPuller()
-        self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(db_branch, accessing_user=accessing_user)
 
     def test_mirror_mirrored_branch(self):
         # Run the puller on a populated mirrored branch pull queue.

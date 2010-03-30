@@ -655,7 +655,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.makeCleanDirectory(config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
         branch_id = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED).id
+            branch_type=BranchType.MIRRORED).id
         self.layer.txn.commit()
         self.db_branch = getUtility(IBranchLookup).get(branch_id)
         self.bzr_tree = self.make_branch_and_tree('src-branch')
@@ -688,7 +688,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
             worker command line arguments, the destination branch and an
             instance of PullerWorkerProtocol.
         """
-        hosted_url = str('lp-hosted:///' + self.db_branch.unique_name)
+        hosted_url = str('lp-internal:///' + self.db_branch.unique_name)
         puller_master = cls(
             self.db_branch.id, hosted_url,
             self.db_branch.unique_name[1:], self.db_branch.branch_type.name,
@@ -714,7 +714,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         def check_authserver_called(ignored):
             self.assertEqual(
-                [('setStackedOn', 77, ''),
+                [('setStackedOn', self.db_branch.id, ''),
                  ('mirrorComplete', self.db_branch.id, revision_id)],
                 self.client.calls)
             return ignored

@@ -29,7 +29,7 @@ from lp.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from lp.codehosting.vfs.branchfs import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchPolicy,
-    HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy)
+    ImportedBranchPolicy, MirroredBranchPolicy)
 from lp.code.enums import BranchType
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
@@ -88,13 +88,6 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         policy = worker.branch_mirrorer.policy
         self.assertIsInstance(policy, MirroredBranchPolicy)
         self.assertIs(None, policy.stacked_on_url)
-
-    def testHostedOpener(self):
-        # A PullerWorker for a hosted branch gets a HostedBranchPolicy as
-        # the policy of its branch_mirrorer.
-        worker = self.makePullerWorker(branch_type=BranchType.HOSTED)
-        self.assertIsInstance(
-            worker.branch_mirrorer.policy, HostedBranchPolicy)
 
     def testImportedOpener(self):
         # A PullerWorker for an imported branch gets a ImportedBranchPolicy as
