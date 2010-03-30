@@ -195,6 +195,14 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
     def __init__(self, job):
         self.context = job
 
+    def __repr__(self):
+        bmp = self.branch_merge_proposal
+        return '<%(job_type)s job for merge %(merge_id)s on %(branch)s>' % {
+            'job_type': self.context.job_type.name,
+            'merge_id': bmp.id,
+            'branch': bmp.source_branch.unique_name,
+            }
+
     @classmethod
     def create(cls, bmp):
         """See `IMergeProposalCreationJob`."""

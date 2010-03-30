@@ -13,6 +13,7 @@ __all__ = [
     'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
+    'TwistedJobRunner',
     ]
 
 
@@ -180,6 +181,7 @@ class BaseJobRunner(object):
         with self.error_utility.oopsMessage(
             dict(job.getOopsVars())):
             try:
+                # self.logger.debug('Running %r', job)
                 self.runJob(job)
             except job.user_error_types, e:
                 job.notifyUserError(e)
@@ -333,20 +335,26 @@ class TwistedJobRunner(BaseJobRunner):
             return
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
+        self.logger.debug('Running %r', job)
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
         def update(response):
+            self.logger.debug('Update called')
             if response['success']:
                 self.completed_jobs.append(job)
+                self.logger.debug('Finished %r', job)
             else:
                 self.incomplete_jobs.append(job)
+                self.logger.debug('Incomplete %r', job)
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
+                self.logger.debug('Oops %r', response['oops_id'])
         def job_raised(failure):
             self.incomplete_jobs.append(job)
             info = (failure.type, failure.value, failure.tb)
             oops = self._doOops(job, info)
             self._logOopsId(oops.id)
+            self.logger.debug('Raised, Oops %r', oops.id)
         deferred.addCallbacks(update, job_raised)
         return deferred
 
@@ -354,9 +362,11 @@ class TwistedJobRunner(BaseJobRunner):
         """Return a task source for all jobs in job_source."""
         def producer():
             while True:
-                for job in self.job_source.iterReady():
+                jobs = list(self.job_source.iterReady())
+                if len(jobs) == 0:
+                    yield None
+                for job in jobs:
                     yield lambda: self.runJobInSubprocess(job)
-                yield None
         return PollingTaskSource(5, producer().next)
 
     def doConsumer(self):
