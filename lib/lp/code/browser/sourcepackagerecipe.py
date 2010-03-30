@@ -8,8 +8,19 @@ __metaclass__ = type
 __all__ = []
 
 
+from lazr.restful.fields import Reference
+from zope.app.form import CustomWidgetFactory
+from zope.component import getUtility
+from zope.interface import Interface
+from zope.schema import Choice, List
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from canonical.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget, LaunchpadRadioWidgetWithDescription)
+
 from canonical.launchpad.webapp import (
-    LaunchpadView)
+    custom_widget, LaunchpadFormView, LaunchpadView)
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries, IDistroSeriesSet)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 
 
@@ -36,6 +47,33 @@ class SourcePackageRecipeView(LaunchpadView):
                 break
         builds.reverse()
         return builds
+
+
+
+
+class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
+    """A view for requesting builds of a SourcePackageRecipe."""
+
+    @property
+    def initial_values(self):
+        return {'distros': self.context.distroseries}
+
+    @property
+    def schema(self):
+        dsset = getUtility(IDistroSeriesSet).search()
+        terms = [SimpleTerm(distro, distro.id, distro.title)
+                 for distro in dsset]
+        class schema(Interface):
+            distros = List(Choice(vocabulary=SimpleVocabulary(terms)))
+        return schema
+
+    custom_widget('distros', LabeledMultiCheckBoxWidget)
+
+    @property
+    def title(self):
+        return self.context.name
+
+    label = title
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):
