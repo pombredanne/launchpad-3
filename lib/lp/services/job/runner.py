@@ -335,7 +335,7 @@ class TwistedJobRunner(BaseJobRunner):
             return
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
-        self.logger.debug('Running %r', job)
+        self.logger.debug('Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
         def update(response):
@@ -348,13 +348,11 @@ class TwistedJobRunner(BaseJobRunner):
                 self.logger.debug('Incomplete %r', job)
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
-                self.logger.debug('Oops %r', response['oops_id'])
         def job_raised(failure):
             self.incomplete_jobs.append(job)
             info = (failure.type, failure.value, failure.tb)
             oops = self._doOops(job, info)
             self._logOopsId(oops.id)
-            self.logger.debug('Raised, Oops %r', oops.id)
         deferred.addCallbacks(update, job_raised)
         return deferred
 
