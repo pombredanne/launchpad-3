@@ -329,8 +329,7 @@ class BugWatchUpdater(object):
             ubuntu_bugzilla_name = ubuntu_bugzilla.name
             # Get all bug tracker names if none have been specified.
             if bug_tracker_names is None:
-                bug_tracker_names = [
-                    tracker.name for tracker in getUtility(IBugTrackerSet)]
+                bug_tracker_names = sorted(getUtility(IBugTrackerSet).names)
 
         def make_updater(bug_tracker_name, bug_tracker_id):
             """Returns a function that can update the given bug tracker."""
@@ -494,7 +493,7 @@ class BugWatchUpdater(object):
                 break
             with self.transaction:
                 watches_left = (
-                    bug_tracker.getBugWatchesNeedingUpdate().count())
+                    bug_tracker.watches_needing_update.count())
             self.log.info(
                 "%s watches left to check on bug tracker '%s'" %
                 (watches_left, bug_tracker_name))
@@ -570,7 +569,7 @@ class BugWatchUpdater(object):
         """Updates the given bug trackers's bug watches."""
         with self.transaction:
             bug_watches_to_update = (
-                bug_tracker.getBugWatchesNeedingUpdate())
+                bug_tracker.watches_needing_update)
             bug_watches_need_updating = (
                 bug_watches_to_update.count() > 0)
 
@@ -697,9 +696,14 @@ class BugWatchUpdater(object):
             remote_new_ids = sorted(
                 set(bug_watch.remotebug for bug_watch in bug_watches
                 if bug_watch not in old_bug_watches))
-            remote_ids_with_comments = sorted(
-                bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch.unpushed_comments.any() is not None)
+            # If the remote system is not configured to sync comments,
+            # don't bother checking for any to push.
+            if remotesystem.sync_comments:
+                remote_ids_with_comments = sorted(
+                    bug_watch.remotebug for bug_watch in bug_watches
+                    if bug_watch.unpushed_comments.any() is not None)
+            else:
+                remote_ids_with_comments = []
 
         # We only make the call to getModifiedRemoteBugs() if there
         # are actually some bugs that we're interested in so as to

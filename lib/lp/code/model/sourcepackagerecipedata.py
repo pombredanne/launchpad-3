@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the recipe storage.
@@ -50,6 +50,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
     def __init__(self, name, type, comment, line_number, branch, revspec,
                  directory, recipe_data, parent_instruction):
+        super(_SourcePackageRecipeDataInstruction, self).__init__()
         self.name = unicode(name)
         self.type = type
         self.comment = comment
@@ -215,6 +216,7 @@ class _SourcePackageRecipeData(Storm):
     def __init__(self, recipe, sourcepackage_recipe):
         """Initialize from the bzr-builder recipe and link it to a db recipe.
         """
+        super(_SourcePackageRecipeData, self).__init__()
         self.setRecipe(recipe)
         self.sourcepackage_recipe = sourcepackage_recipe
 

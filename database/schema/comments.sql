@@ -1340,9 +1340,15 @@ COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The 
 COMMENT ON TABLE SourcePackageRecipe IS 'A recipe for assembling a source package from branches.';
 COMMENT ON COLUMN SourcePackageRecipe.registrant IS 'The person who created this recipe.';
 COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit this recipe.';
-COMMENT ON COLUMN SourcePackageRecipe.distroseries IS 'The distroseries this recipe builds a package for.';
 COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
+COMMENT ON COLUMN SourcePackageRecipe.build_daily IS 'If true, this recipe should be built daily.';
+
+-- SourcePackageRecipeDistroSeries
+
+COMMENT ON TABLE SourcePackageRecipeDistroSeries IS 'Link table for sourcepackagerecipe and distroseries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.distroseries IS 'The primary key of the DistroSeries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The primary key of the SourcePackageRecipe.';
 
 -- SourcePackageRecipeBuild
 

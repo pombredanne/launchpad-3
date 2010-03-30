@@ -1146,6 +1146,11 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
     def test_related_bugs_includes_source_bugs(self):
         """related_bugs includes bugs linked to the source branch."""
         bmp = self.factory.makeBranchMergeProposal()

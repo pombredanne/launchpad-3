@@ -82,6 +82,15 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- NoReferrerError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.NoReferrerError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-noreferrer.pt"
+      class="canonical.launchpad.webapp.error.NoReferrerErrorView"
+      />
+
   <!-- UnsafeFormGetSubmissionError -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"
