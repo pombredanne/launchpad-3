@@ -168,6 +168,7 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
   >>> arg_recipebuild = factory.makeSourcePackageRecipeBuild()
+  >>> changelog = None
 
 The other argurments are strings:
 
@@ -191,7 +192,7 @@ ISourcePackageRelease, it will automatically set the
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog_entry, dsc, arg_key, arg_sect,
+  ...     arg_urgency, changelog, changelog_entry, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright,
   ...     build_conflicts=None, build_conflicts_indep=None,

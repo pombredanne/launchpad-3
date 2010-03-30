@@ -796,6 +796,10 @@ class TestBugWatch:
         """Do nothing, just to provide the interface."""
         pass
 
+    def addActivity(self, result=None, message=None, oops_id=None):
+        """Do nothing, just to provide the interface."""
+        pass
+
 
 class TestResultSequence(list):
     """A mock `SelectResults` object.
@@ -821,7 +825,8 @@ class TestBugTracker:
         self.test_bug_one = test_bug_one
         self.test_bug_two = test_bug_two
 
-    def getBugWatchesNeedingUpdate(self, hours):
+    @property
+    def watches_needing_update(self):
         """Returns a sequence of teo bug watches for testing."""
         return TestResultSequence([
             TestBugWatch(1, self.test_bug_one, failing=True),
@@ -901,7 +906,7 @@ class TestBugWatchUpdater(BugWatchUpdater):
         """
         return [
             bug_watch for bug_watch in (
-                self.bugtracker.getBugWatchesNeedingUpdate(0))
+                self.bugtracker.watches_needing_update)
             if (bug_watch.remotebug == remote_bug_id and
                 bug_watch.id in bug_watch_ids)
             ]
@@ -932,6 +937,7 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
         # trigger a DB error, the second updates successfully.
         bug_tracker = TestBugTracker(test_bug_one, test_bug_two)
         bug_watch_updater = TestBugWatchUpdater(self.layer.txn)
+        self.layer.txn.commit()
         bug_watch_updater._updateBugTracker(bug_tracker)
         # We verify that the first bug watch didn't update the status,
         # and the second did.

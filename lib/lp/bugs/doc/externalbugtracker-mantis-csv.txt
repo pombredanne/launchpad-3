@@ -77,6 +77,8 @@ Collect the Example.com watches:
 
 And have our special Mantis instance process them:
 
+    >>> transaction.commit()
+
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(transaction)
     >>> bug_watch_updater.updateBugWatches(
@@ -164,7 +166,7 @@ now no bug watches are in need of updating:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
+    >>> example_bug_tracker.watches_needing_update.count()
     0
 
 If the status isn't different, the lastchanged attribute doesn't get
