@@ -20,13 +20,13 @@ from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.mail.branch import RecipientReason
-from lp.code.mail.branchmergeproposal import (
-    BMPMailer, send_merge_proposal_modified_notifications)
+from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branch import update_trigger_modified_fields
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
     MergeProposalUpdatedEmailJob, ReviewRequestedEmailJob)
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from canonical.launchpad.webapp import canonical_url
 from lp.testing import login_person, TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
@@ -127,7 +127,6 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
     def test_forCreation_without_bugs(self):
         """If there are no related bugs, omit 'Related bugs'."""
         bmp, subscriber = self.makeProposalWithSubscriber()
-        bug = self.factory.makeBug()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertNotIn('Related bugs:\n', ctrl.body)
@@ -136,7 +135,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         """Correctly format list of reviewers."""
         bmp, subscriber = self.makeProposalWithSubscriber()
         reviewer = self.factory.makePerson(name='review-person')
-        vote_reference = bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertIn(
@@ -151,7 +150,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         bug = self.factory.makeBug(title='I am a bug')
         bmp.source_branch.linkBug(bug, bmp.registrant)
         reviewer = self.factory.makePerson(name='review-person')
-        vote_reference = bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         expected = (
@@ -189,7 +188,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         """Addresses for the to header exclude requested team reviewers."""
         bmp, subscriber = self.makeProposalWithSubscriber()
         team = self.factory.makeTeam(email='group@team.com')
-        request = CodeReviewVoteReference(
+        CodeReviewVoteReference(
             branch_merge_proposal=bmp, reviewer=team, registrant=subscriber)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(subscriber,
@@ -302,7 +301,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
         event = ObjectModifiedEvent(
             merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
-        send_merge_proposal_modified_notifications(merge_proposal, event)
+        merge_proposal_modified(merge_proposal, event)
         self.assertIs(None, self.getProposalUpdatedEmailJob(merge_proposal))
 
     def makeProposalUpdatedEmailJob(self):
@@ -314,7 +313,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         merge_proposal.description = 'change description'
         event = ObjectModifiedEvent(
             merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
-        send_merge_proposal_modified_notifications(merge_proposal, event)
+        merge_proposal_modified(merge_proposal, event)
         job = self.getProposalUpdatedEmailJob(merge_proposal)
         self.assertIsNot(None, job, 'Job was not created.')
         return job, subscriber
@@ -335,7 +334,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             'Description changed to:\n\nchange description',
             job.delta_text)
 
-    def test_send_merge_proposal_modified_notifications(self):
+    def test_merge_proposal_modified(self):
         """Should send emails when invoked with correct parameters."""
         job, subscriber = self.makeProposalUpdatedEmailJob()
         pop_notifications()
@@ -381,7 +380,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             displayname='Candidate', email='candidate@example.com')
         requester = self.factory.makePerson(
             displayname='Requester', email='requester@example.com')
-        request = CodeReviewVoteReference(
+        CodeReviewVoteReference(
             branch_merge_proposal=merge_proposal, reviewer=candidate,
             registrant=requester)
         reason = RecipientReason.forReviewer(merge_proposal, True, candidate)
@@ -450,7 +449,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         # review request email.
         reviewer = self.factory.makePerson()
         pop_notifications()
-        vote_reference = self.bmp.nominateReviewer(reviewer, self.owner, None)
+        self.bmp.nominateReviewer(reviewer, self.owner, None)
         # No email is sent.
         sent_mail = pop_notifications()
         self.assertEqual([], sent_mail)
@@ -465,7 +464,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         # a link to the proposal.
         reviewer = self.factory.makePerson()
         self.bmp.description = 'This branch is awesome.'
-        vote_reference = self.bmp.nominateReviewer(reviewer, self.owner, None)
+        self.bmp.nominateReviewer(reviewer, self.owner, None)
         review_request_job = self.getReviewNotificationEmail()
         review_request_job.run()
         [sent_mail] = pop_notifications()
@@ -496,7 +495,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         review_team.addMember(black_beard, eric)
         pop_notifications()
         login_person(self.owner)
-        vote_reference = self.bmp.nominateReviewer(review_team, self.owner, None)
+        self.bmp.nominateReviewer(review_team, self.owner, None)
         review_request_job = self.getReviewNotificationEmail()
         review_request_job.run()
         sent_mail = pop_notifications()
@@ -510,8 +509,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         # private email address.
         candidate = self.makePersonWithHiddenEmail()
         # Request a review and prepare the mailer.
-        vote_reference = self.bmp.nominateReviewer(
-            candidate, self.owner, None)
+        self.bmp.nominateReviewer(candidate, self.owner, None)
         # Send the mail.
         review_request_job = self.getReviewNotificationEmail()
         review_request_job.run()
