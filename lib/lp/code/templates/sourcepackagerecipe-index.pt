@@ -24,8 +24,7 @@
   <div class="yui-g first">
     <div class="portlet">
       <h2>Description</h2>
-        This recipe builds a foo for disto bar, with my Secret Squirrel
-        changes.
+        <tal:description replace="context/description" />
       </div>
     </div>
     <div class="yui-g">
