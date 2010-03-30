@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
+import os
 import unittest
 
 from canonical.config import config
@@ -63,10 +64,15 @@ class YUIUnitTestCase(WindmillTestCase):
 
 
 def test_suite():
-    test_path = (
-        u'canonical/launchpad/javascript/registry/tests/milestone_table.html')
-    test_case = YUIUnitTestCase()
-    test_case.initialize(test_path)
     suite = unittest.TestSuite()
-    suite.addTest(test_case)
+    registry_testing_path = 'canonical/launchpad/javascript/registry/tests'
+    testing_path = os.path.join(config.root, 'lib', registry_testing_path)
+    unit_test_names = [
+        file_name for file_name in os.listdir(testing_path)
+        if file_name.startswith('test_') and file_name.endswith('.html')]
+    for unit_test_name in unit_test_names:
+        test_path = os.path.join(registry_testing_path, unit_test_name)
+        test_case = YUIUnitTestCase()
+        test_case.initialize(test_path)
+        suite.addTest(test_case)
     return suite
