@@ -463,7 +463,7 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
     def getErrorRecipients(self):
         """Return a list of email-ids to notify about user errors."""
         commenter = self.code_review_comment.message.owner
-        return format_address_for_person(commenter)
+        return [format_address_for_person(commenter)]
 
 
 class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
