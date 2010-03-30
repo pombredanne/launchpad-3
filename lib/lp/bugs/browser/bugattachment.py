@@ -45,13 +45,13 @@ class BugAttachmentContentCheck:
             name=filename, body=file_content)
         # Zope's guess_content_type() doesn't consider all the factors
         # we want considered.  So after we get its answer, we probe a
-        # little further... We may want to look at the encoding too.
-        # We could even look at the file content, but at that point
-        # we'd be basically reimplementing parts of 'patch', and it
-        # may not be necessary.
+        # little further.  But we still don't look at the encoding nor
+        # the file content, because we'd like to avoid reimplementing
+        # 'patch'.  See bug #538219 for more.
         if (guessed_type == 'text/plain'
-            and (filename.endswith('.debdiff')
-                 or filename.endswith('.diff'))):
+            and (filename.endswith('.diff')
+                 or filename.endswith('.debdiff')
+                 or filename.endswith('.patch'))):
             guessed_type = 'text/x-diff'
         return guessed_type
 

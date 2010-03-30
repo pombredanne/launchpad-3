@@ -76,6 +76,9 @@ Now we are redirected to the main bug page...
     Another title
     A fix for this bug.
     A better icon for foo
+    the foo3 patch
+    the foo4 patch
+    the foo5 patch
 
 ...while it is gone from the portlet "Bug attachments".
 
