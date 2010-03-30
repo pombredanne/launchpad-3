@@ -17,6 +17,7 @@ from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
@@ -39,7 +40,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new subversion code import should have NEW status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
             url=self.factory.getUniqueURL())
@@ -53,7 +54,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
             url=self.factory.getUniqueURL(),
@@ -68,7 +69,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new CVS code import should have NEW status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
@@ -83,7 +84,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
@@ -99,7 +100,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new git import is always reviewed by default."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
@@ -114,7 +115,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new hg import is always reviewed by default."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.HG,
             url=self.factory.getUniqueURL(),
@@ -565,7 +566,7 @@ def make_active_import(factory, project_name=None, product_name=None,
         project = None
     product = factory.makeProduct(
         name=product_name, displayname=product_name, project=project)
-    code_import = factory.makeCodeImport(
+    code_import = factory.makeProductCodeImport(
         product=product, branch_name=branch_name,
         svn_branch_url=svn_branch_url, cvs_root=cvs_root,
         cvs_module=cvs_module, git_repo_url=git_repo_url,
@@ -637,10 +638,10 @@ class TestGetActiveImports(TestCaseWithFactory):
         # Deactivating a product means that code imports associated to it are
         # no longer returned.
         code_import = make_active_import(self.factory)
-        self.failUnless(code_import.product.active)
+        self.failUnless(code_import.branch.product.active)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [code_import])
-        deactivate(code_import.product)
+        deactivate(code_import.branch.product)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [])
 
@@ -649,10 +650,10 @@ class TestGetActiveImports(TestCaseWithFactory):
         # products in it are no longer returned.
         code_import = make_active_import(
             self.factory, project_name="whatever")
-        self.failUnless(code_import.product.project.active)
+        self.failUnless(code_import.branch.product.project.active)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [code_import])
-        deactivate(code_import.product.project)
+        deactivate(code_import.branch.product.project)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [])
 
@@ -662,8 +663,8 @@ class TestGetActiveImports(TestCaseWithFactory):
             self.factory, product_name='prod1', branch_name='a')
         prod2_a = make_active_import(
             self.factory, product_name='prod2', branch_name='a')
-        prod1_b = self.factory.makeCodeImport(
-            product=prod1_a.product, branch_name='b')
+        prod1_b = self.factory.makeProductCodeImport(
+            product=prod1_a.branch.product, branch_name='b')
         make_import_active(self.factory, prod1_b)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(
