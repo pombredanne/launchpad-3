@@ -1526,7 +1526,7 @@ class BuildBaseFormatterAPI(ObjectFormatterAPI):
     def link(self, view_name, rootsite=None):
         build = self._context
         if not check_permission('launchpad.View', build):
-            return '%s private source' % icon
+            return 'private source'
 
         url = self.url(view_name=view_name, rootsite=rootsite)
         title = cgi.escape(build.title)
