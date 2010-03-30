@@ -181,7 +181,7 @@ class BaseJobRunner(object):
         with self.error_utility.oopsMessage(
             dict(job.getOopsVars())):
             try:
-                # self.logger.debug('Running %r', job)
+                self.logger.debug('Running %r', job)
                 self.runJob(job)
             except job.user_error_types, e:
                 job.notifyUserError(e)
