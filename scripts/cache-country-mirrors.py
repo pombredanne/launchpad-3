@@ -53,6 +53,7 @@ class CacheCountryMirrors(LaunchpadScript):
             mirrors_file.close()
             filename = os.path.join(dir_name, '%s.txt' % country.iso3166code2)
             shutil.move(tmpfile, filename)
+            os.chmod(filename, 0644)
 
 
 if __name__ == '__main__':
