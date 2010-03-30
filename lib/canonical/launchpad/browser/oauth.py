@@ -205,8 +205,7 @@ def lookup_oauth_context(context):
         context = getUtility(IPillarNameSet).getByName(context)
         if context is None:
             raise ValueError(context)
-
-
+    return context
 
 
 class OAuthTokenAuthorizedView(LaunchpadView):

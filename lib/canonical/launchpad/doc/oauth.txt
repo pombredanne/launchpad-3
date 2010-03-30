@@ -446,7 +446,9 @@ oauth_access_token_for() returns the existing token.
     >>> token = oauth_access_token_for(
     ...     existing_token.consumer.key, existing_token.person,
     ...     existing_token.permission, existing_token.context)
-    >>> token is existing_token
+
+    >>> from zope.proxy import sameProxiedObjects
+    >>> sameProxiedObjects(token, existing_token)
     True
 
 If the user does not already have an access token that matches your
