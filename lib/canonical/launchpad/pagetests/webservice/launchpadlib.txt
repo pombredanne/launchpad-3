@@ -4,9 +4,6 @@ Using launchpadlib in pagetests
 As an alternative to crafting HTTP requests with the 'webservice'
 object, you can write pagetests using launchpadlib.
 
-    >>> from lp.testing import (
-    ...     launchpadlib_for, launchpadlib_credentials_for)
-
 Two helper functions make it easy to set up Launchpad objects that
 can access the web service. With launchpadlib_for() you can set up a
 Launchpad object for a given user with a single call.
@@ -25,6 +22,7 @@ Launchpad object for a given user with a single call.
 With launchpadlib_credentials_for() you can get a launchpadlib
 Credentials object.
 
+    >>> from lp.testing import launchpadlib_credentials_for
     >>> credentials = launchpadlib_credentials_for(
     ...     'launchpadlib test', 'no-priv', 'READ_PUBLIC', 'firefox')
     >>> credentials
