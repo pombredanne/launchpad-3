@@ -13,7 +13,6 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.transport import get_transport
-from bzrlib import urlutils
 from bzrlib.ui import SilentUIFactory
 import bzrlib.ui
 

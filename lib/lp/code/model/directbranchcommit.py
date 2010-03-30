@@ -172,7 +172,6 @@ class DirectBranchCommit:
         if self.to_mirror:
             return
         assert self.is_locked, "Getting revision on un-locked branch."
-        last_revision = None
         last_revision = self.bzrbranch.last_revision()
         if last_revision != self.last_scanned_id:
             raise ConcurrentUpdateError(
@@ -189,7 +188,6 @@ class DirectBranchCommit:
         assert self.is_open, "Committing closed DirectBranchCommit."
         assert self.is_locked, "Not locked at commit time."
 
-        builder = None
         try:
             self._checkForRace()
 

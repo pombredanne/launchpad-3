@@ -282,8 +282,8 @@ class PullerMaster:
         :param source_url: The location from which the branch is to be
             mirrored.
         :param unique_name: The unique name of the branch to be mirrored.
-        :param branch_type: The BranchType of the branch to be mirrored (e.g.
-            BranchType.HOSTED).
+        :param branch_type_name: The name of the BranchType of the branch to
+            be mirrored (e.g. 'MIRRORED').
         :param default_stacked_on_url: The default stacked-on URL for the
             product that the branch is in. '' implies that there is no such
             default.
@@ -297,7 +297,7 @@ class PullerMaster:
         """
         self.branch_id = branch_id
         self.source_url = source_url.strip()
-        self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
+        self.destination_url = 'lp-internal:///%s' % (unique_name,)
         self.unique_name = unique_name
         self.branch_type_name = branch_type_name
         self.default_stacked_on_url = default_stacked_on_url

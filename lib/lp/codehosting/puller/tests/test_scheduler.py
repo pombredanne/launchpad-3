@@ -100,10 +100,10 @@ class TestJobScheduler(TrialTestCase):
         manager.unlock()
 
     def test_run_calls_acquireBranchToPull(self):
-        manager = self.makeJobScheduler(('HOSTED',))
+        manager = self.makeJobScheduler(('MIRRORED',))
         manager.run()
         self.assertEqual(
-            [('acquireBranchToPull', ('HOSTED',))],
+            [('acquireBranchToPull', ('MIRRORED',))],
             manager.branch_puller_endpoint.calls)
 
 
