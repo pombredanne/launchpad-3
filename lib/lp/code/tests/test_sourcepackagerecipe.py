@@ -51,10 +51,11 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         name = self.factory.getUniqueString(u'recipe-name')
+        description = self.factory.getUniqueString(u'recipe-description')
         return getUtility(ISourcePackageRecipeSource).new(
-            registrant=registrant, owner=owner, distroseries=distroseries,
+            registrant=registrant, owner=owner, distroseries=[distroseries],
             sourcepackagename=sourcepackagename, name=name,
-            builder_recipe=builder_recipe)
+            description=description, builder_recipe=builder_recipe)
 
     def test_creation(self):
         # The metadata supplied when a SourcePackageRecipe is created is
@@ -64,14 +65,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         name = self.factory.getUniqueString(u'recipe-name')
+        description = self.factory.getUniqueString(u'recipe-description')
         builder_recipe = self.factory.makeRecipe()
         recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant=registrant, owner=owner, distroseries=distroseries,
+            registrant=registrant, owner=owner, distroseries=[distroseries],
             sourcepackagename=sourcepackagename, name=name,
-            builder_recipe=builder_recipe)
+            description=description, builder_recipe=builder_recipe)
         self.assertEquals(
-            (registrant, owner, distroseries, sourcepackagename, name),
-            (recipe.registrant, recipe.owner, recipe.distroseries,
+            (registrant, owner, set([distroseries]), sourcepackagename, name),
+            (recipe.registrant, recipe.owner, set(recipe.distroseries),
              recipe.sourcepackagename, recipe.name))
 
     def test_source_implements_interface(self):
@@ -85,6 +87,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             self.factory.makeRecipe())
         self.assertProvides(recipe, ISourcePackageRecipe)
+
+    def test_base_branch(self):
+        # When a recipe is created, we can access its base branch.
+        branch = self.factory.makeAnyBranch()
+        builder_recipe = self.factory.makeRecipe(branch)
+        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
+            builder_recipe)
+        self.assertEquals(branch, sp_recipe.base_branch)
 
     def test_branch_links_created(self):
         # When a recipe is created, we can query it for links to the branch
@@ -173,12 +183,13 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_requestBuild(self):
         recipe = self.factory.makeSourcePackageRecipe()
+        (distroseries,) = list(recipe.distroseries)
         ppa = self.factory.makeArchive()
-        build = recipe.requestBuild(ppa, ppa.owner,
+        build = recipe.requestBuild(ppa, ppa.owner, distroseries,
                 PackagePublishingPocket.RELEASE)
         self.assertProvides(build, ISourcePackageRecipeBuild)
         self.assertEqual(build.archive, ppa)
-        self.assertEqual(build.distroseries, recipe.distroseries)
+        self.assertEqual(build.distroseries, distroseries)
         self.assertEqual(build.requester, ppa.owner)
         store = Store.of(build)
         store.flush()
@@ -196,28 +207,32 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_requestBuildRejectsNotPPA(self):
         recipe = self.factory.makeSourcePackageRecipe()
         not_ppa = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        (distroseries,) = list(recipe.distroseries)
         self.assertRaises(NonPPABuildRequest, recipe.requestBuild, not_ppa,
-                not_ppa.owner, PackagePublishingPocket.RELEASE)
+                not_ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildRejectsNoPermission(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
         requester = self.factory.makePerson()
+        (distroseries,) = list(recipe.distroseries)
         self.assertRaises(CannotUploadToArchive, recipe.requestBuild, ppa,
-                requester, PackagePublishingPocket.RELEASE)
+                requester, distroseries, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildRejectsInvalidPocket(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
+        (distroseries,) = list(recipe.distroseries)
         self.assertRaises(InvalidPocketForPPA, recipe.requestBuild, ppa,
-                ppa.owner, PackagePublishingPocket.BACKPORTS)
+                ppa.owner, distroseries, PackagePublishingPocket.BACKPORTS)
 
     def test_requestBuildRejectsDisabledArchive(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
         removeSecurityProxy(ppa).disable()
+        (distroseries,) = list(recipe.distroseries)
         self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
-                ppa.owner, PackagePublishingPocket.RELEASE)
+                ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
@@ -242,10 +257,11 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         name = self.factory.getUniqueString(u'recipe-name')
+        description = self.factory.getUniqueString(u'recipe-description')
         recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant=registrant, owner=owner, distroseries=distroseries,
+            registrant=registrant, owner=owner, distroseries=[distroseries],
             sourcepackagename=sourcepackagename, name=name,
-            builder_recipe=builder_recipe)
+            description=description, builder_recipe=builder_recipe)
         return recipe.builder_recipe
 
     def check_base_recipe_branch(self, branch, url, revspec=None,

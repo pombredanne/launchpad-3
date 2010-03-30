@@ -12,11 +12,12 @@ import unittest
 import windmill
 
 from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
-from canonical.launchpad.windmill.testing.lpuser import login_person
+from canonical.launchpad.windmill.testing.lpuser import (
+    login_person as windmill_login_person)
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import WindmillTestCase
+from lp.testing import WindmillTestCase, login_person
 
 
 POPUP_DIFF = (
@@ -81,6 +82,11 @@ class TestPopupOnBugPage(WindmillTestCase):
     layer = BugsWindmillLayer
     name = "Bug popup diffs"
 
+    def setUp(self):
+        WindmillTestCase.setUp(self)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
     def test_bug_popup_diff(self):
         """Test bug page diff popups."""
         client = self.client
@@ -114,7 +120,7 @@ class TestPopupOnBugPage(WindmillTestCase):
         bug = self.factory.makeBug(product=objs['fooix'])
         transaction.commit()
 
-        login_person(objs['eric'], "test", client)
+        windmill_login_person(objs['eric'], "test", client)
 
         start_url = (windmill.settings['TEST_URL'] + 'bugs/%d' % bug.id)
         client.open(url=start_url)

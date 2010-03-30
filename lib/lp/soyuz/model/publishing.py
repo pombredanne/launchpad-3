@@ -28,7 +28,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
-from storm.expr import Desc, In, LeftJoin
+from storm.expr import Desc, In, LeftJoin, Sum
 from storm.store import Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -43,8 +43,10 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
@@ -857,6 +859,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                    distroseries.name,
                                    self.distroarchseries.architecturetag)
 
+    def getDownloadCount(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        return self.archive.getPackageDownloadTotal(self.binarypackagerelease)
+
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
         bpr = self.binarypackagerelease
@@ -1005,6 +1011,50 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component = self.binarypackagerelease.component
 
         self.component = component
+
+    def _getDownloadCountClauses(self, start_date=None, end_date=None):
+        clauses = [
+            BinaryPackageReleaseDownloadCount.archive == self.archive,
+            BinaryPackageReleaseDownloadCount.binary_package_release ==
+                self.binarypackagerelease,
+            ]
+
+        if start_date is not None:
+            clauses.append(
+                BinaryPackageReleaseDownloadCount.day >= start_date)
+        if end_date is not None:
+            clauses.append(
+                BinaryPackageReleaseDownloadCount.day <= end_date)
+
+        return clauses
+
+    def getDownloadCounts(self, start_date=None, end_date=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        clauses = self._getDownloadCountClauses(start_date, end_date)
+
+        return Store.of(self).using(
+            BinaryPackageReleaseDownloadCount,
+            LeftJoin(
+                Country,
+                BinaryPackageReleaseDownloadCount.country_id ==
+                    Country.id)).find(
+            BinaryPackageReleaseDownloadCount, *clauses).order_by(
+                Desc(BinaryPackageReleaseDownloadCount.day), Country.name)
+
+    def getDailyDownloadTotals(self, start_date=None, end_date=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        clauses = self._getDownloadCountClauses(start_date, end_date)
+
+        results = Store.of(self).find(
+            (BinaryPackageReleaseDownloadCount.day,
+             Sum(BinaryPackageReleaseDownloadCount.count)),
+            *clauses).group_by(
+                BinaryPackageReleaseDownloadCount.day)
+
+        def date_to_string(result):
+            return (result[0].strftime('%Y-%m-%d'), result[1])
+
+        return dict(date_to_string(result) for result in results)
 
 
 class PublishingSet:

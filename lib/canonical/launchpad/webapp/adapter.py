@@ -108,7 +108,8 @@ class CommitLogger:
             now, now, None, 'Transaction completed, status: %s' % txn.status)
 
 
-def set_request_started(starttime=None, request_statements=None, txn=None):
+def set_request_started(
+    starttime=None, request_statements=None, txn=None, enable_timeout=True):
     """Set the start time for the request being served by the current
     thread.
 
@@ -120,6 +121,8 @@ def set_request_started(starttime=None, request_statements=None, txn=None):
     :type request_statements: mutable sequence.
     :param txn: The current transaction manager. If given, txn.commit() and
         txn.abort() calls are logged too.
+    :param enable_timeout: If True, a timeout error is raised if the request
+        runs for a longer time than the configured timeout.
     """
     if getattr(_local, 'request_start_time', None) is not None:
         warnings.warn('set_request_started() called before previous request '
@@ -133,6 +136,7 @@ def set_request_started(starttime=None, request_statements=None, txn=None):
     else:
         _local.request_statements = request_statements
     _local.current_statement_timeout = None
+    _local.enable_timeout = enable_timeout
     if txn is not None:
         _local.commit_logger = CommitLogger(txn)
         txn.registerSynch(_local.commit_logger)
@@ -225,8 +229,8 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""
-    if timeout is None:
-        return False # no timeout configured
+    if timeout is None or not getattr(_local, 'enable_timeout', True):
+        return False # no timeout configured or timeout disabled.
 
     starttime = getattr(_local, 'request_start_time', None)
     if starttime is None:
@@ -483,7 +487,8 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
 
     def get_remaining_time(self):
         """See `TimeoutTracer`"""
-        if not dbconfig.db_statement_timeout:
+        if (not dbconfig.db_statement_timeout or
+            not getattr(_local, 'enable_timeout', True)):
             return None
         start_time = getattr(_local, 'request_start_time', None)
         if start_time is None:

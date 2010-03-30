@@ -798,6 +798,11 @@
         path_expression="string:+dependency/${dependency/id}"
         attribute_to_parent="archive"
         />
+    <browser:url
+        for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"
+        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distroarchseries/architecturetag}/${day}/${country/iso3166code2|string:unknown}"
+        attribute_to_parent="archive"
+        />
 
     <!-- XXX JeroenVermeulen 2010-03-13 bug=539395: This is buildmaster, not soyuz -->
     <browser:page

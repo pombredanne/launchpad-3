@@ -109,6 +109,10 @@ class OffsiteFormPostError(Exception):
     """An attempt was made to post a form from a remote site."""
 
 
+class NoReferrerError(Exception):
+    """At attempt was made to post a form without a REFERER header."""
+
+
 class UnsafeFormGetSubmissionError(Exception):
     """An attempt was made to submit an unsafe form action with GET."""
 
