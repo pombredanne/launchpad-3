@@ -910,7 +910,7 @@ country mirrors:
     >>> print osuosl_mirror.http_base_url
     None
 
-    >>> de_archive_mirror.canTransitionToCountryMirror()
+    >>> osuosl_mirror.canTransitionToCountryMirror()
     False
 
     >>> osuosl_mirror.transitionToCountryMirror(None)
