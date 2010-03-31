@@ -247,6 +247,22 @@ def unique(iterator):
             yield item
 
 
+def suggest_batch_size(self, remote_system, num_watches):
+    """Suggest a value for batch_size if it's not set.
+
+    Givend the number of bug watches for an `remote_system`, this sets
+    a suggested batch size on it. If `remote_system` already has a
+    batch size set, this does not override it.
+
+    :param remote_system: An `ExternalBugTracker`.
+    :param num_watches: The number of watches for `remote_system`.
+    """
+    if remote_system.batch_size is None:
+        remote_system.batch_size = max(
+            SUGGESTED_BATCH_SIZE_MIN, int(
+                SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
+
+
 class BugWatchUpdater(object):
     """Takes responsibility for updating remote bug watches."""
 
@@ -499,13 +515,6 @@ class BugWatchUpdater(object):
                 (watches_left, bug_tracker_name))
             has_watches_to_update = watches_left > 0
 
-    def _suggestBatchSize(self, remote_system, num_watches):
-        """Suggest a value for batch_size if it's not set."""
-        if remote_system.batch_size is None:
-            remote_system.batch_size = max(
-                SUGGESTED_BATCH_SIZE_MIN, int(
-                    SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
-
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
         with self.transaction:
@@ -520,7 +529,7 @@ class BugWatchUpdater(object):
         remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
 
         # Try to hint at how many bug watches to check each time.
-        self._suggestBatchSize(remotesystem_to_use, num_watches)
+        suggest_batch_size(remotesystem_to_use, num_watches)
 
         if (is_gnome_bugzilla and
             isinstance(remotesystem_to_use, BugzillaAPI) and
