@@ -10,7 +10,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from storm.store import Store
+from storm.locals import Store
 
 from canonical.launchpad.scripts.logger import log, DEBUG2
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
