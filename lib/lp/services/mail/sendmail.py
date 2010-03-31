@@ -38,14 +38,12 @@ from email.Header import Header
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email import Charset
-from smtplib import SMTP
 
 from zope.app import zapi
 from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
-from canonical.lp import isZopeless
 from canonical.launchpad.helpers import is_ascii_only
 from lp.services.mail.stub import TestMailer
 from canonical.launchpad import versioninfo
@@ -409,18 +407,11 @@ def sendmail(message, to_addrs=None, bulk=True):
     message['X-Launchpad-Hash'] = hash.hexdigest()
 
     raw_message = message.as_string()
-    if isZopeless():
-        # Zopeless email sending is not unit tested, and won't be.
-        # The zopeless specific stuff is pretty simple though so this
-        # should be fine.
 
-        if config.instance_name == 'testrunner':
-            # when running in the testing environment, store emails
-            TestMailer().send(
-                config.canonical.bounce_address, to_addrs, raw_message)
-        else:
-            return raw_sendmail(
-                config.canonical.bounce_address, to_addrs, raw_message)
+    if config.instance_name == 'testrunner':
+        # when running in the testing environment, store emails
+        TestMailer().send(
+            config.canonical.bounce_address, to_addrs, raw_message)
         # Strip the angle brackets to the return a Message-Id consistent with
         # raw_sendmail (which doesn't include them).
         return message['message-id'][1:-1]
