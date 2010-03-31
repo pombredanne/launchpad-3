@@ -96,6 +96,13 @@ class IBranchMergeProposal(IPrivacy):
             description=_(
                 "If True, this proposal is visible only to subscribers.")))
 
+    description = exported(
+        Text(title=_('Description'), required=False,
+             description=_(
+                "A detailed description of the changes that are being "
+                "addressed by the branch being proposed to be merged."),
+             max_length=50000))
+
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
@@ -133,7 +140,7 @@ class IBranchMergeProposal(IPrivacy):
         Text(
             title=_(
                 "The revision id that has been approved by the reviewer.")),
-        exported_as='reviewed_revno')
+        exported_as='reviewed_revid')
 
     commit_message = exported(
         Summary(
@@ -159,7 +166,7 @@ class IBranchMergeProposal(IPrivacy):
             required=False,
             description=_("The revision id that has been queued for "
                           "landing.")),
-        exported_as='queued_revno')
+        exported_as='queued_revid')
 
     merged_revno = exported(
         Int(
@@ -211,9 +218,6 @@ class IBranchMergeProposal(IPrivacy):
     date_queued = exported(
         Datetime(
             title=_('Date Queued'), required=False, readonly=True))
-    # Cannote use Object as this would cause circular dependencies.
-    root_comment = Attribute(
-        _("The first message in discussion of this merge proposal"))
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
@@ -269,7 +273,7 @@ class IBranchMergeProposal(IPrivacy):
         """True if it is valid for user update the proposal to next_state."""
 
     @call_with(user=REQUEST_USER)
-    @rename_parameters_as(revision_id='revno')
+    @rename_parameters_as(revision_id='revid')
     @operation_parameters(
         status=Choice(
             title=_("The new status of the merge proposal."),
@@ -284,8 +288,8 @@ class IBranchMergeProposal(IPrivacy):
 
         :param status: The new status of the merge proposal.
         :param user: The user making the change.
-        :param revision_id: The revno to provide to the underlying status
-            change method.
+        :param revision_id: The revision id to provide to the underlying
+            status change method.
         """
 
     def setAsWorkInProgress():

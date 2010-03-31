@@ -205,7 +205,7 @@ class ProductSeriesOverviewMenu(
         summary = "Register a new Bazaar branch for this series' project"
         return Link('+addbranch', text, summary, icon='add')
 
-    @enabled_with_permission('launchpad.View')
+    @enabled_with_permission('launchpad.AnyPerson')
     def ubuntupkg(self):
         """Return a link to link this series to an ubuntu sourcepackage."""
         text = 'Link to Ubuntu package'
@@ -309,7 +309,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def request_import_link(self):
         """A link to the page for requesting a new code import."""
-        return canonical_url(getUtility(ICodeImportSet), view_name='+new')
+        return canonical_url(self.context.product, view_name='+new-import')
 
     @property
     def user_branch_visible(self):
@@ -442,7 +442,7 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         if sourcepackagename is None:
             message = "You must choose the source package name."
             self.setFieldError('sourcepackagename', message)
-        # Do not allow users it create links to unpublished Ubuntu packages.
+        # Do not allow users to create links to unpublished Ubuntu packages.
         elif distroseries.distribution.full_functionality:
             source_package = distroseries.getSourcePackage(sourcepackagename)
             if source_package.currentrelease is None:

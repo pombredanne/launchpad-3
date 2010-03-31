@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -12,6 +12,8 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IHasBugHeat',
+    'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
@@ -24,8 +26,7 @@ from zope.schema import Bool, Choice, List, Object, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Tag
 from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
-from lp.registry.interfaces.person import IPerson
+    BugBranchSearch, BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from lazr.enum import DBEnumeratedType
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
@@ -56,11 +57,8 @@ class IHasBugs(Interface):
         "A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
-    official_bug_tags = exported(List(
-        title=_("Official Bug Tags"),
-        description=_("The list of bug tags defined as official."),
-        value_type=Tag(),
-        readonly=True))
+    has_bugtasks = Attribute(
+        "True if a BugTask has ever been reported for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(
@@ -71,13 +69,13 @@ class IHasBugs(Interface):
         search_text=copy_field(IBugTaskSearch['searchtext']),
         status=copy_field(IBugTaskSearch['status']),
         importance=copy_field(IBugTaskSearch['importance']),
-        assignee=Reference(schema=IPerson),
-        bug_reporter=Reference(schema=IPerson),
-        bug_supervisor=Reference(schema=IPerson),
-        bug_commenter=Reference(schema=IPerson),
-        bug_subscriber=Reference(schema=IPerson),
-        owner=Reference(schema=IPerson),
-        affected_user=Reference(schema=IPerson),
+        assignee=Reference(schema=Interface),
+        bug_reporter=Reference(schema=Interface),
+        bug_supervisor=Reference(schema=Interface),
+        bug_commenter=Reference(schema=Interface),
+        bug_subscriber=Reference(schema=Interface),
+        owner=Reference(schema=Interface),
+        affected_user=Reference(schema=Interface),
         has_patch=copy_field(IBugTaskSearch['has_patch']),
         has_cve=copy_field(IBugTaskSearch['has_cve']),
         tags=copy_field(IBugTaskSearch['tag']),
@@ -158,7 +156,12 @@ class IHasBugs(Interface):
                 u"Search for bugs which are linked to hardware reports "
                 "wich contain the given device or whcih contain a device"
                 "contolled by the given driver."),
-            required=False))
+            required=False),
+        linked_branches=Choice(
+            title=(
+                u"Search for bugs that are linked to branches or for bugs"
+                "that are not linked to branches."),
+            vocabulary=BugBranchSearch, required=False))
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
     def searchTasks(search_params, user=None,
@@ -179,7 +182,7 @@ class IHasBugs(Interface):
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False):
+                    hardware_is_linked_to_bug=False, linked_branches=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -196,18 +199,6 @@ class IHasBugs(Interface):
         hardware_owner_is_affected_by_bug,
         hardware_owner_is_subscribed_to_bug,
         hardware_is_linked_to_bug to True.
-        """
-
-    def getUsedBugTags():
-        """Return the tags used by the context as a sorted list of strings."""
-
-    def getUsedBugTagsWithOpenCounts(user):
-        """Return name and bug count of tags having open bugs.
-
-        It returns a list of tuples contining the tag name, and the
-        number of open bugs having that tag. Only the bugs that the user
-        has permission to see are counted, and only tags having open
-        bugs will be returned.
         """
 
     def getBugCounts(user, statuses=None):
@@ -258,6 +249,19 @@ IBugTask['transitionToTarget'].getTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
 
 
+class IHasBugHeat(Interface):
+    """An entity which has bug heat."""
+
+    max_bug_heat = Attribute(
+        "The current highest bug heat value for this entity.")
+
+    def setMaxBugHeat(heat):
+        """Set the max_bug_heat for this context."""
+
+    def recalculateMaxBugHeat():
+        """Recalculate and set the max_bug_heat for this context."""
+
+
 class BugDistroSeriesTargetDetails:
     """The details of a bug targeted to a specific IDistroSeries.
 
@@ -278,13 +282,33 @@ class BugDistroSeriesTargetDetails:
         self.status = status
 
 
-class IOfficialBugTagTargetPublic(Interface):
-    """Public attributes for `IOfficialBugTagTarget`."""
+class IHasOfficialBugTags(Interface):
+    """An entity that exposes a set of official bug tags."""
 
     official_bug_tags = exported(List(
         title=_("Official Bug Tags"),
         description=_("The list of bug tags defined as official."),
-        value_type=Tag()))
+        value_type=Tag(),
+        readonly=True))
+
+    def getUsedBugTags():
+        """Return the tags used by the context as a sorted list of strings."""
+
+    def getUsedBugTagsWithOpenCounts(user):
+        """Return name and bug count of tags having open bugs.
+
+        It returns a list of tuples contining the tag name, and the
+        number of open bugs having that tag. Only the bugs that the user
+        has permission to see are counted, and only tags having open
+        bugs will be returned.
+        """
+
+
+class IOfficialBugTagTargetPublic(IHasOfficialBugTags):
+    """Public attributes for `IOfficialBugTagTarget`."""
+
+    official_bug_tags = copy_field(
+        IHasOfficialBugTags['official_bug_tags'], readonly=False)
 
 
 class IOfficialBugTagTargetRestricted(Interface):

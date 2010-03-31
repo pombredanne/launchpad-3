@@ -11,10 +11,13 @@ __all__ = [
     'ClaimReviewFailed',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
+    'UnknownBranchTypeError',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
 ]
+
+from lazr.restful.declarations import webservice_error
 
 
 class BadBranchMergeProposalSearchContext(Exception):
@@ -38,6 +41,7 @@ class InvalidBranchMergeProposal(Exception):
 
 class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
+    webservice_error(400) #Bad request.
 
 
 class ReviewNotPending(Exception):
@@ -59,3 +63,7 @@ class UserNotBranchReviewer(Exception):
 
 class WrongBranchMergeProposal(Exception):
     """The comment requested is not associated with this merge proposal."""
+
+
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""

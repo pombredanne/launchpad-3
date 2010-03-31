@@ -35,8 +35,8 @@ from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SourcePackagePublishingHistory,
+    BinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
     get_email_template, get_contact_email_addresses, shortlist)
 from lp.soyuz.interfaces.binarypackagerelease import (
@@ -432,7 +432,7 @@ class DistributionMirrorSet:
                 base_query)
             mirrors.extend(shortlist(
                 DistributionMirror.select(query, orderBy=order_by),
-                longest_expected=100))
+                longest_expected=300))
 
         if mirror_type == MirrorContent.ARCHIVE:
             main_mirror = getUtility(
@@ -636,7 +636,7 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
         notNull=True, schema=PackagePublishingPocket)
 
     def getLatestPublishingEntry(self, time_interval, deb_only=True):
-        """Return the SecureBinaryPackagePublishingHistory record with the
+        """Return the BinaryPackagePublishingHistory record with the
         most recent datepublished.
 
         :deb_only: If True, return only publishing records whose
@@ -644,11 +644,11 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
                    BinaryPackageFileType.DEB.
         """
         query = """
-            SecureBinaryPackagePublishingHistory.pocket = %s
-            AND SecureBinaryPackagePublishingHistory.component = %s
-            AND SecureBinaryPackagePublishingHistory.distroarchseries = %s
-            AND SecureBinaryPackagePublishingHistory.archive = %s
-            AND SecureBinaryPackagePublishingHistory.status = %s
+            BinaryPackagePublishingHistory.pocket = %s
+            AND BinaryPackagePublishingHistory.component = %s
+            AND BinaryPackagePublishingHistory.distroarchseries = %s
+            AND BinaryPackagePublishingHistory.archive = %s
+            AND BinaryPackagePublishingHistory.status = %s
             """ % sqlvalues(self.pocket, self.component,
                             self.distro_arch_series,
                             self.distro_arch_series.main_archive,
@@ -656,7 +656,7 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
 
         if deb_only:
             query += """
-                AND SecureBinaryPackagePublishingHistory.binarypackagerelease =
+                AND BinaryPackagePublishingHistory.binarypackagerelease =
                     BinaryPackageFile.binarypackagerelease
                 AND BinaryPackageFile.filetype = %s
                 """ % sqlvalues(BinaryPackageFileType.DEB)
@@ -666,13 +666,13 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
             assert end > start, '%s is not more recent than %s' % (end, start)
             query = (query + " AND datepublished >= %s AND datepublished < %s"
                      % sqlvalues(start, end))
-        return SecureBinaryPackagePublishingHistory.selectFirst(
+        return BinaryPackagePublishingHistory.selectFirst(
             query, clauseTables=['BinaryPackageFile'],
             orderBy='-datepublished')
 
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
-        """Given a SecureBinaryPackagePublishingHistory, return the URL on
+        """Given a BinaryPackagePublishingHistory, return the URL on
         this mirror from where the BinaryPackageRelease file can be downloaded.
         """
         bpr = publishing_record.binarypackagerelease
@@ -706,11 +706,11 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
 
     def getLatestPublishingEntry(self, time_interval):
         query = """
-            SecureSourcePackagePublishingHistory.pocket = %s
-            AND SecureSourcePackagePublishingHistory.component = %s
-            AND SecureSourcePackagePublishingHistory.distroseries = %s
-            AND SecureSourcePackagePublishingHistory.archive = %s
-            AND SecureSourcePackagePublishingHistory.status = %s
+            SourcePackagePublishingHistory.pocket = %s
+            AND SourcePackagePublishingHistory.component = %s
+            AND SourcePackagePublishingHistory.distroseries = %s
+            AND SourcePackagePublishingHistory.archive = %s
+            AND SourcePackagePublishingHistory.status = %s
             """ % sqlvalues(self.pocket, self.component,
                             self.distroseries,
                             self.distroseries.main_archive,
@@ -721,11 +721,11 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
             assert end > start
             query = (query + " AND datepublished >= %s AND datepublished < %s"
                      % sqlvalues(start, end))
-        return SecureSourcePackagePublishingHistory.selectFirst(
+        return SourcePackagePublishingHistory.selectFirst(
             query, orderBy='-datepublished')
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
-        """Given a SecureSourcePackagePublishingHistory, return the URL on
+        """Given a SourcePackagePublishingHistory, return the URL on
         this mirror from where the SourcePackageRelease file can be downloaded.
         """
         spr = publishing_record.sourcepackagerelease

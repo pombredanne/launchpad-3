@@ -197,8 +197,8 @@ class cmd_test(EC2Command):
             'email', short_name='e', argname='EMAIL', type=str,
             help=('Email address to which results should be mailed.  '
                   'Defaults to the email address from `bzr whoami`. May be '
-                  'supplied multiple times. The first supplied email address '
-                  'will be used as the From: address.')),
+                  'supplied multiple times. `bzr whoami` will be used as '
+                  'the From: address.')),
         Option(
             'noemail', short_name='n',
             help=('Do not try to email results.')),
@@ -301,7 +301,8 @@ class cmd_test(EC2Command):
             pqm_submit_location=pqm_submit_location,
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance, launchpad_login=instance._launchpad_login)
+            instance=instance, launchpad_login=instance._launchpad_login,
+            timeout=480)
 
         instance.set_up_and_run(postmortem, not headless, runner.run_tests)
 

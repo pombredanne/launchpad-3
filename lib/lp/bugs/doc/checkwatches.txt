@@ -50,6 +50,7 @@ the watch.
     DEBUG   No watches to update on http://bugs.debian.org
     DEBUG   No watches to update on mailto:bugs@example.com
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    (OOPS-...)
     DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on http://sourceforge.net/
     DEBUG   No watches to update on http://bugzilla.gnome.org/
@@ -85,10 +86,16 @@ and their type is 'BugWatchUpdateWarning'.
     Revision: ...
     User: None
     URL: None
-    Duration: -1
+    Duration: ...
     Informational: False
     <BLANKLINE>
     error-explanation=ExternalBugtracker for ... is not known.
+    ...SELECT 1 FROM BugTracker WHERE BugTracker.id = %s
+    ...Transaction completed, status: Active...
+    Traceback (most recent call last):
+    ...
+    BugWatchUpdateWarning: ExternalBugtracker for BugTrackerType 'SAVANE'
+    is not known.
 
 We set a default timeout on checkwatches to 30 seconds. In order to test
 this, we can monkey-patch urllib2.urlopen so that it always raises a
@@ -132,6 +139,7 @@ will also be automatically filled from the baseurl OOPS property.
 
     >>> import socket
     >>> import urllib2
+    >>> from canonical.database.sqlbase import ZopelessTransactionManager
     >>> urlopen = urllib2.urlopen
 
     >>> transaction.commit()
@@ -139,7 +147,7 @@ will also be automatically filled from the baseurl OOPS property.
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
-    ...     updater = BugWatchUpdater(transaction)
+    ...     updater = BugWatchUpdater(ZopelessTransactionManager)
     ...     updater._login()
     ...     updater.updateBugTrackers(
     ...         bug_tracker_names=[example_bug_tracker.name])
@@ -157,13 +165,16 @@ will also be automatically filled from the baseurl OOPS property.
     Revision: ...
     User: None
     URL: http://bugs.example.com
-    Duration: -1
+    Duration: ...
     Informational: False
     <BLANKLINE>
     baseurl=http://bugs.example.com
     bugtracker=example-bugs
     error-explanation=Connection timed out ... http://bugs.example.com
     <BLANKLINE>
+    ...SELECT COUNT(*) FROM...
+    ...SELECT BugTracker.active, BugTracker.baseurl...
+    ...Transaction completed, status: Committed...
     <BLANKLINE>
     Traceback (most recent call last):
     ...
@@ -206,7 +217,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
     WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
-    known.
+    known. (OOPS-...)
 
 The bug watch's last error type field will have been updated to reflect
 the error that was raised:
@@ -245,7 +256,7 @@ requests are actually made.
 
     >>> from lp.bugs import externalbugtracker
     >>> from canonical.launchpad.scripts import FakeLogger
-    >>> updater = BugWatchUpdater(transaction)
+    >>> updater = BugWatchUpdater(ZopelessTransactionManager)
     >>> original_log = updater.log
     >>> batch_size = externalbugtracker.Roundup.batch_size
     >>> transaction.commit()
@@ -309,6 +320,7 @@ BugWatchUpdater's logger.
     INFO Resetting 1 bug watches for bug tracker 'savannah'
     INFO Updating 1 watches on bug tracker 'savannah'
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    (OOPS-...)
     INFO 0 watches left to check on bug tracker 'savannah'
 
 We can see that the Savannah bug watch has been updated recently. Also,
@@ -439,12 +451,14 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     ...     def setLaunchpadBugId(self, bug_id, lp_bug_id):
     ...         print "setLaunchpadBugId() called"
 
-We'll generate a bug watch with which to test this.
+We'll generate a bug watch with which to test this. The bug watch must
+be associated with at least one bug task to enable syncing.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
     >>> bug_tracker = factory.makeBugTracker()
     >>> bug_watch = factory.makeBugWatch(bugtracker=bug_tracker)
+    >>> bug_watch.bug.default_bugtask.bugwatch = bug_watch
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 

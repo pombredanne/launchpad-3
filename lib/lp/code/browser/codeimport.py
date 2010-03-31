@@ -39,6 +39,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.branch import BranchExists, IBranch
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
@@ -67,7 +68,7 @@ class CodeImportSetBreadcrumb(Breadcrumb):
     text = u'Code Import System'
 
 
-class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
+class DropdownWidgetWithAny(LaunchpadDropdownWidget):
     """A <select> widget with a more appropriate 'no value' message.
 
     By default `LaunchpadDropdownWidget` displays 'no value' when the
@@ -85,25 +86,31 @@ class CodeImportSetView(LaunchpadView):
 
     def initialize(self):
         """See `LaunchpadView.initialize`."""
-        status_field = Choice(
-            __name__='status', title=_("Review Status"),
-            vocabulary=CodeImportReviewStatus, required=False)
-        self.status_widget = CustomWidgetFactory(ReviewStatusDropdownWidget)
-        setUpWidget(self, 'status',  status_field, IInputWidget)
+        review_status_field = copy_field(
+            ICodeImport['review_status'], required=False, default=None)
+        self.review_status_widget = CustomWidgetFactory(DropdownWidgetWithAny)
+        setUpWidget(self, 'review_status',  review_status_field, IInputWidget)
+
+        rcs_type_field = copy_field(
+            ICodeImport['rcs_type'], required=False, default=None)
+        self.rcs_type_widget = CustomWidgetFactory(DropdownWidgetWithAny)
+        setUpWidget(self, 'rcs_type',  rcs_type_field, IInputWidget)
 
         # status should be None if either (a) there were no query arguments
         # supplied, i.e. the user browsed directly to this page (this is when
         # hasValidInput returns False) or (b) the user chose 'Any' in the
         # status widget (this is when hasValidInput returns True but
         # getInputValue returns None).
-        status = None
-        if self.status_widget.hasValidInput():
-            status = self.status_widget.getInputValue()
+        review_status = None
+        if self.review_status_widget.hasValidInput():
+            review_status = self.review_status_widget.getInputValue()
+        # Similar for 'type'
+        rcs_type = None
+        if self.rcs_type_widget.hasValidInput():
+            rcs_type = self.rcs_type_widget.getInputValue()
 
-        if status is not None:
-            imports = self.context.search(review_status=status)
-        else:
-            imports = self.context.getAll()
+        imports = self.context.search(
+            review_status=review_status, rcs_type=rcs_type)
 
         self.batchnav = BatchNavigator(imports, self.request)
 
@@ -112,13 +119,13 @@ class CodeImportView(LaunchpadView):
     """The default view for `ICodeImport`.
 
     We present the CodeImport as a simple page listing all the details of the
-    import such as associated product and branch, who requested the import,
+    import such as target and branch, who requested the import,
     and so on.
     """
 
     def initialize(self):
         """See `LaunchpadView.initialize`."""
-        self.title = "Code Import for %s" % (self.context.product.name,)
+        self.title = "Code Import for %s" % (self.context.branch.target.name,)
 
 
 class CodeImportBaseView(LaunchpadFormView):
@@ -197,7 +204,7 @@ class NewCodeImportForm(Interface):
 
     use_template(
         ICodeImport,
-        ['product', 'rcs_type', 'cvs_root', 'cvs_module'])
+        ['rcs_type', 'cvs_root', 'cvs_module'])
 
     svn_branch_url = URIField(
         title=_("Branch URL"), required=False,
@@ -216,7 +223,7 @@ class NewCodeImportForm(Interface):
         description=_(
             "The URL of the git repository.  The HEAD branch will be "
             "imported."),
-        allowed_schemes=["git"],
+        allowed_schemes=["git", "http", "https"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
         allow_query=False,
@@ -242,6 +249,12 @@ class NewCodeImportForm(Interface):
         description=_(
             "This will be used in the branch URL to identify the "
             "imported branch.  Examples: main, trunk."),
+        )
+
+    product = Choice(
+        title=_('Project'),
+        description=_("The Project to associate the code import with."),
+        vocabulary="Product",
         )
 
 
@@ -321,7 +334,7 @@ class CodeImportNewView(CodeImportBaseView):
         cvs_root, cvs_module, url = self._getImportLocation(data)
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
-            product=product,
+            target=IBranchTarget(product),
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
             url=url,
@@ -338,8 +351,8 @@ class CodeImportNewView(CodeImportBaseView):
             <a href="%(product_url)s">%(product_name)s</a>
             with the name of
             <a href="%(branch_url)s">%(branch_name)s</a>.""",
-                       product_url=canonical_url(existing_branch.product),
-                       product_name=existing_branch.product.name,
+                       product_url=canonical_url(existing_branch.target),
+                       product_name=existing_branch.target.name,
                        branch_url=canonical_url(existing_branch),
                        branch_name=existing_branch.name))
 
@@ -430,9 +443,9 @@ class CodeImportNewView(CodeImportBaseView):
 class EditCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
-    use_template(
-        ICodeImport,
-        ['url', 'cvs_root', 'cvs_module'])
+    url = copy_field(ICodeImport['url'], readonly=False)
+    cvs_root = copy_field(ICodeImport['cvs_root'], readonly=False)
+    cvs_module = copy_field(ICodeImport['cvs_module'], readonly=False)
     whiteboard = copy_field(IBranch['whiteboard'])
 
 

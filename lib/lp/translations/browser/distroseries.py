@@ -11,15 +11,16 @@ __all__ = [
     'DistroSeriesTranslationsAdminView',
     'DistroSeriesTranslationsMenu',
     'DistroSeriesView',
+    'check_distroseries_translations_viewable',
     ]
 
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import action
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
     Link, NavigationMenu, enabled_with_permission)
@@ -27,10 +28,11 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
@@ -157,17 +159,12 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
             [canonical_url(self.context), '+language-packs'])
 
 
-class DistroSeriesTemplatesView(LaunchpadView):
+class DistroSeriesTemplatesView(BaseSeriesTemplatesView):
     """Show a list of all templates for the DistroSeries."""
 
-    is_distroseries = True
-    label = "Translation templates"
-    page_title = "All templates"
-
-    def iter_templates(self):
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(distroseries=self.context,
-                                       ordered_by_names=True)
+    def initialize(self):
+        super(DistroSeriesTemplatesView, self).initialize(
+            series=self.context, is_distroseries=True)
 
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):
@@ -180,34 +177,11 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
             self.context.version)
 
     def checkTranslationsViewable(self):
-        """Check that these translations are visible to the current user.
+        """ Check if user can view translations for this `IDistroSeries`"""
 
-        Launchpad admins, Translations admins, and users with admin
-        rights on the `DistroSeries` are always allowed.  For others
-        this delegates to `IDistroSeries.checkTranslationsViewable`,
-        which raises `TranslationUnavailable` if the translations are
-        set to be hidden.
-
-        :return: Returns normally if this series' translations are
-            viewable to the current user.
-        :raise TranslationUnavailable: if this series' translations are
-            hidden and the user is not one of the limited caste that is
-            allowed to access them.
-        """
-        if check_permission('launchpad.TranslationsAdmin', self.context):
-            # Anyone with admin rights on this series passes.  This
-            # includes Launchpad admins.
-            return
-
-        user = self.user
-        experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-        if user is not None and user.inTeam(experts):
-            # Translations admins also pass.
-            return
-
-        # Everyone else passes only if translations are viewable to the
-        # public.
-        self.context.checkTranslationsViewable()
+        # Is user allowed to see translations for this distroseries?
+        # If not, raise TranslationUnavailable.
+        check_distroseries_translations_viewable(self.context)
 
     def distroserieslanguages(self):
         """Produces a list containing a DistroSeriesLanguage object for
@@ -276,3 +250,47 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
 
     def language_packs(self):
         return Link('+language-packs', 'Language packs')
+
+
+def check_distroseries_translations_viewable(distroseries):
+    """Check that these distribution series translations are visible.
+
+    Launchpad admins, Translations admins, and users with admin
+    rights on the `IDistroSeries` are always allowed.
+
+    Checks the `hide_all_translations` flag.  If it is set, these
+    translations are not to be shown to the public. In that case an
+    appropriate message is composed based on the series' `status`,
+    and a `TranslationUnavailable` exception is raised.
+
+    :return: Returns normally if this series' translations are
+        viewable to the current user.
+    :raise TranslationUnavailable: if this series' translations are
+        hidden and the user is not one of the limited caste that is
+        allowed to access them.
+    """
+
+    if not distroseries.hide_all_translations:
+        # Yup, viewable.
+        return
+
+    if check_permission(
+        'launchpad.TranslationsAdmin', distroseries):
+        return
+
+    future = [
+        SeriesStatus.EXPERIMENTAL,
+        SeriesStatus.DEVELOPMENT,
+        SeriesStatus.FUTURE,
+        ]
+    if distroseries.status in future:
+        raise TranslationUnavailable(
+            "Translations for this release series are not available yet.")
+    elif distroseries.status == SeriesStatus.OBSOLETE:
+        raise TranslationUnavailable(
+            "This release series is obsolete.  Its translations are no "
+            "longer available.")
+    else:
+        raise TranslationUnavailable(
+            "Translations for this release series are not currently "
+            "available.  Please come back soon.")

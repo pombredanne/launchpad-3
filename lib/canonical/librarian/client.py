@@ -10,16 +10,17 @@ __all__ = [
     'RestrictedLibrarianClient',
     ]
 
-import md5
+
+import hashlib
 import re
-import sha
 import socket
-from socket import SOCK_STREAM, AF_INET
-from select import select
 import time
 import threading
 import urllib
 import urllib2
+
+from select import select
+from socket import SOCK_STREAM, AF_INET
 from urlparse import urljoin
 
 from storm.store import Store
@@ -130,8 +131,8 @@ class FileUploadClient:
             self._sendLine('')
 
             # Prepare to the upload the file
-            shaDigester = sha.sha()
-            md5Digester = md5.md5()
+            shaDigester = hashlib.sha1()
+            md5Digester = hashlib.md5()
             bytesWritten = 0
 
             # Read in and upload the file 64kb at a time, by using the two-arg
@@ -158,7 +159,7 @@ class FileUploadClient:
                 id=contentID, filesize=size,
                 sha1=shaDigester.hexdigest(),
                 md5=md5Digester.hexdigest())
-            alias = LibraryFileAlias(
+            LibraryFileAlias(
                 id=aliasID, content=content, filename=name.decode('UTF-8'),
                 mimetype=contentType, expires=expires,
                 restricted=self.restricted)
@@ -355,6 +356,11 @@ class FileDownloadClient:
                     if  time.time() <= try_until:
                         time.sleep(1)
                     else:
+                        # There's a test (in
+                        # lib/c/l/browser/tests/test_librarian.py) which 
+                        # simulates a librarian server error by raising this
+                        # exception, so if you change the exception raised
+                        # here, make sure you update the test.
                         raise LibrarianServerError(str(error))
                 else:
                     raise

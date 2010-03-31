@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Tests for `IBuildBase`."""
 
 __metaclass__ = type
@@ -11,7 +13,6 @@ import unittest
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.testing import TestCase, TestCaseWithFactory
@@ -19,13 +20,6 @@ from lp.testing import TestCase, TestCaseWithFactory
 
 class TestBuildBase(TestCase):
     """Tests for `IBuildBase`."""
-
-    def disabled_test_build_base_provides_interface(self):
-        # XXX: JonathanLange 2010-01-22 bug=510919: BuildBase is supposed to
-        # implement IBuildBase, but doesn't atm. Since it's not the focus of
-        # the branch, we'll postpone the work.
-        build_base = BuildBase()
-        self.assertProvides(build_base, IBuildBase)
 
     def test_getUploadLeaf(self):
         # getUploadLeaf returns the current time, followed by the build id.
@@ -52,6 +46,33 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
     """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_getUploadLogContent_nolog(self):
+        """If there is no log file there, a string explaining that is returned.
+        """
+        self.useTempDir()
+        build_base = BuildBase()
+        self.assertEquals('Could not find upload log file', 
+            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
+
+    def test_getUploadLogContent_only_dir(self):
+        """If there is a directory but no log file, expect the error string,
+        not an exception."""
+        self.useTempDir()
+        os.makedirs("accepted/myleaf")
+        build_base = BuildBase()
+        self.assertEquals('Could not find upload log file', 
+            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
+
+    def test_getUploadLogContent_readsfile(self):
+        """If there is a log file, return its contents."""
+        self.useTempDir()
+        os.makedirs("accepted/myleaf")
+        with open('accepted/myleaf/uploader.log', 'w') as f:
+            f.write('foo')
+        build_base = BuildBase()
+        self.assertEquals('foo',
+            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploaderCommand(self):
         build_base = BuildBase()
