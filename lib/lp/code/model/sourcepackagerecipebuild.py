@@ -113,6 +113,10 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return Store.of(self).find(
             SourcePackageRelease, source_package_recipe_build=self).one()
 
+    @property
+    def title(self):
+        return '%s recipe build' % self.recipe.base_branch.unique_name
+
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
                  archive, pocket, date_created=None,
                  date_first_dispatched=None, date_built=None, builder=None,
@@ -212,10 +216,3 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
         store = IMasterStore(SourcePackageRecipeBuildJob)
         store.add(specific_job)
         return specific_job
-
-    def getTitle(self):
-        """See `IBuildFarmJob`."""
-        return "%s-%s-%s-recipe-build-job" % (
-            self.build.distroseries.displayname,
-            self.build.sourcepackagename.name,
-            self.build.archive.displayname)
