@@ -635,7 +635,7 @@ class IReviewRequestedEmailJob(IRunnableJob):
     """Interface for the job to sends review request emails."""
 
     reviewer = Attribute('The person or team asked to do the review.')
-    requester = Attribute('The person who as asked for the review.')
+    requester = Attribute('The person who has asked for the review.')
 
 
 class IReviewRequestedEmailJobSource(Interface):
