@@ -469,16 +469,22 @@ class BugViewMixin:
     @property
     def regular_attachments(self):
         """The list of bug attachments that are not patches."""
+        # We remove also those attachments where the library file
+        # has been deleted.
         return [attachment
                 for attachment in self.context.attachments
-                if attachment.type != BugAttachmentType.PATCH]
+                if (attachment.type != BugAttachmentType.PATCH and
+                    attachment.libraryfile.content is not None)]
 
     @property
     def patches(self):
         """The list of bug attachments that are patches."""
+        # We remove also those attachments where the library file
+        # has been deleted.
         return [attachment
                 for attachment in self.context.attachments
-                if attachment.type == BugAttachmentType.PATCH]
+                if (attachment.type == BugAttachmentType.PATCH and
+                    attachment.libraryfile.content is not None)]
 
 
 class BugView(LaunchpadView, BugViewMixin):
