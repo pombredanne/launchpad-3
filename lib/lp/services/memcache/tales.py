@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.tal.talinterpreter import TALInterpreter, I18nMessageTypes
 from zope.tales.interfaces import ITALESExpression
-from zope.tales.expressions import simpleTraverse, SubPathExpr
+from zope.tales.expressions import simpleTraverse, PathExpr
 
 from canonical.base import base
 from canonical.config import config
@@ -87,7 +87,9 @@ class MemcacheExpr:
             self.extra_key = None
         elif num_components == 3:
             self.visibility, max_age, extra_key = components
-            self.extra_key = SubPathExpr(extra_key, traverser, engine)._eval
+            # Construct a callable that will evaluate the subpath
+            # expression when passed a context.
+            self.extra_key = PathExpr(name, extra_key, engine, traverser)
         else:
             raise SyntaxError("Too many arguments in cache: expression")
 

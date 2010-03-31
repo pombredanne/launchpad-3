@@ -243,7 +243,7 @@ incorrect.
     </body>
 
 To correct this, we need to manually specify part of the key using
-a tales subpath expression. This subpath expression can be anything
+a tales path expression. This path expression can be anything
 that can be cast to a string.
 
     >>> template = TestPageTemplate(dedent("""\
