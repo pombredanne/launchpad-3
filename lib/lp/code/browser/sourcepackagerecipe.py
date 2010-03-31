@@ -18,10 +18,15 @@ from canonical.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget, LaunchpadRadioWidgetWithDescription)
 
 from canonical.launchpad.webapp import (
-    custom_widget, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
+from canonical.launchpad.webapp.authorization import check_permission
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.browser.archive import make_archive_vocabulary
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet)
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class SourcePackageRecipeView(LaunchpadView):
@@ -63,8 +68,15 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         dsset = getUtility(IDistroSeriesSet).search()
         terms = [SimpleTerm(distro, distro.id, distro.title)
                  for distro in dsset]
+        archive_vocab = make_archive_vocabulary(
+            ppa
+            for ppa in getUtility(IArchiveSet).getPPAsForUser(self.user)
+            if check_permission('launchpad.Append', ppa))
+
         class schema(Interface):
             distros = List(Choice(vocabulary=SimpleVocabulary(terms)))
+            archive = Choice(vocabulary=archive_vocab)
+
         return schema
 
     custom_widget('distros', LabeledMultiCheckBoxWidget)
@@ -74,6 +86,19 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         return self.context.name
 
     label = title
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    @action('Request builds', name='request')
+    def request_action(self, action, data):
+        for distroseries in data['distros']:
+            self.context.requestBuild(
+                data['archive'], self.user, distroseries,
+                PackagePublishingPocket.RELEASE)
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):

@@ -56,9 +56,9 @@
           </div>
         </div>
       </div>
-      <a tal:attributes="href context/fmt:url/+request-builds">Request a build</a>
       <div class="yui-u">
         <div class="portlet">
+          <a tal:attributes="href context/fmt:url/+request-builds">Request a build</a>
           <h2>Build records</h2>
           <ul>
             <li tal:repeat="build view/builds">
