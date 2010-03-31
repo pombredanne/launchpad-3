@@ -349,7 +349,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into\n\t'
             'lp://dev/~mary/super-product/bar', email['subject'])
-        self.assertEqual(dedent("""\
+        expected = dedent("""\
             The proposal to merge lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar has been updated.
 
                 Status: Work in progress => Needs review
@@ -364,8 +364,8 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             --\x20
             %s
             You are subscribed to branch lp://dev/~bob/super-product/fix-foo-for-bar.
-            """) % canonical_url(job.branch_merge_proposal),
-                         email.get_payload(decode=True))
+            """) % canonical_url(job.branch_merge_proposal)
+        self.assertEqual(expected, email.get_payload(decode=True))
 
     def assertRecipientsMatches(self, recipients, mailer):
         """Assert that `mailer` will send to the people in `recipients`."""
@@ -468,8 +468,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         review_request_job = self.getReviewNotificationEmail()
         review_request_job.run()
         [sent_mail] = pop_notifications()
-        self.assertEqual(
-            dedent("""\
+        expected = dedent("""\
                 You have been requested to review the proposed merge of %(source)s into %(target)s.
 
                 This branch is awesome.
@@ -480,8 +479,8 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
                 """ % {
                     'source': self.bmp.source_branch.bzr_identity,
                     'target': self.bmp.target_branch.bzr_identity,
-                    'bmp': canonical_url(self.bmp)}),
-            sent_mail.get_payload(decode=True))
+                    'bmp': canonical_url(self.bmp)})
+        self.assertEqual(expected, sent_mail.get_payload(decode=True))
 
     def test_nominateReview_emails_team_address(self):
         # If a review request is made for a team, the members of the team are
