@@ -14,6 +14,10 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 class PackageBuildFarmJob(BuildFarmJob):
     """Mix-in class for `IBuildFarmJob` implementations for package builds."""
 
+    def getTitle(self):
+        """See `IBuildFarmJob`."""
+        return self.build.title
+
     def jobStarted(self):
         """See `IBuildFarmJob`."""
         self.build.buildstate = BuildStatus.BUILDING
