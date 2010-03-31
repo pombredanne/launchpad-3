@@ -663,19 +663,15 @@ CREATE_NEW = 'create-new'
 IMPORT_EXTERNAL = 'import-external'
 
 
-def _getBranchTypeVocabulary():
-    items = (
-        (LINK_LP_BZR,
-         _("Link to a Bazaar branch already on Launchpad")),
-        (CREATE_NEW,
-         _("Create a new, empty branch in Launchpad and "
-           "link to this series")),
-        (IMPORT_EXTERNAL,
-         _("Import a branch hosted somewhere else")),
-        )
-    terms = [
-        SimpleTerm(name, name, label) for name, label in items]
-    return SimpleVocabulary(terms)
+BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
+    SimpleTerm(LINK_LP_BZR, LINK_LP_BZR,
+               _("Link to a Bazaar branch already on Launchpad")),
+    SimpleTerm(CREATE_NEW, CREATE_NEW,
+               _("Create a new, empty branch in Launchpad and "
+                 "link to this series")),
+    SimpleTerm(IMPORT_EXTERNAL, IMPORT_EXTERNAL,
+               _("Import a branch hosted somewhere else")),
+    ))
 
 
 class RevisionControlSystemsExtended(RevisionControlSystems):
@@ -720,7 +716,7 @@ class SetBranchForm(Interface):
 
     branch_type = Choice(
         title=_('Import type'),
-        vocabulary=_getBranchTypeVocabulary(),
+        vocabulary=BRANCH_TYPE_VOCABULARY,
         description=_("The type of import"),
         required=True)
 
