@@ -294,6 +294,7 @@ patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
+patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
@@ -374,3 +375,6 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+
+# IProductSeries
+patch_reference_property(IProductSeries, 'product', IProduct)

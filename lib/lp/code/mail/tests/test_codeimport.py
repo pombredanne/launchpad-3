@@ -25,7 +25,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeCodeImport(
+        code_import = self.factory.makeProductCodeImport(
             cvs_root=':pserver:anonymouse@cvs.example.com:/cvsroot',
             cvs_module='a_module', branch_name='import',
             product=fooix, registrant=eric)
@@ -48,7 +48,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeCodeImport(
+        code_import = self.factory.makeProductCodeImport(
             svn_branch_url='svn://svn.example.com/fooix/trunk',
             branch_name='trunk', product=fooix, registrant=eric,
             rcs_type=RevisionControlSystems.BZR_SVN)
@@ -71,7 +71,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeCodeImport(
+        code_import = self.factory.makeProductCodeImport(
             git_repo_url='git://git.example.com/fooix.git',
             branch_name='master', product=fooix, registrant=eric)
         transaction.commit()
@@ -94,7 +94,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
-        code_import = self.factory.makeCodeImport(
+        code_import = self.factory.makeProductCodeImport(
             hg_repo_url='http://hg.example.com/fooix.hg',
             branch_name='master', product=fooix, registrant=eric)
         transaction.commit()
