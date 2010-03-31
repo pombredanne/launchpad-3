@@ -105,7 +105,7 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         self.local_branch_path = local_path_from_url(self.local_branch.base)
         self.build_tree(['foo'])
         tree.add('foo')
-        tree.commit('Added foo', rev_id='rev1')
+        self.revid = tree.commit('Added foo')
 
     def __str__(self):
         return self.id()
@@ -334,7 +334,7 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(self.local_branch_path, remote_url)
         remote_revision = self.getLastRevision(remote_url)
-        self.assertEqual(remote_revision, 'rev1')
+        self.assertEqual(self.revid, remote_revision)
         # Add a single revision to the local branch.
         tree = WorkingTree.open(self.local_branch.base)
         tree.commit('Empty commit', rev_id='rev2')
@@ -342,23 +342,25 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
-    def test_rename_branch(self):
+    def test_branch_renaming(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and
         those renames should be immediately reflected in subsequent SFTP
         connections.
 
-        Also, the renames may happen in the database for other reasons, e.g.
-        if the DBA running a one-off script.
+        Changing the owner or product, or changing the name of the owner,
+        product or branch can change the URL of the branch, so we change
+        everything in this test.
         """
-
         # Push the local branch to the server
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(self.local_branch_path, remote_url)
 
-        # Rename branch in the database
+        # Rename owner, product and branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch('testuser', None, 'test-branch')
+        branch.owner.name = 'renamed-user'
+        branch.setTarget(user=branch.owner, project=Product.byName('firefox'))
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
 
@@ -369,52 +371,7 @@ class AcceptanceTests(SSHTestCase):
         # Check that it *is* at the new location.
         self.assertBranchesMatch(
             self.local_branch_path,
-            self.getTransportURL('~testuser/+junk/renamed-branch'))
-
-
-    def test_rename_product(self):
-        # Push the local branch to the server
-        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
-        self.push(self.local_branch_path, remote_url)
-
-        # Assign to a different product in the database. This is effectively a
-        # rename as far as bzr is concerned: the URL changes.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        branch.setTarget(user=branch.owner, project=Product.byName('firefox'))
-        LaunchpadZopelessTestSetup().txn.commit()
-
-        self.assertNotBranch(
-            self.getTransportURL('~testuser/+junk/test-branch'))
-
-        self.assertBranchesMatch(
-            self.local_branch_path,
-            self.getTransportURL('~testuser/firefox/test-branch'))
-
-    def test_rename_user(self):
-        # Rename person in the database. Again, the URL changes (and so does
-        # the username we have to connect as!).
-        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
-        self.push(self.local_branch_path, remote_url)
-
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        # Renaming a person requires a Zope interaction.
-        login(ANONYMOUS)
-        branch.owner.name = 'renamed-user'
-        logout()
-        LaunchpadZopelessTestSetup().txn.commit()
-
-        # Check that it's not at the old location.
-        self.assertNotBranch(
-            self.getTransportURL(
-                '~testuser/+junk/test-branch', 'renamed-user'))
-
-        # Check that it *is* at the new location.
-        self.assertBranchesMatch(
-            self.local_branch_path,
-            self.getTransportURL(
-                '~renamed-user/+junk/test-branch', 'renamed-user'))
+            self.getTransportURL('~renamed-user/firefox/renamed-branch'))
 
     def test_push_team_branch(self):
         remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
@@ -422,47 +379,19 @@ class AcceptanceTests(SSHTestCase):
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     def test_push_new_branch_creates_branch_in_database(self):
+        # pushing creates a branch in the database with the correct name and
+        # last_mirrored_id.
         remote_url = self.getTransportURL(
             '~testuser/+junk/totally-new-branch')
         self.push(self.local_branch_path, remote_url)
 
-        # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch(
             'testuser', None, 'totally-new-branch')
-        LaunchpadZopelessTestSetup().txn.abort()
 
         self.assertEqual(
-            '~testuser/+junk/totally-new-branch', branch.unique_name)
-
-    def test_push_triggers_mirror_request(self):
-        # Pushing new data to a branch should trigger a mirror request.
-        remote_url = self.getTransportURL(
-            '~testuser/+junk/totally-new-branch')
-        self.push(self.local_branch_path, remote_url)
-
-        # Retrieve the branch from the database.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch(
-            'testuser', None, 'totally-new-branch')
-        # Confirm that the branch hasn't had a mirror requested yet. Not core
-        # to the test, but helpful for checking internal state.
-        self.assertNotEqual(None, branch.next_mirror_time)
-        branch.next_mirror_time = None
-        LaunchpadZopelessTestSetup().txn.commit()
-
-        # Add a single revision to the local branch.
-        tree = WorkingTree.open(self.local_branch.base)
-        tree.commit('Empty commit', rev_id='rev2')
-
-        # Push the new revision.
-        self.push(self.local_branch_path, remote_url)
-
-        # Retrieve the branch from the database.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch(
-            'testuser', None, 'totally-new-branch')
-        self.assertNotEqual(None, branch.next_mirror_time)
+            ['~testuser/+junk/totally-new-branch', self.revid],
+            [branch.unique_name, branch.last_mirrored_id])
         LaunchpadZopelessTestSetup().txn.abort()
 
     def test_cant_access_private_branch(self):
@@ -524,7 +453,7 @@ class AcceptanceTests(SSHTestCase):
 
     def test_can_push_loom_branch(self):
         # We can push and pull a loom branch.
-        tree = self.makeLoomBranchAndTree('loom')
+        self.makeLoomBranchAndTree('loom')
         remote_url = self.getTransportURL('~testuser/+junk/loom')
         self.push('loom', remote_url)
         self.assertBranchesMatch('loom', remote_url)
@@ -557,9 +486,7 @@ class SmartserverTests(SSHTestCase):
 
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
-        ro_branch_url = self.createBazaarBranch(
-            'mark', '+junk', 'ro-branch')
-        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        self.createBazaarBranch('mark', '+junk', 'ro-branch')
 
         # Create a new revision on the local branch.
         tree = WorkingTree.open(self.local_branch.base)
@@ -589,10 +516,10 @@ class SmartserverTests(SSHTestCase):
         self.assertEqual(revision, remote_revision)
 
     def test_authserver_error_propagation(self):
-        # Errors raised by createBranch on the authserver should be displayed
-        # sensibly by the client.  We test this by pushing to a product that
-        # does not exist (the other error message possibilities are covered by
-        # unit tests).
+        # Errors raised by createBranch in the XML-RPC server should be
+        # displayed sensibly by the client.  We test this by pushing to a
+        # product that does not exist (the other error message possibilities
+        # are covered by unit tests).
         remote_url = self.getTransportURL('~mark/no-such-product/branch')
         message = "Project 'no-such-product' does not exist."
         last_line = self.assertCantPush(self.local_branch_path, remote_url)
