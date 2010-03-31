@@ -39,7 +39,10 @@ __all__ = [
 
 
 from cgi import escape
+from datetime import datetime, timedelta
 from operator import attrgetter
+
+import pytz
 
 from zope.component import getUtility
 from zope.event import notify
@@ -990,7 +993,14 @@ class ProductPackagesPortletView(LaunchpadFormView):
     @cachedproperty
     def can_show_portlet(self):
         """Are there packages, or can packages be suggested."""
-        return len(self.sourcepackages) > 0 or not config.launchpad.is_lpnet
+        if len(self.sourcepackages) > 0:
+            return True
+        if self.user is None or config.launchpad.is_lpnet:
+            return False
+        last_check = self.context.date_last_packaging_check
+        return (
+            last_check is None
+            or last_check < datetime.now(tz=pytz.UTC) - timedelta(days=365))
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""

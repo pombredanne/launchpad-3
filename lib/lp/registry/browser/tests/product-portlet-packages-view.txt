@@ -112,6 +112,7 @@ Ubuntu series will be suggested.
 And the user is presented with a form to select the distribution
 source package.
 
+    >>> login_person(product.owner)
     >>> content = find_tag_by_id(view.render(), 'portlet-packages')
 
     >>> print extract_text(content)
@@ -147,6 +148,7 @@ If multiple source packages match they will all be displayed.
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
     >>> (ubuntu, product, spn) = updateCache()
+    >>> login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -184,6 +186,17 @@ package then it will not be shown as one of the suggestions.
     ...     print dsp.name
     bingo
 
+The view is not rendered when there are no source packages and the user is
+anonymous.
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.sourcepackages
+    []
+    >>> view.can_show_portlet
+    False
+
 The can_show_portlet property indicates that the portlet can be rendered. The
 portlet is not rendered if there are no source packages and the environment
 is lpnet.
@@ -191,6 +204,9 @@ is lpnet.
     >>> config.launchpad.is_lpnet
     False
 
+    >>> login_person(product.owner)
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
     >>> view.sourcepackages
     []
 
@@ -218,6 +234,34 @@ is lpnet.
     <BLANKLINE>
 
     >>> ignore = config.pop('test_data')
+
+The can_show_portlet property is False when product.date_last_packaging_check
+is None or the date is more than one year ago.
+
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+
+    >>> print product.date_last_packaging_check
+    None
+
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    True
+
+    >>> now = datetime.now(tz=pytz.UTC)
+    >>> product.date_last_packaging_check = now
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    False
+
+
+    >>> product.date_last_packaging_check = now - timedelta(days=366)
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    True
 
 The view's sourcepackages property filters out obsolete packages and
 reverses the order so that the latest packages for the current ubuntu
