@@ -167,6 +167,21 @@ class TestBugWatchUpdater(TestCaseWithFactory):
             # stop SQL statemnet logging.
             clear_request_started()
 
+    def test_suggest_batch_size(self):
+        class RemoteSystem: pass
+        remote_system = RemoteSystem()
+        # When the batch_size is None, suggest_batch_size() will set
+        # it accordingly.
+        remote_system.batch_size = None
+        checkwatches.updater.suggest_batch_size(remote_system, 1)
+        self.failUnlessEqual(100, remote_system.batch_size)
+        remote_system.batch_size = None
+        checkwatches.updater.suggest_batch_size(remote_system, 12350)
+        self.failUnlessEqual(247, remote_system.batch_size)
+        # If the batch_size is already set, it will not be changed.
+        checkwatches.updater.suggest_batch_size(remote_system, 99999)
+        self.failUnlessEqual(247, remote_system.batch_size)
+
 
 class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
     """Tests for updating bugs with linked questions."""

@@ -247,7 +247,7 @@ def unique(iterator):
             yield item
 
 
-def suggest_batch_size(self, remote_system, num_watches):
+def suggest_batch_size(remote_system, num_watches):
     """Suggest a value for batch_size if it's not set.
 
     Givend the number of bug watches for an `remote_system`, this sets
