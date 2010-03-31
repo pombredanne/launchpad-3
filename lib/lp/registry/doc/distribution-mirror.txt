@@ -859,10 +859,6 @@ again:
     >>> de_archive_mirror.canTransitionToCountryMirror()
     False
     >>> de_archive_mirror.transitionToCountryMirror(True)
-    Traceback (most recent call last):
-    ...
-    MirrorAlreadyCountryMirror: This mirror is already set as a country
-      Archive mirror for Germany.
     >>> logout()
 
 There cannot be multiple country mirrors of one type for one country:

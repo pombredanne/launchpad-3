@@ -48,9 +48,8 @@ from lp.registry.interfaces.distributionmirror import (
     CannotTransitionToCountryMirror, CountryMirrorAlreadySet,
     IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,
     IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
-    MirrorAlreadyCountryMirror, MirrorContent, MirrorFreshness,
-    MirrorHasNoHTTPURL, MirrorNotOfficial, MirrorNotProbed, MirrorSpeed,
-    MirrorStatus, PROBE_INTERVAL)
+    MirrorContent, MirrorFreshness, MirrorHasNoHTTPURL, MirrorNotOfficial,
+    MirrorNotProbed, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import simple_sendmail, format_address
@@ -160,11 +159,6 @@ class DistributionMirror(SQLBase):
         current_country_mirror = self.distribution.getCountryMirror(
             self.country, self.content)
 
-        if self == current_country_mirror:
-            raise MirrorAlreadyCountryMirror(
-                "This mirror is already set as a country %s mirror for %s." % (
-                self.content, self.country.name))
-
         if current_country_mirror is not None:
             # Country already has a country mirror.
             raise CountryMirrorAlreadySet(
@@ -202,6 +196,11 @@ class DistributionMirror(SQLBase):
 
     def transitionToCountryMirror(self, country_dns_mirror):
         """See `IDistributionMirror`."""
+
+        # country_dns_mirror has not been changed, do nothing.
+        if self.country_dns_mirror == country_dns_mirror:
+            return
+
         # Environment sanity checks.
         if country_dns_mirror:
             self.verifyTransitionToCountryMirror()

@@ -15,7 +15,6 @@ __all__ = [
     'IDistributionMirrorSet',
     'IMirrorCDImageDistroSeries',
     'PROBE_INTERVAL',
-    'MirrorAlreadyCountryMirror',
     'MirrorContent',
     'MirrorFreshness',
     'MirrorHasNoHTTPURL',
@@ -57,14 +56,6 @@ PROBE_INTERVAL = 23
 class CannotTransitionToCountryMirror(Exception):
     """Root exception for transitions to country mirrors."""
     webservice_error(400)
-
-
-class MirrorAlreadyCountryMirror(CannotTransitionToCountryMirror):
-    """Distribution mirror in question is already set as a country mirror.
-
-    Raised when a user tries to change set a distribution mirror as a country
-    mirror, however it is already set as such for the country.
-    """
 
 
 class CountryMirrorAlreadySet(CannotTransitionToCountryMirror):
