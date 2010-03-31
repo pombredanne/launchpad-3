@@ -604,7 +604,7 @@ class IMergeProposalCreatedJobSource(Interface):
 class IUpdatePreviewDiffJob(IRunnableJob):
     """Interface for the job to update the diff for a merge proposal."""
 
-    def check_ready():
+    def checkReady():
         """Check to see if this job is ready to run."""
 
 

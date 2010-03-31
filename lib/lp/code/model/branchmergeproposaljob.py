@@ -43,6 +43,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
 from canonical.launchpad.interfaces.message import IMessageJob
@@ -662,8 +663,9 @@ class BranchMergeProposalJobSource:
                 BranchMergeProposal.source_branch == SourceBranch.id,
                 BranchMergeProposal.target_branch == TargetBranch.id,
                 ))
-        # Order by the scheduled start then job type.  This should give us all
-        # creation jobs before comment jobs.
+        # Order by the job status first (to get running before waiting), then
+        # the date_created, then job type.  This should give us all creation
+        # jobs before comment jobs.
         jobs = jobs.order_by(
             Desc(Job._status), Job.date_created,
             Desc(BranchMergeProposalJob.job_type))
@@ -687,7 +689,10 @@ class BranchMergeProposalJobSource:
                     derived_job.checkReady()
                 except UpdatePreviewDiffNotReady:
                     # If the job was created under 15 minutes ago wait a bit.
-                    cut_off_time = datetime.now(pytz.UTC) - timedelta(minutes=15)
+                    minutes = (
+                        config.codehosting.update_preview_diff_ready_timeout)
+                    cut_off_time = (
+                        datetime.now(pytz.UTC) - timedelta(minutes=minutes))
                     if job.date_created > cut_off_time:
                         continue
             ready_jobs.append(derived_job)
