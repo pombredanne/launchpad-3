@@ -185,7 +185,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
     def test_run_branches_not_ready(self):
         # If the job has been waiting for a significant period of time (15
-        # minutes for now), we run the job anyway.  The check_ready method
+        # minutes for now), we run the job anyway.  The checkReady method
         # then raises and this is caught as a user error by the job system,
         # and as such sends an email to the error recipients, which for this
         # job is the merge proposal registrant.
@@ -224,18 +224,9 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         # email.  The diff email is always returned first, providing that it
         # is ready.  The diff job is ready if both the source and target have
         # revisions, and the source branch doesn't have a pending scan.
-        bmp = self.factory.makeBranchMergeProposal()
-        bmp_jobs = Store.of(bmp).find(
-            Job,
-            Job.id.is_in(
-                Select(
-                    BranchMergeProposalJob.jobID,
-                    BranchMergeProposalJob.branch_merge_proposal == bmp.id)))
-        a_while_ago = datetime.now(pytz.UTC) - timedelta(minutes=16)
-        bmp_jobs.set(date_created=a_while_ago)
-        [job] = self.job_source.iterReady()
-        self.assertEqual(job.branch_merge_proposal, bmp)
-        self.assertIsInstance(job, UpdatePreviewDiffJob)
+        self.factory.makeBranchMergeProposal()
+        jobs = self.job_source.iterReady()
+        self.assertEqual([], jobs)
 
     def test_iterReady_new_merge_proposal_update_diff_timeout(self):
         # Even if the update preview diff would not normally be considered
@@ -244,8 +235,18 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         # an email to the branch registrant.  This is tested in above in
         # TestUpdatePreviewDiff.
         bmp = self.factory.makeBranchMergeProposal()
-        jobs = self.job_source.iterReady()
-        self.assertEqual([], jobs)
+        bmp_jobs = Store.of(bmp).find(
+            Job,
+            Job.id.is_in(
+                Select(
+                    BranchMergeProposalJob.jobID,
+                    BranchMergeProposalJob.branch_merge_proposal == bmp.id)))
+        minutes = config.codehosting.update_preview_diff_ready_timeout + 1
+        a_while_ago = datetime.now(pytz.UTC) - timedelta(minutes=minutes)
+        bmp_jobs.set(date_created=a_while_ago)
+        [job] = self.job_source.iterReady()
+        self.assertEqual(job.branch_merge_proposal, bmp)
+        self.assertIsInstance(job, UpdatePreviewDiffJob)
 
     def test_iterReady_new_merge_proposal_target_revisions(self):
         # The target branch having revisions is not enough for the job to be
@@ -256,7 +257,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         self.assertEqual([], jobs)
 
     def test_iterReady_new_merge_proposal_source_revisions(self):
-        # The source branch having revisinos is not enough for the job to be
+        # The source branch having revisions is not enough for the job to be
         # considered ready.
         bmp = self.factory.makeBranchMergeProposal()
         self.factory.makeRevisionsForBranch(bmp.source_branch)
@@ -266,9 +267,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
     def test_iterReady_new_merge_proposal_pending_source_scan(self):
         # If the source branch has a pending scan, it stops the job from being
         # ready.
-        bmp = self.factory.makeBranchMergeProposal()
-        self.factory.makeRevisionsForBranch(bmp.target_branch)
-        self.factory.makeRevisionsForBranch(bmp.source_branch)
+        bmp = self.makeBranchMergeProposal()
         bmp.source_branch.last_mirrored_id = 'last-rev-id'
         jobs = self.job_source.iterReady()
         self.assertEqual([], jobs)
@@ -276,9 +275,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
     def test_iterReady_new_merge_proposal_pending_target_scan(self):
         # If the target branch has a pending scan, it does not affect the jobs
         # readiness.
-        bmp = self.factory.makeBranchMergeProposal()
-        self.factory.makeRevisionsForBranch(bmp.target_branch)
-        self.factory.makeRevisionsForBranch(bmp.source_branch)
+        bmp = self.makeBranchMergeProposal()
         bmp.target_branch.last_mirrored_id = 'last-rev-id'
         [job] = self.job_source.iterReady()
         self.assertEqual(job.branch_merge_proposal, bmp)
@@ -287,9 +284,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
     def test_iterReady_new_merge_proposal_update_diff_first(self):
         # A new merge proposal has two jobs, one for the diff, and one for the
         # email.  The diff email is always returned first.
-        bmp = self.factory.makeBranchMergeProposal()
-        self.factory.makeRevisionsForBranch(bmp.source_branch)
-        self.factory.makeRevisionsForBranch(bmp.target_branch)
+        bmp = self.makeBranchMergeProposal()
         [job] = self.job_source.iterReady()
         self.assertEqual(job.branch_merge_proposal, bmp)
         self.assertIsInstance(job, UpdatePreviewDiffJob)

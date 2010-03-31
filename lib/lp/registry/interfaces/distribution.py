@@ -61,13 +61,13 @@ from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 
-
 class IDistributionMirrorMenuMarker(Interface):
     """Marker interface for Mirror navigation."""
 
 
 class DistributionNameField(PillarNameField):
     """The pillar for a distribution."""
+
     @property
     def _content_iface(self):
         """Return the interface of this pillar object."""
@@ -114,8 +114,8 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "The distribution summary. A short paragraph "
-                "describing the goals and highlights of the distro."),
+                "A short paragraph to introduce the the goals and highlights "
+                "of the distribution."),
             required=True))
     homepage_content = exported(
         Text(
@@ -152,7 +152,11 @@ class IDistributionPublic(
     description = exported(
         Description(
             title=_("Description"),
-            description=_("The distro's description."),
+            description=_(
+                "Details about the distributions's work, highlights, goals, "
+                "and how to contribute. Use plain text, paragraphs are "
+                "preserved and URLs are linked in pages. Don't repeat the "
+                "Summary."),
             required=True))
     domainname = exported(
         TextLine(
@@ -599,4 +603,4 @@ class NoPartnerArchive(Exception):
     def __init__(self, distribution):
         Exception.__init__(
             self, "Partner archive for distro '%s' not found"
-            % (distribution.name,))
+            % (distribution.name, ))
