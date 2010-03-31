@@ -40,7 +40,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
     @run_as_db_user(config.launchpad.dbuser)
     def createProposal(self, source, target):
         # The scanner doesn't have insert rights, so do it here.
-        proposal = source.addLandingTarget(source.owner, target)
+        source.addLandingTarget(source.owner, target)
         transaction.commit()
 
     def _createBranchesAndProposal(self):
@@ -215,7 +215,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # Other branches for the product are checked, but if the tip revision
         # of the branch is not yet been set no merge event is emitted for that
         # branch.
-        source = self.factory.makeProductBranch(product=self.product)
+        self.factory.makeProductBranch(product=self.product)
         self.autoMergeBranches(self.db_branch, ['revid'])
         self.assertEqual([], self.merges)
 

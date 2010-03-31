@@ -620,7 +620,7 @@ class BranchMergeProposal(SQLBase):
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
-        chunk = MessageChunk(message=message, content=content, sequence=1)
+        MessageChunk(message=message, content=content, sequence=1)
         return self.createCommentFromMessage(
             message, vote, review_type, original_email=None,
             _notify_listeners=_notify_listeners, _validate=False)

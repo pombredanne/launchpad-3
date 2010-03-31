@@ -652,7 +652,8 @@ class IMergeProposalUpdatedEmailJob(IRunnableJob):
     """Interface for the job to sends email about merge proposal updates."""
 
     editor = Attribute('The person that did the editing.')
-    delta_text = Attribute('The textual representation of the changed fields.')
+    delta_text = Attribute(
+        'The textual representation of the changed fields.')
 
 
 class IMergeProposalUpdatedEmailJobSource(Interface):

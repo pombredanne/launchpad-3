@@ -92,7 +92,6 @@ class RecipientReason:
 
         The registrant will be the sole recipient.
         """
-        branch = merge_proposal.source_branch
         reason_template = 'You proposed %(branch_name)s for merging.'
         return cls(merge_proposal.registrant, merge_proposal.registrant,
                      merge_proposal.source_branch,

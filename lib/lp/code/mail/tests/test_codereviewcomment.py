@@ -18,7 +18,7 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     CodeReviewVote)
 from lp.code.mail.codereviewcomment import  CodeReviewCommentMailer
-from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+from lp.testing import login, login_person, TestCaseWithFactory
 
 
 class TestCodeReviewComment(TestCaseWithFactory):

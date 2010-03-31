@@ -170,7 +170,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
             proposal.superseded_by.rejectBranch(self.target_branch.owner,
                                                 None)
         self.assertProposalState(proposal, from_state)
-        dupe = self.factory.makeBranchMergeProposal(
+        self.factory.makeBranchMergeProposal(
             target_branch=proposal.target_branch,
             source_branch=proposal.source_branch)
         return proposal
@@ -966,11 +966,10 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         # participant.
         wally = self.factory.makePerson(name='wally')
         beaver = self.factory.makePerson(name='beaver')
-        name12 = getUtility(IPersonSet).getByName('name12')
 
         bmp1 = self._make_merge_proposal('wally', 'gokart', 'turbo', True)
         bmp1.nominateReviewer(beaver, wally)
-        bmp2 = self._make_merge_proposal('beaver', 'gokart', 'brakes', True)
+        self._make_merge_proposal('beaver', 'gokart', 'brakes', True)
 
         getter = BranchMergeProposalGetter
         wally_proposals = getter.getProposalsForParticipant(
@@ -1024,8 +1023,8 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 
     def test_wip_for_product_restrictions(self):
         # Check queries on product limited on status.
-        in_progress = self._make_merge_proposal('albert', 'november', 'work')
-        needs_review = self._make_merge_proposal(
+        self._make_merge_proposal('albert', 'november', 'work')
+        self._make_merge_proposal(
             'bob', 'november', 'work', needs_review=True)
         self.assertEqual(
             ['~albert/november/work'],
@@ -1375,7 +1374,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         """A comment with a vote creates a vote reference."""
         merge_proposal = self.factory.makeBranchMergeProposal()
         reviewer = self.factory.makePerson()
-        comment = merge_proposal.createComment(
+        merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content')
         self.assertEqual([], list(merge_proposal.votes))
 
@@ -1383,7 +1382,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         """A second vote changes the comment reference only."""
         merge_proposal = self.factory.makeBranchMergeProposal()
         reviewer = self.factory.makePerson()
-        comment1 = merge_proposal.createComment(
+        merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content',
             vote=CodeReviewVote.DISAPPROVE)
         comment2 = merge_proposal.createComment(
@@ -1659,11 +1658,11 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
         Store.of(updatejob.context).flush()
         self.assertEqual(updatejob, bmp.next_preview_diff_job)
 
-    def test_returns_first__job(self):
+    def test_returns_first_job(self):
         """First-created job is returned."""
         bmp = self.makeBranchMergeProposalNoPending()
         updatejob = UpdatePreviewDiffJob.create(bmp)
-        updatejob2 = UpdatePreviewDiffJob.create(bmp)
+        UpdatePreviewDiffJob.create(bmp)
         self.assertEqual(updatejob, bmp.next_preview_diff_job)
 
     def test_does_not_return_jobs_for_other_proposals(self):
@@ -1671,7 +1670,7 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         bmp.next_preview_diff_job.start()
         bmp.next_preview_diff_job.complete()
-        bmp2 = self.factory.makeBranchMergeProposal()
+        self.factory.makeBranchMergeProposal()
         self.assertIs(None, bmp.next_preview_diff_job)
 
 
