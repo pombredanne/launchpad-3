@@ -67,6 +67,10 @@
               <tal:estimate condition="build/@@+index/estimate">
               (estimated)
               </tal:estimate>
+              for <tal:distro replace="structure
+              build/distroseries/fmt:link:mainsite" />
+              into <tal:archive replace="structure
+              build/archive/fmt:link"/>
             </li>
           </ul>
         </div>
