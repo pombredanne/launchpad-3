@@ -12,12 +12,14 @@
   <div metal:fill-slot="main">
       <div metal:use-macro="context/@@launchpad_form/form">
         <metal:formbody fill-slot="widgets">
-          <tal:widget define="widget nocall:view/widgets/distros">
-            <metal:block use-macro="context/@@launchpad_form/widget_row" />
-          </tal:widget>
-          <tal:widget define="widget nocall:view/widgets/archive">
-            <metal:block use-macro="context/@@launchpad_form/widget_row" />
-          </tal:widget>
+          <table class="form">
+            <tal:widget define="widget nocall:view/widgets/archive">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+            <tal:widget define="widget nocall:view/widgets/distros">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+          </table>
         </metal:formbody>
       </div>
   </div>

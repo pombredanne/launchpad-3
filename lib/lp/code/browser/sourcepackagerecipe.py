@@ -74,8 +74,10 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
             if check_permission('launchpad.Append', ppa))
 
         class schema(Interface):
-            distros = List(Choice(vocabulary=SimpleVocabulary(terms)))
-            archive = Choice(vocabulary=archive_vocab)
+            distros = List(
+                Choice(vocabulary=SimpleVocabulary(terms)),
+                title=u'Distribution series')
+            archive = Choice(title=u'Archive', vocabulary=archive_vocab)
 
         return schema
 
@@ -83,7 +85,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
     @property
     def title(self):
-        return self.context.name
+        return 'Request builds for %s' % self.context.name
 
     label = title
 
