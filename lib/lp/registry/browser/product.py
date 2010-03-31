@@ -1215,19 +1215,10 @@ class ProductConfigureBugTrackerView(ProductConfigureBase):
             data['enable_bug_expiration'] = False
 
 
-class ProductConfigureBranchesView(ProductConfigureBase):
-    """View class to configure the Launchpad Branches for a project."""
-
-    label = "Configure Launchpad Branches"
-    field_names = [
-        "official_codehosting",
-        ]
-
-
 class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
-    label = "Configure Launchpad Blueprints"
+    label = "Configure Blueprints"
     field_names = [
         "official_blueprints",
         ]
@@ -1236,7 +1227,7 @@ class ProductConfigureBlueprintsView(ProductConfigureBase):
 class ProductConfigureTranslationsView(ProductConfigureBase):
     """View class to configure the Launchpad Translations for a project."""
 
-    label = "Configure Launchpad Translations"
+    label = "Configure Translations"
     field_names = [
         "official_rosetta",
         ]
@@ -1245,7 +1236,7 @@ class ProductConfigureTranslationsView(ProductConfigureBase):
 class ProductConfigureAnswersView(ProductConfigureBase):
     """View class to configure the Launchpad Answers for a project."""
 
-    label = "Configure Launchpad Answers"
+    label = "Configure Answers"
     field_names = [
         "official_answers",
         ]

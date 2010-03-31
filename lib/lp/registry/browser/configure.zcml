@@ -1495,13 +1495,6 @@
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"
         permission="launchpad.Edit"
-        name="+configure-branches"
-        template="../../app/templates/generic-edit.pt"
-        class="lp.registry.browser.product.ProductConfigureBranchesView"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
-        permission="launchpad.Edit"
         name="+configure-bugtracker"
         template="../../app/templates/generic-edit.pt"
         class="lp.registry.browser.product.ProductConfigureBugTrackerView"/>

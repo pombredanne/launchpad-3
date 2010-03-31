@@ -11,9 +11,9 @@ First make sure it uses Launchpad for translations.
     Does not use Launchpad for development.
 
     >>> netapplet_owner_browser.getLink(
-    ...   'Configure Launchpad Translations').click()
+    ...   'Configure translations').click()
     >>> print netapplet_owner_browser.title
-    Configure Launchpad Translations : NetApplet
+    Configure Translations : NetApplet
 
     >>> netapplet_owner_browser.getControl(
     ...     'Translations for this project are done in Launchpad'

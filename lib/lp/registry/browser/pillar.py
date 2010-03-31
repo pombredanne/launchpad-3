@@ -162,11 +162,6 @@ class ProductInvolvementView(PillarView):
     has_involvement = True
     visible_disabled_link_names = ['submit_code']
 
-    def __init__(self, context, request):
-        super(ProductInvolvementView, self).__init__(context, request)
-        self.official_codehosting = (
-            self.context.development_focus.branch is not None)
-
     @property
     def configuration_links(self):
         """The enabled involvement links."""

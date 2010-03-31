@@ -28,7 +28,7 @@ so let's use Sample Person, the registrant of Firefox..
     >>> registrant_browser = setupBrowser(
     ...     auth='Basic test@canonical.com:test')
     >>> registrant_browser.open('http://launchpad.dev/firefox')
-    >>> registrant_browser.getLink('Configure Launchpad Bugs').click()
+    >>> registrant_browser.getLink('Configure bug tracker').click()
     >>> registrant_browser.url
     'http://launchpad.dev/firefox/+configure-bugtracker'
 
@@ -47,17 +47,15 @@ doesn't use any bug tracker at all.
 
 We'll also set it as officially using codehosting.
 
-    >>> registrant_browser.open(
-    ...     'http://launchpad.dev/firefox/+configure-branches')
-    >>> registrant_browser.getControl(
-    ...     'Code for this project is published in Bazaar branches on'
-    ...     ' Launchpad').selected = True
-    >>> registrant_browser.getControl('Change').click()
+    >>> registrant_browser.getLink('Configure project branch').click()
+    >>> registrant_browser.getControl('name='field.branch').value = (
+    ...     '~name12/firefox/main')
+    >>> registrant_browser.getControl('Update').click()
 
 Translations can be enabled.
 
     >>> registrant_browser.open('http://launchpad.dev/firefox')
-    >>> registrant_browser.getLink('Configure Launchpad Translations').click()
+    >>> registrant_browser.getLink('Configure translations').click()
     >>> registrant_browser.url
     'http://launchpad.dev/firefox/+configure-translations'
     >>> control = registrant_browser.getControl(
@@ -70,7 +68,7 @@ Translations can be enabled.
 Answers can be disabled.
 
     >>> registrant_browser.open('http://launchpad.dev/firefox')
-    >>> registrant_browser.getLink('Configure Launchpad Answers').click()
+    >>> registrant_browser.getLink('Configure support tracker').click()
     >>> registrant_browser.url
     'http://launchpad.dev/firefox/+configure-answers'
     >>> control = registrant_browser.getControl(
@@ -149,7 +147,7 @@ support JavaScript so this behaviour is easy to simulate.)
     >>> registrant_browser.title
     'Jokosher Audio Editor in Launchpad'
 
-    >>> registrant_browser.getLink('Configure Launchpad Bugs').click()
+    >>> registrant_browser.getLink('Configure bug tracker').click()
     >>> registrant_browser.getControl('In Launchpad').selected
     True
 
@@ -170,7 +168,7 @@ The Status of Launchpad uses shows the bug tracker was changed.
 Reviewing the edit page again, Dafydd, can see that bug expiration was
 also disabled by the switch from Launchpad Bugs.
 
-    >>> registrant_browser.getLink('Configure Launchpad Bugs').click()
+    >>> registrant_browser.getLink('Configure bug tracker').click()
     >>> registrant_browser.getControl('In Launchpad').selected
     False
 
