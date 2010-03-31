@@ -11,7 +11,7 @@ First we create some objects for use in the tests.
     >>> login(ANONYMOUS)
     >>> person = factory.makePerson(name='import-owner')
     >>> product = factory.makeProduct(name='scruff')
-    >>> code_import = removeSecurityProxy(factory.makeCodeImport(
+    >>> code_import = removeSecurityProxy(factory.makeProductCodeImport(
     ...    registrant=person, product=product, branch_name='import'))
     >>> no_import_branch = removeSecurityProxy(factory.makeProductBranch(
     ...     owner=person, product=product, name='no-import'))
