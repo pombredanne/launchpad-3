@@ -4,7 +4,11 @@
 """Implementation of the cache: namespace in TALES."""
 
 __metaclass__ = type
-__all__ = ['MemcacheExpr', 'MemcacheHit', 'MemcacheMiss']
+__all__ = [
+    'MemcacheExpr',
+    'MemcacheHit',
+    'MemcacheMiss',
+    ]
 
 
 from hashlib import md5
@@ -24,7 +28,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.memcache.interfaces import IMemcacheClient
 
 
-# Request annotation key
+# Request annotation key.
 COUNTER_KEY = 'lp.services.memcache.tales.counter'
 
 

@@ -211,7 +211,7 @@ a different cache.
     </body>
 
 Note that the default syntax isn't useful when you are looping over
-a changable list. For example, lets say we have a list of comments.
+a changeable list. For example, let's say we have a list of comments.
 The basic syntax lets us cache the first comment, the second comment,
 the third comment etc.
 
