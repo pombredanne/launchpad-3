@@ -66,7 +66,7 @@ class TestCheckwatchesConfig(TestCase):
     def test_sync_debbugs_comments_enabled(self):
         # Debian Bugs syncing can also be switched on and off using a
         # separate config variable, sync_debbugs_comments. DebBugs
-        # supports comment pushing, comment import and back-linking.
+        # supports comment pushing and import.
         self.pushConfig(
             'checkwatches', sync_comments=True, sync_debbugs_comments=True)
         tracker = DebBugs(self.base_url)
