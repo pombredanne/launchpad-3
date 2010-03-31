@@ -129,7 +129,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                     (build.title, build.id, build.pocket.name,
                      build.distroseries.name))
 
-    def slaveStatus(self, raw_slave_status, status):
+    def updateSlaveStatus(self, raw_slave_status, status):
         """Parse the binary build specific status info into the status dict.
 
         This includes:
@@ -145,7 +145,6 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             status['build_status'] in build_status_with_files):
             status['filemap'] = raw_slave_status[3]
             status['dependencies'] = raw_slave_status[4]
-        return status
 
     def _cachePrivateSourceOnSlave(self, logger):
         """Ask the slave to download source files for a private build.
