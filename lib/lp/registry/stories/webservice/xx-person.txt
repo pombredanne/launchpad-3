@@ -46,6 +46,7 @@ for teams (as they're defined in the ITeam interface).
     proposed_members_collection_link: u'http://.../~salgado/proposed_members'
     resource_type_link: u'http://.../#person'
     self_link: u'http://.../~salgado'
+    sshkeys_collection_link: u'http://.../~salgado/sshkeys'
     sub_teams_collection_link: u'http://.../~salgado/sub_teams'
     super_teams_collection_link: u'http://.../~salgado/super_teams'
     team_owner_link: None
@@ -96,6 +97,7 @@ for teams (as they're defined in the ITeam interface).
     renewal_policy: u'invite them to apply for renewal'
     resource_type_link: u'http://.../#team'
     self_link: u'http://.../~ubuntu-team'
+    sshkeys_collection_link: u'http://.../~ubuntu-team/sshkeys'
     sub_teams_collection_link: u'http://.../~ubuntu-team/sub_teams'
     subscription_policy: u'Moderated Team'
     super_teams_collection_link: u'http://.../~ubuntu-team/super_teams'
@@ -151,6 +153,46 @@ traversed to, obviously.
     HTTP/1.1 404 Not Found
     ...
 
+== SSH keys ===
+
+People have SSH keys which we can manipulate over the API.
+
+The sample person "ssh-user" doesn't have any keys to begin with:
+
+    >>> login('test@canonical.com')
+    >>> person = factory.makePerson(name="ssh-user")
+    >>> logout()
+    >>> sample_person = webservice.get("/~ssh-user").jsonBody()
+    >>> sshkeys = sample_person['sshkeys_collection_link']
+    >>> print sshkeys
+    http://.../~ssh-user/sshkeys
+    >>> print_self_link_of_entries(webservice.get(sshkeys).jsonBody())
+
+Let's give "ssh-user" a key via the back door of our internal Python APIs:
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login(ANONYMOUS)
+    >>> ssh_user = getUtility(IPersonSet).getByName('ssh-user')
+    >>> ssh_key = factory.makeSSHKey(ssh_user)
+    >>> logout()
+
+Now when we get the sshkey collection for 'sssh-user' again, the key should show
+up:
+
+    >>> keys = webservice.get(sshkeys).jsonBody()
+    >>> print_self_link_of_entries(keys)
+    http://.../~ssh-user/+ssh-keys/...
+
+
+And then we can actually retrieve the key:
+
+    >>> pprint_entry(keys['entries'][0])
+    comment: u'generic-string...'
+    keytext: u'generic-string...'
+    keytype: u'RSA'
+    resource_type_link: u'http://.../#ssh_key'
+    self_link: u'http://.../~ssh-user/+ssh-keys/...'
 
 === GPG keys ===
 
@@ -178,7 +220,7 @@ up:
 
     >>> keys = anon_webservice.get(gpgkeys).jsonBody()
     >>> print_self_link_of_entries(keys)
-    http://api.launchpad.dev/beta/~name12/+gpg-keys/00000001
+    http://.../~name12/+gpg-keys/...
 
 
 And then we can actually retrieve the key:

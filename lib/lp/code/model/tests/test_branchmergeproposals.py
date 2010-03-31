@@ -54,7 +54,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.job.runner import JobRunner
 from lp.testing import (
-    capture_events, login_person, TestCaseWithFactory, time_counter)
+    capture_events, login_person, TestCaseWithFactory)
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
 
@@ -1146,6 +1146,11 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
     def test_related_bugs_includes_source_bugs(self):
         """related_bugs includes bugs linked to the source branch."""
         bmp = self.factory.makeBranchMergeProposal()
@@ -1838,6 +1843,14 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         JobRunner.fromReady(UpdatePreviewDiffJob).runAll()
         transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
+
+    def test_10_minute_lease(self):
+        self.useBzrBranches()
+        bmp = self.createExampleMerge()[0]
+        job = UpdatePreviewDiffJob.create(bmp)
+        job.acquireLease()
+        expiry_delta = job.lease_expires - datetime.now(UTC)
+        self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
 
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):
