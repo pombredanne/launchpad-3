@@ -1192,12 +1192,6 @@
             classes="
                 PersonSetNavigation"/>
         <browser:page
-            name="+newperson"
-            for="lp.registry.interfaces.person.IPersonSet"
-            class="lp.registry.browser.person.PersonAddView"
-            permission="launchpad.Admin"
-            template="../templates/people-newperson.pt"/>
-        <browser:page
             name="+newteam"
             for="lp.registry.interfaces.person.IPersonSet"
             class="lp.registry.browser.team.TeamAddView"
