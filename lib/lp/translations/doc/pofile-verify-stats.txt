@@ -176,7 +176,7 @@ all fixed already.
     >>> print returncode
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-pofile-stats-daily.lock
     INFO    Verifying stats of POFiles updated in the last ... days.
     INFO    Verifying a total of 1 POFiles.
     INFO    Done.
@@ -192,7 +192,7 @@ fixed by running the verifier directly.
     >>> print returncode
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-pofile-stats.lock
     INFO    Starting verification of POFile stats at id 99
     INFO    Done.
 
