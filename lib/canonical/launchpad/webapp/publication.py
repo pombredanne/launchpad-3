@@ -213,7 +213,7 @@ class LaunchpadBrowserPublication(
                     structured("""
                         Launchpad is undergoing maintenance and is in
                         read-only mode. <i>You cannot make any
-                        changes.</i> You can find more detail on the
+                        changes.</i> You can find more information on the
                         <a href="http://identi.ca/launchpadstatus">Launchpad
                         system status page</a>.
                         """))

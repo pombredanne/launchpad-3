@@ -15,8 +15,8 @@
           <strong>read-only</strong> mode.
       </p>
       <p>Normal service will resume as soon as possible. You can find more
-         detail on the <a href="http://identi.ca/launchpadstatus">Launchpad
-         system status page</a>.
+         information on the <a href="http://identi.ca/launchpadstatus">
+         Launchpad system status page</a>.
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>
