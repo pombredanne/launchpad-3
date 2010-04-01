@@ -74,6 +74,9 @@ class QueueBuilder(LaunchpadCronScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
+        # We use a fake transaction manager with a no-op commit() to
+        # avoid partial commits that are performed by some of our
+        # methods.
         class _FakeZTM:
             """A fake transaction manager."""
             def commit(self):
@@ -108,7 +111,7 @@ class QueueBuilder(LaunchpadCronScript):
         self.txn.commit()
 
     def createMissingBuilds(self, distroseries):
-        """Ensure that each published package is completly built."""
+        """Ensure that each published package is completely built."""
         self.logger.info("Processing %s" % distroseries.name)
         # Do not create builds for distroseries with no nominatedarchindep
         # they can't build architecture independent packages properly.
