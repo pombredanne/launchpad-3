@@ -32,15 +32,20 @@ class FakeMethod:
         """
         self.result = result
         self.failure = failure
+        self.calls = []
+
 
     def __call__(self, *args, **kwargs):
-        """Catch an invocation to the method.  Increment `call_count`.
+        """Catch an invocation to the method.
+
+        Increment `call_count`, and adds the arguments to `calls`.
 
         Accepts any and all parameters.  Raises the failure passed to
         the constructor, if any; otherwise, returns the result value
         passed to the constructor.
         """
         self.call_count += 1
+        self.calls.append((args, kwargs))
 
         if self.failure is None:
             return self.result
