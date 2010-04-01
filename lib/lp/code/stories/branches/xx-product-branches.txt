@@ -164,10 +164,12 @@ for project branch listings.  'Register a branch' and 'Import your project'.
     >>> product = getUtility(IProductSet).getByName('firefox')
     >>> old_branch = product.development_focus.branch
     >>> product.development_focus.branch = None
+    >>> logout()
     >>> def print_links(browser):
     ...     links = find_tag_by_id(browser.contents, 'floating-links')
     ...     for link in links.findAll('a'):
     ...         print extract_text(link)
+    >>> browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(browser)
     Register a branch
     Import your project
@@ -175,8 +177,10 @@ for project branch listings.  'Register a branch' and 'Import your project'.
 If the product specifies that it officially uses Launchpad code, then
 the 'Import your project' button is not shown.
 
+    >>> login('admin@canonical.com')
     >>> product.development_focus.branch = old_branch
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> logout()
+    >>> browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(browser)
     Register a branch
 
