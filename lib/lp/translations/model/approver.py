@@ -9,8 +9,6 @@ __all__ = [
     'TranslationBuildApprover',
     ]
 
-import os.path
-
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities

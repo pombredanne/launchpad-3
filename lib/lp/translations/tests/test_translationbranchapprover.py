@@ -173,7 +173,7 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         # file name exists.
         translation_domain = self.factory.getUniqueString()
         generic_path = u'po/messages.pot'
-        potemplate = self._create_template(generic_path, translation_domain)
+        self._create_template(generic_path, translation_domain)
         entry = self._upload_file(generic_path)
         approver = self._create_approver(generic_path)
 
@@ -186,7 +186,7 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         # on the existing POTemplate entry.
         translation_domain = self.factory.getUniqueString()
         generic_path = u'po/messages.pot'
-        potemplate = self._create_template(generic_path, translation_domain)
+        self._create_template(generic_path, translation_domain)
         entry = self._upload_file(generic_path)
         approver = self._create_approver(generic_path)
 

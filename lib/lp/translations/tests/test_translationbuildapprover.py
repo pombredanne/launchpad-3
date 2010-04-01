@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import transaction
 from unittest import TestLoader
 
 from zope.component import getUtility
@@ -166,8 +165,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             'po/messages.pot',
             ]
         series = self.factory.makeProductSeries()
-        pot1 = self.factory.makePOTemplate(productseries=series)
-        pot2 = self.factory.makePOTemplate(productseries=series)
+        self.factory.makePOTemplate(productseries=series)
+        self.factory.makePOTemplate(productseries=series)
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 

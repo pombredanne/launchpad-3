@@ -627,8 +627,6 @@ class TranslationImportQueueEntry(SQLBase):
               self.path.startswith('koffice-i18n-')):
             # This package has the language information included as part of a
             # directory: koffice-i18n-LANG_CODE-VERSION
-            # Let's get the root directory that has the language information.
-            lang_directory = self.path.split('/')[0]
             # Extract the language information.
             match = re.match('koffice-i18n-(\S+)-(\S+)', self.path)
             if match is None:

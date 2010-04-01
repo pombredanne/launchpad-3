@@ -197,8 +197,6 @@ class TestTranslationTemplatesBuildBehavior(
         # that TranslationTemplatesBuildBehavior.verifySlaveBuildID
         # accepts.
         behavior = self.makeBehavior()
-        buildfarmjob = behavior.buildfarmjob
-        job = buildfarmjob.job
 
         # The test is that this not raise CorruptBuildID (or anything
         # else, for that matter).
@@ -209,7 +207,6 @@ class TestTranslationTemplatesBuildBehavior(
         # with dashes in branch names.
         behavior = self.makeBehavior()
         buildfarmjob = behavior.buildfarmjob
-        job = buildfarmjob.job
         buildfarmjob.branch.name = 'x-y-z--'
 
         # The test is that this not raise CorruptBuildID (or anything
