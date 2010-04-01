@@ -8,13 +8,13 @@ All comments are set visible by default.
     ...     'http://bugs.launchpad.dev'
     ...     '/jokosher/+bug/11')
     >>> user_browser.getControl(name='field.comment').value = (
-    ...     'This comment will not visible when the test completes.')
+    ...     'This comment will not be visible when the test completes.')
     >>> user_browser.getControl('Post Comment', index=-1).click()
     >>> main_content = find_main_content(user_browser.contents)
     >>> new_comment = main_content('div', 'boardCommentBody')[-1]
     >>> new_comment_text = extract_text(new_comment.div)
     >>> print new_comment_text
-    This comment will not visible when the test completes.
+    This comment will not be visible when the test completes.
 
 Admin users can set a message's visible attribute to False.
 In this case, the last message in the list, the one just added,
@@ -26,7 +26,7 @@ is now set to be hidden.
     >>> bug_11 = getUtility(IBugSet).get(11)
     >>> message = bug_11.messages[-1]
     >>> print message.text_contents
-    This comment will not visible when the test completes.
+    This comment will not be visible when the test completes.
     >>> bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...     bug_11, message)
     >>> bug_message.visible = False
@@ -69,7 +69,7 @@ For admin users, the message is still visible in the bug page.
     >>> last_comment = main_content('div', 'boardCommentBody')[-1]
     >>> last_comment_text = extract_text(last_comment.div)
     >>> print last_comment_text
-    This comment will not visible when the test completes.
+    This comment will not be visible when the test completes.
 
 Admin users will see the hidden message highlighted with an
 'adminHiddenComment' style.
@@ -86,7 +86,7 @@ highlighted with the 'adminHiddenComment style there too.
     >>> contents = extract_text(admin_browser.contents)
     >>> print contents
     Comment #7 : Bug #11 ...
-    This comment will not visible when the test completes.
+    This comment will not be visible when the test completes.
     ...
     >>> main_content = find_main_content(admin_browser.contents)
     >>> last_comment = main_content('div', 'boardCommentBody')[-1]
