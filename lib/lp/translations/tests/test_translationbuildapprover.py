@@ -63,6 +63,19 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         self.assertEqual('domain2', entries[1].potemplate.name)
         self.assertEqual('domain3', entries[2].potemplate.name)
 
+    def test_approve_only_pots(self):
+        # Only template files aill be approved.
+        filenames = [
+            'po/domain1.po',
+            'po/eo.po',
+            'readme.txt',
+            ]
+        series = self.factory.makeProductSeries()
+        approver = TranslationBuildApprover(filenames, productseries=series)
+        entries = self._makeApprovedEntries(series, approver, filenames)
+
+        self._assertStatus(entries, [RosettaImportStatus.NEEDS_REVIEW])
+
     def test_approve_all_existing(self):
         # The happy approval case, all existing templates.
         filenames = [

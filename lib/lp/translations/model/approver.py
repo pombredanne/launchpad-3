@@ -208,7 +208,7 @@ class TranslationBuildApprover(object):
             return None
 
         if entry.path not in self.filenames:
-            # Only files that have been announced to the approver can ve
+            # Only files that have been announced to the approver can be
             # approved.
             return entry
         potemplate = self._potemplateset.getPOTemplateByPath(entry.path)
