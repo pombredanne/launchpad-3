@@ -74,8 +74,10 @@ Users who are not bug supervisors or product registrants cannot
 transition the status from Won't Fix to anything else.
 
     >>> login('foo.bar@canonical.com')
+    >>> foo_bar = getUtility(ILaunchBag).user
+    >>> firefox.setBugSupervisor(foo_bar, foo_bar)
     >>> firefox_bugtask.transitionToStatus(
-    ...     BugTaskStatus.WONTFIX, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.WONTFIX, foo_bar)
 
     >>> login('no-priv@canonical.com')
     >>> firefox_bugtask.transitionToStatus(
@@ -92,7 +94,7 @@ user can transition a particular bugtask.
 
     >>> login('foo.bar@canonical.com')
     >>> firefox_bugtask.transitionToStatus(
-    ...     BugTaskStatus.TRIAGED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.TRIAGED, foo_bar)
 
     >>> login('no-priv@canonical.com')
 
