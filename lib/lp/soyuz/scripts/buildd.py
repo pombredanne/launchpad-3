@@ -74,9 +74,9 @@ class QueueBuilder(LaunchpadCronScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
-        # We use a fake transaction manager with a no-op commit() to
-        # avoid partial commits that are performed by some of our
-        # methods.
+        # In dry-run mode we use a fake transaction manager with a no-op
+        # commit(), so we avoid partial commits that are performed by some of
+        # our methods.
         class _FakeZTM:
             """A fake transaction manager."""
             def commit(self):
