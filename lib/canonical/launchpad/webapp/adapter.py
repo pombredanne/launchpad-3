@@ -40,14 +40,13 @@ from canonical.launchpad.interfaces import IMasterObject, IMasterStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
-    MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeViolation, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR,
+    ReadOnlyModeViolation, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import safe_hasattr
 
 
 __all__ = [
-    'DisconnectionError',
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
@@ -327,7 +326,7 @@ class LaunchpadDatabase(Postgres):
 
     def __init__(self, uri):
         # The uri is just a property name in the config, such as main_master
-        # or auth_slave.
+        # or main_slave.
         # We don't invoke the superclass constructor as it has a very limited
         # opinion on what uri is.
         # pylint: disable-msg=W0231
@@ -356,7 +355,7 @@ class LaunchpadDatabase(Postgres):
                 'Connection uri %s does not match section-realm-flavor format'
                 % repr(self._uri.database))
 
-        assert realm in ('main', 'auth'), 'Unknown realm %s' % realm
+        assert realm == 'main', 'Unknown realm %s' % realm
         assert flavor in ('master', 'slave'), 'Unknown flavor %s' % flavor
 
         my_dbconfig = DatabaseConfig()
@@ -572,14 +571,6 @@ class StoreSelector:
         return db_policy.getStore(name, flavor)
 
 
-# There are not many tables outside of the main replication set, so we
-# can just maintain a hardcoded list of what isn't in there for now.
-_auth_store_tables = frozenset([
-    'Account', 'AccountPassword', 'AuthToken', 'EmailAddress',
-    'OpenIDAssociation', 'OpenIDAuthorization', 'OpenIDNonce',
-    'OpenIDRPSummary'])
-
-
 # We want to be able to adapt a Storm class to an IStore, IMasterStore or
 # ISlaveStore. Unfortunately, the component architecture provides no
 # way for us to declare that a class, and all its subclasses, provides
@@ -588,9 +579,7 @@ _auth_store_tables = frozenset([
 def get_store(storm_class, flavor=DEFAULT_FLAVOR):
     """Return a flavored Store for the given database class."""
     table = getattr(removeSecurityProxy(storm_class), '__storm_table__', None)
-    if table in _auth_store_tables:
-        return getUtility(IStoreSelector).get(AUTH_STORE, flavor)
-    elif table is not None:
+    if table is not None:
         return getUtility(IStoreSelector).get(MAIN_STORE, flavor)
     else:
         return None

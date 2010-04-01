@@ -25,7 +25,7 @@ from canonical.launchpad.webapp.dbpolicy import (
     ReadOnlyLaunchpadDatabasePolicy, SlaveDatabasePolicy,
     SlaveOnlyDatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
-    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
+    ALL_STORES, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore,
     SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -46,9 +46,6 @@ class ImplicitDatabasePolicyTestCase(TestCase):
         store_selector = getUtility(IStoreSelector)
         main_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
         self.failUnlessEqual(self.getDBUser(main_store), 'launchpad_main')
-
-        auth_store = store_selector.get(AUTH_STORE, DEFAULT_FLAVOR)
-        self.failUnlessEqual(self.getDBUser(auth_store), 'launchpad_auth')
 
     def getDBUser(self, store):
         return store.execute(
