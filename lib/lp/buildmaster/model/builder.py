@@ -448,8 +448,7 @@ class Builder(SQLBase):
             if status['builder_status'] == 'BuilderStatus.BUILDING':
                 status['logtail'] = status_sentence[2]
 
-        status = self.current_build_behavior.slaveStatus(
-            status_sentence, status)
+        self.current_build_behavior.updateSlaveStatus(status_sentence, status)
         return status
 
     def slaveStatusSentence(self):
