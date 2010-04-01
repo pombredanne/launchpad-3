@@ -21,9 +21,6 @@ class FakeMethod:
     systems.
     """
 
-    # How many times has this fake method been called?
-    call_count = 0
-
     def __init__(self, result=None, failure=None):
         """Set up a fake function or method.
 
@@ -32,8 +29,9 @@ class FakeMethod:
         """
         self.result = result
         self.failure = failure
-        self.calls = []
 
+        # A log of arguments for each call to this method.
+        self.calls = []
 
     def __call__(self, *args, **kwargs):
         """Catch an invocation to the method.
@@ -44,7 +42,6 @@ class FakeMethod:
         the constructor, if any; otherwise, returns the result value
         passed to the constructor.
         """
-        self.call_count += 1
         self.calls.append((args, kwargs))
 
         if self.failure is None:
@@ -54,3 +51,7 @@ class FakeMethod:
             # possible.  That's why this test disables pylint message
             # E0702.
             raise self.failure
+
+    @property
+    def call_count(self):
+        return len(self.calls)
