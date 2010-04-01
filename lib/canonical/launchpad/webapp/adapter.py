@@ -349,9 +349,6 @@ class LaunchpadDatabase(Postgres):
             raise StormAccessFromMainThread()
 
         try:
-            # XXX: Salgado, 2010-03-22: We can get rid of the realm now that
-            # the auth DB is gone, but I'm not doing it in this branch to keep
-            # the diff simple.
             config_section, realm, flavor = self._uri.database.split('-')
         except ValueError:
             raise AssertionError(
