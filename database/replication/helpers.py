@@ -70,6 +70,7 @@ IGNORED_TABLES = set([
     'public.secret', 'public.sessiondata', 'public.sessionpkgdata',
     # Mirror tables, per Bug #489078. These tables have their own private
     # replication set that is setup manually.
+    'public.lp_account',
     'public.lp_person',
     'public.lp_personlocation',
     'public.lp_teamparticipation',
