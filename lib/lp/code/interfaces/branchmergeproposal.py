@@ -583,7 +583,7 @@ class ICreateMergeProposalJob(IRunnableJob):
     """
 
 
-class ICreateMergeProposalJobSource(Interface):
+class ICreateMergeProposalJobSource(IJobSource):
     """Acquire MergeProposalJobs."""
 
     def create(message_bytes):
