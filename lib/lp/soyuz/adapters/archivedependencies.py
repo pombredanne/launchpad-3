@@ -36,11 +36,13 @@ __all__ = [
     'pocket_dependencies',
     ]
 
-from canonical.config import config
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, ALLOW_RELEASE_BUILDS)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+import logging
+import traceback
+
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
+from lp.soyuz.interfaces.archive import ArchivePurpose, ALLOW_RELEASE_BUILDS
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lazr.uri import URI
 
 
@@ -99,15 +101,15 @@ def get_components_for_building(build):
     return component_dependencies[build.current_component.name]
 
 
-def get_primary_current_component(build):
+def get_primary_current_component(archive, distroseries, sourcepackagename):
     """Return the component name of the primary archive ancestry.
 
     If no ancestry could be found, default to 'universe'.
     """
-    primary_archive = build.archive.distribution.main_archive
+    primary_archive = archive.distribution.main_archive
     ancestries = primary_archive.getPublishedSources(
-        name=build.sourcepackagerelease.name,
-        distroseries=build.distroseries, exact_match=True)
+        name=sourcepackagename,
+        distroseries=distroseries, exact_match=True)
 
     # XXX cprov 20080923 bug=246200: This count should be replaced
     # by bool() (__non_zero__) when storm implementation gets fixed.
@@ -117,23 +119,56 @@ def get_primary_current_component(build):
     return 'universe'
 
 
-def get_sources_list_for_building(build):
+def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     """Return the sources_list entries required to build the given item.
 
+    The entries are returned in the order that is most useful;
+     1. the context archive itself
+     2. external dependencies
+     3. user-selected archive dependencies
+     4. the default primary archive
+
     :param build: a context `IBuild`.
+    :param distroarchseries: A `IDistroArchSeries`
+    :param sourcepackagename: A source package name (as text)
     :return: a deb sources_list entries (lines).
     """
     deps = []
+    sources_list_lines = []
 
-    # Consider primary archive dependency override. Add the default
-    # primary archive dependencies if it's not present.
-    if build.archive.getArchiveDependency(
-        build.distribution.main_archive) is None:
-        primary_dependencies = _get_default_primary_dependencies(build)
-        deps.extend(primary_dependencies)
+    # Add implicit self-dependency for non-primary contexts.
+    if build.archive.purpose in ALLOW_RELEASE_BUILDS:
+        self_dep = [(
+            build.archive, PackagePublishingPocket.RELEASE,
+            get_components_for_building(build))]
+        sources_list_lines = _get_sources_list_for_dependencies(
+            self_dep, distroarchseries)
+
+    # Append external sources_list lines for this archive if it's
+    # specified in the configuration.
+    try:
+        dependencies = build.archive.external_dependencies
+        if dependencies is not None:
+            for archive_dep in dependencies.splitlines():
+                line = archive_dep % (
+                    {'series': distroarchseries.distroseries.name})
+                sources_list_lines.append(line)
+    except StandardError, e:
+        # Malformed external dependencies can incapacitate the build farm
+        # manager (lp:516169). That's obviously not acceptable.
+        # Log the error, and disable the PPA.
+        logger = logging.getLogger()
+        logger.error(
+            'Exception during external dependency processing:\n%s'
+            % traceback.format_exc())
+        # Disable the PPA if needed. This will suspend all the pending binary
+        # builds associated with the problematic PPA.
+        if build.archive.enabled == True:
+            build.archive.disable()
 
     # Consider user-selected archive dependencies.
-    primary_component = get_primary_current_component(build)
+    primary_component = get_primary_current_component(
+        build.archive, build.distroseries, sourcepackagename)
     for archive_dependency in build.archive.dependencies:
         # When the dependency component is undefined, we should use
         # the component where the source is published in the primary
@@ -149,27 +184,15 @@ def get_sources_list_for_building(build):
                 (archive_dependency.dependency, pocket, components)
                 )
 
-    # Add implicit self-dependency for non-primary contexts.
-    if build.archive.purpose in ALLOW_RELEASE_BUILDS:
-        deps.append(
-            (build.archive, PackagePublishingPocket.RELEASE,
-             get_components_for_building(build))
-            )
+    # Consider primary archive dependency override. Add the default
+    # primary archive dependencies if it's not present.
+    if build.archive.getArchiveDependency(
+        build.archive.distribution.main_archive) is None:
+        primary_dependencies = _get_default_primary_dependencies(build)
+        deps.extend(primary_dependencies)
 
-    sources_list_lines = _get_sources_list_for_dependencies(
-        deps, build.distroarchseries)
-
-    # Append external sources_list lines for this archive if it's
-    # specified in the configuration.
-    archive_config_key = 'ppa.%s_%s' % (
-        build.archive.owner.name, build.archive.name)
-    if archive_config_key in config:
-        archive_config = config[archive_config_key]
-        for archive_dep in archive_config.dependencies.splitlines():
-            line = archive_dep % (
-                {'series': build.distroarchseries.distroseries.name})
-            sources_list_lines.append(line)
-
+    sources_list_lines.extend(
+        _get_sources_list_for_dependencies(deps, distroarchseries))
     return sources_list_lines
 
 def _has_published_binaries(archive, distroarchseries, pocket):
@@ -212,7 +235,7 @@ def _get_sources_list_for_dependencies(dependencies, distroarchseries):
 
     :param dependencies: list of 3 elements tuples as:
         (`IArchive`, `PackagePublishingPocket`, list of `IComponent` names)
-    :param distroseries: target `IDistroSeries`;
+    :param distroarchseries: target `IDistroArchSeries`;
 
     :return: a list of sources_list formatted lines.
     """
@@ -249,7 +272,7 @@ def _get_default_primary_dependencies(build):
     primary_dependencies = []
     for pocket in primary_pockets:
         primary_dependencies.append(
-            (build.distribution.main_archive, pocket, primary_components)
-            )
+            (build.distroseries.distribution.main_archive, pocket,
+             primary_components))
 
     return primary_dependencies

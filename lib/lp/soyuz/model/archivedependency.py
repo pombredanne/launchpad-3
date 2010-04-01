@@ -21,7 +21,7 @@ from lp.soyuz.adapters.archivedependencies import (
     component_dependencies)
 from lp.soyuz.interfaces.archivedependency import (
     IArchiveDependency)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class ArchiveDependency(SQLBase):

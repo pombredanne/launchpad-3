@@ -7,8 +7,9 @@ import os
 import transaction
 import unittest
 
-from twisted.internet import defer
-from twisted.internet.error import ConnectionClosed
+from twisted.internet import defer, task, reactor
+from twisted.internet.error import (
+    ConnectionClosed, ProcessTerminated, TimeoutError)
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -17,20 +18,21 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.tests import BuilddSlaveTestSetup
 from canonical.config import config
+from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.scripts.logger import BufferLogger
+from canonical.testing.layers import (
+    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     BaseDispatchResult, BuilddManager, FailDispatchResult, RecordingSlave,
     ResetDispatchResult, buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.scripts.logger import BufferLogger
+from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from canonical.testing.layers import (
-    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -43,27 +45,38 @@ class TestRecordingSlaves(TrialTestCase):
         self.slave = RecordingSlave(
             'foo', 'http://foo:8221/rpc', 'foo.host')
 
-    def testInstantiation(self):
+    def test_representation(self):
         """`RecordingSlave` has a custom representation.
 
         It encloses builder name and xmlrpc url for debug purposes.
         """
         self.assertEqual('<foo:http://foo:8221/rpc>', repr(self.slave))
 
-    def testEnsurePresent(self):
+    def assert_ensurepresent(self, func):
+        """Helper function to test results from calling ensurepresent."""
+        self.assertEqual(
+            [True, 'Download'],
+            func('boing', 'bar', 'baz'))
+        self.assertEqual(
+            [('ensurepresent', ('boing', 'bar', 'baz'))],
+            self.slave.calls)
+
+    def test_ensurepresent(self):
         """`RecordingSlave.ensurepresent` always succeeds.
 
         It returns the expected succeed code and records the interaction
         information for later use.
         """
-        self.assertEqual(
-            [True, 'Download'],
-            self.slave.ensurepresent('boing', 'bar', 'baz'))
-        self.assertEqual(
-            [('ensurepresent', ('boing', 'bar', 'baz'))],
-            self.slave.calls)
+        self.assert_ensurepresent(self.slave.ensurepresent)
 
-    def testBuild(self):
+    def test_sendFileToSlave(self):
+        """RecordingSlave.sendFileToSlave always succeeeds.
+
+        It calls ensurepresent() and hence returns the same results.
+        """
+        self.assert_ensurepresent(self.slave.sendFileToSlave)
+
+    def test_build(self):
         """`RecordingSlave.build` always succeeds.
 
         It returns the expected succeed code and records the interaction
@@ -76,8 +89,8 @@ class TestRecordingSlaves(TrialTestCase):
             [('build', ('boing', 'bar', 'baz'))],
             self.slave.calls)
 
-    def testResume(self):
-        """`RecordingSlave.resumeHost` returns a deferred resume request."""
+    def test_resume(self):
+        """`RecordingSlave.resume` always returns successs."""
         # Resume isn't requested in a just-instantiated RecordingSlave.
         self.assertFalse(self.slave.resume_requested)
 
@@ -86,38 +99,63 @@ class TestRecordingSlaves(TrialTestCase):
         self.assertEqual(['', '', os.EX_OK], self.slave.resume())
         self.assertTrue(self.slave.resume_requested)
 
+    def test_resumeHost_success(self):
+        # On a successful resume resumeHost() fires the returned deferred
+        # callback with 'None'.
+
         # The configuration testing command-line.
         self.assertEqual(
             'echo %(vm_host)s', config.builddmaster.vm_resume_command)
 
-        # When executed it returns the expected output.
+        # On success the response is None.
         def check_resume_success(response):
-            out, err, code = response
-            self.assertEqual(os.EX_OK, code)
-            self.assertEqual('', err)
-            self.assertEqual('foo.host', out.strip())
+            self.assertEquals(None, response)
+        d = self.slave.resumeSlave()
+        d.addCallback(check_resume_success)
+        return d
 
-        d1 = self.slave.resumeSlave()
-        d1.addCallback(check_resume_success)
+    def test_resumeHost_failure(self):
+        # On a failed resume, 'resumeHost' fires the returned deferred
+        # errorback with the `ProcessTerminated` failure.
 
         # Override the configuration command-line with one that will fail.
         failed_config = """
         [builddmaster]
         vm_resume_command: test "%(vm_host)s = 'no-sir'"
         """
-        config.push('vm_resume_command', failed_config)
+        config.push('failed_resume_command', failed_config)
 
-        def check_resume_failure(response):
-            out, err, code = response
-            self.assertNotEqual(os.EX_OK, code)
-            self.assertEqual('', err)
-            self.assertEqual('', out)
-            config.pop('vm_resume_command')
+        # On failures, the response is a twisted `Failure` object containing
+        # a `ProcessTerminated` error.
+        def check_resume_failure(failure):
+            self.assertIsInstance(failure, Failure)
+            self.assertIsInstance(failure.value, ProcessTerminated)
+            config.pop('failed_resume_command')
+        d = self.slave.resumeSlave()
+        d.addErrback(check_resume_failure)
+        return d
 
-        d2 = self.slave.resumeSlave()
-        d2.addCallback(check_resume_failure)
+    def test_resumeHost_timeout(self):
+        # On a resume timeouts, 'resumeHost' fires the returned deferred
+        # errorback with the `TimeoutError` failure.
 
-        return defer.DeferredList([d1, d2])
+        # Override the configuration command-line with one that will timeout.
+        timeout_config = """
+        [builddmaster]
+        vm_resume_command: sleep 5
+        socket_timeout: 1
+        """
+        config.push('timeout_resume_command', timeout_config)
+
+        # On timeouts, the response is a twisted `Failure` object containing
+        # a `TimeoutError` error.
+        def check_resume_timeout(failure):
+            self.assertIsInstance(failure, Failure)
+            self.assertIsInstance(failure.value, TimeoutError)
+            config.pop('timeout_resume_command')
+        d = self.slave.resumeSlave()
+        d.addErrback(check_resume_timeout)
+        return d
 
 
 class TestingXMLRPCProxy:
@@ -272,7 +310,7 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(
             None, result, 'Successful resume checks should return None')
 
-        failed_response = ['', '', os.EX_USAGE]
+        failed_response = Failure(ProcessTerminated())
         result = self.manager.checkResume(failed_response, slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
@@ -440,7 +478,7 @@ class TestBuilddManagerScan(TrialTestCase):
         test_publisher = SoyuzTestPublisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
-        unused = test_publisher.setUpDefaultDistroSeries(hoary)
+        test_publisher.setUpDefaultDistroSeries(hoary)
         test_publisher.addFakeChroots()
         login(ANONYMOUS)
 
@@ -463,13 +501,16 @@ class TestBuilddManagerScan(TrialTestCase):
 
     def assertBuildingJob(self, job, builder, logtail=None):
         """Assert the given job is building on the given builder."""
+        from lp.services.job.interfaces.job import JobStatus
         if logtail is None:
             logtail = 'Dummy sampledata entry, not processing'
 
         self.assertTrue(job is not None)
         self.assertEqual(job.builder, builder)
-        self.assertTrue(job.buildstart is not None)
-        self.assertEqual(job.build.buildstate, BuildStatus.BUILDING)
+        self.assertTrue(job.date_started is not None)
+        self.assertEqual(job.job.status, JobStatus.RUNNING)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual(build.buildstate, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
     def _getManager(self):
@@ -591,24 +632,30 @@ class TestBuilddManagerScan(TrialTestCase):
 
         job = getUtility(IBuildQueueSet).get(job.id)
         self.assertTrue(job.builder is None)
-        self.assertTrue(job.buildstart is None)
-        self.assertEqual(job.build.buildstate, BuildStatus.NEEDSBUILD)
+        self.assertTrue(job.date_started is None)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual(build.buildstate, BuildStatus.NEEDSBUILD)
 
     def testScanRescuesJobFromBrokenBuilder(self):
         # The job assigned to a broken builder is rescued.
 
-        # Sampledata builder is broken and is holding a active job.
-        broken_builder = getUtility(IBuilderSet)['bob']
-        self.assertFalse(broken_builder.builderok)
-        lost_job = broken_builder.currentjob
-        self.assertTrue(lost_job is not None)
-        self.assertBuildingJob(lost_job, broken_builder)
+        # Sampledata builder is enabled and is assigned to an active job.
+        builder = getUtility(IBuilderSet)['bob']
+        self.assertTrue(builder.builderok)
+        job = builder.currentjob
+        self.assertBuildingJob(job, builder)
+
+        # Disable the sampledata builder
+        login('foo.bar@canonical.com')
+        builder.builderok = False
+        transaction.commit()
+        login(ANONYMOUS)
 
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
         manager = self._getManager()
         d = defer.maybeDeferred(manager.scan)
-        d.addCallback(self._checkJobRescued, broken_builder, lost_job)
+        d.addCallback(self._checkJobRescued, builder, job)
         return d
 
     def _checkJobUpdated(self, recording_slaves, builder, job):
@@ -670,13 +717,14 @@ class TestDispatchResult(unittest.TestCase):
         builder.builderok = True
 
         job = builder.currentjob
+        build = getUtility(IBuildSet).getByQueueEntry(job)
         self.assertEqual(
             'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
-            job.build.title)
+            build.title)
 
-        self.assertEqual('BUILDING', job.build.buildstate.name)
+        self.assertEqual('BUILDING', build.buildstate.name)
         self.assertNotEqual(None, job.builder)
-        self.assertNotEqual(None, job.buildstart)
+        self.assertNotEqual(None, job.date_started)
         self.assertNotEqual(None, job.logtail)
 
         transaction.commit()
@@ -686,9 +734,10 @@ class TestDispatchResult(unittest.TestCase):
     def assertJobIsClean(self, job_id):
         """Re-fetch the `IBuildQueue` record and check if it's clean."""
         job = getUtility(IBuildQueueSet).get(job_id)
-        self.assertEqual('NEEDSBUILD', job.build.buildstate.name)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual('NEEDSBUILD', build.buildstate.name)
         self.assertEqual(None, job.builder)
-        self.assertEqual(None, job.buildstart)
+        self.assertEqual(None, job.date_started)
         self.assertEqual(None, job.logtail)
 
     def testResetDispatchResult(self):

@@ -12,7 +12,7 @@ We'll start by adding some attachments to the bug:
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.database import Bug, Person
     >>> login("foo.bar@canonical.com")
-    >>> mark = Person.selectOneBy(name="sabdfl")
+    >>> mark = Person.selectOneBy(name="mark")
     >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
     >>> bug = Bug.get(1)
     >>> content = StringIO.StringIO("<html><body>bogus</body></html>")
@@ -86,7 +86,7 @@ all tasks related to that bug, presented in an easy-to-digest format:
     date-left-closed: ...
     reporter: Sample Person (name12)
     importance: Low
-    assignee: M...rk Sh...ttlew...rth (sabdfl)
+    assignee: M...rk Sh...ttlew...rth (mark)
     milestone: 
     <BLANKLINE>
     task: mozilla-firefox (Ubuntu)
@@ -129,7 +129,7 @@ all tasks related to that bug, presented in an easy-to-digest format:
     --...
     Content-Type: text/plain; charset="utf-8"
     Content-Transfer-Encoding: quoted-printable
-    Author: ... (sabdfl)
+    Author: ... (mark)
     Date: ...
     Message-Id: ...
     <BLANKLINE>

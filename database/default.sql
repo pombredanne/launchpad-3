@@ -28,7 +28,7 @@ INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perel
 ---
 
 -- EmailAddress
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'mark@hbd.com', 1, 2 );
+INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'mark@example.com', 1, 2 );
 INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robertc@robertcollins.net', 2, 2 );
 
 /*

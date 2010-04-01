@@ -19,14 +19,16 @@ from sqlobject import (
 from storm.expr import Join
 from storm.store import Store
 
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
+from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.project import Project
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.worlddata.model.language import Language
 from lp.translations.model.translator import Translator
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -61,6 +63,21 @@ class TranslationGroup(SQLBase):
                                   joinColumn='translationgroup')
     translation_guide_url = StringCol(notNull=False, default=None)
 
+    def __getitem__(self, language_code):
+        """See `ITranslationGroup`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        query = store.find(
+            Translator,
+            Translator.translationgroup == self,
+            Translator.languageID == Language.id,
+            Language.code == language_code)
+        
+        translator = query.one()
+        if translator is None:
+            raise NotFoundError, language_code
+
+        return translator
+
     # used to note additions
     def add(self, content):
         """See ITranslationGroup."""
@@ -85,16 +102,47 @@ class TranslationGroup(SQLBase):
     def projects(self):
         return Project.selectBy(translationgroup=self.id, active=True)
 
-    # get a translator by code
-    def __getitem__(self, code):
+    # A limit of projects to get for the `top_projects`.
+    TOP_PROJECTS_LIMIT = 6
+
+    @property
+    def top_projects(self):
+        """See `ITranslationGroup`."""
+        # XXX Danilo 2009-08-25: We should make this list show a list
+        # of projects based on the top translations karma (bug #418493).
+        goal = self.TOP_PROJECTS_LIMIT
+        projects = list(self.distributions[:goal])
+        found = len(projects)
+        if found < goal:
+            projects.extend(
+                list(self.projects[:goal-found]))
+            found = len(projects)
+        if found < goal:
+            projects.extend(
+                list(self.products[:goal-found]))
+        return projects
+
+    @property
+    def number_of_remaining_projects(self):
+        """See `ITranslationGroup`."""
+        total = (
+            self.projects.count() +
+            self.products.count() +
+            self.distributions.count())
+        if total > self.TOP_PROJECTS_LIMIT:
+            return total - self.TOP_PROJECTS_LIMIT
+        else:
+            return 0
+
+    def fetchTranslatorData(self):
         """See ITranslationGroup."""
-        language_set = getUtility(ILanguageSet)
-        language = language_set[code]
-        result = Translator.selectOneBy(language=language,
-                                        translationgroup=self)
-        if result is None:
-            raise NotFoundError, code
-        return result
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        translator_data = store.find(
+            (Translator, Language, Person),
+            Translator.translationgroup == self,
+            Language.id == Translator.languageID,
+            Person.id == Translator.translatorID)
+        return translator_data.order_by(Language.englishname)
 
 
 class TranslationGroupSet:
@@ -104,8 +152,15 @@ class TranslationGroupSet:
     title = 'Rosetta Translation Groups'
 
     def __iter__(self):
-        """See ITranslationGroupSet."""
-        for group in TranslationGroup.select():
+        """See `ITranslationGroupSet`."""
+        # XXX Danilo 2009-08-25: See bug #418490: we should get
+        # group names from their respective celebrities.  For now,
+        # just hard-code them so they show up at the top of the
+        # listing of all translation groups.
+        for group in TranslationGroup.select(
+            orderBy=[
+                "-(name in ('launchpad-translators', 'ubuntu-translators'))",
+                "title"]):
             yield group
 
     def __getitem__(self, name):

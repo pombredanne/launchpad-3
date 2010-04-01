@@ -32,5 +32,4 @@ And we can see that we escaped the tags:
   ...     user_browser.contents, 'msgset_67_hr_translation_0')
   >>> print extract_text(text.renderContents())
   Upotreba:
-  
   %s [opcije] &lt;foo&gt; [&lt;etiketa&gt;]%s%s%s

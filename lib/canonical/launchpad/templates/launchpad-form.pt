@@ -8,18 +8,30 @@
   <div metal:define-macro="form">
 
     <form action="."
-          tal:attributes="action view/action_url"
+          tal:attributes="action view/action_url;
+                          id launchpad_form_id|nothing;"
           name="launchpadform"
           method="post"
           enctype="multipart/form-data"
           accept-charset="UTF-8">
 
-      <h1 tal:condition="view/label"
-          tal:content="view/label"
-          metal:define-slot="heading"
-          >Add Something</h1>
-
       <div metal:define-macro="formbody">
+        <tal:comment condition="nothing">
+          The _return_url, _return_attribute_name and _return_attribute_value
+          fields are used by the ReturnToReferrerMixin.
+        </tal:comment>
+        <input type="hidden"
+               name="_return_url"
+               tal:condition="view/_return_url | nothing"
+               tal:attributes="value view/_return_url" />
+        <input type="hidden"
+               name="_return_attribute_name"
+               tal:condition="view/_return_attribute_name | nothing"
+               tal:attributes="value view/_return_attribute_name" />
+        <input type="hidden"
+               name="_return_attribute_value"
+               tal:condition="view/_return_attribute_value | nothing"
+               tal:attributes="value view/_return_attribute_value" />
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
           This is the description of the form.
@@ -38,8 +50,8 @@
           Schema validation errors.
         </p>
 
-        <div class="row" 
-             metal:define-slot="extra_top" 
+        <div class="row"
+             metal:define-slot="extra_top"
              tal:replace="nothing">
             <div>Extra top</div>
             <div><input type="text"/></div>
@@ -55,7 +67,7 @@
                 tal:content="structure script" />
 
         <div class="row"
-             metal:define-slot="extra_bottom" 
+             metal:define-slot="extra_bottom"
              tal:replace="nothing">
           <div>Extra bottom</div>
           <div class="field"><input type="text" /></div>
@@ -73,8 +85,8 @@
         </tal:has-cancel-link>
       </div>
 
-      <div class="row" 
-           metal:define-slot="extra_buttons" 
+      <div class="row"
+           metal:define-slot="extra_buttons"
            tal:replace="nothing">
       </div>
 

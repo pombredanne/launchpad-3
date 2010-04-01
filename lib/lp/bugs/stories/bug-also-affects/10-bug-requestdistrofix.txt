@@ -195,5 +195,5 @@ message saying so.
 The link in the error page links to the Launchpad filebug page.
 
     >>> browser.getLink('report this as a bug').click()
-    >>> browser.title
-    'Report a bug about Launchpad'
+    >>> print browser.title
+    Report a bug about Launchpad...

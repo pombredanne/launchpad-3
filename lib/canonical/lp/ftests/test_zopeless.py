@@ -52,7 +52,7 @@ class TestInitZopeless(unittest.TestCase):
             warnings.warn_explicit = warn_explicit
 
     def expectedWarning(self, message, category, filename, lineno,
-                        module=None, registry=None):
+                        module=None, registry=None, module_globals=None):
         self.failUnlessEqual(alreadyInstalledMsg, str(message))
         self.warned = True
 

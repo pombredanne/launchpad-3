@@ -218,9 +218,9 @@ class UploadProcessor:
         :return: a list of upload directories found in the queue
             alphabetically sorted.
         """
-        # Protecting listdir by a lock ensures that we only get
-        # completely finished directories listed. See
-        # PoppyInterface for the other locking place.
+        # Protecting listdir by a lock ensures that we only get completely
+        # finished directories listed. See lp.poppy.hooks for the other
+        # locking place.
         lockfile_path = os.path.join(fsroot, ".lock")
         fsroot_lock = GlobalLock(lockfile_path)
         mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
@@ -239,7 +239,7 @@ class UploadProcessor:
             fsroot_lock.acquire(blocking=True)
             dir_names = os.listdir(fsroot)
         finally:
-            # Skip lockfile deletion, see similar code in poppyinterface.py.
+            # Skip lockfile deletion, see similar code in lp.poppy.hooks.
             fsroot_lock.release(skip_delete=True)
 
         sorted_dir_names =  sorted(
@@ -339,7 +339,10 @@ class UploadProcessor:
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
-        if first_path.isdigit() and policy.name != 'buildd':
+        # XXX: JonathanLange 2010-01-15 bug=510894: We should not be re-using
+        # magical string literals. Zombie Dijkstra will come and kill us in
+        # our sleep.
+        if first_path.isdigit() and policy.name not in ('buildd', 'recipe'):
             error_message = (
                 "Invalid upload path (%s) for this policy (%s)" %
                 (relative_path, policy.name))

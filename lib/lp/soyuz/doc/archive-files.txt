@@ -115,7 +115,7 @@ Adding and retrieving a binary 'udeb'.
 
 Adding and retrieving a source changesfile.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
     >>> source_upload = test_source.distroseries.createQueueEntry(
     ...     pocket=PackagePublishingPocket.RELEASE,

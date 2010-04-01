@@ -7,6 +7,12 @@
   i18n:domain="launchpad"
 >
   <body>
+    <tal:registering metal:fill-slot="registering">
+      Registered
+      <tal:created replace="context/datecreated/fmt:approximatedate" />
+      by
+      <tal:registrant replace="structure context/registrant/fmt:link" />
+    </tal:registering>
 
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="context/title">Mozilla</h1>
@@ -64,7 +70,30 @@
     <div class="yui-g">
       <div class="yui-u first">
         <tal:details replace="structure context/@@+details" />
+
+        <tal:faqs content="structure context/@@+portlet-listfaqs"
+          condition="context/@@+get-involved/official_answers" />
+
+        <tal:has-many-project condition="view/has_many_projects">
+          <tal:questions content="structure context/@@+portlet-latestquestions"
+            condition="context/@@+get-involved/official_answers" />
+        </tal:has-many-project>
+
+        <tal:bugs content="structure context/@@+portlet-latestbugs"
+          condition="context/@@+get-involved/official_malone" />
+
+        <tal:has-many-project condition="view/has_many_projects">
+          <tal:specs content="structure context/@@+portlet-latestspecs"
+            condition="context/@@+get-involved/official_blueprints" />
+        </tal:has-many-project>
+
+        <tal:contributors content="structure context/@@+portlet-top-contributors"/>
+
+        <tal:has-many-project condition="view/has_many_projects">
+          <tal:sprints content="structure context/@@+portlet-coming-sprints" />
+        </tal:has-many-project>
       </div>
+
       <div class="yui-u" id="products">
         <div class="portlet">
           <h2>Projects</h2>
@@ -72,48 +101,29 @@
             There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
-          <dl tal:condition="context/products"
+          <ul tal:condition="context/products"
               tal:repeat="product context/products">
-            <dt><a tal:replace="structure product/fmt:link">product</a></dt>
-            <dd tal:define="dev_focus product/development_focus">
-              <a tal:attributes="href dev_focus/fmt:url"
-                 tal:content="dev_focus/name">trunk</a>
-              series:
-              <tal:releases repeat="release dev_focus/releases">
-                <strong>
-                  <a tal:attributes="href release/fmt:url"
-                     tal:content="release/version">release
-                </a></strong>,
-              </tal:releases>
-              <tal:releases repeat="milestone dev_focus/milestones">
-                <strong>
-                  <a tal:attributes="href milestone/fmt:url"
-                     tal:content="milestone/name">milestone
-                  </a></strong><tal:comma
-                    condition="not:repeat/milestone/end">,</tal:comma>
-              </tal:releases>
-            </dd>
-          </dl>
-          <ul>
-            <li>
-              <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
-            </li>
+            <li><a tal:replace="structure product/fmt:link">product</a></li>
+          </ul>
+          <ul style="margin-top: 0.5em;">
             <li tal:condition="context/menu:overview/new_product/enabled">
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
             </li>
+            <li>
+              <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
+            </li>
           </ul>
         </div>
-      </div>
-    </div>
-    <div class="yui-g">
-      <div class="yui-u first">
-        <tal:bugs content="structure context/@@+portlet-latestbugs" />
-        <tal:specs content="structure context/@@+portlet-latestspecs" />
-        <tal:sprints content="structure context/@@+portlet-coming-sprints" />
-      </div>
-      <div class="yui-u">
-        <tal:questions content="structure context/@@+portlet-latestquestions" />
-        <tal:contributors content="structure context/@@+portlet-top-contributors" />
+
+        <tal:has-few-project condition="not: view/has_many_projects">
+          <tal:questions content="structure context/@@+portlet-latestquestions"
+            condition="context/@@+get-involved/official_answers" />
+
+          <tal:specs content="structure context/@@+portlet-latestspecs"
+            condition="context/@@+get-involved/official_blueprints" />
+
+          <tal:sprints content="structure context/@@+portlet-coming-sprints" />
+        </tal:has-few-project>
       </div>
     </div>
     </tal:main>
@@ -122,27 +132,11 @@
       <div id="object-actions" class="top-portlet">
         <tal:menu replace="structure view/@@+global-actions" />
       </div>
-      <div id="involvement" class="portlet involvement"
-           tal:condition="context/products">
-        <h2>Get Involved</h2>
-        <ul>
-          <li>
-            <a class="bugs"
-              tal:attributes="href context/menu:bugs/new/url">Report a Bug</a>
-          </li>
-          <li>
-            <a class="question"
-              tal:attributes="href context/menu:answers/new/url">Ask a question</a>
-          </li>
-          <li>
-            <a class="translate"
-              tal:attributes="href context/menu:translations/overview/url">Help translate</a>
-          </li>
-        </ul>
-      </div>
+
+      <div tal:replace="structure context/@@+get-involved" />
+
       <tal:portlet tal:replace="structure context/@@+portlet-latestannouncements" />
     </tal:side>
 
   </body>
 </html>
-

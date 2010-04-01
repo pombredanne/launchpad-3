@@ -70,7 +70,7 @@ subscribed instead.
 
     >>> browser.open("http://launchpad.dev/firefox/+securitycontact")
 
-    >>> browser.getControl("Security Contact").value = "sabdfl"
+    >>> browser.getControl("Security Contact").value = "mark"
     >>> browser.getControl("Change").click()
 
     >>> browser.open("http://localhost:9000/firefox/+filebug")
@@ -99,7 +99,7 @@ subscribed instead.
     >>> bug = getUtility(IBugSet).get(other_bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
-    [u'name16', u'sabdfl']
+    [u'mark', u'name16']
 
     >>> logout()
 
@@ -109,21 +109,18 @@ Trying to access the task edit page of a task on a private bug
 redirects the anonymous user to the login page.
 
     >>> browser = setupBrowser()
-    >>> browser.handleErrors = True
     >>> browser.open(
     ...     "http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
-
-XXX: Brad Bollenbach, 2005-09-13: This redirect is going to the wrong
-URL. See https://launchpad.net/malone/bugs/2265.
-
-    >>> print browser.url
-    http://launchpad.dev/firefox/+bug/.../+editstatus/+login
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
 
 The no-privs user cannot access bug #10, because it's filed on a private bug on
 which the no-privs is not an explicit subscriber.
 
     >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
-    >>> browser.open("http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
+    >>> browser.open(
+    ...     "http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
     Traceback (most recent call last):
     ...
     Unauthorized:...

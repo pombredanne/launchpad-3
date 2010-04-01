@@ -122,7 +122,7 @@ class TestBranchPuller(PullerBranchTestCase):
         output, error = process.communicate()
         return process.returncode, output, error
 
-    def runPuller(self):
+    def runPuller(self, *args):
         """Run the puller script for the given branch type.
 
         :param branch_type: One of 'upload', 'mirror' or 'import'
@@ -132,7 +132,7 @@ class TestBranchPuller(PullerBranchTestCase):
             stdout and stderr respectively.
         """
         command = [
-            '%s/bin/py' % config.root, self._puller_script, '-q']
+            '%s/bin/py' % config.root, self._puller_script, '-q'] + list(args)
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 
@@ -140,7 +140,7 @@ class TestBranchPuller(PullerBranchTestCase):
         """Serve the current directory over HTTP, returning the server URL."""
         http_server = HttpServer()
         http_server.port = port
-        http_server.setUp()
+        http_server.start_server()
         # Join cleanup added before the tearDown so the tearDown is executed
         # first as this tells the thread to die.  We then join explicitly as
         # the HttpServer.tearDown does not join.  There is a check in the
@@ -149,7 +149,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # threads and let the garbage collector get them, however this causes
         # issues with the test runner.
         self.addCleanup(http_server._http_thread.join)
-        self.addCleanup(http_server.tearDown)
+        self.addCleanup(http_server.stop_server)
         return http_server.get_url().rstrip('/')
 
     def getLPServerForUser(self, user):
@@ -167,8 +167,8 @@ class TestBranchPuller(PullerBranchTestCase):
         # in a subprocess which would have no way of knowing which directories
         # to look in if we used freshly created temporary directories.
         lp_server = get_lp_server(user.id)
-        lp_server.setUp()
-        self.addCleanup(lp_server.tearDown)
+        lp_server.start_server()
+        self.addCleanup(lp_server.stop_server)
         return lp_server
 
     def openBranchAsUser(self, db_branch, user):
@@ -298,7 +298,7 @@ class TestBranchPuller(PullerBranchTestCase):
         elif branch_type == BranchType.MIRRORED:
             # For mirrored branches, we serve the branch over HTTP, point the
             # database branch at this HTTP server and call requestMirror()
-            self.setUpMirroredBranch(default_branch, format='1.6')
+            self.setUpMirroredBranch(default_branch)
             transaction.commit()
         else:
             raise AssertionError(
@@ -315,7 +315,7 @@ class TestBranchPuller(PullerBranchTestCase):
         default_branch = self._makeDefaultStackedOnBranch()
         db_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=default_branch.product)
-        tree = self.setUpMirroredBranch(db_branch, format='1.6')
+        tree = self.setUpMirroredBranch(db_branch)
         transaction.commit()
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
@@ -335,7 +335,7 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch = self.factory.makeProductBranch(
             branch_type=BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
-        self.pushBranch(db_branch, format='1.6')
+        self.pushBranch(db_branch)
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
         mirrored_branch = self.assertMirrored(db_branch)
@@ -358,7 +358,7 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch = self.factory.makeProductBranch(
             branch_type=BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
-        self.pushBranch(db_branch, format='1.6')
+        self.pushBranch(db_branch)
         # Because Bazaar can't access branches over bzr+ssh in this test, we
         # cheat and set the stacking information directly.
         branch_config = TransportConfig(
@@ -383,7 +383,7 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=default_branch.product)
 
-        tree = self.setUpMirroredBranch(db_branch, format='1.6')
+        tree = self.setUpMirroredBranch(db_branch)
         transaction.commit()
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
@@ -429,6 +429,23 @@ class TestBranchPuller(PullerBranchTestCase):
         # Run the puller on an empty pull queue.
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
+
+    def test_type_filtering(self):
+        # When run with --branch-type arguments, the puller only mirrors those
+        # branches of the specified types.
+        hosted_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED)
+        mirrored_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
+        mirrored_branch.requestMirror()
+        transaction.commit()
+        self.pushBranch(hosted_branch)
+        command, retcode, output, error = self.runPuller(
+            '--branch-type', 'HOSTED')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(hosted_branch)
+        self.assertIsNot(
+            None, mirrored_branch.next_mirror_time)
 
     def test_records_script_activity(self):
         # A record gets created in the ScriptActivity table.

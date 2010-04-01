@@ -15,8 +15,9 @@ milestone targeting.
   >>> admin_browser.open(
   ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas')
   >>> admin_browser.getLink('Target milestone').click()
-  >>> admin_browser.title
-  'Edit blueprint details'
+  >>> print admin_browser.title
+  Target to a milestone : Support <canvas> Objects :
+  Blueprints : Mozilla Firefox
   >>> back_link = admin_browser.getLink('Support <canvas> Objects')
   >>> back_link.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
@@ -42,7 +43,7 @@ milestone.
   <.../firefox/+milestone/1.0...
 
   >>> admin_browser.getLink('1.0').url
-  'http://blueprints.launchpad.dev/firefox/+milestone/1.0'
+  'http://launchpad.dev/firefox/+milestone/1.0'
   >>> admin_browser.getLink('1.0').click()
 
 Now, we should see the spec on the Mozilla Milestone 1.0 page.

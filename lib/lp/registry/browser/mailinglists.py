@@ -40,6 +40,7 @@ class MailingListsReviewView(LaunchpadFormView):
     """Present review page for mailing list creation requests."""
 
     schema = ReviewForm
+    page_title = 'Pending mailing lists requests'
 
     @cachedproperty
     def registered_lists(self):
@@ -129,7 +130,8 @@ class HeldMessageView(LaunchpadView):
         # The author field is very close to what the details has, except that
         # the view wants to include a link to the person's overview page.
         self.author = '<a href="%s">%s</a>' % (
-            canonical_url(self.details.author), self.details.sender)
+            canonical_url(self.details.author),
+            escape(self.details.sender))
 
     def initialize(self):
         """See `LaunchpadView`."""
@@ -157,13 +159,21 @@ class HeldMessageView(LaunchpadView):
             if lineno > 20:
                 break
             if len(line.strip()) == 0:
-                paragraphs.append(u'\n'.join(current_paragraph))
-                paragraphs.append('\n<p>\n')
+                self._append_paragraph(paragraphs, current_paragraph)
                 current_paragraph = []
             else:
                 current_paragraph.append(line)
-        paragraphs.append(u'\n'.join(current_paragraph))
+        self._append_paragraph(paragraphs, current_paragraph)
         self.body_details = u''.join(paragraphs)
+
+    def _append_paragraph(self, paragraphs, current_paragraph):
+        if len(current_paragraph) == 0:
+            # There is nothing to append. The message has multiple
+            # blank lines.
+            return
+        paragraphs.append(u'\n<p>\n')
+        paragraphs.append(u'\n'.join(current_paragraph))
+        paragraphs.append(u'\n</p>\n')
 
     def _remove_leading_blank_lines(self):
         """Strip off any leading blank lines.

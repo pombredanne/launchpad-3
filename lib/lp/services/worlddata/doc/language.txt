@@ -2,7 +2,7 @@
 LanguageSet
 ===========
 
-  >>> from canonical.launchpad.interfaces import ILanguageSet
+  >>> from lp.services.worlddata.interfaces.language import ILanguageSet
   >>> language_set = getUtility(ILanguageSet)
 
 getLanguageByCode
@@ -206,6 +206,12 @@ are no suggestions.
     >>> language.alt_suggestion_language is None
     True
 
+Languages have a useful string representation containing its English name in
+quotes and its language code in parentheses.
+
+    >>> language
+    <Language 'Chinese' (zh)>
+
 
 dashedcode
 ==========
@@ -270,7 +276,7 @@ reading and setting them.
 
 We can add countries using `ILanguage.addCountry` method.
 
-  >>> from canonical.launchpad.interfaces import ICountrySet
+  >>> from lp.services.worlddata.interfaces.country import ICountrySet
   >>> country_set = getUtility(ICountrySet)
   >>> germany = country_set['DE']
   >>> es.addCountry(germany)

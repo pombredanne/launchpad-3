@@ -10,10 +10,11 @@ import unittest
 from lp.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.ftests import import_public_test_keys
+
 
 class TestBuilddUploads(TestStagedBinaryUploadBase):
     """Test how buildd uploads behave inside Soyuz.
@@ -69,15 +70,15 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
 
         real_policy = self.policy
         self.policy = 'insecure'
-        TestStagedBinaryUploadBase.setUp(self)
+        super(TestBuilddUploads, self).setUp()
         self.policy = real_policy
 
     def _publishBuildQueueItem(self, queue_item):
         """Publish build part of the given queue item."""
         queue_item.setAccepted()
         pubrec = queue_item.builds[0].publish(self.log)[0]
-        pubrec.secure_record.status = PackagePublishingStatus.PUBLISHED
-        pubrec.secure_record.datepublished = UTC_NOW
+        pubrec.status = PackagePublishingStatus.PUBLISHED
+        pubrec.datepublished = UTC_NOW
         queue_item.setDone()
 
     def _setupUploadProcessorForBuild(self, build_candidate):
@@ -124,6 +125,6 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
             build_used.title)
         self.assertEqual('FULLYBUILT', build_used.buildstate.name)
 
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

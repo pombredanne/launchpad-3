@@ -80,6 +80,12 @@ class IStaticDiffSource(Interface):
         """Get or create a StaticDiff from a string.
 
         If a StaticDiff exists for this revision_id pair, the text is ignored.
+
+        :param from_revision_id: The id of the old revision.
+        :param to_revision_id: The id of the new revision.
+        :param text: The text of the diff, as bytes.
+        :param filename: The filename to store for the diff.  Randomly
+            generated if not supplied.
         """
 
 
@@ -104,9 +110,9 @@ class IPreviewDiff(IDiff):
                     'generate the diff.'),
             readonly=True))
 
-    dependent_revision_id = exported(
+    prerequisite_revision_id = exported(
         TextLine(
-            title=_('The tip revision id of the dependent branch used to '
+            title=_('The tip revision id of the prerequisite branch used to '
                     'generate the diff.'),
             readonly=True))
 
@@ -114,6 +120,10 @@ class IPreviewDiff(IDiff):
         Text(title=_(
                 'The conflicts text describing any path or text conflicts.'),
              readonly=True))
+
+    has_conflicts = Bool(
+        title=_('Has conflicts'), readonly=True,
+        description=_('The previewed merge produces conflicts.'))
 
     # The schema for the Reference gets patched in _schema_circular_imports.
     branch_merge_proposal = exported(
@@ -125,4 +135,7 @@ class IPreviewDiff(IDiff):
         Bool(readonly=True, description=_(
                 'If the preview diff is stale, it is out of date when '
                 'compared to the tip revisions of the source, target, and '
-                'possibly dependent branches.')))
+                'possibly prerequisite branches.')))
+
+    def getFileByName(filename):
+        """Return the file under +files with specified name."""

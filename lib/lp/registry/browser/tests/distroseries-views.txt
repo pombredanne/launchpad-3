@@ -1,23 +1,34 @@
 DistroSeries view classes
 =========================
 
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
 Let's use ubuntu/hoary for these tests.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
+
+Administering distroseries
+--------------------------
+
+The +admin view allows administrators to change a series. It provides a
+label, page_title, and cancel_url
+
+    >>> view = create_initialized_view(hoary, name='+admin')
+    >>> print view.label
+    Administer The Hoary Hedgehog Release
+
+    >>> print view.page_title
+    Administer The Hoary Hedgehog Release
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu/hoary
+
 We will use a function to print the details related with the
 distroseries being tested.
 
     >>> def administrate_distroseries(distroseries, form):
-    ...     request = LaunchpadTestRequest(form=form)
-    ...     request.method = 'POST'
-    ...     view = getMultiAdapter((hoary, request), name="+admin")
-    ...     view.initialize()
+    ...     view = create_initialized_view(hoary, name='+admin', form=form)
     ...     print '%d errors' % len(view.errors)
     ...     for error in view.errors:
     ...         try:
@@ -138,15 +149,21 @@ initial value remains.
     True
 
 
-Editing distroseries
---------------------
+Editing distro series
+---------------------
 
 The distroseries edit view allows the editor to change series. The form
 uses the displayname, title, and description fields.
 
     >>> view = create_initialized_view(hoary, '+edit')
     >>> print view.label
-    Change The Hoary Hedgehog Release details
+    Edit The Hoary Hedgehog Release details
+
+    >>> print view.page_title
+    Edit The Hoary Hedgehog Release details
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu/hoary
 
     >>> [field.__name__ for field in view.form_fields]
     ['displayname', 'title', 'summary', 'description']
@@ -155,6 +172,7 @@ Series that belong to derivative distributions also contain the status field.
 
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
     >>> yo_series = factory.makeDistroRelease(name='melon')
+    >>> yo_series.title = 'Melon'
     >>> youbuntu.full_functionality
     False
 
@@ -163,14 +181,17 @@ Series that belong to derivative distributions also contain the status field.
     >>> login_person(yo_driver)
     >>> view = create_initialized_view(yo_series, '+edit')
     >>> print view.label
-    Change ... details
+    Edit Melon details
 
     >>> [field.__name__ for field in view.form_fields]
     ['displayname', 'title', 'summary', 'description', 'status']
 
+    >>> print view.widgets.get('status')._getFormValue()
+    Active Development
 
-Creating distroseries
----------------------
+
+Creating distro series
+----------------------
 
 A distroseries is created using the distroseries view.
 
@@ -178,9 +199,9 @@ A distroseries is created using the distroseries view.
 
     >>> view = create_view(ubuntu, '+addseries')
     >>> print view.page_title
-    Register a series in Ubuntu
+    Register a series
     >>> print view.label
-    Register a new series
+    Register a series
 
     >>> print view.cancel_url
     http://launchpad.dev/ubuntu
@@ -213,14 +234,23 @@ A distroseries is created whent the required field are submitted.
     # Save this series to test name and version constraints.
     >>> transaction.commit()
 
+Administrators can create series, but normal users cannot.
 
-Drivers can create distroseries
--------------------------------
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> check_permission('launchpad.Driver', view)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Driver', view)
+    False
+
+
+Drivers can create distro series
+--------------------------------
 
 Users who are appointed as drivers of a distribution can create a series.
 Most distributions are an `IDerivativeDistribution`.
-
-    >>> from canonical.launchpad.webapp.authorization import check_permission
 
     >>> login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
@@ -254,8 +284,8 @@ is an `IBaseDistribution`.
     False
 
 
-Editing Distroseries
---------------------
+Drivers editing distro series
+.............................
 
 The series driver (release manager) can edit a series if the series belongs
 to a `IDerivativeDistribution`.

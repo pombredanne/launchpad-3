@@ -16,10 +16,6 @@
   <permission
     id="launchpad.Edit" title="Editing something" access_level="write" />
 
-  <permission
-    id="launchpad.EditLocation" title="Editing an object's location"
-    access_level="write" />
-
   <!-- Request large downloads, or other heavyweight jobs that are not
   semantically like "editing" and are not restricted to administrators.
   -->
@@ -60,7 +56,7 @@
   <permission
     id="launchpad.Special" title="Special permissions" access_level="write" />
 
-  <!-- Experimental (sabdfl) Trying to use the permissions system to
+  <!-- Experimental (mark) Trying to use the permissions system to
        establish roles. If this works we should consider a parallel "roles"
        system that is similar to the permissions system, or just extending
        our permissions vocabulary to include these roles. -->

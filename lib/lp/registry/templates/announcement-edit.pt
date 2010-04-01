@@ -5,17 +5,13 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
-  <metal:block fill-slot="head_epilogue">
-    <metal:yui-dependencies
-      use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
-  </metal:block>
   <body>
     <div metal:fill-slot="main">
       <div class="top-portlet">
         <div metal:use-macro="context/@@launchpad_form/form" />
       </div>
 
-      <tal:menu replace="structure view/@@+related-pages" />
+      <tal:menu replace="structure context/@@+related-pages" />
     </div>
   </body>
 </html>

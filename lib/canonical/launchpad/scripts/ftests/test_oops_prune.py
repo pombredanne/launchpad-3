@@ -17,6 +17,7 @@ import tempfile
 import unittest
 
 from pytz import UTC
+import transaction
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
@@ -58,9 +59,16 @@ class TestOopsPrune(unittest.TestCase):
             INSERT INTO MessageChunk(message, sequence, content)
             VALUES (1, 99, 'OOPS-%s')
             """ % self.referenced_oops_code)
+        if not os.path.exists(config.error_reports.error_dir):
+            os.mkdir(config.error_reports.error_dir)
+
+        # Need to commit or the changes are not visible on the slave.
+        transaction.commit()
+
 
     def tearDown(self):
         shutil.rmtree(self.oops_dir)
+        shutil.rmtree(config.error_reports.error_dir)
 
     def test_referenced_oops(self):
         self.failUnlessEqual(
@@ -96,6 +104,10 @@ class TestOopsPrune(unittest.TestCase):
                 whiteboard=NULL
                 WHERE id=2
             """)
+
+        # Need to commit or the changes are not visible on the slave.
+        transaction.commit()
+
         self.failUnlessEqual(
                 set([
                     self.referenced_oops_code,

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import os
+import re
 from subprocess import PIPE
 import unittest
 
@@ -16,7 +17,7 @@ from bzrlib.transport import remote
 
 from canonical.config import config
 
-from lp.codehosting import get_bzr_path, get_bzr_plugins_path
+from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 from lp.codehosting.bzrutils import make_error_utility
 
 
@@ -50,7 +51,7 @@ class TestLaunchpadServe(TestCaseWithTransport):
         """
         if env_changes is None:
             env_changes = {}
-        env_changes['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
+        env_changes['BZR_PLUGIN_PATH'] = get_BZR_PLUGIN_PATH_for_subprocess()
         old_env = {}
 
         def cleanup_environment():

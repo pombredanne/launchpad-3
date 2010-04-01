@@ -53,32 +53,20 @@ class TestTranslationSharingPOTemplate(unittest.TestCase):
 
     def test_getPOTMsgSetByMsgIDText(self):
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
-                                               singular="Open file")
+                                               singular="Open file",
+                                               sequence=2)
 
-        # It's still not present in the PO template.
-        read_potmsgset = self.devel_potemplate.getPOTMsgSetByMsgIDText(
-            "Open file")
-        self.assertEquals(read_potmsgset, None)
-
-        # To actually insert it into a POTemplate, it needs
-        # a sequence to be set.
-        potmsgset.setSequence(self.devel_potemplate, 2)
+        # We can retrieve the potmsgset by its ID text.
         read_potmsgset = self.devel_potemplate.getPOTMsgSetByMsgIDText(
             "Open file")
         self.assertEquals(potmsgset, read_potmsgset)
 
     def test_getPOTMsgSetBySequence(self):
-        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         sequence = self.factory.getUniqueInteger()
+        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
+                                               sequence=sequence)
 
-        # It's still not present in the PO template.
-        read_potmsgset = self.devel_potemplate.getPOTMsgSetBySequence(
-            sequence)
-        self.assertEquals(read_potmsgset, None)
-
-        # Now we set the appropriate sequence in a potemplate and see that
-        # it works.
-        potmsgset.setSequence(self.devel_potemplate, sequence)
+        # We can retrieve the potmsgset by its sequence.
         read_potmsgset = self.devel_potemplate.getPOTMsgSetBySequence(
             sequence)
         self.assertEquals(potmsgset, read_potmsgset)
@@ -89,16 +77,11 @@ class TestTranslationSharingPOTemplate(unittest.TestCase):
         self.assertEquals(read_potmsgset, None)
 
     def test_getPOTMsgSetByID(self):
-        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
+        potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
+                                               sequence=3)
         id = potmsgset.id
 
-        # It's still not present in the PO template.
-        read_potmsgset = self.devel_potemplate.getPOTMsgSetByID(id)
-        self.assertEquals(read_potmsgset, None)
-
-        # Now we set the appropriate sequence in a potemplate and see that
-        # we can get it by ID.
-        potmsgset.setSequence(self.devel_potemplate, 3)
+        # We can retrieve the potmsgset by its ID.
         read_potmsgset = self.devel_potemplate.getPOTMsgSetByID(id)
         self.assertEquals(potmsgset, read_potmsgset)
 
@@ -121,16 +104,6 @@ class TestTranslationSharingPOTemplate(unittest.TestCase):
         has_message_id = naked_potemplate.hasMessageID(
             present_msgid_singular, present_msgid_plural, present_context)
         self.assertEquals(has_message_id, True)
-
-        # A new POTMsgSet that is not part of the POTemplate cannot
-        # be gotten using hasMessageID on a POTemplate.
-        absent_potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
-        absent_msgid_singular = absent_potmsgset.msgid_singular
-        absent_msgid_plural = absent_potmsgset.msgid_plural
-        absent_context = absent_potmsgset.msgid_plural
-        has_message_id = naked_potemplate.hasMessageID(
-            absent_msgid_singular, absent_msgid_plural, absent_context)
-        self.assertEquals(has_message_id, False)
 
     def test_hasPluralMessage(self):
         naked_potemplate = removeSecurityProxy(self.devel_potemplate)

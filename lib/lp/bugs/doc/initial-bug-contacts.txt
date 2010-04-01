@@ -60,7 +60,7 @@ Let's add an ITeam as one of the subscribers:
 To remove a subscription, use
 IStructuralSubscriptionTarget.removeBugSubscription:
 
-    >>> debian_firefox.removeBugSubscription(sample_person)
+    >>> debian_firefox.removeBugSubscription(sample_person, sample_person)
     >>> sorted([sub.subscriber.id for sub in debian_firefox.bug_subscriptions])
     [17]
 
@@ -68,7 +68,7 @@ Trying to remove a subscription that doesn't exist on a source package raises a
 DeleteSubscriptionError.
 
     >>> foobar = personset.getByName("name16")
-    >>> debian_firefox.removeBugSubscription(foobar)
+    >>> debian_firefox.removeBugSubscription(foobar, foobar)
     Traceback (most recent call last):
       ...
     DeleteSubscriptionError: ...
@@ -192,7 +192,7 @@ in the footer of the email with the bug title and URL.
     <BLANKLINE>
     ** Affects: firefox
          Importance: Low
-           Assignee: Mark Shuttleworth (sabdfl)
+           Assignee: Mark Shuttleworth (mark)
              Status: New
     <BLANKLINE>
     ** Affects: pmount (Ubuntu)

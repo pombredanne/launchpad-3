@@ -16,6 +16,8 @@ __all__ = [
     'ICodeImportJobWorkflow',
     ]
 
+import datetime
+
 from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Object, Text
 
@@ -122,7 +124,7 @@ class ICodeImportJobSetPublic(Interface):
     # we implement endpoint specific authentication for the private xml-rpc
     # server.
 
-    def getJobForMachine(hostname):
+    def getJobForMachine(hostname, worker_limit):
         """Select a job for the given machine to run and mark it as started.
 
         If there is not already a CodeImportMachine with the given hostname,
@@ -137,13 +139,18 @@ class ICodeImportJobSetPublic(Interface):
 class ICodeImportJobWorkflow(Interface):
     """Utility to manage `CodeImportJob` objects through their life cycle."""
 
-    def newJob(code_import):
+    def newJob(code_import, interval=None):
         """Create a `CodeImportJob` associated with a reviewed `CodeImport`.
 
         Call this method from `CodeImport.updateFromData` when the
         review_status of `code_import` changes to REVIEWED.
 
         :param code_import: `CodeImport` object.
+        :param interval: Schedule the job this far ahead of the start of the
+            last update of this import.  Defaults to
+            ``code_import.effective_update_interval``.  This parameter is
+            ignored and the job scheduled for right now if this is the first
+            run of the import.
         :precondition: `code_import` has REVIEWED review_status.
         :precondition: `code_import` has no associated `CodeImportJob`.
         :return: A new `CodeImportJob` object associated to `code_import`.
@@ -218,9 +225,11 @@ class ICodeImportJobWorkflow(Interface):
             display for diagnostics. May be None.
         :precondition: `import_job`.state == RUNNING.
         :postcondition: `import_job` is deleted.
-        :postcondition: `code_import.import_job` is not None.
+        :postcondition: `code_import.import_job` is not None unless the job
+            has failed more than consecutive_failure_limit times in a row.
         :postcondition: `code_import.import_job.date_due` is
-            import_job.date_due + code_import.effective_update_interval`.
+            import_job.date_due + code_import.effective_update_interval`, with
+            scaling to retry failing imports less often.
         :postcondition: A `CodeImportResult` was created.
         :postcondition: A FINISH `CodeImportEvent` was created.
         """

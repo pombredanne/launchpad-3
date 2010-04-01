@@ -1,35 +1,18 @@
-<tal:root
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
-
-<tal:do-this-first replace="view/processForm" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/team/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-options" />
-</metal:rightportlets>
+  <tal:heading metal:fill-slot="heading">
+    <h1 tal:content="context/title">Mozilla</h1>
+  </tal:heading>
 
   <div metal:fill-slot="main">
-
-      <h1 tal:content="context/title" />
 
     <tal:open-poll condition="context/isOpen">
 
@@ -134,6 +117,7 @@
           <br />
 
           <input type="submit" value="Continue" name="continue" />
+          or <a tal:attributes="href context/team/fmt:url/+polls">Cancel</a>
         </td>
       </tr>
     </table>
@@ -155,4 +139,3 @@
 
 </body>
 </html>
-</tal:root>

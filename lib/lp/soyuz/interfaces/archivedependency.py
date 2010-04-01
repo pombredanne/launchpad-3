@@ -16,7 +16,7 @@ from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)

@@ -167,6 +167,7 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_maintainer = hoary.owner
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
+  >>> arg_recipebuild = factory.makeSourcePackageRecipeBuild()
 
 The other argurments are strings:
 
@@ -193,7 +194,8 @@ ISourcePackageRelease, it will automatically set the
   ...     arg_urgency, changelog_entry, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright,
-  ...      build_conflicts=None, build_conflicts_indep=None)
+  ...     build_conflicts=None, build_conflicts_indep=None,
+  ...     source_package_recipe_build=arg_recipebuild)
 
   >>> new_spr.upload_distroseries.name
   u'hoary'
@@ -203,6 +205,8 @@ ISourcePackageRelease, it will automatically set the
   True
   >>> new_spr.copyright
   u'smashed debian/copyright ...'
+  >>> new_spr.source_package_recipe_build == arg_recipebuild
+  True
 
 Throw away the DB changes:
 
@@ -217,13 +221,14 @@ Let's get a sample SourcePackageRelease:
 
 == Package sizes ==
 
-The size of a package can be obtained via a private SourcePackageRelease
-method.
+The size of a source package can be obtained via the getPackageSize() method.
+It returns the sum of the size of all files comprising the source package (in
+kilo-bytes).
 
     >>> spr = SourcePackageRelease.get(14)
     >>> spr.name
     u'mozilla-firefox'
-    >>> spr._getPackageSize()
+    >>> spr.getPackageSize()
     9690.0
 
 Verify that empty packages have a size of zero.
@@ -233,7 +238,7 @@ Verify that empty packages have a size of zero.
     ...     name="linux-source-2.6.15")
     >>> spr = SourcePackageRelease.selectOneBy(
     ...     sourcepackagename=linux_src, version='2.6.15.3')
-    >>> spr._getPackageSize()
+    >>> spr.getPackageSize()
     0.0
 
 
@@ -264,11 +269,11 @@ the same permission on it.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov.archive.buildd_secret = 'boing'
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True)
 
     >>> private_publication = test_publisher.getPubSource(
-    ...     archive=cprov.archive)
+    ...     archive=cprov_private_ppa)
 
     >>> test_sourcepackagerelease = private_publication.sourcepackagerelease
     >>> print test_sourcepackagerelease.title
@@ -301,7 +306,7 @@ Once the SourcePackageRelease in question gets copied to a public
 archive, let's say Ubuntu primary archive, it will become publicly
 available.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
 
     >>> public_publication = private_publication.copyTo(
@@ -338,7 +343,7 @@ Another common scenario is that once the package is unembargoed from the
 private PPA, it gets deleted from that private PPA.  At this point the
 package is still public:
 
-    >>> unused = private_publication.requestDeletion(cprov)
+    >>> private_publication.requestDeletion(cprov)
     >>> transaction.commit()
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.View', test_sourcepackagerelease)

@@ -32,11 +32,17 @@ class MailWrapper:
             width=width, subsequent_indent=indent,
             replace_whitespace=False, break_long_words=False)
 
-    def format(self, text, force_wrap=False):
+    def format(self, text, force_wrap=False, wrap_func=None):
         """Format the text to be included in an email.
 
-        If force_wrap is False, only paragraphs containing a single line
-        will be wrapped.
+        :param force_wrap: When False (the default), only paragraphs
+            containing a single line will be wrapped.  Otherwise paragraphs in
+            text will be re-wrapped.
+        :type force_wrap: bool
+        :param wrap_func: A function to call at the beginning of each
+            paragraph to be wrapped.  If the function returns False, the
+            paragraph is not wrapped.
+        :type wrap_func: callable or None
         """
         wrapped_lines = []
 
@@ -54,7 +60,13 @@ class MailWrapper:
         for paragraph in text.split('\n\n'):
             lines = paragraph.split('\n')
 
-            if len(lines) == 1:
+            if wrap_func is not None and not wrap_func(paragraph):
+                # The user's callback function has indicated that the
+                # paragraph should not be wrapped.
+                wrapped_lines += (
+                    [indentation + lines[0]] +
+                    [self.indent + line for line in lines[1:]])
+            elif len(lines) == 1:
                 # We use TextWrapper only if the paragraph consists of a
                 # single line, like in the case where a person enters a
                 # comment via the web ui, without breaking the lines

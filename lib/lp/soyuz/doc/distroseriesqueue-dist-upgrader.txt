@@ -279,7 +279,7 @@ files in the respective PPA location.
   >>> beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
   >>> admin = getUtility(ILaunchpadCelebrities).admin
   >>> name16 = getUtility(IPersonSet).getByName("name16")
-  >>> beta_testers.addMember(name16, admin)
+  >>> ignored = beta_testers.addMember(name16, admin)
 
   >>> foobar_archive = getUtility(IArchiveSet).new(
   ...     distribution=ubuntutest, purpose=ArchivePurpose.PPA,
@@ -297,7 +297,6 @@ files in the respective PPA location.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Don't verify signer ACL for PPA
   DEBUG: Finished checking upload.
 
   >>> success = ppa_upload.do_accept()

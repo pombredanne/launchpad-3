@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -95,7 +95,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
     def generateHtpasswd(self, ppa, tokens):
         """Generate a htpasswd file for `ppa`s `tokens`.
-        
+
         :param ppa: The context PPA (an `IArchive`).
         :param tokens: A iterable containing `IArchiveAuthToken`s.
         :return: The filename of the htpasswd file that was generated.
@@ -103,6 +103,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         # Create a temporary file that will be a new .htpasswd.
         pub_config = getPubConfig(ppa)
         fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
+        os.close(fd)
 
         # The first .htpasswd entry is the buildd_secret.
         list_of_users = [
@@ -121,7 +122,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
     def replaceUpdatedHtpasswd(self, ppa, temp_htpasswd_file):
         """Compare the new and the old htpasswd and replace if changed.
-        
+
         :return: True if the file was replaced.
         """
         if self.options.dryrun:

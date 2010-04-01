@@ -9,7 +9,6 @@ __all__ = [
     'LibraryFileAliasSet',
     'LibraryFileContent',
     'LibraryFileDownloadCount',
-    'ParsedApacheLog',
     ]
 
 from datetime import datetime, timedelta
@@ -19,20 +18,18 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, IntCol, SQLRelatedJoin, BoolCol
-from storm.locals import Date, Desc, Int, Reference, Store, Storm, Unicode
+from storm.locals import Date, Desc, Int, Reference, Store
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILibraryFileAlias, ILibraryFileAliasSet, ILibraryFileContent,
-    ILibraryFileDownloadCount, IMasterStore, IParsedApacheLog)
+    ILibraryFileDownloadCount, IMasterStore)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT)
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class LibraryFileContent(SQLBase):
@@ -43,11 +40,9 @@ class LibraryFileContent(SQLBase):
     _table = 'LibraryFileContent'
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    datemirrored = UtcDateTimeCol(default=None)
     filesize = IntCol(notNull=True)
     sha1 = StringCol(notNull=True)
     md5 = StringCol()
-    deleted = BoolCol(notNull=True, default=False)
 
 
 class LibraryFileAlias(SQLBase):
@@ -60,7 +55,7 @@ class LibraryFileAlias(SQLBase):
     _table = 'LibraryFileAlias'
     date_created = UtcDateTimeCol(notNull=False, default=DEFAULT)
     content = ForeignKey(
-            foreignKey='LibraryFileContent', dbName='content', notNull=True,
+            foreignKey='LibraryFileContent', dbName='content', notNull=False,
             )
     filename = StringCol(notNull=True)
     mimetype = StringCol(notNull=True)
@@ -101,7 +96,7 @@ class LibraryFileAlias(SQLBase):
 
     def getURL(self):
         """See ILibraryFileAlias.getURL"""
-        if config.vhosts.use_https:
+        if config.librarian.use_https:
             return self.https_url
         else:
             return self.http_url
@@ -191,6 +186,9 @@ class LibraryFileAlias(SQLBase):
                                  otherColumn='sourcepackagerelease',
                                  intermediateTable='SourcePackageReleaseFile')
 
+    @property
+    def deleted(self):
+        return self.content is None
 
     def __storm_invalidated__(self):
         """Make sure that the file is closed across transaction boundary."""
@@ -241,21 +239,3 @@ class LibraryFileDownloadCount(SQLBase):
     count = Int(allow_none=False)
     country_id = Int(name='country', allow_none=True)
     country = Reference(country_id, 'Country.id')
-
-
-class ParsedApacheLog(Storm):
-    """See `IParsedApacheLog`"""
-
-    implements(IParsedApacheLog)
-    __storm_table__ = 'ParsedApacheLog'
-
-    id = Int(primary=True)
-    first_line = Unicode(allow_none=False)
-    bytes_read = Int(allow_none=False)
-    date_last_parsed = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-
-    def __init__(self, first_line, bytes_read):
-        super(ParsedApacheLog, self).__init__()
-        self.first_line = unicode(first_line)
-        self.bytes_read = bytes_read
-        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR).add(self)

@@ -139,6 +139,23 @@ Files:
  7947f81d47c3ccdadf05d5e4a120b098 41936 x11proto-damage_6.8.99.7.orig.tar.gz
  a4e78902d591d87ab864cedc1e83278d 2201 x11proto-damage_6.8.99.7-2.diff.gz
 
+Package: bar
+Binary: bar
+Version: 1.0-1
+Priority: optional
+Section: misc
+Maintainer: Launchpad team <launchpad@lists.canonical.com>
+Architecture: all
+Standards-Version: 3.6.2
+Format: 3.0 (quilt)
+Directory: pool/main/b/bar
+Files: 
+ 662977e76501561c902c34bf94a2054d 1115 bar_1.0-1.dsc
+ eed105761436486f7eebaa8c017bc59a 178 bar_1.0.orig-comp1.tar.gz
+ 0a30b50fa846e75261808ee1f41d1cbe 156 bar_1.0.orig-comp2.tar.bz2
+ fc1464e5985b962a042d5354452f361d 164 bar_1.0.orig.tar.gz
+ e68110184d4d9e7afd81520cc490b396 737 bar_1.0-1.debian.tar.bz2
+
 Bogus, bogus, bogus
 ain't invalid stanza's neat?
 

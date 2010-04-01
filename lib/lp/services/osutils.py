@@ -6,10 +6,20 @@
 __metaclass__ = type
 __all__ = [
     'remove_tree',
+    'kill_by_pidfile',
+    'remove_if_exists',
+    'two_stage_kill',
     ]
 
-import os
+import os.path
 import shutil
+
+
+from canonical.launchpad.daemons.tachandler import (
+    kill_by_pidfile,
+    remove_if_exists,
+    two_stage_kill,
+    )
 
 
 def remove_tree(path):

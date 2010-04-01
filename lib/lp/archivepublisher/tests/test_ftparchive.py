@@ -21,7 +21,7 @@ from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.ftparchive import FTPArchiveHandler, f_touch
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 def sanitize_feisty_apt_ftparchive_output(text):

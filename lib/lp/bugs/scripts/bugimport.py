@@ -23,7 +23,7 @@ import os
 import time
 
 try:
-    import xml.elementtree.cElementTree as ET
+    import xml.etree.cElementTree as ET
 except ImportError:
     import cElementTree as ET
 
@@ -41,7 +41,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
-from lp.bugs.interfaces.bugattachment import BugAttachmentType, IBugAttachmentSet
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet, NoBugTrackerFound
@@ -155,28 +156,54 @@ class BugImporter:
         if not displayname:
             displayname = None
 
+        person_set = getUtility(IPersonSet)
+
         launchpad_id = self.person_id_cache.get(email)
         if launchpad_id is not None:
-            person = getUtility(IPersonSet).get(launchpad_id)
+            person = person_set.get(launchpad_id)
             if person is not None and person.merged is not None:
                 person = None
         else:
             person = None
 
         if person is None:
-            person = getUtility(IPersonSet).getByEmail(email)
-            if person is None:
+            address = getUtility(IEmailAddressSet).getByEmail(email)
+            if address is None:
                 self.logger.debug('creating person for %s' % email)
-                # has the short name been taken?
-                if name is not None:
-                    person = getUtility(IPersonSet).getByName(name)
-                    if person is not None:
-                        name = None
-                person, address = getUtility(IPersonSet).createPersonAndEmail(
-                    email=email, name=name, displayname=displayname,
+                # Has the short name been taken?
+                if name is not None and (
+                    person_set.getByName(name) is not None):
+                    # The short name is already taken, so we'll pass
+                    # None to createPersonAndEmail(), which will take
+                    # care of creating a unique one.
+                    name = None
+                person, address = (
+                    person_set.createPersonAndEmail(
+                        email=email, name=name, displayname=displayname,
+                        rationale=PersonCreationRationale.BUGIMPORT,
+                        comment=('when importing bugs for %s' %
+                                 self.product.displayname)))
+            elif address.personID is None:
+                # The user has an Account and and EmailAddress linked
+                # to that account.
+                assert address.accountID is not None, (
+                    "Email address not linked to an Account: %s " % email)
+                self.logger.debug(
+                    'creating person from account for %s' % email)
+                if name is not None and (
+                    person_set.getByName(name) is not None):
+                    # The short name is already taken, so we'll pass
+                    # None to createPerson(), which will take care of
+                    # creating a unique one.
+                    name = None
+                person = address.account.createPerson(
                     rationale=PersonCreationRationale.BUGIMPORT,
-                    comment='when importing bugs for %s'
-                            % self.product.displayname)
+                    name=name, comment=('when importing bugs for %s' %
+                                        self.product.displayname))
+            else:
+                # EmailAddress and Person are in different stores.
+                person = person_set.get(address.personID)
+
             self.person_id_cache[email] = person.id
 
         # if we are auto-verifying new accounts, make sure the person

@@ -3,21 +3,12 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
   <body>
 
   <div metal:fill-slot="main">
     <div metal:use-macro="context/@@launchpad_form/form">
-      <p metal:fill-slot="extra_top">
-        For verification purposes we ask that you enter your Launchpad
-        password. If you've forgotten it you'll have to
-        <a href="/+forgottenpassword">reset it</a> first.
-      </p>
 
       <div metal:fill-slot="extra_bottom">
         <p>

@@ -26,6 +26,11 @@ CLUSTERNAME = 'sl'
 # The namespace in the database used to contain all the Slony-I tables.
 CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 
+# Replication set id constants. Don't change these without DBA help.
+LPMAIN_SET_ID = 1
+AUTHDB_SET_ID = 2
+HOLDING_SET_ID = 666
+
 # Seed tables for the authdb replication set to be passed to
 # calculate_replication_set().
 AUTHDB_SEED = frozenset([
@@ -39,6 +44,7 @@ AUTHDB_SEED = frozenset([
 LPMAIN_SEED = frozenset([
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
+    ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
     ('public', 'openidconsumerassociation'),
@@ -52,13 +58,48 @@ LPMAIN_SEED = frozenset([
     ('public', 'parsedapachelog'),
     ('public', 'shipitsurvey'),
     ('public', 'openidassociations'), # Remove this in April 2009 or later.
+    ('public', 'databasereplicationlag'),
     ])
 
 # Explicitly list tables that should not be replicated. This includes the
 # session tables, as these might exist in developer databases but will not
 # exist in the production launchpad database.
 IGNORED_TABLES = set([
-    'public.secret', 'public.sessiondata', 'public.sessionpkgdata'])
+    # Session tables that in some situations will exist in the main lp
+    # database.
+    'public.secret', 'public.sessiondata', 'public.sessionpkgdata',
+    # Mirror tables, per Bug #489078. These tables have their own private
+    # replication set that is setup manually.
+    'public.lp_person',
+    'public.lp_personlocation',
+    'public.lp_teamparticipation',
+    # Ubuntu SSO database. These tables where created manually by ISD
+    # and the Launchpad scripts should not mess with them. Eventually
+    # these tables will be in a totally separate database.
+    'public.auth_permission',
+    'public.auth_group',
+    'public.auth_user',
+    'public.auth_message',
+    'public.django_content_type',
+    'public.auth_permission',
+    'public.django_session',
+    'public.django_site',
+    'public.django_admin_log',
+    'public.ssoopenidrpconfig',
+    'public.auth_group_permissions',
+    'public.auth_user_groups',
+    'public.auth_user_user_permissions',
+    'public.oauth_nonce',
+    'public.oauth_consumer',
+    'public.oauth_token',
+    'public.api_user',
+    'public.oauth_consumer_id_seq',
+    'public.api_user_id_seq',
+    'public.oauth_nonce_id_seq',
+    ])
+
+# Calculate IGNORED_SEQUENCES
+IGNORED_SEQUENCES = set('%s_id_seq' % table for table in IGNORED_TABLES)
 
 
 def slony_installed(con):
@@ -101,7 +142,7 @@ class TableReplicationInfo:
 
 def sync(timeout):
     """Generate a sync event and wait for it to complete on all nodes.
-   
+
     This means that all pending events have propagated and are in sync
     to the point in time this method was called. This might take several
     hours if there is a large backlog of work to replicate.
@@ -255,7 +296,7 @@ def get_all_cluster_nodes(con):
         assert len(node_ids) == 1, "Multiple nodes but no paths."
         master_node_id = node_ids[0]
         master_connection_string = ConnectionString(
-            config.database.main_master)
+            config.database.rw_main_master)
         master_connection_string.user = 'slony'
         return [Node(
             master_node_id, 'node%d_node' % master_node_id,
@@ -282,10 +323,10 @@ def preamble(con=None):
         cluster name = sl;
 
         # Symbolic ids for replication sets.
-        define lpmain_set  1;
-        define authdb_set  2;
-        define holding_set 666;
-        """)]
+        define lpmain_set  %d;
+        define authdb_set  %d;
+        define holding_set %d;
+        """ % (LPMAIN_SET_ID, AUTHDB_SET_ID, HOLDING_SET_ID))]
 
     if master_node is not None:
         preamble.append(dedent("""\
@@ -303,9 +344,9 @@ def preamble(con=None):
                 node.nickname, node.node_id,
                 node.nickname, node.connection_string,
                 node.nickname, node.nickname)))
-    
+
     return '\n\n'.join(preamble)
-        
+
 
 def calculate_replication_set(cur, seeds):
     """Return the minimal set of tables and sequences needed in a
@@ -434,7 +475,7 @@ def discover_unreplicated(cur):
 
     return (
         all_tables - replicated_tables - IGNORED_TABLES,
-        all_sequences - replicated_sequences)
+        all_sequences - replicated_sequences - IGNORED_SEQUENCES)
 
 
 class ReplicationConfigError(Exception):

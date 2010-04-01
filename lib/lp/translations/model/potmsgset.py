@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -6,25 +6,35 @@
 __metaclass__ = type
 __all__ = ['POTMsgSet']
 
+import datetime
 import gettextpo
 import logging
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+from storm.expr import SQL
+from storm.store import EmptyResultSet, Store
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.launchpad import helpers
+from canonical.launchpad.helpers import shortlist
 from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     IPOTMsgSet,
-    POTMsgSetInIncompatibleTemplatesError)
+    POTMsgSetInIncompatibleTemplatesError,
+    TranslationCreditsType)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationimporter import (
@@ -34,8 +44,6 @@ from lp.translations.interfaces.translationmessage import (
     TranslationConflict,
     TranslationValidationStatus)
 from lp.translations.interfaces.translations import TranslationConstants
-from canonical.launchpad.helpers import shortlist
-from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import (
@@ -46,21 +54,29 @@ from lp.translations.model.translationtemplateitem import (
 
 
 # Msgids that indicate translation credit messages, and their
-# contexts.
-credit_message_ids = {
+# contexts and type.
+credits_message_info = {
     # Regular gettext credits messages.
-    u'translation-credits': None,
-    u'translator-credits': None,
-    u'translator_credits': None,
+    u'translation-credits': (None, TranslationCreditsType.GNOME),
+    u'translator-credits': (None, TranslationCreditsType.GNOME),
+    u'translator_credits': (None, TranslationCreditsType.GNOME),
 
     # KDE credits messages.
-    u'Your emails': u'EMAIL OF TRANSLATORS',
-    u'Your names': u'NAME OF TRANSLATORS',
+    u'Your emails':
+        (u'EMAIL OF TRANSLATORS', TranslationCreditsType.KDE_EMAILS),
+    u'Your names':
+        (u'NAME OF TRANSLATORS', TranslationCreditsType.KDE_NAMES),
 
     # Old KDE credits messages.
-    u'_: EMAIL OF TRANSLATORS\nYour emails': None,
-    u'_: NAME OF TRANSLATORS\nYour names': None,
+    u'_: EMAIL OF TRANSLATORS\nYour emails':
+        (None, TranslationCreditsType.KDE_EMAILS),
+    u'_: NAME OF TRANSLATORS\nYour names':
+        (None, TranslationCreditsType.KDE_NAMES),
     }
+
+# String to be used as msgstr for translation credits messages.
+credits_message_str = (u'This is a dummy translation so that the '
+                       u'credits are counted as translated.')
 
 
 class POTMsgSet(SQLBase):
@@ -83,6 +99,8 @@ class POTMsgSet(SQLBase):
     _cached_singular_text = None
 
     _cached_uses_english_msgids = None
+
+    credits_message_ids = credits_message_info.keys()
 
     def __storm_invalidated__(self):
         self._cached_singular_text = None
@@ -266,7 +284,9 @@ class POTMsgSet(SQLBase):
         return self._getUsedTranslationMessage(
             None, language, variant, current=True)
 
-    def getLocalTranslationMessages(self, potemplate, language):
+    def getLocalTranslationMessages(self, potemplate, language,
+                                    include_dismissed=False,
+                                    include_unreviewed=True):
         """See `IPOTMsgSet`."""
         query = """
             is_current IS NOT TRUE AND
@@ -277,13 +297,24 @@ class POTMsgSet(SQLBase):
         msgstr_clause = make_plurals_sql_fragment(
             "msgstr%(form)d IS NOT NULL", "OR")
         query += " AND (%s)" % msgstr_clause
-        current = self.getCurrentTranslationMessage(potemplate, language)
-        if current is not None:
-            if current.date_reviewed is None:
-                comparing_date = current.date_created
-            else:
-                comparing_date = current.date_reviewed
-            query += " AND date_created > %s" % sqlvalues(comparing_date)
+        if include_dismissed != include_unreviewed:
+            current = self.getCurrentTranslationMessage(potemplate, language)
+            if current is not None:
+                if current.date_reviewed is None:
+                    comparing_date = current.date_created
+                else:
+                    comparing_date = current.date_reviewed
+                if include_unreviewed:
+                    term = " AND date_created > %s"
+                else:
+                    term = " AND date_created <= %s"
+                query += term % sqlvalues(comparing_date)
+        elif include_dismissed and include_unreviewed:
+            # Return all messages
+            pass
+        else:
+            # No need to run a query.
+            return EmptyResultSet()
 
         return TranslationMessage.select(query)
 
@@ -295,6 +326,9 @@ class POTMsgSet(SQLBase):
 
         A message is used if it's either imported or current, and unused
         otherwise.
+
+        Suggestions are read-only, so these objects come from the slave
+        store.
         """
         if not config.rosetta.global_suggestions_enabled:
             return []
@@ -358,7 +392,9 @@ class POTMsgSet(SQLBase):
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
 
-        result = TranslationMessage.select('id IN (%s)' % ids_query)
+        result = ISlaveStore(TranslationMessage).find(
+            TranslationMessage,
+            TranslationMessage.id.is_in(SQL(ids_query)))
 
         return shortlist(result, longest_expected=100, hardlimit=2000)
 
@@ -686,14 +722,20 @@ class POTMsgSet(SQLBase):
         is_editor = (force_edition_rights or
                      pofile.canEditTranslations(submitter))
 
-        assert (is_imported or is_editor or
-                pofile.canAddSuggestions(submitter)), (
-                  '%s cannot add translations nor can add suggestions' % (
-                    submitter.displayname))
+        if is_read_only():
+            # This can happen if the request was just in time to slip
+            # past the read-only check before the gate closed.  If it
+            # does, that screws up the privileges checks below since
+            # nobody has translation privileges in read-only mode.
+            raise UnexpectedFormData(
+                "Sorry, Launchpad is in read-only mode right now.")
 
         if is_imported and not is_editor:
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
+
+        assert is_editor or pofile.canAddSuggestions(submitter), (
+            '%s cannot add suggestions here.' % submitter.displayname)
 
         # If not an editor, default to submitting a suggestion only.
         just_a_suggestion = not is_editor
@@ -721,7 +763,8 @@ class POTMsgSet(SQLBase):
     def updateTranslation(self, pofile, submitter, new_translations,
                           is_imported, lock_timestamp, force_shared=False,
                           force_diverged=False, force_suggestion=False,
-                          ignore_errors=False, force_edition_rights=False):
+                          ignore_errors=False, force_edition_rights=False,
+                          allow_credits=False):
         """See `IPOTMsgSet`."""
 
         just_a_suggestion, warn_about_lock_timestamp = (
@@ -733,7 +776,10 @@ class POTMsgSet(SQLBase):
 
         # If the update is on the translation credits message, yet
         # update is not is_imported, silently return.
-        if self.is_translation_credit and not is_imported:
+        deny_credits = (not allow_credits and
+                        self.is_translation_credit and
+                        not is_imported)
+        if deny_credits:
             return None
 
         # Sanitize translations
@@ -985,13 +1031,20 @@ class POTMsgSet(SQLBase):
     @property
     def is_translation_credit(self):
         """See `IPOTMsgSet`."""
-        # msgid_singular.msgid is pre-joined everywhere where
-        # is_translation_credit is used
-        if self.msgid_singular.msgid not in credit_message_ids:
-            return False
+        credit_type = self.translation_credits_type
+        return credit_type != TranslationCreditsType.NOT_CREDITS
 
-        expected_context = credit_message_ids[self.msgid_singular.msgid]
-        return expected_context is None or (self.context == expected_context)
+    @property
+    def translation_credits_type(self):
+        """See `IPOTMsgSet`."""
+        if self.msgid_singular.msgid not in credits_message_info:
+            return TranslationCreditsType.NOT_CREDITS
+
+        expected_context, credits_type = (
+            credits_message_info[self.msgid_singular.msgid])
+        if expected_context is None or (self.context == expected_context):
+            return credits_type
+        return TranslationCreditsType.NOT_CREDITS
 
     def makeHTMLID(self, suffix=None):
         """See `IPOTMsgSet`."""
@@ -1012,6 +1065,23 @@ class POTMsgSet(SQLBase):
             except SQLObjectNotFound:
                 pomsgid = POMsgID(msgid=plural_form_text)
             self.msgid_plural = pomsgid
+
+    def setTranslationCreditsToTranslated(self, pofile):
+        """See `IPOTMsgSet`."""
+        if not self.is_translation_credit:
+            return
+
+        if self.getSharedTranslationMessage(pofile.language) is not None:
+            return
+
+        # The credits message has a fixed "translator."
+        translator = getUtility(ILaunchpadCelebrities).rosetta_experts
+
+        message = self.updateTranslation(
+            pofile, translator, [credits_message_str],
+            is_imported=False, allow_credits=True,
+            force_shared=True, force_edition_rights=True,
+            lock_timestamp=datetime.datetime.now(pytz.UTC))
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""
@@ -1056,7 +1126,8 @@ class POTMsgSet(SQLBase):
 
     def getAllTranslationMessages(self):
         """See `IPOTMsgSet`."""
-        return TranslationMessage.selectBy(potmsgset=self, orderBy=['id'])
+        return Store.of(self).find(
+            TranslationMessage, TranslationMessage.potmsgset == self)
 
     def getAllTranslationTemplateItems(self):
         """See `IPOTMsgSet`."""

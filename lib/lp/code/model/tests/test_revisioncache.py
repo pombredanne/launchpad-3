@@ -20,6 +20,54 @@ from lp.code.model.revision import RevisionCache
 from lp.testing import TestCaseWithFactory, time_counter
 
 
+class TestRevisionCacheAdaptation(TestCaseWithFactory):
+    """Check that certain objects can be adapted to a revision cache."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product(self):
+        # A product can be adapted to a revision cache.
+        product = self.factory.makeProduct()
+        cache = IRevisionCache(product, None)
+        self.assertIsNot(None, cache)
+
+    def test_project(self):
+        # A project can be adapted to a revision cache.
+        project = self.factory.makeProject()
+        cache = IRevisionCache(project, None)
+        self.assertIsNot(None, cache)
+
+    def test_person(self):
+        # A person can be adapted to a revision cache.
+        person = self.factory.makePerson()
+        cache = IRevisionCache(person, None)
+        self.assertIsNot(None, cache)
+
+    def test_distribution(self):
+        # A distribution can be adapted to a revision cache.
+        distribution = self.factory.makeDistribution()
+        cache = IRevisionCache(distribution, None)
+        self.assertIsNot(None, cache)
+
+    def test_distro_series(self):
+        # A distro series can be adapted to a revision cache.
+        distro_series = self.factory.makeDistroRelease()
+        cache = IRevisionCache(distro_series, None)
+        self.assertIsNot(None, cache)
+
+    def test_source_package(self):
+        # A source package can be adapted to a revision cache.
+        source_package = self.factory.makeSourcePackage()
+        cache = IRevisionCache(source_package, None)
+        self.assertIsNot(None, cache)
+
+    def test_distribution_source__package(self):
+        # A distribution source pakcage can be adapted to a revision cache.
+        distro_source_package = self.factory.makeDistributionSourcePackage()
+        cache = IRevisionCache(distro_source_package, None)
+        self.assertIsNot(None, cache)
+
+
 class TestRevisionCache(TestCaseWithFactory):
     """Test the revision cache filters and counts."""
 

@@ -10,12 +10,11 @@ import os
 from zope.security.management import setSecurityPolicy
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs, tearDown)
+    LayeredDocFileSuite, setGlobs, setUp, tearDown)
 from canonical.launchpad.ftests.test_system_documentation import (
     branchscannerSetUp)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadZopelessLayer
-
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 from lp.services.testing import build_test_suite
 
 
@@ -56,6 +55,14 @@ special = {
         '../doc/revision.txt',
         setUp=branchscannerSetUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer
+        ),
+    'codeimport-result.txt': LayeredDocFileSuite(
+        '../doc/codeimport-result.txt',
+        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
+        ),
+    'branch-merge-proposal-notifications.txt': LayeredDocFileSuite(
+        '../doc/branch-merge-proposal-notifications.txt',
+        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
         ),
     }
 

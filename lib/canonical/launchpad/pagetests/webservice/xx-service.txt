@@ -1,10 +1,37 @@
-= Introduction =
+************
+Introduction
+************
 
 Some standard behavior is defined by the web service itself, not by
 the individual resources.
 
+Multiple versions
+=================
 
-== No beta team redirection ==
+The Launchpad web service defines three versions: 'beta', '1.0', and
+'devel'.
+
+    >>> def me_link_for_version(version):
+    ...     response = webservice.get("/", api_version=version)
+    ...     print response.jsonBody()['me_link']
+
+    >>> me_link_for_version('beta')
+    http://api.launchpad.dev/beta/people/+me
+
+    >>> me_link_for_version('1.0')
+    http://api.launchpad.dev/1.0/people/+me
+
+    >>> me_link_for_version('devel')
+    http://api.launchpad.dev/devel/people/+me
+
+No other versions are available.
+
+    >>> print webservice.get("/", api_version="nosuchversion")
+    HTTP/1.1 404 Not Found
+    ...
+
+No beta team redirection
+========================
 
 Members of the beta team aren't redirected to the beta site on API call.
 
@@ -46,18 +73,91 @@ But not a request to the web service:
 
     >>> ignored = config.pop('beta_data')
 
+Resources not exposed on the web service
+========================================
 
-== Resources not exposed on the web service ==
-
-Soyuz build set (exposed on the web at builders) are not available on the
+Soyuz build set (exposed on the web at /builders) are not available on the
 web service:
 
     >>> print webservice.get("/builders")
     HTTP/1.1 404 Not Found
     ...
 
+Anonymous requests
+==================
 
-== API Requests to other hosts ==
+A properly signed web service request whose OAuth token key is empty
+is treated as an anonymous request.
+
+    >>> root = 'http://api.launchpad.dev/beta'
+    >>> body = anon_webservice.get(root).jsonBody()
+    >>> print body['projects_collection_link']
+    http://api.launchpad.dev/beta/projects
+    >>> print body['me_link']
+    http://api.launchpad.dev/beta/people/+me
+
+Normally, Launchpad will reject any call made with an unrecognized
+consumer key, because access tokens are registered with specific
+consumer keys.
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     LaunchpadWebServiceCaller)
+    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
+
+    >>> caller = LaunchpadWebServiceCaller('new-consumer', 'access-key')
+    >>> response = caller.get(root)
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    Unknown consumer (new-consumer).
+    ...
+
+But with anonymous access there is no registration step. The first
+time Launchpad sees a consumer key might be during an
+anonymous request, and it can't reject that request just because it
+doesn't recognize the client.
+
+    >>> login(ANONYMOUS)
+    >>> consumer_set = getUtility(IOAuthConsumerSet)
+    >>> print consumer_set.getByKey('another-new-consumer')
+    None
+    >>> logout()
+
+    >>> caller = LaunchpadWebServiceCaller('another-new-consumer', '')
+    >>> response = caller.get(root)
+    >>> print response.getheader('status')
+    200 Ok
+
+Launchpad automatically adds new consumer keys it sees to its database.
+
+    >>> login(ANONYMOUS)
+    >>> print consumer_set.getByKey('another-new-consumer').key
+    another-new-consumer
+    >>> logout()
+
+Anonymous requests can't access certain data.
+
+    >>> response = anon_webservice.get(body['me_link'])
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    You need to be logged in to view this URL.
+    ...
+
+Anonymous requests can't change the dataset.
+
+    >>> import simplejson
+    >>> data = simplejson.dumps({'display_name' : "This won't work"})
+    >>> response = anon_webservice.patch(root + "/~salgado",
+    ...     'application/json', data)
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    (<Person at...>, 'displayname', 'launchpad.Edit')
+    ...
+
+API Requests to other hosts
+===========================
 
 JavaScript working with the API must deal with the browser's Same Origin
 Policy - requests may only be made to the host that the page was loaded
@@ -73,36 +173,39 @@ The URLs in the returned representations point to the current host,
 rather than the api host.  The canonical_url() function also returns
 links to the current host.
 
-The ServiceRoot for http://bugs.launchpad.dev/api/beta/ is the same as a
+The ServiceRoot for http://bugs.launchpad.dev/api/devel/ is the same as a
 request to http://api.launchpad.net/beta/, but with the links pointing
 to a different host.
 
+    >>> webservice.domain = 'bugs.launchpad.dev'
     >>> root = webservice.get(
-    ...     'http://bugs.launchpad.dev/api/beta/').jsonBody()
+    ...     'http://bugs.launchpad.dev/api/devel/').jsonBody()
     >>> print root['people_collection_link']
-    http://bugs.launchpad.dev/api/beta/people
+    http://bugs.launchpad.dev/api/devel/people
 
 Requests on these hosts also honor the standard Launchpad authorization
 scheme (and don't require OAuth).
 
     >>> from canonical.launchpad.testing.pages import (
     ...     LaunchpadWebServiceCaller)
-    >>> noauth_webservice = LaunchpadWebServiceCaller()
+    >>> noauth_webservice = LaunchpadWebServiceCaller(
+    ...     domain='bugs.launchpad.dev')
     >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
     >>> print noauth_webservice.get(
-    ...     'http://bugs.launchpad.dev/api/beta/people/+me',
+    ...     'http://bugs.launchpad.dev/api/devel/people/+me',
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 303 See Other
     ...
-    Location: http://bugs.launchpad.dev/api/beta/~name12...
+    Location: http://bugs.launchpad.dev/api/devel/~name12...
     ...
 
 But the regular authentication still doesn't work on the normal API
 virtual host:
 
+    >>> noauth_webservice.domain = 'api.launchpad.dev'
     >>> print noauth_webservice.get(
     ...     'http://api.launchpad.dev/beta/people/+me',
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 401 Unauthorized
     ...
-
+    Request is missing an OAuth consumer key.

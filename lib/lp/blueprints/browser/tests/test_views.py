@@ -11,7 +11,7 @@ import unittest
 
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -31,7 +31,7 @@ def test_suite():
         path = filename
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
+            layer=DatabaseFunctionalLayer,
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)

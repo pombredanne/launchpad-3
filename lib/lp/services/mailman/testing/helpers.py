@@ -75,10 +75,6 @@ def get_size(path):
 
 def review_list(list_name, status='approve'):
     """Helper for approving a mailing list."""
-    browser = Browser('foo.bar@canonical.com:test')
-    browser.open('http://launchpad.dev:8085/+mailinglists')
-    browser.getControl(name='field.' + list_name).value = [status]
-    browser.getControl('Submit').click()
     result = MailmanLayer.xmlrpc_watcher.wait_for_create(list_name)
     if result is not None:
         # The watch timed out.
@@ -103,7 +99,7 @@ def create_list(team_name):
         'Open Team']
     browser.getControl('Create').click()
     # Create the mailing list.
-    browser.getLink('Configure mailing list').click()
+    browser.getLink('Create a mailing list').click()
     browser.getControl('Apply for Mailing List').click()
     mailing_list = review_list(team_name)
     # pylint: disable-msg=F0401

@@ -17,7 +17,7 @@
         </div>
       </div>
 
-      <tal:menu replace="structure view/@@+related-pages" />
+      <tal:menu replace="structure context/@@+related-pages" />
     </div>
   </body>
 </html>

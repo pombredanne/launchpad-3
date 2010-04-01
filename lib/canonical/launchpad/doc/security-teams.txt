@@ -17,18 +17,18 @@ a "security contact" on a Distribution or a Product.
     >>> IHasSecurityContact.providedBy(firefox)
     True
 
-    >>> sabdfl = personset.get(1)
+    >>> mark = personset.get(1)
     >>> ubuntu_team = personset.get(17)
 
 Security contacts are set through properties.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> ubuntu.security_contact = sabdfl
+    >>> ubuntu.security_contact = mark
     >>> firefox.security_contact = ubuntu_team
 
     >>> print ubuntu.security_contact.name
-    sabdfl
+    mark
 
     >>> print firefox.security_contact.name
     ubuntu-team
@@ -61,7 +61,7 @@ Shuttleworth are both subscribed to the bug.
     ...     return sorted(subscriber.name for subscriber in subscribers)
 
     >>> subscriber_names(bug)
-    [u'name16', u'sabdfl']
+    [u'mark', u'name16']
 
 If the bug were not reported as security-related, only Foo Bar would
 have been subscribed:
@@ -276,4 +276,3 @@ affects are subscribed to it.
     Bug Reporter
     Distribution Security Contact
     Product Security Contact
-

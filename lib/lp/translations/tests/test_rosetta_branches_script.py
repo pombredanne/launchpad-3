@@ -91,6 +91,8 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         oops_report = globalErrorUtility.getLastOopsReport()
         if previous_oops_report is not None:
             self.assertNotEqual(oops_report.id, previous_oops_report.id)
+        self.assertIn(
+            'INFO    Job resulted in OOPS: %s\n' % oops_report.id, stderr)
         self.assertEqual('NoSuchRevision', oops_report.type)
 
 

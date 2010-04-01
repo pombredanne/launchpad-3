@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-published">
 
-  <h2>Published as</h2>
+  <h2>Published versions</h2>
 
   <div class="portletBody portletContent">
 

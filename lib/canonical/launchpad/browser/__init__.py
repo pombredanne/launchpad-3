@@ -15,13 +15,10 @@ files in this directory.
 from lp.soyuz.browser.archive import *
 from lp.code.browser.bazaar import *
 from lp.soyuz.browser.binarypackagerelease import *
-from canonical.launchpad.browser.bounty import *
-from canonical.launchpad.browser.bountysubscription import *
 from lp.code.browser.branchmergeproposal import *
 from lp.code.browser.branchref import *
 from lp.code.browser.branchsubscription import *
 from lp.code.browser.branchvisibilitypolicy import *
-from canonical.launchpad.browser.branding import *
 from lp.soyuz.browser.build import *
 from lp.soyuz.browser.builder import *
 from lp.code.browser.codeimport import *
@@ -40,7 +37,7 @@ from lp.answers.browser.faqcollection import *
 from lp.answers.browser.faqtarget import *
 from lp.registry.browser.featuredproject import *
 from canonical.launchpad.browser.feeds import *
-from canonical.launchpad.browser.hwdb import *
+from lp.hardwaredb.browser.hwdb import *
 from lp.registry.browser.karma import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.launchpadstatistic import *
@@ -48,11 +45,9 @@ from canonical.launchpad.browser.librarian import *
 from canonical.launchpad.browser.logintoken import *
 from lp.registry.browser.mailinglists import *
 from lp.registry.browser.mentoringoffer import *
-from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.oauth import *
-from canonical.launchpad.browser.objectreassignment import *
+from lp.registry.browser.objectreassignment import *
 from canonical.launchpad.browser.packagerelationship import *
-from canonical.launchpad.browser.packaging import *
 from lp.registry.browser.peoplemerge import *
 from lp.registry.browser.poll import *
 from lp.soyuz.browser.publishedpackage import *

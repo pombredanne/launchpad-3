@@ -14,7 +14,7 @@ the question's description and the title is empty.
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
   >>> createLink.click()
   >>> print browser.title
-  Create bug report based on...
+  Create bug report based on question #2...
   >>> browser.getControl('Summary').value
   ''
   >>> browser.getControl('Description').value

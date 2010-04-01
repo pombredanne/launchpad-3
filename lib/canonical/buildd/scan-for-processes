@@ -15,14 +15,15 @@
 
 SUDO=/usr/bin/sudo
 BUILDID="$1"
+REALHOME=$(cd $HOME && pwd -P)
 
 set -e
 
 exec 2>&1
 
-echo "Scanning for processes to kill in build $BUILDID..."
+[ $(id -u) = "0" ] || exec $SUDO $0 "$REALHOME/build-$BUILDID/chroot-autobuild"
 
-[ $(id -u) = "0" ] || exec $SUDO $0 "$HOME/build-$BUILDID/chroot-autobuild"
+echo "Scanning for processes to kill in build $BUILDID..."
 
 PREFIX="$BUILDID"
 FOUND=0

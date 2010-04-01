@@ -25,11 +25,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from canonical.launchpad.fields import StrippedTextLine
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_new_distrotask)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IAddBugTaskForm,
     IAddBugTaskWithProductCreationForm, valid_remote_bug_url)
@@ -53,12 +53,16 @@ from canonical.widgets.popup import SearchForUpstreamPopupWidget
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
+    page_title = 'Record as affecting another project'
+
     @property
     def first_step(self):
         return ChooseProductStep
 
 
 class BugAlsoAffectsDistroMetaView(MultiStepView):
+    page_title = 'Record as affecting another distribution/package'
+
     @property
     def first_step(self):
         return DistroBugTaskCreationStep

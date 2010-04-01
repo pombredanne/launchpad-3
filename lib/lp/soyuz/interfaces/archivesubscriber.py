@@ -185,3 +185,6 @@ class IPersonalArchiveSubscription(Interface):
 
     displayname = TextLine(title=_("Subscription displayname"),
         required=False)
+
+    title = TextLine(title=_("Subscription title"),
+        required=False)

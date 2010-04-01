@@ -1,0 +1,55 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div>
+  <form method="get" name="filter" id="filter_form"
+        style="padding-bottom: 0.5em"
+        tal:attributes="action view/request/URL">
+    <label for="field.status">
+      Proposals with status:
+    </label>
+    <tal:lifecycle-selector replace="structure view/widgets/status"/>
+    <noscript>
+      <input type="submit" value="Filter"/>
+    </noscript>
+  </form>
+<script type="text/javascript">
+
+LPS.use('node', function(Y) {
+
+  function submit_filter() {
+    Y.one('#filter_form').submit();
+  }
+  Y.on('domready', function () {
+    var field = Y.one("[id=field.status]");
+    field.on('change', submit_filter);
+  });
+
+});
+
+</script>
+  </div>
+
+  <tal:has-proposals condition="view/proposal_count">
+    <div tal:replace="structure view/proposals/@@+listing" />
+  </tal:has-proposals>
+
+  <p id="no-proposals"
+     tal:condition="not: view/proposal_count"
+     tal:content="view/no_proposal_message">
+    No reviews
+  </p>
+
+</div>
+
+</body>
+</html>

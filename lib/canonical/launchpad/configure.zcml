@@ -8,6 +8,8 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
+  <include package="grokcore.component" file="meta.zcml" />
+
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
   <include file="links.zcml" />
@@ -16,14 +18,18 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="lp.hardwaredb" />
+
   <include package="lp.app" />
   <include package="lp.bugs" />
+  <include package="lp.buildmaster" />
   <include package="lp.registry" />
   <include package="lp.answers" />
   <include package="lp.coop.answersbugs" />
   <include package="lp.code" />
   <include package="lp.soyuz" />
   <include package="lp.translations" />
+  <include package="lp.testopenid" />
   <include package="lp.blueprints" />
   <include package="lp.services.comments" />
 
@@ -58,7 +64,7 @@
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IProjectSet"
+    for="canonical.launchpad.interfaces.IProjectGroupSet"
     path_expression="string:projectgroups"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
@@ -69,15 +75,10 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:url
-    for="canonical.launchpad.interfaces.IMailingListSet"
-    path_expression="string:+mailinglists"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
   <!-- RDF downloadable documents -->
   <browser:page
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    class="canonical.launchpad.browser.launchpad.RDFIndexView"
     name="rdf"
     template="templates/rdf-index.pt"
     permission="zope.Public"
@@ -98,5 +99,4 @@
       name="PlotKit"
       directory="../../contrib/PlotKit"
       />
-
 </configure>

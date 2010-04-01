@@ -88,7 +88,7 @@ Now, lets test all of that for DistroSeriess too!
     >>> krunch = kubuntu.getSeries('krunch')
 
     # Only owners, experts, or admins can create a milestone.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> new_ms = krunch.newMilestone('1.3rc2')
     >>> print new_ms.name
     1.3rc2
@@ -118,8 +118,8 @@ zope.exceptions.NotFoundError:
 
 == Project Milestones ==
 
-The database associates milestones only with products and distroserieses.
-The interface IProjectMilestone provides a virtual view of milestones
+The database associates milestones only with products and distroseries.
+The interface IProjectGroupMilestone provides a virtual view of milestones
 that are related to a project by collecting all milestones that are
 associated with products that belong to a project.
 
@@ -131,8 +131,8 @@ project.all_milestones returns all milestones for this project. No product
 belonging to the Gnome project has any milestones, hence Gnome itself has
 neither any milestones.
 
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> gnome = getUtility(IProjectSet)['gnome']
+    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> gnome = getUtility(IProjectGroupSet)['gnome']
     >>> for product in gnome.products:
     ...     print '%s %s' % (
     ...         product.name,
@@ -496,3 +496,52 @@ If specifications are targeted to the milestone, it cannot be deleted.
     ...
     AssertionError: You cannot delete a milestone which has specifications
                     targeted to it.
+
+If a milestone has a structural subscription, it cannot be deleted.
+
+    >>> milestone = ff_onedotzero.newMilestone('1.0.14')
+    >>> subscription = milestone.addSubscription(owner, owner)
+    >>> milestone.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: You cannot delete a milestone which has structural
+                    subscriptions.
+
+
+Closing milestone targeted bugs
+-------------------------------
+
+When a milestone with bug tasks creates a release, those bug tasks in fix
+committed status are updated to fix released. An ObjectModifiedEvent
+event is signaled for each changed bug task.
+
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTask
+
+    >>> def print_event(object, event):
+    ...     print "Received %s on %s" % (
+    ...         event.__class__.__name__.split('.')[-1],
+    ...         object.__class__.__name__.split('.')[-1])
+
+    >>> milestone = ff_onedotzero.newMilestone('kia')
+    >>> fixed_bugtask = factory.makeBugTask(target=upstream_firefox)
+    >>> fixed_bugtask.transitionToMilestone(milestone, owner)
+    >>> fixed_bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED, owner)
+    >>> triaged_bugtask = factory.makeBugTask(target=upstream_firefox)
+    >>> triaged_bugtask.transitionToMilestone(milestone, owner)
+    >>> triaged_bugtask.transitionToStatus(BugTaskStatus.TRIAGED, owner)
+    >>> release = milestone.createProductRelease(owner, datetime.now(UTC))
+    >>> bugtask_event_listener = TestEventListener(
+    ...     IBugTask, IObjectModifiedEvent, print_event)
+
+    >>> milestone.closeBugsAndBlueprints(owner)
+    Received ObjectModifiedEvent on BugTask
+
+    >>> fixed_bugtask.status
+    <DBItem BugTaskStatus.FIXRELEASED, (30) Fix Released>
+
+    >>> triaged_bugtask.status
+    <DBItem BugTaskStatus.TRIAGED, (21) Triaged>
+
+    >>> bugtask_event_listener.unregister()

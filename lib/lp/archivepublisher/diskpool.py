@@ -8,8 +8,8 @@ import tempfile
 
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (
-    NotInPool, PoolFileOverwriteError)
+from lp.soyuz.interfaces.publishing import (
+    MissingSymlinkInPool, NotInPool, PoolFileOverwriteError)
 from canonical.librarian.utils import copy_and_close, sha1_from_path
 
 
@@ -229,7 +229,10 @@ class DiskPoolEntry:
         3) Remove the main file and there are symlinks left.
         """
         if not self.file_component:
-            raise NotInPool()
+            raise NotInPool(
+                "File for removing %s %s/%s is not in pool, skipping." %
+                (component, self.source, self.filename))
+
 
         # Okay, it's there, if it's a symlink then we need to remove
         # it simply.
@@ -242,7 +245,10 @@ class DiskPoolEntry:
             assert os.path.islink(link_path)
             return self._reallyRemove(component)
 
-        assert component == self.file_component
+        if component != self.file_component:
+            raise MissingSymlinkInPool(
+                "Symlink for %s/%s in %s is missing, skipping." %
+                (self.source, self.filename, component))
 
         # It's not a symlink, this means we need to check whether we
         # have symlinks or not.

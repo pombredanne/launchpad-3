@@ -59,7 +59,9 @@ If you choose to publish immediately, the date field must be empty.
     Traceback (most recent call last):
     ...
     WidgetInputError: ('field.foo', u'Foo',
-    Please do not provide a date if you want to publish immediately.)
+                       LaunchpadValidationError(u'Please do not provide a date
+                                                  if you want to publish
+                                                  immediately.'))
 
 If you choose to publish at a specific date in the future, the date field
 must be filled.
@@ -70,4 +72,4 @@ must be filled.
     Traceback (most recent call last):
     ...
     WidgetInputError: ('field.foo', u'Foo',
-    Please provide a publication date.)
+    LaunchpadValidationError(u'Please provide a publication date.'))

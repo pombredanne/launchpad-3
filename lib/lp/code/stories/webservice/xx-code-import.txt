@@ -1,0 +1,59 @@
+Introduction
+============
+
+Launchpad can tell you about the code imports that power a branch
+if it is an import branch.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+
+First we create some objects for use in the tests.
+
+    >>> login(ANONYMOUS)
+    >>> person = factory.makePerson(name='import-owner')
+    >>> product = factory.makeProduct(name='scruff')
+    >>> code_import = removeSecurityProxy(factory.makeProductCodeImport(
+    ...    registrant=person, product=product, branch_name='import'))
+    >>> no_import_branch = removeSecurityProxy(factory.makeProductBranch(
+    ...     owner=person, product=product, name='no-import'))
+    >>> logout()
+
+If we query a branch with no import then we find that it tells us
+it doesn't have one.
+
+    >>> branch_url = '/' + no_import_branch.unique_name
+    >>> response = webservice.get(branch_url)
+    >>> representation = response.jsonBody()
+    >>> print representation['code_import_link']
+    None
+
+For a branch with an import we get a link to the import entry in its
+representation.
+
+    >>> branch_url = '/' + code_import.branch.unique_name
+    >>> response = webservice.get(branch_url)
+    >>> representation = response.jsonBody()
+    >>> print representation['code_import_link']
+    http://.../~import-owner/scruff/import/+code-import
+
+We can get some information about the import using this URL.
+
+    >>> import_url = representation['code_import_link']
+    >>> response = webservice.get(import_url)
+    >>> representation = response.jsonBody()
+    >>> print representation['self_link'] == import_url
+    True
+    >>> print representation['branch_link']
+    http://.../~import-owner/scruff/import
+    >>> print representation['review_status']
+    Pending Review
+    >>> print representation['rcs_type']
+    Subversion via CSCVS
+    >>> print representation['url']
+    http://domain9.domain.com/path10
+    >>> print representation['cvs_root']
+    None
+    >>> print representation['cvs_module']
+    None
+    >>> print representation['date_last_successful']
+    None
+

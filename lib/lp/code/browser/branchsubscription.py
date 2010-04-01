@@ -125,6 +125,8 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
 
     subscribing_self = True
 
+    page_title = label = "Subscribe to branch"
+
     @action("Subscribe")
     def subscribe(self, action, data):
         # To catch the stale post problem, check that the user is not
@@ -211,6 +213,8 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     # is never considered subscribed.
     user_is_subscribed = False
     subscribing_self = False
+
+    page_title = label = "Subscribe to branch"
 
     @action("Subscribe", name="subscribe_action")
     def subscribe_action(self, action, data):

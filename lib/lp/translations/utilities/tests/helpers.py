@@ -15,6 +15,7 @@ import transaction
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.scripts import FakeLogger
@@ -64,7 +65,8 @@ def import_pofile_or_potemplate(file_contents, person,
     else:
         commit()
 
-    entry.setStatus(RosettaImportStatus.APPROVED)
+    entry.setStatus(RosettaImportStatus.APPROVED,
+                    getUtility(ILaunchpadCelebrities).rosetta_experts)
     (subject, body) = target.importFromQueue(entry, FakeLogger())
     return entry
 

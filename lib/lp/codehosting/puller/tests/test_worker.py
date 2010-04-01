@@ -14,19 +14,16 @@ import unittest
 import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
-from bzrlib.errors import NotBranchError
+from bzrlib.errors import IncompatibleRepositories, NotBranchError, NotStacked
 from bzrlib.tests.http_server import HttpServer
-from bzrlib.remote import RemoteBranch
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 from bzrlib.revision import NULL_REVISION
-from bzrlib.smart import server
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
 
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.puller.worker import (
     BranchLoopError, BranchMirrorer, BranchReferenceForbidden,
-    PullerWorkerProtocol, StackedOnBranchNotFound, get_vfs_format_classes,
+    PullerWorkerProtocol, StackedOnBranchNotFound,
     install_worker_ui_factory, WORKER_ACTIVITY_NETWORK)
 from lp.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
@@ -37,7 +34,6 @@ from lp.code.enums import BranchType
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
 from lazr.uri import URI
-from canonical.testing import reset_logging
 
 
 def get_netstrings(line):
@@ -54,37 +50,6 @@ def get_netstrings(line):
             'Expected %r == %r' % (',', line[colon_index+1+length]))
         line = line[colon_index+length+2:]
     return strings
-
-
-class TestGetVfsFormatClasses(TestCaseWithTransport):
-    """Tests for `lp.codehosting.puller.worker.get_vfs_format_classes`.
-    """
-
-    def tearDown(self):
-        # This makes sure the connections held by the branches opened in the
-        # test are dropped, so the daemon threads serving those branches can
-        # exit.
-        gc.collect()
-        super(TestGetVfsFormatClasses, self).tearDown()
-
-    def test_get_vfs_format_classes(self):
-        # get_vfs_format_classes for a returns the underlying format classes
-        # of the branch, repo and bzrdir, even if the branch is a
-        # RemoteBranch.
-        vfs_branch = self.make_branch('.')
-        smart_server = server.SmartTCPServer_for_testing()
-        smart_server.setUp(self.get_vfs_only_server())
-        self.addCleanup(smart_server.tearDown)
-        remote_branch = bzrlib.branch.Branch.open(smart_server.get_url())
-        # Check that our set up worked: remote_branch is Remote and
-        # source_branch is not.
-        self.assertIsInstance(remote_branch, RemoteBranch)
-        self.failIf(isinstance(vfs_branch, RemoteBranch))
-        # Now, get_vfs_format_classes on both branches returns the same format
-        # information.
-        self.assertEqual(
-            get_vfs_format_classes(vfs_branch),
-            get_vfs_format_classes(remote_branch))
 
 
 class PrearrangedStackedBranchPolicy(AcceptAnythingPolicy):
@@ -167,7 +132,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         source_tree.commit('commit message')
         # Make the directory.
         dest = get_transport(to_mirror.dest)
-        ensure_base(dest)
+        dest.create_prefix()
         dest.mkdir('.bzr')
         # 'dest' is not a branch.
         self.assertRaises(
@@ -203,13 +168,55 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
         self.assertFalse(dest._format.supports_stacking())
 
+    def test_defaultStackedOnBranchIncompatibleMirrorsOK(self):
+        # If the policy supplies a stacked on URL for a branch which is
+        # incompatible with the branch we're mirroring, the mirroring
+        # completes successfully and the destination branch is not stacked.
+        stack_on = self.make_branch('default-stack-on', format='2a')
+        source_branch = self.make_branch('source-branch', format='1.9')
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            policy=PrearrangedStackedBranchPolicy(stack_on.base))
+        to_mirror.mirrorWithoutChecks()
+        dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
+        self.assertRaises(NotStacked, dest.get_stacked_on_url)
+
+    def testCanMirrorWithIncompatibleRepos(self):
+        # If the destination branch cannot be opened because its repository is
+        # not compatible with that of the branch it is stacked on, we delete
+        # the destination branch and start again.
+        self.get_transport('dest').ensure_base()
+        # Make a branch to stack on in 1.6 format
+        self.make_branch('dest/stacked-on', format='1.6')
+        # Make a branch stacked on this.
+        stacked_branch = self.make_branch('dest/stacked', format='1.6')
+        stacked_branch.set_stacked_on_url(self.get_url('dest/stacked-on'))
+        # Delete the stacked-on branch and replace it with a 2a format branch.
+        self.get_transport('dest').delete_tree('stacked-on')
+        self.make_branch('dest/stacked-on', format='2a')
+        # Check our setup: trying to open the stacked branch raises
+        # IncompatibleRepositories.
+        self.assertRaises(
+            IncompatibleRepositories,
+            bzrlib.branch.Branch.open, 'dest/stacked')
+        source_branch = self.make_branch(
+            'source-branch', format='2a')
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('dest/stacked'))
+        # The branch can be mirrored without errors and the destionation
+        # location is upgraded to match the source format.
+        to_mirror.mirrorWithoutChecks()
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(
+            source_branch.repository._format,
+            mirrored_branch.repository._format)
+
     def testRaisesStackedOnBranchNotFoundInitialMirror(self):
         # If the stacked-on branch cannot be found in the mirrored area on an
         # initial mirror, then raise StackedOnBranchNotFound. This will ensure
         # the puller will mirror the stacked branch as soon as the stacked-on
         # branch has been mirrored.
-        stacked_on_branch = self.make_branch(
-            'stacked-on-branch', format='1.6')
+        self.make_branch('stacked-on-branch', format='1.6')
         stacked_branch = self.make_branch('source-branch', format='1.6')
         stacked_branch.set_stacked_on_url('../stacked-on-branch')
         # Make a sub-directory so that the relative URL cannot be found.
@@ -238,8 +245,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('mirrored-area/destdir'))
         to_mirror.mirrorWithoutChecks()
-        stacked_on_branch = self.make_branch(
-            'stacked-on-branch', format='1.6')
+        self.make_branch('stacked-on-branch', format='1.6')
         stacked_branch.set_stacked_on_url('../stacked-on-branch')
         self.assertRaises(
             StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
@@ -559,6 +565,7 @@ class TestMirroredBranchPolicy(TestCase):
     """Tests specific to `MirroredBranchPolicy`."""
 
     def setUp(self):
+        super(TestMirroredBranchPolicy, self).setUp()
         self.factory = LaunchpadObjectFactory()
 
     def testNoFileURL(self):
@@ -673,11 +680,11 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.assertSentNetstrings(['startMirroring', '0'])
 
     def test_mirrorSucceeded(self):
-        # Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'.
+        # Calling 'mirrorSucceeded' sends the revids and 'mirrorSucceeded'.
         self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorSucceeded(1234)
-        self.assertSentNetstrings(['mirrorSucceeded', '1', '1234'])
+        self.protocol.mirrorSucceeded('rev1', 'rev2')
+        self.assertSentNetstrings(['mirrorSucceeded', '2', 'rev1', 'rev2'])
 
     def test_mirrorFailed(self):
         # Calling 'mirrorFailed' sends the error message.
@@ -724,17 +731,17 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         self.saved_factory = bzrlib.ui.ui_factory
+        self.disable_directory_isolation()
 
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
         bzrlib.ui.ui_factory = self.saved_factory
-        reset_logging()
 
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""
         server = HttpServer()
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        server.start_server()
+        self.addCleanup(server.stop_server)
         # The gc.collect allows the threads behind any HTTP requests to exit.
         self.addCleanup(gc.collect)
         return server

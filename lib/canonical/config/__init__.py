@@ -16,10 +16,13 @@ import logging
 import sys
 from urlparse import urlparse, urlunparse
 
+import pkg_resources
 import ZConfig
 
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
+
+from canonical.launchpad.readonly import is_read_only
 
 
 __all__ = [
@@ -140,7 +143,16 @@ class CanonicalConfig:
         self._instance_name = instance_name
         os.environ[LPCONFIG] = instance_name
         # Need to reload the config.
+        self._invalidateConfig()
+
+    def _invalidateConfig(self):
+        """Invalidate the config, causing the config to be regenerated."""
         self._config = None
+
+    def reloadConfig(self):
+        """Reload the config."""
+        self._invalidateConfig()
+        self._getConfig()
 
     @property
     def process_name(self):
@@ -154,14 +166,14 @@ class CanonicalConfig:
     def setProcess(self, process_name):
         """Set the name of the process to select a conf file.
 
-        This method is used to set the process_name is if should be
+        This method is used to set the process_name if it should be
         different from the name obtained from sys.argv[0]. CanonicalConfig
         will try to load <process_name>-lazr.conf if it exists. Otherwise,
         it will load launchpad-lazr.conf.
         """
         self._process_name = process_name
         # Need to reload the config.
-        self._config = None
+        self._invalidateConfig()
 
     def _getConfig(self):
         """Get the schema and config for this environment.
@@ -194,8 +206,8 @@ class CanonicalConfig:
 
     def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
-        schemafile = os.path.join(
-            self.root, 'lib/zope/app/server/schema.xml')
+        schemafile = pkg_resources.resource_filename(
+            'zope.app.server', 'schema.xml')
         schema = ZConfig.loadSchema(schemafile)
         root_options, handlers = ZConfig.loadConfig(
             schema, self.zope_config_file)
@@ -211,14 +223,15 @@ class CanonicalConfig:
         self.threads = root_options.threads
 
     def generate_overrides(self):
-        """Ensure correct config .zcml overrides will be called.
+        """Ensure correct config.zcml overrides will be called.
 
         Call this method before letting any ZCML processing occur.
         """
         loader_file = os.path.join(self.root, '+config-overrides.zcml')
         loader = open(loader_file, 'w')
 
-        print >> loader, """<configure xmlns="http://namespaces.zope.org/zope">
+        print >> loader, """
+            <configure xmlns="http://namespaces.zope.org/zope">
                 <!-- This file automatically generated using
                      canonical.config.CanonicalConfig.generate_overrides.
                      DO NOT EDIT. -->
@@ -356,62 +369,32 @@ def loglevel(value):
 
 
 class DatabaseConfig:
-    """A class to provide the Launchpad database configuration.
-
-    The dbconfig option overlays the database configurations of a
-    chosen config section over the base section:
-
-        >>> from canonical.config import config, dbconfig
-        >>> print config.database.main_master
-        dbname=...
-        >>> print config.database.dbuser
-        Traceback (most recent call last):
-          ...
-        AttributeError: ...
-        >>> print config.launchpad.main_master
-        Traceback (most recent call last):
-          ...
-        AttributeError: ...
-        >>> print config.launchpad.dbuser
-        launchpad_main
-        >>> print config.librarian.dbuser
-        librarian
-
-        >>> dbconfig.setConfigSection('librarian')
-        >>> print dbconfig.main_master
-        dbname=...
-        >>> print dbconfig.dbuser
-        librarian
-
-        >>> dbconfig.setConfigSection('launchpad')
-        >>> print dbconfig.main_master
-        dbname=...
-        >>> print dbconfig.dbuser
-        launchpad_main
-
-    Some values are required to have a value, such as dbuser.  So we
-    get an exception if they are not set:
-
-        >>> config.codehosting.dbuser
-        Traceback (most recent call last):
-          ...
-        AttributeError: No section key named dbuser.
-        >>> dbconfig.setConfigSection('codehosting')
-        >>> print dbconfig.dbuser
-        Traceback (most recent call last):
-          ...
-        ValueError: dbuser must be set
-        >>> dbconfig.setConfigSection('launchpad')
-    """
+    """A class to provide the Launchpad database configuration."""
     _config_section = None
     _db_config_attrs = frozenset([
         'dbuser', 'auth_dbuser',
-        'main_master', 'main_slave', 'auth_master', 'auth_slave',
+        'rw_main_master', 'rw_main_slave',
+        'ro_main_master', 'ro_main_slave', 'auth_master', 'auth_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'randomise_select_results',
         'soft_request_timeout', 'storm_cache', 'storm_cache_size'])
     _db_config_required_attrs = frozenset([
-        'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave'])
+        'dbuser', 'rw_main_master', 'rw_main_slave', 'ro_main_master',
+        'ro_main_slave', 'auth_master', 'auth_slave'])
+
+    @property
+    def main_master(self):
+        if is_read_only():
+            return self.ro_main_master
+        else:
+            return self.rw_main_master
+
+    @property
+    def main_slave(self):
+        if is_read_only():
+            return self.ro_main_slave
+        else:
+            return self.rw_main_slave
 
     def setConfigSection(self, section_name):
         self._config_section = section_name

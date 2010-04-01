@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BaseDispatchResult',
-    'BuilddManager'
+    'BuilddManager',
     'FailDispatchResult',
     'RecordingSlave',
     'ResetDispatchResult',
@@ -15,11 +15,10 @@ __all__ = [
     ]
 
 import logging
-import os
 import transaction
 
 from twisted.application import service
-from twisted.internet import reactor, utils, defer
+from twisted.internet import reactor, defer
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -31,6 +30,8 @@ from canonical.buildd.utils import notes
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
+from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
+from lp.services.twistedsupport.processmonitor import run_process_with_timeout
 
 
 buildd_success_result_map = {
@@ -70,6 +71,7 @@ class RecordingSlave:
     major slave-scanner throughput issue while avoiding large-scale changes to
     its code base.
     """
+
     def __init__(self, name, url, vm_host):
         self.name = name
         self.url = url
@@ -80,6 +82,15 @@ class RecordingSlave:
 
     def __repr__(self):
         return '<%s:%s>' % (self.name, self.url)
+
+    def cacheFile(self, logger, libraryfilealias):
+        """Cache the file on the server."""
+        self.ensurepresent(
+            libraryfilealias.content.sha1, libraryfilealias.http_url, '', '')
+
+    def sendFileToSlave(self, *args):
+        """Helper to send a file to this builder."""
+        return self.ensurepresent(*args)
 
     def ensurepresent(self, *args):
         """Download files needed for the build."""
@@ -109,13 +120,17 @@ class RecordingSlave:
         Used the configuration command-line in the same way
         `BuilddSlave.resume` does.
 
+        Also use the builddmaster configuration 'socket_timeout' as
+        the process timeout.
+
         :return: a Deferred
         """
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self.vm_host}
         # Twisted API require string and the configuration provides unicode.
         resume_argv = [str(term) for term in resume_command.split()]
-        d = utils.getProcessOutputAndValue(resume_argv[0], resume_argv[1:])
+        d = run_process_with_timeout(
+            tuple(resume_argv), timeout=config.builddmaster.socket_timeout)
         return d
 
 
@@ -155,10 +170,10 @@ class FailDispatchResult(BaseDispatchResult):
     @write_transaction
     def __call__(self):
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.builder import IBuilderSet
+        from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
-        builder.failbuilder(self.info)
+        builder.failBuilder(self.info)
         self._cleanJob(builder.currentjob)
 
 
@@ -175,7 +190,7 @@ class ResetDispatchResult(BaseDispatchResult):
     @write_transaction
     def __call__(self):
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.builder import IBuilderSet
+        from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
         self._cleanJob(builder.currentjob)
@@ -208,7 +223,7 @@ class BuilddManager(service.Service):
         Make it less verbose to avoid messing too much with the old code.
         """
         level = logging.INFO
-        logger = logging.getLogger('slave-scanner')
+        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
 
         # Redirect the output to the twisted log module.
         channel = logging.StreamHandler(log.StdioOnnaStick())
@@ -233,7 +248,8 @@ class BuilddManager(service.Service):
     def scanFailed(self, error):
         """Deal with scanning failures."""
         self.logger.info(
-            'Scanning failed with: %s' % error.getErrorMessage())
+            'Scanning failed with: %s\n%s' %
+            (error.getErrorMessage(), error.getTraceback()))
         self.finishCycle()
 
     def nextCycle(self):
@@ -268,7 +284,7 @@ class BuilddManager(service.Service):
 
             Perform the finishing-cycle tasks mentioned above.
             """
-            self.logger.info('Scanning cycle finished.')
+            self.logger.debug('Scanning cycle finished.')
             # We are only interested in returned objects of type
             # BaseDispatchResults, those are the ones that needs evaluation.
             # None, resulting from successful chains, are discarded.
@@ -289,7 +305,7 @@ class BuilddManager(service.Service):
             # Return the evaluated events for testing purpose.
             return deferred_results
 
-        self.logger.info('Finishing scanning cycle.')
+        self.logger.debug('Finishing scanning cycle.')
         dl = defer.DeferredList(self._deferreds, consumeErrors=True)
         dl.addBoth(done)
         return dl
@@ -310,7 +326,7 @@ class BuilddManager(service.Service):
         handled in an asynchronous and parallel fashion.
         """
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.builder import IBuilderSet
+        from lp.buildmaster.interfaces.builder import IBuilderSet
 
         recording_slaves = []
         builder_set = getUtility(IBuilderSet)
@@ -336,19 +352,11 @@ class BuilddManager(service.Service):
                     transaction.commit()
                 continue
 
-            candidate = builder.findBuildCandidate()
-            if candidate is None:
-                self.logger.debug(
-                    "No build candidates available for builder.")
-                continue
-
             slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
-            builder.setSlaveForTesting(slave)
-
-            builder.dispatchBuildCandidate(candidate)
+            candidate = builder.findAndStartJob(buildd_slave=slave)
             if builder.currentjob is not None:
                 recording_slaves.append(slave)
-            transaction.commit()
+                transaction.commit()
 
         return recording_slaves
 
@@ -358,12 +366,11 @@ class BuilddManager(service.Service):
         If it failed, it returns a corresponding `ResetDispatchResult`
         dispatch result.
         """
-        out, err, code = response
-        if code == os.EX_OK:
+        if not isinstance(response, Failure):
             return None
 
         self.logger.error(
-            '%s resume failure:\nOUT: %s\nErr: %s' % (slave, out, err))
+            '%s resume failure: %s' % (slave, response.getErrorMessage()))
         self.slaveDone(slave)
         return self.reset_result(slave)
 
@@ -409,7 +416,7 @@ class BuilddManager(service.Service):
 
         See `RecordingSlave.resumeSlaveHost` for more details.
         """
-        self.logger.info('Resuming slaves: %s' % recording_slaves)
+        self.logger.debug('Resuming slaves: %s' % recording_slaves)
         self.remaining_slaves = recording_slaves
         if len(self.remaining_slaves) == 0:
             self.finishCycle()

@@ -7,7 +7,13 @@
     class="portlet"
     tal:define="contributions view/contributions"
     tal:condition="contributions">
-    <h2>Most active in</h2>
+    <h2>
+      <span class="see-all">
+        <a tal:attributes="href context/menu:overview/karma/url"
+          >Recent activities</a>
+      </span>
+      Most active in
+    </h2>
     <table class="contributions" id="contributions">
       <tbody>
         <tal:contributions repeat="contribution contributions">

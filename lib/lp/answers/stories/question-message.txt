@@ -11,8 +11,9 @@ an email post to examine the markup rules. This message contains a
 quoted passage, and a signature with an email address in it.
 
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/+question/11')
-    >>> user_browser.title.decode('utf-8')
-    u'Ubuntu question #11: ...Continue playing after shutdown...'
+    >>> print user_browser.title.decode('utf-8')
+    Question #11 : ...
+
     >>> user_browser.getControl('Message').value = (
     ...     "Top quoting is bad netiquette.\n"
     ...     "The leading text will be displayed\n"
@@ -35,8 +36,8 @@ quoted passage, and a signature with an email address in it.
 Email addresses are visible to authenticated users. Sample Person is
 authenticated already, He will see 'human@somewhere.org'
 
-    >>> user_browser.title.decode('utf-8')
-    u'Ubuntu question #11: ...Continue playing after shutdown...'
+    >>> print user_browser.title.decode('utf-8')
+    Question #11 :  ...
     >>> text = find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]
     >>> print extract_text(text.findAll('p')[-1])
@@ -50,8 +51,9 @@ of 'person@domain.dom'. The anonymous user is unauthenticated, he will
 see the obfuscated email address (<email address hidden>).
 
     >>> anon_browser.open('http://answers.launchpad.dev/ubuntu/+question/11')
-    >>> anon_browser.title.decode('utf-8')
-    u'Ubuntu question #11: ...Continue playing after shutdown...'
+    >>> print anon_browser.title
+    Question #11 : ...
+
     >>> text = find_tags_by_class(
     ...     anon_browser.contents, 'boardCommentBody')[-1]
     >>> print extract_text(text.findAll('p')[-1])

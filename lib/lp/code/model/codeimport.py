@@ -31,17 +31,16 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.launchpad.interfaces import IStore
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
-    BranchType, CodeImportResultStatus, CodeImportReviewStatus,
-    RevisionControlSystems)
+    BranchType, CodeImportJobState, CodeImportResultStatus,
+    CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJobWorkflow)
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
 from lp.code.model.codeimportresult import CodeImportResult
@@ -69,16 +68,6 @@ class CodeImport(SQLBase):
         dbName='assignee', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
 
-    @property
-    def product(self):
-        """See `ICodeImport`."""
-        return self.branch.product
-
-    @property
-    def series(self):
-        """See `ICodeImport`."""
-        return ProductSeries.selectOneBy(branch=self.branch)
-
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
 
@@ -89,9 +78,7 @@ class CodeImport(SQLBase):
 
     cvs_module = StringCol(default=None)
 
-    svn_branch_url = StringCol(default=None)
-
-    git_repo_url = StringCol(default=None)
+    url = StringCol(default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
@@ -106,8 +93,12 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_cvs,
             RevisionControlSystems.SVN:
                 config.codeimport.default_interval_subversion,
+            RevisionControlSystems.BZR_SVN:
+                config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
+            RevisionControlSystems.HG:
+                config.codeimport.default_interval_hg,
             }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
@@ -121,10 +112,12 @@ class CodeImport(SQLBase):
             "Only makes sense for series with import details set.")
         if self.rcs_type == RevisionControlSystems.CVS:
             return '%s %s' % (self.cvs_root, self.cvs_module)
-        elif self.rcs_type == RevisionControlSystems.SVN:
-            return self.svn_branch_url
-        elif self.rcs_type == RevisionControlSystems.GIT:
-            return self.git_repo_url
+        elif self.rcs_type in (
+            RevisionControlSystems.SVN,
+            RevisionControlSystems.GIT,
+            RevisionControlSystems.BZR_SVN,
+            RevisionControlSystems.HG):
+            return self.url
         else:
             raise AssertionError(
                 'Unknown rcs type: %s'% self.rcs_type.title)
@@ -158,7 +151,8 @@ class CodeImport(SQLBase):
             "coalesce",
             Select(
                 CodeImportResult.id,
-                And(CodeImportResult.status == CodeImportResultStatus.SUCCESS,
+                And(CodeImportResult.status.is_in(
+                        CodeImportResultStatus.successes),
                     CodeImportResult.code_import == self),
                 order_by=Desc(CodeImportResult.id),
                 limit=1),
@@ -211,40 +205,40 @@ class CodeImportSet:
 
     implements(ICodeImportSet)
 
-    def new(self, registrant, product, branch_name, rcs_type,
-            svn_branch_url=None, cvs_root=None, cvs_module=None,
-            review_status=None, git_repo_url=None):
+    def new(self, registrant, target, branch_name, rcs_type,
+            url=None, cvs_root=None, cvs_module=None, review_status=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
-            assert svn_branch_url is None
-            assert git_repo_url is None
-        elif rcs_type == RevisionControlSystems.SVN:
+            assert url is None
+        elif rcs_type in (RevisionControlSystems.SVN,
+                          RevisionControlSystems.BZR_SVN,
+                          RevisionControlSystems.GIT,
+                          RevisionControlSystems.HG):
             assert cvs_root is None and cvs_module is None
-            assert svn_branch_url is not None
-            assert git_repo_url is None
-        elif rcs_type == RevisionControlSystems.GIT:
-            assert cvs_root is None and cvs_module is None
-            assert svn_branch_url is None
-            assert git_repo_url is not None
+            assert url is not None
         else:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
         if review_status is None:
-            review_status = CodeImportReviewStatus.NEW
+            # Auto approve git and hg imports.
+            if rcs_type in (
+                RevisionControlSystems.GIT, RevisionControlSystems.HG):
+                review_status = CodeImportReviewStatus.REVIEWED
+            else:
+                review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        namespace = get_branch_namespace(vcs_imports, product)
+        namespace = target.getNamespace(registrant)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
-            registrant=vcs_imports)
+            registrant=registrant)
 
         code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=import_branch,
-            rcs_type=rcs_type, svn_branch_url=svn_branch_url,
+            rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
-            review_status=review_status, git_repo_url=git_repo_url)
+            review_status=review_status)
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(ObjectCreatedEvent(code_import))
@@ -261,10 +255,6 @@ class CodeImportSet:
         if code_import.import_job is not None:
             CodeImportJob.delete(code_import.import_job.id)
         CodeImport.delete(code_import.id)
-
-    def getAll(self):
-        """See `ICodeImportSet`."""
-        return CodeImport.select()
 
     def getActiveImports(self, text=None):
         """See `ICodeImportSet`."""
@@ -323,18 +313,19 @@ class CodeImportSet:
         return CodeImport.selectOneBy(
             cvs_root=cvs_root, cvs_module=cvs_module)
 
-    def getByGitDetails(self, git_repo_url):
+    def getByURL(self, url):
         """See `ICodeImportSet`."""
-        return CodeImport.selectOneBy(git_repo_url=git_repo_url)
-
-    def getBySVNDetails(self, svn_branch_url):
-        """See `ICodeImportSet`."""
-        return CodeImport.selectOneBy(svn_branch_url=svn_branch_url)
+        return CodeImport.selectOneBy(url=url)
 
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(branch=branch)
 
-    def search(self, review_status):
+    def search(self, review_status=None, rcs_type=None):
         """See `ICodeImportSet`."""
-        return CodeImport.selectBy(review_status=review_status)
+        clauses = []
+        if review_status is not None:
+            clauses.append(CodeImport.review_status == review_status)
+        if rcs_type is not None:
+            clauses.append(CodeImport.rcs_type == rcs_type)
+        return IStore(CodeImport).find(CodeImport, *clauses)

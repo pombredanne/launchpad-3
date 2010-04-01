@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad"
 >
 <body>
@@ -16,13 +13,14 @@
 
       <h1>Signed code of conduct entry</h1>
 
-      <p><dfn>Display name:</dfn>
-         <span tal:replace="context/displayname">CoC</span></p>
-
+      <p>Signed <tal:date replace="context/datecreated/fmt:date" />
+      by <a tal:replace="structure context/owner/fmt:link" />.
+      </p>
 
       <p><dfn>Status:</dfn>
        <span tal:omit-tag="" tal:condition="context/active">Active</span>
        <span tal:omit-tag="" tal:condition="not:context/active">Inactive</span>
+       <a tal:replace="structure context/menu:overview/activation/fmt:icon" />
       </p>
 
       <p><dfn>Created:</dfn>
@@ -45,6 +43,11 @@
           <pre tal:content="context/signedcode">SIGNEDCODE</pre>
       </tal:block>
 
+      <br />
+      <p>
+        <a tal:attributes="href context/menu:overview/adminconsole/url">Go
+          back to the admin console</a>.
+      </p>
 </div>
 
 </body>

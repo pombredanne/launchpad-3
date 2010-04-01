@@ -135,18 +135,21 @@ here. The filter is applied during creation by specifying the filter value
 as an extra parameter. The default value is "None" which disables the filter
 and both current and disabled templates are returned.
 
-For getPOTemplateByTranslationDomain, this case is an error because only one
-template per translation domain is allowed.
+For getPOTemplateByTranslationDomain, this case is an error.  The
+approver needs a unique domain to identify the right template to upload
+to.
 
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=productseries)
     >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
     ...     'foodomain')
-    WARNING:lp.translations.model.potemplate:Found...
-    multiple templates with translation domain 'foodomain'...
-    There should be only one.
-    >>> potemplate is None
-    True
+    WARNING:lp.translations.model.potemplate:Found 2 competing templates
+    with translation domain 'foodomain':
+    "current-template in Fooproduct fooseries";
+    "disabled-template in Fooproduct fooseries".
+
+    >>> print potemplate
+    None
 
 Setting the filter to "True" will only return current (enabled) templates.
 
@@ -377,20 +380,24 @@ Templates can be exported to its native format.
     msgid "evolution minicard"
     msgstr ""
     <BLANKLINE>
+    #. addressbook:ldap-init primary
     #: addressbook/addressbook-errors.xml.h:2
     msgid "This addressbook could not be opened."
     msgstr ""
     <BLANKLINE>
+    #. addressbook:ldap-init secondary
     #: addressbook/addressbook-errors.xml.h:4
     msgid ""
     "This addressbook server might unreachable or the server name may be "
     "misspelled or your network connection could be down."
     msgstr ""
     <BLANKLINE>
+    #. addressbook:ldap-auth primary
     #: addressbook/addressbook-errors.xml.h:6
     msgid "Failed to authenticate with LDAP server."
     msgstr ""
     <BLANKLINE>
+    #. addressbook:ldap-auth secondary
     #: addressbook/addressbook-errors.xml.h:8
     msgid ""
     "Check to make sure your password is spelled correctly and that you are using "
@@ -437,15 +444,19 @@ Templates can be exported to its native format.
     msgstr[0] ""
     msgstr[1] ""
     <BLANKLINE>
+    # start po-group: common
+    #. xgroup(common)
     #: encfs/FileUtils.cpp:1044
     msgid "EncFS Password: "
     msgstr ""
     <BLANKLINE>
+    #. xgroup(usage)
     #: encfs/main.cpp:340
     msgid ""
     "When specifying daemon mode, you must use absolute paths (beginning with '/')"
     msgstr ""
     <BLANKLINE>
+    #. xgroup(setup)
     #: encfs/FileUtils.cpp:535
     #, c-format
     msgid ""

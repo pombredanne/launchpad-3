@@ -1,16 +1,12 @@
-<html
+<distribution-upstream-bug-report
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
 
-<metal:heading fill-slot="head_epilogue">
+  <metal:heading fill-slot="head_epilogue">
     <style type="text/css">
     <!--
       td.amount a { display: block; }
@@ -18,66 +14,17 @@
       tr.bad { background: #ffbfbf; }
     -->
     </style>
-</metal:heading>
+  </metal:heading>
 
-  <body>
-    <metal:portlets fill-slot="portlets">
-    </metal:portlets>
+  <div metal:fill-slot="heading">
+    <h1>
+      Upstream bug report for
+      <tal:distro replace="context/displayname" />
+    </h1>
+  </div>
 
-    <div metal:fill-slot="help">
-      <p>
-      This report gives an overview of how good the bug communication is
-      between a distribution and the upstream projects it produces
-      packages from.
-      </p>
-
-      <p>
-      Note that many of the counts in the table are linked to
-      corresponding bug listings. The counts may disagree in certain
-      corner cases and those should be verified through <a
-      href="/ubuntu/+addquestion">a Launchpad question</a>. Details on
-      the counts follow.
-      </p>
-
-      <dl>
-        <dt>Open</dt><dd>Counts unfixed bugs on that package.</dd>
-        <dt>Triaged</dt><dd>Counts unfixed bugs that have been marked as
-        triaged by the official distribution triage team.</dd>
-        <dt>Upstream</dt><dd>Of those bugs triaged, how many indicate they
-        also affect an upstream project. Note that not all bugs filed
-        against a distribution apply to an upstream project, so this
-        percentage will rarely reach 100%.</dd>
-        <dt>Watch</dt><dd>Of the triaged bugs affecting an upstream
-        project, how many have bug watches pointing to remote bug
-        trackers. It is a measure of how well we can monitor progress in
-        the upstream project.  The watch column is blank for projects
-        which use Launchpad for bug tracking since it implies that there
-        is already direct communication between distribution and
-        upstream.</dd>
-        <dt>&Delta;</dt><dd>Deltas and percentages are relative to
-        numbers in the previous category; for instance, the delta for
-        watches is the number of upstreamed bugs minus the number of
-        bugs with watches linked.</dd>
-      </dl>
-
-      <p>
-      The colour green implies healthy activity for that specific value;
-      so a green cell for Triaged means that a good rate of open bugs
-      for that source package have been triaged.
-      </p>
-      <p>
-      The colour red implies data that needs to be filled out in the
-      project registration to allow the upstream bug submission process
-      to work effectively. Links are provided to fix them for users with
-      the appropriate permissions.
-      </p>
-
-    </div>
-
-    <div metal:fill-slot="main">
-      <h1>Upstream bug report for
-        <tal:distro replace="context/displayname" /></h1>
-
+  <div metal:fill-slot="main">
+    <div class="top-portlet">
       <tal:no-bugs tal:condition="not: view/data">
         <span tal:replace="context/displayname" /> has no bugs filed
         against it.
@@ -184,6 +131,13 @@
               <img id="sortarrow-watched-delta"
                   tal:attributes="src links/watched_bugs_delta/arrow" />
             </th>
+            <th class="amount">
+              <a id="sort-bugs-with-upstream-patches"
+                  tal:attributes="href links/bugs_with_upstream_patches/link"
+              >Patches for upstream</a>
+              <img id="sortarrow-bugs-with-upstream-patches"
+                  tal:attributes="src links/bugs_with_upstream_patches/arrow" />
+            </th>
           </tr>
         </thead>
         <tbody id="upstream-report-content">
@@ -272,7 +226,7 @@
             </td>
             <tal:upstream-in-launchpad
                 condition="item/official_malone">
-                <td colspan="3" class="good">&nbsp;</td>
+                <td colspan="4" class="good">&nbsp;</td>
             </tal:upstream-in-launchpad>
             <tal:upstream-not-in-launchpad
                 condition="not: item/official_malone">
@@ -283,6 +237,17 @@
               <td tal:attributes="class string:amount ${item/watched_bugs_class}">
                 <a tal:attributes="href item/watched_bugs_delta_url"
                    tal:content="item/watched_bugs_delta"></a>
+              </td>
+              <td tal:attributes="class string:amount ${item/watched_bugs_class}">
+                <tal:has-bugs-with-upstream-patches
+                    condition="item/bugs_with_upstream_patches">
+                  <a tal:attributes="href item/bugs_with_upstream_patches_url"
+                      tal:content="item/bugs_with_upstream_patches"></a>
+                </tal:has-bugs-with-upstream-patches>
+                <tal:has-no-bugs-with-upstream-patches
+                    condition="not: item/bugs_with_upstream_patches">
+                   -
+                </tal:has-no-bugs-with-upstream-patches>
               </td>
             </tal:upstream-not-in-launchpad>
           </tr>
@@ -310,6 +275,8 @@
                 tal:content="view/total/watched_bugs_percentage/fmt:float/.2" />
             <td class="amount"
                 tal:content="view/total/watched_bugs_delta" />
+            <td class="amount"
+                tal:content="view/total/bugs_with_upstream_patches" />
           </tr>
         </tfoot>
       </table>
@@ -319,6 +286,6 @@
         packages listed.</small></div>
 
     </div>
+  </div>
 
-  </body>
-</html>
+</distribution-upstream-bug-report>

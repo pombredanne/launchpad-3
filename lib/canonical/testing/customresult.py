@@ -9,11 +9,12 @@ __all__ = [
     'list_tests',
     'patch_find_tests',
     'patch_zope_testresult',
+    'replace_list_of_tests',
     ]
 
 from unittest import TestSuite
 from testtools import MultiTestResult, iterate_tests
-from zope.testing import testrunner
+from zope.testing.testrunner import find, formatter, runner
 
 
 class NullOutputFormatter:
@@ -39,10 +40,10 @@ def patch_find_tests(hook):
         `testrunner.find_tests` and returns a thing with the same type and
         structure.
     """
-    real_find_tests = testrunner.find_tests
+    real_find_tests = find.find_tests
     def find_tests(*args):
         return hook(real_find_tests(*args))
-    testrunner.find_tests = find_tests
+    find.find_tests = find_tests
 
 
 def list_tests(tests_by_layer_name):
@@ -84,7 +85,7 @@ def patch_zope_testresult(result):
 
     :param result: A TestResult instance.
     """
-    old_zope_factory = testrunner.TestResult
+    old_zope_factory = runner.TestResult
     def zope_result_factory(options, tests, layer_name=None):
         zope_result = old_zope_factory(options, tests, layer_name=layer_name)
         if isinstance(zope_result, MultiTestResult):
@@ -92,4 +93,22 @@ def patch_zope_testresult(result):
         else:
             zope_result.options.output = NullOutputFormatter()
             return MultiTestResult(result, zope_result)
-    testrunner.TestResult = zope_result_factory
+    runner.TestResult = zope_result_factory
+
+
+def replace_list_of_tests(out_file):
+    """Replace OutputFormatter.list_of_tests.
+
+    This is so we can obtain the list of tests that zope.testing
+    thinks should be run, after considering layers, etc. It also
+    prints test.id() rather than str(test).
+
+    :param out_file: A writeable file where the list IDs can be
+        written to.
+    """
+    def list_of_tests(formatter, tests, layer_name):
+        """Report a list of test ids."""
+        print "Saving %s tests." % layer_name
+        for test in tests:
+            out_file.write(test.id() + "\n")
+    formatter.OutputFormatter.list_of_tests = list_of_tests

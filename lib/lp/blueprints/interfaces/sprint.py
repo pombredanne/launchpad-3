@@ -27,8 +27,11 @@ from canonical.launchpad.fields import (
     PublicPersonChoice)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.launchpad import IHasDrivers
+from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.role import IHasOwner
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
+
+
 class SprintNameField(ContentNameField):
 
     errormessage = _("%s is already in use by another sprint.")
@@ -41,7 +44,7 @@ class SprintNameField(ContentNameField):
         return getUtility(ISprintSet)[name]
 
 
-class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
+class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IRootContext):
     """A sprint, or conference, or meeting."""
 
     id = Int(title=_('The Sprint ID'))
@@ -140,7 +143,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
         """
 
     # subscription-related methods
-    def attend(person, time_starts, time_ends):
+    def attend(person, time_starts, time_ends, is_physical):
         """Record that this person will be attending the Sprint."""
 
     def removeAttendance(person):
@@ -192,7 +195,8 @@ class ISprintSet(Interface):
     def __getitem__(name):
         """Get a specific Sprint."""
 
-    def new(owner, name, title, time_starts, time_ends, summary=None,
-            description=None, mugshot=None, logo=None, icon=None):
+    def new(owner, name, title, time_zone, time_starts, time_ends,
+            summary, address=None, driver=None, home_page=None,
+            mugshot=None, logo=None, icon=None):
         """Create a new sprint."""
 

@@ -12,13 +12,19 @@ __all__ = [
 import gettextpo
 import datetime
 import os
+import posixpath
 import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
 from operator import attrgetter
 
+import transaction
+
+from canonical.config import config
 from canonical.database.sqlbase import cursor, quote
+
+from storm.exceptions import TimeoutError
 
 from canonical.cachedproperty import cachedproperty
 from lp.registry.interfaces.person import (
@@ -119,7 +125,6 @@ class ExistingPOFileInDatabase:
         # Pre-fill self.messages and self.imported with data.
         self._fetchDBRows()
 
-
     def _fetchDBRows(self):
         msgstr_joins = [
             "LEFT OUTER JOIN POTranslation pt%d "
@@ -168,8 +173,32 @@ class ExistingPOFileInDatabase:
             TranslationTemplateItem.sequence,
             TranslationMessage.potemplate NULLS LAST
           ''' % substitutions
+
         cur = cursor()
-        cur.execute(sql)
+        try:
+            # XXX 2009-09-14 DaniloSegan (bug #408718):
+            # this statement causes postgres to eat the diskspace
+            # from time to time.  Let's wrap it up in a timeout.
+            timeout = config.poimport.statement_timeout
+
+            # We have to commit what we've got so far or we'll lose
+            # it when we hit TimeoutError.
+            transaction.commit()
+
+            if timeout == 'timeout':
+                # This is used in tests.
+                query = "SELECT pg_sleep(2)"
+                timeout = '1s'
+            else:
+                timeout = 1000 * int(timeout)
+                query = sql
+            cur.execute("SET statement_timeout to %s" % quote(timeout))
+            cur.execute(query)
+        except TimeoutError:
+            # Restart the transaction and return empty SelectResults.
+            transaction.abort()
+            transaction.begin()
+            cur.execute("SELECT 1 WHERE 1=0")
         rows = cur.fetchall()
 
         assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
@@ -286,9 +315,14 @@ class TranslationImporter:
                 return True
         return False
 
+    def isHidden(self, path):
+        """See `ITranslationImporter`."""
+        normalized_path = posixpath.normpath(path)
+        return normalized_path.startswith('.') or '/.' in normalized_path
+
     def isTranslationName(self, path):
         """See `ITranslationImporter`."""
-        base_name, suffix = os.path.splitext(path)
+        base_name, suffix = posixpath.splitext(path)
         if suffix not in self.supported_file_extensions:
             return False
         for importer_suffix in self.template_suffixes:
@@ -730,21 +764,18 @@ class POFileImporter(FileImporter):
             return None
 
         personset = getUtility(IPersonSet)
-        person = personset.getByEmail(email)
 
-        if person is None:
-            # We create a new person, without a password.
-            comment = 'when importing the %s translation of %s' % (
-                self.pofile.language.displayname, self.potemplate.displayname)
+        # We may have to create a new person.  If we do, this is the
+        # rationale.
+        comment = 'when importing the %s translation of %s' % (
+            self.pofile.language.displayname, self.potemplate.displayname)
+        rationale = PersonCreationRationale.POFILEIMPORT
 
-            try:
-                person, dummy = personset.createPersonAndEmail(
-                    email, PersonCreationRationale.POFILEIMPORT,
-                    displayname=name, comment=comment)
-            except InvalidEmailAddress:
-                return None
-
-        return person
+        try:
+            return personset.ensurePerson(
+                email, displayname=name, rationale=rationale, comment=comment)
+        except InvalidEmailAddress:
+            return None
 
     def importMessage(self, message):
         """See FileImporter."""

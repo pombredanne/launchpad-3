@@ -3,7 +3,8 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-release-critical-bugs"
-  tal:define="series_buglistings view/series_buglistings">
+  tal:define="series_buglistings view/series_buglistings"
+  tal:condition="series_buglistings">
 
   <h2>Series-targeted bugs</h2>
 

@@ -52,7 +52,7 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
 
     schema = ISpecificationBranch
     field_names = []
-    label = _('Edit specification branch summary')
+    label = _('Delete link between specification and branch')
 
     def initialize(self):
         self.specification = self.context.specification
@@ -61,10 +61,6 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.specification)
-
-    @action(_('Update'), name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
 
     @action(_('Delete'), name='delete')
     def delete_action(self, action, data):

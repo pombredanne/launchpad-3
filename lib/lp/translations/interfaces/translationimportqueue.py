@@ -3,26 +3,30 @@
 
 # pylint: disable-msg=E0211,E0213
 
+from datetime import timedelta
+
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, Object, Text, TextLine)
+from zope.security.interfaces import Unauthorized
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productseries import IProductSeries
 
 from lazr.restful.interface import copy_field
-from lazr.restful.fields import Reference, ReferenceChoice
-from lazr.restful.declarations import (
+from lazr.restful.fields import Reference
+from lazr.restful.declarations import (call_with,
     collection_default_content, exported, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, operation_parameters,
-    operation_returns_entry, operation_returns_collection_of)
-
+    export_as_webservice_entry, export_read_operation,
+    export_write_operation, operation_parameters,
+    operation_returns_entry, operation_returns_collection_of,
+    REQUEST_USER, webservice_error)
 from lp.translations.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
 
@@ -37,6 +41,8 @@ __all__ = [
     'RosettaImportStatus',
     'SpecialTranslationImportTargetFilter',
     'TranslationFileType',
+    'translation_import_queue_entry_age',
+    'UserCannotSetTranslationImportStatus',
     ]
 
 
@@ -44,6 +50,15 @@ class TranslationImportQueueConflictError(
                                     TranslationImportExportBaseException):
     """A new entry cannot be inserted into the queue because it
     conflicts with existing entries."""
+
+
+class UserCannotSetTranslationImportStatus(Unauthorized):
+    """User not permitted to change status.
+
+    Raised when a user tries to transition to a new status who doesn't
+    have the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorized'
 
 
 class RosettaImportStatus(DBEnumeratedType):
@@ -91,6 +106,28 @@ class RosettaImportStatus(DBEnumeratedType):
 
         The entry has been blocked to be imported by a Rosetta Expert.
         """)
+
+    NEEDS_INFORMATION = DBItem(7, """
+        Needs Information
+
+        The reviewer needs more information before this entry can be approved.
+        """)
+
+
+# Some time spans in days.
+DAYS_IN_MONTH = 30
+DAYS_IN_HALF_YEAR = 366 / 2
+
+
+# Period after which entries with certain statuses are culled from the
+# queue.
+translation_import_queue_entry_age = {
+    RosettaImportStatus.DELETED: timedelta(days=3),
+    RosettaImportStatus.FAILED: timedelta(days=DAYS_IN_MONTH),
+    RosettaImportStatus.IMPORTED: timedelta(days=3),
+    RosettaImportStatus.NEEDS_INFORMATION: timedelta(days=DAYS_IN_HALF_YEAR),
+    RosettaImportStatus.NEEDS_REVIEW: timedelta(days=DAYS_IN_HALF_YEAR),
+}
 
 
 class SpecialTranslationImportTargetFilter(DBEnumeratedType):
@@ -152,9 +189,8 @@ class ITranslationImportQueueEntry(Interface):
             required=True))
 
     importer = exported(
-        ReferenceChoice(
+        ParticipatingPersonChoice(
             title=_("Uploader"),
-            schema=IPerson,
             required=True,
             readonly=True,
             description=_(
@@ -255,10 +291,23 @@ class ITranslationImportQueueEntry(Interface):
             required=False,
             readonly=True))
 
-    def setStatus(status):
-        """Set status.
+    def canAdmin(roles):
+        """Check if the user can administer this entry."""
 
-        :param status: new status to set.
+    def canEdit(roles):
+        """Check if the user can edit this entry."""
+
+    def canSetStatus(new_status, user):
+        """Check if the user can set this new status."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(new_status=copy_field(status))
+    @export_write_operation()
+    def setStatus(new_status, user):
+        """Transition to a new status if possible.
+
+        :param new_status: Status to transition to.
+        :param user: The user that is doing the transition.
         """
 
     def setErrorOutput(output):
@@ -334,7 +383,7 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntriesFromTarball(content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None):
+        potemplate=None, filename_filter=None):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
@@ -399,30 +448,37 @@ class ITranslationImportQueue(Interface):
         All returned items will implement `IHasTranslationImports`.
         """
 
-    def executeOptimisticApprovals(ztm):
-        """Try to move entries from the Needs Review status to Approved one.
+    def executeOptimisticApprovals(txn=None):
+        """Try to approve Needs-Review entries.
 
-        :arg ztm: Zope transaction manager object.
+        :arg txn: Optional transaction manager.  If given, will be
+            committed regularly.
 
         This method moves all entries that we know where should they be
         imported from the Needs Review status to the Accepted one.
         """
 
-    def executeOptimisticBlock(ztm):
+    def executeOptimisticBlock(txn=None):
         """Try to move entries from the Needs Review status to Blocked one.
 
-        :arg ztm: Zope transaction manager object or None.
+        :arg txn: Optional transaction manager.  If given, will be
+            committed regularly.
 
-        This method moves all .po entries that are on the same directory that
-        a .pot entry that has the status Blocked to that same status.
+        This method moves uploaded translations for Blocked templates to
+        the Blocked status as well.  This lets you block a template plus
+        all its present or future translations in one go.
 
-        Return the number of items blocked.
+        :return: The number of items blocked.
         """
 
     def cleanUpQueue():
-        """Remove old DELETED and IMPORTED entries.
+        """Remove old entries in terminal states.
 
-        Only entries older than 5 days will be removed.
+        This "garbage-collects" entries from the queue based on their
+        status (e.g. Deleted and Imported ones) and how long they have
+        been in that status.
+
+        :return: The number of entries deleted.
         """
 
     def remove(entry):
@@ -457,7 +513,7 @@ class IEditTranslationImportQueueEntry(Interface):
     file_type = Choice(
         title=_("File Type"),
         description=_(
-            "The type of the file being imported imported."),
+            "The type of the file being imported."),
         required=True,
         vocabulary = TranslationFileType)
 

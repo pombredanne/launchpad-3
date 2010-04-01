@@ -9,7 +9,7 @@ If you're not logged in and go to the +polls page of the "Ubuntu Team"
 you'll see a link to login as a team administrator.
 
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
-    >>> anon_browser.getLink('Polls').click()
+    >>> anon_browser.getLink('Show polls').click()
     >>> anon_browser.url
     'http://launchpad.dev/~ubuntu-team/+polls'
     >>> anon_browser.getLink('Log in as an admin to set up a new poll').url
@@ -28,13 +28,13 @@ Now we're logged in as Jeff Waugh which is a team administrator and thus can
 create a new poll.
 
     >>> team_admin_browser.open('http://launchpad.dev/~ubuntu-team')
-    >>> team_admin_browser.getLink('Polls').click()
-    >>> team_admin_browser.getLink('Create a poll').click()
+    >>> team_admin_browser.getLink('Show polls').click()
+    >>> team_admin_browser.getLink('Set up a new poll').click()
     >>> team_admin_browser.url
     'http://launchpad.dev/~ubuntu-team/+newpoll'
 
     >>> team_admin_browser.title
-    'New poll for team Ubuntu Team'
+    'New poll for team Ubuntu Team...
 
 First we try to create a poll with a invalid name to
 test the name field validator.
@@ -109,12 +109,12 @@ We're redirected to the newly created poll
     >>> team_admin_browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080'
     >>> team_admin_browser.title
-    'Poll: \xe2\x80\x9cDebian Project Leader Election 2080\xe2\x80\x9d'
+    'Debian Project Leader Election 2080 : \xe2\x80\x9cUbuntu Team\xe2\x80\x9d team'
     >>> print_location(team_admin_browser.contents)
-    Hierarchy: Launchpad > ?Ubuntu Team? team
+    Hierarchy:  ?Ubuntu Team? team > Debian Project Leader Election 2080
     Tabs:
     * Overview (selected) - http://launchpad.dev/~ubuntu-team
-    * Code - http://code.launchpad.dev/~ubuntu-team
+    * Branches - http://code.launchpad.dev/~ubuntu-team
     * Bugs - http://bugs.launchpad.dev/~ubuntu-team
     * Blueprints - http://blueprints.launchpad.dev/~ubuntu-team
     * Translations - http://translations.launchpad.dev/~ubuntu-team
@@ -148,11 +148,11 @@ Now lets try to insert a poll with the name of a existing one.
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
     There is 1 error.
     dpl-2080 is already in use by another poll in this team.
- 
+
 When creating a new poll, its start date must be at least 12 hours from
 now, so that the user creating it has a chance to add some options before
 the poll opens -- at that point new options cannot be added.
- 
+
     >>> team_admin_browser.getControl('The unique name').value = 'today'
     >>> from datetime import datetime
     >>> today = datetime.today().strftime('%Y-%m-%d')

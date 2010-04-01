@@ -11,7 +11,7 @@ __all__ = [
     'ISourcePackage',
     'ISourcePackageFactory',
     'SourcePackageFileType',
-    'SourcePackageFormat',
+    'SourcePackageType',
     'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
@@ -21,7 +21,8 @@ from zope.schema import Choice, Object, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.soyuz.interfaces.component import IComponent
 from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
@@ -30,7 +31,8 @@ from lazr.restful.declarations import (
     operation_returns_entry, REQUEST_USER)
 
 
-class ISourcePackage(IBugTarget):
+class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
+                     IHasOfficialBugTags):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
@@ -89,14 +91,13 @@ class ISourcePackage(IBugTarget):
     # This is really a reference to an IProductSeries.
     productseries = exported(
         ReferenceChoice(
-            title=_("Product Series"), required=False,
+            title=_("Project series"), required=False,
             vocabulary="ProductSeries",
             schema=Interface,
             description=_(
-                "The best guess we have as to the Launchpad ProductSeries "
-                "for this Source Package. Try find packaging information for "
-                "this specific distroseries then try parent series and "
-                "previous Ubuntu series.")))
+                "The registered project series that this source package "
+                "is based on. This series may be the same as the one that "
+                "earlier versions of this source packages were based on.")))
 
     releases = Attribute("The full set of source package releases that "
         "have been published in this distroseries under this source "
@@ -224,6 +225,41 @@ class ISourcePackage(IBugTarget):
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
 
+    latest_published_component_name = exported(TextLine(
+        title=u'The name of the component in which the package'
+               ' was last published.',
+        readonly=True, required=False))
+
+    def get_default_archive(component=None):
+        """Get the default archive of this package.
+
+        If 'component' is a partner component, then the default archive is the
+        partner archive. Otherwise, the primary archive of the associated
+        distribution.
+
+        :param component: The `IComponent` to base the default archive
+            decision on. If None, defaults to the last published component.
+        :raise NoPartnerArchive: If returning the partner archive is
+            appropriate, but no partner archive exists.
+        :return: `IArchive`.
+        """
+
+    def getLatestTranslationsUploads():
+        """Find latest Translations tarballs as produced by Soyuz.
+
+        :return: A list of `ILibraryFileAlias`es, usually of size zero
+            or one.  If not, they are sorted from oldest to newest.
+        """
+
+    @export_read_operation()
+    def linkedBranches():
+        """Get the official branches for this package.
+
+        This operation returns a {`Pocket`-name : `IBranch`} dict.
+
+        :return: A {`Pocket`-name : `IBranch`} dict.
+        """
+
 
 class ISourcePackageFactory(Interface):
     """A creator of source packages."""
@@ -268,7 +304,7 @@ class SourcePackageFileType(DBEnumeratedType):
         which in turn lists the orig.tar.gz and diff.tar.gz files used to
         make up the package.  """)
 
-    ORIG = DBItem(4, """
+    ORIG_TARBALL = DBItem(4, """
         Orig Tarball
 
         This file is an Ubuntu "orig" file, typically an upstream tarball or
@@ -280,16 +316,34 @@ class SourcePackageFileType(DBEnumeratedType):
         This is an Ubuntu "diff" file, containing changes that need to be
         made to upstream code for the packaging on Ubuntu. Typically this
         diff creates additional directories with patches and documentation
-        used to build the binary packages for Ubuntu.  """)
+        used to build the binary packages for Ubuntu.
 
-    TARBALL = DBItem(6, """
-        Tarball
+        This is only part of the 1.0 source package format.""")
+
+    NATIVE_TARBALL = DBItem(6, """
+        Native Tarball
 
         This is a tarball, usually of a mixture of Ubuntu and upstream code,
         used in the build process for this source package.  """)
 
+    DEBIAN_TARBALL = DBItem(7, """
+        Debian Tarball
 
-class SourcePackageFormat(DBEnumeratedType):
+        This file is an Ubuntu "orig" file, typically an upstream tarball or
+        other lightly-modified upstreamish thing.
+
+        This is only part of the 3.0 (quilt) source package format.""")
+
+    COMPONENT_ORIG_TARBALL = DBItem(8, """
+        Component Orig Tarball
+
+        This file is an Ubuntu component "orig" file, typically an upstream
+        tarball containing a component of the source package.
+
+        This is only part of the 3.0 (quilt) source package format.""")
+
+
+class SourcePackageType(DBEnumeratedType):
     """Source Package Format
 
     Launchpad supports distributions that use source packages in a variety

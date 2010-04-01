@@ -90,44 +90,54 @@ Each binary publication exposes a number of properties:
 Security
 ========
 
-When Celso's PPA becomes private ...
+Create a private PPA for Celso with some binaries.
 
     >>> login("foo.bar@canonical.com")
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> cprov.archive.buildd_secret = 'boing'
-    >>> cprov.archive.private = True
-
-    >>> transaction.commit()
-
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
+    >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> cprov_private_ppa_db = factory.makeArchive(
+    ...     private=True, owner=cprov_db, name="p3a",
+    ...     distribution=ubuntu_db)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> private_source_pub = test_publisher.getPubBinaries(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     binaryname='privacy-test-bin',
+    ...     archive=cprov_private_ppa_db)
     >>> logout()
 
 Only Celso (or anyone who participates on the PPA owner team) has
 access to the PPA publications.
 
+    >>> cprov_private_ppa = webservice.get("/~cprov/+archive/p3a").jsonBody()
     >>> cprov_bins_response = webservice.named_get(
-    ...     cprov_archive['self_link'], 'getPublishedBinaries')
-    >>> print cprov_bins_response.getOutput()
+    ...     cprov_private_ppa['self_link'], 'getPublishedBinaries')
+    >>> print cprov_bins_response
     HTTP/1.1 200 Ok
     ...
 
 Any other user attempt would result in a 401 error.
 
     >>> response = user_webservice.named_get(
-    ...     cprov_archive['self_link'], 'getPublishedBinaries')
-    >>> print response.getOutput()
+    ...     cprov_private_ppa['self_link'], 'getPublishedBinaries')
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
 
 If the user attempts to access the publication URL directly they will
 also fail in their quest.
 
+    >>> pubs = cprov_bins_response.jsonBody()
     >>> private_publication_url = pubs['entries'][0]['self_link']
     >>> response = user_webservice.get(private_publication_url)
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
-

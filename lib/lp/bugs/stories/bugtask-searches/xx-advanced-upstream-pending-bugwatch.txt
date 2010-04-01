@@ -8,22 +8,6 @@ upstream', during the first round of triage. Another user can choose
 locate the bugs that need a bugwatch setup.
 
 
-== Common searches on a product's bug page (part 1) ==
-
-No Privileges Person visits the alsa-utils front page on Launchpad.
-He wants to link Launchpad bugs to to the upstream bug tracker. He can
-see that there are '0 bugs need forwarding upstream'.
-
-    >>> user_browser.open('http://bugs.launchpad.dev/alsa-utils/')
-    >>> user_browser.title
-    'Bugs in ALSA utilities'
-
-    >>> pending_watches_link = user_browser.getLink(
-    ...     'need forwarding upstream')
-    >>> pending_watches_link.text
-    '0 bugs need forwarding upstream'
-
-
 == Marking and searching for pending bugwatches ==
 
 Sample Person is doing some bug reporting and triage for his adopted
@@ -52,8 +36,7 @@ Sample Person visits the advanced search page for alsa-utils, and
 chooses to search for all bugs that need to be forwarded upstream.
 He sees one match.
 
-    >>> browser.open('http://bugs.launchpad.dev/alsa-utils/')
-    >>> browser.getLink('Advanced search').click()
+    >>> browser.open('http://bugs.launchpad.dev/alsa-utils/+bugs?advanced=1')
     >>> pending_bugwatch_label = (
     ...     'Show bugs that need to be forwarded to an upstream '
     ...     'bug tracker')
@@ -63,26 +46,3 @@ He sees one match.
     >>> print extract_text(bug_listing)
     Summary        Importance  Status
     ...Test Bug 1  Undecided   New
-
-
-== Common searches on a product's bug page (part 2) ==
-
-No Privileges Person returns to the alsa-utils front page on Launchpad.
-He wants to link bugs to to the upstream bug tracker.
-
-    >>> user_browser.open('http://bugs.launchpad.dev/alsa-utils/')
-    >>> user_browser.title
-    'Bugs in ALSA utilities'
-
-    >>> pending_watches_link = user_browser.getLink(
-    ...     'needs forwarding upstream')
-    >>> pending_watches_link.text
-    '1 bug needs forwarding upstream'
-
-    >>> pending_watches_link.click()
-
-    >>> bug_listing = find_tag_by_id(user_browser.contents, 'buglisting')
-    >>> print extract_text(bug_listing)
-    Summary        Importance  Status
-    ...Test Bug 1  Undecided   New
-

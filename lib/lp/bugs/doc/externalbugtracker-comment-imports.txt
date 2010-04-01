@@ -203,7 +203,7 @@ imported.
 
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     WARNING:...:Unable to import remote comment author. No email address
-    or display name found.
+    or display name found. (OOPS-...)
 
     >>> print bug.messages[-1].text_contents
     Yet another comment.
@@ -363,7 +363,7 @@ import process.
 
 We'll add a listener to check for Karma events.
 
-    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 

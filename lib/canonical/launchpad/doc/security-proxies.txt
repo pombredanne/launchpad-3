@@ -16,23 +16,23 @@ First, some imports and set up::
 Get a proxied and unproxied person object for the same person, and demonstrate
 working comparisons::
 
-    >>> sabdfl = Person.get(1)
-    >>> sabdfl_proxied = getUtility(IPersonSet).get(1)
-    >>> sabdfl is sabdfl_proxied
+    >>> mark = Person.get(1)
+    >>> mark_proxied = getUtility(IPersonSet).get(1)
+    >>> mark is mark_proxied
     False
-    >>> sabdfl == sabdfl
+    >>> mark == mark
     True
-    >>> sabdfl == sabdfl_proxied
+    >>> mark == mark_proxied
     True
-    >>> sabdfl_proxied == sabdfl
+    >>> mark_proxied == mark
     True
-    >>> sabdfl_proxied == sabdfl_proxied
+    >>> mark_proxied == mark_proxied
     True
 
 A dbschema Item can also be given to sqlobject's select() method, or any
 of its variants.
 
-    >>> proxied_policy = sabdfl_proxied.subscriptionpolicy
+    >>> proxied_policy = mark_proxied.subscriptionpolicy
     >>> type(proxied_policy)
     <type 'zope.security._proxy._Proxy'>
 
@@ -49,13 +49,13 @@ XXX: bug 3315
 DB schema objects should be comparable correctly when proxied...
 
     >>> from canonical.launchpad.interfaces import (
-    ...     DistroSeriesStatus, IDistroSeriesSet)
+    ...     SeriesStatus, IDistroSeriesSet)
     >>> hoary = getUtility(IDistroSeriesSet).get(3)
     >>> print hoary.status.name
     DEVELOPMENT
-    >>> hoary.status == DistroSeriesStatus.DEVELOPMENT
+    >>> hoary.status == SeriesStatus.DEVELOPMENT
     True
-    >>> hoary.status is DistroSeriesStatus.DEVELOPMENT
+    >>> hoary.status is SeriesStatus.DEVELOPMENT
     False
 
 Finally, tear down the test:

@@ -18,7 +18,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -691,6 +691,7 @@ class TestBugChanges(unittest.TestCase):
         attachment = self.factory.makeBugAttachment(
             bug=self.bug, owner=self.user)
         self.saveOldChanges()
+        download_url = attachment.libraryfile.http_url
         attachment.removeFromBug(user=self.user)
 
         attachment_removed_activity = {
@@ -698,13 +699,13 @@ class TestBugChanges(unittest.TestCase):
             'whatchanged': 'attachment removed',
             'newvalue': None,
             'oldvalue': '%s %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title, download_url),
             }
 
         attachment_removed_notification = {
             'person': self.user,
             'text': '** Attachment removed: "%s"\n   %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title, download_url),
             }
 
         self.assertRecordedChange(
@@ -1208,38 +1209,6 @@ class TestBugChanges(unittest.TestCase):
             }
 
         self.assertRecordedChange(expected_activity=expected_activity)
-
-    def test_series_nominated_and_approved(self):
-        # When adding a nomination that is approved automatically, it's
-        # like adding a new bug task for the series directly.
-        product = self.factory.makeProduct(owner=self.user)
-        product.driver = self.user
-        series = self.factory.makeProductSeries(product=product)
-        self.bug.addTask(self.user, product)
-        self.saveOldChanges()
-
-        nomination = self.bug.addNomination(self.user, series)
-        self.assertTrue(nomination.isApproved())
-
-        expected_activity = {
-            'person': self.user,
-            'newvalue': series.bugtargetname,
-            'whatchanged': 'bug task added',
-            'newvalue': series.bugtargetname,
-            }
-
-        task_added_notification = {
-            'person': self.user,
-            'text': (
-                '** Also affects: %s\n'
-                '   Importance: Undecided\n'
-                '       Status: New' % (
-                    series.bugtargetname)),
-            }
-
-        self.assertRecordedChange(
-            expected_activity=expected_activity,
-            expected_notification=task_added_notification)
 
     def test_nomination_approved(self):
         # When a nomination is approved, it's like adding a new bug

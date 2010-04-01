@@ -21,6 +21,8 @@ from shutil import copyfileobj
 from storm.store import Store
 from zope.component import getUtility
 
+import transaction
+
 from canonical.database.sqlbase import sqlvalues, cursor
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.translations.interfaces.languagepack import (
@@ -116,6 +118,10 @@ def export(distroseries, component, update, force_utf8, logger):
             for potmsgset in cached_potmsgsets:
                 store.invalidate(potmsgset.msgid_singular)
                 store.invalidate(potmsgset)
+
+            # Commit a transaction with every PO template and its
+            # PO files exported so we don't keep it open for too long.
+            transaction.commit()
 
             cached_potemplate = potemplate
             cached_potmsgsets = [

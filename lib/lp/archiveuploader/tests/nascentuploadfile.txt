@@ -216,6 +216,16 @@ filenames.
     >>> src_match.group(3)
     'tar.gz'
 
+    >>> src_match = re_issource.match('foo_1.0.tar.bz2')
+    >>> src_match.group(0)
+    'foo_1.0.tar.bz2'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'tar.bz2'
+
     >>> src_match = re_issource.match('foo_1.0.diff.gz')
     >>> src_match.group(0)
     'foo_1.0.diff.gz'
@@ -236,12 +246,65 @@ filenames.
     >>> src_match.group(3)
     'dsc'
 
+    >>> src_match = re_issource.match('foo_1.0.debian.tar.gz')
+    >>> src_match.group(0)
+    'foo_1.0.debian.tar.gz'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'debian.tar.gz'
+
+    >>> src_match = re_issource.match('foo_1.0.debian.tar.bz2')
+    >>> src_match.group(0)
+    'foo_1.0.debian.tar.bz2'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'debian.tar.bz2'
+
+    >>> src_match = re_issource.match('foo_1.0.orig-foo.tar.gz')
+    >>> src_match.group(0)
+    'foo_1.0.orig-foo.tar.gz'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'orig-foo.tar.gz'
+
+    >>> src_match = re_issource.match('foo_1.0.orig-bar.tar.bz2')
+    >>> src_match.group(0)
+    'foo_1.0.orig-bar.tar.bz2'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0'
+    >>> src_match.group(3)
+    'orig-bar.tar.bz2'
+
+    >>> src_match = re_issource.match('foo_1.0.porig-bar.tar.bz2')
+    >>> src_match.group(0)
+    'foo_1.0.porig-bar.tar.bz2'
+    >>> src_match.group(1)
+    'foo'
+    >>> src_match.group(2)
+    '1.0.porig-bar'
+    >>> src_match.group(3)
+    'tar.bz2'
+
 And finally some failures:
 
     >>> re_isadeb.match('foo-bar_1.0_i386.bed') is None
     True
 
     >>> re_issource.match('foo_1.0.c') is None
+    True
+
+    >>> re_issource.match('foo_1.0.diff.bz2') is None
     True
 
 However a custom upload is essencially a tarball, so it also matches
@@ -506,6 +569,115 @@ It also verifies the file size when the checksum matches.
     ['File ed_0.2-20.dsc mentioned in the changes has a size mismatch. 578 != 500']
 
 
+=== Format file type verification ===
+
+DSCFile performs additional verification on the types of the referenced
+files, confirming that they are suitable for the source package's
+format. There is an error generator to verify each format.
+
+   >>> from lp.archiveuploader.dscfile import (check_format_1_0_files,
+   ...     check_format_3_0_native_files, check_format_3_0_quilt_files)
+   >>> from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+
+==== 1.0 ==== 
+
+A 1.0 source can contain either a tar.gz or an orig.tar.gz and diff.gz.
+
+   >>> list(check_format_1_0_files('foo_1.dsc', {
+   ...     SourcePackageFileType.ORIG_TARBALL: 1,
+   ...     SourcePackageFileType.DIFF: 1,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 0,
+   ...     SourcePackageFileType.NATIVE_TARBALL: 0,
+   ...     }, {}, 0))
+   []
+
+   >>> list(check_format_1_0_files('foo_1.dsc', {
+   ...     SourcePackageFileType.NATIVE_TARBALL: 1,
+   ...     SourcePackageFileType.ORIG_TARBALL: 0,
+   ...     SourcePackageFileType.DIFF: 0,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 0,
+   ...     }, {}, 0))
+   []
+
+But if we have some other combination, or bzip2 compression, errors
+will be generated.
+
+   >>> list(check_format_1_0_files('foo_1.dsc', {
+   ...     SourcePackageFileType.NATIVE_TARBALL: 1,
+   ...     SourcePackageFileType.ORIG_TARBALL: 1,
+   ...     SourcePackageFileType.DIFF: 1,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 0,
+   ...     }, {}, 1))
+   [UploadError('foo_1.dsc: is format 1.0 but uses bzip2 compression.',), UploadError('foo_1.dsc: must have exactly one tar.gz, or an orig.tar.gz and diff.gz',)]
+
+The files are also bad if there are any components:
+
+   >>> list(check_format_1_0_files('foo_1.dsc', {
+   ...     SourcePackageFileType.ORIG_TARBALL: 1,
+   ...     SourcePackageFileType.DIFF: 1,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 0,
+   ...     SourcePackageFileType.NATIVE_TARBALL: 0,
+   ...     }, {'foo': 1}, 0))
+   [UploadError('foo_1.dsc: must have exactly one tar.gz, or an orig.tar.gz and diff.gz',)]
+
+==== 3.0 (native) ==== 
+
+A 3.0 (native) source must contain just a tar.(gz|bz2).
+
+   >>> list(check_format_3_0_native_files('foo_1.dsc', {
+   ...     SourcePackageFileType.NATIVE_TARBALL: 1,
+   ...     SourcePackageFileType.ORIG_TARBALL: 0,
+   ...     SourcePackageFileType.DIFF: 0,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 0,
+   ...     }, {}, 1))
+   []
+
+   >>> list(check_format_3_0_native_files('foo_1.dsc', {
+   ...     SourcePackageFileType.NATIVE_TARBALL: 1,
+   ...     SourcePackageFileType.ORIG_TARBALL: 1,
+   ...     SourcePackageFileType.DIFF: 0,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 0,
+   ...     }, {}, 1))
+   [UploadError('foo_1.dsc: must have only a tar.*.',)]
+
+   >>> list(check_format_3_0_native_files('foo_1.dsc', {
+   ...     SourcePackageFileType.NATIVE_TARBALL: 1,
+   ...     SourcePackageFileType.ORIG_TARBALL: 0,
+   ...     SourcePackageFileType.DIFF: 0,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 0,
+   ...     }, {'foo': 1}, 0))
+   [UploadError('foo_1.dsc: must have only a tar.*.',)]
+
+==== 3.0 (quilt) ==== 
+
+A 3.0 (quilt) source must have an orig.tar.*, a debian.tar.*, and at
+most one orig-COMPONENT.tar.* for each COMPONENT.
+
+   >>> list(check_format_3_0_quilt_files('foo_1.dsc', {
+   ...     SourcePackageFileType.ORIG_TARBALL: 1,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 1,
+   ...     SourcePackageFileType.NATIVE_TARBALL: 0,
+   ...     SourcePackageFileType.DIFF: 0,
+   ...     }, {'foo': 1}, 1))
+   []
+
+   >>> list(check_format_3_0_quilt_files('foo_1.dsc', {
+   ...     SourcePackageFileType.NATIVE_TARBALL: 1,
+   ...     SourcePackageFileType.ORIG_TARBALL: 1,
+   ...     SourcePackageFileType.DIFF: 0,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 1,
+   ...     }, {}, 1))
+   [UploadError('foo_1.dsc: must have only an orig.tar.*, a debian.tar.*, and optionally orig-*.tar.*',)]
+
+   >>> list(check_format_3_0_quilt_files('foo_1.dsc', {
+   ...     SourcePackageFileType.ORIG_TARBALL: 1,
+   ...     SourcePackageFileType.DEBIAN_TARBALL: 1,
+   ...     SourcePackageFileType.NATIVE_TARBALL: 0,
+   ...     SourcePackageFileType.DIFF: 0,
+   ...     }, {'foo': 2}, 0))
+   [UploadError('foo_1.dsc: has more than one orig-foo.tar.*.',)]
+
+
 === Sub-DSC files or DSCUploadedFiles ===
 
 Sub-DSCFiles are DSCUploadedFile objects.
@@ -538,6 +710,77 @@ The DSCUploadedFile also inherit the ability to verify file sanity:
 
 
 == DebBinaryUploadFile ==
+
+DebBinaryUploadFile models a binary .deb file. 
+
+   >>> from lp.archiveuploader.nascentuploadfile import (
+   ...    DebBinaryUploadFile)
+   >>> ed_deb_path = datadir('ed_0.2-20_i386.deb')
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/editors', 'important', 'foo', '1.2',
+   ...                     ed_mixed_changes, modified_insecure_policy,
+   ...                     mock_logger_quiet)
+
+Like the other files it can be verified:
+
+   >>> list(ed_binary_deb.verify())
+   []
+
+Verification checks that the specified section matches the section in the
+changes file:
+
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/net', 'important', 'foo', '1.2',
+   ...                     ed_mixed_changes, modified_insecure_policy,
+   ...                     mock_logger_quiet)
+   >>> list(ed_binary_deb.verify())
+   [UploadError('ed_0.2-20_i386.deb control file lists section as 
+                main/editors but changes file has main/net.',)]
+
+It also checks the priority against the changes file:
+
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/editors', 'extra', 'foo', '1.2',
+   ...                     ed_mixed_changes, modified_insecure_policy,
+   ...                     mock_logger_quiet)
+   >>> list(ed_binary_deb.verify())
+   [UploadError('ed_0.2-20_i386.deb control file lists priority as important 
+                 but changes file has extra.',)]
+
+The timestamp of the files in the .deb are tested against the policy for being 
+too new:
+
+   >>> old_only_policy = getPolicy(
+   ...     name='insecure', distro='ubuntu', distroseries='hoary')
+   >>> old_only_policy.can_upload_binaries = True
+   >>> old_only_policy.future_time_grace = -5 * 365 * 24 * 60 * 60
+
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/editors', 'important', 'foo', '1.2',
+   ...                     ed_mixed_changes, old_only_policy,
+   ...                     mock_logger_quiet)
+   >>> list(ed_binary_deb.verifyDebTimestamp())
+   [UploadError('ed_0.2-20_i386.deb: has 26 file(s) with a time stamp too 
+    	far into the future (e.g. control [Thu Jan  3 19:29:01 2008]).',)]
+
+... as well as for being too old:
+
+   >>> new_only_policy = getPolicy(
+   ...     name='insecure', distro='ubuntu', distroseries='hoary')
+   >>> new_only_policy.can_upload_binaries = True
+   >>> new_only_policy.earliest_year = 2010
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/editors', 'important', 'foo', '1.2',
+   ...                     ed_mixed_changes, new_only_policy,
+   ...                     mock_logger_quiet)
+   >>> list(ed_binary_deb.verify())
+   [UploadError('ed_0.2-20_i386.deb: has 26 file(s) with a time stamp too
+                 far in the past (e.g. control [Thu Jan  3 19:29:01 2008]).',)]
 
 
 == UDebBinaryUploadFile ==

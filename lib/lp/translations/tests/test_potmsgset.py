@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0102
@@ -15,15 +15,18 @@ from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.model.translationmessage import (
-    DummyTranslationMessage)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potmsgset import (
-    POTMsgSetInIncompatibleTemplatesError)
+    POTMsgSetInIncompatibleTemplatesError, TranslationCreditsType)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationmessage import TranslationConflict
+from lp.translations.model.translationmessage import (
+    DummyTranslationMessage)
+
 from lp.testing import TestCaseWithFactory
 from canonical.testing import ZopelessDatabaseLayer
 
@@ -291,9 +294,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 self.stable_potemplate, serbian)),
             set([shared_suggestion, another_suggestion]))
 
-        # Setting one of the suggestions as current will leave make
+        # Setting one of the suggestions as current will leave
         # them both 'reviewed' and thus hidden.
-        shared_suggestion = self.factory.makeSharedTranslationMessage(
+        current_translation = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, suggestion=False)
         self.assertEquals(
             set(self.potmsgset.getLocalTranslationMessages(
@@ -326,6 +329,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
 
+        transaction.commit()
+
         # When there is no translation for the external POTMsgSet,
         # no externally used suggestions are returned.
         self.assertEquals(
@@ -337,6 +342,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_suggestion = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=True)
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(serbian),
             [])
@@ -347,6 +355,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=False, is_imported=True)
         imported_translation.is_current = False
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(serbian),
             [imported_translation])
@@ -356,6 +367,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=False, is_imported=False)
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(serbian),
             [imported_translation, current_translation])
@@ -374,6 +388,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
 
+        transaction.commit()
+
         # When there is no translation for the external POTMsgSet,
         # no externally used suggestions are returned.
         self.assertEquals(
@@ -385,6 +401,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_suggestion = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=True)
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
             [external_suggestion])
@@ -395,6 +414,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=False, is_imported=True)
         imported_translation.is_current = False
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
             [external_suggestion])
@@ -404,6 +426,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=False, is_imported=False)
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
             [external_suggestion])
@@ -635,8 +660,61 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.devel_potemplate, serbian)
         self.assertEquals(current_translation, shared_translation)
 
-class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
-    """Test dimissal of translation suggestions."""
+    def test_setTranslationCreditsToTranslated(self):
+        """Test that translation credits are correctly set as translated."""
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+        self.assertNotEqual(None, current)
+
+    def test_setTranslationCreditsToTranslated_diverged(self):
+        # Even if there's a diverged translation credits translation,
+        # we should provide an automatic shared translation instead.
+        alsa_utils = getUtility(IProductSet).getByName('alsa-utils')
+        trunk = alsa_utils.getSeries('trunk')
+        potemplate = trunk.getPOTemplate('alsa-utils')
+        es_pofile = potemplate.getPOFileByLang('es')
+        credits_potmsgset = potemplate.getPOTMsgSetByMsgIDText(
+            u'_: EMAIL OF TRANSLATORS\nYour emails')
+
+        es_current = credits_potmsgset.getCurrentTranslationMessage(
+            potemplate, es_pofile.language)
+        # Let's make sure this message is also marked as imported
+        # and diverged.
+        es_current.is_imported = True
+        es_current.potemplate = potemplate
+
+        self.assertTrue(es_current.is_current)
+        self.assertNotEqual(None, es_current.potemplate)
+
+        # Setting credits as translated will give us a shared translation.
+        credits_potmsgset.setTranslationCreditsToTranslated(es_pofile)
+        current_shared = credits_potmsgset.getSharedTranslationMessage(
+            es_pofile.language)
+        self.assertNotEqual(None, current_shared)
+        self.assertEqual(None, current_shared.potemplate)
+
+    def test_setTranslationCreditsToTranslated_submitter(self):
+        # Submitter on the automated translation message is always
+        # the rosetta_experts team.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        translator = self.factory.makePerson()
+        sr_pofile.lasttranslator = translator
+        sr_pofile.owner = translator
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+        self.assertEqual(rosetta_experts, current.submitter)
+
+
+class TestPOTMsgSetSuggestions(TestCaseWithFactory):
+    """Test retrieval and dismissal of translation suggestions."""
 
     layer = ZopelessDatabaseLayer
 
@@ -655,7 +733,7 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
     def setUp(self):
         # Create a product with all the boilerplate objects to be able to
         # create TranslationMessage objects.
-        super(TestPOTMsgSetSuggestionsDismissal, self).setUp()
+        super(TestPOTMsgSetSuggestions, self).setUp()
         self.now = self.gen_now().next
         self.foo = self.factory.makeProduct()
         self.foo_main = self.factory.makeProductSeries(
@@ -685,16 +763,16 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         self._setDateCreated(self.suggestion1)
         self._setDateCreated(self.suggestion2)
         # There are two local suggestions now.
-        self.assertEqual(set([self.suggestion1, self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion1, self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
         # There is no local suggestion now.
-        self.assertEqual(set(), set(
+        self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
 
     def test_dismiss_nochange(self):
         # Set order of creation and review.
@@ -702,17 +780,17 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         self._setDateCreated(self.suggestion2)
         self._setDateReviewed(self.translation)
         # There is no local suggestion.
-        self.assertEqual(set(), set(
+        self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
                 self.potemplate, self.pofile.language)
-            ))
+            )
         # Dismiss suggestions.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
         # There is still no local suggestion.
-        self.assertEqual(set(), set(
+        self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
 
     def test_dismiss_conflicting_suggestion(self):
         # Set order of creation and review.
@@ -721,16 +799,16 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         old_now = self.now()
         self._setDateCreated(self.suggestion2)
         # There are two local suggestions now.
-        self.assertEqual(set([self.suggestion1, self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion1, self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions using an older timestamp only dismisses those
         # that were filed before that timestamp.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), old_now)
-        self.assertEqual(set([self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
 
     def test_dismiss_conflicting_translation(self):
         # Set order of creation and review.
@@ -739,18 +817,18 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         self._setDateReviewed(self.translation)
         self._setDateCreated(self.suggestion2)
         # Only the 2nd suggestion is visible.
-        self.assertEqual(set([self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions using an older timestamp fails if there is
         # a newer curent translation.
         self.assertRaises(TranslationConflict, 
             self.potmsgset.dismissAllSuggestions,
             self.pofile, self.factory.makePerson(), old_now)
         # Still only the 2nd suggestion is visible.
-        self.assertEqual(set([self.suggestion2]), set(
+        self.assertContentEqual([self.suggestion2],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
 
     def test_dismiss_empty_translation(self):
         # Set order of creation and review.
@@ -761,10 +839,10 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         suggestion3.is_current = False
         self._setDateCreated(suggestion3)
         # All suggestions are visible.
-        self.assertEqual(
-            set([self.suggestion1, self.suggestion2, suggestion3]),
-            set(self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+        self.assertContentEqual(
+            [self.suggestion1, self.suggestion2, suggestion3],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions, leaving the translation empty.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
@@ -773,9 +851,56 @@ class TestPOTMsgSetSuggestionsDismissal(TestCaseWithFactory):
         self.assertNotEqual(None, current)
         self.assertEqual([None], current.translations)
         # All suggestions are gone.
-        self.assertEqual(set(), set(
+        self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)))
+                self.potemplate, self.pofile.language))
+
+    def _setUp_for_getLocalTranslationMessages(self):
+        # Suggestions are retrieved using getLocalTranslationMessages.
+        # For these tests we need one suggestion that is dismissed (older)
+        # and one that is unreviewed (newer).
+        self._setDateCreated(self.suggestion1)
+        self._setDateReviewed(self.translation)
+        self._setDateCreated(self.suggestion2)
+
+    def test_getLocalTranslationMessages_include_unreviewed(self):
+        # Setting include_unreviewed to True and include_dismissed to False
+        # will only return those that have not been dismissed. This is
+        # the default behavior but is made explicit here.
+        self._setUp_for_getLocalTranslationMessages()
+        self.assertContentEqual(
+            [self.suggestion2],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language,
+                include_dismissed=False, include_unreviewed=True))
+
+    def test_getLocalTranslationMessages_include_dismissed(self):
+        # Setting include_unreviewed to False and include_dismissed to True
+        # will only return those that have been dismissed.
+        self._setUp_for_getLocalTranslationMessages()
+        self.assertContentEqual(
+            [self.suggestion1],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language,
+                include_dismissed=True, include_unreviewed=False))
+
+    def test_getLocalTranslationMessages_include_all(self):
+        # Setting both parameters to True retrieves all suggestions.
+        self._setUp_for_getLocalTranslationMessages()
+        self.assertContentEqual(
+            [self.suggestion1, self.suggestion2],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language,
+                include_dismissed=True, include_unreviewed=True))
+
+    def test_getLocalTranslationMessages_include_none(self):
+        # Setting both parameters to False retrieves nothing.
+        self._setUp_for_getLocalTranslationMessages()
+        self.assertContentEqual(
+            [],
+            self.potmsgset.getLocalTranslationMessages(
+                self.potemplate, self.pofile.language,
+                include_dismissed=False, include_unreviewed=False))
 
 
 class TestPOTMsgSetCornerCases(TestCaseWithFactory):
@@ -1029,6 +1154,114 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
 
         self.assertTrue(tm1.is_imported)
         self.assertFalse(tm2.is_imported)
+
+
+class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
+    """Test methods related to TranslationCredits."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestPOTMsgSetTranslationCredits, self).setUp()
+        self.potemplate = self.factory.makePOTemplate()
+
+    def test_creation_credits(self):
+        # Upon creation of a translation credits message,
+        # dummy translations are inserted for each POFile.
+        eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+        sr_pofile = self.factory.makePOFile('sr', potemplate=self.potemplate)
+
+        credits = self.factory.makePOTMsgSet(
+            self.potemplate, u'translator-credits', sequence=1)
+
+        eo_translation = credits.getCurrentTranslationMessage(
+            self.potemplate, eo_pofile.language)
+        self.assertIsNot(None, eo_translation,
+            "Translation credits are not translated upon creation.")
+
+        sr_translation = credits.getCurrentTranslationMessage(
+            self.potemplate, sr_pofile.language)
+        self.assertIsNot(None, sr_translation,
+            "Translation credits are not translated upon "
+            "creation in 2nd POFile.")
+
+    def test_creation_not_translated(self):
+        # Normal messages do not receive a dummy translation.
+        eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
+        eo_translation = potmsgset.getCurrentTranslationMessage(
+            self.potemplate, eo_pofile.language)
+        self.assertIs(None, eo_translation)
+
+    def test_creation_not_imported(self):
+        # Dummy translation for translation credits are not created as
+        # imported and can therefore be overwritten by later imports.
+        eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+        imported_credits = u'Imported credits.'
+
+        credits = self.factory.makePOTMsgSet(
+            self.potemplate, u'translator-credits', sequence=1)
+        translation = self.factory.makeTranslationMessage(eo_pofile, credits,
+             translations=[imported_credits], is_imported=True)
+
+        eo_translation = credits.getCurrentTranslationMessage(
+            self.potemplate, eo_pofile.language)
+        self.assertEqual(imported_credits, eo_translation.msgstr0.translation,
+            "Imported translation credits do not replace dummy credits.")
+
+    def test_creation_pofile(self):
+        # When a new pofile is created, dummy translations are created for
+        # all translation credits messages.
+        
+        credits = self.factory.makePOTMsgSet(
+            self.potemplate, u'translator-credits', sequence=1)
+        eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+
+        eo_translation = credits.getCurrentTranslationMessage(
+            self.potemplate, eo_pofile.language)
+        self.assertIsNot(None, eo_translation,
+            "Translation credits receive no dummy translation upon "
+            "POFile creation.")
+
+    def test_translation_credits_gnome(self):
+        # Detect all known variations of Gnome translator credits.
+        gnome_credits = [
+            u'translator-credits',
+            u'translator_credits',
+            u'translation-credits',
+        ]
+        for sequence, credits_string in enumerate(gnome_credits):
+            credits = self.factory.makePOTMsgSet(
+                self.potemplate, credits_string, sequence=sequence+1)
+            self.assertTrue(credits.is_translation_credit)
+            self.assertEqual(TranslationCreditsType.GNOME,
+                             credits.translation_credits_type)
+
+    def test_translation_credits_kde(self):
+        # Detect all known variations of KDE translator credits.
+        kde_credits = [
+            (u'Your emails', u'EMAIL OF TRANSLATORS',
+             TranslationCreditsType.KDE_EMAILS),
+            (u'Your names', u'NAME OF TRANSLATORS',
+             TranslationCreditsType.KDE_NAMES),
+        ]
+        sequence = 0
+        for credits_string, context, credits_type in kde_credits:
+            sequence += 1
+            credits = self.factory.makePOTMsgSet(
+                self.potemplate, credits_string,
+                context=context, sequence=sequence)
+            self.assertTrue(credits.is_translation_credit)
+            self.assertEqual(credits_type, credits.translation_credits_type)
+
+            # Old KDE style.
+            sequence += 1
+            credits = self.factory.makePOTMsgSet(
+                self.potemplate, u'_: %s\n%s' % (context, credits_string),
+                sequence=sequence)
+            self.assertTrue(credits.is_translation_credit)
+            self.assertEqual(credits_type, credits.translation_credits_type)
 
 
 def test_suite():

@@ -11,14 +11,12 @@ __all__ = [
 
 from bzrlib.revision import NULL_REVISION
 
-from zope.component import adapter, getUtility
-
-from lp.codehosting.scanner import events
+from zope.component import getUtility
 
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES, notify_modified)
 
 
 def is_series_branch(branch):
@@ -62,7 +60,7 @@ def merge_detected(logger, source, target, proposal=None):
         if is_development_focus(target):
             mark_branch_merged(logger, source)
     else:
-        proposal.markAsMerged()
+        notify_modified(proposal, proposal.markAsMerged)
         # If there is an explicit merge proposal, change the branch's
         # status when it's been merged into a development focus or any
         # other series branch.
@@ -70,7 +68,6 @@ def merge_detected(logger, source, target, proposal=None):
             mark_branch_merged(logger, proposal.source_branch)
 
 
-@adapter(events.ScanCompleted)
 def auto_merge_branches(scan_completed):
     """Detect branches that have been merged.
 
@@ -117,7 +114,6 @@ def auto_merge_branches(scan_completed):
             merge_detected(logger, branch, db_branch)
 
 
-@adapter(events.ScanCompleted)
 def auto_merge_proposals(scan_completed):
     """Detect merged proposals."""
     db_branch = scan_completed.db_branch

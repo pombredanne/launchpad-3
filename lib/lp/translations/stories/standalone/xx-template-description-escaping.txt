@@ -30,7 +30,7 @@ The template's description is linkified, so the URL is clickable.
 The same description also shows up on the +translate page for the
 package.  Again,the URL is clickable.
 
-    >>> description = find_description(package_url + '/+translate')
+    >>> description = find_description(package_url + '/+translations')
     >>> len(description)
     1
     >>> print description[0]

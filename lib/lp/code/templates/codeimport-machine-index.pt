@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
 
 <style type="text/css" metal:fill-slot="head_epilogue">
@@ -18,14 +15,12 @@
 
 <body>
 
-  <h1 metal:fill-slot="heading">Code Import Machine</h1>
+  <h1 metal:fill-slot="heading">
+    <tal:hostname content="context/hostname">hostname</tal:hostname>:
+    <tal:status content="context/state/title">online</tal:status>
+  </h1>
 
   <div metal:fill-slot="main" class="visualPadding">
-
-    <h1>
-      <tal:hostname content="context/hostname">hostname</tal:hostname>:
-      <tal:status content="context/state/title">online</tal:status>
-    </h1>
 
     <div id="update-status" tal:condition="context/required:launchpad.Edit">
       <h2>Update machine status</h2>

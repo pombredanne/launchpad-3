@@ -6,7 +6,6 @@
 
   <tal:batch define="batch view/complete_builds">
 
-    <div style="padding: 0em 1em 2em 0em">
      <form name="build_records_state" action="" method="GET">
           <tal:searchname condition="view/search_name">
             Package:
@@ -32,9 +31,8 @@
             </option>
           </select>
           </tal:arch_selector>
-          <input type="submit" value="Update" />
+          <input type="submit" value="Filter" />
      </form>
-    </div>
 
   <tal:navigation_top
      replace="structure view/batchnav/@@+navigation-links-upper" />
@@ -103,8 +101,8 @@
                 <tal:building condition="bq/builder">
                   Build started
                   <span
-                    tal:attributes="title bq/buildstart/fmt:datetime"
-                    tal:content="bq/buildstart/fmt:displaydate" />
+                    tal:attributes="title bq/job/date_started/fmt:datetime"
+                    tal:content="bq/job/date_started/fmt:displaydate" />
                   on
                   <a tal:content="bq/builder/title"
                      tal:attributes="href bq/builder/fmt:url"/>

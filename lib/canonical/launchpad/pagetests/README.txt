@@ -91,7 +91,7 @@ You can use the following authorization lines:
 
   for Mark Shuttleworth: (launchpad admin, registry admin, mirror admin,
                           ubuntu team, testing spanish team)
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
 
   for Carlos: (launchpad admin, rosetta admin, ubuntu translators, testing
                spanish team)

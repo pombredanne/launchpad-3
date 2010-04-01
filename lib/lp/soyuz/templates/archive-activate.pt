@@ -8,16 +8,12 @@
   >
 <body>
 
-<div metal:fill-slot="heading">
-  <h1>Personal Package Archive Activation</h1>
-</div>
-
 <div metal:fill-slot="main">
   <div class="top-portlet">
     A PPA is a place where you can build and publish your own packages.
     These can be custom versions of Ubuntu packages, or completely new
     packages, and can be built for any
-    <a tal:attributes="href view/ubuntu/fmt:link">supported version of Ubuntu</a>.
+    <a tal:attributes="href view/ubuntu/fmt:url">supported version of Ubuntu</a>.
     For more information, please see the
     <a href="https://help.launchpad.net/Packaging/PPA">PPA help page</a>.
   </div>

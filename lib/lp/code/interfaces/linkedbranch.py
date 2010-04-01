@@ -19,6 +19,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
+from zope.security.proxy import isinstance as zope_isinstance
 
 
 class ICanHasLinkedBranch(Interface):
@@ -67,6 +68,10 @@ def get_linked_branch(provided):
     """
     has_linked_branch = ICanHasLinkedBranch(provided, None)
     if has_linked_branch is None:
+        if zope_isinstance(provided, tuple):
+            # Distroseries are returned as tuples containing distroseries and
+            # pocket.
+            provided = provided[0]
         raise CannotHaveLinkedBranch(provided)
     branch = has_linked_branch.branch
     if branch is None:

@@ -2,12 +2,11 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-series"
-  tal:condition="context/serieses">
-  <div id="sandm" class="portletBody portletContent">
+  class="portlet" id="sandm"
+  tal:condition="context/series">
     <h2>Series and milestones</h2>
-    <ul tal:condition="context/serieses">
-      <tal:per_series repeat="series context/serieses">
+    <ul tal:condition="context/series">
+      <tal:per_series repeat="series context/series">
         <li tal:condition="series/active">
           <strong>
           <a tal:attributes="href series/fmt:url" class="sprite distribution">
@@ -26,9 +25,18 @@
         </li>
       </tal:per_series>
     </ul>
-    <ul>
-      <li><a href="+series">All series</a></li>
-      <li><a href="+milestones">All milestones</a></li>
+
+    <ul class="horizontal">
+      <li
+        tal:define="link context/menu:overview/addseries"
+        tal:condition="link/enabled">
+        <a tal:replace="structure context/menu:overview/addseries/fmt:link" />
+      </li>
+      <li>
+        <a tal:replace="structure context/menu:overview/series/fmt:link" />
+      </li>
+      <li>
+        <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
+      </li>
     </ul>
-  </div>
 </div>

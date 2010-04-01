@@ -109,7 +109,7 @@ Set up some more webservice users:
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
-    >>> admin_person = getUtility(IPersonSet).getByName('sabdfl')
+    >>> admin_person = getUtility(IPersonSet).getByName('mark')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> logout()
 
@@ -174,7 +174,7 @@ If the build cannot be retried, then a 400 code is returned.  Let's
 alter the buildstate to one that cannot be retried:
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> build.buildstate = BuildStatus.FAILEDTOUPLOAD
     >>> logout()
 

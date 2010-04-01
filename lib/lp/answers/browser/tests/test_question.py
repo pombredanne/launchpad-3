@@ -17,7 +17,6 @@ from canonical.testing import DatabaseFunctionalLayer
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(LayeredDocFileSuite('questioncontextmenu.txt'))
     suite.addTest(LayeredDocFileSuite('question-subscribe_me.txt',
                   setUp=setUp, tearDown=tearDown,
                   layer=DatabaseFunctionalLayer))

@@ -12,12 +12,17 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.distribution import NoPartnerArchive
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.testing import TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -141,9 +146,9 @@ class TestSourcePackage(TestCaseWithFactory):
         # the source package.
         distribution = self.factory.makeDistribution()
         dev_series = self.factory.makeDistroRelease(
-            distribution=distribution, status=DistroSeriesStatus.DEVELOPMENT)
+            distribution=distribution, status=SeriesStatus.DEVELOPMENT)
         other_series = self.factory.makeDistroRelease(
-            distribution=distribution, status=DistroSeriesStatus.OBSOLETE)
+            distribution=distribution, status=SeriesStatus.OBSOLETE)
         self.assertEqual(dev_series, distribution.currentseries)
         dev_sourcepackage = self.factory.makeSourcePackage(
             distroseries=dev_series)
@@ -166,6 +171,59 @@ class TestSourcePackage(TestCaseWithFactory):
             distribution_sourcepackage,
             sourcepackage.distribution_sourcepackage)
 
+    def test_default_archive(self):
+        # The default archive of a source package is the primary archive of
+        # its distribution.
+        sourcepackage = self.factory.makeSourcePackage()
+        distribution = sourcepackage.distribution
+        self.assertEqual(
+            distribution.main_archive, sourcepackage.get_default_archive())
+
+    def test_default_archive_partner(self):
+        # If the source package was most recently uploaded to a partner
+        # component, then its default archive is the partner archive for the
+        # distribution.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackage.sourcepackagename,
+            distroseries=sourcepackage.distroseries,
+            component=partner,
+            status=PackagePublishingStatus.PUBLISHED)
+        distribution = sourcepackage.distribution
+        expected_archive = self.factory.makeArchive(
+            distribution=distribution,
+            purpose=ArchivePurpose.PARTNER)
+        self.assertEqual(
+            expected_archive, sourcepackage.get_default_archive())
+
+    def test_default_archive_specified_component(self):
+        # If the component is explicitly specified as partner, then we return
+        # the partner archive.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        distribution = sourcepackage.distribution
+        expected_archive = self.factory.makeArchive(
+            distribution=distribution,
+            purpose=ArchivePurpose.PARTNER)
+        self.assertEqual(
+            expected_archive,
+            sourcepackage.get_default_archive(component=partner))
+
+    def test_default_archive_partner_doesnt_exist(self):
+        # If the default archive ought to be the partner archive (because the
+        # last published upload was to a partner component) then
+        # default_archive will raise an exception.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackage.sourcepackagename,
+            distroseries=sourcepackage.distroseries,
+            component=partner,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertRaises(
+            NoPartnerArchive, sourcepackage.get_default_archive)
+
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
     """Tests for source package branch linking security."""
@@ -179,6 +237,80 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         self.assertRaises(
             Unauthorized, sourcepackage.setBranch, pocket, branch, registrant)
+
+
+class TestSourcePackageViews(TestCaseWithFactory):
+    """Tests for source package view classes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.owner = self.factory.makePerson()
+        self.product = self.factory.makeProduct(
+            name='bonkers', displayname='Bonkers', owner=self.owner)
+
+        self.obsolete_productseries = self.factory.makeProductSeries(
+            name='obsolete', product=self.product)
+        self.obsolete_productseries.status = SeriesStatus.OBSOLETE
+
+        self.dev_productseries = self.factory.makeProductSeries(
+            name='current', product=self.product)
+        self.dev_productseries.status = SeriesStatus.DEVELOPMENT
+
+        self.distribution = self.factory.makeDistribution(
+            name='youbuntu', displayname='Youbuntu', owner=self.owner)
+        self.distroseries = self.factory.makeDistroRelease(name='busy',
+            distribution=self.distribution)
+        self.sourcepackagename = self.factory.makeSourcePackageName(
+            name='bonkers')
+        self.package = self.factory.makeSourcePackage(
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.distroseries)
+
+    def test_editpackaging_obsolete_series_in_vocabulary(self):
+        # The sourcepackage's current product series is included in
+        # the vocabulary even if it is obsolete.
+        self.package.setPackaging(self.obsolete_productseries, self.owner)
+        form = {
+            'field.product': 'bonkers',
+            'field.actions.continue': 'Continue',
+            'field.__visited_steps__': 'sourcepackage_change_upstream_step1',
+            }
+        view = create_initialized_view(
+            self.package, name='+edit-packaging', form=form,
+            principal=self.owner)
+        self.assertEqual([], view.view.errors)
+        self.assertEqual(
+            self.obsolete_productseries,
+            view.view.form_fields['productseries'].field.default,
+            "The form's default productseries must be the current one.")
+        options = [term.token
+                   for term in view.view.widgets['productseries'].vocabulary]
+        self.assertEqual(
+            ['trunk', 'current', 'obsolete'], options,
+            "The obsolete series must be in the vocabulary.")
+
+    def test_editpackaging_obsolete_series_not_in_vocabulary(self):
+        # Obsolete productseries are normally not in the vocabulary.
+        form = {
+            'field.product': 'bonkers',
+            'field.actions.continue': 'Continue',
+            'field.__visited_steps__': 'sourcepackage_change_upstream_step1',
+            }
+        view = create_initialized_view(
+            self.package, name='+edit-packaging', form=form,
+            principal=self.owner)
+        self.assertEqual([], view.view.errors)
+        self.assertEqual(
+            None,
+            view.view.form_fields['productseries'].field.default,
+            "The form's default productseries must be None.")
+        options = [term.token
+                   for term in view.view.widgets['productseries'].vocabulary]
+        self.assertEqual(
+            ['trunk', 'current'], options,
+            "The obsolete series must NOT be in the vocabulary.")
 
 
 def test_suite():

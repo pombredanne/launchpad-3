@@ -274,7 +274,7 @@ the preceding page.
 
     >>> user_browser.getLink('Portuguese (Brazil)').click()
     >>> print user_browser.title
-    Portuguese (Brazil) questions in Mozilla Firefox
+    Portuguese (Brazil) questions in Mozilla Firefox : Questions : Mozilla Firefox
 
     >>> language_field = user_browser.getControl(name='field.language')
     >>> print language_field.type
@@ -304,8 +304,8 @@ project. He can see the question on the second page of "My questions"...
     >>> sample_person_browser.open('http://answers.launchpad.dev/ubuntu')
     >>> sample_person_browser.getLink('My questions').click()
     >>> sample_person_browser.getLink('Next').click()
-    >>> sample_person_browser.title
-    'Questions you asked about Ubuntu'
+    >>> print sample_person_browser.title
+    Questions you asked about Ubuntu : Questions : Ubuntu
 
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
@@ -322,9 +322,8 @@ project. He can see the question on the second page of "My questions"...
 
     >>> sample_person_browser.getLink(
     ...     'Change your preferred languages').click()
-    >>> sample_person_browser.title
-    "Sample Person's preferred languages"
+    >>> print sample_person_browser.title
+    Language preferences...
 
     >>> sample_person_browser.getControl('Arabic', index=0).selected
     False
-

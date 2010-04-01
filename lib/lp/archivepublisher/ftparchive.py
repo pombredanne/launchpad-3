@@ -15,12 +15,12 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.webapp.interfaces import (
      DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from lp.archivepublisher.utils import process_in_batches
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.section import Section
-
 
 
 def package_name(filename):
@@ -366,7 +366,7 @@ class FTPArchiveHandler:
 
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides, and generate them."""
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -629,7 +629,7 @@ class FTPArchiveHandler:
 
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket in pocketsuffix:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -735,7 +735,7 @@ class FTPArchiveHandler:
 
         If fullpublish is true, we generate config for everything.
 
-        Otherwise, we aim to limit our config to certain distroserieses
+        Otherwise, we aim to limit our config to certain distroseries
         and pockets. By default, we will exclude release pockets for
         released series, and in addition we exclude any pocket not
         explicitly marked as dirty. dirty_pockets must be a nested
@@ -748,7 +748,7 @@ class FTPArchiveHandler:
                                           self._config.miscroot))
 
         # confixtext now contains a basic header. Add a dists entry for
-        # each of the distroserieses we've touched
+        # each of the distroseries we've touched
         for distroseries_name in self._config.distroSeriesNames():
             distroseries = self.distro[distroseries_name]
             for pocket in pocketsuffix:
