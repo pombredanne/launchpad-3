@@ -58,21 +58,34 @@
       </div>
       <div class="yui-u">
         <div class="portlet">
-          <a tal:attributes="href context/fmt:url/+request-builds">Request a build</a>
           <h2>Build records</h2>
-          <ul>
-            <li tal:repeat="build view/builds">
-              <tal:status replace="build/@@+index/status" />
-              <tal:date replace="build/@@+index/date/fmt:displaydate" />
-              <tal:estimate condition="build/@@+index/estimate">
-              (estimated)
-              </tal:estimate>
-              for <tal:distro replace="structure
-              build/distroseries/fmt:link:mainsite" />
-              into <tal:archive replace="structure
-              build/archive/fmt:link"/>
-            </li>
-          </ul>
+          <table>
+            <tr>
+              <th style="text-align: left"><span>Status</span></th>
+              <th style="text-align: left">Time</th>
+              <th style="text-align: left">Distro</th>
+              <th style="text-align: left">Archive</th>
+            </tr>
+            <tr tal:repeat="build view/builds">
+              <td>
+                <tal:status replace="build/@@+index/status" />
+              </td>
+              <td>
+                <tal:date replace="build/@@+index/date/fmt:displaydate" />
+                <tal:estimate condition="build/@@+index/estimate">
+                (estimated)
+                </tal:estimate>
+              </td>
+              <td>
+                <tal:distro
+                replace="structure build/distroseries/fmt:link:mainsite" />
+              </td>
+              <td>
+                <tal:archive replace="structure build/archive/fmt:link"/>
+              </td>
+            </tr>
+          </table>
+          <tal:request replace="structure context/menu:context/request_builds/fmt:link" />
         </div>
       </div>
     </div>
