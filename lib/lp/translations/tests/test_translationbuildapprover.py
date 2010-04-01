@@ -64,7 +64,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         self.assertEqual('domain3', entries[2].potemplate.name)
 
     def test_approve_only_pots(self):
-        # Only template files aill be approved.
+        # Only template files will be approved.
         filenames = [
             'po/domain1.po',
             'po/eo.po',

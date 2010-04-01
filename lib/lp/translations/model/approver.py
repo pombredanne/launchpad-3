@@ -161,7 +161,7 @@ class TranslationBuildApprover(object):
                 distroseries is not None and sourcepackagename is not None))
 
         importer = TranslationImporter()
-        # We Only care for templates.
+        # We only care for templates.
         self.filenames = filter(importer.isTemplateName, filenames)
         self._potemplateset = getUtility(IPOTemplateSet).getSubset(
             productseries=productseries,

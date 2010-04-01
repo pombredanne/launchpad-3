@@ -268,7 +268,7 @@ class TestTTBuildBehaviorTranslationsQueue(
 
         entries = self.queue.getAllEntries(target=self.productseries)
         statuses = [entry.status for entry in entries]
-        self.assertContentEqual(
+        self.assertEqual(
             [RosettaImportStatus.APPROVED] * 3, statuses)
 
     def test_uploadTarball_importer(self):
