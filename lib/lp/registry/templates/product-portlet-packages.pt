@@ -3,7 +3,8 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag=""
-  define="packages context/sourcepackages">
+  define="packages view/sourcepackages"
+  condition="view/can_show_portlet">
 
 <div class="portlet" id="portlet-packages">
   <h2>

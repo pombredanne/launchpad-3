@@ -319,6 +319,17 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
 COMMENT ON COLUMN BugWatch.remote_importance IS 'The importance of the bug as returned by the remote server. This will be converted into a Launchpad BugTaskImportance value.';
 COMMENT ON COLUMN BugWatch.remote_lp_bug_id IS 'The bug in Launchpad that the remote bug is pointing at. This can be different than the BugWatch.bug column, since the same remote bug can be linked from multiple bugs in Launchpad, but the remote bug can only link to a single bug in Launchpad. The main use case for this column is to avoid having to query the remote bug tracker for this information, in order to decide whether we need to give this information to the remote bug tracker.';
+COMMENT ON COLUMN BugWatch.next_check IS 'The time after which the watch should next be checked. Note that this does not denote an exact schedule for the next check since checkwatches only runs periodically.';
+
+
+-- BugWatchActivity
+
+COMMENT ON TABLE BugWatchActivity IS 'This table contains a record of each update for a given bug watch. This allows us to track whether a given update was successful or not and, if not, the details of the error which caused the update to fail.';
+COMMENT ON COLUMN BugWatchActivity.bug_watch IS 'The bug_watch to which this activity entry relates.';
+COMMENT ON COLUMN BugWatchActivity.activity_date IS 'The datetime at which the activity occurred.';
+COMMENT ON COLUMN BugWatchActivity.result IS 'The result of the update. Legal values are defined in the BugWatchErrorType enumeration. An update is considered successful if its error_type is NULL.';
+COMMENT ON COLUMN BugWatchActivity.message IS 'The message (if any) associated with the update.';
+COMMENT ON COLUMN BugWatchActivity.oops_id IS 'The OOPS id, if any, associated with the error that caused the update to fail.';
 
 
 -- BugAffectsPerson
@@ -1295,7 +1306,7 @@ COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed
 COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated with this sourcepackage. Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/copyright';
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages that will conflict with this source while building, as mentioned in the control file "Build-Conflicts:" field.';
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
-
+COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The LibraryFileAlias ID of changelog associated with this sourcepackage.  Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/changelog.Debian.gz';
 
 -- SourcePackageName
 
@@ -1329,9 +1340,15 @@ COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The 
 COMMENT ON TABLE SourcePackageRecipe IS 'A recipe for assembling a source package from branches.';
 COMMENT ON COLUMN SourcePackageRecipe.registrant IS 'The person who created this recipe.';
 COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit this recipe.';
-COMMENT ON COLUMN SourcePackageRecipe.distroseries IS 'The distroseries this recipe builds a package for.';
 COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
+COMMENT ON COLUMN SourcePackageRecipe.build_daily IS 'If true, this recipe should be built daily.';
+
+-- SourcePackageRecipeDistroSeries
+
+COMMENT ON TABLE SourcePackageRecipeDistroSeries IS 'Link table for sourcepackagerecipe and distroseries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.distroseries IS 'The primary key of the DistroSeries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The primary key of the SourcePackageRecipe.';
 
 -- SourcePackageRecipeBuild
 
@@ -1912,6 +1929,7 @@ COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for acce
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
+COMMENT ON COLUMN Archive.status IS 'The status of this archive, e.g. ACTIVE.  See the ArchiveState DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
 COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all source and binary names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';

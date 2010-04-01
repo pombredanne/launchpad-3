@@ -107,13 +107,16 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def _createViewWithResponse(
-            self, account, response_status=SUCCESS, response_msg=''):
+            self, account, response_status=SUCCESS, response_msg='',
+            view_class=StubbedOpenIDCallbackView):
         openid_response = FakeOpenIDResponse(
             ITestOpenIDPersistentIdentity(account).openid_identity_url,
             status=response_status, message=response_msg)
-        return self._createAndRenderView(openid_response)
+        return self._createAndRenderView(
+            openid_response, view_class=view_class)
 
-    def _createAndRenderView(self, response):
+    def _createAndRenderView(self, response,
+                             view_class=StubbedOpenIDCallbackView):
         request = LaunchpadTestRequest(
             form={'starting_url': 'http://launchpad.dev/after-login'},
             environ={'PATH_INFO': '/'})
@@ -122,7 +125,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # setup a newInteraction() using our request.
         logout()
         newInteraction(request)
-        view = StubbedOpenIDCallbackView(object(), request)
+        view = view_class(object(), request)
         view.initialize()
         view.openid_response = response
         # Monkey-patch getByOpenIDIdentifier() to make sure the view uses the
@@ -234,6 +237,28 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertFalse(view.login_called)
         main_content = extract_text(find_main_content(html))
         self.assertIn('Your login was unsuccessful', main_content)
+
+    def test_negative_openid_assertion_when_user_already_logged_in(self):
+        # The OpenID provider responded with a negative assertion, but the
+        # user already has a valid cookie, so we add a notification message to
+        # the response and redirect to the starting_url specified in the
+        # OpenID response.
+        test_account = self.factory.makeAccount('Test account')
+        class StubbedOpenIDCallbackViewLoggedIn(StubbedOpenIDCallbackView):
+            account = test_account
+        view, html = self._createViewWithResponse(
+            test_account, response_status=FAILURE,
+            response_msg='Server denied check_authentication',
+            view_class=StubbedOpenIDCallbackViewLoggedIn)
+        self.assertFalse(view.login_called)
+        response = view.request.response
+        self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
+        self.assertEquals(view.request.form['starting_url'],
+                          response.getHeader('Location'))
+        notification_msg = view.request.response.notifications[0].message
+        expected_msg = ('Your authentication failed but you were already '
+                        'logged into Launchpad')
+        self.assertIn(expected_msg, notification_msg)
 
     def test_IAccountSet_getByOpenIDIdentifier_monkey_patched(self):
         with IAccountSet_getByOpenIDIdentifier_monkey_patched():

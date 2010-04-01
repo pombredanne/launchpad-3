@@ -48,6 +48,7 @@ from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
@@ -62,6 +63,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.build import BuildSetStatus, IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
@@ -216,6 +218,56 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
             return results[0]
 
         return None
+
+    @stepthrough('+binaryhits')
+    def traverse_binaryhits(self, name_str):
+        """Traverse to an `IBinaryPackageReleaseDownloadCount`.
+
+        A matching path is something like this:
+
+          +binaryhits/foopkg/1.0/i386/2010-03-11/AU
+
+        To reach one where the country is None, use:
+
+          +binaryhits/foopkg/1.0/i386/2010-03-11/unknown
+        """
+
+        if len(self.request.stepstogo) < 4:
+            return None
+
+        version = self.request.stepstogo.consume()
+        archtag = self.request.stepstogo.consume()
+        date_str = self.request.stepstogo.consume()
+        country_str = self.request.stepstogo.consume()
+
+        try:
+            name = getUtility(IBinaryPackageNameSet)[name_str]
+        except NotFoundError:
+            return None
+
+        # This will return None if there are multiple BPRs with the same
+        # name in the archive's history, but in that case downloads
+        # won't be counted either.
+        bpr = self.context.getBinaryPackageRelease(name, version, archtag)
+        if bpr is None:
+            return None
+
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return None
+
+        # 'unknown' should always be safe, since the key is the two letter
+        # ISO code, and 'unknown' has more than two letters.
+        if country_str == 'unknown':
+            country = None
+        else:
+            try:
+                country = getUtility(ICountrySet)[country_str]
+            except NotFoundError:
+                return None
+
+        return self.context.getPackageDownloadCount(bpr, date, country)
 
     @stepthrough('+subscriptions')
     def traverse_subscription(self, person_name):
