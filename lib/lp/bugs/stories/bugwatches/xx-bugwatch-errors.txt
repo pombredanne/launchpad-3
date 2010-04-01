@@ -33,14 +33,14 @@ no existing bug watches.
 We can now alter the bug watch manually to check that the correct error
 messages are displayed.
 
-    >>> from canonical.launchpad.interfaces import (BugWatchErrorType,
+    >>> from canonical.launchpad.interfaces import (BugWatchActivityStatus,
     ...     BugTaskStatus, IBugTrackerSet, UNKNOWN_REMOTE_STATUS)
 
     >>> login('foo.bar@canonical.com')
     >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> bug12 = getUtility(IBugSet).get(12)
     >>> watch = bug12.getBugWatch(tracker, '900')
-    >>> watch.last_error_type = BugWatchErrorType.BUG_NOT_FOUND
+    >>> watch.last_error_type = BugWatchActivityStatus.BUG_NOT_FOUND
     >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     >>> logout()
 
@@ -54,11 +54,11 @@ should now be displayed to the user.
     The Mozilla.org Bug Tracker bug #900 appears not to exist. Check
     that the bug number is correct.
 
-We can observe this for each of the BugWatchErrorType values:
+We can observe this for each of the BugWatchActivityStatus values:
 
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     set_bugwatch_error_type)
-    >>> for item in sorted(BugWatchErrorType.items):
+    >>> for item in sorted(BugWatchActivityStatus.items):
     ...     set_bugwatch_error_type(watch, item)
     ...     user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
     ...     for tag in find_tags_by_class(user_browser.contents,

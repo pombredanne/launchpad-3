@@ -949,6 +949,54 @@ Generating respective "Packages" stanzas:
     >>> [pub_file.archive_url for pub_file in bpph.files]
     [u'http://ftpmaster.internal/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 
+Binary publishing records also have a download count, which contains
+the number of downloads of this binary package release in this archive.
+
+    >>> print bpph.getDownloadCount()
+    0
+
+    >>> from datetime import date
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> australia = getUtility(ICountrySet)['AU']
+    >>> uk = getUtility(ICountrySet)['GB']
+
+    >>> bpph.archive.updatePackageDownloadCount(
+    ...     bpph.binarypackagerelease, date(2010, 2, 19), None, 2)
+    >>> bpph.archive.updatePackageDownloadCount(
+    ...     bpph.binarypackagerelease, date(2010, 2, 21), australia, 10)
+    >>> bpph.archive.updatePackageDownloadCount(
+    ...     bpph.binarypackagerelease, date(2010, 2, 21), uk, 4)
+
+    >>> print bpph.getDownloadCount()
+    16
+
+We can also use getDownloadCounts to find the raw download counts per
+day and country.
+
+    >>> [(b.day, b.country.name if b.country is not None else None)
+    ...   for b in bpph.getDownloadCounts()]
+    [(datetime.date(2010, 2, 21), u'Australia'),
+     (datetime.date(2010, 2, 21), u'United Kingdom'),
+     (datetime.date(2010, 2, 19), None)]
+
+getDownloadCounts lets us filter by date.
+
+    >>> [b.day for b in bpph.getDownloadCounts(start_date=date(2010, 2, 21))]
+    [datetime.date(2010, 2, 21), datetime.date(2010, 2, 21)]
+    >>> [b.day for b in bpph.getDownloadCounts(end_date=date(2010, 2, 20))]
+    [datetime.date(2010, 2, 19)]
+    >>> [b.day for b in bpph.getDownloadCounts(
+    ...     start_date=date(2010, 2, 20), end_date=date(2010, 2, 20))]
+    []
+
+We can also get a dict of totals for each day. The keys are strings to
+work around lazr.restful's dict limitations. This too has a date filter.
+
+    >>> bpph.getDailyDownloadTotals()
+    {'2010-02-21': 14L, '2010-02-19': 2L}
+    >>> bpph.getDailyDownloadTotals(start_date=date(2010, 2, 20))
+    {'2010-02-21': 14L}
+
 
 IPublishingSet
 ==============
