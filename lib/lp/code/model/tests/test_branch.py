@@ -1732,6 +1732,7 @@ class TestBranchBugLinks(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.user = self.factory.makePerson()
+        login_person(self.user)
 
     def test_bug_link(self):
         # Branches can be linked to bugs through the Branch interface.
