@@ -31,6 +31,7 @@ from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugheat import BugHeatCalculator
 from lp.code.interfaces.revision import IRevisionSet
@@ -753,6 +754,40 @@ class BugHeatUpdater(TunableLoop):
         transaction.commit()
 
 
+class ObsoleteBugAttachmentDeleter(TunableLoop):
+    """Delete bug attachments without a LibraryFileContent record.
+
+    Our database schema allows LibraryFileAlias records that have no
+    corresponding LibraryFileContent records.
+
+    This class deletes bug attachments that reference such "content free"
+    and thus completely useless LFA records.
+    """
+
+    maximum_chunk_size = 1000
+
+    BUGATTACHMENTS_WITHOUT_CONTENT = (
+        """SELECT bugattachment.id from bugattachment, libraryfilealias
+               WHERE bugattachment.libraryfile=libraryfilealias.id
+                   AND libraryfilealias.content IS NULL""")
+
+    def __init__(self, log, abort_time=None):
+        super(ObsoleteBugAttachmentDeleter, self).__init__(log, abort_time)
+        self.store = IMasterStore(BugAttachment)
+
+    def isDone(self):
+        result = self.store.execute(
+            "SELECT EXISTS(%s)" % self.BUGATTACHMENTS_WITHOUT_CONTENT)
+        return not result.get_one()[0]
+
+    def __call__(self, chunk_size):
+        chunk_size = max(int(chunk_size), 1)
+        self.store.execute(
+            "DELETE FROM BugAttachment WHERE id IN (%s LIMIT %i)"
+            % (self.BUGATTACHMENTS_WITHOUT_CONTENT, chunk_size))
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -857,7 +892,8 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonEmailAddressLinkChecker,
         BugNotificationPruner,
         BranchJobPruner,
-        ]
+        ObsoleteBugAttachmentDeleter,
+    ]
     experimental_tunable_loops = [
         PersonPruner,
         ]
