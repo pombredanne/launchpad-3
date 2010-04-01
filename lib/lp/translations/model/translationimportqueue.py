@@ -981,7 +981,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None, approver_class=None):
+        potemplate=None, filename_filter=None, approver_factory=None):
         """See ITranslationImportQueue."""
         num_files = 0
         conflict_files = []
@@ -1001,9 +1001,9 @@ class TranslationImportQueue:
                 upload_files[tarinfo.name] = path
         tarball.close()
 
-        if approver_class is None:
-            approver_class = TranslationNullApprover
-        approver = approver_class(
+        if approver_factory is None:
+            approver_factory = TranslationNullApprover
+        approver = approver_factory(
             upload_files.values(),
             productseries=productseries,
             distroseries=distroseries, sourcepackagename=sourcepackagename)

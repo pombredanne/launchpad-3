@@ -383,7 +383,7 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntriesFromTarball(content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None):
+        potemplate=None, filename_filter=None, approver_factory=None):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
@@ -395,6 +395,10 @@ class ITranslationImportQueue(Interface):
         :arg distroseries: is the link of this import with a distribution.
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
+        :arg approver_factory: is a factory method that creates an approver
+            which approves entries right after adding them to the queue.
+            If None, TranslationNullApprover is used which does not approve
+            anything.
 
         sourcepackagename + distroseries and productseries are exclusive, we
         must have only one combination of them.
