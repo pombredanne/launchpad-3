@@ -445,7 +445,7 @@ config.malone.expiration_dbuser.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-expire-bugtasks.lock
     INFO    Expiring unattended, INCOMPLETE bugtasks older than
             60 days for projects that use Launchpad Bugs.
     INFO    Found 3 bugtasks to expire.

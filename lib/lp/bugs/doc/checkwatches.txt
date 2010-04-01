@@ -44,7 +44,7 @@ the watch.
     0
 
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-checkwatches.lock
     DEBUG   Using a global batch size of None
     DEBUG   Skipping updating Ubuntu Bugzilla watches.
     DEBUG   No watches to update on http://bugs.debian.org
