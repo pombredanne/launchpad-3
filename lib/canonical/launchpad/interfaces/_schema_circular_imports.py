@@ -126,8 +126,6 @@ IBranchMergeProposal['nominateReviewer'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewVoteReference
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
 
-patch_entry_return_type(IBranchTarget, 'newCodeImport', ICodeImport)
-
 patch_collection_return_type(IHasBranches, 'getBranches', IBranch)
 patch_collection_return_type(
     IHasMergeProposals, 'getMergeProposals', IBranchMergeProposal)
