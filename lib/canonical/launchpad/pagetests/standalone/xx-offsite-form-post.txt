@@ -66,12 +66,42 @@ around Zope bug 98437 (https://bugs.edge.launchpad.net/zope3/+bug/98437).
   >>> browser.getControl('Create').click()
   Traceback (most recent call last):
     ...
-  OffsiteFormPostError: No value for REFERER header
+  NoReferrerError: No value for REFERER header
 
-Though, to support apport, we let POST requests without a REFERER header
-go through to +storeblob.
+When a POST request is rejected because the REFERER header is missing, it
+may be because the user is trying to enforce anonymity.  Therefore, we
+present a hopefully helpful error message.
+
+  >>> browser.handleErrors = True
+  >>> browser.open('http://launchpad.dev/people/+newteam')
+  MONKEYPATCH ACTIVATED
+  >>> browser.getControl('Name', index=0).value = 'team3'
+  >>> browser.getControl('Display Name').value = 'Team 3'
+  >>> browser.getControl('Create').click()
+  Traceback (most recent call last):
+    ...
+  HTTPError...
+  >>> print browser.headers['status']
+  403 Forbidden
+  >>> print extract_text(find_main_content(browser.contents))
+  No REFERER Header
+  ...
+  >>> browser.getLink('the FAQ').url
+  'https://answers.edge.launchpad.net/launchpad/+faq/1024'
+  >>> browser.handleErrors = False
+
+We have a few exceptional cases in which we allow POST requests without a
+REFERER header.
+
+To support apport, we allow it for +storeblob.
 
   >>> browser.post('http://launchpad.dev/+storeblob', 'x=1')
+  MONKEYPATCH ACTIVATED
+
+Similary, we exempt the URL /+hwdb/+submit in order to allow checkbox
+to submit HWDB reports.
+
+  >>> browser.post('http://launchpad.dev/+hwdb/+submit', 'x=1')
   MONKEYPATCH ACTIVATED
 
 To support old versions of launchpadlib, we also let POST requests
@@ -95,7 +125,7 @@ OffsiteFormPostError.
 We also let the request go through if the referrer is from a site
 managed by launchpad:
 
-  # Go behing the curtains and change the hostname of one of our sites so that
+  # Go behind the curtains and change the hostname of one of our sites so that
   # we can test this.
   >>> from canonical.launchpad.webapp.vhosts import allvhosts
   >>> allvhosts._hostnames.add('bzr.dev')
@@ -108,7 +138,7 @@ managed by launchpad:
   >>> print browser.url
   http://launchpad.dev/~team4
 
-  # Now retore our site's hostname.
+  # Now restore our site's hostname.
   >>> allvhosts._hostnames.remove('bzr.dev')
 
 Cheaters never prosper
@@ -131,7 +161,7 @@ a referrerless POST request to the browser-accessible API.
   ...     'http://launchpad.dev/api/devel/people', 'ws.op=foo&x=1')
   Traceback (most recent call last):
   ...
-  OffsiteFormPostError: No value for REFERER header
+  NoReferrerError: No value for REFERER header
 
 You can't cheat by making your referrerless POST request seem as
 though it were signed with OAuth.
@@ -146,7 +176,7 @@ though it were signed with OAuth.
   ...     'http://launchpad.dev/', 'oauth_consumer_key=foo&oauth_token=bar')
   Traceback (most recent call last):
   ...
-  OffsiteFormPostError: No value for REFERER header
+  NoReferrerError: No value for REFERER header
 
 You might think you can actually sign a request with an anonymous
 OAuth credential. You don't need any knowledge of the user account to
