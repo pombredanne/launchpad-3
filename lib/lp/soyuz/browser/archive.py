@@ -21,6 +21,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
+    'make_archive_vocabulary',
     'traverse_distro_archive',
     'traverse_named_ppa',
     ]
