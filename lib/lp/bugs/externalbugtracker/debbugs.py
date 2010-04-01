@@ -33,6 +33,7 @@ from lp.bugs.interfaces.externalbugtracker import (
 from canonical.launchpad.mail import simple_sendmail
 from lp.bugs.scripts import debbugs
 from canonical.launchpad.webapp import urlsplit
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,
@@ -50,8 +51,6 @@ class DebBugs(ExternalBugTracker):
     implements(
         ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
-    sync_comments = config.checkwatches.sync_debbugs_comments
-
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(
@@ -64,6 +63,11 @@ class DebBugs(ExternalBugTracker):
 
     def __init__(self, baseurl, db_location=None):
         super(DebBugs, self).__init__(baseurl)
+        # debbugs syncing can be enabled/disabled separately.
+        self.sync_comments = (
+            self.sync_comments and
+            config.checkwatches.sync_debbugs_comments)
+
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
@@ -319,6 +323,7 @@ class DebBugs(ExternalBugTracker):
                 commit()
                 return message
 
+    @ensure_no_transaction
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Push a comment to the remote DebBugs instance.
 

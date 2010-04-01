@@ -283,3 +283,8 @@ class ReadOnlyErrorView(SystemErrorView):
     def __call__(self):
         return self.index()
 
+
+class NoReferrerErrorView(SystemErrorView):
+    """View rendered when a POST request does not include a REFERER header."""
+
+    response_code = 403 # Forbidden.

@@ -8,7 +8,6 @@ BugWatch, Message and BugMessage instances with which to work.
 
     >>> from zope.interface import implements
     >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import (
@@ -33,7 +32,7 @@ BugWatch, Message and BugMessage instances with which to work.
 
     >>> bug_watch = bug.addWatch(bug_tracker, '1234', sample_person)
 
-    >>> commit()
+    >>> transaction.commit()
 
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
@@ -98,6 +97,9 @@ tracker.
 
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bugwatch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
+
+    >>> transaction.commit()
+
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
     Comment added as remote comment 1
     INFO:...:Pushed 1 comments to remote bug 1234 on ...
@@ -118,8 +120,10 @@ remote_comment_id.
 If we try to push the comment again, nothing will happen because we
 already have a remote id for it (ergo it has been pushed already).
 
+    >>> transaction.commit()
+
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
-    >>> commit()
+    >>> transaction.commit()
 
 If we now check the bug watch's unpushed_comments property, we will
 find it to be empty.
@@ -136,12 +140,13 @@ tracker the next time the bugwatch updater accesses it.
 
     >>> message_three = getUtility(IMessageSet).fromText(
     ...     "Comment the third", "Body the third.", sample_person)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
     >>> bugmessage_two = bug.linkMessage(message_two, bug_watch)
     >>> bugmessage_three = bug.linkMessage(message_three, bug_watch)
+    >>> transaction.commit()
 
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
     Comment added as remote comment 2
@@ -153,7 +158,7 @@ tracker the next time the bugwatch updater accesses it.
     2: Body the second.
     3: Body the third.
 
-    >>> commit()
+    >>> transaction.commit()
 
 If a comment on the Launchpad bug isn't related to the bug watch, it
 won't be pushed.
@@ -161,10 +166,11 @@ won't be pushed.
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> message_four = getUtility(IMessageSet).fromText(
     ...     "Comment the fourth", "Body the fourth.", sample_person)
-    >>> commit()
+    >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
-
     >>> bugmessage_four = bug.linkMessage(message_four)
+    >>> transaction.commit()
+
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
 
     >>> print_bug_messages(bug, bug_watch)
@@ -214,6 +220,8 @@ example ExternalBugTracker that does comment importing.
 Running importBugComments() on the external bugtracker will result in
 the remote comments being imported into Launchpad.
 
+    >>> transaction.commit()
+
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 3 comments for remote bug 1234 on ...
 
@@ -231,6 +239,8 @@ Each of the imported comments has its remote_comment_id field set.
 Running pushBugComments() on the external bugtracker won't result in the
 comments being pushed because they have already been imported.
 
+    >>> transaction.commit()
+
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
 
 If the external bugtracker's addRemoteComment() method returns an
@@ -244,11 +254,12 @@ invalid remote comment ID, an error will be raised:
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> message_five = getUtility(IMessageSet).fromText(
     ...     "Comment the fifth", "Body the fifth.", sample_person)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
     >>> bugmessage_five = bug.linkMessage(message_five, bug_watch)
+    >>> transaction.commit()
 
     >>> broken_external_bugtracker = ErroringExternalBugTracker(
     ...     'http://example.com')

@@ -66,14 +66,12 @@ You can check if a branch is linked to a bug:
     >>> branch = getUtility(IBranchLookup).get(1)
     >>> bug_branch_three = bug.linkBranch(branch, user)
 
-
-If we make the bug private, no-priv won't be allowed to edit neither the
-bug nor the BugBranch.
+If we make the bug private, no-priv won't be allowed to edit either
+the bug or the BugBranch.
 
     >>> login('foo.bar@canonical.com')
     >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
-
     >>> login('no-priv@canonical.com')
 
     >>> bug.description = 'Yet another description.'
@@ -81,9 +79,35 @@ bug nor the BugBranch.
     ...
     Unauthorized:...
 
+    >>> bug.unlinkBranch(branch, getUtility(ILaunchBag).user)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> another_branch = factory.makeAnyBranch()
+    >>> bug.linkBranch(another_branch, getUtility(ILaunchBag).user)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
     >>> login('foo.bar@canonical.com')
     >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
+
+Likewise, anonymous users cannot link or unlink branches.
+
+    >>> login(ANONYMOUS)
+
+    >>> bug.unlinkBranch(branch, getUtility(ILaunchBag).user)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> bug.linkBranch(another_branch, getUtility(ILaunchBag).user)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
     >>> login('no-priv@canonical.com')
 
 You can unlink a branch from a bug using unlinkBranch().
