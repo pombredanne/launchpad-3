@@ -456,7 +456,8 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
     label = 'Confirm e-mail address'
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
+        if self.redirectIfInvalidOrConsumedToken():
+            return
         super(ValidateEmailView, self).initialize()
 
     def validate(self, data):
