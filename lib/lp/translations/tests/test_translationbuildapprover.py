@@ -68,7 +68,6 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         filenames = [
             'po/domain1.po',
             'po/eo.po',
-            'readme.txt',
             ]
         series = self.factory.makeProductSeries()
         approver = TranslationBuildApprover(filenames, productseries=series)
