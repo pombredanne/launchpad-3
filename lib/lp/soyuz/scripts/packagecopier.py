@@ -246,20 +246,6 @@ class CopyChecker:
             len(inventory_conflicts) == 0):
             return
 
-        # Check if files with the same filename already exist in the target
-        destination_file_conflicts = self.archive.getPublishedSources(
-            name=source.sourcepackagerelease.name)
-        dfc = {}
-        for file in destination_file_conflicts:
-            for inc_file in file.sourcepackagerelease.files:
-                dfc[inc_file.libraryfile.filename] = inc_file.libraryfile
-        for file in source.sourcepackagerelease.files:
-            if file.libraryfile.filename in dfc.keys():
-                if file.libraryfile != dfc[file.libraryfile.filename]:
-                    raise CannotCopy(
-                        "%s already exists in destination archive with "
-                        "different contents." % file.libraryfile.filename)
-
         # Cache the conflicting publications because they will be iterated
         # more than once.
         destination_archive_conflicts = list(destination_archive_conflicts)
@@ -343,6 +329,20 @@ class CopyChecker:
             if not copied_binaries.issuperset(published_binaries):
                 raise CannotCopy(
                     "binaries conflicting with the existing ones")
+
+        # Check if files with the same filename already exist in the target
+        destination_file_conflicts = self.archive.getPublishedSources(
+            name=source.sourcepackagerelease.name)
+        dfc = {}
+        for file in destination_file_conflicts:
+            for inc_file in file.sourcepackagerelease.files:
+                dfc[inc_file.libraryfile.filename] = inc_file.libraryfile
+        for file in source.sourcepackagerelease.files:
+            if file.libraryfile.filename in dfc.keys():
+                if file.libraryfile != dfc[file.libraryfile.filename]:
+                    raise CannotCopy(
+                        "%s already exists in destination archive with "
+                        "different contents." % file.libraryfile.filename)
 
     def checkCopy(self, source, series, pocket):
         """Check if the source can be copied to the given location.

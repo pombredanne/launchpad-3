@@ -1781,8 +1781,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertEqual(0, len(copied))
         self.assertEqual(
             copy_helper.logger.buffer.getvalue().splitlines()[-1],
-            'ERROR: probe 1.1 in warty (probe_1.1.dsc already exists '
-            'in destination archive with different contents.)')
+            'ERROR: probe 1.1 in warty (a different source with the '
+            'same version is published in the destination archive)')
 
     def _setupSecurityPropagationContext(self, sourcename):
         """Setup a security propagation publishing context.
