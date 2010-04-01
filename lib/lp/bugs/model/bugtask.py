@@ -813,7 +813,8 @@ class BugTask(SQLBase, BugTaskMixin):
             user.id == celebrities.bug_importer.id):
             return True
         else:
-            return new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES
+            return (self.status is not BugTaskStatus.WONTFIX and
+                    new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
