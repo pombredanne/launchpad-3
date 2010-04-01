@@ -122,7 +122,7 @@ class IBranchTarget(IPrimaryContext):
     @operation_returns_entry(Interface) # really ICodeImport
     @export_write_operation()
     def newCodeImport(registrant, branch_name, rcs_type,
-            url=None, cvs_root=None, cvs_module=None):
+            url=None, cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import for this target.
 
         :param registrant: the `IPerson` who should be recorded as creating
@@ -132,6 +132,8 @@ class IBranchTarget(IPrimaryContext):
         :param url: the url to import from if the import isn't CVS.
         :param cvs_root: if the import is from CVS the CVSROOT to import from.
         :param cvs_module: if the import is from CVS the module to import.
+        :param owner: the `IPerson` to own the resulting branch, or None to
+            use registrant.
         :returns: an `ICodeImport`.
         :raises AssertionError: if supports_code_imports is False.
         """

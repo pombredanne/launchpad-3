@@ -23,6 +23,7 @@ from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_read_operation, export_write_operation,
     operation_parameters, operation_returns_collection_of,
     operation_returns_entry)
+from lazr.restful.fields import Reference
 
 
 class IHasBranches(Interface):
@@ -129,12 +130,14 @@ class IHasCodeImports(Interface):
         url=TextLine(title=_('Foreign VCS URL')),
         cvs_root=TextLine(title=_('CVS roor URL')),
         cvs_module=TextLine(title=_('CVS module to import')),
+        owner=Reference(title=_('Owner of the resulting branch'),
+            schema=Interface)
         )
     @call_with(registrant=REQUEST_USER)
     @operation_returns_entry(Interface) # Really IBranchMergeProposal.
     @export_write_operation()
     def newCodeImport(registrant=None, branch_name=None, rcs_type=None,
-            url=None, cvs_root=None, cvs_module=None):
+            url=None, cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import.
 
         :param registrant: The IPerson to record as the registrant of the
@@ -145,5 +148,7 @@ class IHasCodeImports(Interface):
             (i.e. isn't CVS).
         :param cvs_root: The CVSROOT for a CVS import.
         :param cvs_module: The module to import for a CVS import.
+        :param owner: Who should own the created branch, or None for it to
+            be the same as the registrant, or the caller over the API.
         :returns: An instance of `ICodeImport`.
         """

@@ -68,7 +68,9 @@ class HasRequestedReviewsMixin:
 class HasCodeImportsMixin:
 
     def newCodeImport(self, registrant=None, branch_name=None,
-            rcs_type=None, url=None, cvs_root=None, cvs_module=None):
+            rcs_type=None, url=None, cvs_root=None, cvs_module=None,
+            owner=None):
         """See `IHasCodeImports`."""
         return IBranchTarget(self).newCodeImport(registrant, branch_name,
-                rcs_type, url=url, cvs_root=cvs_root, cvs_module=cvs_module)
+                rcs_type, url=url, cvs_root=cvs_root, cvs_module=cvs_module,
+                owner=owner)

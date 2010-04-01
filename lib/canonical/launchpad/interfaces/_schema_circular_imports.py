@@ -135,6 +135,8 @@ patch_collection_return_type(
     IHasRequestedReviews, 'getRequestedReviews', IBranchMergeProposal)
 patch_entry_return_type(
     IHasCodeImports, 'newCodeImport', ICodeImport)
+patch_plain_parameter_type(
+    IHasCodeImports, 'newCodeImport', 'owner', IPerson)
 
 # IBugTask
 

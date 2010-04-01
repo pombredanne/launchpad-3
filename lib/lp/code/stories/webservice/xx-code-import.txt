@@ -5,24 +5,33 @@ Launchpad can tell you about the code imports that power a branch
 if it is an import branch.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
 
 First we create some objects for use in the tests.
 
     >>> login(ANONYMOUS)
     >>> person = factory.makePerson(name='import-owner')
+    >>> team = factory.makeTeam(name='import-owner-team')
+    >>> other_team = factory.makeTeam(name='other-team')
+    >>> other_person = factory.makePerson(name='other-person')
+    >>> removeSecurityProxy(person).join(team)
     >>> product = factory.makeProduct(name='scruff')
+    >>> svn_branch_url = "http://svn.domain.com/source"
     >>> code_import = removeSecurityProxy(factory.makeProductCodeImport(
     ...    registrant=person, product=product, branch_name='import',
-    ...    svn_branch_url="http://svn.domain.com/source"))
+    ...    svn_branch_url=svn_branch_url))
     >>> no_import_branch = removeSecurityProxy(factory.makeProductBranch(
     ...     owner=person, product=product, name='no-import'))
     >>> logout()
+    >>> import_webservice = webservice_for_person(
+    ...     person, permission=OAuthPermission.WRITE_PUBLIC)
 
 If we query a branch with no import then we find that it tells us
 it doesn't have one.
 
     >>> branch_url = '/' + no_import_branch.unique_name
-    >>> response = webservice.get(branch_url)
+    >>> response = import_webservice.get(branch_url)
     >>> representation = response.jsonBody()
     >>> print representation['code_import_link']
     None
@@ -31,7 +40,7 @@ For a branch with an import we get a link to the import entry in its
 representation.
 
     >>> branch_url = '/' + code_import.branch.unique_name
-    >>> response = webservice.get(branch_url)
+    >>> response = import_webservice.get(branch_url)
     >>> representation = response.jsonBody()
     >>> print representation['code_import_link']
     http://.../~import-owner/scruff/import/+code-import
@@ -39,7 +48,7 @@ representation.
 We can get some information about the import using this URL.
 
     >>> import_url = representation['code_import_link']
-    >>> response = webservice.get(import_url)
+    >>> response = import_webservice.get(import_url)
     >>> representation = response.jsonBody()
     >>> print representation['self_link'] == import_url
     True
@@ -75,11 +84,13 @@ The same is true for package branches.
     ...    branch_name='import',
     ...    svn_branch_url="http://svn.domain.com/package_source"))
     >>> logout()
+    >>> import_webservice = webservice_for_person(
+    ...     person, permission=OAuthPermission.WRITE_PUBLIC)
 
 There is a link on the branch object
 
     >>> branch_url = '/' + code_import.branch.unique_name
-    >>> response = webservice.get(branch_url)
+    >>> response = import_webservice.get(branch_url)
     >>> representation = response.jsonBody()
     >>> print representation['code_import_link']
     http://.../~import-owner/scruffbuntu/manic/scruff/import/+code-import
@@ -87,7 +98,7 @@ There is a link on the branch object
 and there is information available about the import itsef.
 
     >>> import_url = representation['code_import_link']
-    >>> response = webservice.get(import_url)
+    >>> response = import_webservice.get(import_url)
     >>> representation = response.jsonBody()
     >>> print representation['self_link'] == import_url
     True
@@ -112,14 +123,14 @@ We can create an import using the API by calling a method on the project.
 
     >>> product_url = '/' + product.name
     >>> new_remote_url = factory.getUniqueURL()
-    >>> response = webservice.named_post(product_url, 'newCodeImport',
+    >>> response = import_webservice.named_post(product_url, 'newCodeImport',
     ...    branch_name='new-import', rcs_type='Git',
     ...    url=new_remote_url)
     >>> representation = response.jsonBody()
     >>> print representation['self_link']
-    http://.../~salgado/scruff/new-import/+code-import
+    http://.../~import-owner/scruff/new-import/+code-import
     >>> print representation['branch_link']
-    http://.../~salgado/scruff/new-import
+    http://.../~import-owner/scruff/new-import
     >>> print representation['rcs_type']
     Git
     >>> print representation['url'] == new_remote_url
@@ -135,14 +146,14 @@ If we must we can create a CVS import.
 
     >>> product_url = '/' + product.name
     >>> new_remote_url = factory.getUniqueURL()
-    >>> response = webservice.named_post(product_url, 'newCodeImport',
+    >>> response = import_webservice.named_post(product_url, 'newCodeImport',
     ...    branch_name='cvs-import', rcs_type='Concurrent Versions System',
     ...    cvs_root=new_remote_url, cvs_module="foo")
     >>> representation = response.jsonBody()
     >>> print representation['self_link']
-    http://.../~salgado/scruff/cvs-import/+code-import
+    http://.../~import-owner/scruff/cvs-import/+code-import
     >>> print representation['branch_link']
-    http://.../~salgado/scruff/cvs-import
+    http://.../~import-owner/scruff/cvs-import
     >>> print representation['rcs_type']
     Concurrent Versions System
     >>> print representation['url']
@@ -160,14 +171,14 @@ We can also create an import targetting a source package.
     ...     '/' + distribution.name + '/' + distroseries.name + '/+source/'
     ...     + source_package.name)
     >>> new_remote_url = factory.getUniqueURL()
-    >>> response = webservice.named_post(source_package_url, 'newCodeImport',
-    ...    branch_name='new-import', rcs_type='Mercurial',
+    >>> response = import_webservice.named_post(source_package_url,
+    ...    'newCodeImport', branch_name='new-import', rcs_type='Mercurial',
     ...    url=new_remote_url)
     >>> representation = response.jsonBody()
     >>> print representation['self_link']
-    http://.../~salgado/scruffbuntu/manic/scruff/new-import/+code-import
+    http://.../~import-owner/scruffbuntu/manic/scruff/new-import/+code-import
     >>> print representation['branch_link']
-    http://.../~salgado/scruffbuntu/manic/scruff/new-import
+    http://.../~import-owner/scruffbuntu/manic/scruff/new-import
     >>> print representation['rcs_type']
     Mercurial
     >>> print representation['url'] == new_remote_url
@@ -178,3 +189,57 @@ We can also create an import targetting a source package.
     None
     >>> print representation['date_last_successful']
     None
+
+If we wish to create a branch owned by a team we are part of then we can.
+
+    >>> team_url = import_webservice.getAbsoluteUrl('/~import-owner-team')
+    >>> new_remote_url = factory.getUniqueURL()
+    >>> response = import_webservice.named_post(product_url, 'newCodeImport',
+    ...    branch_name='team-import', rcs_type='Git',
+    ...    url=new_remote_url, owner=team_url)
+    >>> representation = response.jsonBody()
+    >>> print representation['self_link']
+    http://.../~import-owner-team/scruff/team-import/+code-import
+    >>> print representation['branch_link']
+    http://.../~import-owner-team/scruff/team-import
+    >>> print representation['rcs_type']
+    Git
+    >>> print representation['url'] == new_remote_url
+    True
+    >>> print representation['cvs_root']
+    None
+    >>> print representation['cvs_module']
+    None
+    >>> print representation['date_last_successful']
+    None
+
+== Exceptions ==
+
+We can't pick just any team to own the branch.
+
+    >>> other_team_url = import_webservice.getAbsoluteUrl('/~other-team')
+    >>> new_remote_url = factory.getUniqueURL()
+    >>> print import_webservice.named_post(product_url, 'newCodeImport',
+    ...    branch_name='other-team-import', rcs_type='Git',
+    ...    url=new_remote_url, owner=other_team_url)
+    HTTP/1.1 400 Bad Request ...
+    BranchCreatorNotMemberOfOwnerTeam: Import-owner is not a member of
+    Other Team...
+
+And we can't choose another user.
+
+    >>> other_person_url = import_webservice.getAbsoluteUrl('/~other-person')
+    >>> print import_webservice.named_post(product_url, 'newCodeImport',
+    ...    branch_name='other-person-import', rcs_type='Git',
+    ...    url=new_remote_url, owner=other_person_url)
+    HTTP/1.1 400 Bad Request ...
+    BranchCreatorNotOwner: Import-owner cannot create branches owned by
+    Other-person...
+
+We can't choose a branch name that has already been taken.
+
+    >>> print import_webservice.named_post(product_url, 'newCodeImport',
+    ...    branch_name='import', rcs_type='Git', url=new_remote_url)
+    HTTP/1.1 400 Bad Request ...
+    A branch with the name "import" already exists for import-owner in
+    scruff...
