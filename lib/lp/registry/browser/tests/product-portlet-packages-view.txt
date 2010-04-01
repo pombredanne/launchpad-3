@@ -39,7 +39,6 @@ does not happen automatically.
     ...     login(ANONYMOUS)
     ...     return (ubuntu, product, spn)
 
-
 Let's create a test project.
 
     >>> product = factory.makeProduct(name="bingo")
@@ -64,7 +63,6 @@ appropriate message asking to suggest a match.
     There are no unlinked source packages that are a good match. Can you
     suggest one?
     Link to Ubuntu package
-
 
 A distribution source package in a distribution other than ubuntu will
 not be suggested.

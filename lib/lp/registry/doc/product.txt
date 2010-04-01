@@ -218,7 +218,7 @@ related to a certain upstream:
    [(u'alsa-utils', u'debian'), (u'alsa-utils', u'ubuntu')]
 
 The date_last_packaging_check attribute records the last date that the
-project was comfirmed to have no Ubuntu packages. The project can be rejected
+project was confirmed to have no Ubuntu packages. The project can be rejected
 at some later date. A value of None means that no user has ever confirmed that
 that the project has no Ubuntu packages.
 
