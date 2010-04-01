@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for things found directly in `canonical.twistedsupport`."""
+"""Tests for things found directly in `lp.services.twistedsupport`."""
 
 __metaclass__ = type
 
@@ -9,7 +9,7 @@ import unittest
 
 from twisted.internet import defer
 
-from canonical.twistedsupport import extract_result
+from lp.services.twistedsupport import extract_result
 from lp.testing import TestCase
 
 class TestExtractResult(TestCase):

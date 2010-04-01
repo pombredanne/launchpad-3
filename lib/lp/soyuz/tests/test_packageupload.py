@@ -20,6 +20,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail import stub
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet, PackageUploadCustomFormat, PackageUploadStatus)
@@ -272,6 +273,10 @@ class PackageUploadTestCase(TestCaseWithFactory):
             'main/dist-upgrader-all')
         self.assertEquals(
             ['20060302.0120', 'current'], sorted(os.listdir(custom_path)))
+        
+        # The custom files were also copied to the public librarian
+        for customfile in delayed_copy.customfiles:
+            self.assertFalse(customfile.libraryfilealias.restricted)
 
     def test_realiseUpload_for_source_only_delayed_copies(self):
         # Source-only delayed-copies results in the source published
@@ -296,6 +301,38 @@ class PackageUploadTestCase(TestCaseWithFactory):
         [build] = pub_record.getBuilds()
         self.assertEquals(
             BuildStatus.NEEDSBUILD, build.buildstate)
+
+    def test_realiseUpload_for_overridden_component_archive(self):
+        # If the component of an upload is overridden to 'Partner' for
+        # example, then the new publishing record should be for the
+        # partner archive.
+        self.test_publisher.prepareBreezyAutotest()
+
+        # Get some sample changes file content for the new upload.
+        changes_file = open(
+            datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'))
+        changes_file_content = changes_file.read()
+        changes_file.close()
+
+        main_upload_release = self.test_publisher.getPubSource(
+            sourcename='main-upload', spr_only=True,
+            component='main', changes_file_content=changes_file_content)
+        package_upload = main_upload_release.package_upload
+
+        self.assertEqual("primary", main_upload_release.upload_archive.name)
+
+        # Override the upload to partner and verify the change.
+        partner_component = getUtility(IComponentSet)['partner']
+        main_component = getUtility(IComponentSet)['main']
+        package_upload.overrideSource(
+            partner_component, None, [partner_component, main_component])
+        self.assertEqual(
+            "partner", main_upload_release.upload_archive.name)
+
+        # Now realise the upload and verify that the publishing is for
+        # the partner archive.
+        pub = package_upload.realiseUpload()[0]
+        self.assertEqual("partner", pub.archive.name)
 
 
 def test_suite():
