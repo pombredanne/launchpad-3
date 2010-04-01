@@ -261,15 +261,37 @@ is None or the date is more than one year ago.
     >>> view.can_show_portlet
     True
 
-The view's sourcepackages property filters out obsolete packages and
-reverses the order so that the latest packages for the current ubuntu
-series are shown first.
+The user can choose a package to create a Packaging link.
+
+    >>> product.sourcepackages
+    []
+
+    >>> form = {
+    ...     'field.distributionsourcepackage': 'bingo',
+    ...     'field.actions.link': 'Link to this Ubuntu Package',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", form=form)
+    >>> view.errors
+    []
+
+    >>> for sp in product.sourcepackages:
+    ...     print sp.name
+    bingo
 
     >>> from lp.registry.interfaces.packaging import (
     ...     IPackagingUtil, PackagingType)
 
     >>> packaging_util = getUtility(IPackagingUtil)
-    >>> series = ubuntu.currentseries
+    >>> packaging_util.deletePackaging(
+    ...     product.development_focus,
+    ...     getUtility(ISourcePackageNameSet)['bingo'],
+    ...     ubuntu.currentseries)
+
+The view's sourcepackages property filters out obsolete packages and
+reverses the order so that the latest packages for the current ubuntu
+series are shown first.
+
     >>> spn = factory.makeSourcePackageName(name="a-obsolete-package")
     >>> packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
