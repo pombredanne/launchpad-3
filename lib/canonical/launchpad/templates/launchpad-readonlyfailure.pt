@@ -16,7 +16,7 @@
       </p>
       <p>Normal service will resume as soon as possible. You can find more
          information on the <a href="http://identi.ca/launchpadstatus">
-         Launchpad system status page</a>.
+         Launchpad system status</a> page.
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

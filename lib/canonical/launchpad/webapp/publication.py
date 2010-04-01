@@ -215,7 +215,7 @@ class LaunchpadBrowserPublication(
                         read-only mode. <i>You cannot make any
                         changes.</i> You can find more information on the
                         <a href="http://identi.ca/launchpadstatus">Launchpad
-                        system status page</a>.
+                        system status</a> page.
                         """))
 
     def getPrincipal(self, request):
