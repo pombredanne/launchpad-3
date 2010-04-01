@@ -117,8 +117,8 @@ class IBranchTarget(IPrimaryContext):
     def getBugTask(bug):
         """Get the BugTask for a given bug related to the branch target."""
 
-    def newCodeImport(registrant, branch_name, rcs_type,
-            url=None, cvs_root=None, cvs_module=None):
+    def newCodeImport(registrant, branch_name, rcs_type, url=None,
+                      cvs_root=None, cvs_module=None):
         """Create a new code import for this target.
 
         :param registrant: the `IPerson` who should be recorded as creating
