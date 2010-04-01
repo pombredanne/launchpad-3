@@ -26,8 +26,7 @@
 
         <tr>
           <td>
-            <label>
-              <input tal:replace="structure view/branch_type_link" />
+            <label tal:replace="structure view/branch_type_link">
               Link to a Bazaar branch already in Launchpad
             </label>
             <table class="subordinate">
@@ -40,8 +39,7 @@
 
         <tr>
           <td>
-            <label>
-              <input tal:replace="structure view/branch_type_create" />
+            <label tal:replace="structure view/branch_type_create">
               Create a new, empty branch in Launchpad and link
               to this series
             </label>
@@ -50,8 +48,7 @@
 
         <tr>
           <td>
-            <label>
-              <input tal:replace="structure view/branch_type_import" />
+            <label tal:replace="structure view/branch_type_import">
               Import a branch hosted somewhere else
             </label>
             <table class="subordinate">
@@ -61,8 +58,7 @@
 
               <tr>
                 <td>
-                  <label>
-                    <input tal:replace="structure view/rcs_type_bzr" />
+                  <label tal:replace="structure view/rcs_type_bzr">
                     Bazaar, hosted externally
                   </label>
                 </td>
@@ -70,8 +66,7 @@
 
               <tr>
                 <td>
-                  <label>
-                    <input tal:replace="structure view/rcs_type_git" />
+                  <label tal:replace="structure view/rcs_type_git">
                     Git
                   </label>
                 </td>
@@ -79,8 +74,7 @@
 
               <tr>
                 <td>
-                  <label>
-                    <input tal:replace="structure view/rcs_type_svn" />
+                  <label tal:replace="structure view/rcs_type_svn">
                     SVN
                   </label>
                 </td>
@@ -88,8 +82,7 @@
 
               <tr>
                 <td>
-                  <label>
-                    <input tal:replace="structure view/rcs_type_hg" />
+                  <label tal:replace="structure view/rcs_type_hg">
                     Mercurial
                   </label>
                 </td>
@@ -97,8 +90,7 @@
 
               <tr>
                 <td>
-                  <label>
-                    <input tal:replace="structure view/rcs_type_cvs" />
+                  <label tal:replace="structure view/rcs_type_cvs">
                     CVS
                   </label>
                   <table class="subordinate">

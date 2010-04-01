@@ -753,7 +753,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         'branch_type': LINK_LP_BZR,
         }
 
-    def setUpWidgets(self):
+    def xsetUpWidgets(self):
         super(ProductSeriesSetBranchView, self).setUpWidgets()
 
         # Extract the radio buttons from the rcs_type widget, so we can
@@ -780,6 +780,52 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         self.branch_type_create = str(create_button)
         self.branch_type_import = str(import_button)
         self.branch_type_emptymarker = str(emptymarker)
+
+    def setUpWidgets(self):
+        super(ProductSeriesSetBranchView, self).setUpWidgets()
+
+        def render(widget, term, current_value, label=None):
+            if term.value == current_value:
+                render = widget.renderSelectedItem
+            else:
+                render = widget.renderItem
+            if label is None:
+                label = term.title
+            try:
+                value = term.name
+            except AttributeError:
+                value = term.value
+            return render(index=term.value,
+                          text=label,
+                          value=value,
+                          name=widget.name,
+                          cssClass='')
+
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        widget = self.widgets['rcs_type']
+        vocab = widget.vocabulary
+        form_value = widget._getFormValue()
+        try:
+            current_value = form_value.value
+        except AttributeError:
+            current_value = vocab.BZR.value
+        self.rcs_type_cvs = render(widget, vocab.CVS, current_value, 'CVS')
+        self.rcs_type_svn = render(widget, vocab.BZR_SVN, current_value, 'SVN')
+        self.rcs_type_git = render(widget, vocab.GIT, current_value)
+        self.rcs_type_hg = render(widget, vocab.HG, current_value)
+        self.rcs_type_bzr = render(widget, vocab.BZR, current_value)
+        self.rcs_type_emptymarker = widget._emptyMarker()
+
+        widget = self.widgets['branch_type']
+        current_value = widget._getFormValue()
+        vocab = widget.vocabulary
+
+        (self.branch_type_link,
+         self.branch_type_create,
+         self.branch_type_import) = [
+            render(widget, vocab.by_value[value], current_value)
+            for value in (LINK_LP_BZR, CREATE_NEW, IMPORT_EXTERNAL)]
+
 
     def _validateLinkLpBzr(self, data):
         """Validate data for link-lp-bzr case."""
@@ -850,6 +896,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
         names = ['branch_type', 'rcs_type']
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         super(ProductSeriesSetBranchView, self).validate_widgets(data, names)
         branch_type = data.get('branch_type')
         if branch_type == LINK_LP_BZR:
