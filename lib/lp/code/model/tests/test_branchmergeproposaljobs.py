@@ -87,33 +87,6 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         verifyObject(IMergeProposalCreatedJob, job)
         verifyObject(IBranchMergeProposalJob, job)
 
-    def test_run_makes_diff(self):
-        """MergeProposalCreationJob.run creates a diff."""
-        self.useBzrBranches()
-        target, target_tree = self.create_branch_and_tree('target')
-        target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
-        target_tree.add('foo')
-        rev1 = target_tree.commit('added foo')
-        source, source_tree = self.create_branch_and_tree('source')
-        source_tree.pull(target_tree.branch, stop_revision=rev1)
-        source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\n')
-        source_tree.commit('added bar')
-        target_tree.merge_from_branch(source_tree.branch)
-        target_tree.commit('merged from source')
-        source_tree.bzrdir.root_transport.put_bytes('foo', 'foo\nbar\nqux\n')
-        source_tree.commit('added qux')
-        bmp = self.factory.makeBranchMergeProposal(
-            source_branch=source, target_branch=target,
-            registrant=source.owner)
-        job = MergeProposalCreatedJob.create(bmp)
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        job.run()
-        self.assertIs(None, bmp.review_diff)
-        self.assertIsNot(None, bmp.preview_diff)
-        transaction.commit()
-        self.checkDiff(bmp.preview_diff)
-
     def checkDiff(self, diff):
         self.assertNotIn('+bar', diff.diff.text)
         self.assertIn('+qux', diff.diff.text)
@@ -174,12 +147,12 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
     def test_run(self):
         self.useBzrBranches()
         bmp = self.createExampleMerge()[0]
-        UpdatePreviewDiffJob.create(bmp)
+        job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        JobRunner.fromReady(UpdatePreviewDiffJob).runAll()
+        JobRunner([job]).runAll()
         transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
 
