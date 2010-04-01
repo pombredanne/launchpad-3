@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import atexit
+import re
 import os
 import unittest
 import xmlrpclib
@@ -15,23 +16,28 @@ from bzrlib.tests import multiply_tests, TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
-from lp.codehosting.bzrutils import DenyingServer
-from lp.codehosting.tests.helpers import (
-    adapt_suite, LoomTestMixin)
-from lp.codehosting.tests.servers import (
-    CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
-from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
-from lp.codehosting.vfs import branch_id_to_path
-from lp.registry.model.person import Person
-from lp.registry.model.product import Product
+from zope.component import getUtility
+
 from canonical.config import config
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
 
 from lp.code.enums import BranchType
+from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
+
+from lp.codehosting.bzrutils import DenyingServer
+from lp.codehosting.tests.helpers import adapt_suite, LoomTestMixin
+from lp.codehosting.tests.servers import (
+    CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
+from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
+from lp.codehosting.vfs import branch_id_to_path
+
+from lp.registry.model.person import Person
+from lp.registry.model.product import Product
+
+from lp.testing import TestCaseWithFactory
 
 
 class SSHServerLayer(ZopelessAppServerLayer):
@@ -78,7 +84,7 @@ class SSHServerLayer(ZopelessAppServerLayer):
         SSHServerLayer._reset()
 
 
-class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
+class SSHTestCase(TestCaseWithTransport, LoomTestMixin, TestCaseWithFactory):
     """TestCase class that runs an SSH server as well as the app server."""
 
     layer = SSHServerLayer
@@ -100,10 +106,10 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         self.addCleanup(ssh_denier.stop_server)
 
         # Create a local branch with one revision
-        tree = self.make_branch_and_tree('.')
+        tree = self.make_branch_and_tree('local')
         self.local_branch = tree.branch
         self.local_branch_path = local_path_from_url(self.local_branch.base)
-        self.build_tree(['foo'])
+        self.build_tree(['local/foo'])
         tree.add('foo')
         self.revid = tree.commit('Added foo')
 
@@ -163,11 +169,11 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         """
         return get_bzr_path()
 
-    def push(self, local_directory, remote_url, use_existing_dir=False):
+    def push(self, local_directory, remote_url, extra_args=None):
         """Push the local branch to the given URL."""
         args = ['push', '-d', local_directory, remote_url]
-        if use_existing_dir:
-            args.append('--use-existing-dir')
+        if extra_args is not None:
+            args.extend(extra_args)
         self._run_bzr(args)
 
     def assertCantPush(self, local_directory, remote_url, error_messages=()):
@@ -366,12 +372,15 @@ class AcceptanceTests(SSHTestCase):
 
         # Check that it's not at the old location.
         self.assertNotBranch(
-            self.getTransportURL('~testuser/+junk/test-branch'))
+            self.getTransportURL(
+                '~testuser/+junk/test-branch', username='renamed-user'))
 
         # Check that it *is* at the new location.
         self.assertBranchesMatch(
             self.local_branch_path,
-            self.getTransportURL('~renamed-user/firefox/renamed-branch'))
+            self.getTransportURL(
+                '~renamed-user/firefox/renamed-branch',
+                username='renamed-user'))
 
     def test_push_team_branch(self):
         remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
@@ -393,6 +402,55 @@ class AcceptanceTests(SSHTestCase):
             ['~testuser/+junk/totally-new-branch', self.revid],
             [branch.unique_name, branch.last_mirrored_id])
         LaunchpadZopelessTestSetup().txn.abort()
+
+    def test_record_default_stacking(self):
+        # XXX
+
+        product = self.factory.makeProduct()
+
+        self.make_branch_and_tree('stacked-on')
+        trunk_unique_name = '~testuser/%s/trunk' % product.name
+        self.push('stacked-on', self.getTransportURL(trunk_unique_name))
+        db_trunk = getUtility(IBranchSet).getByUniqueName(trunk_unique_name)
+
+        self.factory.enableDefaultStackingForProduct(
+            db_trunk.product, db_trunk)
+
+        LaunchpadZopelessTestSetup().txn.commit()
+
+        stacked_unique_name = '~testuser/%s/stacked' % product.name
+        self.push(
+            self.local_branch_path, self.getTransportURL(stacked_unique_name))
+        db_stacked = getUtility(IBranchSet).getByUniqueName(
+            stacked_unique_name)
+
+        self.assertEqual(db_trunk, db_stacked.stacked_on)
+
+    def test_explicit_stacking(self):
+        # XXX
+
+        product = self.factory.makeProduct()
+
+        self.make_branch_and_tree('stacked-on')
+        trunk_unique_name = '~testuser/%s/trunk' % product.name
+        trunk_url = self.getTransportURL(trunk_unique_name)
+        self.push('stacked-on', self.getTransportURL(trunk_unique_name))
+
+        stacked_unique_name = '~testuser/%s/stacked' % product.name
+        stacked_url = self.getTransportURL(stacked_unique_name)
+        self.push(
+            self.local_branch_path, stacked_url,
+            extra_args=['--stacked-on', trunk_url])
+
+        branch_set = getUtility(IBranchSet)
+        db_trunk = branch_set.getByUniqueName(trunk_unique_name)
+        db_stacked = branch_set.getByUniqueName(stacked_unique_name)
+
+        self.assertEqual(db_trunk, db_stacked.stacked_on)
+
+        output, error = self._run_bzr(['info', stacked_url])
+        actually_stacked_on = re.search('stacked on: (.*)$', output).group(1)
+        self.assertEqual('/' + trunk_unique_name, actually_stacked_on)
 
     def test_cant_access_private_branch(self):
         # Trying to get information about a private branch should fail as if
@@ -427,7 +485,9 @@ class AcceptanceTests(SSHTestCase):
         branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        self.push(self.local_branch_path, remote_url, use_existing_dir=True)
+        self.push(
+            self.local_branch_path, remote_url,
+            extra_args=['--use-existing-dir'])
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     def test_cant_push_to_existing_mirrored_branch(self):

@@ -136,4 +136,4 @@ class SSHCodeHostingServer(Server):
     def get_url(self, user=None):
         if user is None:
             user = 'testuser'
-        return '%s://%s@localhost:22222/' % (self._schema, user)
+        return '%s://%s@bazaar.launchpad.dev:22222/' % (self._schema, user)

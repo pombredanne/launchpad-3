@@ -635,6 +635,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         # 'borrowing' the lock that is being released.
         branch_config = TransportConfig(branch._transport, 'branch.conf')
         branch_config.set_option(uri.path, 'stacked_on_location')
+        return uri.path
 
     def branchChanged(self, virtual_url_fragment):
         """Notify Launchpad of a change to the a branch.
