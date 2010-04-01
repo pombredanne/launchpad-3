@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'HasBranchesMixin',
+    'HasCodeImportsMixin',
     'HasMergeProposalsMixin',
     'HasRequestedReviewsMixin',
     ]
@@ -16,6 +17,7 @@ from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
+from lp.code.interfaces.branchtarget import IBranchTarget
 
 
 class HasBranchesMixin:
@@ -61,3 +63,12 @@ class HasRequestedReviewsMixin:
             visible_by_user)
         proposals = visible_branches.getMergeProposalsForReviewer(self, status)
         return proposals
+
+
+class HasCodeImportsMixin:
+
+    def newCodeImport(self, registrant=None, branch_name=None,
+            rcs_type=None, url=None, cvs_root=None, cvs_module=None):
+        """See `IHasCodeImports`."""
+        return IBranchTarget(self).newCodeImport(registrant, branch_name,
+                rcs_type, url=url, cvs_root=cvs_root, cvs_module=cvs_module)

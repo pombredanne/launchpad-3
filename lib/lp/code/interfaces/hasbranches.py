@@ -6,21 +6,23 @@
 __metaclass__ = type
 __all__ = [
     'IHasBranches',
+    'IHasCodeImports',
     'IHasMergeProposals',
     'IHasRequestedReviews',
     ]
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, List
+from zope.schema import Choice, Datetime, List, TextLine
 
 from canonical.launchpad import _
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeProposalStatus)
+    BranchLifecycleStatus, BranchMergeProposalStatus, RevisionControlSystems)
 
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_read_operation,
-    operation_parameters, operation_returns_collection_of)
+    REQUEST_USER, call_with, export_read_operation, export_write_operation,
+    operation_parameters, operation_returns_collection_of,
+    operation_returns_entry)
 
 
 class IHasBranches(Interface):
@@ -108,4 +110,40 @@ class IHasRequestedReviews(Interface):
         :param status: A list of statuses to filter with.
         :param visible_by_user: Normally the user who is asking.
         :returns: A list of `IBranchMergeProposal`.
+        """
+
+
+class IHasCodeImports(Interface):
+    """Some things can have code imports that target them.
+
+    This interface defines the common methods that for working with them.
+    """
+
+    # In order to minimise dependancies the returns_collection is defined as
+    # Interface here and defined fully in the circular imports file.
+
+    @operation_parameters(
+        branch_name=TextLine(
+            title=_('Name of branch to create'), required=True),
+        rcs_type=Choice(vocabulary=RevisionControlSystems, required=True),
+        url=TextLine(title=_('Foreign VCS URL')),
+        cvs_root=TextLine(title=_('CVS roor URL')),
+        cvs_module=TextLine(title=_('CVS module to import')),
+        )
+    @call_with(registrant=REQUEST_USER)
+    @operation_returns_entry(Interface) # Really IBranchMergeProposal.
+    @export_write_operation()
+    def newCodeImport(registrant=None, branch_name=None, rcs_type=None,
+            url=None, cvs_root=None, cvs_module=None):
+        """Create a new code import.
+
+        :param registrant: The IPerson to record as the registrant of the
+            import
+        :param branch_name: The name of the branch to create.
+        :param rcs_type: The type of the foreign VCS.
+        :param url: The URL to import from if the VCS type uses a single URL
+            (i.e. isn't CVS).
+        :param cvs_root: The CVSROOT for a CVS import.
+        :param cvs_module: The module to import for a CVS import.
+        :returns: An instance of `ICodeImport`.
         """

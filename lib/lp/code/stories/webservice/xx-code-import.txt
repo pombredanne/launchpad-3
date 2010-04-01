@@ -136,15 +136,40 @@ If we must we can create a CVS import.
     >>> product_url = '/' + product.name
     >>> new_remote_url = factory.getUniqueURL()
     >>> response = webservice.named_post(product_url, 'newCodeImport',
-    ...    branch_name='new-import', rcs_type='Concurrent Versioning System',
+    ...    branch_name='cvs-import', rcs_type='Concurrent Versions System',
+    ...    cvs_root=new_remote_url, cvs_module="foo")
+    >>> representation = response.jsonBody()
+    >>> print representation['self_link']
+    http://.../~salgado/scruff/cvs-import/+code-import
+    >>> print representation['branch_link']
+    http://.../~salgado/scruff/cvs-import
+    >>> print representation['rcs_type']
+    Concurrent Versions System
+    >>> print representation['url']
+    None
+    >>> print representation['cvs_root'] == new_remote_url
+    True
+    >>> print representation['cvs_module'] == "foo"
+    True
+    >>> print representation['date_last_successful']
+    None
+
+We can also create an import targetting a source package.
+
+    >>> source_package_url = (
+    ...     '/' + distribution.name + '/' + distroseries.name + '/+source/'
+    ...     + source_package.name)
+    >>> new_remote_url = factory.getUniqueURL()
+    >>> response = webservice.named_post(source_package_url, 'newCodeImport',
+    ...    branch_name='new-import', rcs_type='Mercurial',
     ...    url=new_remote_url)
     >>> representation = response.jsonBody()
     >>> print representation['self_link']
-    http://.../~salgado/scruff/new-import/+code-import
+    http://.../~salgado/scruffbuntu/manic/scruff/new-import/+code-import
     >>> print representation['branch_link']
-    http://.../~salgado/scruff/new-import
+    http://.../~salgado/scruffbuntu/manic/scruff/new-import
     >>> print representation['rcs_type']
-    Git
+    Mercurial
     >>> print representation['url'] == new_remote_url
     True
     >>> print representation['cvs_root']
@@ -153,4 +178,3 @@ If we must we can create a CVS import.
     None
     >>> print representation['date_last_successful']
     None
-
