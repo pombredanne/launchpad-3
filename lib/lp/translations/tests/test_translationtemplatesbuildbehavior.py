@@ -45,8 +45,7 @@ class FakeChroot:
 class FakeSlave:
     """Pretend build slave."""
     def __init__(self, builderstatus):
-        self.status = {
-            'build_status': 'BuildStatus.%s' % builderstatus.name,
+        self._status = {
             'test_build_started': False,
         }
 
@@ -55,14 +54,22 @@ class FakeSlave:
 
     def build(self, buildid, build_type, chroot_sha1, filemap, args):
         """Pretend to start a build."""
-        self.status['build_id'] = buildid
-        self.status['filemap'] = filemap
+        self._status['build_id'] = buildid
+        self._status['filemap'] = filemap
 
         # Chuck in some information that a real slave wouldn't store,
         # but which will allow tests to check up on the build call.
-        self.status['test_build_type'] = build_type
-        self.status['test_build_args'] = args
-        self.status['test_build_started'] = True
+        self._status['test_build_type'] = build_type
+        self._status['test_build_args'] = args
+        self._status['test_build_started'] = True
+
+    def status(self):
+        return (
+            'BuilderStatus.WAITING',
+            'BuildStatus.OK',
+            self._status.get('build_id'),
+            {},
+            )
 
 
 class FakeBuilder:
@@ -72,7 +79,7 @@ class FakeBuilder:
         self.cleanSlave = FakeMethod()
 
     def slaveStatus(self):
-        return self.slave.status
+        return self.slave._status
 
 
 class FakeBuildQueue:
@@ -170,7 +177,6 @@ class TestTranslationTemplatesBuildBehavior(
         behavior._getChroot = FakeChroot
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
-        slave_status = behavior._builder.slave.status
         builder = behavior._builder
 
         behavior.dispatchBuildToSlave(queue_item, logging)
@@ -179,6 +185,7 @@ class TestTranslationTemplatesBuildBehavior(
         self.assertEqual(0, builder.cleanSlave.call_count)
         self.assertEqual(0, behavior._uploadTarball.call_count)
 
+        slave_status = behavior.slaveStatus(builder.slave.status())
         behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
 
         self.assertEqual(1, queue_item.destroySelf.call_count)
