@@ -1008,7 +1008,7 @@ class TranslationImportQueue:
             productseries=productseries,
             distroseries=distroseries, sourcepackagename=sourcepackagename)
 
-        # Re-opening because wer are using sequential access ("r|*") which is
+        # Re-opening because we are using sequential access ("r|*") which is
         # so much faster.
         tarball = tarfile.open('', 'r|*', StringIO(content))
         for tarinfo in tarball:
