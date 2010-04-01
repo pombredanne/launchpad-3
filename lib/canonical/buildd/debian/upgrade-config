@@ -81,6 +81,17 @@ def upgrade_to_58():
         'buildrecipepath = /usr/share/launchpad-buildd'
         '/slavebin/buildrecipe\n')
 
+def upgrade_to_59():
+    print "Upgrading %s to version 59" % conf_file
+    subprocess.call(["mv", conf_file, conf_file+"-prev59~"])
+    in_file = open(conf_file+"-prev59~", "r")
+    out_file = open(conf_file, "w")
+    out_file.write(in_file.read())
+    out_file.write(
+        '\n[translationtemplatesmanager]\n'
+        'generatepath = /usr/share/launchpad-buildd/slavebin/generate-translation-templates\n'
+        'resultarchive = translation-templates.tar.gz\n')
+
 
 if __name__ == "__main__":
     if old_version.find("~") > 0:
@@ -95,4 +106,6 @@ if __name__ == "__main__":
         upgrade_to_57()
     if int(old_version) < 58:
         upgrade_to_58()
+    if int(old_version) < 59:
+        upgrade_to_59()
 
