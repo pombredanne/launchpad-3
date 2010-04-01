@@ -141,21 +141,18 @@ class BranchMergeProposal(SQLBase):
     def next_preview_diff_job(self):
         # circular dependencies
         from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob, MergeProposalCreatedJob,
-            UpdatePreviewDiffJob)
-        job_classes = [MergeProposalCreatedJob, UpdatePreviewDiffJob]
-        type_classes = dict(
-            (job_class.class_job_type, job_class)
-            for job_class in job_classes)
+            BranchMergeProposalJob, BranchMergeProposalJobFactory,
+            BranchMergeProposalJobType)
         job = Store.of(self).find(
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == self,
-            BranchMergeProposalJob.job_type.is_in(type_classes.keys()),
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF,
             BranchMergeProposalJob.job == Job.id,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING])
             ).order_by(Job.scheduled_start, Job.date_created).first()
         if job is not None:
-            return type_classes[job.job_type](job)
+            return BranchMergeProposalJobFactory.create(job)
         else:
             return None
 

@@ -17,7 +17,9 @@ __metaclass__ = type
 
 __all__ = [
     'BranchMergeProposalJob',
+    'BranchMergeProposalJobFactory',
     'BranchMergeProposalJobSource',
+    'BranchMergeProposalJobType',
     'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
     'MergeProposalCreatedJob',

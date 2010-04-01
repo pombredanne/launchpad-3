@@ -1627,14 +1627,6 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_returns_bmp_job(self):
-        """For new proposals, get the MergeProposalCreatedJob."""
-        bmp = self.factory.makeBranchMergeProposal()
-        job = bmp.next_preview_diff_job
-        self.assertEqual(bmp, job.branch_merge_proposal)
-        self.assertIs(
-            MergeProposalCreatedJob, removeSecurityProxy(job).__class__)
-
     def test_returns_none_if_job_not_pending(self):
         """Jobs are shown while pending."""
         bmp = self.factory.makeBranchMergeProposal()
