@@ -27,10 +27,10 @@ from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 class LinkedBranchOrder(EnumeratedType):
     """An enum used only for ordering."""
 
-    FIRST = Item('Product')
-    SECOND = Item('Distribution Source Package')
-    THIRD = Item('Product Series')
-    FOURTH = Item('Suite Source Package')
+    PRODUCT = Item('Product')
+    DISTRIBUTION_SOURCE_PACKAGE = Item('Distribution Source Package')
+    PRODUCT_SERIES = Item('Product Series')
+    SUITE_SOURCE_PACKAGE = Item('Suite Source Package')
 
 
 class BaseLinkedBranch:
@@ -48,7 +48,7 @@ class ProductSeriesLinkedBranch(BaseLinkedBranch):
     adapts(IProductSeries)
     implements(ICanHasLinkedBranch)
 
-    sort_order = LinkedBranchOrder.THIRD
+    sort_order = LinkedBranchOrder.PRODUCT_SERIES
 
     def __init__(self, product_series):
         self._product_series = product_series
@@ -82,7 +82,7 @@ class ProductLinkedBranch(BaseLinkedBranch):
     adapts(IProduct)
     implements(ICanHasLinkedBranch)
 
-    sort_order = LinkedBranchOrder.FIRST
+    sort_order = LinkedBranchOrder.PRODUCT
 
     def __init__(self, product):
         self._product = product
@@ -116,7 +116,7 @@ class PackageLinkedBranch(BaseLinkedBranch):
     adapts(ISuiteSourcePackage)
     implements(ICanHasLinkedBranch)
 
-    sort_order = LinkedBranchOrder.FOURTH
+    sort_order = LinkedBranchOrder.SUITE_SOURCE_PACKAGE
 
     def __init__(self, suite_sourcepackage):
         self._suite_sourcepackage = suite_sourcepackage
@@ -125,27 +125,20 @@ class PackageLinkedBranch(BaseLinkedBranch):
         result = super(PackageLinkedBranch, self).__cmp__(other)
         if result != 0:
             return result
-        # Next compare the distribution name.
-        result = cmp(
+        # The versions are reversed as we want the greater Version to sort
+        # before the lesser one.  Hence self in the other tuple, and other in
+        # the self tuple.  Next compare the distribution name.
+        my_parts = (
             self._suite_sourcepackage.distribution.name,
-            other._suite_sourcepackage.distribution.name)
-        if result != 0:
-            return result
-        # For the distroseries, we want to reverse sort the version.
-        result = -cmp(
+            Version(other._suite_sourcepackage.distroseries.version),
+            self._suite_sourcepackage.sourcepackagename.name,
+            self._suite_sourcepackage.pocket)
+        other_parts = (
+            other._suite_sourcepackage.distribution.name,
             Version(self._suite_sourcepackage.distroseries.version),
-            Version(other._suite_sourcepackage.distroseries.version))
-        if result != 0:
-            return result
-        # Lastly we check the source package name and pocket.
-        else:
-            my_parts = (
-                self._suite_sourcepackage.sourcepackagename.name,
-                self._suite_sourcepackage.pocket)
-            other_parts = (
-                other._suite_sourcepackage.sourcepackagename.name,
-                other._suite_sourcepackage.pocket)
-            return cmp(my_parts, other_parts)
+            other._suite_sourcepackage.sourcepackagename.name,
+            other._suite_sourcepackage.pocket)
+        return cmp(my_parts, other_parts)
 
     @property
     def branch(self):
@@ -172,7 +165,7 @@ class DistributionPackageLinkedBranch(BaseLinkedBranch):
     adapts(IDistributionSourcePackage)
     implements(ICanHasLinkedBranch)
 
-    sort_order = LinkedBranchOrder.SECOND
+    sort_order = LinkedBranchOrder.DISTRIBUTION_SOURCE_PACKAGE
 
     def __init__(self, distribution_sourcepackage):
         self._distribution_sourcepackage = distribution_sourcepackage
