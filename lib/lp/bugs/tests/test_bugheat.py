@@ -96,7 +96,7 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 ICalculateBugHeatJobSource jobs.\n', stderr)
+            'INFO    Ran 1 CalculateBugHeatJob jobs.\n', stderr)
 
     def test_getOopsVars(self):
         # BugJobDerived.getOopsVars() returns the variables to be used
