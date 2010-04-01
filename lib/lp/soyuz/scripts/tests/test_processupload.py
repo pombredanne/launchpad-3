@@ -76,7 +76,7 @@ class TestProcessUpload(unittest.TestCase):
         # proper log message
         self.assertEqual(1, returncode)
         self.assertEqual(
-            ['INFO    creating lockfile',
+            ['INFO    Creating lockfile: /var/lock/process-upload-insecure.lock',
              'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use'
              ], err.splitlines())
 

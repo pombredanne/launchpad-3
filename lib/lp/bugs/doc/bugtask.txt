@@ -1104,7 +1104,7 @@ is used here.
     >>> (out, err) = process.communicate()
 
     >>> print err
-    INFO creating lockfile
+    INFO Creating lockfile: /var/lock/launchpad-launchpad-targetnamecacheupdater.lock
     INFO Updating targetname cache of bugtasks.
     INFO Updating 1 BugTasks (starting id: 2).
     INFO Updating ...BugTasks...
