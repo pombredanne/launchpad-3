@@ -546,7 +546,8 @@ different distribution and series combinations.
     >>> print err
     INFO    Setting lockfile name to
             launchpad-language-pack-exporter__ubuntu__hoary.lock.
-    INFO    creating lockfile
+    INFO    Creating lockfile:
+        /var/lock/launchpad-language-pack-exporter__ubuntu__hoary.lock
     INFO    Exporting translations for series hoary of distribution ubuntu.
     INFO    Number of PO files to export: 12
     INFO    Exporting XPI template files.
