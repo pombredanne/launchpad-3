@@ -87,13 +87,13 @@ class QueueBuilder(LaunchpadCronScript):
             self.txn = _FakeZTM()
 
         sorted_distroseries = self.calculateDistroseries()
-        archserieses = []
+        archseries = []
         # Initialize the relevant architectures (those with chroots).
         # it's needed even for 'score-only' mode.
         for series in sorted_distroseries:
-            for archseries in series.architectures:
-                if archseries.getChroot():
-                    archserieses.append(archseries)
+            for das in series.architectures:
+                if das.getChroot():
+                    archseries.append(das)
 
         if not self.options.score_only:
             # For each distroseries we care about, scan for
@@ -105,8 +105,8 @@ class QueueBuilder(LaunchpadCronScript):
 
         # Ensure all NEEDSBUILD builds have a buildqueue entry
         # and re-score them.
-        self.addMissingBuildQueueEntries(archserieses)
-        self.scoreCandidates(archserieses)
+        self.addMissingBuildQueueEntries(archseries)
+        self.scoreCandidates(archseries)
 
         self.txn.commit()
 
