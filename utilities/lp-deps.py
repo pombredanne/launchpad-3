@@ -16,12 +16,20 @@ import sys
 
 TOP = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..'))
-JS_DIRS = ['lib/lp/code/javascript']
+# JS_DIRSET is a tuple of the dir where the code exists, and the name of the
+# symlink it should be linked as in the icing build directory.
+JS_DIRSET = [
+    (os.path.join('lib', 'lp', 'code', 'javascript'), 'code'),]
+ICING_ROOT = os.path.join(TOP, 'lib', 'canonical', 'launchpad', 'icing')
+ICING_BUILD = os.path.join(ICING_ROOT, 'build')
 
-for DIR in JS_DIRS:
-    full_dir = os.path.join(TOP, DIR)
+for DIRSET in JS_DIRSET:
+    full_dir = os.path.join(TOP, DIRSET[0])
+    # We don't want the tests to be included.  If we want to nest the files in
+    # more folders though, this is where we change it.
     for filename in os.listdir(full_dir):
         if filename.endswith('.js'):
             absolute_filename = os.path.join(full_dir, filename)
             print absolute_filename
-    #TODO: Add symlink to icing build dir
+
+    os.symlink(full_dir, os.path.join(ICING_BUILD, DIRSET[1]))
