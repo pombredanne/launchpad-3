@@ -38,7 +38,7 @@ class _BaseBranchTarget:
         return self.context != other.context
 
     def newCodeImport(self, registrant, branch_name, rcs_type, url=None,
-            cvs_root=None, cvs_module=None, owner=None):
+                      cvs_root=None, cvs_module=None, owner=None):
         """See `IBranchTarget`."""
         return getUtility(ICodeImportSet).new(
             registrant, self, branch_name, rcs_type, url=url,

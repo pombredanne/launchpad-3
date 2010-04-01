@@ -121,8 +121,8 @@ class IBranchTarget(IPrimaryContext):
 
     @operation_returns_entry(Interface) # really ICodeImport
     @export_write_operation()
-    def newCodeImport(registrant, branch_name, rcs_type,
-            url=None, cvs_root=None, cvs_module=None, owner=None):
+    def newCodeImport(registrant, branch_name, rcs_type, url=None,
+                      cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import for this target.
 
         :param registrant: the `IPerson` who should be recorded as creating
