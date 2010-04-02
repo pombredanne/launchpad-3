@@ -25,7 +25,8 @@ from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
 from lp.code.interfaces.branch import IBranch
 
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    call_with, export_as_webservice_entry, exported, export_write_operation,
+    REQUEST_USER)
 from lazr.restful.fields import ReferenceChoice
 
 
@@ -177,6 +178,8 @@ class ICodeImport(Interface):
         :param user: the user who is requesting the import be tried again.
         """
 
+    @call_with(requester=REQUEST_USER)
+    @export_write_operation()
     def requestImport(requester):
         """Request that an import be tried soon."""
 

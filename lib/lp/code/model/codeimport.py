@@ -202,11 +202,10 @@ class CodeImport(SQLBase):
         """See `ICodeImport`."""
         if self.import_job is None: # not in automatic mode
            raise CodeImportNotInReviewedState("This code import is %s, and "
-                   "must be Reviewed for you to call requestImport.")
-        if (self.import_job.state !=
-              CodeImportJobState.PENDING):
-            assert (self.import_job.state ==
-                    CodeImportJobState.RUNNING)
+                   "must be Reviewed for you to call requestImport."
+                   % self.review_status.name)
+        if (self.import_job.state != CodeImportJobState.PENDING):
+            assert (self.import_job.state == CodeImportJobState.RUNNING)
             # Already running
             raise CodeImportAlreadyRunning("This code import is already "
                     "running.")
@@ -216,6 +215,7 @@ class CodeImport(SQLBase):
         else:
             getUtility(ICodeImportJobWorkflow).requestJob(
                 self.import_job, requester)
+        return None
 
 
 class CodeImportSet:

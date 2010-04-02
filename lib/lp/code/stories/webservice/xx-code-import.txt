@@ -259,3 +259,24 @@ We can't choose a branch name that has already been taken.
     HTTP/1.1 400 Bad Request ...
     A branch with the name "import" already exists for import-owner in
     scruff...
+
+== Requesting an Import ==
+
+You can request that an approved, working import happen soon over the
+API using the requestImport() method.
+
+    >>> login(ANONYMOUS)
+    >>> git_import = removeSecurityProxy(factory.makeProductCodeImport(
+    ...     registrant=person, product=product, branch_name='git-import',
+    ...     git_repo_url=factory.getUniqueURL()))
+    >>> logout()
+    >>> import_webservice = webservice_for_person(
+    ...     person, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> git_import_url = (
+    ...    '/' + git_import.branch.unique_name + '/+code-import')
+    >>> response = import_webservice.named_post(
+    ...     git_import_url, 'requestImport')
+    >>> print response.status
+    200
+    >>> print response.jsonBody()
+    None
