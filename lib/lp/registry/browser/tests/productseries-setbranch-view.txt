@@ -197,6 +197,7 @@ Git branches cannnot use svn.
 But Git branches may use git.
 
     >>> series = factory.makeProductSeries(name="chevette", product=product)
+    >>> chevette = series
     >>> transaction.commit()
     >>> form = {
     ...     'field.branch_type': 'import-external',
@@ -207,6 +208,7 @@ But Git branches may use git.
     ...     'field.actions.update': 'Update',
     ...     }
     >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> transaction.commit()
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:
@@ -314,3 +316,24 @@ CVS module field specified.
     Code import created and branch linked to the series.
     >>> print series.branch.name
     corvair-branch
+
+Attempting to import a location that has already been imported results
+in an error.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'GIT',
+    ...     'field.branch_name': 'chevette-branch-dup',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'git://github.com/chevette',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    <BLANKLINE>
+    This foreign branch URL is already specified for
+    the imported branch <a href="http://code.launchpad.dev/~.../chevy/chevette-branch">~.../chevy/chevette-branch</a>.
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message

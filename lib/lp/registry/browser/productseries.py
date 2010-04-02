@@ -845,6 +845,17 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         if repo_url is None:
             self.setFieldError('repo_url',
                                'You must set the external repository URL.')
+        else:
+            # Ensure this URL has not been imported before.
+            code_import = getUtility(ICodeImportSet).getByURL(repo_url)
+            if code_import is not None:
+                self.setFieldError(
+                    'repo_url',
+                    structured("""
+                    This foreign branch URL is already specified for
+                    the imported branch <a href="%s">%s</a>.""",
+                               canonical_url(code_import.branch),
+                               code_import.branch.unique_name))
 
         # RCS type is mandatory.
         # This condition should never happen since an initial value is set.
@@ -978,6 +989,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                     branch = self._createBzrBranch(
                         BranchType.MIRRORED, branch_name, branch_owner,
                         data['repo_url'])
+
                     if branch is not None:
                         self.context.branch = branch
                         self.request.response.addInfoNotification(
@@ -985,6 +997,8 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                             'the series.')
                 else:
                     # We need to create an import request.
+
+                    # Ensure the URL has not already been imported.
                     if rcs_type == RevisionControlSystemsExtended.CVS:
                         cvs_root = data.get('repo_url')
                         cvs_module = data.get('cvs_module')
@@ -993,17 +1007,19 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                         cvs_root = None
                         cvs_module = None
                         url = data.get('repo_url')
+                    rcs_item = RevisionControlSystems.items[rcs_type.name]
                     code_import = getUtility(ICodeImportSet).new(
                         registrant=self.user,
                         target=self.target,
                         branch_name=branch_name,
-                        rcs_type=RevisionControlSystems.items[rcs_type.name],
+                        rcs_type=rcs_item,
                         url=url,
                         cvs_root=cvs_root,
                         cvs_module=cvs_module)
                     self.context.branch = code_import.branch
                     self.request.response.addInfoNotification(
-                        'Code import created and branch linked to the series.')
+                        'Code import created and branch linked to the '
+                        'series.')
             else:
                 raise UnexpectedFormData(branch_type)
 
