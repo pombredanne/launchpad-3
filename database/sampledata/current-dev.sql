@@ -775,6 +775,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'mark_oid', NULL, '123/mark');
@@ -854,6 +860,8 @@ INSERT INTO account (id, date_created, creation_rationale, status, date_status_s
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243634, '2009-08-24 14:36:04.670944', 1, 20, '2009-08-24 14:36:04.670944', 'Epiphany Maintainer', 'HHN3kCp', 'Activated when the preferred email was set.', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243635, '2009-08-24 14:39:04.682972', 1, 20, '2009-08-24 14:39:04.682972', 'intltool maintainer', 'NbFGnBx', 'Activated when the preferred email was set.', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243636, '2009-08-24 14:41:04.403504', 1, 20, '2009-08-24 14:41:04.403504', 'Lies Maintainer', 'e3eENYJ', 'Activated when the preferred email was set.', NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243637, '2010-03-21 16:37:00.097121', 1, 20, '2010-03-21 16:37:00.097121', 'Ppa-user', 'AdzdTBA', 'Activated when the preferred email was set.', NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243638, '2010-03-21 16:40:52.504463', 7, 10, '2010-03-21 16:40:52.504463', 'Santiago Vila', 'pD7XQny', NULL, NULL);
 
 
 ALTER TABLE account ENABLE TRIGGER ALL;
@@ -924,6 +932,7 @@ INSERT INTO accountpassword (id, account, password) VALUES (243636, 243633, 'BnG
 INSERT INTO accountpassword (id, account, password) VALUES (243637, 243634, 'j4OCnhO4rzPbvyJgeHYEGXe8FpfWYMsCsRvxb9wZVBUHsCfiUP/XvQ==');
 INSERT INTO accountpassword (id, account, password) VALUES (243638, 243635, 'MUDYvi+UgO8wUqxwhd9br4tXTgxPpcloU5EUW5BRTNUKUS2ac+hG7A==');
 INSERT INTO accountpassword (id, account, password) VALUES (243639, 243636, 'Q/4V+DAYdXXoCoQiSchF9DkfA4ntWhmkJhmzcmYmylpEnlbiZfvyIA==');
+INSERT INTO accountpassword (id, account, password) VALUES (243640, 243637, 'R8LC6MbIoRPDggGnD6Er3tX3VcTigtjn/n3pvfbdXtOJBWzXWL0gIA==');
 
 
 ALTER TABLE accountpassword ENABLE TRIGGER ALL;
@@ -1006,18 +1015,20 @@ ALTER TABLE apportjob ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (1, 17, NULL, true, NULL, 1, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:12.241774', 15, 1, 8, 5, 1, '2008-09-23 17:29:03.442606', NULL, NULL, NULL, 'Primary Archive for Ubuntu Linux', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (2, 1, NULL, true, NULL, 2, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.863812', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.445921', NULL, NULL, NULL, 'Primary Archive for Redhat Advanced Server', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (3, 1, NULL, true, NULL, 3, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.864941', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.446557', NULL, NULL, NULL, 'Primary Archive for Debian GNU/Linux', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (4, 1, NULL, true, NULL, 4, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.865502', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.44689', NULL, NULL, NULL, 'Primary Archive for The Gentoo Linux', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (5, 1, NULL, true, NULL, 5, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866015', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447202', NULL, NULL, NULL, 'Primary Archive for Kubuntu - Free KDE-based Linux', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (7, 4, NULL, true, NULL, 7, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866529', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447515', NULL, NULL, NULL, 'Primary Archive for GuadaLinex: Linux for Andalucia', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (8, 17, NULL, true, NULL, 8, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.867154', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447851', NULL, NULL, NULL, 'Primary Archive for Ubuntu Test', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (9, 28, 'packages to help my friends.', true, 1024, 1, 2, false, 3, 3, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.867684', 4, 0, 3, 1, 0, '2008-09-23 17:29:03.448178', NULL, NULL, NULL, 'PPA for Celso Providelo', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, 1, 2, false, 1, 1, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.868202', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.448488', NULL, NULL, NULL, 'PPA for Mark Shuttleworth', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, 1, 2, false, 0, 0, NULL, NULL, NULL, true, 'ppa', true, '2008-05-27 18:15:15.868709', 1, 0, 0, 1, 0, '2008-09-23 17:29:03.448797', NULL, NULL, NULL, 'PPA for No Privileges Person', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (12, 17, 'Partner archive', true, NULL, 1, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869209', 1, 0, 1, 0, 0, '2008-09-23 17:29:03.449157', NULL, NULL, NULL, 'Partner Archive for Ubuntu Linux', 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies) VALUES (13, 17, 'Partner archive', true, NULL, 8, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869732', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.449471', NULL, NULL, NULL, 'Partner Archive for Ubuntu Test', 0, NULL);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (1, 17, NULL, true, NULL, 1, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:12.241774', 15, 1, 8, 5, 1, '2008-09-23 17:29:03.442606', NULL, NULL, NULL, 'Primary Archive for Ubuntu Linux', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (2, 1, NULL, true, NULL, 2, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.863812', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.445921', NULL, NULL, NULL, 'Primary Archive for Redhat Advanced Server', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (3, 1, NULL, true, NULL, 3, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.864941', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.446557', NULL, NULL, NULL, 'Primary Archive for Debian GNU/Linux', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (4, 1, NULL, true, NULL, 4, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.865502', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.44689', NULL, NULL, NULL, 'Primary Archive for The Gentoo Linux', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (5, 1, NULL, true, NULL, 5, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866015', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447202', NULL, NULL, NULL, 'Primary Archive for Kubuntu - Free KDE-based Linux', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (7, 4, NULL, true, NULL, 7, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866529', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447515', NULL, NULL, NULL, 'Primary Archive for GuadaLinex: Linux for Andalucia', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (8, 17, NULL, true, NULL, 8, 1, false, NULL, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.867154', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.447851', NULL, NULL, NULL, 'Primary Archive for Ubuntu Test', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (9, 28, 'packages to help my friends.', true, 1024, 1, 2, false, 3, 3, NULL, NULL, NULL, true, 'ppa', false, '2008-05-27 18:15:15.867684', 4, 0, 3, 1, 0, '2008-09-23 17:29:03.448178', NULL, NULL, NULL, 'PPA for Celso Providelo', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, 1, 2, false, 1, 1, NULL, NULL, NULL, true, 'ppa', false, '2008-05-27 18:15:15.868202', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.448488', NULL, NULL, NULL, 'PPA for Mark Shuttleworth', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, 1, 2, false, 0, 0, NULL, NULL, NULL, true, 'ppa', false, '2008-05-27 18:15:15.868709', 1, 0, 0, 1, 0, '2008-09-23 17:29:03.448797', NULL, NULL, NULL, 'PPA for No Privileges Person', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (12, 17, 'Partner archive', true, NULL, 1, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869209', 1, 0, 1, 0, 0, '2008-09-23 17:29:03.449157', NULL, NULL, NULL, 'Partner Archive for Ubuntu Linux', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (13, 17, 'Partner archive', true, NULL, 8, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869732', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.449471', NULL, NULL, NULL, 'Partner Archive for Ubuntu Test', 0, NULL, 0);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status) VALUES (14, 243651, 'Automatically created test PPA.', true, 1024, 1, 2, false, 0, 0, NULL, NULL, NULL, false, 'test-ppa', true, '2010-03-21 16:37:03.438124', 0, 0, 0, 0, 0, '2010-03-21 16:37:03.438124', NULL, NULL, NULL, 'PPA named test-ppa for Ppa-user', 0, 'deb http://archive.ubuntu.com/ubuntu lucid main restricted universe multiverse
+', 0);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -1064,6 +1075,8 @@ INSERT INTO archivepermission (id, date_created, person, permission, archive, co
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (16, '2006-10-16 18:31:43.465111', 12, 2, 1, 4, NULL, NULL, false);
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (17, '2006-10-16 18:31:43.465111', 243602, 2, 1, 3, NULL, NULL, false);
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (18, '2006-10-16 18:31:43.465111', 243602, 2, 1, 4, NULL, NULL, false);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (19, '2010-03-21 16:36:52.135353', 17, 1, 1, 4, NULL, NULL, false);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (20, '2010-03-21 16:36:52.135353', 17, 2, 1, 4, NULL, NULL, false);
 
 
 ALTER TABLE archivepermission ENABLE TRIGGER ALL;
@@ -1116,31 +1129,31 @@ ALTER TABLE binarypackagename ENABLE TRIGGER ALL;
 
 ALTER TABLE binarypackagepublishinghistory DISABLE TRIGGER ALL;
 
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (9, 12, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-18 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (9, 12, 1, 4, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-18 00:00:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (11, 15, 6, 3, 1, 3, 40, '2005-05-05 00:00:00', '2005-05-05 00:01:00', '2006-01-25 00:00:00', 7, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (12, 15, 6, 2, 3, 3, 40, '2006-01-25 00:00:00', '2006-01-25 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (12, 15, 6, 4, 3, 3, 40, '2006-01-25 00:00:00', '2006-01-25 00:01:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (13, 15, 1, 3, 3, 3, 40, '2006-01-26 00:00:00', '2006-01-26 00:01:00', '2007-09-13 00:00:01', NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (14, 15, 7, 3, 3, 3, 40, '2006-01-26 00:00:00', '2006-01-26 00:01:00', '2006-01-28 00:00:00', NULL, NULL, NULL, NULL, 0, 3, NULL, NULL);
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (15, 12, 7, 2, 3, 3, 40, '2006-01-26 00:00:00', '2006-01-26 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, 3, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (16, 15, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-24 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (17, 16, 1, 2, 1, 1, 10, '2005-07-06 00:00:00', '2005-08-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (16, 15, 1, 4, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-24 00:01:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (17, 16, 1, 4, 1, 1, 10, '2005-07-06 00:00:00', '2005-08-20 00:00:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (18, 17, 1, 3, 1, 1, 10, '2005-08-07 00:00:00', '2005-08-22 00:00:00', '2005-08-22 00:00:01', NULL, NULL, '2005-08-22 00:00:02', '2005-08-23 00:00:00', 0, 1, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (19, 18, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (20, 17, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (21, 18, 11, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (19, 18, 1, 4, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (20, 17, 1, 4, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:01:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (21, 18, 11, 4, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (22, 20, 8, 4, 1, 1, 40, '2006-09-13 00:00:00', '2006-09-13 00:00:01', '2006-09-13 00:00:01', NULL, NULL, '2006-09-13 00:00:02', '2006-09-13 00:00:03', 0, 1, 1, 'nah ...');
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (23, 6, 1, 4, 1, 1, 40, '2006-12-01 00:00:00', '2006-12-01 00:00:01', '2006-12-01 00:00:01', NULL, NULL, '2006-12-01 00:00:02', '2006-12-01 00:00:03', 0, 1, 28, 'I do not like it either');
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (24, 21, 1, 2, 1, 1, 40, '2006-12-01 00:00:00', '2006-12-01 00:00:01', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (24, 21, 1, 4, 1, 1, 40, '2006-12-01 00:00:00', '2006-12-01 00:00:01', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (25, 12, 1, 2, 1, 1, 10, '2007-01-19 00:00:00', '2007-02-19 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, 8, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (26, 22, 1, 2, 1, 1, 40, '2006-04-11 13:00:00', '2006-04-11 13:00:01', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (26, 22, 1, 4, 1, 1, 40, '2006-04-11 13:00:00', '2006-04-11 13:00:01', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (27, 22, 1, 2, 1, 1, 40, '2007-07-10 13:00:00', '2007-07-10 13:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL);
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (28, 23, 1, 2, 1, 1, 40, '2007-07-10 13:00:00', '2007-07-10 13:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL);
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (29, 23, 12, 2, 1, 1, 40, '2007-07-10 13:00:00', '2007-07-10 13:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL);
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (30, 24, 12, 2, 1, 1, 40, '2007-08-10 13:00:00', '2007-08-10 13:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (31, 25, 8, 2, 5, 7, 20, '2007-08-09 21:55:39.561526', '2007-08-09 21:56:39.561526', NULL, NULL, NULL, NULL, NULL, 0, 12, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (32, 26, 12, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-18 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (33, 27, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-18 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (34, 27, 12, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-18 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (31, 25, 8, 4, 5, 7, 20, '2007-08-09 21:55:39.561526', '2007-08-09 21:56:39.561526', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 12, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (32, 26, 12, 4, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-18 00:00:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (33, 27, 1, 4, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-18 00:00:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (34, 27, 12, 4, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-18 00:00:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO binarypackagepublishinghistory (id, binarypackagerelease, distroarchseries, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (35, 24, 12, 2, 1, 1, 40, '2007-08-10 13:00:00', '2007-08-10 13:00:01', NULL, NULL, NULL, NULL, NULL, 0, 10, NULL, NULL);
 
 
@@ -1167,6 +1180,13 @@ INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, descr
 
 
 ALTER TABLE binarypackagerelease ENABLE TRIGGER ALL;
+
+
+ALTER TABLE binarypackagereleasedownloadcount DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE binarypackagereleasedownloadcount ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bounty DISABLE TRIGGER ALL;
@@ -1715,21 +1735,28 @@ ALTER TABLE bugtrackerperson ENABLE TRIGGER ALL;
 
 ALTER TABLE bugwatch DISABLE TRIGGER ALL;
 
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (2, 1, 1, '2000', '', '2004-10-04 01:00:00', '2004-10-04 01:00:00', '2004-10-04 01:00:00', 1, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (5, 1, 1, '42', 'FUBAR', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (6, 9, 4, '1234', NULL, '2006-02-23 16:43:25.744534', NULL, '2006-02-23 16:43:25.744534', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (7, 7, 3, '280883', NULL, '2006-03-29 16:45:45.054836', NULL, '2006-03-29 16:45:45.054836', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (11, 15, 3, '308994', 'open important', '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641', '2007-12-18 16:30:47.889614', 16, NULL, 'UNKNOWN', NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (12, 15, 2, '304070', NULL, NULL, NULL, '2007-12-18 16:31:34.790641', 243614, 2, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (2, 1, 1, '2000', '', '2004-10-04 01:00:00', '2004-10-04 01:00:00', '2004-10-04 01:00:00', 1, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (5, 1, 1, '42', 'FUBAR', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (6, 9, 4, '1234', NULL, '2006-02-23 16:43:25.744534', NULL, '2006-02-23 16:43:25.744534', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (7, 7, 3, '280883', NULL, '2006-03-29 16:45:45.054836', NULL, '2006-03-29 16:45:45.054836', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (11, 15, 3, '308994', 'open important', '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641', '2007-12-18 16:30:47.889614', 16, NULL, 'UNKNOWN', NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (12, 15, 2, '304070', NULL, NULL, NULL, '2007-12-18 16:31:34.790641', 243614, 2, NULL, NULL, NULL);
 
 
 ALTER TABLE bugwatch ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugwatchactivity DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugwatchactivity ENABLE TRIGGER ALL;
 
 
 ALTER TABLE build DISABLE TRIGGER ALL;
@@ -1885,6 +1912,44 @@ INSERT INTO componentselection (id, distroseries, component, date_created) VALUE
 INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (12, 1, 3, '2006-10-16 18:31:43.262049');
 INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (13, 10, 5, '2007-06-24 13:12:05.04436');
 INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (14, 11, 5, '2007-06-24 13:12:10.692827');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (15, 3, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (16, 3, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (17, 14, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (18, 14, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (19, 14, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (20, 14, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (21, 15, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (22, 15, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (23, 15, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (24, 15, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (25, 16, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (26, 16, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (27, 16, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (28, 16, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (29, 17, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (30, 17, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (31, 17, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (32, 17, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (33, 18, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (34, 18, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (35, 18, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (36, 18, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (37, 19, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (38, 19, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (39, 19, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (40, 19, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (41, 20, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (42, 20, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (43, 20, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (44, 20, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (45, 21, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (46, 21, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (47, 21, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (48, 21, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (49, 22, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (50, 22, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (51, 22, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (52, 22, 4, '2010-03-21 16:36:52.135353');
 
 
 ALTER TABLE componentselection ENABLE TRIGGER ALL;
@@ -2236,7 +2301,7 @@ ALTER TABLE diff ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
+INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntu
@@ -2245,21 +2310,21 @@ distsroot=/var/tmp/archive/ubuntu/dists
 overrideroot=/var/tmp/archive/ubuntu-overrides
 cacheroot=/var/tmp/archive/ubuntu-cache
 miscroot=/var/tmp/archive/ubuntu-misc
-', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, 3, 100, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL, true, NULL, true, true, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, 3, 100, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL, true, NULL, true, true, NULL, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, 2, 200, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, 2, 200, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
+Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, owner, lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntutest
@@ -2268,7 +2333,7 @@ distsroot=/var/tmp/archive/ubuntutest/dists
 overrideroot=/var/tmp/archive/ubuntutest-overrides
 cacheroot=/var/tmp/archive/ubuntutest-cache
 miscroot=/var/tmp/archive/ubuntutest-misc
-', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL);
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL);
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -2344,6 +2409,34 @@ INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag
 INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true);
 INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false);
 INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (13, 3, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (14, 14, 1, 'i386', 1, true, 0, '2010-03-21 16:36:52.135353', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (15, 14, 4, 'hppa', 1, false, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (16, 14, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (17, 15, 4, 'hppa', 1, false, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (18, 15, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (19, 15, 1, 'i386', 1, true, 0, '2010-03-21 16:36:52.135353', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (20, 16, 4, 'hppa', 1, false, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (21, 16, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (22, 16, 1, 'i386', 1, true, 0, '2010-03-21 16:36:52.135353', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (23, 17, 4, 'hppa', 1, false, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (24, 17, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (25, 17, 1, 'i386', 1, true, 0, '2010-03-21 16:36:52.135353', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (26, 18, 4, 'hppa', 1, false, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (27, 18, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (28, 18, 1, 'i386', 1, true, 0, '2010-03-21 16:36:52.135353', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (29, 19, 4, 'hppa', 1, false, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (30, 19, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (31, 19, 1, 'i386', 1, true, 0, '2010-03-21 16:36:52.135353', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (32, 20, 4, 'hppa', 1, false, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (33, 20, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (34, 20, 1, 'i386', 1, true, 0, '2010-03-21 16:36:52.135353', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (35, 21, 4, 'hppa', 1, false, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (36, 21, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (37, 21, 1, 'i386', 1, true, 0, '2010-03-21 16:36:52.135353', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (38, 22, 4, 'hppa', 1, false, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (39, 22, 3, 'amd64', 1, true, 0, '2010-03-21 16:36:52.135353', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized) VALUES (40, 22, 1, 'i386', 1, true, 0, '2010-03-21 16:36:52.135353', true);
 
 
 ALTER TABLE distroarchseries ENABLE TRIGGER ALL;
@@ -2363,19 +2456,21 @@ ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
 
 ALTER TABLE distroseries DISABLE TRIGGER ALL;
 
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (1, 1, 'warty', 'The Warty Warthog Release', 'Warty was the first stable release of Ubuntu. Key feature goals included releasing on time, with the latest version of the Gnome Desktop Environment, and the creation of all the infrastructure required to manage Ubuntu itself. Warty includes excellent support for Python, with most of the widely used Python libraries installed by default.', '4.10', 4, '2004-08-20 00:00:00', NULL, 17, NULL, 'Warty is the first release of Ubuntu, with a planned release date of October 2004.', 'Warty', NULL, 0, 1, 'warty-changes@ubuntu.com', 4, 3, NULL, '2006-10-16 18:31:43.475428', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (1, 1, 'warty', 'The Warty Warthog Release', 'Warty was the first stable release of Ubuntu. Key feature goals included releasing on time, with the latest version of the Gnome Desktop Environment, and the creation of all the infrastructure required to manage Ubuntu itself. Warty includes excellent support for Python, with most of the widely used Python libraries installed by default.', '4.10', 6, '2004-08-20 00:00:00', NULL, 17, '[publishing]
+components = main restricted universe multiverse', 'Warty is the first release of Ubuntu, with a planned release date of October 2004.', 'Warty', NULL, 0, 1, 'warty-changes@ubuntu.com', 4, 3, NULL, '2006-10-16 18:31:43.475428', false, false, NULL, NULL, NULL, false);
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'Six', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.482603', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 2, NULL, 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'Hoary', NULL, 96, 6, 'hoary-changes@ubuntu.com', 1, 4, NULL, '2006-10-16 18:31:43.483559', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 6, NULL, 1, 1, '[publishing]
+components = main restricted universe multiverse', 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'Hoary', NULL, 96, 6, 'hoary-changes@ubuntu.com', 1, 4, NULL, '2006-10-16 18:31:43.483559', false, false, NULL, NULL, NULL, false);
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 3, NULL, 2, 7, NULL, 'The release that we would not expect', '7.0', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.484426', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (5, 1, 'grumpy', 'The Grumpy Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet in active development. This information is purely a placeholder.', '5.10', 1, NULL, 1, 1, NULL, 'Grumpy is the third release of Ubuntu, planned for October 2005.', 'Grumpy', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.485233', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (5, 1, 'grumpy', 'The Grumpy Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet in active development. This information is purely a placeholder.', '5.10', 6, NULL, 1, 1, '[publishing]
+components = main restricted universe multiverse', 'Grumpy is the third release of Ubuntu, planned for October 2005.', 'Grumpy', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.485233', false, false, NULL, NULL, NULL, false);
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'Woody', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.486054', false, false, NULL, NULL, NULL, false);
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 3, NULL, 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'Sarge', NULL, 0, NULL, NULL, 0, 0, 6, '2006-10-16 18:31:43.486972', false, false, NULL, NULL, NULL, false);
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, NULL, 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'Sid', NULL, 0, NULL, NULL, 0, 1, NULL, '2006-10-16 18:31:43.487779', false, false, NULL, NULL, NULL, false);
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
 Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.488598', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, NULL, 3, 1, '[publishing]
-components = main restricted universe multiverse
-', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubuntu.com', 0, 0, NULL, '2006-10-16 18:31:43.489468', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 6, NULL, 3, 1, '[publishing]
+components = main restricted universe multiverse', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubuntu.com', 0, 0, NULL, '2006-10-16 18:31:43.489468', false, false, NULL, NULL, NULL, false);
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, NULL, 1, 1, '[publishing]
 components = main restricted universe multiverse
 ', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.490333', false, false, NULL, NULL, NULL, false);
@@ -2383,6 +2478,24 @@ INSERT INTO distroseries (id, distribution, name, title, description, version, r
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (13, 8, 'hoary-test', 'Mock Hoary', 'nothing special', '9.9.9', 1, NULL, 1, 1, '[publishing]
 components = main restricted universe multiverse
 ', 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.492845', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (14, 1, 'dapper', 'The Dapper Drake', '6.06 is awesome.', '6.06', 5, NULL, 3, 1, '[publishing]
+components = main restricted universe multiverse', 'Ubuntu 6.06 is good.', 'Dapper', NULL, 0, 14, NULL, 0, 0, NULL, '2010-03-21 16:36:52.135353', true, true, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (15, 1, 'edgy', 'The Edgy Eft', '6.10 is awesome.', '6.10', 6, NULL, 14, 1, '[publishing]
+components = main restricted universe multiverse', 'Ubuntu 6.10 is good.', 'Edgy', NULL, 0, 19, NULL, 0, 0, NULL, '2010-03-21 16:36:52.135353', true, true, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (16, 1, 'feisty', 'The Feisty Fawn', '7.04 is awesome.', '7.04', 6, NULL, 15, 1, '[publishing]
+components = main restricted universe multiverse', 'Ubuntu 7.04 is good.', 'Feisty', NULL, 0, 22, NULL, 0, 0, NULL, '2010-03-21 16:36:52.135353', true, true, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (17, 1, 'gutsy', 'The Gutsy Gibbon', '7.10 is awesome.', '7.10', 6, NULL, 16, 1, '[publishing]
+components = main restricted universe multiverse', 'Ubuntu 7.10 is good.', 'Gutsy', NULL, 0, 25, NULL, 0, 0, NULL, '2010-03-21 16:36:52.135353', true, true, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (18, 1, 'hardy', 'The Hardy Heron', '8.04 is awesome.', '8.04', 5, NULL, 17, 1, '[publishing]
+components = main restricted universe multiverse', 'Ubuntu 8.04 is good.', 'Hardy', NULL, 0, 28, NULL, 0, 0, NULL, '2010-03-21 16:36:52.135353', true, true, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (19, 1, 'intrepid', 'The Intrepid Ibex', '8.10 is awesome.', '8.10', 5, NULL, 18, 1, '[publishing]
+components = main restricted universe multiverse', 'Ubuntu 8.10 is good.', 'Intrepid', NULL, 0, 31, NULL, 0, 0, NULL, '2010-03-21 16:36:52.135353', true, true, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (20, 1, 'jaunty', 'The Jaunty Jackalope', '9.04 is awesome.', '9.04', 5, NULL, 19, 1, '[publishing]
+components = main restricted universe multiverse', 'Ubuntu 9.04 is good.', 'Jaunty', NULL, 0, 34, NULL, 0, 0, NULL, '2010-03-21 16:36:52.135353', true, true, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (21, 1, 'karmic', 'The Karmic Koala', '9.10 is awesome.', '9.10', 4, NULL, 20, 1, '[publishing]
+components = main restricted universe multiverse', 'Ubuntu 9.10 is good.', 'Karmic', NULL, 0, 37, NULL, 0, 0, NULL, '2010-03-21 16:36:52.135353', true, true, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (22, 1, 'lucid', 'The Lucid Lynx', '10.04 is awesome.', '10.04', 2, NULL, 21, 1, '[publishing]
+components = main restricted universe multiverse', 'Ubuntu 10.04 is good.', 'Lucid', NULL, 0, 40, NULL, 0, 0, NULL, '2010-03-21 16:36:52.135353', true, true, NULL, NULL, NULL, false);
 
 
 ALTER TABLE distroseries ENABLE TRIGGER ALL;
@@ -2519,6 +2632,8 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (90, 'epiphany-maintainer@example.com', 243648, 4, '2009-08-24 14:36:04.670944', 243634);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (91, 'intltool-maintainer@example.com', 243649, 4, '2009-08-24 14:39:04.682972', 243635);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (92, 'lies@example.com', 243650, 4, '2009-08-24 14:41:04.403504', 243636);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (93, 'test@launchpad.dev', 243651, 4, '2010-03-21 16:37:00.097121', 243637);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (94, 'sanvila@debian.org', 243652, 1, '2010-03-21 16:40:52.504463', 243638);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -2632,6 +2747,8 @@ ALTER TABLE flatpackagesetinclusion ENABLE TRIGGER ALL;
 ALTER TABLE gpgkey DISABLE TRIGGER ALL;
 
 INSERT INTO gpgkey (id, owner, keyid, fingerprint, active, algorithm, keysize, can_encrypt, date_created) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024, true, '2006-10-16 18:31:43.631499');
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, active, algorithm, keysize, can_encrypt, date_created) VALUES (2, 243651, '90A7B996', 'C13FCD9A94FCCEE3B75277D075545A4890A7B996', true, 1, 2048, true, '2010-03-21 16:37:00.153872');
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, active, algorithm, keysize, can_encrypt, date_created) VALUES (3, 243651, '00000001', '00000001AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', true, 1, 2, false, '2010-03-21 16:37:03.438124');
 
 
 ALTER TABLE gpgkey ENABLE TRIGGER ALL;
@@ -3815,6 +3932,31 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (90, 90, 'pmount_1.0-1_all.deb', 'application/x-debian-package', NULL, '2008-05-08 10:15:32.440132', '2008-05-08 10:10:27.899028', false, 0);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (91, 91, 'upload_22_log.txt', 'application/text', NULL, '2008-07-07 22:30:01.123456', '2008-07-07 22:30:01.123456', false, 0);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (92, 92, 'sample-submission-2.xml', 'application/x-bzip2', NULL, '2008-09-30 08:19:00.222131', '2008-09-30 08:19:00.222131', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (93, 93, 'hello_2.4-3_source.changes', 'text/plain', NULL, '2010-03-21 16:40:52.468708', '2010-03-21 16:40:52.468708', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (94, 94, 'changelog', 'text/x-debian-source-changelog', NULL, '2010-03-21 16:40:52.468708', '2010-03-21 16:40:52.468708', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (95, 95, 'hello_2.4.orig.tar.gz', 'application/gzipped-tar', NULL, '2010-03-21 16:40:52.468708', '2010-03-21 16:40:52.468708', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (96, 96, 'hello_2.4-3.diff.gz', 'application/gzipped-patch', NULL, '2010-03-21 16:40:52.468708', '2010-03-21 16:40:52.468708', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (97, 97, 'hello_2.4-3.dsc', 'text/x-debian-source-package', NULL, '2010-03-21 16:40:52.468708', '2010-03-21 16:40:52.468708', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (98, 98, 'hello_2.4-3_source.changes', 'text/plain', NULL, '2010-03-21 16:40:53.242249', '2010-03-21 16:40:53.242249', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (99, 99, 'changelog', 'text/x-debian-source-changelog', NULL, '2010-03-21 16:40:53.242249', '2010-03-21 16:40:53.242249', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (100, 100, 'hello_2.4.orig.tar.gz', 'application/gzipped-tar', NULL, '2010-03-21 16:40:53.242249', '2010-03-21 16:40:53.242249', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (101, 101, 'hello_2.4-3.diff.gz', 'application/gzipped-patch', NULL, '2010-03-21 16:40:53.242249', '2010-03-21 16:40:53.242249', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (102, 102, 'hello_2.4-3.dsc', 'text/x-debian-source-package', NULL, '2010-03-21 16:40:53.242249', '2010-03-21 16:40:53.242249', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (103, 103, 'hello_2.4-3_source.changes', 'text/plain', NULL, '2010-03-21 16:40:55.270048', '2010-03-21 16:40:55.270048', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (104, 104, 'changelog', 'text/x-debian-source-changelog', NULL, '2010-03-21 16:40:55.270048', '2010-03-21 16:40:55.270048', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (105, 105, 'hello_2.4.orig.tar.gz', 'application/gzipped-tar', NULL, '2010-03-21 16:40:55.270048', '2010-03-21 16:40:55.270048', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (106, 106, 'hello_2.4-3.diff.gz', 'application/gzipped-patch', NULL, '2010-03-21 16:40:55.270048', '2010-03-21 16:40:55.270048', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (107, 107, 'hello_2.4-3.dsc', 'text/x-debian-source-package', NULL, '2010-03-21 16:40:55.270048', '2010-03-21 16:40:55.270048', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (108, 108, 'hello_2.4-3_source.changes', 'text/plain', NULL, '2010-03-21 16:40:56.808105', '2010-03-21 16:40:56.808105', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (109, 109, 'changelog', 'text/x-debian-source-changelog', NULL, '2010-03-21 16:40:56.808105', '2010-03-21 16:40:56.808105', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (110, 110, 'hello_2.4.orig.tar.gz', 'application/gzipped-tar', NULL, '2010-03-21 16:40:56.808105', '2010-03-21 16:40:56.808105', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (111, 111, 'hello_2.4-3.diff.gz', 'application/gzipped-patch', NULL, '2010-03-21 16:40:56.808105', '2010-03-21 16:40:56.808105', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (112, 112, 'hello_2.4-3.dsc', 'text/x-debian-source-package', NULL, '2010-03-21 16:40:56.808105', '2010-03-21 16:40:56.808105', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (113, 113, 'hello_2.4-3_source.changes', 'text/plain', NULL, '2010-03-21 16:40:58.942507', '2010-03-21 16:40:58.942507', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (114, 114, 'changelog', 'text/x-debian-source-changelog', NULL, '2010-03-21 16:40:58.942507', '2010-03-21 16:40:58.942507', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (115, 115, 'hello_2.4.orig.tar.gz', 'application/gzipped-tar', NULL, '2010-03-21 16:40:58.942507', '2010-03-21 16:40:58.942507', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (116, 116, 'hello_2.4-3.diff.gz', 'application/gzipped-patch', NULL, '2010-03-21 16:40:58.942507', '2010-03-21 16:40:58.942507', false, 0);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted, hits) VALUES (117, 117, 'hello_2.4-3.dsc', 'text/x-debian-source-package', NULL, '2010-03-21 16:40:58.942507', '2010-03-21 16:40:58.942507', false, 0);
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3909,6 +4051,31 @@ INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VA
 INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (90, '2008-05-08 10:10:16.866444', 18, '0c805a60b31058a1018680f99447033dcb9d4caa', '8a8a67b8dbc5f203ae8712092c68c7aa', NULL);
 INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (91, '2008-07-07 22:30:01.123456', 10, '0c805a60b31058a1018680f99447033dcb9d4c01', '8a8a67b8dbc5f203ae8712092c68c701', NULL);
 INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (92, '2008-09-30 08:19:00.222131', 10, 'f10e2821bbbea527ea02200352313bc059445190', '7815696ecbf1c96e6894b779456d330e', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (93, '2010-03-21 16:40:52.468708', 1698, 'a894138c09bc49182f4f70368d3436ce254db1c3', '456e2055f980f56163423b5ae61dd1ba', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (94, '2010-03-21 16:40:52.468708', 9384, '4298df8dc91044112f33febac673524fab1d04b9', '9443d7940112cb5f00f864de4f318e5d', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (95, '2010-03-21 16:40:52.468708', 499638, 'fcbf0264928900adf03a7797474375e1a6fa3836', '1691faa758ca41c70b6da5501bdf230a', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (96, '2010-03-21 16:40:52.468708', 5739, '6de5cf470583cdbf2947d16aa4f10e3028839391', '0a267ee8ef148e91d06c3750ec79ca85', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (97, '2010-03-21 16:40:52.468708', 1173, '20353964f353c348956c88e7bd2af180a9ab665f', '63e41c55fd6e4909ff181c85538416a9', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (98, '2010-03-21 16:40:53.242249', 1698, '1b228d4b27ea16a65ae708669846095fb40c9172', 'aa20edb67b9ba280f8ecefe6118534bd', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (99, '2010-03-21 16:40:53.242249', 9384, '4298df8dc91044112f33febac673524fab1d04b9', '9443d7940112cb5f00f864de4f318e5d', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (100, '2010-03-21 16:40:53.242249', 499638, 'fcbf0264928900adf03a7797474375e1a6fa3836', '1691faa758ca41c70b6da5501bdf230a', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (101, '2010-03-21 16:40:53.242249', 5739, '6de5cf470583cdbf2947d16aa4f10e3028839391', '0a267ee8ef148e91d06c3750ec79ca85', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (102, '2010-03-21 16:40:53.242249', 1173, '6d9a9191d822a7d935d5eb2e68f75130e7f450ec', 'cf0607fdf8e6103db833164806da3d0b', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (103, '2010-03-21 16:40:55.270048', 1698, '1b228d4b27ea16a65ae708669846095fb40c9172', 'aa20edb67b9ba280f8ecefe6118534bd', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (104, '2010-03-21 16:40:55.270048', 9384, '4298df8dc91044112f33febac673524fab1d04b9', '9443d7940112cb5f00f864de4f318e5d', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (105, '2010-03-21 16:40:55.270048', 499638, 'fcbf0264928900adf03a7797474375e1a6fa3836', '1691faa758ca41c70b6da5501bdf230a', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (106, '2010-03-21 16:40:55.270048', 5739, '6de5cf470583cdbf2947d16aa4f10e3028839391', '0a267ee8ef148e91d06c3750ec79ca85', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (107, '2010-03-21 16:40:55.270048', 1173, '6d9a9191d822a7d935d5eb2e68f75130e7f450ec', 'cf0607fdf8e6103db833164806da3d0b', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (108, '2010-03-21 16:40:56.808105', 1698, '1b228d4b27ea16a65ae708669846095fb40c9172', 'aa20edb67b9ba280f8ecefe6118534bd', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (109, '2010-03-21 16:40:56.808105', 9384, '4298df8dc91044112f33febac673524fab1d04b9', '9443d7940112cb5f00f864de4f318e5d', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (110, '2010-03-21 16:40:56.808105', 499638, 'fcbf0264928900adf03a7797474375e1a6fa3836', '1691faa758ca41c70b6da5501bdf230a', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (111, '2010-03-21 16:40:56.808105', 5739, '6de5cf470583cdbf2947d16aa4f10e3028839391', '0a267ee8ef148e91d06c3750ec79ca85', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (112, '2010-03-21 16:40:56.808105', 1173, '6d9a9191d822a7d935d5eb2e68f75130e7f450ec', 'cf0607fdf8e6103db833164806da3d0b', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (113, '2010-03-21 16:40:58.942507', 1698, '1b228d4b27ea16a65ae708669846095fb40c9172', 'aa20edb67b9ba280f8ecefe6118534bd', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (114, '2010-03-21 16:40:58.942507', 9384, '4298df8dc91044112f33febac673524fab1d04b9', '9443d7940112cb5f00f864de4f318e5d', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (115, '2010-03-21 16:40:58.942507', 499638, 'fcbf0264928900adf03a7797474375e1a6fa3836', '1691faa758ca41c70b6da5501bdf230a', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (116, '2010-03-21 16:40:58.942507', 5739, '6de5cf470583cdbf2947d16aa4f10e3028839391', '0a267ee8ef148e91d06c3750ec79ca85', NULL);
+INSERT INTO libraryfilecontent (id, datecreated, filesize, sha1, md5, sha256) VALUES (117, '2010-03-21 16:40:58.942507', 1173, '6d9a9191d822a7d935d5eb2e68f75130e7f450ec', 'cf0607fdf8e6103db833164806da3d0b', NULL);
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3929,6 +4096,92 @@ INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype
 
 
 ALTER TABLE logintoken ENABLE TRIGGER ALL;
+
+
+ALTER TABLE lp_account DISABLE TRIGGER ALL;
+
+INSERT INTO lp_account (id, openid_identifier) VALUES (1, 'mark_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2, 'lifeless_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (3, 'justdave_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (4, 'kamion_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (5, 'keybuk_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (6, 'jdub_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (7, 'spiv_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (8, 'jblack_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (9, 'kiko_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (10, 'limi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (11, 'stevea_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (12, 'name12_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (13, 'carlos_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (14, 'daf_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (16, 'name16_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (22, 'stub_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (23, 'ddaa_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (26, 'kinnison_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (27, 'debonzi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (28, 'cprov_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (29, 'salgado_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (33, 'edgar_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (34, 'jvprat_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (35, 'sigurd-ubuntu_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (36, 'skacel_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (37, 'danner_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (38, 'martin-pitt_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (39, 'nsv_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (40, 'callipeo_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (41, 'jorge-gonzalez-gonzalez_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (42, 'barbier_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (43, 'andrelop_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (44, 'valyag_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (45, 'luk-claes_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (46, 'kurem_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (47, 'morten_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (48, 'mpo_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (49, 'kebil_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (50, 'tsukimi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (51, 'kreutzm_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (52, 'no-priv_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (55, 'marilize_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (56, 'jordi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (58, 'bug-importer_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (62, 'bug-watch-updater_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (63, 'karl_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (65, 'launchpad-janitor_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (66, 'matsubara_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (67, 'team-membership-janitor_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (68, 'launchpad-beta-owner_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (70, 'former-user_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243602, 'no-team-memberships_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243603, 'one-membership_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243606, 'neMCQNd');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243608, 'WQPMHdf');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243609, '6w7kmzC');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243610, 'cCGE3LA');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243611, 'MGWJnTL');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243614, '6KHNEe3');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243615, 'yEzBPbd');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243616, 'R8FpwXd');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243617, 'CALDpFr');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243622, 'rPwGRk4');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243623, 'mTmeENb');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243624, 'cF4PNk3');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243625, '3sbtGMy');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243626, 'LQCGF4D');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243627, 'tMRLhWD');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243628, 'MY7Gzdp');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243629, 'DX4rknT');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243630, 'f8mXQsW');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243631, 'DeKE6Tx');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243632, 'wwnwXxy');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243633, 'YEBL6yn');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243634, 'HHN3kCp');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243635, 'NbFGnBx');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243636, 'e3eENYJ');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243637, 'AdzdTBA');
+INSERT INTO lp_account (id, openid_identifier) VALUES (243638, 'pD7XQny');
+
+
+ALTER TABLE lp_account ENABLE TRIGGER ALL;
 
 
 ALTER TABLE lp_person DISABLE TRIGGER ALL;
@@ -4016,7 +4269,7 @@ INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, langua
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243614, 'josh', NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 243614);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243615, 'Sjoerd Simons', NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 243615);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243616, 'Martin Pitt', NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 243616);
-INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243617, 'Tim Penhey', NULL, NULL, 'thumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243617);
+INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243617, 'Tim Penhey', NULL, NULL, 'dumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243617);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243618, 'Bazaar Experts', 243617, 'This team is responsible for the management of Bazaar branches in Launchpad.', 'bazaar-experts', NULL, NULL, NULL, NULL, 3, NULL, '2008-03-06 09:57:59.957489', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243620, 'Canonical Partner Developers', 28, NULL, 'canonical-partner-dev', NULL, NULL, NULL, NULL, 2, NULL, '2008-05-14 10:29:17.539543', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243621, 'Commercial Subscription Admins', 243622, NULL, 'commercial-admins', NULL, NULL, NULL, NULL, 3, NULL, '2008-04-21 21:29:56.881698', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
@@ -4048,6 +4301,8 @@ INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, langua
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243648, 'Epiphany Maintainer', NULL, NULL, 'epiphany-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:36:04.668409', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243634);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243649, 'intltool maintainer', NULL, NULL, 'intltool-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:38:22.003195', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243635);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243650, 'Lies Maintainer', NULL, NULL, 'lies-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:39:04.740018', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243636);
+INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243651, 'Ppa-user', NULL, NULL, 'ppa-user', NULL, NULL, NULL, NULL, 1, NULL, '2010-03-21 16:37:00.092385', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243637);
+INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243652, 'Santiago Vila', NULL, NULL, 'sanvila', NULL, NULL, NULL, NULL, 1, NULL, '2010-03-21 16:40:52.468708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 7, 'when the hello_2.4-3 package was uploaded to lucid/RELEASE', NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243638);
 
 
 ALTER TABLE lp_person ENABLE TRIGGER ALL;
@@ -4299,6 +4554,10 @@ INSERT INTO lp_teamparticipation (id, team, person) VALUES (249, 243641, 243646)
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (250, 243648, 243648);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (251, 243649, 243649);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (252, 243650, 243650);
+INSERT INTO lp_teamparticipation (id, team, person) VALUES (253, 243651, 243651);
+INSERT INTO lp_teamparticipation (id, team, person) VALUES (254, 32, 243651);
+INSERT INTO lp_teamparticipation (id, team, person) VALUES (255, 17, 243651);
+INSERT INTO lp_teamparticipation (id, team, person) VALUES (256, 243652, 243652);
 
 
 ALTER TABLE lp_teamparticipation ENABLE TRIGGER ALL;
@@ -5121,6 +5380,11 @@ INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_c
 INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (13, 3, 10, 0, 65, '2007-08-09 21:25:37.832976', NULL, 12);
 INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (14, 3, 10, 0, 69, '2007-08-09 21:54:18.456616', NULL, 12);
 INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (15, 3, 1, 0, 52, '2008-05-25 20:39:27.186515', NULL, 10);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (16, 0, 22, 0, 93, '2010-03-21 16:40:52.468708', NULL, 1);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (17, 0, 22, 0, 98, '2010-03-21 16:40:53.242249', NULL, 1);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (18, 0, 22, 0, 103, '2010-03-21 16:40:55.270048', NULL, 1);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (19, 0, 22, 0, 108, '2010-03-21 16:40:56.808105', NULL, 1);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (20, 0, 22, 0, 113, '2010-03-21 16:40:58.942507', NULL, 1);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
@@ -5157,6 +5421,11 @@ INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_c
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (6, 12, 34, '2007-02-15 14:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (7, 13, 36, '2007-08-09 21:25:37.832976');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (8, 15, 35, '2006-10-16 18:31:43.832976');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (9, 16, 38, '2010-03-21 16:40:52.468708');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (10, 17, 39, '2010-03-21 16:40:53.242249');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (11, 18, 40, '2010-03-21 16:40:55.270048');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (12, 19, 41, '2010-03-21 16:40:56.808105');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (13, 20, 42, '2010-03-21 16:40:58.942507');
 
 
 ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
@@ -5167,8 +5436,35 @@ ALTER TABLE packaging DISABLE TRIGGER ALL;
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 1, 1, 3, 2, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.336247');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 10, 19, 1, 8, '2005-09-15 11:55:38.640138', NULL, '2006-10-16 18:31:44.337965');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 11, 19, 8, 8, '2005-09-15 11:55:48.109778', NULL, '2006-10-16 18:31:44.338488');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 12, 1, 14, 2, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 13, 9, 14, 3, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 14, 10, 14, 5, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 15, 10, 15, 5, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 16, 9, 15, 3, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 17, 1, 15, 2, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 18, 1, 16, 2, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 19, 9, 16, 3, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.338912');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 20, 10, 16, 5, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 21, 10, 17, 5, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 22, 9, 17, 3, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 23, 1, 17, 2, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 24, 1, 18, 2, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 25, 9, 18, 3, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 26, 10, 18, 5, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 27, 10, 19, 5, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 28, 9, 19, 3, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 29, 1, 19, 2, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 3, 10, 1, 5, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.339361');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 30, 1, 20, 2, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 31, 9, 20, 3, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 32, 10, 20, 5, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 33, 10, 21, 5, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 34, 9, 21, 3, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 35, 1, 21, 2, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 36, 1, 22, 2, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 37, 9, 22, 3, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 38, 10, 22, 5, '2010-03-21 16:36:52.135353', NULL, '2010-03-21 16:36:52.135353');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 4, 9, 1, 3, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.339782');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 6, 10, 3, 5, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.340203');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 7, 15, 1, 6, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.340624');
@@ -5270,7 +5566,7 @@ INSERT INTO person (id, displayname, teamowner, teamdescription, name, language,
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243614, 'josh', NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 243614);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243615, 'Sjoerd Simons', NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 243615);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243616, 'Martin Pitt', NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 243616);
-INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243617, 'Tim Penhey', NULL, NULL, 'thumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243617);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243617, 'Tim Penhey', NULL, NULL, 'dumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243617);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243618, 'Bazaar Experts', 243617, 'This team is responsible for the management of Bazaar branches in Launchpad.', 'bazaar-experts', NULL, NULL, NULL, NULL, 3, NULL, '2008-03-06 09:57:59.957489', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243620, 'Canonical Partner Developers', 28, NULL, 'canonical-partner-dev', NULL, NULL, NULL, NULL, 2, NULL, '2008-05-14 10:29:17.539543', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243621, 'Commercial Subscription Admins', 243622, NULL, 'commercial-admins', NULL, NULL, NULL, NULL, 3, NULL, '2008-04-21 21:29:56.881698', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
@@ -5302,6 +5598,8 @@ INSERT INTO person (id, displayname, teamowner, teamdescription, name, language,
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243648, 'Epiphany Maintainer', NULL, NULL, 'epiphany-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:36:04.668409', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243634);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243649, 'intltool maintainer', NULL, NULL, 'intltool-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:38:22.003195', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243635);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243650, 'Lies Maintainer', NULL, NULL, 'lies-maintainer', NULL, NULL, NULL, NULL, 1, NULL, '2009-08-24 14:39:04.740018', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243636);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243651, 'Ppa-user', NULL, NULL, 'ppa-user', NULL, NULL, NULL, NULL, 1, NULL, '2010-03-21 16:37:00.092385', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243637);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243652, 'Santiago Vila', NULL, NULL, 'sanvila', NULL, NULL, NULL, NULL, 1, NULL, '2010-03-21 16:40:52.468708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 7, 'when the hello_2.4-3 package was uploaded to lucid/RELEASE', NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243638);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -8155,31 +8453,31 @@ ALTER TABLE processorfamily ENABLE TRIGGER ALL;
 
 ALTER TABLE product DISABLE TRIGGER ALL;
 
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (1, 1, 17, 'tomcat', 'Tomcat', 'Tomcat', 'The servlet container that is used in the official Reference Implementation for the Java Servlet and JavaServer Pages technologies.', 'Apache Tomcat is developed in an open and participatory environment and released under the Apache Software License. This project has nothing to do with Ubuntu, but this description uses the word "Ubuntu" for the purpose of testing search results.', '2004-09-24 20:58:00.655518', 'http://tomcat.apache.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 16, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 17, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://archive.apache.org/dist/tomcat', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 17, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 2, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 15, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 2, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, false, true, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, true, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with the Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (1, 1, 17, 'tomcat', 'Tomcat', 'Tomcat', 'The servlet container that is used in the official Reference Implementation for the Java Servlet and JavaServer Pages technologies.', 'Apache Tomcat is developed in an open and participatory environment and released under the Apache Software License. This project has nothing to do with Ubuntu, but this description uses the word "Ubuntu" for the purpose of testing search results.', '2004-09-24 20:58:00.655518', 'http://tomcat.apache.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 16, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 17, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://archive.apache.org/dist/tomcat', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 17, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 2, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 15, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 2, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, false, true, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, true, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with the Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
 
-The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, true, true, NULL, NULL, NULL, NULL, 3, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (6, 5, 12, 'gnome-terminal', 'GNOME Terminal', 'The GNOME Terminal Emulator', 'Gnome Terminal is a simple terminal application for your Gnome desktop. It allows quick access to console applications, supports all console types, and has many useful features such as tabbed consoles (many consoles in a single window with quick switching between them).', 'The Gnome Terminal application fully supports Gnome 2 and is a standard part of the Gnome Desktop.', '2004-09-24 20:58:02.256678', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, 2, 14, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, 'gnome-terminal', NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (7, 6, 12, 'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.258743', 'http://www.novell.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 13, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 4, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (9, 5, 16, 'applets', 'Gnome Applets', 'The Gnome Panel Applets', 'The Gnome Panel Applets are a collection of standard widgets that can be installed on your desktop Panel. These icons act as launchers for applications, or indicators of the status of your machine. For example, panel applets exist to show you your battery status or wifi network signal strength.', 'This is the collection of Panel Applets that is part of the default Gnome release. Additional Panel Applets are available from third parties. A complete set of Panel Applets is included in the Ubuntu OS, for example.
+The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, true, true, NULL, NULL, NULL, NULL, 3, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (6, 5, 12, 'gnome-terminal', 'GNOME Terminal', 'The GNOME Terminal Emulator', 'Gnome Terminal is a simple terminal application for your Gnome desktop. It allows quick access to console applications, supports all console types, and has many useful features such as tabbed consoles (many consoles in a single window with quick switching between them).', 'The Gnome Terminal application fully supports Gnome 2 and is a standard part of the Gnome Desktop.', '2004-09-24 20:58:02.256678', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, 2, 14, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, 'gnome-terminal', NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (7, 6, 12, 'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.258743', 'http://www.novell.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 13, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 4, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (9, 5, 16, 'applets', 'Gnome Applets', 'The Gnome Panel Applets', 'The Gnome Panel Applets are a collection of standard widgets that can be installed on your desktop Panel. These icons act as launchers for applications, or indicators of the status of your machine. For example, panel applets exist to show you your battery status or wifi network signal strength.', 'This is the collection of Panel Applets that is part of the default Gnome release. Additional Panel Applets are available from third parties. A complete set of Panel Applets is included in the Ubuntu OS, for example.
 
-The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Andropovitch Axelsson.', '2004-10-03 16:46:09.113721', 'http://www.gnome.org/panel/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 12, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 16, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 18, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 2, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (11, 5, 12, 'netapplet', 'NetApplet', 'Network Applet', 'The Novell Network Applet', 'Displays current network status and allows network switching', '2005-03-10 16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 5, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 6, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 16, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 11, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 16, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 10, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', NULL, '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 2, 1, true, false, NULL, NULL, NULL, NULL, 8, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 1, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (16, NULL, 12, 'landscape', 'The Landscape Project', 'The Landscape Project', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface.', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface. The scope of the project isn''t limited, and will grow up as new features are planned.
+The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Andropovitch Axelsson.', '2004-10-03 16:46:09.113721', 'http://www.gnome.org/panel/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 12, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 16, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 18, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 2, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (11, 5, 12, 'netapplet', 'NetApplet', 'Network Applet', 'The Novell Network Applet', 'Displays current network status and allows network switching', '2005-03-10 16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 5, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 6, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 16, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 11, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 16, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 10, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', NULL, '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 2, 1, true, false, NULL, NULL, NULL, NULL, 8, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 1, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (16, NULL, 12, 'landscape', 'The Landscape Project', 'The Landscape Project', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface.', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface. The scope of the project isn''t limited, and will grow up as new features are planned.
 
-The Landscape system consists of two major parts: a client daemon which delivers information to the server and acts on server-provided requests; and a web server responsible for handling communication with clients and the user interface itself.', '2006-07-11 19:59:17.311451', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, 64, NULL, NULL, NULL, 9, NULL, NULL, NULL, NULL, false, true, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (17, NULL, 12, 'launchpad', 'Launchpad', 'Launchpad', 'Launchpad is a catalogue of libre software projects and products. Projects registered in the Launchpad are linked to their translations in Rosetta, their bugs in Malone, their RCS imports in Bazaar, and their packages in Soyuz.', 'Launchpad''s design is inspired by the Description of a Project (DOAP) framework by Edd Dumbill, with extensions for actual releases of products.', '2006-11-24 12:48:19.178553', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, NULL, NULL, NULL, NULL, 19, NULL, NULL, NULL, NULL, true, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (18, NULL, 37, 'upstart', 'Upstart', 'The Upstart System Initialisation Process', 'Event-based init daemon.', 'upstart is a replacement for the /sbin/init daemon which handles starting of tasks and services during boot, stopping them during shutdown and supervising them while the system is running.', '2007-03-14 18:47:04.891546', 'http://upstart.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 3, 100, false, false, NULL, NULL, NULL, NULL, 20, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 37, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (19, NULL, 28, 'aptoncd', 'APTonCD', 'APTonCD, Get APT Anywhere', 'A simple yet powerful tool which allows you to create one (or more) CD/DVD-Repository containing all of the packages downloaded via apt-get or aptitude.', 'A GUI-based tool that allows you to create a CD/DVD with all downloaded packages with APT-GET, creating a removable-repository.
+The Landscape system consists of two major parts: a client daemon which delivers information to the server and acts on server-provided requests; and a web server responsible for handling communication with clients and the user interface itself.', '2006-07-11 19:59:17.311451', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, 64, NULL, NULL, NULL, 9, NULL, NULL, NULL, NULL, false, true, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (17, NULL, 12, 'launchpad', 'Launchpad', 'Launchpad', 'Launchpad is a catalogue of libre software projects and products. Projects registered in the Launchpad are linked to their translations in Rosetta, their bugs in Malone, their RCS imports in Bazaar, and their packages in Soyuz.', 'Launchpad''s design is inspired by the Description of a Project (DOAP) framework by Edd Dumbill, with extensions for actual releases of products.', '2006-11-24 12:48:19.178553', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, NULL, NULL, NULL, NULL, 19, NULL, NULL, NULL, NULL, true, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (18, NULL, 37, 'upstart', 'Upstart', 'The Upstart System Initialisation Process', 'Event-based init daemon.', 'upstart is a replacement for the /sbin/init daemon which handles starting of tasks and services during boot, stopping them during shutdown and supervising them while the system is running.', '2007-03-14 18:47:04.891546', 'http://upstart.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 3, 100, false, false, NULL, NULL, NULL, NULL, 20, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 37, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (19, NULL, 28, 'aptoncd', 'APTonCD', 'APTonCD, Get APT Anywhere', 'A simple yet powerful tool which allows you to create one (or more) CD/DVD-Repository containing all of the packages downloaded via apt-get or aptitude.', 'A GUI-based tool that allows you to create a CD/DVD with all downloaded packages with APT-GET, creating a removable-repository.
 
 With aptoncd you can:
 * Create a CD/DVD with all downloaded packages
@@ -8188,26 +8486,26 @@ With aptoncd you can:
 * Upgrade a lot of computers with same DVD
 * And more is expected...
 
-In the "Create APTonCD" feature we have the possibility to make a CD/DVD with all previously downloaded packages with apt-get or aptitude. It uses apt-cache (/var/cache/apt/archives) and scans for packages and makes a repository in one (or more) CD/DVD, exactly as the previous option.', '2007-03-14 18:53:13.112116', 'http://aptoncd.sourceforge.net/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 21, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 28, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (20, NULL, 14, 'jokosher', 'Jokosher', 'Jokosher Audio Editor', 'Jokosher is a simple yet powerful multi-track studio. With it you can create and record music, podcasts and more, all from an integrated simple environment.', 'Jokosher brings together many sources of audio into a seamless environment where you can record, mix and publish your audio content.', '2007-03-15 20:11:49.501871', 'http://www.jokosher.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, NULL, NULL, NULL, NULL, 22, NULL, NULL, NULL, NULL, false, false, false, NULL, false, true, NULL, NULL, false, false, 14, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (21, NULL, 12, 'bzr', 'Bazaar', 'Bazaar Version Control System', 'Bazaar is a distributed revision control system. It allows team members to branch and merge upstream code very easily. Most importantly, it is very robust in handling renames so that merges across radical restructurings of the tree are efficient and correct.', 'Bazaar aims to be a distributed RCS system that the open source community loves to use.
+In the "Create APTonCD" feature we have the possibility to make a CD/DVD with all previously downloaded packages with apt-get or aptitude. It uses apt-cache (/var/cache/apt/archives) and scans for packages and makes a repository in one (or more) CD/DVD, exactly as the previous option.', '2007-03-14 18:53:13.112116', 'http://aptoncd.sourceforge.net/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 21, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 28, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (20, NULL, 14, 'jokosher', 'Jokosher', 'Jokosher Audio Editor', 'Jokosher is a simple yet powerful multi-track studio. With it you can create and record music, podcasts and more, all from an integrated simple environment.', 'Jokosher brings together many sources of audio into a seamless environment where you can record, mix and publish your audio content.', '2007-03-15 20:11:49.501871', 'http://www.jokosher.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, NULL, NULL, NULL, NULL, 22, NULL, NULL, NULL, NULL, false, false, false, NULL, false, true, NULL, NULL, false, false, 14, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (21, NULL, 12, 'bzr', 'Bazaar', 'Bazaar Version Control System', 'Bazaar is a distributed revision control system. It allows team members to branch and merge upstream code very easily. Most importantly, it is very robust in handling renames so that merges across radical restructurings of the tree are efficient and correct.', 'Bazaar aims to be a distributed RCS system that the open source community loves to use.
 
-Distributed revision control systems allow multiple people to have their own branch of a project, and merge code efficiently between them. This enables new contributors to immediately have access to the full tools that previously have been limited to just the committers to a project.', '2007-03-27 16:28:27.763632', 'http://bazaar-vcs.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 23, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (22, NULL, 12, 'redfish', 'Redfish', 'Redfish', 'The redfish project.', 'The redfish project.', '2007-04-18 20:58:56.846607', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, 64, NULL, NULL, NULL, 24, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (23, 1, 1, 'derby', 'Derby', 'Derby - Java Database', 'Apache Derby, an Apache DB subproject, is an open source relational database implemented entirely in Java and available under the Apache License, Version 2.0.', 'Some key advantages include:
+Distributed revision control systems allow multiple people to have their own branch of a project, and merge code efficiently between them. This enables new contributors to immediately have access to the full tools that previously have been limited to just the committers to a project.', '2007-03-27 16:28:27.763632', 'http://bazaar-vcs.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 23, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (22, NULL, 12, 'redfish', 'Redfish', 'Redfish', 'The redfish project.', 'The redfish project.', '2007-04-18 20:58:56.846607', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, 64, NULL, NULL, NULL, 24, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 12, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (23, 1, 1, 'derby', 'Derby', 'Derby - Java Database', 'Apache Derby, an Apache DB subproject, is an open source relational database implemented entirely in Java and available under the Apache License, Version 2.0.', 'Some key advantages include:
 
     * Derby has a small footprint -- about 2 megabytes for the base engine and embedded JDBC driver.
     * Derby is based on the Java, JDBC, and SQL standards.
     * Derby provides an embedded JDBC driver that lets you embed Derby in any Java-based solution.
     * Derby also supports the more familiar client/server mode with the Derby Network Client JDBC driver and Derby Network Server.
     * Derby is easy to install, deploy, and use.
-', '2007-11-19 12:44:30.603892', 'http://db.apache.org/derby/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 25, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 1, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (24, NULL, 243623, 'mega-money-maker', 'Mega Money Maker', 'Sample Commercial Project', 'Proprietary project', NULL, '2008-06-27 14:51:47.366199', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 26, NULL, NULL, NULL, NULL, false, false, false, 'All rights reserved.  Not free.', false, false, NULL, NULL, false, false, 243623, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (25, NULL, 16, 'rosetta', 'Launchpad Translations', 'The translations part of Launchpad', 'Here you can translate your project into other spoken languages.', NULL, '2008-10-02 10:12:40.909504', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 27, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 16, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (26, NULL, 16, 'obsolete-junk', 'Obsolete Junk', 'The Great Mass of Obsolete Junk', 'If you have junk that you don''t want clogging up your product, dump it here.', NULL, '2009-05-02 21:33:15.310312', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 28, NULL, NULL, NULL, NULL, false, false, false, '(We have them all because we are junk. Junk. Junk I tell you.)', false, false, NULL, NULL, false, true, 16, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (27, NULL, 243648, 'epiphany', 'Epiphany', 'Epiphany Web Browser', 'A default GNOME web browser.', 'description1', '2009-08-24 14:36:04.699204', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 3, 20, true, false, NULL, NULL, NULL, NULL, 29, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 243648, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (28, NULL, 243649, 'intltool', 'intltool', 'Internationalization build tools', 'Tools to extract translatable messages from different file formats and to merge them back in.', 'description2', '2009-08-24 14:39:04.708167', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 2, 1, true, false, NULL, NULL, NULL, NULL, 30, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 243649, NULL, NULL);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus) VALUES (29, NULL, 243650, 'lies', 'Lies', 'Quick production of lies', 'Software to easily and quickly manufacture as many lies as possible. It takes truth as the input', 'description3', '2009-08-24 14:41:04.427117', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 2, 100, true, false, NULL, NULL, NULL, NULL, 31, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 243650, NULL, NULL);
+', '2007-11-19 12:44:30.603892', 'http://db.apache.org/derby/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 25, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 1, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (24, NULL, 243623, 'mega-money-maker', 'Mega Money Maker', 'Sample Commercial Project', 'Proprietary project', NULL, '2008-06-27 14:51:47.366199', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 26, NULL, NULL, NULL, NULL, false, false, false, 'All rights reserved.  Not free.', false, false, NULL, NULL, false, false, 243623, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (25, NULL, 16, 'rosetta', 'Launchpad Translations', 'The translations part of Launchpad', 'Here you can translate your project into other spoken languages.', NULL, '2008-10-02 10:12:40.909504', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 27, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 16, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (26, NULL, 16, 'obsolete-junk', 'Obsolete Junk', 'The Great Mass of Obsolete Junk', 'If you have junk that you don''t want clogging up your product, dump it here.', NULL, '2009-05-02 21:33:15.310312', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 28, NULL, NULL, NULL, NULL, false, false, false, '(We have them all because we are junk. Junk. Junk I tell you.)', false, false, NULL, NULL, false, true, 16, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (27, NULL, 243648, 'epiphany', 'Epiphany', 'Epiphany Web Browser', 'A default GNOME web browser.', 'description1', '2009-08-24 14:36:04.699204', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 3, 20, true, false, NULL, NULL, NULL, NULL, 29, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 243648, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (28, NULL, 243649, 'intltool', 'intltool', 'Internationalization build tools', 'Tools to extract translatable messages from different file formats and to merge them back in.', 'description2', '2009-08-24 14:39:04.708167', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 2, 1, true, false, NULL, NULL, NULL, NULL, 30, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 243649, NULL, NULL, NULL);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant, remote_product, translation_focus, max_bug_heat) VALUES (29, NULL, 243650, 'lies', 'Lies', 'Quick production of lies', 'Software to easily and quickly manufacture as many lies as possible. It takes truth as the input', 'description3', '2009-08-24 14:41:04.427117', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 2, 100, true, false, NULL, NULL, NULL, NULL, 31, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 243650, NULL, NULL, NULL);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -8498,24 +8796,24 @@ ALTER TABLE productsvnmodule ENABLE TRIGGER ALL;
 
 ALTER TABLE project DISABLE TRIGGER ALL;
 
-INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (1, 1, 'apache', 'Apache', 'Apache', 'The Apache projects are characterized by a collaborative, consensus based development process, an open and pragmatic software license, and a desire to create high quality software that leads the way in its field.', 'We consider ourselves not simply a group of projects sharing a server, but rather a community of developers and users.', '2004-09-24 20:58:00.633513', 'http://apache.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1);
-INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (2, 2, 'do-not-use-info-imports', 'DO NOT USE', 'DO NOT USE', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', '2004-09-24 20:58:00.637677', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, true, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2);
-INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (3, 2, 'launchpad-mirrors', 'Launchpad SCM Mirrors', 'The Launchpad Mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', 'A project to mirror revision control archives into Arch.', '2004-09-24 20:58:00.65398', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2);
-INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (4, 12, 'mozilla', 'the Mozilla Project', 'The Mozilla Project', 'The Mozilla Project is the largest open source web browser collaborative project. Founded when Netscape released the source code to its pioneering browser in 1999, the Mozilla Project continues to set the standard for web browser technology.', 'The Mozilla Project produces several internet applications that are very widely used, and is also a center for collaboration on internet standards work by open source groups.
+INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant, max_bug_heat) VALUES (1, 1, 'apache', 'Apache', 'Apache', 'The Apache projects are characterized by a collaborative, consensus based development process, an open and pragmatic software license, and a desire to create high quality software that leads the way in its field.', 'We consider ourselves not simply a group of projects sharing a server, but rather a community of developers and users.', '2004-09-24 20:58:00.633513', 'http://apache.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL);
+INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant, max_bug_heat) VALUES (2, 2, 'do-not-use-info-imports', 'DO NOT USE', 'DO NOT USE', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', '2004-09-24 20:58:00.637677', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, true, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, NULL);
+INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant, max_bug_heat) VALUES (3, 2, 'launchpad-mirrors', 'Launchpad SCM Mirrors', 'The Launchpad Mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', 'A project to mirror revision control archives into Arch.', '2004-09-24 20:58:00.65398', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, NULL);
+INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant, max_bug_heat) VALUES (4, 12, 'mozilla', 'the Mozilla Project', 'The Mozilla Project', 'The Mozilla Project is the largest open source web browser collaborative project. Founded when Netscape released the source code to its pioneering browser in 1999, the Mozilla Project continues to set the standard for web browser technology.', 'The Mozilla Project produces several internet applications that are very widely used, and is also a center for collaboration on internet standards work by open source groups.
 
 The Project now has several popular products, including the Firefox web browser, the Thunderbird mail client and the libraries that enable them to run on many platforms.
 
-Organisationally, the Mozilla Project is hosted by the Mozilla Foundation, a not-for-profit company incorporated in the US.', '2004-09-24 20:58:02.177698', 'http://www.mozilla.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 12);
-INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (5, 12, 'gnome', 'GNOME', 'The GNOME Project', 'The GNOME Project is an initiative to prduce a free desktop software framework. GNOME is more than a set of applications, it is a user interface standard (the Gnome HIG) and a set of libraries that allow applications to work together in a harmonious desktop-ish way.', 'The Gnome Project was founded (when?) to build on the success of early applications using the Gtk GUI toolkit. Many of those applications are still part of Gnome, and the Gtk toolkit remains an essential part of Gnome.
+Organisationally, the Mozilla Project is hosted by the Mozilla Foundation, a not-for-profit company incorporated in the US.', '2004-09-24 20:58:02.177698', 'http://www.mozilla.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 12, NULL);
+INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant, max_bug_heat) VALUES (5, 12, 'gnome', 'GNOME', 'The GNOME Project', 'The GNOME Project is an initiative to prduce a free desktop software framework. GNOME is more than a set of applications, it is a user interface standard (the Gnome HIG) and a set of libraries that allow applications to work together in a harmonious desktop-ish way.', 'The Gnome Project was founded (when?) to build on the success of early applications using the Gtk GUI toolkit. Many of those applications are still part of Gnome, and the Gtk toolkit remains an essential part of Gnome.
 
-Gnome applications cover the full spectrum from office productivity applications to games, digital camera applications, and of course the Gnome Panel which acts as a launcher and general access point for apps on the desktop.', '2004-09-24 20:58:02.222154', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, false, true, NULL, 2, 20, NULL, 2, NULL, NULL, NULL, NULL, NULL, NULL, 12);
-INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (6, 12, 'iso-codes-project', 'iso-codes', 'iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.238443', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 12);
-INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (7, 16, 'aaa', 'the Test Project', 'The Test Project', 'This is a small project that has no purpose by to serve as a test data point. The only thing this project has ever produced is products, most of which are largely unheard of. This short description is long enough.', 'Of course, one can''t say enough about the Test Project. Not only is it always there, it''s often exactly in the same state that you saw it last. And it has an amazing ability to pop up in places where you just didn''t think you''d expect to find it. Very noticeable when you least want it noticed, that sort of thing.
+Gnome applications cover the full spectrum from office productivity applications to games, digital camera applications, and of course the Gnome Panel which acts as a launcher and general access point for apps on the desktop.', '2004-09-24 20:58:02.222154', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, false, true, NULL, 2, 20, NULL, 2, NULL, NULL, NULL, NULL, NULL, NULL, 12, NULL);
+INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant, max_bug_heat) VALUES (6, 12, 'iso-codes-project', 'iso-codes', 'iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.238443', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 12, NULL);
+INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant, max_bug_heat) VALUES (7, 16, 'aaa', 'the Test Project', 'The Test Project', 'This is a small project that has no purpose by to serve as a test data point. The only thing this project has ever produced is products, most of which are largely unheard of. This short description is long enough.', 'Of course, one can''t say enough about the Test Project. Not only is it always there, it''s often exactly in the same state that you saw it last. And it has an amazing ability to pop up in places where you just didn''t think you''d expect to find it. Very noticeable when you least want it noticed, that sort of thing.
 
-It would be very interesting to know whether this second paragraph of text about the test project is in fact rendered as a second paragraph, or if it all blurs together in a haze of testing. Only time will tell.', '2004-10-03 22:27:25.02843', 'http://www.testmenow.com', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16);
-INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant) VALUES (8, 16, 'gimp', 'the GiMP Project', 'The GIMP Project', 'The GIMP Project works in the field of image manipulation and reproduction. The Project is responsible for several pieces of software, such as The GiMP and GiMP-Print.', 'Founded by Spencer Kimball in 1996 with the simple aim of producing a "paint" program, the GIMP project has become one of the defining projects of the open source world. The GIMP itself is an image manipulation program that is beginning to rival even Adobe Photoshop in features and functionality.
+It would be very interesting to know whether this second paragraph of text about the test project is in fact rendered as a second paragraph, or if it all blurs together in a haze of testing. Only time will tell.', '2004-10-03 22:27:25.02843', 'http://www.testmenow.com', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16, NULL);
+INSERT INTO project (id, owner, name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, driver, bugtracker, homepage_content, icon, mugshot, logo, bug_reporting_guidelines, reviewer_whiteboard, registrant, max_bug_heat) VALUES (8, 16, 'gimp', 'the GiMP Project', 'The GIMP Project', 'The GIMP Project works in the field of image manipulation and reproduction. The Project is responsible for several pieces of software, such as The GiMP and GiMP-Print.', 'Founded by Spencer Kimball in 1996 with the simple aim of producing a "paint" program, the GIMP project has become one of the defining projects of the open source world. The GIMP itself is an image manipulation program that is beginning to rival even Adobe Photoshop in features and functionality.
 
-The project is loosely organised, with about 15 people making regular contributions. There is no fixed release schedule other than "when it is done".', '2004-10-03 22:27:45.283741', 'http://www.gimp.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16);
+The project is loosely organised, with about 15 people making regular contributions. There is no fixed release schedule other than "when it is done".', '2004-10-03 22:27:45.283741', 'http://www.gimp.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 16, NULL);
 
 
 ALTER TABLE project ENABLE TRIGGER ALL;
@@ -8788,6 +9086,25 @@ INSERT INTO section (id, name) VALUES (32, 'electronics');
 INSERT INTO section (id, name) VALUES (33, 'embedded');
 INSERT INTO section (id, name) VALUES (34, 'hamradio');
 INSERT INTO section (id, name) VALUES (35, 'science');
+INSERT INTO section (id, name) VALUES (36, 'cli-mono');
+INSERT INTO section (id, name) VALUES (37, 'database');
+INSERT INTO section (id, name) VALUES (38, 'debug');
+INSERT INTO section (id, name) VALUES (39, 'fonts');
+INSERT INTO section (id, name) VALUES (40, 'gnu-r');
+INSERT INTO section (id, name) VALUES (41, 'gnustep');
+INSERT INTO section (id, name) VALUES (42, 'haskell');
+INSERT INTO section (id, name) VALUES (43, 'httpd');
+INSERT INTO section (id, name) VALUES (44, 'java');
+INSERT INTO section (id, name) VALUES (45, 'kernel');
+INSERT INTO section (id, name) VALUES (46, 'lisp');
+INSERT INTO section (id, name) VALUES (47, 'localization');
+INSERT INTO section (id, name) VALUES (48, 'ocaml');
+INSERT INTO section (id, name) VALUES (49, 'php');
+INSERT INTO section (id, name) VALUES (50, 'ruby');
+INSERT INTO section (id, name) VALUES (51, 'vcs');
+INSERT INTO section (id, name) VALUES (52, 'video');
+INSERT INTO section (id, name) VALUES (53, 'xfce');
+INSERT INTO section (id, name) VALUES (54, 'zope');
 
 
 ALTER TABLE section ENABLE TRIGGER ALL;
@@ -8878,6 +9195,530 @@ INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (8
 INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (81, 1, 7, '2007-02-09 10:31:52.595418');
 INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (82, 3, 7, '2007-02-09 10:31:52.595418');
 INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (83, 3, 29, '2007-02-15 12:31:52.595418');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (84, 3, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (85, 3, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (86, 3, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (87, 3, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (88, 3, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (89, 3, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (90, 3, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (91, 3, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (92, 3, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (93, 3, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (94, 3, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (95, 3, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (96, 3, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (97, 3, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (98, 3, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (99, 3, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (100, 3, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (101, 3, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (102, 3, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (103, 3, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (104, 3, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (105, 3, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (106, 3, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (107, 3, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (108, 3, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (109, 3, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (110, 3, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (111, 3, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (112, 3, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (113, 3, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (114, 3, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (115, 3, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (116, 3, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (117, 3, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (118, 3, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (119, 3, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (120, 3, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (121, 3, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (122, 3, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (123, 3, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (124, 3, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (125, 3, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (126, 3, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (127, 3, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (128, 3, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (129, 3, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (130, 3, 54, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (131, 14, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (132, 14, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (133, 14, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (134, 14, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (135, 14, 7, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (136, 14, 29, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (137, 14, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (138, 14, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (139, 14, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (140, 14, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (141, 14, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (142, 14, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (143, 14, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (144, 14, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (145, 14, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (146, 14, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (147, 14, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (148, 14, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (149, 14, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (150, 14, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (151, 14, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (152, 14, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (153, 14, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (154, 14, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (155, 14, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (156, 14, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (157, 14, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (158, 14, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (159, 14, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (160, 14, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (161, 14, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (162, 14, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (163, 14, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (164, 14, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (165, 14, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (166, 14, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (167, 14, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (168, 14, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (169, 14, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (170, 14, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (171, 14, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (172, 14, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (173, 14, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (174, 14, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (175, 14, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (176, 14, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (177, 14, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (178, 14, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (179, 14, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (180, 14, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (181, 14, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (182, 14, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (183, 14, 54, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (184, 15, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (185, 15, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (186, 15, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (187, 15, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (188, 15, 7, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (189, 15, 29, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (190, 15, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (191, 15, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (192, 15, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (193, 15, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (194, 15, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (195, 15, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (196, 15, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (197, 15, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (198, 15, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (199, 15, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (200, 15, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (201, 15, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (202, 15, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (203, 15, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (204, 15, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (205, 15, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (206, 15, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (207, 15, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (208, 15, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (209, 15, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (210, 15, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (211, 15, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (212, 15, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (213, 15, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (214, 15, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (215, 15, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (216, 15, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (217, 15, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (218, 15, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (219, 15, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (220, 15, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (221, 15, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (222, 15, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (223, 15, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (224, 15, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (225, 15, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (226, 15, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (227, 15, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (228, 15, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (229, 15, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (230, 15, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (231, 15, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (232, 15, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (233, 15, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (234, 15, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (235, 15, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (236, 15, 54, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (237, 16, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (238, 16, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (239, 16, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (240, 16, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (241, 16, 7, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (242, 16, 29, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (243, 16, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (244, 16, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (245, 16, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (246, 16, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (247, 16, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (248, 16, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (249, 16, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (250, 16, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (251, 16, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (252, 16, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (253, 16, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (254, 16, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (255, 16, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (256, 16, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (257, 16, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (258, 16, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (259, 16, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (260, 16, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (261, 16, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (262, 16, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (263, 16, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (264, 16, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (265, 16, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (266, 16, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (267, 16, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (268, 16, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (269, 16, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (270, 16, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (271, 16, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (272, 16, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (273, 16, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (274, 16, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (275, 16, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (276, 16, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (277, 16, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (278, 16, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (279, 16, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (280, 16, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (281, 16, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (282, 16, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (283, 16, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (284, 16, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (285, 16, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (286, 16, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (287, 16, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (288, 16, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (289, 16, 54, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (290, 17, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (291, 17, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (292, 17, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (293, 17, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (294, 17, 7, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (295, 17, 29, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (296, 17, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (297, 17, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (298, 17, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (299, 17, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (300, 17, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (301, 17, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (302, 17, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (303, 17, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (304, 17, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (305, 17, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (306, 17, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (307, 17, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (308, 17, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (309, 17, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (310, 17, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (311, 17, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (312, 17, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (313, 17, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (314, 17, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (315, 17, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (316, 17, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (317, 17, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (318, 17, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (319, 17, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (320, 17, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (321, 17, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (322, 17, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (323, 17, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (324, 17, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (325, 17, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (326, 17, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (327, 17, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (328, 17, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (329, 17, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (330, 17, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (331, 17, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (332, 17, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (333, 17, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (334, 17, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (335, 17, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (336, 17, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (337, 17, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (338, 17, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (339, 17, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (340, 17, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (341, 17, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (342, 17, 54, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (343, 18, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (344, 18, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (345, 18, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (346, 18, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (347, 18, 7, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (348, 18, 29, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (349, 18, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (350, 18, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (351, 18, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (352, 18, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (353, 18, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (354, 18, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (355, 18, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (356, 18, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (357, 18, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (358, 18, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (359, 18, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (360, 18, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (361, 18, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (362, 18, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (363, 18, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (364, 18, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (365, 18, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (366, 18, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (367, 18, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (368, 18, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (369, 18, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (370, 18, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (371, 18, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (372, 18, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (373, 18, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (374, 18, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (375, 18, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (376, 18, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (377, 18, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (378, 18, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (379, 18, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (380, 18, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (381, 18, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (382, 18, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (383, 18, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (384, 18, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (385, 18, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (386, 18, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (387, 18, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (388, 18, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (389, 18, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (390, 18, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (391, 18, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (392, 18, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (393, 18, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (394, 18, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (395, 18, 54, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (396, 19, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (397, 19, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (398, 19, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (399, 19, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (400, 19, 7, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (401, 19, 29, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (402, 19, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (403, 19, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (404, 19, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (405, 19, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (406, 19, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (407, 19, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (408, 19, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (409, 19, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (410, 19, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (411, 19, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (412, 19, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (413, 19, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (414, 19, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (415, 19, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (416, 19, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (417, 19, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (418, 19, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (419, 19, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (420, 19, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (421, 19, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (422, 19, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (423, 19, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (424, 19, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (425, 19, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (426, 19, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (427, 19, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (428, 19, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (429, 19, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (430, 19, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (431, 19, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (432, 19, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (433, 19, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (434, 19, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (435, 19, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (436, 19, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (437, 19, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (438, 19, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (439, 19, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (440, 19, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (441, 19, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (442, 19, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (443, 19, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (444, 19, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (445, 19, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (446, 19, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (447, 19, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (448, 19, 54, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (449, 20, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (450, 20, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (451, 20, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (452, 20, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (453, 20, 7, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (454, 20, 29, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (455, 20, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (456, 20, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (457, 20, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (458, 20, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (459, 20, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (460, 20, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (461, 20, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (462, 20, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (463, 20, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (464, 20, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (465, 20, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (466, 20, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (467, 20, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (468, 20, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (469, 20, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (470, 20, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (471, 20, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (472, 20, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (473, 20, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (474, 20, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (475, 20, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (476, 20, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (477, 20, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (478, 20, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (479, 20, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (480, 20, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (481, 20, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (482, 20, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (483, 20, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (484, 20, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (485, 20, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (486, 20, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (487, 20, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (488, 20, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (489, 20, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (490, 20, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (491, 20, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (492, 20, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (493, 20, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (494, 20, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (495, 20, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (496, 20, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (497, 20, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (498, 20, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (499, 20, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (500, 20, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (501, 20, 54, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (502, 21, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (503, 21, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (504, 21, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (505, 21, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (506, 21, 7, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (507, 21, 29, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (508, 21, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (509, 21, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (510, 21, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (511, 21, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (512, 21, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (513, 21, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (514, 21, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (515, 21, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (516, 21, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (517, 21, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (518, 21, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (519, 21, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (520, 21, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (521, 21, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (522, 21, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (523, 21, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (524, 21, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (525, 21, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (526, 21, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (527, 21, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (528, 21, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (529, 21, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (530, 21, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (531, 21, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (532, 21, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (533, 21, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (534, 21, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (535, 21, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (536, 21, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (537, 21, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (538, 21, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (539, 21, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (540, 21, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (541, 21, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (542, 21, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (543, 21, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (544, 21, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (545, 21, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (546, 21, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (547, 21, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (548, 21, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (549, 21, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (550, 21, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (551, 21, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (552, 21, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (553, 21, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (554, 21, 54, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (555, 22, 3, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (556, 22, 1, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (557, 22, 2, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (558, 22, 4, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (559, 22, 7, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (560, 22, 29, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (561, 22, 36, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (562, 22, 5, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (563, 22, 37, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (564, 22, 38, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (565, 22, 8, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (566, 22, 32, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (567, 22, 33, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (568, 22, 39, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (569, 22, 9, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (570, 22, 10, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (571, 22, 11, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (572, 22, 40, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (573, 22, 41, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (574, 22, 34, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (575, 22, 42, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (576, 22, 43, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (577, 22, 12, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (578, 22, 44, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (579, 22, 13, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (580, 22, 45, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (581, 22, 15, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (582, 22, 14, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (583, 22, 46, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (584, 22, 47, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (585, 22, 16, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (586, 22, 17, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (587, 22, 18, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (588, 22, 19, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (589, 22, 20, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (590, 22, 48, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (591, 22, 21, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (592, 22, 22, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (593, 22, 23, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (594, 22, 49, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (595, 22, 24, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (596, 22, 50, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (597, 22, 35, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (598, 22, 25, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (599, 22, 26, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (600, 22, 27, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (601, 22, 28, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (602, 22, 30, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (603, 22, 51, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (604, 22, 52, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (605, 22, 31, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (606, 22, 53, '2010-03-21 16:36:52.135353');
+INSERT INTO sectionselection (id, distroseries, section, date_created) VALUES (607, 22, 54, '2010-03-21 16:36:52.135353');
 
 
 ALTER TABLE sectionselection ENABLE TRIGGER ALL;
@@ -8972,6 +9813,7 @@ ALTER TABLE shippingrun ENABLE TRIGGER ALL;
 ALTER TABLE signedcodeofconduct DISABLE TRIGGER ALL;
 
 INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode, recipient, active, admincomment) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL);
+INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode, recipient, active, admincomment) VALUES (2, 243651, 3, '2010-03-21 16:37:03.438124', 'Normally a signed CoC would go here.', NULL, true, NULL);
 
 
 ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;
@@ -8992,6 +9834,15 @@ INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (10, 
 INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (11, 11, 0);
 INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (12, 12, 0);
 INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (13, 13, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (14, 14, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (15, 15, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (16, 16, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (17, 17, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (18, 18, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (19, 19, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (20, 20, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (21, 21, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (22, 22, 0);
 
 
 ALTER TABLE sourcepackageformatselection ENABLE TRIGGER ALL;
@@ -9016,6 +9867,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (24, 'cdrkit');
 INSERT INTO sourcepackagename (id, name) VALUES (25, 'language-pack-de');
 INSERT INTO sourcepackagename (id, name) VALUES (26, 'iceweasel');
 INSERT INTO sourcepackagename (id, name) VALUES (27, 'commercialpackage');
+INSERT INTO sourcepackagename (id, name) VALUES (28, 'hello');
 
 
 ALTER TABLE sourcepackagename ENABLE TRIGGER ALL;
@@ -9023,33 +9875,33 @@ ALTER TABLE sourcepackagename ENABLE TRIGGER ALL;
 
 ALTER TABLE sourcepackagepublishinghistory DISABLE TRIGGER ALL;
 
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (1, 14, 1, 1, 1, 3, '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (2, 15, 3, 2, 1, 3, '2004-09-27 11:57:13', '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (4, 17, 1, 2, 1, 1, '2004-03-14 18:00:00', '2004-03-14 18:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (5, 16, 3, 2, 1, 2, '2004-03-10 16:30:00', '2004-03-10 16:30:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (1, 14, 1, 4, 1, 3, '2004-09-27 11:57:13', NULL, '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (2, 15, 3, 4, 1, 3, '2004-09-27 11:57:13', '2004-09-27 11:57:13', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (4, 17, 1, 4, 1, 1, '2004-03-14 18:00:00', '2004-03-14 18:00:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (5, 16, 3, 4, 1, 2, '2004-03-10 16:30:00', '2004-03-10 16:30:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (8, 20, 3, 3, 1, 1, '2005-04-18 17:34:15.308434', '2005-04-18 17:34:15.308434', '2005-08-24 17:01:15.308434', 21, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (9, 21, 3, 2, 1, 3, '2005-08-24 17:01:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (10, 23, 1, 2, 1, 1, '2005-09-15 11:42:02.870714', '2005-09-15 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (9, 21, 3, 4, 1, 3, '2005-08-24 17:01:15.308434', '2005-08-24 17:01:15.308434', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (10, 23, 1, 4, 1, 1, '2005-09-15 11:42:02.870714', '2005-09-15 11:42:02.870714', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (11, 24, 8, 2, 1, 2, '2005-09-15 11:42:21.070926', '2005-09-15 11:42:21.070926', NULL, NULL, NULL, NULL, NULL, 0, 3, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (12, 25, 3, 2, 1, 1, '2005-09-15 11:43:00.05741', '2005-09-15 11:43:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (13, 26, 3, 2, 3, 1, '2005-12-22 18:19:00.05741', '2005-12-22 18:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (12, 25, 3, 4, 1, 1, '2005-09-15 11:43:00.05741', '2005-09-15 11:43:00.05741', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (13, 26, 3, 4, 3, 1, '2005-12-22 18:19:00.05741', '2005-12-22 18:20:00.05741', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (14, 24, 3, 3, 1, 3, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 25, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (15, 24, 1, 2, 1, 1, '2005-09-16 11:42:02.870714', '2005-09-16 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (16, 27, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (17, 28, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (18, 14, 1, 2, 1, 2, '2006-02-13 12:19:00.05741', '2006-02-13 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (19, 28, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (20, 25, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (15, 24, 1, 4, 1, 1, '2005-09-16 11:42:02.870714', '2005-09-16 11:42:02.870714', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (16, 27, 3, 4, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (17, 28, 3, 4, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (18, 14, 1, 4, 1, 2, '2006-02-13 12:19:00.05741', '2006-02-13 12:19:00.05741', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (19, 28, 1, 4, 1, 3, '2006-02-15 12:19:00.05741', NULL, '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (20, 25, 1, 4, 1, 3, '2006-02-15 12:19:00.05741', NULL, '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (21, 24, 11, 4, 1, 3, '2006-09-14 11:44:00.10654', '2006-09-14 11:44:00', '2006-09-14 11:44:01', 25, '2006-09-14 11:45:00', '2006-09-14 11:45:00', '2006-09-15 11:45:00', 0, 8, 1, 'does anyone like ? I did not think so.');
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (22, 32, 1, 4, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, '2006-12-02 11:44:00', 0, 1, 28, 'I do not like it.');
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (23, 33, 1, 2, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (23, 33, 1, 4, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (24, 14, 1, 2, 1, 2, '2006-02-19 11:57:13', '2007-02-19 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, 8, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (25, 33, 10, 2, 1, 3, '2007-04-25 13:44:00.10654', '2007-04-25 14:14:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (26, 35, 1, 2, 1, 3, '2006-04-11 12:00:00', '2006-04-11 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (25, 33, 10, 4, 1, 3, '2007-04-25 13:44:00.10654', '2007-04-25 14:14:00', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (26, 35, 1, 4, 1, 3, '2006-04-11 12:00:00', '2006-04-11 12:00:01', '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 1, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (27, 33, 10, 2, 1, 3, '2007-07-09 13:44:00.10654', '2007-07-09 14:14:00', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL);
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (28, 35, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL);
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (29, 20, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (30, 36, 10, 2, 5, 7, '2007-08-09 21:28:12.106187', NULL, NULL, NULL, NULL, NULL, NULL, 0, 12, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (30, 36, 10, 4, 5, 7, '2007-08-09 21:28:12.106187', NULL, '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 12, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (31, 35, 10, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 10, NULL, NULL);
 
 
@@ -9093,29 +9945,29 @@ ALTER TABLE sourcepackagerecipedatainstruction ENABLE TRIGGER ALL;
 
 ALTER TABLE sourcepackagerelease DISABLE TRIGGER ALL;
 
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1), pmount', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4), pmount', 'any', NULL, 1, 1, 1, 1, 1, 'Mark Shuttleworth <mark@canonical.com>', '3.6.2', '1.0', 'mozilla-firefox', 1, NULL, 'gcc-4.0, pmount', 'gcc-4.0-base, pmount', NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 1, 9, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 3, 1, 10, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 2, 1, 10, 1, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'pmount (0.1-1) hoary; urgency=low
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1), pmount', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4), pmount', 'any', NULL, 1, 1, 1, 1, 1, 'Mark Shuttleworth <mark@canonical.com>', '3.6.2', '1.0', 'mozilla-firefox', 1, NULL, 'gcc-4.0, pmount', 'gcc-4.0-base, pmount', NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 1, 9, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 3, 1, 10, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 2, 1, 10, 1, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'pmount (0.1-1) hoary; urgency=low
 
  * Fix description (Malone #1)
  * Fix debian (Debian #2000)
  * Fix warty (Warty Ubuntu #1)
 
- -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 2, 1, 14, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, 'powerpc', NULL, 1, 1, 14, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, 'alsa-utils (1.0.8-1ubuntu1) warty; urgency=low
+ -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 2, 1, 14, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, 'powerpc', NULL, 1, 1, 14, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, 'alsa-utils (1.0.8-1ubuntu1) warty; urgency=low
 
  * Placeholder
 
-     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 1, 19, 1, 1, 'Mark Shuttleworth <mark@example.com>', '3.6.2', '1.0', 'alsa-mixer', 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4) warty; urgency=low
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 1, 19, 1, 1, 'Mark Shuttleworth <mark@example.com>', '3.6.2', '1.0', 'alsa-mixer', 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4) warty; urgency=low
 
  * Placeholder
 
-     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'any', NULL, 2, 1, 19, 8, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'any', NULL, 2, 1, 19, 8, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
 
  * Placeholder
  LP: #10
@@ -9124,22 +9976,22 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
  LP: #7, #8,
    #11
 
-     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 19, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 20, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (27, 1, 'b8p', '2006-02-10 11:19:00', 1, NULL, 1, 'libstdc++ (9.9-1) hoary; urgency=high
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 19, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 20, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (27, 1, 'b8p', '2006-02-10 11:19:00', 1, NULL, 1, 'libstdc++ (9.9-1) hoary; urgency=high
 
  * Placeholder
 
- -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, 16, 21, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 22, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 17, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (32, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 23, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (33, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 24, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (34, 1, '1.0', '2007-02-15 14:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 29, 16, 25, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (35, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 26, 1, 1, NULL, NULL, '1.0', NULL, 10, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (36, 243606, '1.0-1', '2007-08-09 21:25:37.832976', 1, NULL, 5, 'commercialpackage (1.0-1) breezy; urgency=low
+ -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, 16, 21, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 22, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 17, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (32, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 23, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (33, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 24, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (34, 1, '1.0', '2007-02-15 14:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 29, 16, 25, 10, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (35, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 26, 1, 1, NULL, NULL, '1.0', NULL, 10, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (36, 243606, '1.0-1', '2007-08-09 21:25:37.832976', 1, NULL, 5, 'commercialpackage (1.0-1) breezy; urgency=low
 
   * Initial version
       Address for testing linkification: Foo Bar <foo.bar@canonical.com>
@@ -9163,8 +10015,423 @@ Version: GnuPG v1.4.6 (GNU/Linux)
 iD8DBQFGtzTjWhGlTF8G/HcRAtFsAJ4hHyKhOnsUOQDI+SAk000DmFAnUgCcC84J
 3F4bEPeRcnUjCFI/hjR0kxg=
 =Tjln
-', 7, 243606, 27, 10, 1, 'Julian Edwards <launchpad@julian-edwards.com>', '3.6.2', '1.0', 'commercialpackage', 12, NULL, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build) VALUES (37, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, '1.0', NULL, 11, NULL, NULL, NULL, NULL);
+', 7, 243606, 27, 10, 1, 'Julian Edwards <launchpad@julian-edwards.com>', '3.6.2', '1.0', 'commercialpackage', 12, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (37, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, '1.0', NULL, 11, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (38, 243652, '2.4-3', '2010-03-21 16:40:52.468708', 1, NULL, 3, 'hello (2.4-3) lucid; urgency=low
+
+  * Modified doc/Makefile.in to avoid /usr/share/info/dir.gz.
+ -- Santiago Vila <sanvila@debian.org>   Sun, 30 Aug 2009 13:05:52 +0200', '', '', 'any', '-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.0
+Source: hello
+Binary: hello
+Architecture: any
+Version: 2.4-3
+Maintainer: Santiago Vila <sanvila@debian.org>
+Standards-Version: 3.8.3
+Checksums-Sha1: 
+ fcbf0264928900adf03a7797474375e1a6fa3836 499638 hello_2.4.orig.tar.gz
+ 6de5cf470583cdbf2947d16aa4f10e3028839391 5739 hello_2.4-3.diff.gz
+Checksums-Sha256: 
+ 534745c4b7e063f5eb5f984609caf0f7c06d46df03e4d404f20996d28b6df1f7 499638 hello_2.4.orig.tar.gz
+ 0b4bc9f52010291d4a2d4842f010fc6df1f77c969201aa3114611c634b82c3f4 5739 hello_2.4-3.diff.gz
+Files: 
+ 1691faa758ca41c70b6da5501bdf230a 499638 hello_2.4.orig.tar.gz
+ 0a267ee8ef148e91d06c3750ec79ca85 5739 hello_2.4-3.diff.gz
+
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJLmIvHAAoJEJ3amgfFEfZnU8QIAICN7JOMC95OyQS1kEKfTAl9
+lC2fKpr+T/nXXME2ixjmiD3SsN5vx52rsrWL1V43CvyBmCorvZ1iVq27zokrUcPD
+PcTCeEldBlOQNVXs8mqr/PfQT7nKD0oW7JTWCWfsJSINy9jLez+wx98qFrXjsHHh
+HnXG3gcAXvf0i7PGk/9S8/9M1fdK0nKLxzY8pXAB/EruFcrFsiMjoyhAbnrfeQRJ
+UtD5w8poXIenctKyrC/yBBAkOVXKoIWBffMpRqwuo2kKiCpZnY7hr/HI2U+tbb+n
+LgrjBjmLvxD5F3XxiNiqpClqqHHmO5tT3iTSzKF8zql/HPcgX73F4oQAp2mAKS8=
+=GTTu
+', 7, 243652, 28, 22, 1, 'Santiago Vila <sanvila@debian.org>', '3.8.3', '1.0', 'hello', 1, 'This is the Debian GNU prepackaged version of the FSF''s GNU hello
+utility.  This package provides the classic greeting to the users of
+Debian, as well as providing Debian''s developers with an example of
+how to package a GNU program. GNU `hello'' was written by Mike Haertel,
+David MacKenzie, Jan Brittenson, Charles Hannum, Roland McGrath, Noah
+Friedman, Karl Eichwalder, and The King.
+
+This package was first put together by Ian Jackson and it''s currently
+maintained by Santiago Vila. The source for this release was taken
+from:
+
+http://ftp.gnu.org/gnu/hello/hello-2.4.tar.gz
+
+The changes were very minimal:
+
+- Adding support for the Debian package maintenance scheme, by adding
+  various debian/* files.
+
+Program Copyright 1992, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
+2002, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+
+Modifications for Debian Copyright (C) 1994,1995,1996 Ian Jackson.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+
+On Debian systems, the complete text of the GNU General Public License
+can be found in `/usr/share/common-licenses/GPL''.
+
+Manual Copyright (C) 1992, 1993, 1996, 2002, 2005, 2006, 2007, 2008
+Free Software Foundation, Inc.
+
+Permission is granted to copy, distribute and/or modify this
+document under the terms of the GNU Free Documentation License,
+Version 1.2 or any later version published by the Free Software
+Foundation; with no Invariant Sections, with no Front-Cover Texts,
+and with no Back-Cover Texts.  A copy of the license is included
+in the section entitled "GNU Free Documentation License".
+
+On Debian systems, the complete text of the GNU Free Documentation
+License can be found in `/usr/share/common-licenses/GFDL''.', '', '', NULL, 94);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (39, 243652, '2.4-3', '2010-03-21 16:40:53.242249', 1, NULL, 3, 'hello (2.4-3) lucid; urgency=low
+
+  * Modified doc/Makefile.in to avoid /usr/share/info/dir.gz.
+ -- Santiago Vila <sanvila@debian.org>   Sun, 30 Aug 2009 13:05:52 +0200', '', '', 'any', '-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.0
+Source: hello
+Binary: hello
+Architecture: any
+Version: 2.4-3
+Maintainer: Santiago Vila <sanvila@debian.org>
+Standards-Version: 3.8.3
+Checksums-Sha1: 
+ fcbf0264928900adf03a7797474375e1a6fa3836 499638 hello_2.4.orig.tar.gz
+ 6de5cf470583cdbf2947d16aa4f10e3028839391 5739 hello_2.4-3.diff.gz
+Checksums-Sha256: 
+ 534745c4b7e063f5eb5f984609caf0f7c06d46df03e4d404f20996d28b6df1f7 499638 hello_2.4.orig.tar.gz
+ 0b4bc9f52010291d4a2d4842f010fc6df1f77c969201aa3114611c634b82c3f4 5739 hello_2.4-3.diff.gz
+Files: 
+ 1691faa758ca41c70b6da5501bdf230a 499638 hello_2.4.orig.tar.gz
+ 0a267ee8ef148e91d06c3750ec79ca85 5739 hello_2.4-3.diff.gz
+
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJLmUVdAAoJEHVUWkiQp7mWu9MH/1jzF2VpsT85mLjLMlVgTr72
+AGi5tqS29NWWOb/JxeK8JrN9EfQ+dPhn0gxQ8uJbq3qBzU44WXhrc+aOo7PkDmUV
+1Pu2Epf0sz76AjSiqBOPFhQOuOulkv3B1VBcUSIxnXCp2XLKMppmXjATa0I3FC5u
+H7MlEe2Ly6d8Sbj1W+zuHhX5e9vQNoxcyIvXW8d86epNdH849rlkO3QIJbkqswoM
+QM0q7mDWFE1g1x8yE9LR9dOugrNBZGv2Z7NP88zWYi0hgs7Yt/D5k8UQm+59BwkQ
+ZhFqGx8/Jb60dTjUolGD08VGvFdpuXhNCMUfqqAWvSgGpJGwqtfTR5Ei16DanAg=
+=+vup
+', 7, 243652, 28, 22, 1, 'Santiago Vila <sanvila@debian.org>', '3.8.3', '1.0', 'hello', 1, 'This is the Debian GNU prepackaged version of the FSF''s GNU hello
+utility.  This package provides the classic greeting to the users of
+Debian, as well as providing Debian''s developers with an example of
+how to package a GNU program. GNU `hello'' was written by Mike Haertel,
+David MacKenzie, Jan Brittenson, Charles Hannum, Roland McGrath, Noah
+Friedman, Karl Eichwalder, and The King.
+
+This package was first put together by Ian Jackson and it''s currently
+maintained by Santiago Vila. The source for this release was taken
+from:
+
+http://ftp.gnu.org/gnu/hello/hello-2.4.tar.gz
+
+The changes were very minimal:
+
+- Adding support for the Debian package maintenance scheme, by adding
+  various debian/* files.
+
+Program Copyright 1992, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
+2002, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+
+Modifications for Debian Copyright (C) 1994,1995,1996 Ian Jackson.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+
+On Debian systems, the complete text of the GNU General Public License
+can be found in `/usr/share/common-licenses/GPL''.
+
+Manual Copyright (C) 1992, 1993, 1996, 2002, 2005, 2006, 2007, 2008
+Free Software Foundation, Inc.
+
+Permission is granted to copy, distribute and/or modify this
+document under the terms of the GNU Free Documentation License,
+Version 1.2 or any later version published by the Free Software
+Foundation; with no Invariant Sections, with no Front-Cover Texts,
+and with no Back-Cover Texts.  A copy of the license is included
+in the section entitled "GNU Free Documentation License".
+
+On Debian systems, the complete text of the GNU Free Documentation
+License can be found in `/usr/share/common-licenses/GFDL''.', '', '', NULL, 99);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (40, 243652, '2.4-3', '2010-03-21 16:40:55.270048', 1, NULL, 3, 'hello (2.4-3) lucid; urgency=low
+
+  * Modified doc/Makefile.in to avoid /usr/share/info/dir.gz.
+ -- Santiago Vila <sanvila@debian.org>   Sun, 30 Aug 2009 13:05:52 +0200', '', '', 'any', '-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.0
+Source: hello
+Binary: hello
+Architecture: any
+Version: 2.4-3
+Maintainer: Santiago Vila <sanvila@debian.org>
+Standards-Version: 3.8.3
+Checksums-Sha1: 
+ fcbf0264928900adf03a7797474375e1a6fa3836 499638 hello_2.4.orig.tar.gz
+ 6de5cf470583cdbf2947d16aa4f10e3028839391 5739 hello_2.4-3.diff.gz
+Checksums-Sha256: 
+ 534745c4b7e063f5eb5f984609caf0f7c06d46df03e4d404f20996d28b6df1f7 499638 hello_2.4.orig.tar.gz
+ 0b4bc9f52010291d4a2d4842f010fc6df1f77c969201aa3114611c634b82c3f4 5739 hello_2.4-3.diff.gz
+Files: 
+ 1691faa758ca41c70b6da5501bdf230a 499638 hello_2.4.orig.tar.gz
+ 0a267ee8ef148e91d06c3750ec79ca85 5739 hello_2.4-3.diff.gz
+
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJLmUVdAAoJEHVUWkiQp7mWu9MH/1jzF2VpsT85mLjLMlVgTr72
+AGi5tqS29NWWOb/JxeK8JrN9EfQ+dPhn0gxQ8uJbq3qBzU44WXhrc+aOo7PkDmUV
+1Pu2Epf0sz76AjSiqBOPFhQOuOulkv3B1VBcUSIxnXCp2XLKMppmXjATa0I3FC5u
+H7MlEe2Ly6d8Sbj1W+zuHhX5e9vQNoxcyIvXW8d86epNdH849rlkO3QIJbkqswoM
+QM0q7mDWFE1g1x8yE9LR9dOugrNBZGv2Z7NP88zWYi0hgs7Yt/D5k8UQm+59BwkQ
+ZhFqGx8/Jb60dTjUolGD08VGvFdpuXhNCMUfqqAWvSgGpJGwqtfTR5Ei16DanAg=
+=+vup
+', 7, 243652, 28, 22, 1, 'Santiago Vila <sanvila@debian.org>', '3.8.3', '1.0', 'hello', 1, 'This is the Debian GNU prepackaged version of the FSF''s GNU hello
+utility.  This package provides the classic greeting to the users of
+Debian, as well as providing Debian''s developers with an example of
+how to package a GNU program. GNU `hello'' was written by Mike Haertel,
+David MacKenzie, Jan Brittenson, Charles Hannum, Roland McGrath, Noah
+Friedman, Karl Eichwalder, and The King.
+
+This package was first put together by Ian Jackson and it''s currently
+maintained by Santiago Vila. The source for this release was taken
+from:
+
+http://ftp.gnu.org/gnu/hello/hello-2.4.tar.gz
+
+The changes were very minimal:
+
+- Adding support for the Debian package maintenance scheme, by adding
+  various debian/* files.
+
+Program Copyright 1992, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
+2002, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+
+Modifications for Debian Copyright (C) 1994,1995,1996 Ian Jackson.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+
+On Debian systems, the complete text of the GNU General Public License
+can be found in `/usr/share/common-licenses/GPL''.
+
+Manual Copyright (C) 1992, 1993, 1996, 2002, 2005, 2006, 2007, 2008
+Free Software Foundation, Inc.
+
+Permission is granted to copy, distribute and/or modify this
+document under the terms of the GNU Free Documentation License,
+Version 1.2 or any later version published by the Free Software
+Foundation; with no Invariant Sections, with no Front-Cover Texts,
+and with no Back-Cover Texts.  A copy of the license is included
+in the section entitled "GNU Free Documentation License".
+
+On Debian systems, the complete text of the GNU Free Documentation
+License can be found in `/usr/share/common-licenses/GFDL''.', '', '', NULL, 104);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (41, 243652, '2.4-3', '2010-03-21 16:40:56.808105', 1, NULL, 3, 'hello (2.4-3) lucid; urgency=low
+
+  * Modified doc/Makefile.in to avoid /usr/share/info/dir.gz.
+ -- Santiago Vila <sanvila@debian.org>   Sun, 30 Aug 2009 13:05:52 +0200', '', '', 'any', '-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.0
+Source: hello
+Binary: hello
+Architecture: any
+Version: 2.4-3
+Maintainer: Santiago Vila <sanvila@debian.org>
+Standards-Version: 3.8.3
+Checksums-Sha1: 
+ fcbf0264928900adf03a7797474375e1a6fa3836 499638 hello_2.4.orig.tar.gz
+ 6de5cf470583cdbf2947d16aa4f10e3028839391 5739 hello_2.4-3.diff.gz
+Checksums-Sha256: 
+ 534745c4b7e063f5eb5f984609caf0f7c06d46df03e4d404f20996d28b6df1f7 499638 hello_2.4.orig.tar.gz
+ 0b4bc9f52010291d4a2d4842f010fc6df1f77c969201aa3114611c634b82c3f4 5739 hello_2.4-3.diff.gz
+Files: 
+ 1691faa758ca41c70b6da5501bdf230a 499638 hello_2.4.orig.tar.gz
+ 0a267ee8ef148e91d06c3750ec79ca85 5739 hello_2.4-3.diff.gz
+
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJLmUVdAAoJEHVUWkiQp7mWu9MH/1jzF2VpsT85mLjLMlVgTr72
+AGi5tqS29NWWOb/JxeK8JrN9EfQ+dPhn0gxQ8uJbq3qBzU44WXhrc+aOo7PkDmUV
+1Pu2Epf0sz76AjSiqBOPFhQOuOulkv3B1VBcUSIxnXCp2XLKMppmXjATa0I3FC5u
+H7MlEe2Ly6d8Sbj1W+zuHhX5e9vQNoxcyIvXW8d86epNdH849rlkO3QIJbkqswoM
+QM0q7mDWFE1g1x8yE9LR9dOugrNBZGv2Z7NP88zWYi0hgs7Yt/D5k8UQm+59BwkQ
+ZhFqGx8/Jb60dTjUolGD08VGvFdpuXhNCMUfqqAWvSgGpJGwqtfTR5Ei16DanAg=
+=+vup
+', 7, 243652, 28, 22, 1, 'Santiago Vila <sanvila@debian.org>', '3.8.3', '1.0', 'hello', 1, 'This is the Debian GNU prepackaged version of the FSF''s GNU hello
+utility.  This package provides the classic greeting to the users of
+Debian, as well as providing Debian''s developers with an example of
+how to package a GNU program. GNU `hello'' was written by Mike Haertel,
+David MacKenzie, Jan Brittenson, Charles Hannum, Roland McGrath, Noah
+Friedman, Karl Eichwalder, and The King.
+
+This package was first put together by Ian Jackson and it''s currently
+maintained by Santiago Vila. The source for this release was taken
+from:
+
+http://ftp.gnu.org/gnu/hello/hello-2.4.tar.gz
+
+The changes were very minimal:
+
+- Adding support for the Debian package maintenance scheme, by adding
+  various debian/* files.
+
+Program Copyright 1992, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
+2002, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+
+Modifications for Debian Copyright (C) 1994,1995,1996 Ian Jackson.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+
+On Debian systems, the complete text of the GNU General Public License
+can be found in `/usr/share/common-licenses/GPL''.
+
+Manual Copyright (C) 1992, 1993, 1996, 2002, 2005, 2006, 2007, 2008
+Free Software Foundation, Inc.
+
+Permission is granted to copy, distribute and/or modify this
+document under the terms of the GNU Free Documentation License,
+Version 1.2 or any later version published by the Free Software
+Foundation; with no Invariant Sections, with no Front-Cover Texts,
+and with no Back-Cover Texts.  A copy of the license is included
+in the section entitled "GNU Free Documentation License".
+
+On Debian systems, the complete text of the GNU Free Documentation
+License can be found in `/usr/share/common-licenses/GFDL''.', '', '', NULL, 109);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (42, 243652, '2.4-3', '2010-03-21 16:40:58.942507', 1, NULL, 3, 'hello (2.4-3) lucid; urgency=low
+
+  * Modified doc/Makefile.in to avoid /usr/share/info/dir.gz.
+ -- Santiago Vila <sanvila@debian.org>   Sun, 30 Aug 2009 13:05:52 +0200', '', '', 'any', '-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.0
+Source: hello
+Binary: hello
+Architecture: any
+Version: 2.4-3
+Maintainer: Santiago Vila <sanvila@debian.org>
+Standards-Version: 3.8.3
+Checksums-Sha1: 
+ fcbf0264928900adf03a7797474375e1a6fa3836 499638 hello_2.4.orig.tar.gz
+ 6de5cf470583cdbf2947d16aa4f10e3028839391 5739 hello_2.4-3.diff.gz
+Checksums-Sha256: 
+ 534745c4b7e063f5eb5f984609caf0f7c06d46df03e4d404f20996d28b6df1f7 499638 hello_2.4.orig.tar.gz
+ 0b4bc9f52010291d4a2d4842f010fc6df1f77c969201aa3114611c634b82c3f4 5739 hello_2.4-3.diff.gz
+Files: 
+ 1691faa758ca41c70b6da5501bdf230a 499638 hello_2.4.orig.tar.gz
+ 0a267ee8ef148e91d06c3750ec79ca85 5739 hello_2.4-3.diff.gz
+
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJLmUVdAAoJEHVUWkiQp7mWu9MH/1jzF2VpsT85mLjLMlVgTr72
+AGi5tqS29NWWOb/JxeK8JrN9EfQ+dPhn0gxQ8uJbq3qBzU44WXhrc+aOo7PkDmUV
+1Pu2Epf0sz76AjSiqBOPFhQOuOulkv3B1VBcUSIxnXCp2XLKMppmXjATa0I3FC5u
+H7MlEe2Ly6d8Sbj1W+zuHhX5e9vQNoxcyIvXW8d86epNdH849rlkO3QIJbkqswoM
+QM0q7mDWFE1g1x8yE9LR9dOugrNBZGv2Z7NP88zWYi0hgs7Yt/D5k8UQm+59BwkQ
+ZhFqGx8/Jb60dTjUolGD08VGvFdpuXhNCMUfqqAWvSgGpJGwqtfTR5Ei16DanAg=
+=+vup
+', 7, 243652, 28, 22, 1, 'Santiago Vila <sanvila@debian.org>', '3.8.3', '1.0', 'hello', 1, 'This is the Debian GNU prepackaged version of the FSF''s GNU hello
+utility.  This package provides the classic greeting to the users of
+Debian, as well as providing Debian''s developers with an example of
+how to package a GNU program. GNU `hello'' was written by Mike Haertel,
+David MacKenzie, Jan Brittenson, Charles Hannum, Roland McGrath, Noah
+Friedman, Karl Eichwalder, and The King.
+
+This package was first put together by Ian Jackson and it''s currently
+maintained by Santiago Vila. The source for this release was taken
+from:
+
+http://ftp.gnu.org/gnu/hello/hello-2.4.tar.gz
+
+The changes were very minimal:
+
+- Adding support for the Debian package maintenance scheme, by adding
+  various debian/* files.
+
+Program Copyright 1992, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
+2002, 2005, 2006, 2007, 2008 Free Software Foundation, Inc.
+
+Modifications for Debian Copyright (C) 1994,1995,1996 Ian Jackson.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+
+On Debian systems, the complete text of the GNU General Public License
+can be found in `/usr/share/common-licenses/GPL''.
+
+Manual Copyright (C) 1992, 1993, 1996, 2002, 2005, 2006, 2007, 2008
+Free Software Foundation, Inc.
+
+Permission is granted to copy, distribute and/or modify this
+document under the terms of the GNU Free Documentation License,
+Version 1.2 or any later version published by the Free Software
+Foundation; with no Invariant Sections, with no Front-Cover Texts,
+and with no Back-Cover Texts.  A copy of the license is included
+in the section entitled "GNU Free Documentation License".
+
+On Debian systems, the complete text of the GNU Free Documentation
+License can be found in `/usr/share/common-licenses/GFDL''.', '', '', NULL, 114);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -9186,6 +10453,21 @@ INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetyp
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (36, 66, 4, 12);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (36, 67, 5, 13);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (36, 68, 3, 14);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (38, 95, 4, 15);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (38, 96, 5, 16);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (38, 97, 3, 17);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (39, 100, 4, 18);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (39, 101, 5, 19);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (39, 102, 3, 20);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (40, 105, 4, 21);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (40, 106, 5, 22);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (40, 107, 3, 23);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (41, 110, 4, 24);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (41, 111, 5, 25);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (41, 112, 3, 26);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (42, 115, 4, 27);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (42, 116, 5, 28);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (42, 117, 3, 29);
 
 
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;
@@ -9593,6 +10875,7 @@ ALTER TABLE sshkey DISABLE TRIGGER ALL;
 
 INSERT INTO sshkey (id, person, keytype, keytext, comment, date_created) VALUES (1, 12, 2, 'AAAAB3NzaC1kc3MAAAEBAPfhCA15ZaT08brwVXwpJjcZT6QFIipzF1sGy57HY7QPi/W+uljr1VcCHzWdlSmda7YpTCTx0NFYYQIccQRGX6zYL8v1w9FSRCAnxxUJmqEhsUDFYFdVTa9uLCrs3MSbmh7wwFPdRrGrO6X5x7T4dMZQwykSZrOVdpLcCHRgrMZslLomIAjERn6OAQNiGFz7B2tEi/3Soqd52bGJwOtGymRiAXkPSLbH7KfzSCe34ytdh6BD+4SrgSoa+TL3VDV70QAdlOFXD42ZHl3Sc0Tde4LbZeYq2Uf84DOATLZBbOYpRSqTLkM9XngpnvCRVb6dxEQfgODDw783tEuPpySLj2EAAAAVANpUVgivDjt9gFibN/AXfYy1meeBAAABAB6FtnMywmWZg2lr2I3nDfE5U5QbGUQB/ZEP98ZkSkhOcF29VlnGOxyb2/VZbVTLa/btlPF82L4An/c8VKtKZnel7LnAlMoArdgzQNXGVQQVtnaWwM26ydgDzkSSIes3elNZgsfnPRBvaF0ol9Tqju0rNGKjnr3ZOX/NX+42bxpjRnxYj1h56yP2jKKeGfjorI6JK1YfqBAiTxzaDMzSpknnrbztaKJoh7IFqMMOp9ANSFh7H106pEaCv3ebCTJZprtWqNKjb2zum7OQPRz3upA0qx22ocTokjv4itXJ6yj/BvGu9qdOIQFXuB2rsFtLZtS8ATueOly0GzyeiZBx/AEAAAEBAO8jRYjL7tAYnVlO1p6UzPOicAuGCFWfNbBEDRAXoSgLNdj451jStw+eUc9ZVz7tG/XRVZsiavtFHb2cbrcfX1YOd69xi0m+IY6mo3yKt3irQRokDtt376sHoUdHgj2ozySZJgG8IJndtoS+VQQy6NdClA3fNFb96bF865eNaRYoHJO9ZI84lkWQL++MLzIuyFfCs1hSlapyyuHC8kFmF7AQdrVZvbohSbnWs+w53nIW8nAA7z21wAukvE1Pl6AQyG0e7U1sYS8Pc8dtmzJvdtVZWBl02/gqQJ7f06mFvnsN45rR1Uyxnrwl6rbFwqabZDlyD5Ac6Icbvz9SG1gBOiI=', 'andrew@trogdor', '2006-10-16 18:31:53.030784');
 INSERT INTO sshkey (id, person, keytype, keytext, comment, date_created) VALUES (2, 1, 2, 'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==', 'Private key in lib/lp/codehosting/tests/id_dsa', '2007-03-30 03:39:27.689516');
+INSERT INTO sshkey (id, person, keytype, keytext, comment, date_created) VALUES (3, 243651, 1, 'AAAAB3NzaC1yc2EAAAABIwAAAQEA4T3rFl8HondKnGq3+OEAoXzhsZL3YyzRIMCFQeD6aLLHCoVGAwUs3cg7bqUVshGb3udz5Wl/C4ym1aF5Uk5xaZWr2ByKZG6ZPFQb2MZbOG+Lcd5A14gSS2+Hw6+LIoMM8u6CJvIjbTHVI2wbz/ClINDEcJC0bh+YpuaKWyt2iExHATq153ST3dih+sDDK8bq6bFMKM8sdJHl9soKGo7V7i6jIn8E84XmcdTq8Gm2gt6VhOIb/wtr1ix7nxzZ7qCxAQr//FhJ8yVsmHx7wRwkndS7muPfVlVd5jBYPN74AvNicGrQsaPtbkAIwlxOrL92BsS6xtb+sO2iJYHK/EJMoQ==', 'Added by utility script.', '2010-03-21 16:37:00.153872');
 
 
 ALTER TABLE sshkey ENABLE TRIGGER ALL;
@@ -9754,6 +11037,7 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (114, 243634, 243644, 2, '2009-08-24 14:20:18.041551', NULL, NULL, NULL, 243643, NULL, 243643, '2009-08-24 14:20:18.041551', NULL, NULL, '2009-08-24 14:20:18.041551', NULL, NULL, NULL, '2009-08-24 14:19:10.891377');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (115, 243640, 243647, 7, NULL, NULL, NULL, NULL, 243635, NULL, NULL, '2009-08-24 14:20:51.178444', NULL, NULL, NULL, NULL, NULL, NULL, '2009-08-24 14:19:10.891377');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (116, 243646, 243641, 2, '2009-08-24 14:21:03.889338', NULL, NULL, NULL, 243637, NULL, 243637, '2009-08-24 14:21:03.889338', NULL, NULL, '2009-08-24 14:21:03.889338', NULL, NULL, NULL, '2009-08-24 14:19:10.891377');
+INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (117, 243651, 17, 2, '2010-03-21 16:37:00.167726', NULL, NULL, NULL, 243651, NULL, 243651, '2010-03-21 16:37:00.167726', NULL, NULL, '2010-03-21 16:37:00.167726', NULL, NULL, NULL, '2010-03-21 16:37:00.153872');
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9992,6 +11276,10 @@ INSERT INTO teamparticipation (id, team, person) VALUES (249, 243641, 243646);
 INSERT INTO teamparticipation (id, team, person) VALUES (250, 243648, 243648);
 INSERT INTO teamparticipation (id, team, person) VALUES (251, 243649, 243649);
 INSERT INTO teamparticipation (id, team, person) VALUES (252, 243650, 243650);
+INSERT INTO teamparticipation (id, team, person) VALUES (253, 243651, 243651);
+INSERT INTO teamparticipation (id, team, person) VALUES (254, 32, 243651);
+INSERT INTO teamparticipation (id, team, person) VALUES (255, 17, 243651);
+INSERT INTO teamparticipation (id, team, person) VALUES (256, 243652, 243652);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
