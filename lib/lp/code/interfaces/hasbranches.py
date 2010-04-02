@@ -128,7 +128,7 @@ class IHasCodeImports(Interface):
             title=_('Name of branch to create'), required=True),
         rcs_type=Choice(vocabulary=RevisionControlSystems, required=True),
         url=TextLine(title=_('Foreign VCS URL')),
-        cvs_root=TextLine(title=_('CVS roor URL')),
+        cvs_root=TextLine(title=_('CVS root URL')),
         cvs_module=TextLine(title=_('CVS module to import')),
         owner=Reference(title=_('Owner of the resulting branch'),
             schema=Interface)
