@@ -2377,9 +2377,9 @@ ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
 ALTER TABLE distributionsourcepackagecache DISABLE TRIGGER ALL;
 
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (1, 3, 19, 'alsa-utils', '', '', '', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (2, 1, 1, 'mozilla-firefox', 'mozilla-firefox mozilla-firefox-data', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (3, 1, 9, 'evolution', '', '', '', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (4, 1, 10, 'netapplet', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (2, 1, 1, 'mozilla-firefox', 'mozilla-firefox mozilla-firefox-data', 'Mozilla Firefox Data Mozilla Firefox Web Browser ff from iceweasel', 'Mozilla Firefox Data is ..... Mozilla Firefox Web Browser is ..... iceweasel huh ?', NULL, 'Mozilla dummy Changelog......', 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (3, 1, 9, 'evolution', '', '', '', NULL, '', 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (4, 1, 10, 'netapplet', '', '', '', NULL, '', 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (5, 1, 14, 'pmount', 'pmount', 'pmount shortdesc', 'pmount description', NULL, 'This is a placeholder changelog for pmount 0.1-2 pmount (0.1-1) hoary; urgency=low
 
  * Fix description (Malone #1)
@@ -2387,16 +2387,36 @@ INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename,
  * Fix warty (Warty Ubuntu #1)
 
  -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (6, 1, 19, 'alsa-utils', '', '', '', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (7, 1, 20, 'cnews', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (6, 1, 19, 'alsa-utils', '', '', '', NULL, 'alsa-utils (1.0.8-1ubuntu1) warty; urgency=low
+
+ * Placeholder
+
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300 alsa-utils (1.0.9a-4) warty; urgency=low
+
+ * Placeholder
+
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300 alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
+
+ * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
+ LP: #7, #8,
+   #11
+
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (7, 1, 20, 'cnews', '', '', '', NULL, '', 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (8, 1, 21, 'libstdc++', '', '', '', NULL, 'libstdc++ (9.9-1) hoary; urgency=high
 
  * Placeholder
 
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (9, 1, 22, 'linux-source-2.6.15', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (9, 1, 22, 'linux-source-2.6.15', 'linux-2.6.12', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', NULL, '', 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (10, 1, 23, 'foobar', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL, 12);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (12, 1, 15, 'a52dec', '', '', '', NULL, '', 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (13, 1, 24, 'cdrkit', 'cdrkit', 'cdrkit is nice', 'cdrkit should be kept', NULL, '', 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (14, 1, 26, 'iceweasel', 'mozilla-firefox', 'ff from iceweasel', 'iceweasel huh ?', NULL, '', 1);
 
 
 ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
@@ -9906,6 +9926,12 @@ INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseri
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (29, 20, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL);
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (30, 36, 10, 4, 5, 7, '2007-08-09 21:28:12.106187', NULL, '2010-03-21 16:36:52.135353', NULL, NULL, NULL, NULL, 0, 12, 16, 'Cleaned up because of missing Librarian files.');
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (31, 35, 10, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 10, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (32, 43, 22, 1, 1, 2, '2010-04-02 21:08:51.881793', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (33, 44, 22, 1, 1, 2, '2010-04-02 21:08:51.881793', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (34, 45, 22, 1, 1, 2, '2010-04-02 21:08:51.881793', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (35, 46, 22, 1, 1, 2, '2010-04-02 21:08:51.881793', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (36, 47, 22, 1, 1, 2, '2010-04-02 21:08:51.881793', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment) VALUES (37, 48, 22, 1, 1, 2, '2010-04-02 21:08:51.881793', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL);
 
 
 ALTER TABLE sourcepackagepublishinghistory ENABLE TRIGGER ALL;
@@ -10442,6 +10468,12 @@ in the section entitled "GNU Free Documentation License".
 
 On Debian systems, the complete text of the GNU Free Documentation
 License can be found in `/usr/share/common-licenses/GFDL''.', '', '', NULL, 114);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (43, 12, '3.0-0', '2010-04-02 21:08:51.881793', 2, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 12, 1, 22, 1, 'Sample Person <test@canonical.com>', '3.6.2', '1.0', 'foo-bin', 1, 'generic-string1', NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (44, 12, '3.0-0', '2010-04-02 21:08:51.881793', 2, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 12, 9, 22, 1, 'Sample Person <test@canonical.com>', '3.6.2', '1.0', 'foo-bin', 1, 'generic-string2', NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (45, 12, '3.0-0', '2010-04-02 21:08:51.881793', 2, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 12, 10, 22, 1, 'Sample Person <test@canonical.com>', '3.6.2', '1.0', 'foo-bin', 1, 'generic-string3', NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (46, 12, '3.0-0', '2010-04-02 21:08:51.881793', 2, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 12, 19, 22, 1, 'Sample Person <test@canonical.com>', '3.6.2', '1.0', 'foo-bin', 1, 'generic-string4', NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (47, 12, '3.0-0', '2010-04-02 21:08:51.881793', 2, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 12, 15, 22, 1, 'Sample Person <test@canonical.com>', '3.6.2', '1.0', 'foo-bin', 1, 'generic-string5', NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog) VALUES (48, 12, '3.0-0', '2010-04-02 21:08:51.881793', 2, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 12, 14, 22, 1, 'Sample Person <test@canonical.com>', '3.6.2', '1.0', 'foo-bin', 1, 'generic-string6', NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
