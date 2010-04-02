@@ -68,7 +68,7 @@ class FakeSlave:
             'BuilderStatus.WAITING',
             'BuildStatus.OK',
             self._status.get('build_id'),
-            {},
+            self._status.get('filemap'),
             )
 
 
@@ -90,19 +90,21 @@ class FakeBuildQueue:
         Copies its builder from the behavior object.
         """
         self.builder = behavior._builder
+        self.specific_job = behavior.buildfarmjob
         self.destroySelf = FakeMethod()
 
 
 class MakeBehaviorMixin(object):
     """Provide common test methods."""
 
-    def makeBehavior(self):
+    def makeBehavior(self, branch=None):
         """Create a TranslationTemplatesBuildBehavior.
 
         Anything that might communicate with build slaves and such
         (which we can't really do here) is mocked up.
         """
-        specific_job = self.factory.makeTranslationTemplatesBuildJob()
+        specific_job = self.factory.makeTranslationTemplatesBuildJob(
+            branch=branch)
         behavior = IBuildFarmJobBehavior(specific_job)
         slave = FakeSlave(BuildStatus.NEEDSBUILD)
         behavior._builder = FakeBuilder(slave)
@@ -274,6 +276,28 @@ class TestTTBuildBehaviorTranslationsQueue(
 
         entries = self.queue.getAllEntries(target=self.productseries)
         self.assertEqual(self.branch.owner, entries[0].importer)
+
+    def test_updateBuild_WAITING_uploads(self):
+        behavior = self.makeBehavior(branch=self.branch)
+        behavior._getChroot = FakeChroot
+        queue_item = FakeBuildQueue(behavior)
+        builder = behavior._builder
+
+        behavior.dispatchBuildToSlave(queue_item, logging)
+
+        builder.slave.getFile.result = open(self.dummy_tar)
+        builder.slave._status['filemap'] = {
+            'translation-templates.tar.gz': 'foo'}
+        slave_status = behavior.slaveStatus(builder.slave.status())
+        behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
+
+        entries = self.queue.getAllEntries(target=self.productseries)
+        expected_templates = [
+            'po/messages.pot',
+            'po-other/other.pot',
+            'po-thethird/templ3.pot'
+            ]
+        self.assertContentEqual(expected_templates, self._getPaths(entries))
 
 
 def test_suite():

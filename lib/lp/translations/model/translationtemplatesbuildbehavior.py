@@ -123,7 +123,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                     build_id))
             else:
                 logger.debug("Uploading translation templates tarball.")
-                self._uploadTarball(tarball, logger)
+                self._uploadTarball(queue_item.specific_job.branch, tarball, logger)
                 logger.debug("Upload complete.")
 
         queue_item.builder.cleanSlave()
