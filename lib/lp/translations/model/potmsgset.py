@@ -702,11 +702,11 @@ class POTMsgSet(SQLBase):
                     # Either converge_shared==True, or a new message.
                     new_message.potemplate = None
 
-                new_message.is_current_ubuntu = True
+                new_message.makeCurrentUbuntu()
             else:
                 new_message.potemplate = None
         if is_current_upstream or new_message == upstream_message:
-            new_message.is_current_upstream = True
+            new_message.makeCurrentUpstream()
 
 
     def _isTranslationMessageASuggestion(self, force_suggestion,

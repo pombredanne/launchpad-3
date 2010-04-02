@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,6 +9,8 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+
+from storm.locals import Store
 
 from canonical.launchpad.scripts.logger import log, DEBUG2
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
@@ -147,12 +149,16 @@ def bequeathe_flags(source_message, target_message, incumbents=None):
         # Transfer is_current_ubuntu flag.
         source_message.is_current_ubuntu = False
         target_message.is_current_ubuntu = True
+        Store.of(source_message).add_flush_order(
+            source_message, target_message)
 
     if (source_message.is_current_upstream and
         not target_message.is_current_upstream):
         # Transfer is_current_upstream flag.
         source_message.is_current_upstream = False
         target_message.is_current_upstream = True
+        Store.of(source_message).add_flush_order(
+            source_message, target_message)
 
     source_message.destroySelf()
 
